@@ -7,7 +7,7 @@ val Lv11 = listOf(Card.LevelInfo(1, 1, 0))
 val Lv10_24 = listOf(Card.LevelInfo(1, 0, 0), Card.LevelInfo(2, 4, 0))
 
 class 電人トレイン : SpiritCard(Category.SPIRITCARD, "電トレ", Color.W, 3, Sbl.W, Sbl.W * 1, setOf(Family.武装, Family.界渡), Lv11) {
-    override fun effect(tr: Transition): Sequence<Transition> = sequenceOf(tr)
+    override fun effect(tr: SpaceTime): Sequence<SpaceTime> = sequenceOf(tr)
             .action(op召喚配置(this))  // このカードを召喚する
             .sqOwnSide_flatMap { deck.cards.top(4).flatMap { t4 -> opMoveCards(PICKEDCARD, t4) } }//4枚オープンしpickedに置く
             .sqOwnSide_flatMap { opPayCost(1) }//1コスト支払うことで

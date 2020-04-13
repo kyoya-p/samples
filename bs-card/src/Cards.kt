@@ -20,9 +20,9 @@ abstract class Card(
 
 
 data class CardAttr(
-        val place: Place
+        val place: FO
 ) {
-    fun tr(place: Place = this.place): CardAttr = CardAttr(place)
+    fun tr(place: FO = this.place): CardAttr = CardAttr(place)
 }
 
 
