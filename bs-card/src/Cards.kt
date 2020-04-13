@@ -1,8 +1,7 @@
 package BSSim
 
-import java.util.Collection
 
-enum class Category { SPIRITCARD, BRAVECARD, NEXUSCARD, MAGICCARD, DECK, HAND, TRASH, RSV, BURST, CARDTRUSH, CORETRASH, LIFE, RESERVE, PICKEDCARD, PICKEDCORE }
+enum class Category { SPIRITCARD, BRAVECARD, NEXUSCARD, MAGICCARD, DECK, HAND, TRASH, RSV, BURST, CARDTRUSH, CORETRASH, LIFE, RESERVE, PICKEDCARD, PICKEDCORE, PLACE }
 
 abstract class Card(
         val category: Category,
@@ -13,70 +12,47 @@ abstract class Card(
         val reduction: Sbl,
         val familiy: Set<Family>,
         val lvInfo: List<LevelInfo>
-) : Effectable("Card"), Comparable<Card> {
+) : Effectable("Card") {
     data class LevelInfo(val level: Int, val keepCore: Int, val bp: Int)
-
-    //override val effects0 get() = listOf<Effect>()
-
-    override fun hashCode(): Int {
-        return category.hashCode() * 3131 + name.hashCode() * 31 + cost
-    }
-
-    override fun equals(o: Any?): Boolean {
-        o as Card
-        return category == o.category
-                && name == o.name
-                && colors == o.colors
-                && cost == o.cost
-                && simbols == o.simbols
-                && reduction == o.reduction
-                && familiy == o.familiy
-                && lvInfo == o.lvInfo
-    }
-
-    override fun compareTo(o: Card): Int {
-        return category.compareTo(o.category)
-                .if0 { name.compareTo(o.name) }
-                .if0 { colors.compareTo(o.colors) }
-                .if0 { cost.compareTo(o.cost) }
-                .if0 { simbols.compareTo(o.simbols) }
-    }
-
-    inline operator fun times(n: Int): List<Card> = mutableListOf<Card>().also {
-        for (i in 0 until n) {
-            it.add(this)
-        }
-    }
 
     override fun toString() = "$name"
 }
 
-//typealias Cards = List<Card>
-class Cards(val cs: List<Card>) : Comparable<Cards> {
-    constructor() : this(listOf())
 
-    override fun compareTo(other: Cards): Int {
-        val i1 = cs.iterator()
-        val i2 = other.cs.iterator()
-        while (i1.hasNext() || i2.hasNext()) {
-            i1.hasNext().compareTo(i2.hasNext()).let { if (it != 0) return it }
-            i1.next().compareTo(i2.next()).let { if (it != 0) return it }
-        }
-        return 0
-    }
-
-    fun take(n: Int) = Cards(cs.take(n))
-    fun drop(n: Int) = Cards(cs.drop(n))
-    operator fun plus(b: Cards): Cards = Cards(cs + b.cs)
-
+data class CardAttr(
+        val place: Place
+) {
+    fun tr(place: Place = this.place): CardAttr = CardAttr(place)
 }
 
-inline fun Cards.pick(ca: Card): Sequence<Pair<Card, Cards>> = sequence {
-    val n = cs.indexOf(ca)
+
+typealias Cards = List<Card>
+
+fun Cards.pick(ca: Card): Sequence<Pair<Card, Cards>> = sequence {
+    val n = indexOf(ca)
     if (n >= 0) {
         yield(ca to (take(n) + drop(n + 1)))
     }
 }
 
-inline fun Cards.drop(ca: Card): Cards = pick(ca).take1Case().second
-inline fun Cards.drops(cas: Cards): Cards = cas.cs.fold(this) { cs, ca -> cs.drop(ca) }
+fun Cards.top(n: Int): Sequence<Cards> = if (n > this.size) sequenceOf() else sequenceOf(take(n))
+fun Cards.bottom(n: Int): Sequence<Cards> = if (n > this.size) sequenceOf() else sequenceOf(takeLast(n))
+
+fun Cards.remove(c: Card): Cards = pick(c).onlyTakeOneCase().second
+fun Cards.remove(cs: Cards): Cards = cs.fold(this) { res, c -> res.remove(c) }
+
+fun main() {
+    class T1 : SpiritCard(Category.SPIRITCARD, "T1", Color.Y, 0, Sbl.Y, Sbl.Zero, setOf(), listOf())
+
+    val t1_1 = T1()
+    val t1_2 = T1()
+    t1_1 assert t1_1
+    t1_1 assertNot t1_2
+
+    setOf(t1_1) assert setOf(t1_1)
+    setOf(t1_1) assertNot setOf(t1_2)
+    setOf(t1_1, t1_2) assert setOf(t1_1, t1_2)
+    setOf(t1_1, t1_2) assert setOf(t1_2, t1_1)
+    listOf(t1_1, t1_2) assert listOf(t1_1, t1_2)
+    listOf(t1_1, t1_2) assertNot listOf(t1_2, t1_1)
+}

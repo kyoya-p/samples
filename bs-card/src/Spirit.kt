@@ -1,5 +1,7 @@
 package BSSim
 
+import javax.swing.UIManager.put
+
 open class SummonnableCard(
         category: Category
         , name: String
@@ -42,7 +44,7 @@ open class SpiritCard(
         , lvInfo
 ) {
     override fun effect(p: Transition): Sequence<Transition> =
-            sequenceOf(p).action(op配置(this))
+            sequenceOf(p).action(op召喚配置(this))
 }
 
 open class BraveCard(
@@ -90,3 +92,15 @@ open class NexusCard(
 }
 
 
+// スピリット/ブレイヴの召喚、ネクサスの配置
+//
+// 維持コストをフィールドから選択しFOに置く
+class op召喚配置(val card: Card) : Effectable("召喚 配置") {
+    override fun effect(p: Transition): Sequence<Transition> = sequenceOf(p)
+            .sqOwnSide_flatMap { this.opPayCost(card.cost - fieldSimbols.reduction(card.reduction)) } // コストをフィールドから選択しトラッシュに置く
+            .sqOwnSide_flatMap {
+                val newFo = Place(card.name) //FOを新しく生成
+                setPlaceCardBy(newFo) { listOf(card) } //カードを置いてフィールドに配置
+                        .opMoveCore(newFo, payableCoreHolders, 1)// [TODO]とりあえす1コアおいてみる
+            }
+}

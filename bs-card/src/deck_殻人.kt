@@ -9,9 +9,9 @@ class ピグレ : SpiritCard(Category.SPIRITCARD, "ピグレ", Color.G, 3, Sbl.G
 
 /*デッキ定義*/
 
-val deck_殻人1 = (
-        オルリ() * 1
-                + ちょうちん() * 2
-                + ピグレ() * 2
-                + 子フ() * 1
-        )
+val deck_殻人1 = listOf(
+        オルリ()
+        , ちょうちん()
+        , ピグレ()
+        , 子フ()
+)
