@@ -12,8 +12,8 @@ fun Side.toMutableSide() = MutableSide(cards.toMutableMap(), places.toMutableMap
 fun MutableSide.toMutableSide() = this
 fun MutableSide.toSide() = Side(cards, places)
 fun Side.toSide() = this
-fun Side.mutation(op: MutableSide.() -> Unit) = toMutableSide().apply { op() }.toSide()
-fun MutableSide.mutation(op: MutableSide.() -> Unit) = apply { op() }
+inline fun Side.mutation(op: MutableSide.() -> Unit) = toMutableSide().apply { op() }.toSide()
+inline fun MutableSide.mutation(op: MutableSide.() -> Unit) = apply { op() }
 
 fun MutableSide.upd(fo: FO, op: (FoAttr) -> FoAttr) {
     places[fo] = op(places[fo]!!)
@@ -54,18 +54,18 @@ val Side.reserve get() = this.places[RESERVE]!!
 val Side.pickedCards get() = this.places[PICKEDCARD]!!
 val Side.pickedCore get() = this.places[PICKEDCORE]!!
 
-fun initialSide(deck: List<Card>): Side {
+fun initialSide(deck: Set<Card>): Side {
     val places = mutableMapOf<FO, FoAttr>()
     val cards = mutableMapOf<Card, CardAttr>()
 
-    places[DECK] = FoAttr(cardOrdering = true)
-    places[HAND] = FoAttr()
-    places[CARDTRASH] = FoAttr()
-    places[CORETRASH] = FoAttr()
-    places[LIFE] = FoAttr(core = Core(5))
-    places[RESERVE] = FoAttr(core = Core(4, 1))
-    places[PICKEDCARD] = FoAttr()
-    places[PICKEDCORE] = FoAttr()
+    places[DECK] = FoAttr(id = DECK, cardOrdering = true)
+    places[HAND] = FoAttr(id = HAND)
+    places[CARDTRASH] = FoAttr(id = CARDTRASH)
+    places[CORETRASH] = FoAttr(id = CORETRASH)
+    places[LIFE] = FoAttr(id = LIFE, core = Core(5))
+    places[RESERVE] = FoAttr(id = RESERVE, core = Core(4, 1))
+    places[PICKEDCARD] = FoAttr(id = PICKEDCARD)
+    places[PICKEDCORE] = FoAttr(id = PICKEDCORE)
 
     deck.forEach {
         cards[it] = CardAttr(DECK)
@@ -77,7 +77,8 @@ fun initialSide(deck: List<Card>): Side {
 fun Side.tr(cards: Map<Card, CardAttr> = this.cards, places: Map<FO, FoAttr> = this.places): Side = Side(cards, places)
 fun Side.attr(p: FO): FoAttr = places[p]!!
 fun Side.attr(c: Card): CardAttr = cards[c]!!
-
+fun Side.fo(c: Card): FO = attr(c).place
+fun Side.foAttr(c: Card): FoAttr = attr(attr(c).place)
 
 // ----------------------------------------------------------------
 // 基本操作(整合性保証しない)
@@ -98,6 +99,23 @@ fun Side.setPlaceCardBy(tg: FO, op: (Cards) -> Cards): Side = mutation {
     places[tg] = attr(tg).tr(cards = op(attr(tg).cards))
 }
 
+fun Side.opCreateNewFO(newFo: FO, cardOrdering: Boolean = false): Sequence<Side> = sequenceOf(
+        mutation {
+            val newFoAttr = FoAttr(newFo, core = Core(0), cardOrdering = cardOrdering, cards = listOf<Card>())
+            places[newFo] = newFoAttr
+        }
+)
+
+fun Side.opCreateNewFO(card: Card, cardOrdering: Boolean = false): Sequence<Side> = sequenceOf(
+        mutation {
+            val newFo = FO("tmp")
+            val newFoAttr = FoAttr(newFo, core = Core(0), cardOrdering = cardOrdering, cards = listOf())
+            places.put(newFo, newFoAttr)
+            setCardPlaceBy(card) { newFo }
+        }
+)
+
+fun Side.removeFO(fo: FO): Side = mutation { places.remove(fo) }
 
 // ----------------------------------------------------------------
 // BS固有の設定
@@ -131,18 +149,24 @@ fun Side.putCoreBy(dst: FO, op: (Core) -> Core): Side {
 fun Side.opMoveCore(dst: FO, src: FO, core: Core): Sequence<Side> = sequence {
     if (places[src]!!.core.contains(core)) { //srcに移動するだけのコアがあるなら
         yield(putCoreBy(src) { it - core }.putCoreBy(dst) { it + core })
+    } else {
+        println("No movable cores.")
     }
 }
 
 // コア取り出し可能なBSOから特定BSOへのコアの移動
-inline fun Side.opMoveCore(dst: FO, srcs: List<FO>, core: Int): Sequence<Side> = sequence {
+fun Side.opMoveCore(dst: FO, srcs: List<FO>, core: Int): Sequence<Side> = sequence {
     srcs.map { places[it]!!.core }.pickCore(core).forEach { (picked, rem) ->
         val m = srcs.zip(rem).associate { (p, c) -> p to c }
         val post = mutation {
-            places.forEach {
-                places[it.key] = places[it.key]!!.tr(core = m[it.key]!!)
+
+            //ピックアップ対象のコアホルダからコア取り上げ
+            m.forEach { (fo, c) ->
+                places[fo] = places[fo]!!.tr(core = c)
+
             }
-            putCoreBy(dst) { it + picked }
+            // places.forEach { places[it.key] = places[it.key]!!.tr(core = m[it.key]!!) }
+            putCoreBy(dst) { it + picked } //取り出したコアを対象に置く
         }
         yield(post)
     }
@@ -166,10 +190,10 @@ fun Side.opMoveCardsBy(dst: FO, cs: Cards, opInsert: (dst: Cards, cs: Cards) -> 
     }
 }
 
-inline fun Side.opMoveCards(dst: FO, cs: Cards): Sequence<Side> =
+fun Side.opMoveCards(dst: FO, cs: Cards): Sequence<Side> =
         opMoveCardsBy(dst, cs) { dst, cs -> sequenceOf(dst + cs) }
 
-inline fun Side.opMoveCard(dst: FO, c: Card): Sequence<Side> = sequenceOf(
+fun Side.opMoveCard(dst: FO, c: Card): Sequence<Side> = sequenceOf(
         setCardPlaceBy(c) { dst }
                 .setPlaceCardBy(dst) { it + listOf(c) }
                 .setPlaceCardBy(attr(c).place) { it.remove(c) }
@@ -179,10 +203,10 @@ inline fun Side.opMoveCard(dst: FO, c: Card): Sequence<Side> = sequenceOf(
 // 複合操作
 inline val Side.fieldSimbols get() = fieldObjects.map { attr(it).cards[0].simbols }.fold(Sbl()) { s, sbl -> s + sbl }
 
-inline fun Side.opPayCost(cost: Int): Sequence<Side> = opMoveCore(CORETRASH, payableCoreHolders, cost)
+fun Side.opPayCost(cost: Int): Sequence<Side> = opMoveCore(CORETRASH, payableCoreHolders, cost)
 
 // FO消滅(維持コア以下にする(維持コア0のFOは消滅できない))
-inline fun Side.opDestruct(fo: FO): Sequence<Side> = sequence {
+fun Side.opDestruct(fo: FO): Sequence<Side> = sequence {
     if (attr(fo).cards[0].lvInfo[0].keepCore >= 1) { //維持コア1以上
         opMoveCore(RESERVE, fo, attr(fo).core) //コアをリザーブに移動
                 .flatMap { opMoveCards(CARDTRASH, attr(fo).cards) } //FOのカードをすべてトラッシュへ移動
@@ -218,9 +242,9 @@ fun main() {
     val C2 = Card2()
     val C3 = Card3()
 
-    val s123 = initialSide(listOf(C1, C2, C3))
-    val s123b = initialSide(listOf(C1, C2, C3))
-    val s213 = initialSide(listOf(C2, C1, C3))
+    val s123 = initialSide(setOf(C1, C2, C3))
+    val s123b = initialSide(setOf(C1, C2, C3))
+    val s213 = initialSide(setOf(C2, C1, C3))
 
     s123.deck.cards assert listOf(C1, C2, C3)
     s123.deck.cards assertNot listOf(C1, C3, C2)

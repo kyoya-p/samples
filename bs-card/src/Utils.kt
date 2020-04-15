@@ -10,10 +10,18 @@ inline fun Int.if0(op: () -> Int) = if (this == 0) op() else this
 // for Debug
 fun <T> T.pln(mark: String = "") = also { println("${mark}${this} ") }
 fun <T> T.print() = also { print("$this ") }
+fun <T> Sequence<T>.pln(op: T.() -> Unit) = apply { map { it.op().pln() } }
 fun <T> T.printh() = also { shortHash().print() }
 infix fun <T> T.assert(test: T) = also {
     if (this != test) {
         println("F:${this}.${this.shortHash()}==${test}.${test.shortHash()}")
+        throw Exception()
+    }
+}
+
+inline fun <T> T.assert(op: T.() -> Boolean) = also {
+    if (!op()) {
+        println("F:${this}.${this.shortHash()} ")
         throw Exception()
     }
 }

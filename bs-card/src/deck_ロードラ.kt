@@ -7,11 +7,11 @@ val Lv11 = listOf(Card.LevelInfo(1, 1, 0))
 val Lv10_24 = listOf(Card.LevelInfo(1, 0, 0), Card.LevelInfo(2, 4, 0))
 
 class 電人トレイン : SpiritCard(Category.SPIRITCARD, "電トレ", Color.W, 3, Sbl.W, Sbl.W * 1, setOf(Family.武装, Family.界渡), Lv11) {
-    override fun effect(tr: SpaceTime): Sequence<SpaceTime> = sequenceOf(tr)
-            .action(op召喚配置(this))  // このカードを召喚する
-            .sqOwnSide_flatMap { deck.cards.top(4).flatMap { t4 -> opMoveCards(PICKEDCARD, t4) } }//4枚オープンしpickedに置く
-            .sqOwnSide_flatMap { opPayCost(1) }//1コスト支払うことで
-            .sqOwnSide_flatMap {
+    override fun effect(tr: History): Sequence<History> = sequenceOf(tr)
+            .choices(op召喚配置(this))  // このカードを召喚する
+            .flatMap_ownSide { deck.cards.top(4).flatMap { t4 -> opMoveCards(PICKEDCARD, t4) } }//4枚オープンしpickedに置く
+            .flatMap_ownSide { opPayCost(1) }//1コスト支払うことで
+            .flatMap_ownSide {
                 pickedCards.cards.asSequence().filter { it.familiy.contains(Family.創界神) && it.colors == Color.W }.flatMap {   //pickedが白の創界神の場合
                     opMoveCard(HAND, it) //手札に加える
                 }

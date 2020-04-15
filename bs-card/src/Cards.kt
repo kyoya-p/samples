@@ -12,7 +12,7 @@ abstract class Card(
         val reduction: Sbl,
         val familiy: Set<Family>,
         val lvInfo: List<LevelInfo>
-) : Effectable("Card") {
+) : Effectable("Card"), Effect {
     data class LevelInfo(val level: Int, val keepCore: Int, val bp: Int)
 
     override fun toString() = "$name"
