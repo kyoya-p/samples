@@ -10,7 +10,7 @@ inline fun Int.if0(op: () -> Int) = if (this == 0) op() else this
 // for Debug
 fun <T> T.pln(mark: String = "") = also { println("${mark}${this} ") }
 fun <T> T.print() = also { print("$this ") }
-fun <T> Sequence<T>.pln(op: T.() -> Unit) = apply { map { it.op().pln() } }
+fun <T, R> Sequence<T>.pln(op: T.() -> R) = toList().also { it.mapIndexed { i, it -> it.op().pln("$i:") } }.asSequence()
 fun <T> T.printh() = also { shortHash().print() }
 infix fun <T> T.assert(test: T) = also {
     if (this != test) {

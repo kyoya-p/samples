@@ -57,9 +57,9 @@ class EfMainStep : Effect {
 }
 
 fun main() {
-    val c00 = SpiritCard(Category.SPIRITCARD, "c1", Color.R, 0, Sbl.R, Sbl.R * 0, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
-    val c11 = SpiritCard(Category.SPIRITCARD, "c2", Color.R, 1, Sbl.R, Sbl.R * 1, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
-    val c32 = SpiritCard(Category.SPIRITCARD, "c3", Color.R, 3, Sbl.R, Sbl.R * 2, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
+    val c00 = SpiritCard(Category.SPIRITCARD, "c00", Color.R, 0, Sbl.R, Sbl.R * 0, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
+    val c11 = SpiritCard(Category.SPIRITCARD, "c11", Color.R, 1, Sbl.R, Sbl.R * 1, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
+    val c32 = SpiritCard(Category.SPIRITCARD, "c32", Color.R, 3, Sbl.R, Sbl.R * 2, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
 
     fun ParallelWorld.opドロー(n: Int): ParallelWorld = flatMap_ownSide { opMoveCards(HAND, deck.top(n)) }
 
@@ -83,22 +83,26 @@ fun main() {
             .opドロー(1)
             .assert { onlyTakeOneCase().stn.ownSide.hand.cardSet == setOf(c00) }
             .assert { onlyTakeOneCase().stn.ownSide.deck.cardList == listOf(c11, c32) }
+            .assert { onlyTakeOneCase().stn.ownSide.attr(c00).place == HAND }
 
             .flatMap_ownSide { opCreateNewFO(c00) } //手札のカード(コスト0軽減0)をFOに
-            .flatMap_ownSide {
-                opMoveCore(fo(c00), RESERVE, Core(1))
-            }
+            .flatMap_ownSide { opMoveCore(fo(c00), RESERVE, Core(1)) } //リザーブからコアを置く
+
             .assert { onlyTakeOneCase().stn.ownSide.reserve.core.c == 2 } //リザーブにはあと2コア
             .assert { map { it.stn.ownSide.foAttr(c00).core }.toSet() == setOf(Core(1)) } //スピリット上のコア1個
-            .pln { stn.ownSide }.toList().asSequence()
-/*            .flatMap {
+
+            .opドロー(1)
+            .pln { this }
+            .flatMap {
                 Ef召喚配置(c11).use(it)  //コスト1軽減1のスピを召喚
-            }.toList().asSequence() //一旦確定
+
+            }
+            .pln { this }
+
             .assert { toList()[0].stn.ownSide.hand.cardSet == setOf<Card>(c32) } //手札は1枚
             .assert { toList()[0].stn.ownSide.trashCore.core == Core(1, 1) } // トラッシュは1
-*/
-            .forEach {it.pln()} //観測者 いないと観測されない
 
+            .pln { this }
 
     eden(setOf(c00, c11, c32), setOf())
             .opドロー(1)
@@ -110,4 +114,5 @@ fun main() {
 
 
 }
+
 
