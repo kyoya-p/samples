@@ -4,13 +4,29 @@ package BSSim
 open class FO(val name: String)
 
 data class FoAttr(
-        val core: Core = Core(0)
+        val id: FO
+        , val core: Core = Core(0)
         , val cardOrdering: Boolean = false //順序に意味があるか
         , val cards: Cards = listOf()  //スタックされる場合トップのカードが[0]
 ) {
-    fun tr(cardOrdering: Boolean = this.cardOrdering, cards: Cards = this.cards, core: Core = this.core): FoAttr =
+    data class Mutable(
+            var id: FO
+            , var core: Core = Core(0)
+            , var cardOrdering: Boolean = false //順序に意味があるか
+            , var cards: MutableList<Card> = mutableListOf()  //スタックされる場合トップのカードが[0]
+    ) {
+        fun toImmutable() = FoAttr(id = id, core = core, cardOrdering = cardOrdering, cards = cards)
+    }
+
+    fun toMutable() = Mutable(id = id, core = core, cardOrdering = cardOrdering, cards = cards.toMutableList())
+    fun tr(op: Mutable.() -> Unit) = toMutable().apply { op() }.toImmutable()
+
+    override fun toString() = "${id.name}" + (if (core.c > 0) ":${core}" else "") + if (cards.size != 0) "${cards}" else ""
+
+    fun tr(id: FO = this.id, cardOrdering: Boolean = this.cardOrdering, cards: Cards = this.cards, core: Core = this.core): FoAttr =
             FoAttr(
-                    cardOrdering = cardOrdering
+                    id = id
+                    , cardOrdering = cardOrdering
                     , cards = if (cardOrdering) cards else cards.toSet().toList()
                     , core = core
             )
@@ -37,10 +53,12 @@ data class FoAttr(
             throw Exception("The cards are out of order.")
         }
 
-    fun top(n: Int): Cards = if (cards.size >= n) cardList.take(n) else throw Exception("Not enough Cards.") //カード枚数が不足
+    fun top(n: Int): Cards = if (cards.size >= n) cardList.take(n) else throw Exception("Not enough Cards. size=${cards.size}<${n} ${this}.${hashCode()}") //カード枚数が不足
 
     fun stack(cs: Cards): FoAttr = tr(cards = cs + cardList)
     fun stackBottom(cs: Cards): FoAttr = tr(cards = cardList + cs)
 }
 
-open class FieldPlace(name: String) : FO(name)
+
+open class FieldFO(name: String) : FO(name)
+

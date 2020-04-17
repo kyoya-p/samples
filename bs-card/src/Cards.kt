@@ -12,7 +12,7 @@ abstract class Card(
         val reduction: Sbl,
         val familiy: Set<Family>,
         val lvInfo: List<LevelInfo>
-) : Effectable("Card") {
+) : Effectable("Card"), Effect {
     data class LevelInfo(val level: Int, val keepCore: Int, val bp: Int)
 
     override fun toString() = "$name"
@@ -22,9 +22,16 @@ abstract class Card(
 data class CardAttr(
         val place: FO
 ) {
+
+
+    fun toMutable() = MutableCardAttr(place = place)
+    fun tr(op: MutableCardAttr.() -> Unit) = toMutable().apply { this@apply.op() }.toImmutable()
+
     fun tr(place: FO = this.place): CardAttr = CardAttr(place)
 }
-
+data class MutableCardAttr(var place: FO) {
+    fun toImmutable() = CardAttr(place = place)
+}
 
 typealias Cards = List<Card>
 
