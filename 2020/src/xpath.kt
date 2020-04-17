@@ -9,15 +9,29 @@ import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
 
 fun main() {
-    val doc = readXml("./test/dc.xml")
-    //val nodeList = selectByXpath(doc, "//*[contains(name(),'-id')]")
-    val nodeList = selectByXpath(doc, "//id")
-    nodeList.map {
-        ancestors(it).map { it.nodeName }.joinToString("/")
-    }.distinct().forEach {
-        println(it)
-    }
+    select2("./test/sb.xml", "//*[not(*)]").forEach { path, v -> println("$path $v") }
+
+    // select("./test/sb.xml", "(//id|//*[contains(name(),'-id')])").forEach { println(it) }
+    //  select("./test/dc.xml", "(//id|//*[contains(name(),'-id')])").forEach { println(it) }
 }
+
+fun select(file: String, path: String): List<String> = selectByXpath(readXml(file), path)
+        .map {
+            generateSequence(it) { it.parentNode }.toList().reversed().drop(1) //親ノードをたどりすべて列挙し
+                    .map { it.nodeName }.joinToString("/") //ノード名を文字列として結合
+        }.map {
+            it.replace("(\\d+)".toRegex(), "*") // 無用な重複排除のため、"数字/"=>'*/"に置き換え
+        }.distinct()
+        .map { it.replace("/data/value", " []") } //末尾の"/data/value"を'[]'に置き換え
+        .map { "Doc($file): $it" }
+
+fun Node.absPath() = generateSequence(this) { it.parentNode }.toList().reversed().drop(1)
+        .map { it.nodeName }.joinToString("/").replace("(\\d+)".toRegex(), "*")
+
+fun select2(file: String, path: String) =
+        selectByXpath(readXml(file), path).groupingBy { it.absPath() }.fold(listOf<String>()) { r, t ->
+            r + t.textContent.take(6).replace("[\\r\\n]".toRegex(), "")
+        }
 
 // XML読み取り
 fun readXml(fileName: String): Document {
@@ -38,7 +52,3 @@ fun selectByXpath(doc: Document, xpath: String): List<Node> {
     return res
 }
 
-// 親ノードを全て列挙
-fun ancestors(node: Node): List<Node> {
-    return generateSequence(node) { it.parentNode }.toList().reversed()
-}
