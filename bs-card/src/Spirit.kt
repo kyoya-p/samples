@@ -21,7 +21,7 @@ open class SummonnableCard(
 ) {
     override fun effect(p: History): Sequence<History> = sequenceOf()
     override val efName: String = "召喚配置可能カード"
-    override fun use(h: History): ParallelWorld = Ef召喚配置(this).use(h)
+    override fun use(h: History): ParallelWorld = e召喚配置(this).use(h)
 }
 
 open class SpiritCard(
@@ -100,7 +100,7 @@ open class NexusCard(
 // 維持コストをフィールドから選択しFOに置く
 class op召喚配置(val card: Card) : Effectable("召喚 配置") {
     override fun effect(p: History): Sequence<History> = sequenceOf(p)
-            .flatMap_ownSide { this.opPayCost(card.cost - fieldSimbols.reduction(card.reduction)) } // コストをフィールドから選択しトラッシュに置く
+            .flatMap_ownSide { this.opPayCost(card) } // コストをフィールドから選択しトラッシュに置く
             .flatMap_ownSide {
                 val newFo = FO(card.efName) //FOを新しく生成
                 setPlaceCardBy(newFo) { listOf(card) } //カードを置いてフィールドに配置
@@ -108,17 +108,22 @@ class op召喚配置(val card: Card) : Effectable("召喚 配置") {
             }
 }
 
-class Ef召喚配置(val card: Card) : Effect {
+class e召喚配置(val card: Card) : Effect {
     override val efName: String = "召喚 配置"
     override fun use(p: History): Sequence<History> = sequenceOf(p)
-            .flatMap_ownSide {
-                val reqCore = card.cost - fieldSimbols.reduction(card.reduction)
-                opPayCost(if (reqCore < 0) 0 else reqCore)
-            } // コストを支払い
-            .flatMap_ownSide {
-                val newFo = FO(card.name) //FOを新しく生成し
-                opCreateNewFO(newFo) // それをフィールドに配置
-                        .flatMap { it.opMoveCard(newFo, card) } //カードを置き
-                        .flatMap { opMoveCore(newFo, payableCoreHolders, 1) } // [TODO]とりあえす1コアおいてみる
+            .flatMap_ownSide { opPayCost(card) } // コストを支払い
+            .flatMap_ownSide { opCreateFO(card) } // カードをフィールドに配置
+            .flatMap_ownSide { opMoveCore(fo(card), payableCoreHolders, 1) } // [TODO]とりあえす1コアおいてみる
+
+    fun ParallelWorld.ef() =
+            flatMap {
+                this@e召喚配置.use(it)
             }
+
+    val f: ParallelWorld.() -> ParallelWorld = {
+        flatMap {
+            this@e召喚配置.use(it)
+        }
+    }
 }
+

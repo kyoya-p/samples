@@ -1,7 +1,12 @@
 package BSSim
 
 // カード、コアを置ける場所
-open class FO(val name: String)
+open class FO(val name: String) {
+    override fun toString(): String = name
+    override fun hashCode(): Int = name.hashCode()
+    override fun equals(other: Any?): Boolean = name == (other as FO).name
+}
+
 
 data class FoAttr(
         val id: FO

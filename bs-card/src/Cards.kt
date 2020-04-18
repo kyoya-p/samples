@@ -22,15 +22,14 @@ abstract class Card(
 data class CardAttr(
         val place: FO
 ) {
+    data class Mutable(var place: FO) {
+        fun toImmutable() = CardAttr(place = place)
+    }
 
-
-    fun toMutable() = MutableCardAttr(place = place)
-    fun tr(op: MutableCardAttr.() -> Unit) = toMutable().apply { this@apply.op() }.toImmutable()
+    fun toMutable() = Mutable(place = place)
+    fun tr(op: Mutable.() -> Unit) = toMutable().apply { this@apply.op() }.toImmutable()
 
     fun tr(place: FO = this.place): CardAttr = CardAttr(place)
-}
-data class MutableCardAttr(var place: FO) {
-    fun toImmutable() = CardAttr(place = place)
 }
 
 typealias Cards = List<Card>

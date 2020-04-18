@@ -4,8 +4,10 @@ inline fun <T> List<T>.pickTop(n: Int): Sequence<Pair<List<T>, List<T>>> = if (n
 inline fun <T> List<T>.pickBottom(n: Int): Sequence<Pair<List<T>, List<T>>> = if (n <= size) sequenceOf(drop(n).reversed() to take(n)) else sequenceOf() //1枚ずつ取り出し、最初に取り出したものが[0]
 inline fun <T> List<T>.putTop(i: List<T>): List<T> = i.reversed() + this //[0]を最初として順に1枚ずつ置く。
 inline fun <T> List<T>.putBottom(i: List<T>): List<T> = this + i //[0]を最初として順に1枚ずつ置く。
-inline fun Int.if0(op: () -> Int) = if (this == 0) op() else this
 
+inline fun Int.if0(op: () -> Int) = if (this == 0) op() else this
+inline fun min(a: Int, b: Int) = if (a >= b) b else a
+inline fun max(a: Int, b: Int) = if (a >= b) a else b
 
 // for Debug
 fun <T> T.pln(mark: String = "") = also { println("${mark}${this} ") }
