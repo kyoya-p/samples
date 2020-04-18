@@ -1,7 +1,7 @@
 package BSSim
 
 
-enum class Category { SPIRITCARD, BRAVECARD, NEXUSCARD, MAGICCARD, DECK, HAND, TRASH, RSV, BURST, CARDTRUSH, CORETRASH, LIFE, RESERVE, PICKEDCARD, PICKEDCORE, PLACE }
+enum class Category { SPIRITCARD, BRAVECARD, NEXUSCARD, MAGICCARD, DECK, HAND, TRASH, RSV, BURST, CARDTRUSH, CORETRASH, LIFE, RESERVE, PICKEDCARD, PICKEDCORE, PLACE, DECKBOTTOM }
 
 abstract class Card(
         val category: Category,
@@ -10,9 +10,9 @@ abstract class Card(
         val cost: Int,
         val simbols: Sbl,
         val reduction: Sbl,
-        val familiy: Set<Family>,
+        val family: Set<Family>,
         val lvInfo: List<LevelInfo>
-) : Effectable("Card"), Effect {
+) : Effect {
     data class LevelInfo(val level: Int, val keepCore: Int, val bp: Int)
 
     override fun toString() = "$name"
@@ -47,6 +47,26 @@ fun Cards.bottom(n: Int): Sequence<Cards> = if (n > this.size) sequenceOf() else
 fun Cards.remove(c: Card): Cards = pick(c).onlyTakeOneCase().second
 fun Cards.remove(cs: Cards): Cards = cs.fold(this) { res, c -> res.remove(c) }
 
+
+// デッキボトムを示す仮想カード
+// これをドローしたら敗北
+// デッキの掘り具合を示す指標とする
+class DeckBottom : Card(category = Category.DECKBOTTOM
+        , name = "DeckBotton"
+        , colors = Color.None
+        , cost = 0
+        , simbols = Sbl.Zero
+        , reduction = Sbl.Zero, family = setOf(), lvInfo = listOf()) {
+    override val efName = "DeckBottom:Dummy"
+
+    override fun use(h: History): ParallelWorld = sequenceOf(h)
+            .map_ownSide {
+                if (hand.cards.contains(this@DeckBottom)) throw Exception("デッキボトムに達した。負け")
+                else this
+            }
+}
+
+
 fun main() {
     class T1 : SpiritCard(Category.SPIRITCARD, "T1", Color.Y, 0, Sbl.Y, Sbl.Zero, setOf(), listOf())
 
@@ -62,3 +82,5 @@ fun main() {
     listOf(t1_1, t1_2) assert listOf(t1_1, t1_2)
     listOf(t1_1, t1_2) assertNot listOf(t1_2, t1_1)
 }
+
+

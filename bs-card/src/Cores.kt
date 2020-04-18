@@ -17,7 +17,7 @@ data class Core(val c/*総数*/: Int, val sc/*うちソウルコア数 core>=sCo
     operator fun minus(o: Core) = copy(c - o.c, sc - o.sc)
     operator fun unaryMinus() = copy(-c, -sc)
 
-    inline fun contains(tg: Core): Boolean = c >= tg.c && sc >= tg.sc
+    inline fun contains(tg: Core): Boolean = (this - tg).run { c >= 0 && sc >= 0 && c >= sc }
 
     fun downTo(end: Core): Sequence<Core> = sequence {
         fun min(a: Int, b: Int) = if (a >= b) b else a
@@ -68,28 +68,6 @@ fun Core.pickCore(pick: Core, minPick: Core): Sequence<Pair<Core, Core>> = seque
     }
 }
 
-// 複数個のコアホルダから指定のコアを取り出す組み合わせ
-// 取り出したコアと残りのコアのパターンを返す
-fun List<Core>.pickCore(pick: Core): Sequence<Pair<Core, List<Core>>> {
-    fun min(a: Int, b: Int) = if (a > b) b else a
-    return if (size == 0) {
-        if (pick.c == 0) sequenceOf(Core(0) to listOf())
-        else sequenceOf()
-    } else {
-        val topCoreHolder = this[0]
-        val remCoreHolders = drop(1)
-        sequence {
-            for (c in pick.c downTo 0) for (sc in min(c, pick.sc) downTo 0) {
-                val pick1st = Core(c, sc)
-                topCoreHolder.pickCore(pick1st).forEach { (picked1st, r1st) ->
-                    remCoreHolders.pickCore(pick - picked1st).forEach { (rPicked, rCores) ->
-                        yield((picked1st + rPicked) to (listOf(picked1st) + rCores))
-                    }
-                }
-            }
-        }
-    }
-}
 
 typealias CoreL = List<Core>
 
@@ -114,25 +92,33 @@ fun pickCore(pick: Int, holder: CoreL): Sequence<Pair<Core, CoreL>> = when {
     }
 }
 
-fun List<Core>.pickCoreXXX(pick: Int): Sequence<Pair<Core, List<Core>>> =
-        if (size == 0) {
-            sequenceOf()
-        } else {
-            val topCoreHolder = this[0]
-            val rCoreHolders = drop(1)
-            sequence {
-                for (pick1st in pick downTo 0) {
-                    topCoreHolder.pickCore(pick1st).forEach { (picked1st, cores1st) ->
-                        rCoreHolders.pickCoreXXX(pick - pick1st).forEach { (rPicked, rCores) ->
-                            yield((picked1st + rPicked) to (listOf(picked1st) + rCores))
-                        }
-                    }
+
+// 複数個のコアホルダーから指定個のコアを取り出す組み合わせ
+// 取り出したコアと残りのコアのパターンを返す
+fun pickCore(pick: Core, holder: CoreL): Sequence<Pair<Core, CoreL>> = when {
+    pick.c == 0 -> sequenceOf(Core(0) to holder) //取り出さない場合は変化なし
+    holder.size == 0 -> sequenceOf() // ハコがない=取り出し不可
+    holder.size == 1 -> when { //ハコ1個で..
+        (!holder[0].contains(pick)) -> sequenceOf() //そのコア数が不足するなら取り出し不可
+        else -> sequenceOf(pick to listOf(holder[0] - pick)) //足りるなら、取り出すコア数は確定
+    }
+    else -> { //ハコが2個以上なら、
+        pick.downTo().asSequence().flatMap { pk ->
+            pickCore(pk, listOf(holder[0])).flatMap { (pked, h0) ->  //最初の1箱から取り出すコア数は0～pick個まで幅があり
+                pickCore(pick - pked, holder.drop(1)).map { (rpked, rh) -> //それぞれについて、残りの箱から取り出すパターンがある
+                    pked + rpked to h0 + rh
                 }
             }
         }
+    }
+}
+
+
+fun Core.downTo() = sequence { for (ci in c downTo 0) for (si in min(sc, ci) downTo 0) yield(Core(ci, si)) }
 
 
 fun main() {
+
     Core(1).assert(Core(1))
     Core(1, 1).assertNot(Core(1, 2))
 
@@ -194,5 +180,18 @@ fun main() {
 
     pickCore(1, listOf(C11, C11)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C11, C0), listOf(C0, C11)))
     pickCore(2, listOf(C2, C2)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C0, C2), listOf(C1, C1), listOf(C2, C0)))
+
+
+    pickCore(Core(1), listOf()).map { (pkd, rh) -> rh }.toSet().assert(setOf())
+    pickCore(Core(0), listOf(C21)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C21)))
+    pickCore(Core(1), listOf(C21)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C11)))
+    pickCore(Core(2), listOf(C21)).map { (pkd, rh) -> rh }.toSet().assert(setOf())
+
+    pickCore(Core(0), listOf(C1, C1)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C1, C1)))
+    pickCore(Core(1), listOf(C1, C1)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C1, C0), listOf(C0, C1)))
+    pickCore(Core(2), listOf(C1, C1)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C0, C0)))
+
+    pickCore(Core(1, 1), listOf(C11, C11)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C11, C0), listOf(C0, C11)))
+    pickCore(Core(2, 1), listOf(C21, C2)).map { (pkd, rh) -> rh }.toSet().assert(setOf(listOf(C0, C2), listOf(C0, C2), listOf(C1, C1)))
 
 }

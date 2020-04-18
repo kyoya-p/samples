@@ -26,7 +26,10 @@ data class FoAttr(
     fun toMutable() = Mutable(id = id, core = core, cardOrdering = cardOrdering, cards = cards.toMutableList())
     fun tr(op: Mutable.() -> Unit) = toMutable().apply { op() }.toImmutable()
 
-    override fun toString() = "${id.name}" + (if (core.c > 0) ":${core}" else "") + if (cards.size != 0) "${cards}" else ""
+    override fun toString() = "${id.name}" + (if (core.c > 0) ":${core}" else "") +
+            if (cards.size != 0 && !(cards.size == 1 && (cards[0].name == id.name))) {
+                cards.take(4).map { it.name } + (if (cards.size > 4) listOf("~${cards.size}") else listOf())
+            } else ""
 
     fun tr(id: FO = this.id, cardOrdering: Boolean = this.cardOrdering, cards: Cards = this.cards, core: Core = this.core): FoAttr =
             FoAttr(

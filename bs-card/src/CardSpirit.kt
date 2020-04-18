@@ -19,7 +19,6 @@ open class SummonnableCard(
         , family
         , lvInfo
 ) {
-    override fun effect(p: History): Sequence<History> = sequenceOf()
     override val efName: String = "召喚配置可能カード"
     override fun use(h: History): ParallelWorld = e召喚配置(this).use(h)
 }
@@ -43,11 +42,10 @@ open class SpiritCard(
         , family
         , lvInfo
 ) {
-    override fun effect(p: History): Sequence<History> =
-            sequenceOf(p).choices(op召喚配置(this))
+//    override fun use(p: History): Sequence<History> =
+    //          sequenceOf(p).choices(op召喚配置(this))
 
     override val efName: String = "Spirit"
-
 }
 
 open class BraveCard(
@@ -96,34 +94,21 @@ open class NexusCard(
 
 
 // スピリット/ブレイヴの召喚、ネクサスの配置
-//
-// 維持コストをフィールドから選択しFOに置く
-class op召喚配置(val card: Card) : Effectable("召喚 配置") {
-    override fun effect(p: History): Sequence<History> = sequenceOf(p)
-            .flatMap_ownSide { this.opPayCost(card) } // コストをフィールドから選択しトラッシュに置く
-            .flatMap_ownSide {
-                val newFo = FO(card.efName) //FOを新しく生成
-                setPlaceCardBy(newFo) { listOf(card) } //カードを置いてフィールドに配置
-                        .opMoveCore(newFo, payableCoreHolders, 1)// [TODO]とりあえす1コアおいてみる
-            }
-}
 
 class e召喚配置(val card: Card) : Effect {
     override val efName: String = "召喚 配置"
     override fun use(p: History): Sequence<History> = sequenceOf(p)
-            .flatMap_ownSide { opPayCost(card) } // コストを支払い
+            .effect(ePayCardCost(card)) // コストを支払い
             .flatMap_ownSide { opCreateFO(card) } // カードをフィールドに配置
-            .flatMap_ownSide { opMoveCore(fo(card), payableCoreHolders, 1) } // [TODO]とりあえす1コアおいてみる
+            .flatMap_ownSide { opMoveCore(fo(card), payableCoreHolders, card.lvInfo[0].keepCore) } // TODO: とりあえず最少維持コア
+            .effect(e消滅チェック())
+}
 
-    fun ParallelWorld.ef() =
-            flatMap {
-                this@e召喚配置.use(it)
-            }
-
-    val f: ParallelWorld.() -> ParallelWorld = {
-        flatMap {
-            this@e召喚配置.use(it)
-        }
-    }
+class e召喚配置_NoCost(val card: Card) : Effect {
+    override val efName: String = "召喚 配置"
+    override fun use(p: History): Sequence<History> = sequenceOf(p)
+            .flatMap_ownSide { opCreateFO(card) } // カードをフィールドに配置
+            .flatMap_ownSide { opMoveCore(fo(card), payableCoreHolders, card.lvInfo[0].keepCore) } // TODO: とりあえず最少維持コア
+            .effect(e消滅チェック())
 }
 

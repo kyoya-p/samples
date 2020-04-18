@@ -40,6 +40,18 @@ val Side.reserve get() = this.fos[RESERVE]!!
 val Side.pickedCards get() = this.fos[PICKEDCARD]!!
 val Side.pickedCore get() = this.fos[PICKEDCORE]!!
 
+var Side.Mutable.reserve
+    get() = fos[RESERVE]!!
+    set(v) {
+        fos[RESERVE] = v
+    }
+var Side.Mutable.trashCore
+    get() = fos[CORETRASH]!!
+    set(v) {
+        fos[CORETRASH] = v
+    }
+
+
 fun initialSide(deck: Set<Card>): Side {
     val places = mutableMapOf<FO, FoAttr>()
     val cards = mutableMapOf<Card, CardAttr>()
@@ -116,24 +128,11 @@ val Side.fieldObjectsMap: Map<FO, FoAttr> get() = fos.filter { it.key is FieldFO
 // コア関係
 val Side.payableCoreHolders: List<FO> get() = listOf(RESERVE) + fieldObjects
 
-fun Side.putCoreByXX(dst: FO, op: (Core) -> Core): Side {
-    val pre = fos[dst]!!.core
-    val post = op(pre)
-    return tr(places = fos.toMutableMap().also { it[dst] = it[dst]!!.tr(core = post) })
-}
 
 fun Side.putCoreBy(dst: FO, op: (Core) -> Core): Side = mutation {
     fos[dst]!!.core = op(fos[dst]!!.core)
 }
 
-// srcからdstへコアを移動
-fun Side.opMoveCore(dst: FO, src: FO, core: Core): Sequence<Side> = sequence {
-    if (fos[src]!!.core.contains(core)) { //srcに移動するだけのコアがあるなら
-        yield(putCoreBy(src) { it - core }.putCoreBy(dst) { it + core })
-    } else {
-        println("No movable cores.")
-    }
-}
 
 // コア取り出し可能なBSOから特定BSOへのコアの移動
 fun Side.opMoveCore(dst: FO, srcFos: List<FO>, core: Int): Sequence<Side> {
@@ -146,30 +145,35 @@ fun Side.opMoveCore(dst: FO, srcFos: List<FO>, core: Int): Sequence<Side> {
     }
 }
 
-fun Side.opMoveCoreXXX(dst: FO, srcs: List<FO>, core: Int): Sequence<Side> = sequence {
-    srcs.map { fos[it]!!.core }.pickCoreXXX(core).forEach { (picked, rem) ->
-        val m = srcs.zip(rem).associate { (p, c) -> p to c }
-        val post = mutation {
-            //ピックアップ対象のコアホルダからコア取り上げ
-            m.forEach { (fo, c) ->
-                fos[fo]!!.core = c
-            }
-            // places.forEach { places[it.key] = places[it.key]!!.tr(core = m[it.key]!!) }
-            putCoreBy(dst) { it + picked } //取り出したコアを対象に置く
+fun Side.opMoveCore(core: Core, dst: FO, src: FO): Sequence<Side> = opMoveCore(core, dst, listOf(src))
+fun Side.opMoveCore(core: Core, dst: FO, srcFos: List<FO>): Sequence<Side> {
+    val h = srcFos.map { fos[it]!!.core }
+    return pickCore(core, h).map { (picked, rem) ->
+        mutation {
+            rem.forEachIndexed { i, c -> fos[srcFos[i]]!!.core = c } //抜きだしたコア状態を反映し
+            fos[dst]!!.core += picked  //取り出したコアを対象に置く
         }
-        yield(post)
     }
+}
+
+class eMoveCore(val core: Int, val dst: FO, val srcFos: List<FO>) : Effect {
+    override val efName = "コア移動"
+    override fun use(h: History): ParallelWorld = sequenceOf(h)
+            .flatMap_ownSide {
+                opMoveCore(dst, srcFos, core)
+            }
+}
+
+fun Side.opPayCost(cost: Int): Sequence<Side> = opMoveCore(CORETRASH, payableCoreHolders, cost)
+
+fun Side.opPayCost(card: Card): Sequence<Side> {
+    fun Int.min0() = if (this < 0) 0 else this
+    val reqCore = (card.cost - fieldSimbols.reduction(card.reduction)).min0()
+    return opPayCost(reqCore)
 }
 
 // ----------------------------------------------------------------
 // カード関係
-
-// 指定のFOにカードを移動する
-/*fun Side.moveCardBy(dst: FO, c: Card, opInsert: (dst: Cards, c: Card) -> Cards): Side = this
-        .setPlaceCardBy(dst) { opInsert(it, c) }
-        .setCardPlaceBy(c) { dst }
-        .setPlaceCardBy(attr(c).place) { it.remove(c) }
-*/
 
 fun Side.opMoveCardsBy(dst: FO, cs: Cards, opInsert: (dst: Cards, cs: Cards) -> Sequence<Cards>): Sequence<Side> =
         opInsert(attr(dst).cards, cs).map { dstCards ->
@@ -194,20 +198,19 @@ fun Side.opMoveCard(dst: FO, c: Card): Sequence<Side> =
 // 複合操作
 inline val Side.fieldSimbols get() = fieldObjects.map { attr(it).cards[0].simbols }.fold(Sbl()) { s, sbl -> s + sbl }
 
-fun Side.opPayCost(cost: Int): Sequence<Side> = opMoveCore(CORETRASH, payableCoreHolders, cost)
-fun Side.opPayCost(card: Card): Sequence<Side> {
-    fun Int.min0() = if (this < 0) 0 else this
-    val reqCore = (card.cost - fieldSimbols.reduction(card.reduction)).min0()
-    return opPayCost(reqCore)
-}
 
 // FO消滅(維持コア以下にする(維持コア0のFOは消滅できない))
 fun Side.opDestruct(fo: FO): Sequence<Side> = sequenceOf(this)
         .filter { attr(fo).cards[0].lvInfo[0].keepCore >= 1 } //維持コア1以上
-        .flatMap { it.opMoveCore(RESERVE, fo, attr(fo).core) } //コアをリザーブに移動
+        .flatMap { opMoveCore(RESERVE, listOf(fo), attr(fo).core.c) } //コアをリザーブに移動
         .flatMap { it.opMoveCards(CARDTRASH, attr(fo).cards) } //FOのカードをすべてトラッシュへ移動
         .map { it.deleteFO(fo) } //空FOを削除
 
+// ----------------------------------------------------------------
+// シミュレーション補助
+
+// Bottomまでの枚数(初期設定でBottomカードを仕込んでおくこと)
+fun Side.deckDepth(bottomMark: Card): Int = deck.cards.lastIndexOf(bottomMark)
 
 // ----------------------------------------------------------------
 // Test

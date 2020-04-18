@@ -28,6 +28,12 @@ inline fun <T> T.assert(op: T.() -> Boolean) = also {
     }
 }
 
+inline fun <T> Sequence<T>.assertEach(op: T.() -> Boolean) = also {
+    it.forEach {
+        it.assert { op() }
+    }
+}
+
 fun <T> T.shortHash() = ("00" + hashCode().toUInt().toString(16)).let { it.substring(it.length - 3) }
 
 fun <T> List<T>.only1choice() = if (size == 1) this[0] else throw Exception("This must take one choice.")
