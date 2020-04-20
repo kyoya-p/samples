@@ -27,11 +27,21 @@ open class opMoveCore(val dst: FO, val srcs: List<FO>, val pick: Int) : Effectab
     }
 }
 
-open class opPayCost(val pick: Int) : Effectable("コスト支払") {
-    override fun effect(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
-        opMoveCore(CORETRASH, payableCoreHolders, pick)
+
+open class ePayCost(val pick: Int) : Effect {
+    override val efName = "コスト支払い"
+    override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
+        opPayCost(pick)
     }
 }
+
+open class ePayCardCost(val c: Card) : Effect {
+    override val efName = "コスト支払い"
+    override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
+        opPayCost(c)
+    }
+}
+
 
 // 指定のFOを消滅させる
 class op消滅(val fo: FO) : Effectable("消滅") {
@@ -40,9 +50,18 @@ class op消滅(val fo: FO) : Effectable("消滅") {
     }
 }
 
+class e消滅(val fo: FO) : Effect {
+    override val efName = "消滅"
+    override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
+        opDestruct(fo)
+    }
+}
+
 // FOをチェックし維持コア不足のFOを消滅させる
-class op消滅チェック : Effectable("消滅チェック") {
-    override fun effect(tr: History): Sequence<History> = sequenceOf(tr).flatMap_ownSide {
+class e消滅チェック : Effect {
+    override val efName: String = "消滅チェック"
+
+    override fun use(tr: History): Sequence<History> = sequenceOf(tr).flatMap_ownSide {
         val exts = fieldObjects.filter { fo -> attr(fo).core.c < attr(fo).cards[0].lvInfo[0].keepCore } //維持コア未満のカードのリストを用意し
         destroy(exts, tr).map { it.stn.ownSide } //すべて消滅
     }
@@ -61,29 +80,4 @@ class op消滅チェック : Effectable("消滅チェック") {
     }
 }
 
-// 現在のSituationで取りえるTransition(操作)を列挙
-// (例: メインステップなら手札の召喚可能カードを召喚)
-fun listChoice(tr: History): Sequence<Effectable> = sequence {
-    // 全カード/FieldObject/Fieldが有する Effectを実行し、取り得る選択肢を列挙
-    val prevStn = tr.stn.ownSide.hand.cards.forEach { ca -> //手札の効果(召喚など)をチェック
-        yield(ca)
-    }
-}
-
-// 効果の発揮に伴う状態遷移/派生効果も含め解決
-fun tr(tr: History): Sequence<History> = sequence {
-    yield(tr) //何もしない選択肢
-    val choise = listChoice(tr)
-    choise.forEach {
-        //it.pln("ACTION:")
-        sequenceOf(tr).choices(it).forEach {
-            tr(it)
-                    .distinctBy { it.hashCode() }
-                    .forEach {
-                        //it.pln()
-                        yield(it)
-                    }
-        }
-    }
-}
 

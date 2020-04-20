@@ -1,5 +1,7 @@
 package BSSim
 
+import java.lang.Exception
+
 data class World(
         val ownSide: Side,
         val enemySide: Side = Side(),
@@ -25,14 +27,30 @@ data class World(
     override fun toString() = "St{${ownSide}}"
 }
 
-fun <T> Sequence<T>.onlyTakeOneCase(): T = take(1).toList()[0]
-
+fun <T> Sequence<T>.onlyTakeOneCase(msg: String = ""): T {
+    try {
+        return take(1).toList()[0]
+    } catch (e: Exception) {
+        throw Exception("onlyTakeOneCase():" + msg)
+    }
+}
 
 fun ParallelWorld.flatMap_world(op: Sequence<World>.() -> Sequence<World>): ParallelWorld = flatMap { tr -> sequenceOf(tr.stn).op().map { History(prevStn = tr.prevStn, stn = it) } }
 fun ParallelWorld.flatMap_ownSide(d: UInt = 0u, op: Side.() -> Sequence<Side>): ParallelWorld = flatMap_world { map_ownSide { flatMap { it.op() } } }
+fun ParallelWorld.filter_ownSide(d: UInt = 0u, op: Side.() -> Boolean): ParallelWorld = flatMap_world { map_ownSide { filter { it.op() } } }
+
 fun Sequence<History>.map_ownSide(d: UInt = 0u, op: Side.() -> Side): Sequence<History> = flatMap_world { map_ownSide { map { it.op() } } }
 fun Sequence<World>.map_ownSide(d: Int = 0, op: Sequence<Side>.() -> Sequence<Side>): Sequence<World> = flatMap { s -> sequenceOf(s.ownSide).op().map { s.tr(ownSide = it) } }
 
+infix fun ParallelWorld.effect(e: Effect): ParallelWorld = flatMap { e.use(it) } //～を発揮する
+fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld = sequence {//～できる
+    forEach {
+        yield(it)// 何もしない場合
+    }
+    op().forEach {
+        yield(it) // 操作を行った結果
+    }
+}
 
 // 状態遷移
 data class History(val prevStn: History?, val stn: World)
@@ -43,15 +61,41 @@ fun eden(deck: Set<Card>, enemyDeck: Set<Card>) = sequenceOf(History(null, World
 
 
 // すべての効果を再帰的に実行
-class EfMainStep : Effect {
+class eMainStep : Effect {
     override val efName: String = "MainStep"
 
     override fun use(h: History): ParallelWorld = sequence {
         yield(h) //何もしない選択
         h.stn.ownSide.hand.cards.forEach {
             it.use(h).forEach {
-                this@EfMainStep.use(it).forEach { yield(it) }
+                this@eMainStep.use(it).forEach { yield(it) }
             }
+        }
+    }
+}
+
+class eDrawStep(val nDraw: Int = 1) : Effect {
+    override val efName: String = "DrawStep"
+    override fun use(h: History): ParallelWorld = sequenceOf(h).flatMap_ownSide {
+        opMoveCards(HAND, deck.cards.top(nDraw).onlyTakeOneCase("eDrawStep(${nDraw}) but card num. of deck is ${deck.cards.size}"))
+    }
+}
+
+class eCoreStep(val incCore: Int = 1) : Effect {
+    override val efName: String = "CoreStep"
+    override fun use(h: History): ParallelWorld = sequenceOf(h).map_ownSide {
+        mutation {
+            reserve.core += Core(1)
+        }
+    }
+}
+
+class eRefreshStep() : Effect {
+    override val efName: String = "RefreshStep"
+    override fun use(h: History): ParallelWorld = sequenceOf(h).map_ownSide {
+        mutation {
+            reserve.core += trashCore.core
+            trashCore.core = Core(0)
         }
     }
 }
@@ -59,60 +103,79 @@ class EfMainStep : Effect {
 fun main() {
     val c00 = SpiritCard(Category.SPIRITCARD, "c00", Color.R, 0, Sbl.R, Sbl.R * 0, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
     val c11 = SpiritCard(Category.SPIRITCARD, "c11", Color.R, 1, Sbl.R, Sbl.R * 1, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
+    val c22 = SpiritCard(Category.SPIRITCARD, "c32", Color.R, 2, Sbl.R, Sbl.R * 2, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
     val c32 = SpiritCard(Category.SPIRITCARD, "c32", Color.R, 3, Sbl.R, Sbl.R * 2, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
+    val c63 = SpiritCard(Category.SPIRITCARD, "c63", Color.R, 6, Sbl.R, Sbl.R * 3, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
 
     fun ParallelWorld.opドロー(n: Int): ParallelWorld = flatMap_ownSide { opMoveCards(HAND, deck.top(n)) }
 
+
     eden(setOf(c00, c11, c32), setOf())
             .assert { toList()[0].stn.ownSide.reserve.core == Core(4, 1) }
-            .flatMap_ownSide { opMoveCore(CORETRASH, RESERVE, Core(1, 0)) } //普通のコア1個リザーブからトラッシュに移動したら、
+            .flatMap_ownSide { opMoveCore(Core(1, 0), CORETRASH, RESERVE) } //普通のコア1個リザーブからトラッシュに移動したら、
             .apply { toList()[0].stn.ownSide.reserve.core == Core(3, 1) } //残りは3コア(Sコア1個)
 
             .flatMap_ownSide { opMoveCore(CORETRASH, listOf(RESERVE), 1) } //さらにコア1個(Sコアかどうかは不問)を移動したら、
             .apply { map { it.stn.ownSide.reserve.core }.toSet() == setOf(Core(2, 0), Core(2, 1)) } //残りは2コア (ソウルコアを含む場合とふくまない場合がある)
 
-            .flatMap_ownSide { opPayCost(1) } //1コスト支払ったら、
+            .effect(ePayCost(1))//1コスト支払ったら、
             .apply { map { it.stn.ownSide.reserve.core }.toSet() == setOf(Core(1, 0), Core(1, 1)) } //残りは1コア (ソウルコアの場合と普通コアの場合がある)
 
             .forEach { }
 
     eden(setOf(c00, c11, c32), setOf())
-            .flatMap_ownSide { opMoveCore(CORETRASH, RESERVE, Core(1, 1)) } //Sコア1個を除いておく(テストのため)
-            .assert { onlyTakeOneCase().stn.ownSide.reserve.core.c == 3 } //リザーブにはあと3コア
+            .flatMap_ownSide { opMoveCore(Core(2, 1), CORETRASH, RESERVE) } //2コア(Sコア1)を除いておく(テストのため)
+            .assert { onlyTakeOneCase().stn.ownSide.reserve.core.c == 2 }
 
             .opドロー(1)
             .assert { onlyTakeOneCase().stn.ownSide.hand.cardSet == setOf(c00) }
             .assert { onlyTakeOneCase().stn.ownSide.deck.cardList == listOf(c11, c32) }
             .assert { onlyTakeOneCase().stn.ownSide.attr(c00).place == HAND }
 
-            .flatMap_ownSide { opCreateNewFO(c00) } //手札のカード(コスト0軽減0)をFOに
-            .flatMap_ownSide { opMoveCore(fo(c00), RESERVE, Core(1)) } //リザーブからコアを置く
+            .flatMap_ownSide { opCreateFO(c00) } //手札のカード(コスト0軽減0)をFOに
+            .flatMap_ownSide { opMoveCore(Core(1), fo(c00), RESERVE) } //リザーブからコアを置く
+            .assert { onlyTakeOneCase().stn.ownSide.reserve.core.c == 1 } //リザーブ残り
+            .assert { onlyTakeOneCase().stn.ownSide.foAttr(c00).core.c == 1 } //スピリット上のコア
 
-            .assert { onlyTakeOneCase().stn.ownSide.reserve.core.c == 2 } //リザーブにはあと2コア
-            .assert { map { it.stn.ownSide.foAttr(c00).core }.toSet() == setOf(Core(1)) } //スピリット上のコア1個
+            .flatMap_ownSide { opDestruct(fo(c00)) } // c00を消滅
+            .assert { onlyTakeOneCase().stn.ownSide.reserve.core == Core(2) } //リザーブ残り
+            .assert { onlyTakeOneCase().stn.ownSide.trashCards.cardSet == setOf(c00) }
 
             .opドロー(1)
-            .pln { this }
-            .flatMap {
-                Ef召喚配置(c11).use(it)  //コスト1軽減1のスピを召喚
+            // .flatMap { Ef召喚配置(c11).use(it) }  //コスト1軽減1のスピを召喚
+            .flatMap_ownSide { opPayCost(c11) } // コストを支払い
+            .flatMap_ownSide { opCreateFO(c11) } // カードをフィールドに配置
+            .flatMap_ownSide { opMoveCore(fo(c11), payableCoreHolders, 1) } // [TODO]とりあえす1コアおいてみる
 
-            }
-            .pln { this }
+            .assert { toList()[0].stn.ownSide.hand.cardSet == setOf<Card>() } //手札は0枚
+            .assert { toList()[0].stn.ownSide.trashCore.core == Core(3, 1) } // トラッシュは3
+            .assert { toList()[0].stn.ownSide.reserve.core == Core(0) } // リザーブは0
 
-            .assert { toList()[0].stn.ownSide.hand.cardSet == setOf<Card>(c32) } //手札は1枚
-            .assert { toList()[0].stn.ownSide.trashCore.core == Core(1, 1) } // トラッシュは1
-
-            .pln { this }
-
-    eden(setOf(c00, c11, c32), setOf())
-            .opドロー(1)
-            .flatMap {
-                //println(it.stn.ownSide.hand)
-                EfMainStep().use(it)
-            }
             .forEach { }
 
+    eden(setOf(c00, c11, c22, c63), setOf())
+            .opドロー(4)
+            .flatMap { e召喚配置(c00).use(it) }.flatMap { e消滅チェック().use(it) }
+            .flatMap { e召喚配置(c11).use(it) }.flatMap { e消滅チェック().use(it) }
+            .flatMap { e召喚配置(c22).use(it) }.flatMap { e消滅チェック().use(it) }
+            .flatMap { e召喚配置(c63).use(it) }.flatMap { e消滅チェック().use(it) }
+            .distinctBy { it.stn.ownSide }
+            .assert {
+                map { it.stn.ownSide.fieldObjectsMap[FO(c63.name)]!!.core }.toSet() == setOf(Core(1, 0), Core(1, 1))
+            }
+//            .pln { "${stn.ownSide} $${stn.ownSide.shortHash()}" }
 
+    eden(setOf(c00, c11, c22, c63), setOf())
+            .effect(eDrawStep(1))
+            .assertEach { stn.ownSide.hand.cards == listOf(c00) }
+            .effect(eMainStep())
+            .assert { count() == 3 } // 召喚しない、する(Sコア置く)、する(Sコア置かない)
+
+            .effect(eDrawStep(3))
+            .effect(eMainStep())
+            .filter { it.stn.ownSide.fieldObjectsMap.containsKey(FO(c63.name)) } // c63を召喚するケースだけ抽出
+            .distinct()
+            .assert { count() == 2 } // する(Sコア置く)、する(Sコア置かない)
 }
 
 
