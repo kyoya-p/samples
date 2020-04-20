@@ -50,5 +50,3 @@ fun excelBook(file: File, readOnly: Boolean = true) = XSSFWorkbookFactory.create
 fun XSSFWorkbook.sheetAt(sheetNo: Int) = getSheetAt(sheetNo)!!
 
 
-val googleTranslate = "https://translate.google.com/?op=translate&sl=ja&tl=en&text=こんにちは"
-
