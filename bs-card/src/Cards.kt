@@ -41,15 +41,20 @@ fun Cards.pick(ca: Card): Sequence<Pair<Card, Cards>> = sequence {
     }
 }
 
-fun Cards.top(n: Int): Sequence<Cards> = if (n > this.size) sequenceOf() else sequenceOf(take(n))
-fun Cards.bottom(n: Int): Sequence<Cards> = if (n > this.size) sequenceOf() else sequenceOf(takeLast(n))
+fun Cards.top(n: Int, amap: Boolean = true): Sequence<Cards> = if (amap) {
+    sequenceOf(take(min(this.size, n)))
+} else {
+    if (n > this.size) sequenceOf()
+    else sequenceOf(take(n))
+}
 
 fun Cards.remove(c: Card): Cards = pick(c).onlyTakeOneCase().second
 fun Cards.remove(cs: Cards): Cards = cs.fold(this) { res, c -> res.remove(c) }
 
 
 // デッキボトムを示す仮想カード
-// これをドローしたら敗北
+// これをドローしたら遷移終了
+//   終了パターンに保存し、遷移先は無し
 // デッキの掘り具合を示す指標とする
 class DeckBottom : Card(category = Category.DECKBOTTOM
         , name = "DeckBotton"
@@ -58,12 +63,9 @@ class DeckBottom : Card(category = Category.DECKBOTTOM
         , simbols = Sbl.Zero
         , reduction = Sbl.Zero, family = setOf(), lvInfo = listOf()) {
     override val efName = "DeckBottom:Dummy"
-
     override fun use(h: History): ParallelWorld = sequenceOf(h)
-            .map_ownSide {
-                if (hand.cards.contains(this@DeckBottom)) throw Exception("デッキボトムに達した。負け")
-                else this
-            }
+
+
 }
 
 

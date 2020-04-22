@@ -1,5 +1,7 @@
 package BSSim
 
+import java.io.File
+
 inline fun <T> List<T>.pickTop(n: Int): Sequence<Pair<List<T>, List<T>>> = if (n <= size) sequenceOf(take(n) to drop(n)) else sequenceOf() //1枚ずつ取り出し、最初に取り出したものが[0]
 inline fun <T> List<T>.pickBottom(n: Int): Sequence<Pair<List<T>, List<T>>> = if (n <= size) sequenceOf(drop(n).reversed() to take(n)) else sequenceOf() //1枚ずつ取り出し、最初に取り出したものが[0]
 inline fun <T> List<T>.putTop(i: List<T>): List<T> = i.reversed() + this //[0]を最初として順に1枚ずつ置く。

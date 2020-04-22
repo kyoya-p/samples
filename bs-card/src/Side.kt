@@ -5,11 +5,13 @@ package BSSim
 //typealias MutableSide = MutableSet<Card>
 
 data class Side(val cards: Map<Card, CardAttr> = mapOf(), val fos: Map<FO, FoAttr> = mapOf()) {
-    override fun toString() = fos.values.toString()
+    //override fun toString() = fos.values.toString()
+    override fun toString() = places.map {
+        fos[it]
+    }.toString()
 
     data class Mutable(val cards: MutableMap<Card, CardAttr.Mutable>, val fos: MutableMap<FO, FoAttr.Mutable>)
 }
-
 
 fun <K, V, MV> Map<K, V>.mapValueBy(op: (V) -> MV) = map { (k, v) -> k to op(v) }.toMap()
 fun <K, V, MV> Map<K, V>.mMapValueBy(op: (V) -> MV) = map { (k, v) -> k to op(v) }.toMap().toMutableMap()
@@ -18,7 +20,6 @@ fun <K, V, MV> Map<K, V>.mMapValueBy(op: (V) -> MV) = map { (k, v) -> k to op(v)
 fun Side.toMutableSide() = Side.Mutable(cards = cards.mMapValueBy { it.toMutable() }, fos = fos.map { (k, v) -> k to v.toMutable() }.toMap().toMutableMap())
 fun Side.Mutable.toSide() = Side(cards = cards.mapValueBy { it.toImmutable() }, fos = fos.mapValueBy { it.toImmutable() })
 inline fun Side.mutation(op: Side.Mutable.() -> Unit) = toMutableSide().apply { op() }.toSide()
-
 
 val DECK = FO("Dk")
 val HAND = FO("Hd")
@@ -110,16 +111,17 @@ fun Side.removeFO(fo: FO): Side = mutation { fos.remove(fo) }
 // フィールドオブジェクト以外の全オブジェクト(カード/コアを置ける場所)
 val Side.places: List<FO>
     get() = listOf(
-            DECK,
             HAND,
+            RESERVE
+    ) + fieldObjects + listOf(
+            DECK,
             BURST,
             LIFE,
             CARDTRASH,
             CORETRASH,
-            RESERVE,
             PICKEDCARD,
             PICKEDCORE
-    ) + fieldObjects
+    )
 
 val Side.fieldObjects: List<FO> get() = fos.keys.filter { it is FieldFO }
 val Side.fieldObjectsMap: Map<FO, FoAttr> get() = fos.filter { it.key is FieldFO }
@@ -184,6 +186,15 @@ fun Side.opMoveCardsBy(dst: FO, cs: Cards, opInsert: (dst: Cards, cs: Cards) -> 
                     cards[c]!!.place = dst
                 }
                 fos[dst]!!.cards = dstCards.toMutableList()
+            }
+        }
+
+// srcからdstへカードを移動する。移動した結果のCardsはPair<dst:Cards,src:Cards>で指定する
+fun Side.opMoveCardsBy(dst: FO, src: FO, op: (dst: Cards, src: Cards) -> Sequence<Pair<Cards, Cards>>): Sequence<Side> =
+        op(attr(dst).cards, attr(src).cards).map { (d, s) ->
+            mutation {
+                fos[dst]!!.cards = d.toMutableList()
+                fos[src]!!.cards = s.toMutableList()
             }
         }
 
