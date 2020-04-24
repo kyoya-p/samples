@@ -1,11 +1,13 @@
 package BSSim
 
-import java.lang.Exception
+import kotlinx.coroutines.yield
+
+//import java.lang.Exception
 
 data class World(
         val ownSide: Side,
         val enemySide: Side = Side(),
-        val step: Int = 1
+        val step: Int = 0
 ) {
     constructor(prevStn: World
                 , ownSide: Side = prevStn.ownSide
@@ -24,7 +26,7 @@ data class World(
     inline fun trEnemySide(op: Side.() -> Side): World = tr(enemySide = enemySide.op())
     inline fun trEnemySideSq(op: Side.() -> Sequence<Side>): Sequence<World> = enemySide.op().map { tr(ownSide = it) }
 
-    override fun toString() = "St{${ownSide}}"
+    override fun toString() = "Wd{s:${step} ${ownSide}}"
 }
 
 fun <T> Sequence<T>.onlyTakeOneCase(msg: String = ""): T {
@@ -35,12 +37,19 @@ fun <T> Sequence<T>.onlyTakeOneCase(msg: String = ""): T {
     }
 }
 
-fun ParallelWorld.flatMap_world(op: Sequence<World>.() -> Sequence<World>): ParallelWorld = flatMap { tr -> sequenceOf(tr.stn).op().map { History(prevStn = tr.prevStn, stn = it) } }
-fun ParallelWorld.flatMap_ownSide(d: UInt = 0u, op: Side.() -> Sequence<Side>): ParallelWorld = flatMap_world { map_ownSide { flatMap { it.op() } } }
-fun ParallelWorld.filter_ownSide(d: UInt = 0u, op: Side.() -> Boolean): ParallelWorld = flatMap_world { map_ownSide { filter { it.op() } } }
+fun ParallelWorld.flatMap_world(op: World.() -> Sequence<World>): ParallelWorld = flatMap { h -> h.stn.op().map { History(prevStn = h.prevStn, stn = it) } }
+fun ParallelWorld.flatMap_ownSide(d: UInt = 0u, op: Side.() -> Sequence<Side>): ParallelWorld = flatMap_world { ownSide.op().map { tr(ownSide = it) } }
 
-fun Sequence<History>.map_ownSide(d: UInt = 0u, op: Side.() -> Side): Sequence<History> = flatMap_world { map_ownSide { map { it.op() } } }
-fun Sequence<World>.map_ownSide(d: Int = 0, op: Sequence<Side>.() -> Sequence<Side>): Sequence<World> = flatMap { s -> sequenceOf(s.ownSide).op().map { s.tr(ownSide = it) } }
+fun ParallelWorld.map_world(op: World.() -> World): ParallelWorld = map { h -> History(prevStn = h.prevStn, stn = h.stn.op()) }
+fun ParallelWorld.map_ownSide(d: UInt = 0u, op: Side.() -> Side): ParallelWorld = map_world { tr(ownSide = ownSide.op()) }
+
+fun ParallelWorld.filter_ownSide(cond: Side.() -> Boolean): ParallelWorld = filter { it.stn.ownSide.cond() }
+fun ParallelWorld.if_world(cond: World.() -> Boolean, op: ParallelWorld.() -> ParallelWorld): ParallelWorld = sequence {
+    flatMap {
+        if (it.stn.cond()) sequenceOf(it).op()
+        else sequenceOf(it)
+    }
+}
 
 infix fun ParallelWorld.effect(e: Effect): ParallelWorld = flatMap { e.use(it) } //～を発揮する
 fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld = sequence {//～できる
@@ -56,9 +65,7 @@ fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld
 data class History(val prevStn: History?, val stn: World)
 typealias ParallelWorld = Sequence<History>
 
-
-fun eden(deck: Set<Card>, enemyDeck: Set<Card>) = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 1)))
-
+fun eden(deck: Set<Card>, enemyDeck: Set<Card>) = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 0)))
 
 // すべての効果を再帰的に実行
 class eMainStep : Effect {
@@ -74,6 +81,27 @@ class eMainStep : Effect {
     }
 }
 
+class eStartStep : Effect {
+    override val efName: String = "CoreStep"
+    override fun use(h: History): ParallelWorld = sequenceOf(h).map_world {
+        tr(step = step + 1)
+    }
+}
+
+class eCoreStep(val incCore: Int = 1) : Effect {
+    override val efName: String = "CoreStep"
+    override fun use(h: History): ParallelWorld = sequenceOf(h).map_world {
+        if (step > 1) {
+            val postSide = ownSide.mutation {
+                reserve.core += Core(1)
+            }
+            tr(ownSide = postSide)
+        } else {
+            this
+        }
+    }
+}
+
 class eDrawStep(val nDraw: Int = 1) : Effect {
     override val efName: String = "DrawStep"
     override fun use(h: History): ParallelWorld = sequenceOf(h).flatMap_ownSide {
@@ -81,14 +109,6 @@ class eDrawStep(val nDraw: Int = 1) : Effect {
     }
 }
 
-class eCoreStep(val incCore: Int = 1) : Effect {
-    override val efName: String = "CoreStep"
-    override fun use(h: History): ParallelWorld = sequenceOf(h).map_ownSide {
-        mutation {
-            reserve.core += Core(1)
-        }
-    }
-}
 
 class eRefreshStep() : Effect {
     override val efName: String = "RefreshStep"
