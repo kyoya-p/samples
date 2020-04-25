@@ -59,6 +59,7 @@ fun initialSide(deck: Set<Card>): Side {
 
     places[DECK] = FoAttr(id = DECK, cardOrdering = true)
     places[HAND] = FoAttr(id = HAND)
+//    places[BURST] = FoAttr(id = BURST)
     places[CARDTRASH] = FoAttr(id = CARDTRASH)
     places[CORETRASH] = FoAttr(id = CORETRASH)
     places[LIFE] = FoAttr(id = LIFE, core = Core(5))
@@ -115,7 +116,7 @@ val Side.places: List<FO>
             RESERVE
     ) + fieldObjects + listOf(
             DECK,
-            BURST,
+//            BURST,
             LIFE,
             CARDTRASH,
             CORETRASH,

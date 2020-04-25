@@ -53,7 +53,7 @@ fun Cards.remove(cs: Cards): Cards = cs.fold(this) { res, c -> res.remove(c) }
 
 
 // デッキボトムを示す仮想カード
-// これをドローしたら遷移終了
+// これがデッキからなくなったら遷移終了
 //   終了パターンに保存し、遷移先は無し
 // デッキの掘り具合を示す指標とする
 class DeckBottom : Card(category = Category.DECKBOTTOM
@@ -63,9 +63,12 @@ class DeckBottom : Card(category = Category.DECKBOTTOM
         , simbols = Sbl.Zero
         , reduction = Sbl.Zero, family = setOf(), lvInfo = listOf()) {
     override val efName = "DeckBottom:Dummy"
-    override fun use(h: History): ParallelWorld = sequenceOf(h)
-
-
+    override fun use(h: History): ParallelWorld = if (h.world.ownSide.deck.cards.contains(this)) {
+        sequenceOf(h)
+    } else {
+        println("[Terminate simulation] Reached bottom of deck. $h")
+        sequenceOf()
+    }
 }
 
 

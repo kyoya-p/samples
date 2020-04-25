@@ -63,7 +63,7 @@ class e消滅チェック : Effect {
 
     override fun use(tr: History): Sequence<History> = sequenceOf(tr).flatMap_ownSide {
         val exts = fieldObjects.filter { fo -> attr(fo).core.c < attr(fo).cards[0].lvInfo[0].keepCore } //維持コア未満のカードのリストを用意し
-        destroy(exts, tr).map { it.stn.ownSide } //すべて消滅
+        destroy(exts, tr).map { it.world.ownSide } //すべて消滅
     }
 
     //リストされたFOをすべて消滅させる TODO:順番が大切
