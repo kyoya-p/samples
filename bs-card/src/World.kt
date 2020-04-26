@@ -28,10 +28,10 @@ fun <T> Sequence<T>.onlyTakeOneCase(msg: String = ""): T {
     }
 }
 
-fun ParallelWorld.flatMap_world(op: World.() -> Sequence<World>): ParallelWorld = flatMap { h -> h.world.op().map { History(past = h.past, world = it) } }
+fun ParallelWorld.flatMap_world(op: World.() -> Sequence<World>): ParallelWorld = flatMap { h -> h.world.op().map { h.tr(it) } }
 fun ParallelWorld.flatMap_ownSide(d: UInt = 0u, op: Side.() -> Sequence<Side>): ParallelWorld = flatMap_world { ownSide.op().map { tr(ownSide = it) } }
 
-fun ParallelWorld.map_world(op: World.() -> World): ParallelWorld = map { h -> History(past = h.past, world = h.world.op()) }
+fun ParallelWorld.map_world(op: World.() -> World): ParallelWorld = map { h -> h.tr(h.world.op()) }
 fun ParallelWorld.map_ownSide(d: UInt = 0u, op: Side.() -> Side): ParallelWorld = map_world { tr(ownSide = ownSide.op()) }
 
 fun ParallelWorld.filter_ownSide(cond: Side.() -> Boolean): ParallelWorld = filter { it.world.ownSide.cond() }
@@ -42,7 +42,7 @@ fun ParallelWorld.if_world(cond: World.() -> Boolean, op: ParallelWorld.() -> Pa
     }
 }
 
-infix fun ParallelWorld.effect(e: Effect): ParallelWorld = flatMap { e.use(it) } //～を発揮する
+infix fun ParallelWorld.effect(e: Maneuver): ParallelWorld = flatMap { e.use(it) } //～を発揮する
 fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld = sequence {//～できる
     forEach {
         yield(it)// 何もしない場合
@@ -53,13 +53,21 @@ fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld
 }
 
 // 状態遷移
-data class History(val past: History?, val world: World)
+data class History constructor(val past: History?, val world: World) {
+    inline fun tr(newWorld: World): History = History(past = null, world = newWorld)
+
+    override fun toString(): String = "past:${past.hashCode()} world={${world}}"
+
+    companion object {
+        fun eden(deck: Set<Card>, enemyDeck: Set<Card>): ParallelWorld = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 0)))
+    }
+}
+
 typealias ParallelWorld = Sequence<History>
 
-fun eden(deck: Set<Card>, enemyDeck: Set<Card>) = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 0)))
 
 // すべての効果を再帰的に実行
-class eMainStep : Effect {
+class eMainStep : Maneuver {
     override val efName: String = "MainStep"
 
     override fun use(h: History): ParallelWorld = useChecked(h, 0)
@@ -85,14 +93,14 @@ class eMainStep : Effect {
     }
 }
 
-class eStartStep : Effect {
+class eStartStep : Maneuver {
     override val efName: String = "CoreStep"
     override fun use(h: History): ParallelWorld = sequenceOf(h).map_world {
         tr(step = step + 1)
     }
 }
 
-class eCoreStep(val incCore: Int = 1) : Effect {
+class eCoreStep(val incCore: Int = 1) : Maneuver {
     override val efName: String = "CoreStep"
     override fun use(h: History): ParallelWorld = sequenceOf(h).map_world {
         if (step > 1) {
@@ -106,7 +114,7 @@ class eCoreStep(val incCore: Int = 1) : Effect {
     }
 }
 
-class eDrawStep(val nDraw: Int = 1) : Effect {
+class eDrawStep(val nDraw: Int = 1) : Maneuver {
     override val efName: String = "DrawStep"
     override fun use(h: History): ParallelWorld = sequenceOf(h).flatMap_ownSide {
         opMoveCards(HAND, deck.cards.top(nDraw).onlyTakeOneCase("eDrawStep(${nDraw}) but card num. of deck is ${deck.cards.size}"))
@@ -114,7 +122,7 @@ class eDrawStep(val nDraw: Int = 1) : Effect {
 }
 
 
-class eRefreshStep() : Effect {
+class eRefreshStep() : Maneuver {
     override val efName: String = "RefreshStep"
     override fun use(h: History): ParallelWorld = sequenceOf(h).map_ownSide {
         mutation {
@@ -123,6 +131,7 @@ class eRefreshStep() : Effect {
         }
     }
 }
+
 
 fun main() {
     val c00 = SpiritCard(Category.SPIRITCARD, "c00", Color.R, 0, Sbl.R, Sbl.R * 0, setOf(), listOf(Card.LevelInfo(1, 1, 1000)))
@@ -133,8 +142,7 @@ fun main() {
 
     fun ParallelWorld.opドロー(n: Int): ParallelWorld = flatMap_ownSide { opMoveCards(HAND, deck.top(n)) }
 
-
-    eden(setOf(c00, c11, c32), setOf())
+    History.eden(setOf(c00, c11, c32), setOf())
             .assert { toList()[0].world.ownSide.reserve.core == Core(4, 1) }
             .flatMap_ownSide { opMoveCore(Core(1, 0), CORETRASH, RESERVE) } //普通のコア1個リザーブからトラッシュに移動したら、
             .apply { toList()[0].world.ownSide.reserve.core == Core(3, 1) } //残りは3コア(Sコア1個)
@@ -147,7 +155,7 @@ fun main() {
 
             .forEach { }
 
-    eden(setOf(c00, c11, c32), setOf())
+    History.eden(setOf(c00, c11, c32), setOf())
             .flatMap_ownSide { opMoveCore(Core(2, 1), CORETRASH, RESERVE) } //2コア(Sコア1)を除いておく(テストのため)
             .assert { onlyTakeOneCase().world.ownSide.reserve.core.c == 2 }
 
@@ -177,7 +185,7 @@ fun main() {
 
             .forEach { }
 
-    eden(setOf(c00, c11, c22, c63), setOf())
+    History.eden(setOf(c00, c11, c22, c63), setOf())
             .opドロー(4)
             .flatMap { e召喚配置(c00).use(it) }.flatMap { e消滅チェック().use(it) }
             .flatMap { e召喚配置(c11).use(it) }.flatMap { e消滅チェック().use(it) }
@@ -189,7 +197,7 @@ fun main() {
             }
 //            .pln { "${stn.ownSide} $${stn.ownSide.shortHash()}" }
 
-    eden(setOf(c00, c11, c22, c63), setOf())
+    History.eden(setOf(c00, c11, c22, c63), setOf())
             .effect(eDrawStep(1))
             .assertEach { world.ownSide.hand.cards == listOf(c00) }
             .effect(eMainStep())

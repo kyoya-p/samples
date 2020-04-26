@@ -12,7 +12,7 @@ abstract class Card(
         val reduction: Sbl,
         val family: Set<Family>,
         val lvInfo: List<LevelInfo>
-) : Effect {
+) : Maneuver {
     data class LevelInfo(val level: Int, val keepCore: Int, val bp: Int)
 
     override fun toString() = "$name"

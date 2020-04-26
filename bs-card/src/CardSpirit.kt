@@ -95,7 +95,7 @@ open class NexusCard(
 
 // スピリット/ブレイヴの召喚、ネクサスの配置
 
-class e召喚配置(val card: Card) : Effect {
+class e召喚配置(val card: Card) : Maneuver {
     override val efName: String = "召喚 配置"
     override fun use(p: History): Sequence<History> = sequenceOf(p)
             .effect(ePayCardCost(card)) // コストを支払い
@@ -104,7 +104,7 @@ class e召喚配置(val card: Card) : Effect {
             .effect(e消滅チェック())
 }
 
-class e召喚配置_NoCost(val card: Card) : Effect {
+class e召喚配置_NoCost(val card: Card) : Maneuver {
     override val efName: String = "召喚 配置"
     override fun use(p: History): Sequence<History> = sequenceOf(p)
             .flatMap_ownSide { opCreateFO(card) } // カードをフィールドに配置

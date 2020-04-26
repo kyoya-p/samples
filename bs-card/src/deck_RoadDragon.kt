@@ -16,7 +16,7 @@ val Lv10_24 = listOf(Card.LevelInfo(1, 0, 0), Card.LevelInfo(2, 4, 0))
 
 
 //デッキをオープンし条件に合致したカード1枚を手札に加え、残ったカードはデッキの下に
-class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() -> Cards) : Effect {
+class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() -> Cards) : Maneuver {
     override val efName = "サーチ"
     override fun use(h: History): ParallelWorld = kotlin.runCatching {
         sequenceOf(h)
@@ -38,7 +38,7 @@ class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() 
 }
 
 //デッキをオープンしカードを～、残ったカードはデッキの下に TODO: テスト用に除外
-class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> ParallelWorld) : Effect {
+class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> ParallelWorld) : Maneuver {
     override val efName = "サーチ"
 
     override fun use(h: History): ParallelWorld = sequenceOf(h)
@@ -54,7 +54,7 @@ class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> Parallel
 }
 
 //デッキをオープンし条件に合致したカードをすべて手札に加え、残ったカードはデッキの下に
-class eサーチAll(val nOpen: Int, val cond: (Card) -> Boolean) : Effect {
+class eサーチAll(val nOpen: Int, val cond: (Card) -> Boolean) : Maneuver {
     override val efName = "サーチ"
 
     override fun use(h: History): ParallelWorld = sequenceOf(h)
@@ -226,7 +226,7 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
         return passStn
     }
 
-    eden(deck1, enemyDeck = setOf())
+    History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }  //.pln { "${stn.ownSide} : ${stn.ownSide.deckDepth(deckBottom)} " }
             .effect(eDrawStep(4)).terminationCheck().cutBranches()
             .turn().terminationCheck().cutBranches()

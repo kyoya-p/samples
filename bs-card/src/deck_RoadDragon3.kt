@@ -1,9 +1,12 @@
-package BSSim.ロードラ2
+package BSSim.ロードラ3
 
 import BSSim.*
 import BSSim.ロードラ.*
+import java.io.FileOutputStream
+import java.io.PrintStream
 import kotlin.random.Random
 
+val logger = PrintStream(FileOutputStream("log_roaddragon.csv"))
 
 fun main(args: Array<String>) {
     val seedTop = args[0]?.toInt()
@@ -76,22 +79,18 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
     History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }
             .effect(eDrawStep(4)).terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
-            .turn().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
             .forEachIndexed { i, it ->
                 println("$i:${it.world.eval()}  ${it.world}")
             }
 
 
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
 
     termedWorld.sortedBy { h ->
         h.world.step * 1000

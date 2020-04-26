@@ -1,8 +1,8 @@
-package  BSSim
+package BSSim
 
 
 // 効果
-interface Effect {
+interface Maneuver {
     val efName: String
     fun use(h: History): ParallelWorld
 }
@@ -28,14 +28,14 @@ open class opMoveCore(val dst: FO, val srcs: List<FO>, val pick: Int) : Effectab
 }
 
 
-open class ePayCost(val pick: Int) : Effect {
+open class ePayCost(val pick: Int) : Maneuver {
     override val efName = "コスト支払い"
     override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
         opPayCost(pick)
     }
 }
 
-open class ePayCardCost(val c: Card) : Effect {
+open class ePayCardCost(val c: Card) : Maneuver {
     override val efName = "コスト支払い"
     override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
         opPayCost(c)
@@ -50,7 +50,7 @@ class op消滅(val fo: FO) : Effectable("消滅") {
     }
 }
 
-class e消滅(val fo: FO) : Effect {
+class e消滅(val fo: FO) : Maneuver {
     override val efName = "消滅"
     override fun use(p: History): Sequence<History> = sequenceOf(p).flatMap_ownSide {
         opDestruct(fo)
@@ -58,7 +58,7 @@ class e消滅(val fo: FO) : Effect {
 }
 
 // FOをチェックし維持コア不足のFOを消滅させる
-class e消滅チェック : Effect {
+class e消滅チェック : Maneuver {
     override val efName: String = "消滅チェック"
 
     override fun use(tr: History): Sequence<History> = sequenceOf(tr).flatMap_ownSide {

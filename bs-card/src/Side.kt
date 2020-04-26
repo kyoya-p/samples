@@ -159,7 +159,7 @@ fun Side.opMoveCore(core: Core, dst: FO, srcFos: List<FO>): Sequence<Side> {
     }
 }
 
-class eMoveCore(val core: Int, val dst: FO, val srcFos: List<FO>) : Effect {
+class eMoveCore(val core: Int, val dst: FO, val srcFos: List<FO>) : Maneuver {
     override val efName = "コア移動"
     override fun use(h: History): ParallelWorld = sequenceOf(h)
             .flatMap_ownSide {
