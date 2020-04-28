@@ -21,7 +21,7 @@ abstract class MagicCard(
 }
 
 
-class eマジック使用(val card: Card, val op: History.() -> ParallelWorld = { sequenceOf(this) }) : Effect {
+class eマジック使用(val card: Card, val op: History.() -> ParallelWorld = { sequenceOf(this) }) : Maneuver {
     override val efName: String = "使用"
     override fun use(p: History): Sequence<History> = sequenceOf(p)
             .effect(ePayCardCost(card)) // コストを支払い

@@ -1,9 +1,14 @@
 package BSSim.ロードラ
 
 import BSSim.*
-import java.io.File
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import java.io.FileOutputStream
+import java.io.PrintStream
 import kotlin.random.Random
 import kotlin.io.*
+
+val logger = PrintStream(FileOutputStream("log.csv"))
 
 val LvNone = listOf<Card.LevelInfo>()
 val Lv11 = listOf(Card.LevelInfo(1, 1, 0))
@@ -11,11 +16,11 @@ val Lv10_24 = listOf(Card.LevelInfo(1, 0, 0), Card.LevelInfo(2, 4, 0))
 
 
 //デッキをオープンし条件に合致したカード1枚を手札に加え、残ったカードはデッキの下に
-class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() -> Cards) : Effect {
+class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() -> Cards) : Maneuver {
     override val efName = "サーチ"
     override fun use(h: History): ParallelWorld = kotlin.runCatching {
         sequenceOf(h)
-                .flatMap_ownSide { opMoveCards(PICKEDCARD, deck.cards.top(nOpen).onlyTakeOneCase("${nOpen}枚オープンだが　デッキのカードは${deck.cards}\n${h.stn}")) }//nOpen枚オープンしpickedに置く
+                .flatMap_ownSide { opMoveCards(PICKEDCARD, deck.cards.top(nOpen).onlyTakeOneCase("${nOpen}枚オープンだが　デッキのカードは${deck.cards}\n${h.world}")) }//nOpen枚オープンしpickedに置く
                 .flatMap_ownSide {
                     val pick = pickedCards.cards.cond()
                     if (pick.size == 0) sequenceOf(this) //手札に加えるカードはない
@@ -27,13 +32,13 @@ class eサーチ1枚手札By_残デッキ下(val nOpen: Int, val cond: Cards.() 
                     }
                 }
     }.onFailure {
-        println(h.stn)
+        println(h.world)
         throw it
     }.getOrThrow()
 }
 
 //デッキをオープンしカードを～、残ったカードはデッキの下に TODO: テスト用に除外
-class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> ParallelWorld) : Effect {
+class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> ParallelWorld) : Maneuver {
     override val efName = "サーチ"
 
     override fun use(h: History): ParallelWorld = sequenceOf(h)
@@ -42,14 +47,14 @@ class eサーチBy_デッキ下(val nOpen: Int, val cond: History.() -> Parallel
             .flatMap { it.cond() }
             .flatMap_ownSide {
                 opMoveCardsBy(DECK, pickedCards.cards) { dst, cs ->
-//                    sequenceOf(dst + cs) // TODO: 本来は好きな順序で戻す。まじめにやると組合せ爆発しそう...
-                    sequenceOf(dst) // TODO: テスト時間短縮のため破棄
+                    sequenceOf(dst + cs) // TODO: 本来は好きな順序で戻す。まじめにやると組合せ爆発しそう...
+//                    sequenceOf(dst) // TODO: テスト時間短縮のため破棄
                 }
             }
 }
 
 //デッキをオープンし条件に合致したカードをすべて手札に加え、残ったカードはデッキの下に
-class eサーチAll(val nOpen: Int, val cond: (Card) -> Boolean) : Effect {
+class eサーチAll(val nOpen: Int, val cond: (Card) -> Boolean) : Maneuver {
     override val efName = "サーチ"
 
     override fun use(h: History): ParallelWorld = sequenceOf(h)
@@ -106,7 +111,7 @@ class 神世界トリスタ : SpiritCard(Category.SPIRITCARD, "神トリ", Color
             //以下召喚時効果
             .optional { //～できる
                 effect(eサーチBy_デッキ下(5) {
-                    stn.ownSide.pickedCards.cards.asSequence().filter { it.family.contains(Family.創界神) || it.family.contains(Family.界渡) }.flatMap {
+                    world.ownSide.pickedCards.cards.asSequence().filter { it.family.contains(Family.創界神) || it.family.contains(Family.界渡) }.flatMap {
                         sequenceOf(this).flatMap_ownSide { opMoveCard(HAND, it) }
                     }
                 })
@@ -128,7 +133,7 @@ class 転校生 : MagicCard(Category.MAGICCARD, "転校生", Color.G, 4, Sbl.G +
     override fun use(h: History): ParallelWorld = sequenceOf(h)
             .effect(eマジック使用(this))
             .effect(eサーチBy_デッキ下(4) {
-                val gw = stn.ownSide.pickedCards.cards.filter { it.family.contains(Family.ウル) && it.family.contains(Family.創界神) }
+                val gw = world.ownSide.pickedCards.cards.filter { it.family.contains(Family.ウル) && it.family.contains(Family.創界神) }
                 if (gw.count() == 0) {
                     sequenceOf(this) //GWなければなにもしない
                 } else {
@@ -153,10 +158,8 @@ class キマリ : NexusCard(Category.NEXUSCARD, "キマリ", Color.P, 2, Sbl.Gd,
             .effect(e召喚配置(this))
 }
 
-class ダミー : SpiritCard(Category.SPIRITCARD, "Dmy", Color.Y, 12, Sbl.R, Sbl.R * 0, setOf(Family.覇王), Lv11) {
-    override fun use(h: History): Sequence<History> = sequenceOf()
-//            .filter_ownSide { hand.cards.contains(this@ダミーカード) } //このカードが手札にあったら
-//            .flatMap_ownSide { opMoveCard(CARDTRASH, this@ダミーカード) } //トラッシュに置かれる(計算量削減のため)
+class ダミー : SpiritCard(Category.SPIRITCARD, "ダミー", Color.Y, 12, Sbl.R, Sbl.R * 0, setOf(Family.覇王), Lv11) {
+    override fun use(h: History): Sequence<History> = sequenceOf()//何もしない
 }
 
 fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
@@ -165,7 +168,7 @@ fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
         .effect(eRefreshStep())
         .effect(eMainStep())
 
-fun main(args: Array<String>) {
+fun main(args: Array<String>) = runBlocking {
     val seedTop = args[0]?.toInt()
     val loopCount = args[1]?.toInt()
 
@@ -179,11 +182,13 @@ fun main(args: Array<String>) {
             , x(3) { 電人トレイン() } + x(3) { 幼グランロロ() } + x(3) { サルベージ() } + x(3) { 転校生() } + x(3) { ダミー() }
     )
 
-    println("cond, seed, step, termRatio, nCase, deck")
+    logger.println("cond, seed, step, termRatio, nCase, deck")
 
     for (deckOpt1 in deckOpt) {
-        for (seed in seedTop until seedTop + loopCount) {
-            test11(deckOpt1.toSet(), deckBase, seed)
+        async {
+            for (seed in seedTop until seedTop + loopCount) {
+                test11(deckOpt1.toSet(), deckBase, seed)
+            }
         }
     }
 }
@@ -194,7 +199,7 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
     val deck1 = deck.shuffled(Random(seed)).toSet() + deckBottom
     fun Side.evaluation(): Int = deckDepth(deckBottom)            // ロードラ用評価関数=デッキ進度
     fun <T> Sequence<T>.cutBranchesBy(nTake: Int, nBest: Int, op: (T) -> Int): Sequence<T> = sortedBy { op(it) }.let { it.take(nBest) + it.drop(nBest).toList().shuffled() }.take(nTake)
-    fun ParallelWorld.cutBranches(): ParallelWorld = cutBranchesBy(20, 5) { it.stn.ownSide.evaluation() }
+    fun ParallelWorld.cutBranches(): ParallelWorld = cutBranchesBy(20, 5) { it.world.ownSide.evaluation() }
 
     //    val termStn = mutableSetOf<World>()
     fun ParallelWorld.terminationCheck(): ParallelWorld {
@@ -213,17 +218,15 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
         val nTerm = nCond - passStn.count()
 
         if (nCond != 0) {
-            val aStep = map { it.stn.step }.average()
-            File("log.csv").writeText(
-                    "${deckOpt.joinToString("_")}, ${seed}, ${aStep}, " +
-                            "${nTerm * 1.0 / nCond}, ${nCond}, ${deck1.joinToString("_")}"
-                    , Charsets.UTF_8
+            val aStep = map { it.world.step }.average()
+            logger.println(
+                    "${deckOpt.joinToString("_")}, ${seed}, ${aStep}, ${nTerm * 1.0 / nCond}, ${nCond}, ${deck1.joinToString("_")}"
             )
         }
         return passStn
     }
 
-    eden(deck1, enemyDeck = setOf())
+    History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }  //.pln { "${stn.ownSide} : ${stn.ownSide.deckDepth(deckBottom)} " }
             .effect(eDrawStep(4)).terminationCheck().cutBranches()
             .turn().terminationCheck().cutBranches()
@@ -231,7 +234,8 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
             .turn().terminationCheck().cutBranches()
             .turn().terminationCheck().cutBranches()
             .turn().terminationCheck().cutBranches()
-
+            .turn().terminationCheck().cutBranches()
+            .turn().terminationCheck().pln{this.world}.cutBranches()
             .forEach { }
 }
 

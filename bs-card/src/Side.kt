@@ -59,6 +59,7 @@ fun initialSide(deck: Set<Card>): Side {
 
     places[DECK] = FoAttr(id = DECK, cardOrdering = true)
     places[HAND] = FoAttr(id = HAND)
+//    places[BURST] = FoAttr(id = BURST)
     places[CARDTRASH] = FoAttr(id = CARDTRASH)
     places[CORETRASH] = FoAttr(id = CORETRASH)
     places[LIFE] = FoAttr(id = LIFE, core = Core(5))
@@ -115,7 +116,7 @@ val Side.places: List<FO>
             RESERVE
     ) + fieldObjects + listOf(
             DECK,
-            BURST,
+//            BURST,
             LIFE,
             CARDTRASH,
             CORETRASH,
@@ -158,7 +159,7 @@ fun Side.opMoveCore(core: Core, dst: FO, srcFos: List<FO>): Sequence<Side> {
     }
 }
 
-class eMoveCore(val core: Int, val dst: FO, val srcFos: List<FO>) : Effect {
+class eMoveCore(val core: Int, val dst: FO, val srcFos: List<FO>) : Maneuver {
     override val efName = "コア移動"
     override fun use(h: History): ParallelWorld = sequenceOf(h)
             .flatMap_ownSide {
