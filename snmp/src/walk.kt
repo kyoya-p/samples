@@ -41,11 +41,14 @@ fun VariableBinding.toVBString(): String {
 fun main() {
     val r: PDU = Snmp(DefaultUdpTransportMapping()).use { snmp ->
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1.3.6"))))
+        //val addr = InetAddress.getByName("10.36.102.45")
+        val addr = InetAddress.getByName("255.255.255.255")
         val target = CommunityTarget(
-                UdpAddress(InetAddress.getByName("10.36.102.45"), 161)
+                UdpAddress(addr, 161)
                 , OctetString("public"))
         snmp.listen()
         snmp.send(pdu, target).response!!
     }
+    //println(r.)
     println(r.variableBindings[0])
 }

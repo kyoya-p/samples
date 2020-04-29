@@ -1,0 +1,7 @@
+FROM adoptopenjdk/openjdk11:x86_64-alpine-jre-11.0.6_10
+RUN export http_proxy="http://admin:admin@172.29.241.32:807" \
+  && export https_proxy="http://admin:admin@172.29.241.32:807" \
+  && apt update upgrade \
+  && apt install -y git \
+  && apt install -y screen
+CMD [ "/bin/sh" ]
