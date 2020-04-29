@@ -73,6 +73,12 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
 
     val termedWorld = mutableSetOf<History>()
 
+    fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
+            .effect(eCoreStep(1))
+            .effect(eDrawStep(1))
+            .effect(eRefreshStep())
+            .effect(eMainStep() { it.eval().toDouble() })
+
     History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }
             .effect(eDrawStep(4)).terminationCheck(termedWorld).cutBranches()
@@ -86,12 +92,6 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
             .forEachIndexed { i, it ->
                 println("$i:${it.world.eval()}  ${it.world}")
             }
-
-
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
-    //.turn().terminationCheck(termedWorld).cutBranches()
 
     termedWorld.sortedBy { h ->
         h.world.step * 1000

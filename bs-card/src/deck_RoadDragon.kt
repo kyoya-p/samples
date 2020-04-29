@@ -162,11 +162,11 @@ class ダミー : SpiritCard(Category.SPIRITCARD, "ダミー", Color.Y, 12, Sbl.
     override fun use(h: History): Sequence<History> = sequenceOf()//何もしない
 }
 
-fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
+fun ParallelWorld.turn(eval: (World) -> Double): ParallelWorld = effect(eStartStep())
         .effect(eCoreStep(1))
         .effect(eDrawStep(1))
         .effect(eRefreshStep())
-        .effect(eMainStep())
+        .effect(eMainStep() { eval(it) })
 
 fun main(args: Array<String>) = runBlocking {
     val seedTop = args[0]?.toInt()
@@ -226,16 +226,19 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
         return passStn
     }
 
+    fun eval(w: World) = w.ownSide.fieldSimbols.toInt().toDouble()
+    fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
+            .effect(eCoreStep(1))
+            .effect(eDrawStep(1))
+            .effect(eRefreshStep())
+            .effect(eMainStep() { eval(it) })
+            .terminationCheck()
+
     History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }  //.pln { "${stn.ownSide} : ${stn.ownSide.deckDepth(deckBottom)} " }
             .effect(eDrawStep(4)).terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().cutBranches()
-            .turn().terminationCheck().pln{this.world}.cutBranches()
+            .turn().cutBranches()
+            .pln { this.world }
             .forEach { }
 }
 

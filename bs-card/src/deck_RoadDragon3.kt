@@ -42,7 +42,7 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
     val deck1 = deck.shuffled(Random(seed)).toSet() + deckBottom
 
     fun World.eval(): Int {
-        return ownSide.deckDepth(deckBottom) * 100 - ownSide.fieldSimbols.toInt()
+        return ownSide.deckDepth(deckBottom) * 100
     }
 
     fun <T> Sequence<T>.cutBranchesBy(nTake: Int, nBest: Int, op: (T) -> Int): Sequence<T> = sortedBy { op(it) }.let { it.take(nBest) + it.drop(nBest).toList().shuffled() }.take(nTake)
@@ -76,16 +76,17 @@ fun test11(deckOpt: Set<Card>, deckBase: List<Card>, seed: Int) {
 
     val termedWorld = mutableSetOf<History>()
 
+    fun ParallelWorld.turn(): ParallelWorld = effect(eStartStep())
+            .effect(eCoreStep(1))
+            .effect(eDrawStep(1))
+            .effect(eRefreshStep())
+            .effect(eMainStep() { it.eval().toDouble() })
+
     History.eden(deck1, enemyDeck = setOf())
             .map_ownSide { mutation { reserve.core = Core(4, 0) } }
             .effect(eDrawStep(4)).terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
-            .turn().toSet().asSequence().terminationCheck(termedWorld).cutBranches()
+            .turn().terminationCheck(termedWorld).cutBranches().take(1)
+            .turn().terminationCheck(termedWorld).cutBranches().take(1)
             .forEachIndexed { i, it ->
                 println("$i:${it.world.eval()}  ${it.world}")
             }

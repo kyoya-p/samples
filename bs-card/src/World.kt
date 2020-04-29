@@ -5,14 +5,6 @@ data class World(
         val enemySide: Side = Side(),
         val step: Int = 0
 ) {
-    /*    constructor(prevStn: World
-                    , ownSide: Side = prevStn.ownSide
-                    , enemySide: Side = prevStn.enemySide
-                    , step: Int = prevStn.step
-        ) : this(ownSide = ownSide, enemySide = enemySide, step = step)
-    */
-
-    // -----New API ----------------------------------------------------------
     inline fun tr(ownSide: Side = this.ownSide
                   , enemySide: Side = this.enemySide
                   , step: Int = this.step) = World(ownSide = ownSide, enemySide = enemySide, step = step)
@@ -54,9 +46,10 @@ fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld
 
 // 状態遷移
 data class History constructor(val past: History?, val world: World) {
-    inline fun tr(newWorld: World): History = History(past = null, world = newWorld)
+    inline fun tr(newWorld: World): History = History(past = this, world = newWorld)
 
-    override fun toString(): String = "past:${past.hashCode()} world={${world}}"
+    //override fun toString(): String = "past:${past.hashCode()} world={${world}}"
+    override fun toString(): String = "${past?.world ?: null} -> ${world}"
 
     companion object {
         fun eden(deck: Set<Card>, enemyDeck: Set<Card>): ParallelWorld = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 0)))
@@ -65,29 +58,43 @@ data class History constructor(val past: History?, val world: World) {
 
 typealias ParallelWorld = Sequence<History>
 
-
+// メインステップの状態遷移(主に召喚)
 // すべての効果を再帰的に実行
-class eMainStep : Maneuver {
+// eval: メインステップにおける各選択肢に対する評価関数。これにより結果の期待値を求める
+class eMainStep(val eval: (World) -> Double) : Maneuver {
     override val efName: String = "MainStep"
 
-    override fun use(h: History): ParallelWorld = useChecked(h, 0)
-    //sequence {
-    /*yield(h) //何もしない選択
-    h.stn.ownSide.hand.cards.forEach {
-        it.use(h).forEach {
-            this@eMainStep.use(it).forEach { yield(it) }
-        }
-    }*/
+    override fun use(h: History): ParallelWorld {
+        val res = useChecked0(h, 0)
+        return res
+    }
 
-
-    fun useChecked(h: History, depth: Int): ParallelWorld = sequence {
+    fun useChecked0(h: History, depth: Int): ParallelWorld {
         if (depth >= 1024) {
             println("Suspected [Stack overflow][$depth] in $h")
         }
-        yield(h) //何もしない選択
-        h.world.ownSide.hand.cards.forEach {
-            it.use(h).forEach {
-                useChecked(it, depth + 1).forEach { yield(it) }
+        //何も召喚しない場合の評価を含める
+        val r = sequenceOf(h) + h.world.ownSide.hand.cards.asSequence().flatMap {
+            it.use(h).flatMap { useChecked0(it, depth + 1) }
+        }
+
+        return r.groupingBy { it }.eachCount().toList().sortedBy { (h, n) ->
+            eval(h.world) * n
+        }.map { (h, n) ->
+            h
+        }.asSequence()
+    }
+
+    fun useChecked(h: History, depth: Int): ParallelWorld {
+        if (depth >= 1024) {
+            println("Suspected [Stack overflow][$depth] in $h")
+        }
+        return sequence {
+            yield(h) //何もしない選択
+            h.world.ownSide.hand.cards.map {
+                it.use(h).forEach {
+                    useChecked(it, depth + 1).forEach { yield(it) }
+                }
             }
         }
     }
@@ -195,19 +202,27 @@ fun main() {
             .assert {
                 map { it.world.ownSide.fieldObjectsMap[FO(c63.name)]!!.core }.toSet() == setOf(Core(1, 0), Core(1, 1))
             }
-//            .pln { "${stn.ownSide} $${stn.ownSide.shortHash()}" }
+
+    fun eval1(w: World): Double = -w.ownSide.fieldSimbols.toInt().toDouble() //シンボル数優先
+    fun eval2(w: World) = -1.0 * (w.ownSide.fieldObjectsMap.map { (_, a) -> a.cards[0].cost }.max() ?: -1) //高コススピ優先
 
     History.eden(setOf(c00, c11, c22, c63), setOf())
             .effect(eDrawStep(1))
             .assertEach { world.ownSide.hand.cards == listOf(c00) }
-            .effect(eMainStep())
+
+            .effect(eMainStep() { eval1(it) })
+            .map { it.pln() }
             .assert { count() == 3 } // 召喚しない、する(Sコア置く)、する(Sコア置かない)
 
+            .effect(eStartStep())
             .effect(eDrawStep(3))
-            .effect(eMainStep())
-            .filter { it.world.ownSide.fieldObjectsMap.containsKey(FO(c63.name)) } // c63を召喚するケースだけ抽出
-            .distinct()
-            .assert { count() == 2 } // する(Sコア置く)、する(Sコア置かない)
+            .effect(eRefreshStep())
+            .effect(eMainStep() { eval2(it) })
+            //.filter { it.world.ownSide.fieldObjectsMap.containsKey(FO(c63.name)) } // c63を召喚するケースだけ抽出する
+            .distinctBy { it.world }
+            .take(2).map {
+                it.pln()
+            }.assert { count() == 2 } // 召喚した結果(Sコア置く)、する(Sコア置かない)
 }
 
 
