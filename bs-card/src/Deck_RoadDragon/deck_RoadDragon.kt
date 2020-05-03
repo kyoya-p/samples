@@ -77,16 +77,27 @@ class 電人トレイン : SpiritCard(Category.SPIRITCARD, "電トレ", Color.W,
             .effect(e召喚配置(this))  // このカードを召喚する
             //以下召喚時効果
             .optional { //～できる
-                サーチ1().effect(ePayCost(1))
+                search1(4)
             }
 
-
-    fun ParallelWorld.サーチ1(): ParallelWorld = effect(eサーチ1枚手札By_残デッキ下(4) {
-        filter { it.family.contains(Family.創界神) && it.colors == Color.W } //白の創界神1枚
-    })
+    fun ParallelWorld.search1(nOpen: Int): ParallelWorld = flatMap_ownSide { opMoveCards(PICKEDCARD, deck.cards.top(nOpen).onlyTakeOneCase()) }//4枚オープンしpickedに置く
+            .flatMap_ownSide {
+                pickedCards.cards.asSequence().filter { it.family.contains(Family.創界神) && it.colors == Color.W }.flatMap {// 条件に合うカード1枚を
+                    opMoveCard(HAND, it) //手札に移動し
+                }.flatMap {
+                    it.opPayCost(1) //1コスト払う
+                }
+            }
+            .flatMap_ownSide {
+                opMoveCardsBy(DECK, pickedCards.cards) { dst, cs -> // 残りのカードはデッキ下に戻す
+                    //sequenceOf(dst + cs) // TODO: 本来は好きな順序で戻す。まじめにやると組合せ爆発しそう...
+                    sequenceOf(dst) // TODO: テスト時間短縮のため破棄
+                }
+            }
+            .effect(e消滅チェック())
 }
 
-class 幼グランロロ : SpiritCard(Category.SPIRITCARD, "幼グラ", Color.RPGWYB, 2, Sbl.Gd, Sbl.Zero * 1, setOf(Family.武装, Family.界渡), Lv11) {
+class 幼グラロロドラ : SpiritCard(Category.SPIRITCARD, "幼グラ", Color.RPGWYB, 2, Sbl.Gd, Sbl.Zero, setOf(Family.絶晶神, Family.界渡), Lv11) {
     override fun use(h: History): Sequence<History> = sequenceOf(h)
             .effect(e召喚配置(this))  // このカードを召喚する
             //以下召喚時効果
@@ -150,6 +161,11 @@ class チヒロ : NexusCard(Category.NEXUSCARD, "チヒロ", Color.W, 2, Sbl.Gd,
             .effect(e召喚配置(this))
 }
 
+class アプロディーテ : NexusCard(Category.NEXUSCARD, "アプロ", Color.Y, 2, Sbl(Color.Y + Color.Gd, 1), Sbl.Y, setOf(Family.創界神, Family.オリン), Lv10_24) {
+    override fun use(h: History): Sequence<History> = sequenceOf(h)
+            .effect(e召喚配置(this))
+}
+
 // https://batspi.com/index.php?cmd=read&page=巽%20キマリ
 val Lv10_26 = listOf(Card.LevelInfo(1, 0, 0), Card.LevelInfo(2, 6, 0))
 
@@ -176,10 +192,10 @@ fun main(args: Array<String>) = runBlocking {
     val deckBase = x(3) { チヒロ() } + x(3) { キマリ() } + x(40) { ダミー() }
     val deckOpt = listOf(
             x(3) { ダミー() } + x(3) { ダミー() } + x(3) { ダミー() } + x(3) { ダミー() } + x(3) { ダミー() }
-            , x(3) { 電人トレイン() } + x(3) { 幼グランロロ() } + x(3) { サルベージ() } + x(3) { 転校生() } + x(3) { 神世界トリスタ() }
-            , x(3) { 電人トレイン() } + x(3) { 幼グランロロ() } + x(3) { ダミー() } + x(3) { 転校生() } + x(3) { 神世界トリスタ() }
-            , x(3) { 電人トレイン() } + x(3) { 幼グランロロ() } + x(3) { サルベージ() } + x(3) { ダミー() } + x(3) { 神世界トリスタ() }
-            , x(3) { 電人トレイン() } + x(3) { 幼グランロロ() } + x(3) { サルベージ() } + x(3) { 転校生() } + x(3) { ダミー() }
+            , x(3) { 電人トレイン() } + x(3) { 幼グラロロドラ() } + x(3) { サルベージ() } + x(3) { 転校生() } + x(3) { 神世界トリスタ() }
+            , x(3) { 電人トレイン() } + x(3) { 幼グラロロドラ() } + x(3) { ダミー() } + x(3) { 転校生() } + x(3) { 神世界トリスタ() }
+            , x(3) { 電人トレイン() } + x(3) { 幼グラロロドラ() } + x(3) { サルベージ() } + x(3) { ダミー() } + x(3) { 神世界トリスタ() }
+            , x(3) { 電人トレイン() } + x(3) { 幼グラロロドラ() } + x(3) { サルベージ() } + x(3) { 転校生() } + x(3) { ダミー() }
     )
 
     logger.println("cond, seed, step, termRatio, nCase, deck")

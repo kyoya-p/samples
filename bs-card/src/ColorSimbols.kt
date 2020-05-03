@@ -49,6 +49,7 @@ inline class Sbl(val s: Map<Color, Int> = mapOf()) : Comparable<Sbl> {
 
     inline fun Map<Color, Int>.toSimbols() = Sbl(this)
     inline fun Color.toSimbols() = Sbl(this)
+    inline fun Pair<Color, Int>.toSimbols() = Sbl(mapOf(this))
     inline operator fun plus(b: Sbl) = Sbl(s + b.s.keys.associateWith { k -> (s[k] ?: 0) + (b.s[k] ?: 0) })
     inline operator fun times(b: Int) = s.map { (c, v) -> c to v * b }.toMap().toSimbols()
     inline fun matches(pickColor: Color) = s.asSequence().filter { (c, v) -> pickColor.matches(c) }
@@ -86,7 +87,6 @@ inline class Sbl(val s: Map<Color, Int> = mapOf()) : Comparable<Sbl> {
             (Sbl.R * 3).reduction(Sbl.R).assert(1)
             (Sbl.R * 3).reduction(Sbl.R * 4).assert(3)
             (Sbl.R * 3 + Sbl.G).reduction(Sbl.R * 2 + Sbl.G * 2).assert(3)
-
         }
     }
 

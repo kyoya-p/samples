@@ -45,11 +45,21 @@ fun ParallelWorld.optional(op: ParallelWorld.() -> ParallelWorld): ParallelWorld
 }
 
 // 状態遷移
-data class History constructor(val past: History?, val world: World) {
-    inline fun tr(newWorld: World): History = History(past = this, world = newWorld)
 
-    //override fun toString(): String = "past:${past.hashCode()} world={${world}}"
-    override fun toString(): String = "${past?.world ?: null} -> ${world}"
+class History private constructor(val past: History?, val world: World) {
+    fun tr(newWorld: World): History {
+        if (past != null) {
+            if (this.world == newWorld) {
+                return History(past = past, world = newWorld)
+            } else {
+                return History(past = this, world = newWorld)
+            }
+        } else {
+            return History(past = this, world = newWorld)
+        }
+    }
+
+    override fun toString(): String = "past:${past.hashCode()} world={${world}}"
 
     companion object {
         fun eden(deck: Set<Card>, enemyDeck: Set<Card>): ParallelWorld = sequenceOf(History(null, World(ownSide = initialSide(deck), enemySide = initialSide(enemyDeck), step = 0)))
@@ -79,25 +89,12 @@ class eMainStep(val eval: (World) -> Double) : Maneuver {
         }
 
         return r.groupingBy { it }.eachCount().toList().sortedBy { (h, n) ->
-            eval(h.world) * n
+            eval(h.world)
         }.map { (h, n) ->
             h
         }.asSequence()
     }
 
-    fun useChecked(h: History, depth: Int): ParallelWorld {
-        if (depth >= 1024) {
-            println("Suspected [Stack overflow][$depth] in $h")
-        }
-        return sequence {
-            yield(h) //何もしない選択
-            h.world.ownSide.hand.cards.map {
-                it.use(h).forEach {
-                    useChecked(it, depth + 1).forEach { yield(it) }
-                }
-            }
-        }
-    }
 }
 
 class eStartStep : Maneuver {
