@@ -3,10 +3,13 @@ package mibtool
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
+import org.snmp4j.TransportMapping
+import org.snmp4j.event.ResponseEvent
+import org.snmp4j.event.ResponseListener
 import org.snmp4j.mp.SnmpConstants
+import org.snmp4j.mp.SnmpConstants.version1
 import org.snmp4j.smi.*
 import org.snmp4j.transport.DefaultUdpTransportMapping
-import java.io.PrintStream
 import java.net.InetAddress
 
 
@@ -38,17 +41,40 @@ fun VariableBinding.toVBString(): String {
 }
 
 
+// TODO
+// TODO
+// TODO
+// TODO
+// TODO
+
 fun main() {
-    val r: PDU = Snmp(DefaultUdpTransportMapping()).use { snmp ->
-        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1.3.6"))))
-        //val addr = InetAddress.getByName("10.36.102.45")
-        val addr = InetAddress.getByName("255.255.255.255")
-        val target = CommunityTarget(
-                UdpAddress(addr, 161)
-                , OctetString("public"))
-        snmp.listen()
-        snmp.send(pdu, target).response!!
+    val transport: TransportMapping<*> = DefaultUdpTransportMapping()
+    val snmp = Snmp(transport)
+    transport.listen()
+
+    val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName("255.255.255.255"), 161)
+    val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>()
+    target.setAddress(targetAddress)
+    target.community = OctetString("public")
+    target.timeout = 5_000
+    target.retries = 5
+    target.version = SnmpConstants.version2c
+
+    val listener: ResponseListener = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
+            (event.source as Snmp).cancel(event.request, this)
+            println("Received response PDU is: " + event.response)
+            println("response listener thread id: " + Thread.currentThread().id)
+            println("**********************************")
+        }
     }
-    //println(r.)
-    println(r.variableBindings[0])
+
+    println("main thread id: " + Thread.currentThread().id)
+    val pdu1 = PDU()
+    pdu1.add(VariableBinding(OID("1.3.6")))
+    pdu1.type = PDU.GETNEXT
+    snmp.send(pdu1, target, null, listener)
+
+    Thread.sleep(30_000)
 }
+
