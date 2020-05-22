@@ -74,6 +74,7 @@ fun main(args: Array<String>) {
         h.world.step * 10000
         +h.world.ownSide.deckDepth(deckBottom) * 100
     }.sortedBy { it.world.step }.take(2).forEach {
+
         println("----------------------------------")
         println(it.world)
     }

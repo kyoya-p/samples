@@ -7,16 +7,16 @@ interface Maneuver {
     fun use(h: History): ParallelWorld
 }
 
+class NoOp : Maneuver {
+    override val efName = "noOp"
+
+    override fun use(h: History): ParallelWorld = sequenceOf(h)
+}
+
 // 効果を発揮するもの
 // カードやトラッシュ等
 abstract class Effectable(val effectName: String) {
     abstract fun effect(tr: History): Sequence<History>
-
-    companion object {
-        val opNone = object : Effectable("noOp") {
-            override fun effect(tr: History): Sequence<History> = sequenceOf()
-        }
-    }
 }
 
 fun <T : Effectable> Sequence<History>.choices(effectable: T): Sequence<History> = flatMap { effectable.effect(it) }
