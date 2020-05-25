@@ -21,8 +21,8 @@ fun main() {
     println(Date().time - start1)
 
     // コルーチン
-    // - 非同期タスクをたくさん呼び出すのには良い
-    // - メニーコアを活用する役には立たない
+    // - コールバック非同期タスクをたくさん呼び出すにはGood
+    // - シングルスレッドなのでメニーコアを活用する役には立たない
     val start2 = Date().time
     runBlocking {
         (1..20).forEach { i ->
