@@ -56,7 +56,7 @@ fun main() {
     val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>()
     target.setAddress(targetAddress)
     target.community = OctetString("public")
-    target.timeout = 5_000
+    target.timeout = 5_000 //ms
     target.retries = 5
     target.version = SnmpConstants.version2c
 

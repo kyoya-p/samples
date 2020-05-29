@@ -31,7 +31,6 @@ fun main() {
             } else {
                 throw Exception("This Authenticator supports only proxy authentication.")
             }
-
         }
     })
 
