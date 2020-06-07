@@ -11,6 +11,7 @@ import org.snmp4j.mp.SnmpConstants.version1
 import org.snmp4j.smi.*
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
+import java.util.concurrent.Semaphore
 
 
 fun VariableBinding.toVBString(): String {
@@ -57,24 +58,21 @@ fun main() {
     target.setAddress(targetAddress)
     target.community = OctetString("public")
     target.timeout = 5_000 //ms
-    target.retries = 5
     target.version = SnmpConstants.version2c
 
-    val listener: ResponseListener = object : ResponseListener {
-        override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
-            (event.source as Snmp).cancel(event.request, this)
-            println("Received response PDU is: " + event.response)
-            println("response listener thread id: " + Thread.currentThread().id)
-            println("**********************************")
+    val sem = Semaphore(1).apply { acquire() }
+    val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
+    snmp.send(pdu, target, null, object : ResponseListener {
+        override fun <A : Address> onResponse(event: ResponseEvent<A>) {
+            //(event.source as Snmp).cancel(event.request, this)
+            if (event.response == null) {
+                sem.release()
+            } else {
+                println("${event.peerAddress}+${event.response[0].variable}")
+            }
         }
-    }
+    })
 
-    println("main thread id: " + Thread.currentThread().id)
-    val pdu1 = PDU()
-    pdu1.add(VariableBinding(OID("1.3.6")))
-    pdu1.type = PDU.GETNEXT
-    snmp.send(pdu1, target, null, listener)
-
-    Thread.sleep(30_000)
+    sem.acquire()
 }
 
