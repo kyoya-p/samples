@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-js"))
+    implementation(npm("mqtt")) // これだけ?
+    implementation(npm("is-sorted"))
 }
 
 kotlin.target.browser { }
