@@ -21,6 +21,7 @@ fun Scanner.nextMIBSet(): TreeMap<OID, VariableBinding> {
                 generateSequence { true }.takeWhile { hasNext() }.map {
                     val b: Byte = findInLine(".").toCharArray()[0].toByte()
                     if (b == ':'.toByte()) findInLine("..").toInt(16).toByte() else b
+
                 }.toList().toByteArray()
             }
         }
