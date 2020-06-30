@@ -38,3 +38,31 @@ fun <A : Address> Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTar
     send(PDU(PDU.GETNEXT, vbl), target).response.variableBindings
 }.drop(1).takeWhile { it.zip(initVbl).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
 
+@Serializer(forClass = VariableBinding::class)
+object VariableBindingSerializer : KSerializer<VariableBinding> {
+    override val descriptor: SerialDescriptor
+        get() = TODO("Not yet implemented")
+
+    override fun deserialize(decoder: Decoder): VariableBinding {
+        val input = decoder as? JsonInput ?: throw SerializationException("This class can be loaded only by Json")
+
+        val vb = input.decodeJson()
+        val oid = vb.jsonObject["oid"].toString()!!
+        val stx = vb.jsonObject["stx"]?.int!!
+        val value = vb.jsonObject["value"]?.toString()!!
+
+//TODO
+//TODO
+//TODO
+//TODO
+//TODO
+
+        println(vb)
+        return VariableBinding()
+    }
+
+    override fun serialize(encoder: Encoder, value: VariableBinding) {
+        TODO("Not yet implemented")
+    }
+
+}
