@@ -1,6 +1,9 @@
 package mibtool
 
 import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.*
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -11,6 +14,15 @@ import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 
 fun main(args: Array<String>) {
+    //TODO <Test>
+    val vb = VariableBinding(OID("1.3.6"), Counter32(999))//TODO
+    val vbl = listOf(vb)
+    val r = Json.stringify(ListSerializer(VariableBindingSerializer), vbl)//TODO
+    println(r)
+    System.exit(0)
+    //TODO </Test>
+
+
     if (args.size == 0) {
         println("syntax: java -jar walk.jar params...")
         println("example: java -jar walk.jar addr: 192.168.1.2, oids: [1.3.6.1,1.3.6.2] ")
@@ -62,7 +74,12 @@ object VariableBindingSerializer : KSerializer<VariableBinding> {
     }
 
     override fun serialize(encoder: Encoder, value: VariableBinding) {
-        TODO("Not yet implemented")
+        val output = encoder as? JsonOutput
+                ?: throw SerializationException("This class can be saved only by Json")
+        val vb = JsonObject(mapOf("oid" to JsonLiteral(value.oid.toString()),
+                "stx" to JsonLiteral(value.syntax),
+                "v" to JsonLiteral(value.variable.toString()) //TODO 型チェック
+        ))
+        output.encodeJson(vb)
     }
-
 }
