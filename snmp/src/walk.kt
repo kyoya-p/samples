@@ -1,7 +1,6 @@
 package mibtool
 
 import com.charleskorn.kaml.Yaml
-import kotlinx.serialization.*
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.*
 import org.snmp4j.CommunityTarget
@@ -15,13 +14,13 @@ import java.net.InetAddress
 
 fun main(args: Array<String>) {
     //TODO <Test>
-    val vb = VariableBinding(OID("1.3.6"), Counter32(999))//TODO
+//    val vb = Counter32(999)//TODO
+    val vb = OctetString("\u0000\u0000123")//TODO
     val vbl = listOf(vb)
-    val r = Json.stringify(ListSerializer(VariableBindingSerializer), vbl)//TODO
+    val r = Json.stringify(VariableSerializer,vb)//TODO
     println(r)
     System.exit(0)
     //TODO </Test>
-
 
     if (args.size == 0) {
         println("syntax: java -jar walk.jar params...")
@@ -49,37 +48,3 @@ fun main(args: Array<String>) {
 fun <A : Address> Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<A>) = generateSequence(initVbl) { vbl ->
     send(PDU(PDU.GETNEXT, vbl), target).response.variableBindings
 }.drop(1).takeWhile { it.zip(initVbl).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
-
-@Serializer(forClass = VariableBinding::class)
-object VariableBindingSerializer : KSerializer<VariableBinding> {
-    override val descriptor: SerialDescriptor
-        get() = TODO("Not yet implemented")
-
-    override fun deserialize(decoder: Decoder): VariableBinding {
-        val input = decoder as? JsonInput ?: throw SerializationException("This class can be loaded only by Json")
-
-        val vb = input.decodeJson()
-        val oid = vb.jsonObject["oid"].toString()!!
-        val stx = vb.jsonObject["stx"]?.int!!
-        val value = vb.jsonObject["value"]?.toString()!!
-
-//TODO
-//TODO
-//TODO
-//TODO
-//TODO
-
-        println(vb)
-        return VariableBinding()
-    }
-
-    override fun serialize(encoder: Encoder, value: VariableBinding) {
-        val output = encoder as? JsonOutput
-                ?: throw SerializationException("This class can be saved only by Json")
-        val vb = JsonObject(mapOf("oid" to JsonLiteral(value.oid.toString()),
-                "stx" to JsonLiteral(value.syntax),
-                "v" to JsonLiteral(value.variable.toString()) //TODO 型チェック
-        ))
-        output.encodeJson(vb)
-    }
-}
