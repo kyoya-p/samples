@@ -3,53 +3,57 @@ package  mibtool
 import org.snmp4j.*
 import org.snmp4j.mp.SnmpConstants
 import org.snmp4j.smi.*
+import org.snmp4j.transport.DefaultUdpTransportMapping
+import java.io.File
 import java.util.*
+import java.util.concurrent.Semaphore
 
+typealias MibMap = TreeMap<OID, VariableBinding>
 
-// TODO
-// TODO
-// TODO
-// TODO
-// TODO
+fun MibMap.getNext(oid: OID) = higherEntry(oid)?.value
 
-
-fun Scanner.nextMIBSet(): TreeMap<OID, VariableBinding> {
-    fun Scanner.nextVariable(): Variable {
-        fun Scanner.nextOctetString(): ByteArray {
-            next("\"(.*)\"")
-            return Scanner(match().group(1)).run {
-                generateSequence { true }.takeWhile { hasNext() }.map {
-                    val b: Byte = findInLine(".").toCharArray()[0].toByte()
-                    if (b == ':'.toByte()) findInLine("..").toInt(16).toByte() else b
-
-                }.toList().toByteArray()
-            }
-        }
-
-        return when (val valueType = nextInt()) {
-            2 -> Integer32(nextInt())
-            4 -> OctetString(nextOctetString())
-            5 -> Null()
-            6 -> OID(next())
-            64 -> IpAddress(nextOctetString())
-            65 -> Counter32(nextLong())
-            66 -> Gauge32(nextLong())
-            67 -> TimeTicks(nextLong())
-            68 -> Opaque(nextOctetString())
-            70 -> Counter64(nextLong())
-            128 -> Null(128)
-            129 -> Null(129)
-            130 -> Null(130)
-            else -> throw IllegalArgumentException("Unsupported variable syntax: ${valueType}")
-        }
+fun main(args: Array<String>) {
+    val mibMap = File(args[0]).run {
+        val lines = readLines()
+        val nMib = lines[0].toInt()
+        lines.drop(1).asSequence().take(nMib).map { it.toVariableBinding() }
+    }.run { MibMap().also { m -> forEach { m[it.oid!!] = it } } }
+    mibMap.map { (a, b) -> b }.forEachIndexed { i, v ->
+        println("$i $v")
     }
-
-    val size = nextInt()
-    val m = TreeMap<OID, VariableBinding>()
-    for (i in 0 until size) {
-        val oid = OID(next())
-        val variable = nextVariable()
-        m[oid] = VariableBinding(oid, variable)
+    val tm = DefaultUdpTransportMapping(UdpAddress("0.0.0.0".toInetAddr(), 161))
+    Snmp(tm).use { snmp ->
+        snmp.addCommandResponder(
+                object : CommandResponder {
+                    override fun <A : Address> processPdu(ev: CommandResponderEvent<A>) {
+                        val resVBL = ev.pdu.variableBindings.map { vb ->
+                            when (ev.pdu.type) {
+                                PDU.GETNEXT -> mibMap.getNext(vb.oid)
+                                else -> mibMap.get(vb.oid)
+                            } ?: VariableBinding(vb.oid, Null.endOfMibView)
+                        }
+                        val resPdu = PDU(ev.pdu).apply {
+                            type = PDU.RESPONSE
+                            variableBindings = resVBL
+                            errorStatus = if (resVBL.all { it.variable != Null.endOfMibView }) 0 else PDU.noSuchName
+                            errorIndex = if (errorStatus == 0) 0 else resVBL.map { it.variable }.indexOf(Null.endOfMibView)
+                        }
+                        val target = CommunityTarget<A>().apply {
+                            community = OctetString(ev.securityName)
+                            address = ev.peerAddress
+                            version = SnmpConstants.version1
+                            timeout = 0
+                            retries = 0
+                        }
+                        println(ev.pdu.toString() + " => " + resPdu)
+                        snmp.send(resPdu, target)
+                    }
+                }
+        )
+        snmp.listen()
+        println("started.")
+        Semaphore(0).acquire()
     }
-    return m
+    println("term.")
 }
+

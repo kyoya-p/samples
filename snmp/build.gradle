@@ -28,8 +28,9 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     //compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_version"
     compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-runtime', version: '0.20.0'
+    compile "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.5.0"
 
-    compile group: 'org.snmp4j', name: 'snmp4j', version: '3.4.0'
+    compile group: 'org.snmp4j', name: 'snmp4j', version: '3.4.2'
     implementation 'com.charleskorn.kaml:kaml:0.17.0'
 }
 
