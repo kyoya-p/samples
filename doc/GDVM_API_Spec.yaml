@@ -1,0 +1,298 @@
+openapi: 3.0.0
+info:
+  title: GDVM_API_Specification
+  version: '0.9'
+  description: ''
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /platform/group/CRUD_Funcs(TBD):
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-group-CRUD_Funcs(TBD)
+      responses:
+        '200':
+          description: OK
+  /platform/region/CRUD_Funcs(TBD):
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-region-CRUD_Funcs(TBD)
+      responses:
+        '200':
+          description: OK
+  /platform/agent/create:
+    post:
+      summary: ''
+      operationId: post-platform-agent-create
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Object'
+                  - type: object
+                    properties:
+                      agentConf:
+                        $ref: '#/components/schemas/AgentConfig'
+              examples:
+                example-1: {}
+  /platform/agent/delete:
+    post:
+      summary: ''
+      operationId: post-platform-agent-delete
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agentId:
+                  type: integer
+  /platform/agent/get(TBD):
+    post:
+      summary: ''
+      operationId: post-platform-agent-get
+      responses:
+        '200':
+          description: OK
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentList:
+                    type: object
+                    properties:
+                      agentId:
+                        type: integer
+                      agentConfig:
+                        type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query(TBD):
+                  type: string
+    parameters: []
+  /platform/agent/update:
+    post:
+      summary: ''
+      operationId: post-platform-agent-update
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agentId:
+                    type: integer
+                  agentConfig:
+                    $ref: '#/components/schemas/Agent'
+  /platform/user/CRUD_Funcs(TBD):
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-user-CRUD_Funcs(TBD)
+      responses:
+        '200':
+          description: OK
+  /platform/authority/CRUD_Funcs(Groupと同じ):
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-authority-CRUD_Funcs(Group-)
+      responses:
+        '200':
+          description: OK
+  /platform/group/contains:
+    post:
+      summary: ''
+      operationId: post-platform-group-contains
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isContain:
+                    type: boolean
+                  containerList:
+                    type: array
+                    minItems: 0
+                    items:
+                      type: integer
+                  containeeList:
+                    type: array
+                    minItems: 0
+                    items:
+                      type: integer
+                required:
+                  - isContain
+        '201':
+          description: Created
+      description: |
+        GlobalObjectがグループのメンバか判定する。
+        Group(id:groupId).memberIdList.contains(id:testId)をすべてのgroupId,testIdに対して実施しパラメータに応じた結果を返す。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                testIdList:
+                  type: array
+                  items:
+                    type: integer
+                groupIdList:
+                  type: array
+                  items:
+                    type: integer
+  /platform/group/add:
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-group-add
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idList:
+                  type: array
+                  items:
+                    type: integer
+  /platform/group/remove:
+    parameters: []
+    post:
+      summary: ''
+      operationId: post-platform-group-remove
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idList:
+                  type: array
+                  items:
+                    type: boolean
+components:
+  schemas:
+    Object:
+      title: Object
+      type: object
+      description: "ObjectはGDVM Platformで管理されるオブジェクトを示す。  \nUser, Device, Group(=Attribute), Region, Authority はObjectである。  \n\n#### GDvM Platform 初期状態で用意されるインスタンス:  \n- const AttributeGroup=Object(id:0)  // Objectがグループであることを示す属性。AttributeGroup.memberIdList={0,1,2,3,4,5,6,7}  \n- const AttributeEnabled=Objecet(id:0) // Objectが有効であることをしめす属性。不要になったidは削除されず、本属性が除去される。各APIは明示的に指示されない限り、本属性が付与されたGlobalObjectのみを操作する。  \n\n- const AttributeAuthority=Object(id:1) // Objectの権限を示す属性。AttributeAuthority.memberIdList={5}\n- const AttributeUser=Object(id:2)   // Objectがユーザであることを示す属性。 AttributeUser.memberIdList={8}\n- const AttributeDevice=Object(id:3) // Objectがデバイスであることを示す属性。 初期状態でDeviceは無い\n- const AttributeAgent=Object(id:4)  //  ObjectがAgentであることを示す属性。初期状態でAgentは無い\n\n- const AuthorityAdmin=Object(id:5) // ObjectがAdmin権限を持つことを示す属性。AuthorityAdmin.memberIdList={8}  \n  AuthorityAdminを持つオブジェクトに対する処理は、他のすべてのAuthorityチェックを行わず実行する。\n- const AttributeRegion=Object(id:6) // ObjectがRegionであることを示す属性   AttributeRegion.memberIdList={7}\n- const RegionWorld=Object(id:7)     // 最上位のRegion。すべてのRegionはこのObjectを上位に持つ。初期状態で子Regionは無い  \n- const UserAdmin=Object(id:8) // Adminアカウント。\n\n"
+      properties:
+        id:
+          type: integer
+          description: |-
+            0x0 ~ 0x0fff: システム領域。固定値が割り当てられる。
+            0x1000 ~ 0xffff: 予約
+            0x10000 ~ ユーザ領域。システムが生成する連番。
+      x-examples:
+        example-1:
+          id: 1
+    User:
+      allOf:
+        - $ref: '#/components/schemas/GlobalObject'
+        - type: object
+          properties:
+            idpId:
+              type: integer
+              description: 外部IdPおよび内部認証の識別情報
+            loginName:
+              type: string
+              description: 外部IdPの場合は使用しない。
+            password:
+              type: string
+              description: 外部IdPの場合は使用しない。
+            externalId:
+              type: string
+              description: 外部IdPを使用する場合の識別文字列
+      description: 本プラットフォームを利用する個人に対応GlobalObject。
+    Group:
+      title: Group
+      description: |-
+        GroupはGlobalObjectの集合を示す。
+        別名はAuthority, Attribute。
+
+        通常、Groupを直接生成削除することはなくGroupのサブクラスであるAuthorityやRegionを操作する。
+        Groupを直接操作するケースはPlatformとして新たにGlobalObjectの属性を作成する場合。例えば、冷水器デバイスをDeviceWarterCoolerとしてカテゴライズする場合等。
+      allOf:
+        - $ref: '#/components/schemas/GlobalObject'
+        - type: object
+          properties:
+            memberIdList:
+              type: array
+              items:
+                type: integer
+      x-examples:
+        example-1:
+          id: 1
+          memberIdList:
+            - 2
+            - 3
+            - 4
+    Authority:
+      oneOf:
+        - $ref: '#/components/schemas/Group'
+      description: |-
+        特定の権限を持つオブジェクトを列挙する。
+        Groupの別名。
+        例えば、AuthorityAdministrator.memberIdList={8}の場合、GlobalObject(id:8)はAdministrator 権限を持つ。
+    Attribute:
+      oneOf:
+        - $ref: '#/components/schemas/Group'
+      description: |-
+        特定の属性を持つオブジェクトを列挙する。
+        Groupの別名。
+        例えば、AttributeUser.memberIdList={8}の場合、GlobalObject(id:8)はUserである。
+    Device:
+      title: Device
+      allOf:
+        - $ref: '#/components/schemas/GlobalObject'
+      description: 機器、サービスなどの実体に対応するGlobalObject。
+    Agent:
+      title: Agent
+      allOf:
+        - $ref: '#/components/schemas/Device'
+        - type: object
+          properties:
+            agentConf:
+              $ref: '#/components/schemas/AgentConfig'
+      description: 個々のAgentに対応するDevice。
+    Region:
+      title: Region
+      allOf:
+        - $ref: '#/components/schemas/Group'
+      description: |
+        Broker経由でIoTメッセージが到達する範囲を示すGroup。
+        RegionWorld(@gdvm)を最上位とする階層構造。
+        AWS上でのインプリメントの場合、階層は(RegionWorldを除き)最大3階層(@gdvm/region1/region2/region3)。
+        Regionの移動は禁止。
+    AgentConfig:
+      title: AgentConfig
+      type: string
+      description: この文字列はset topicメッセージによってAgentに渡される。
