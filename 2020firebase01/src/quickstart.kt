@@ -27,6 +27,10 @@ import com.google.cloud.firestore.WriteResult
 import com.google.common.collect.ImmutableMap
 import java.util.*
 
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+
+
 /**
  * A simple Quick start application demonstrating how to connect to Firestore
  * and add and query documents.
