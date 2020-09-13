@@ -19,7 +19,7 @@ fun main() {
         }
     })
 
-    Thread.sleep(1000 * 30) //30秒間　更新を待つ
+    Thread.sleep(1000 * 30) //30秒間　更新を待つ その間にコンソールからデータを更新
 
     registration.remove()
     println("Complete.")

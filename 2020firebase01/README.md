@@ -2,6 +2,9 @@ https://qiita.com/drafts/5ea2b225a79d1eea46e6
 
 Note: testはそこそこな課金になるのでご注意
 
+実行時に環境変数指定:
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/road-to-iot-8efd3bfb2ccd.json
+
 ## test1.kt
 ```
 set() 直列 100[query]: 237.52 [ms]
