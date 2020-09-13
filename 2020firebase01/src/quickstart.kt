@@ -4,21 +4,17 @@ import com.google.cloud.firestore.*
 import com.google.common.collect.ImmutableMap
 import java.util.*
 
-fun main() {
-    val db: Firestore = FirestoreOptions.getDefaultInstance().getService()
 
-}
 
-class Quickstart {
+class Quickstart// [START fs_initialize]
+// [END fs_initialize]
+/**
+ * Initialize Firestore using default project ID.
+ */() {
     private var db: Firestore
 
-    /**
-     * Initialize Firestore using default project ID.
-     */
-    constructor() {
-        // [START fs_initialize]
+    init {
         val db: Firestore = FirestoreOptions.getDefaultInstance().getService()
-        // [END fs_initialize]
         this.db = db
     }
 
