@@ -29,9 +29,9 @@ fun main(args: Array<String>) {
         target.timeout = 5_000 //ms
 
         val initVbl = listOf(VariableBinding(OID(param.oid)))
-        snmp.walk(initVbl, target).map { it[0] }.map { VB(it.oid.toString(), it.variable) }.forEach {
-            //println(Yaml.default.stringify(VB.serializer(), it))
-            println(it.toString())
+        snmp.walk(initVbl, target).map { it[0] }.forEach {
+            val v = it.variable.toVariableString()
+            println("${it.oid} ${it.syntax} ${v}")
         }
     }
 }
