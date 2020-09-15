@@ -55,11 +55,11 @@ object VariableSerializer : KSerializer<Variable> {
     }
 }
 
-fun Variable.toString() = when (this) {
+fun Variable.toVariableString() = when (this) {
     is Integer32 -> value.toString() // 2: Integer32
     is OctetString -> value!!.caped() // 4: OctetString
     is Null -> ByteArray(0).caped() // 5: Null
-    is OID -> value.toOidString() // 6: OID
+    is OID -> toOidString() // 6: OID
     is IpAddress -> inetAddress.address!!.caped() // 64: IpAddress
     is Counter32 -> value.toString() // 65: Counter32
     is Gauge32 -> value.toString() // 66: Gauge32
@@ -72,9 +72,7 @@ fun Variable.toString() = when (this) {
     else -> throw IllegalArgumentException("Unsupported variable type: ${javaClass.name}")
 }
 
-fun OID.toString() = this.value.joinToString(".", ".")
-
-
+fun OID.toOidString() = value.joinToString(".")
 fun IntArray.toOidString() = joinToString(".", "\"", "\"")
 fun String.uncaped2() = ("  " + this).windowed(3).mapNotNull {
     when {

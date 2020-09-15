@@ -21,7 +21,7 @@ fun main(args: Array<String>) {
     mibMap.map { (a, b) -> b }.forEachIndexed { i, v ->
         println("$i $v")
     }
-    val tm = DefaultUdpTransportMapping(UdpAddress("0.0.0.0".toInetAddr(), 161))
+    val tm = DefaultUdpTransportMapping(UdpAddress("10.36.102.84".toInetAddr(), 161))
     Snmp(tm).use { snmp ->
         snmp.addCommandResponder(
                 object : CommandResponder {
@@ -45,7 +45,9 @@ fun main(args: Array<String>) {
                             timeout = 0
                             retries = 0
                         }
-                        println(ev.pdu.toString() + " => " + resPdu)
+                        println("Req:${ev.peerAddress} PDU:{ty:${PDU.getTypeString(ev.pdu.type)}, vb:${ev.pdu.variableBindings} "
+                                + "=> ResPDU:{ty:${PDU.getTypeString(resPdu.type)} er:${resPdu.errorStatus} ei:${resPdu.errorIndex} vb:${resPdu.variableBindings}"
+                        )
                         snmp.send(resPdu, target)
                     }
                 }

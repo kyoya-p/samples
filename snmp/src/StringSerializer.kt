@@ -9,6 +9,27 @@ fun VariableBinding.toString(): String {
     return "$o $s $r\n"
 }
 
+/*
+fun Variable.toString(): String {
+    return when (this) {
+        is Integer32 -> toString()
+        is OctetString -> this.value.caped()
+        is Null -> ""
+        is OID -> toString()
+        is IpAddress -> inetAddress.address.caped()
+        is Counter32 -> toString()
+        is Gauge32 -> toString()
+        is TimeTicks -> toString()
+        is Opaque -> value.caped()
+        is Counter64 -> toString()
+        //128 -> Null(128)
+        //129 -> Null(129)
+        //130 -> Null(130)
+        else -> throw IllegalArgumentException("Unsupported variable syntax: ${syntax}")
+    }
+}
+*/
+
 fun String.dropWS() = dropWhile { it.isWhitespace() }
 fun String.takeNotWS() = takeWhile { !it.isWhitespace() }
 fun String.dropNotWS() = dropWhile { !it.isWhitespace() }
