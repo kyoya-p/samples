@@ -9,6 +9,8 @@ RUN apt-get update \
     	unzip
 
 WORKDIR /opt
+
+ARG T1
 RUN git clone https://github.com/kyoya-p/samples
 WORKDIR samples/2020firebase01
 
@@ -21,3 +23,4 @@ RUN unzip -P $PASS road-to-iot-8efd3bfb2ccd.zip
 
 #FROM jre
 
+CMD java -jar build/libs/2020firebase.jar
