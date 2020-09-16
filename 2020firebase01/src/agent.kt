@@ -1,11 +1,12 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
-import kotlinx.coroutines.sync.Semaphore
 import java.util.*
 
 val db = FirestoreOptions.getDefaultInstance().getService()
 
-suspend fun main() {
+fun main() {
+    val semTerm = Semaphore(1).apply { acuire() }
+
     val docRef: DocumentReference = db.collection("devSettings").document("AG1") // 監視するドキュメント
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメント更新時ハンドラ
@@ -27,7 +28,7 @@ suspend fun main() {
 
                 res1.get() //書込み完了待ち
                 res2.get() //書込み完了待ち
-                println("CMPL[${Date().time % 100000/1000.0}]. ")
+                println("CMPL[${Date().time % 100000 / 1000.0}]. ")
             } else {
                 println("Current data: null")
             }
@@ -35,7 +36,7 @@ suspend fun main() {
     })
 
 //    Thread.sleep(1000 * 60 * 10) //しばし待つ その間にコンソールからデータを更新して通知
-    Semaphore(0).acquire() //ずっと待つ
+    semTerm.acquire() //終了指示(release)まで待つ
 
     registration.remove()
     println("Complete.")
