@@ -5,13 +5,13 @@
 FROM adoptopenjdk/openjdk11:aarch64-ubuntu-jdk-11.0.7_10-slim
 RUN apt-get update \
     && apt-get install -y \
-    git \
-    unzip
+        git \
+    	unzip
 
 WORKDIR /opt
 RUN git clone https://github.com/kyoya-p/samples
 WORKDIR samples/2020firebase01
 ARG PASS
 RUN unzip -P $PASS road-to-iot-8efd3bfb2ccd.zip
-
+RUN env GOOGLE_APPLICATION_CREDENTIALS=./road-to-iot-8efd3bfb2ccd.json bash -c ./gradlew run
 
