@@ -1,3 +1,3 @@
 FROM alpine
-ARG PASS
-RUN echo $PASS
+ARG _PASS
+RUN echo $_PASS
