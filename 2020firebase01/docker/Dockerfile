@@ -1,8 +1,9 @@
 #
-# Docker build --build-arg PASS={password}
+# docker build --build-arg PASS={password}
+# docker build --build-arg PASS={password} --build-arg T2="`date`"
 #
 
-FROM adoptopenjdk/openjdk11:aarch64-ubuntu-jdk-11.0.7_10-slim
+FROM adoptopenjdk/openjdk11:jdk-11.0.7_10-slim
 RUN apt-get update \
     && apt-get install -y \
         git \
