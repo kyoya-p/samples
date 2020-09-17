@@ -1,11 +1,12 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
+import kotlinx.coroutines.sync.Semaphore
 import java.util.*
 
 val db = FirestoreOptions.getDefaultInstance().getService()
 
-fun main() {
-    val semTerm = Semaphore(1).apply { acuire() }
+suspend fun main() {
+    val semTerm = Semaphore(1).apply { acquire() }
 
     val docRef: DocumentReference = db.collection("devSettings").document("AG1") // 監視するドキュメント
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
