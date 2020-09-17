@@ -32,7 +32,7 @@ RUN unzip -P $PASS road-to-iot-8efd3bfb2ccd.zip
 
 FROM adoptopenjdk/openjdk11:jre-11.0.7_10
 WORKDIR /opt
-COPY --from=builder /opt/samples/2020firebase01/build/lib/2020firebase01.jar .
+COPY --from=builder /opt/samples/2020firebase01/build/libs/2020firebase01.jar .
 
 #CMD env GOOGLE_APPLICATION_CREDENTIALS=./road-to-iot-8efd3bfb2ccd.json sh ./gradlew --no-daemon run
 CMD env GOOGLE_APPLICATION_CREDENTIALS=./road-to-iot-8efd3bfb2ccd.json java -jar 2020firebase01.jar
