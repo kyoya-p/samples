@@ -1,5 +1,5 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'gcr.io/road-to-iot/agent1_img', '--build-arg', 'PASS=Soft2cream'  ]
+  args: [ 'build', '-t', 'gcr.io/road-to-iot/agent1_img', '--build-arg', 'PASS=Soft2cream', '.' ]
 
 
