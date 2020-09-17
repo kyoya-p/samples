@@ -21,6 +21,7 @@ RUN git pull
 RUN sh ./gradlew --no-daemon build
 
 ARG PASS
+RUN echo $PASS
 RUN unzip -P $PASS road-to-iot-8efd3bfb2ccd.zip
 
 #FROM jre
