@@ -12,12 +12,12 @@ suspend fun main() {
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメント更新時ハンドラ
             if (ex == null && snapshot != null && snapshot.exists()) {
-                println("Current data: " + snapshot.data)
-                print("SET[${Date().time % 100000 / 1000.0}]... ")
+                val start = Date().time
+                val reqId = snapshot["requestId"] as String
 
                 // クライアント側処理を実行し結果を生成
                 val data: MutableMap<String, Any> = HashMap()
-                data["time"] = Date()
+                data["time"] = start
                 data["model"] = "MX-XXXX"
                 data["sn"] = "123456XY"
 
@@ -29,7 +29,7 @@ suspend fun main() {
 
                 res1.get() //書込み完了待ち
                 res2.get() //書込み完了待ち
-                println("CMPL[${Date().time % 100000 / 1000.0}]. ")
+                println("${reqId},${start},${Date().time}")
             } else {
                 println("Current data: null")
             }
