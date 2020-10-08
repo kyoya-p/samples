@@ -1,13 +1,13 @@
-package mibtool
+package mibtool.snmp4jWrapper
 
 import kotlinx.serialization.*
 
 @Serializable
 data class SnmpParams(
+        val req: String = "walk",
         val addr: String,
         val oid: String = ".1",
-        val oids: List<String> = listOf(),
-        val comm: String = "public",
-        val version: String = "2c"
+        //val comm: String = "public",
+        //val snmpVer: String = "1"
 )
 

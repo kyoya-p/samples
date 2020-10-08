@@ -36,6 +36,9 @@ dependencies {
 
     compile group: 'org.snmp4j', name: 'snmp4j', version: '3.4.2'
     implementation 'com.charleskorn.kaml:kaml:0.17.0'
+
+    // for Firebase
+    compile group: 'com.google.cloud', name: 'google-cloud-firestore', version: '2.0.0'
 }
 
 

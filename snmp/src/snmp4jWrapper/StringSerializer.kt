@@ -1,4 +1,4 @@
-package  mibtool
+package  mibtool.snmp4jWrapper
 
 import org.snmp4j.smi.*
 

@@ -1,8 +1,9 @@
-package  mibtool
+package  mibtool.snmp4jWrapper
 
 import org.snmp4j.*
 import org.snmp4j.mp.SnmpConstants
 import org.snmp4j.smi.*
+import org.snmp4j.PDU
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.io.File
 import java.util.*

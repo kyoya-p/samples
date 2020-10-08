@@ -1,6 +1,8 @@
-package mibtool
+package mibtool.snmp4jWrapper
 
 import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -15,27 +17,34 @@ fun main(args: Array<String>) {
         println("syntax: java -jar walk.jar params...")
         println("example: java -jar walk.jar addr: 192.168.1.2, oids: [1.3.6.1,1.3.6.2] ")
         println("params=")
-        println(Yaml.default.stringify(SnmpParams.serializer(), SnmpParams("<addr>")))
+        println(Yaml.default.stringify(SnmpParams.serializer(), SnmpParams(req = "<request>", addr = "<addr>")))
         System.exit(-1)
     }
     val param = Yaml.default.parse(SnmpParams.serializer(), "{" + args.joinToString(" ") + "}")
+    val vbl = walk(param).toList()
+    val format = Json { prettyPrint = true }
+    println(format.encodeToString(vbl))
+}
 
+
+fun walk(param: SnmpParams) = sequence {
     val transport = DefaultUdpTransportMapping()
     Snmp(transport).use { snmp ->
         transport.listen()
 
-        val target = CommunityTarget(UdpAddress(InetAddress.getByName(param.addr), 161), OctetString(param.comm))
+        val target = CommunityTarget(UdpAddress(InetAddress.getByName(param.addr), 161), OctetString("public"))
         target.version = SnmpConstants.version2c
         target.timeout = 5_000 //ms
 
         val initVbl = listOf(VariableBinding(OID(param.oid)))
-        snmp.walk(initVbl, target).map { it[0] }.forEach {
-            val v = it.variable.toVariableString()
-            println("${it.oid} ${it.syntax} ${v}")
-        }
+        snmp.walk(PDU(PDU.GETNEXT, initVbl), target).forEach { yield(it) }
     }
 }
 
 fun <A : Address> Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<A>) = generateSequence(initVbl) { vbl ->
     send(PDU(PDU.GETNEXT, vbl), target).response?.variableBindings
 }.drop(1).takeWhile { it.zip(initVbl).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
+
+fun <A : Address> Snmp.walk(initPDU: PDU, target: CommunityTarget<A>) = generateSequence(initPDU) { pdu ->
+    send(pdu.apply { type = PDU.GETNEXT; variableBindings = variableBindings.map { VariableBinding(it.oid) } }, target).response
+}.drop(1).takeWhile { it.variableBindings.zip(initPDU.variableBindings).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }

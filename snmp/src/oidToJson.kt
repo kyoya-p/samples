@@ -1,4 +1,4 @@
-package mibtool
+package mibtool.snmp4jWrapper
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json

@@ -1,4 +1,4 @@
-package mibtool
+package mibtool.snmp4jWrapper
 
 import java.math.BigInteger
 import java.net.InetAddress
