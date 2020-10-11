@@ -1,5 +1,7 @@
 package mibtool.snmp4jWrapper
 
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -41,35 +43,45 @@ fun VariableBinding.toVBString(): String {
 }
 
 
-fun main() {
-    broadcast("255.255.255.255")
+suspend fun main() {
+    broadcast("255.255.255.255").collect {
+        println(it)
+    }
 }
 
-fun broadcast(addr: String) = sequence {
+fun broadcast(addr: String) = callbackFlow<mibtool.Response> {
     val transport: TransportMapping<*> = DefaultUdpTransportMapping()
 
-    val sem = Semaphore(1).apply { acquire() }
+    val sem = Semaphore(1).apply(Semaphore::acquire)
     Snmp(transport).use { snmp ->
         transport.listen()
         val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
         val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>()
         target.setAddress(targetAddress)
         target.community = OctetString("public")
-        target.timeout = 5_000 //ms
+        target.timeout = 15_000 //ms
         target.version = SnmpConstants.version2c
 
-        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
+        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
         snmp.send(pdu, target, null, object : ResponseListener {
             override fun <A : Address> onResponse(event: ResponseEvent<A>) {
                 if (event.response == null) { //Tomeout
                     sem.release()
                 } else {
-                    println("${event.peerAddress}+${event.response[0].variable}")
+                    val PDU = event.response!!
+                    offer(mibtool.Response(
+                            addr = event.peerAddress.toString(),
+                            pdu = mibtool.PDU(
+                                    type = pdu.type,
+                                    errIdx = pdu.errorIndex,
+                                    errSt = pdu.errorStatus,
+                                    vbl = pdu.variableBindings.map(VariableBinding::toVB)
+                            ),
+                    ))
                 }
             }
         })
-
+        sem.acquire()
     }
-    sem.acquire()
 }
 

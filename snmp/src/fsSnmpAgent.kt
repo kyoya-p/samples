@@ -1,22 +1,41 @@
-package mibtool
+package fssnmpagent
 
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import mibtool.snmp4jWrapper.SnmpParams
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import mibtool.PDU
+import mibtool.Response
+import mibtool.SnmpConfig
+import mibtool.VB
 import mibtool.snmp4jWrapper.toPDU
-import mibtool.snmp4jWrapper.walk
 import java.util.*
 import java.util.concurrent.Semaphore
 
-// kotlin.serializationでは動的な型(Any等)はシリアライズできないようだ(静的型付け第一か)
-//@Serializable
-//data class tmp(val param: Map<String, Any /*!*/ >)
+@Serializable
+data class AgentRequest(
+        val addrRangeList: List<AddressRange> = listOf(AddressRange()),
+        val filter: List<String> = listOf(".1.3.6.1.2.1.1.1"),
+        val report: List<String> = listOf(".1"),
+        val snmpConfig: SnmpConfig,
+)
+
+@Serializable
+data class AddressRange(
+        val type: String = "broadcast",
+        val addr: String = "255.255.255.255",
+        val addrEnd: String = "",
+)
+
+val db = FirestoreOptions.getDefaultInstance().getService()
 
 fun main() {
-    val db = FirestoreOptions.getDefaultInstance().getService()
     val docRef: DocumentReference = db.collection("devSettings").document("snmp1") // 監視するドキュメント
 
     val semTerm = Semaphore(1).apply { acquire() }
@@ -24,25 +43,11 @@ fun main() {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメント更新時ハンドラ
             val start = Date().time
             if (ex == null && snapshot != null && snapshot.exists()) {
-                // Firestoreから返されたJsonをsnmpParamに変換
-                val request = snapshot.data!!.entries.map { (k, v) -> "\"$k\":\"$v\"" }.joinToString(",", "{", "}")
-                println(request)
-                val snmpParam = Json {}.decodeFromString<SnmpParams>(request)
-
-                val res = walk(snmpParam).map { it.toPDU() }.toList()
-
-                // 処理結果アップロード(Log)
-                val res1 = db.collection("devlogs_a").document().set(Json {}.encodeToString(res))
-
-                // 処理結果アップロード(固定のdocにアップロード)
-                //val res2 = db.collection("devLogs").document("model:sn").set(data)
-
-                res1.get() //書込み完了待ち
-                //res2.get() //書込み完了待ち
-                println("${start} ~ ${Date().time}")
+                agentAction(snapshot)
             } else {
                 println("Current data: null")
             }
+            println("${start} ~ ${Date().time}")
         }
     })
     println("Start listening to Firestore.")
@@ -50,5 +55,52 @@ fun main() {
     registration.remove()
 
     println("Terminated.")
+}
+
+fun agentAction(snapshot: DocumentSnapshot) = runBlocking {
+    // Firestoreから返されたJsonをsnmpParamに変換
+//                val request = snapshot.data!!.entries.map { (k, v) -> "\"$k\":\"$v\"" }.joinToString(",", "{", "}")
+    val m = snapshot.data!!.entries.mapNotNull { (k, v) -> if (k != null && v as JsonElement != null) k to v else null }.toMap()
+    val request1 = JsonObject(m)
+    val request= Json{}.decodeFromString<AgentRequest>(snapshot.data.toString())
+    println(request)
+//                val agentRequest = Json {}.decodeFromString<AgentRequest>(snapshot.data)
+//                val agentRequest = Json {}.encodeToString(JsonElement.serializer(), snapshot.data)
+    val agentRequest = snapshot.data!!.toString()
+    println(agentRequest.toString())
+//                agentAction(agentRequest)
+
+    // 処理結果アップロード(Log)
+    val res1 = db.collection("devlogs_a").document().set("res")
+    res1.get() //書込み完了待ち
+
+    channelFlow<Response> {
+        request.addrRangeList.asFlow().map { range ->
+            when (range.type) {
+                "broadcast" -> {
+                    val pdu = PDU(vbl = request.filter.map { VB(oid = it) })
+                    broadcast(request.snmpConfig, range.addr, pdu).collect { offer(it) }
+                }
+                else -> null
+            }
+        }
+    }.collect {
+        println(it)
+    }
+}
+
+fun filter(snmpConfig: SnmpConfig, rangeList: List<AddressRange>) = channelFlow<Response> {
+    rangeList.forEach { range ->
+        broadcast(snmpConfig, range.addr, PDU()).collect { offer(it) }
+    }
+}
+
+fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {
+    val res = mibtool.snmp4jWrapper.walk(snmpParam, pdu, addr).map { it.toPDU().vbl[0] }.toList()
+    return Json {}.encodeToString(mapOf("results" to res))
+}
+
+fun broadcast(snmpParam: SnmpConfig, addr: String, pdl: PDU) = callbackFlow<Response> {
+    mibtool.snmp4jWrapper.broadcast(addr)
 }
 

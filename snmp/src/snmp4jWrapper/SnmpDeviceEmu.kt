@@ -22,7 +22,7 @@ fun main(args: Array<String>) {
     mibMap.map { (a, b) -> b }.forEachIndexed { i, v ->
         println("$i $v")
     }
-    val tm = DefaultUdpTransportMapping(UdpAddress("10.36.102.84".toInetAddr(), 161))
+    val tm = DefaultUdpTransportMapping(UdpAddress("0.0.0.0".toInetAddr(), 161))
     Snmp(tm).use { snmp ->
         snmp.addCommandResponder(
                 object : CommandResponder {

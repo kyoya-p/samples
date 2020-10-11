@@ -1,53 +1,71 @@
-package mibtool.snmp4jWrapper
+package mibtool
 
 import kotlinx.serialization.*
-import org.snmp4j.smi.VariableBinding
-import org.snmp4j.PDU
 
-//import org.snmp4j.smi.*
+@Serializable
+data class SnmpConfig(
+        val req: String = "walk",
+        val comm: String = "public",
+        val ver: String = "2c"
+)
+
+@Serializable
+data class Request(
+        val addr: String,
+        val pdu: PDU,
+        val snmpConfig: SnmpConfig,
+)
+
+@Serializable
+data class Response(
+        val addr: String,
+        val pdu: PDU,
+)
 
 @Serializable
 data class PDU(
-        val id: Int,
-        val errorStatus: Int,
-        val errorIndex: Int,
-        val type: Int,
-        val vbl: List<VB>,
+        val errSt: Int = 0,
+        val errIdx: Int = 0,
+        val type: Int = GETNEXT,
+        val vbl: List<VB> = listOf<VB>(VB(".1")),
 )
+
+val PDU.Companion.GET: Int get() = -96
+val PDU.Companion.GETNEXT: Int get() = -95
+val PDU.Companion.RESPONSE: Int get() = -94
+val PDU.Companion.SET: Int get() = -93
 
 @Serializable
 data class VB(
         val oid: String,
-        val stx: Int?,
-        val value: String?,
+        val stx: Int = 0,
+        val value: String = "",
 )
 
-// from SNMP4J
-fun PDU.toPDU() = PDU(
-        id = requestID.value,
-        errorStatus = errorStatus,
-        errorIndex = errorIndex,
-        type = type,
-        vbl = variableBindings.map { it.toVB() }
-)
-
-fun VariableBinding.toVB() = VB(
-        oid = oid.toOidString(),
-        stx = syntax,
-        value = toValueString(),
-)
-
+val VB.Companion.ASN_UNIVERSAL get() = 0x00
+val VB.Companion.ASN_APPLICATION get() = 0x40
+val VB.Companion.OCTETSTRING get() = ASN_UNIVERSAL or 0x04
+val VB.Companion.IPADDRESS get() = ASN_APPLICATION or 0x00
 
 // from Simple OID File
 fun String.toVB(): VB {
-    val OCTETSTRING = 4
+
     fun String.dropWS() = dropWhile { it.isWhitespace() }
     fun String.takeNotWS() = takeWhile { !it.isWhitespace() }
     fun String.dropNotWS() = dropWhile { !it.isWhitespace() }
 
-    val oid = dropWS().takeNotWS()
-    val stx = dropWS().dropNotWS().dropWS().takeNotWS().toInt()
-    val value = dropWS().dropNotWS().dropWS().dropNotWS().dropWS().takeNotWS()
-    val decValue = if (stx == OCTETSTRING) value.drop(1).dropLast(1) else value
+    val s1 = dropWS()
+    val oid = s1.takeNotWS()
+
+    val s2 = s1.dropNotWS().dropWS()
+    val stx = s2.toInt()
+
+    val s3 = s2.dropNotWS().dropWS()
+    val value = s3.takeNotWS()
+
+    val decValue = when (stx) {
+        VB.OCTETSTRING, VB.IPADDRESS -> value.drop(1).dropLast(1)
+        else -> value
+    }
     return VB(oid, stx, decValue)
 }

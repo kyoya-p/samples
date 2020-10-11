@@ -2,6 +2,7 @@ package mibtool.snmp4jWrapper
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import mibtool.toVB
 import java.io.File
 
 fun main(args: Array<String>) {
