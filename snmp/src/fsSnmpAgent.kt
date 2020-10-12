@@ -14,6 +14,7 @@ import mibtool.PDU
 import mibtool.Response
 import mibtool.SnmpConfig
 import mibtool.VB
+import mibtool.snmp4jWrapper.broadcast
 import mibtool.snmp4jWrapper.toPDU
 import java.util.*
 import java.util.concurrent.Semaphore
@@ -62,45 +63,26 @@ fun agentAction(snapshot: DocumentSnapshot) = runBlocking {
 //                val request = snapshot.data!!.entries.map { (k, v) -> "\"$k\":\"$v\"" }.joinToString(",", "{", "}")
     val m = snapshot.data!!.entries.mapNotNull { (k, v) -> if (k != null && v as JsonElement != null) k to v else null }.toMap()
     val request1 = JsonObject(m)
-    val request= Json{}.decodeFromString<AgentRequest>(snapshot.data.toString())
-    println(request)
+//    val request= Json{}.decodeFromString<AgentRequest>(snapshot.data.toString())
+//    println(request)
 //                val agentRequest = Json {}.decodeFromString<AgentRequest>(snapshot.data)
 //                val agentRequest = Json {}.encodeToString(JsonElement.serializer(), snapshot.data)
     val agentRequest = snapshot.data!!.toString()
     println(agentRequest.toString())
 //                agentAction(agentRequest)
 
+    broadcast("255.255.255.255") {
+
+    }
+
     // 処理結果アップロード(Log)
     val res1 = db.collection("devlogs_a").document().set("res")
     res1.get() //書込み完了待ち
 
-    channelFlow<Response> {
-        request.addrRangeList.asFlow().map { range ->
-            when (range.type) {
-                "broadcast" -> {
-                    val pdu = PDU(vbl = request.filter.map { VB(oid = it) })
-                    broadcast(request.snmpConfig, range.addr, pdu).collect { offer(it) }
-                }
-                else -> null
-            }
-        }
-    }.collect {
-        println(it)
-    }
-}
-
-fun filter(snmpConfig: SnmpConfig, rangeList: List<AddressRange>) = channelFlow<Response> {
-    rangeList.forEach { range ->
-        broadcast(snmpConfig, range.addr, PDU()).collect { offer(it) }
-    }
 }
 
 fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {
     val res = mibtool.snmp4jWrapper.walk(snmpParam, pdu, addr).map { it.toPDU().vbl[0] }.toList()
     return Json {}.encodeToString(mapOf("results" to res))
-}
-
-fun broadcast(snmpParam: SnmpConfig, addr: String, pdl: PDU) = callbackFlow<Response> {
-    mibtool.snmp4jWrapper.broadcast(addr)
 }
 

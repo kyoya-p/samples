@@ -1,7 +1,9 @@
 package mibtool.snmp4jWrapper
 
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import mibtool.Response
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -43,16 +45,22 @@ fun VariableBinding.toVBString(): String {
 }
 
 
-suspend fun main() {
-    broadcast("255.255.255.255").collect {
-        println(it)
+fun main() {
+    runBlocking {
+        launch {
+            broadcast("255.255.255.255") {
+                if (it == null) {
+                    println(it)
+                }
+            }
+        }
     }
 }
 
-fun broadcast(addr: String) = callbackFlow<mibtool.Response> {
+fun broadcast(addr: String, op: (Response?) -> Unit) {
     val transport: TransportMapping<*> = DefaultUdpTransportMapping()
 
-    val sem = Semaphore(1).apply(Semaphore::acquire)
+    val sem = Semaphore(1).apply { acquire() }
     Snmp(transport).use { snmp ->
         transport.listen()
         val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
@@ -66,10 +74,11 @@ fun broadcast(addr: String) = callbackFlow<mibtool.Response> {
         snmp.send(pdu, target, null, object : ResponseListener {
             override fun <A : Address> onResponse(event: ResponseEvent<A>) {
                 if (event.response == null) { //Tomeout
+                    op(null)
                     sem.release()
                 } else {
-                    val PDU = event.response!!
-                    offer(mibtool.Response(
+                    val pdu = event.response!!
+                    op(mibtool.Response(
                             addr = event.peerAddress.toString(),
                             pdu = mibtool.PDU(
                                     type = pdu.type,

@@ -4,8 +4,6 @@ import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.parse
-import kotlinx.serialization.stringify
 import mibtool.SnmpConfig
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -36,7 +34,7 @@ fun main(args: Array<String>) {
     println(commStr)
     val commandOption = Yaml.default.decodeFromString(CommandOption.serializer(), commStr)
     val vbl = walk(commandOption.snmpConfig, commandOption.pdu, commandOption.addr).toList()
-    val format = Json {  }
+    val format = Json { prettyPrint = true }
     println(format.encodeToString(vbl))
 }
 
