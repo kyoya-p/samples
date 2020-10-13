@@ -16,7 +16,7 @@ apply plugin: 'application'
 apply plugin: 'kotlin'
 apply plugin: 'kotlinx-serialization'
 
-mainClassName = 'someClass'
+mainClassName = 'fssnmpagent.FsSnmpAgentKt'
 
 sourceSets.main.java.srcDirs = ['src']
 sourceSets.test.java.srcDirs = ['test']

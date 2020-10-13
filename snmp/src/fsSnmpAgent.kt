@@ -61,8 +61,8 @@ fun main() {
 fun agentAction(snapshot: DocumentSnapshot) = runBlocking {
     // Firestoreから返されたJsonをsnmpParamに変換
 //                val request = snapshot.data!!.entries.map { (k, v) -> "\"$k\":\"$v\"" }.joinToString(",", "{", "}")
-    val m = snapshot.data!!.entries.mapNotNull { (k, v) -> if (k != null && v as JsonElement != null) k to v else null }.toMap()
-    val request1 = JsonObject(m)
+    val m = snapshot.data!!.entries.mapNotNull { (k, v) -> if (k != null && v as JsonElement? != null) k to v else null }.toMap()
+//    val request1 = JsonObject(m)
 //    val request= Json{}.decodeFromString<AgentRequest>(snapshot.data.toString())
 //    println(request)
 //                val agentRequest = Json {}.decodeFromString<AgentRequest>(snapshot.data)
