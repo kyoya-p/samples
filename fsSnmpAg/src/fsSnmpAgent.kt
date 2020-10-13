@@ -2,6 +2,7 @@ package fssnmpagent
 
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
+import firesoreInterOp.from
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -42,13 +43,21 @@ fun main() {
     val semTerm = Semaphore(1).apply { acquire() }
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメント更新時ハンドラ
-            val start = Date().time
-            if (ex == null && snapshot != null && snapshot.exists()) {
-                agentAction(snapshot)
-            } else {
-                println("Current data: null")
+            try {
+                val start = Date().time
+
+                println(snapshot!!.data)
+                if (ex == null && snapshot != null && snapshot.exists()) {
+                    val agentRequest = AgentRequest.from(snapshot.data as Map<String, *>)
+                    agentAction(agentRequest)
+                } else {
+                    println("Current data: null")
+                }
+                println("${start} ~ ${Date().time}")
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            println("${start} ~ ${Date().time}")
         }
     })
     println("Start listening to Firestore.")
@@ -58,25 +67,14 @@ fun main() {
     println("Terminated.")
 }
 
-fun agentAction(snapshot: DocumentSnapshot) = runBlocking {
-    // Firestoreから返されたJsonをsnmpParamに変換
-//                val request = snapshot.data!!.entries.map { (k, v) -> "\"$k\":\"$v\"" }.joinToString(",", "{", "}")
-    val m = snapshot.data!!.entries.mapNotNull { (k, v) -> if (k != null && v as JsonElement? != null) k to v else null }.toMap()
-//    val request1 = JsonObject(m)
-//    val request= Json{}.decodeFromString<AgentRequest>(snapshot.data.toString())
-//    println(request)
-//                val agentRequest = Json {}.decodeFromString<AgentRequest>(snapshot.data)
-//                val agentRequest = Json {}.encodeToString(JsonElement.serializer(), snapshot.data)
-    val agentRequest = snapshot.data!!.toString()
+fun agentAction(agentRequest: AgentRequest) = runBlocking {
     println(agentRequest.toString())
-//                agentAction(agentRequest)
-
     broadcast("255.255.255.255") {
 
     }
 
     // 処理結果アップロード(Log)
-    val res1 = db.collection("devlogs_a").document().set("res")
+    val res1 = db.collection("devlogs_a").document().set(mapOf("res" to "res"))
     res1.get() //書込み完了待ち
 
 }
