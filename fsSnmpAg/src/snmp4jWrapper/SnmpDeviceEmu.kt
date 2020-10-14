@@ -96,14 +96,6 @@ fun ByteArray.caped() = toUByteArray().map { it.toInt() }.joinToString("", "\"",
     else it.toChar().toString()
 }
 
-fun String.uncaped() = generateSequence(0 to 0.toByte()) { (i, c) ->
-    when {
-        i >= length -> null
-        this[i] == ':' -> (i + 3) to substring(i + 1, i + 3).toInt(16).toByte()
-        else -> (i + 1) to this[i].toByte()
-    }
-}.drop(1).map { it.second }
-
 /*
 fun String.toVB(): VariableBinding {
     fun String.getToken(): Pair<String?, String> {

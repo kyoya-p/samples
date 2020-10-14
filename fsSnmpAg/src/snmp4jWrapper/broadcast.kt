@@ -16,35 +16,6 @@ import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 import java.util.concurrent.Semaphore
 
-
-fun VariableBinding.toVBString(): String {
-    fun ByteArray.toOctetString(): String {
-        val os = this.joinToString("") {
-            val b = it.toInt() and 0xff
-            if (b <= 0x20 || 0x7f <= b || b == '\"'.toInt() || b == ':'.toInt()) ":%02x".format(b)
-            else it.toChar().toString()
-        }
-        return "\"" + os + "\""
-    }
-
-    val v = variable
-    val vr = when (v) {
-        is Integer32 -> v.toString()
-        is OctetString -> v.value.toOctetString()
-        is Null -> "\"\""
-        is OID -> v.toString()
-        is IpAddress -> v.inetAddress.address.toOctetString()
-        is Counter32 -> v.value.toString()
-        is Gauge32 -> v.value.toString()
-        is TimeTicks -> v.value.toString()
-        is Opaque -> v.value.toString()
-        is Counter64 -> v.value.toString()
-        else -> throw IllegalArgumentException("Unsupported variable syntax: ${this.syntax}")
-    }
-    return "$oid $syntax $vr"
-}
-
-
 fun main() {
     runBlocking {
         launch {
@@ -64,20 +35,26 @@ fun broadcast(addr: String, op: (Response?) -> Unit) {
     Snmp(transport).use { snmp ->
         transport.listen()
         val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
-        val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>()
-        target.setAddress(targetAddress)
-        target.community = OctetString("public")
-        target.timeout = 15_000 //ms
-        target.version = SnmpConstants.version2c
+        val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>().apply {
+            setAddress(targetAddress)
+            community = OctetString("public")
+            timeout = 5_000 //ms
+            retries = 5
+            version = SnmpConstants.version2c
+        }
 
-        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+        val oid_sysName = ".1.3.6.1.2.1.1.1"
+        val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
+        val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber)
+        val pdu = PDU(PDU.GETNEXT, sampleOids.map { VariableBinding(OID(it)) })
+
         snmp.send(pdu, target, null, object : ResponseListener {
             override fun <A : Address> onResponse(event: ResponseEvent<A>) {
-                if (event.response == null) { //Tomeout
+                val pdu = event.response
+                if (pdu == null) { //Tomeout
                     op(null)
                     sem.release()
                 } else {
-                    val pdu = event.response!!
                     op(mibtool.Response(
                             addr = event.peerAddress.toString(),
                             pdu = mibtool.PDU(

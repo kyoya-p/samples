@@ -27,16 +27,15 @@ data class AddressRange(
         val addrEnd: String = "",
 )
 
-val db = FirestoreOptions.getDefaultInstance().getService()
-
 fun main() {
+    val db = FirestoreOptions.getDefaultInstance().getService()
     val docRef: DocumentReference = db.collection("devSettings").document("snmp1") // 監視するドキュメント
 
     val semTerm = Semaphore(1).apply { acquire() }
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
-        override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメント更新時ハンドラ
+        override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
             try {
-                val start = Date().time
+                val start = Date()
 
                 println(snapshot!!.data)
                 if (ex == null && snapshot != null && snapshot.exists()) {
@@ -45,7 +44,7 @@ fun main() {
                 } else {
                     println("Current data: null")
                 }
-                println("${start} ~ ${Date().time}")
+                println("${start} ~ ${Date()}")
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -60,15 +59,24 @@ fun main() {
 }
 
 fun agentAction(agentRequest: AgentRequest) = runBlocking {
+    val db = FirestoreOptions.getDefaultInstance().getService()
+
     println(agentRequest.toString())
-    broadcast("255.255.255.255") {
-
+    broadcast(agentRequest.addrRangeList[0].addr) {
+        if (it != null) {
+            // 処理結果アップロード
+            val res = mapOf(
+                    "time" to Date().time,
+                    "addr" to it.addr,
+                    "pdu" to it.pdu,
+            )
+            println(res)
+            val key = "model=${it.pdu.vbl[0].value}:sn=${it.pdu.vbl[1].value}"
+            val res1 = db.collection("device").document(key).set(res)
+            val res2 = db.collection("devLog").document().set(res)
+            res1.get() //書込み完了待ち
+        }
     }
-
-    // 処理結果アップロード(Log)
-    val res1 = db.collection("devlogs_a").document().set(mapOf("res" to "res"))
-    res1.get() //書込み完了待ち
-
 }
 
 fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {

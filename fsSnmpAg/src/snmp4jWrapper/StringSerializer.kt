@@ -40,6 +40,33 @@ fun String.toVariableBinding(): VariableBinding {
     return VariableBinding(OID(oid), v)
 }
 
+
+fun VariableBinding.toVBString(): String {
+    fun ByteArray.toOctetString(): String {
+        val os = this.joinToString("") {
+            val b = it.toInt() and 0xff
+            if (b <= 0x20 || 0x7f <= b || b == '\"'.toInt() || b == ':'.toInt()) ":%02x".format(b)
+            else it.toChar().toString()
+        }
+        return "\"" + os + "\""
+    }
+
+    val v = variable
+    val vr = when (v) {
+        is Integer32 -> v.toString()
+        is OctetString -> v.value.toOctetString()
+        is Null -> "\"\""
+        is OID -> v.toString()
+        is IpAddress -> v.inetAddress.address.toOctetString()
+        is Counter32 -> v.value.toString()
+        is Gauge32 -> v.value.toString()
+        is TimeTicks -> v.value.toString()
+        is Opaque -> v.value.toString()
+        is Counter64 -> v.value.toString()
+        else -> throw IllegalArgumentException("Unsupported variable syntax: ${this.syntax}")
+    }
+    return "$oid $syntax $vr"
+}
 fun String.toVariable(): Variable {
     val stx = dropWS().takeNotWS().toInt()
     val v = dropWS().dropNotWS().dropWS().run {
@@ -51,7 +78,7 @@ fun String.toVariable(): Variable {
     //println("$stx $v [${v.uncaped().map{it.toUByte().toString(16)}.joinToString()}]")
     return when (stx) {
         2 -> Integer32(v.toInt())
-        4 -> OctetString(v)
+        4 -> OctetString(v.uncaped().toList().toByteArray())
         5 -> Null()
         6 -> OID(v)
         64 -> IpAddress(v.uncaped().toList().toByteArray())
@@ -66,3 +93,12 @@ fun String.toVariable(): Variable {
         else -> throw IllegalArgumentException("Unsupported variable syntax: ${stx}")
     }
 }
+
+
+fun String.uncaped() = generateSequence(0 to 0.toByte()) { (i, c) ->
+    when {
+        i >= length -> null
+        this[i] == ':' -> (i + 3) to substring(i + 1, i + 3).toInt(16).toByte()
+        else -> (i + 1) to this[i].toByte()
+    }
+}.drop(1).map { it.second }
