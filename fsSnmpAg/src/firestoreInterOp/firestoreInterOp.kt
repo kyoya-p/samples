@@ -1,7 +1,7 @@
-package firesoreInterOp
+package firestoreInterOp
 
-import fssnmpagent.AddressRange
-import fssnmpagent.AgentRequest
+import AddressRange
+import AgentRequest
 import mibtool.SnmpConfig
 
 fun AgentRequest.Companion.from(obj: Map<String, *>) = AgentRequest(
