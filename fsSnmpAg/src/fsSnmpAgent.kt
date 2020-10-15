@@ -27,22 +27,25 @@ data class AddressRange(
         val addrEnd: String = "",
 )
 
-fun main() {
+
+fun main(args: Array<String>) {
+    val agentId by lazy { if (args.size == 0) "snmp1" else args[0] }
     val db = FirestoreOptions.getDefaultInstance().getService()
-    val docRef: DocumentReference = db.collection("devSettings").document("snmp1") // 監視するドキュメント
+    val docRef: DocumentReference = db.collection("devSettings").document(agentId) // 監視するドキュメント
 
     val semTerm = Semaphore(1).apply { acquire() }
     val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
             try {
                 val start = Date()
-
-                println(snapshot!!.data)
-                if (ex == null && snapshot != null && snapshot.exists()) {
-                    val agentRequest = AgentRequest.from(snapshot.data as Map<String, *>)
-                    agentAction(agentRequest)
+                if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
+                    println(snapshot.data)
+                    val agentRequest = AgentRequest.from(snapshot.data!!)
+                    val agent=Agent(agentId)
+                    agent.action(agentRequest)
                 } else {
                     println("Current data: null")
+                    println("Exception: $ex")
                 }
                 println("${start} ~ ${Date()}")
 
@@ -58,29 +61,48 @@ fun main() {
     println("Terminated.")
 }
 
-fun agentAction(agentRequest: AgentRequest) = runBlocking {
-    val db = FirestoreOptions.getDefaultInstance().getService()
+class Agent(val agentId:String) {
+    fun action(agentRequest: AgentRequest) = runBlocking {
+        val startTime = Date().time
+        val setDetected = mutableSetOf<String>()
+        val db = FirestoreOptions.getDefaultInstance().getService()
 
-    println(agentRequest.toString())
-    broadcast(agentRequest.addrRangeList[0].addr) {
-        if (it != null) {
-            // 処理結果アップロード
-            val res = mapOf(
-                    "time" to Date().time,
-                    "addr" to it.addr,
-                    "pdu" to it.pdu,
-            )
-            println(res)
-            val key = "model=${it.pdu.vbl[0].value}:sn=${it.pdu.vbl[1].value}"
-            val res1 = db.collection("device").document(key).set(res)
-            val res2 = db.collection("devLog").document().set(res)
-            res1.get() //書込み完了待ち
+        println(agentRequest.toString())
+        broadcast(agentRequest.addrRangeList[0].addr) { response ->
+            if (response != null) {
+                // 処理結果アップロード
+                val key = "model=${response.pdu.vbl[0].value}:sn=${response.pdu.vbl[1].value}"
+                setDetected.add(key)
+                val deviceStatus = mapOf(
+                        "time" to startTime,
+                        "id" to key,
+                        "addr" to response.addr,
+                        "pdu" to response.pdu,
+                )
+
+                println(key)
+                val res1 = db.collection("device").document(key).set(deviceStatus)
+                val res2 = db.collection("devLog").document().set(deviceStatus)
+                //res1.get() //書込み完了待ち
+                //res2.get() //書込み完了待ち
+            } else {
+                //Timeout
+                val agentLog = mapOf(
+                        "time" to startTime,
+                        "id" to agentId,
+                        "result" to mapOf("detected" to setDetected.toList())
+                )
+                println(agentLog)
+
+                val res3 = db.collection("devLog").document().set(agentLog)
+                //res3.get() //
+            }
         }
     }
-}
 
-fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {
-    val res = mibtool.snmp4jWrapper.walk(snmpParam, pdu, addr).map { it.toPDU().vbl[0] }.toList()
-    return Json {}.encodeToString(mapOf("results" to res))
+    fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {
+        val res = mibtool.snmp4jWrapper.walk(snmpParam, pdu, addr).map { it.toPDU().vbl[0] }.toList()
+        return Json {}.encodeToString(mapOf("results" to res))
+    }
 }
 
