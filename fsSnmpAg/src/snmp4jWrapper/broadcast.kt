@@ -38,8 +38,8 @@ fun broadcast(addr: String, op: (Response?) -> Unit) {
         val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>().apply {
             setAddress(targetAddress)
             community = OctetString("public")
-            timeout = 5_000 //ms
-            retries = 5
+            timeout = 2_000 //ms
+            retries = 2
             version = SnmpConstants.version2c
         }
 

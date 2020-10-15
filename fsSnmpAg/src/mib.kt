@@ -23,6 +23,22 @@ data class Response(
 )
 
 @Serializable
+data class Target(
+        val addr: String,
+        val port: Int = 161,
+        val credential: Credential = Credential(),
+        val retries: Int = 5,
+        val interval: Long = 5000,
+)
+
+@Serializable
+data class Credential(
+        val type: String = "2c",
+        val v1commStr: String = "public",
+        // v3...
+)
+
+@Serializable
 data class PDU(
         val errSt: Int = 0,
         val errIdx: Int = 0,

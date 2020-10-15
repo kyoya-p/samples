@@ -5,8 +5,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import mibtool.Credential
 import mibtool.PDU
 import mibtool.SnmpConfig
+import mibtool.Target
 import mibtool.snmp4jWrapper.broadcast
 import mibtool.snmp4jWrapper.toPDU
 import java.util.*
@@ -14,90 +16,141 @@ import java.util.concurrent.Semaphore
 
 @Serializable
 data class AgentRequest(
-        val addrRangeList: List<AddressRange> = listOf(AddressRange()),
-        val filter: List<String> = listOf(".1.3.6.1.2.1.1.1"),
-        val report: List<String> = listOf(".1"),
-        val snmpConfig: SnmpConfig,
+        val addrSpec: AddressSpec,
+        //val filter: List<String>,
+        //val report: List<String>,
 )
 
 @Serializable
-data class AddressRange(
-        val type: String = "broadcast",
-        val addr: String = "255.255.255.255",
-        val addrEnd: String = "",
+data class AddressSpec(
+        val broadcastAddr: List<String>,
+        val unicastAddr: List<String>,
+        val unicastAddrUntil: List<String>,
+        val credential: Credential,
+        val interval: Long,
+        val retries: Int,
 )
 
+@Serializable
+data class Filter(
+        val pdu: PDU,
+        val keyNames: List<String>,
+        val keyOids: List<String>,
+)
 
 fun main(args: Array<String>) {
     val agentId by lazy { if (args.size == 0) "snmp1" else args[0] }
-    val db = FirestoreOptions.getDefaultInstance().getService()
-    val docRef: DocumentReference = db.collection("devSettings").document(agentId) // 監視するドキュメント
-
-    val semTerm = Semaphore(1).apply { acquire() }
-    val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
-        override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
-            try {
-                val start = Date()
-                if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
-                    println(snapshot.data)
-                    val agentRequest = AgentRequest.from(snapshot.data!!)
-                    val agent=Agent(agentId)
-                    agent.action(agentRequest)
-                } else {
-                    println("Current data: null")
-                    println("Exception: $ex")
-                }
-                println("${start} ~ ${Date()}")
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    })
-    println("Start listening to Firestore.")
-    semTerm.acquire() //終了指示(release)まで待つ
-    registration.remove()
-
+    val agent = Agent(agentId)
+    agent.run()
     println("Terminated.")
 }
 
-class Agent(val agentId:String) {
-    fun action(agentRequest: AgentRequest) = runBlocking {
+class Agent(val deviceId: String) {
+    val semTerm = Semaphore(1).apply { acquire() }
+    val deviceIdMap = mutableMapOf<String, ProxyDevice>()
+
+    fun run() {
+        val db = FirestoreOptions.getDefaultInstance().getService()
+        val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視するドキュメント
+
+        val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
+            override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
+                try {
+                    if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
+                        println(snapshot.data)
+                        action(AgentRequest.from(snapshot.data!!))
+                    } else {
+                        println("Current data: null")
+                        println("Exception: $ex")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        })
+        println("Start listening to Firestore.")
+        semTerm.acquire() //終了指示(release)まで待つ
+        registration.remove()
+    }
+
+    fun action(agentRequest: AgentRequest) {
         val startTime = Date().time
-        val setDetected = mutableSetOf<String>()
+        val detectedDeviceMap = mutableMapOf<String, ProxyDevice>()
         val db = FirestoreOptions.getDefaultInstance().getService()
 
         println(agentRequest.toString())
-        broadcast(agentRequest.addrRangeList[0].addr) { response ->
+        broadcast(agentRequest.addrSpec.broadcastAddr[0]) { response ->
             if (response != null) {
                 // 処理結果アップロード
                 val key = "model=${response.pdu.vbl[0].value}:sn=${response.pdu.vbl[1].value}"
-                setDetected.add(key)
                 val deviceStatus = mapOf(
                         "time" to startTime,
                         "id" to key,
+                        "type" to "mfp",
                         "addr" to response.addr,
                         "pdu" to response.pdu,
                 )
 
+                val detected = deviceIdMap.remove(key)
+                        ?: ProxyDevice(deviceId = key, target = mibtool.Target(addr = response.addr))
+                detectedDeviceMap.put(key, detected)
                 println(key)
                 val res1 = db.collection("device").document(key).set(deviceStatus)
                 val res2 = db.collection("devLog").document().set(deviceStatus)
-                //res1.get() //書込み完了待ち
-                //res2.get() //書込み完了待ち
             } else {
                 //Timeout
                 val agentLog = mapOf(
                         "time" to startTime,
-                        "id" to agentId,
-                        "result" to mapOf("detected" to setDetected.toList())
+                        "id" to deviceId,
+                        "type" to "agent.mfp.mib",
+                        "result" to mapOf(
+                                "detected" to detectedDeviceMap.keys.toList(),
+                                "removed" to deviceIdMap.keys.toList()
+                        ),
                 )
-                println(agentLog)
+                deviceIdMap.values.forEach { it.terminate() } //検知できなかった既存デバイスは終了
+                deviceIdMap.clear()
+                deviceIdMap.putAll(detectedDeviceMap)
 
                 val res3 = db.collection("devLog").document().set(agentLog)
-                //res3.get() //
+                val res4 = db.collection("devLog").document(deviceId).set(agentLog)
             }
         }
+    }
+}
+
+class ProxyDevice(val deviceId: String, val target: Target) {
+    val semTerm = Semaphore(1).apply { acquire() }
+    fun run() {
+        val db = FirestoreOptions.getDefaultInstance().getService()
+        val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視ドキュメント
+
+        val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
+            override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
+                // 基本的に初期設定情報を取得する。変更あれば再初期化
+                try {
+                    if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
+                        println(snapshot.data)
+                        action(AgentRequest.from(snapshot.data!!))
+                    } else {
+                        println("Current data: null")
+                        println("Exception: $ex")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        })
+        println("Start listening to Firestore.")
+        semTerm.acquire()
+        registration.remove()
+    }
+
+    fun action(agentRequest: AgentRequest) = runBlocking {
+    }
+
+    fun terminate() {
+        semTerm.release()
     }
 
     fun walk(snmpParam: SnmpConfig, pdu: PDU, addr: String): String {

@@ -1,29 +1,30 @@
 package firestoreInterOp
 
-import AddressRange
+import AddressSpec
 import AgentRequest
-import mibtool.SnmpConfig
+import mibtool.Credential
+import mibtool.PDU
 
-fun AgentRequest.Companion.from(obj: Map<String, *>) = AgentRequest(
-        addrRangeList = (obj["addrRangeList"] as List<Map<String, *>>).map { AddressRange.from(it) },
-        filter = ((obj["filter"] as Map<String, *>)["oids"] as List<String>).map { it },
-        report = ((obj["report"] as Map<String, *>)["oids"] as List<String>).map { it },
-        snmpConfig = if (obj["snmpConfig"] == null) SnmpConfig() else SnmpConfig.from(obj["snmpConfig"] as Map<String, *>)
+fun AgentRequest.Companion.from(obj: Map<String?, *>) = AgentRequest(
+        addrSpec = AddressSpec.from(obj["addrSpec"] as Map<String?, *>),
+        //filter = ((obj["filter"] as Map<String, *>)?.let{},
+        //report = ((obj["report"] as Map<String, *>)["oids"] as List<String>).map { it },
+        //snmpConfig = if (obj["snmpConfig"] == null) SnmpConfig() else SnmpConfig.from(obj["snmpConfig"] as Map<String, *>)
 )
 
-fun SnmpConfig.Companion.from(obj: Map<String, *>) = SnmpConfig(
-        req = obj["req"] as String,
-        comm = obj["comm"] as String,
-        ver = obj["ver"] as String,
-)
-
-fun AddressRange.Companion.from(map: Map<String, *>) = AddressRange(
-        type = map["type"] as String,
-        addr = map["addr"] as String,
-        addrEnd = map["addrEnd"] as String,
+fun AddressSpec.Companion.from(obj: Map<String?, *>) = AddressSpec(
+        broadcastAddr = obj["broadcastAddr"]?.let { it as List<String> } ?: listOf(),
+        unicastAddr = obj["unicastAddr"]?.let { it as List<String> } ?: listOf(),
+        unicastAddrUntil = obj["unicastAddrUntil"]?.let { it as List<String> } ?: listOf(),
+        credential = obj["credential"]?.let { it as Map<String?, *>; Credential.from(it) } ?: Credential(),
+        interval = obj["interval"]?.let { it as Long } ?: 5000L,
+        retries = obj["retries"]?.let { it as Int } ?: 5,
 )
 
 
+fun Credential.Companion.from(obj: Map<String?, *>) = Credential(
+        //TODO
+)
 
 
 
