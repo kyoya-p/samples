@@ -82,11 +82,11 @@ class Agent(val deviceId: String) {
         broadcast(agentRequest.addrSpec.broadcastAddr[0]) { response ->
             if (response != null) {
                 // 処理結果アップロード
-                val key = "model=${response.pdu.vbl[0].value}:sn=${response.pdu.vbl[1].value}"
+                val key = "type=mfp.mib:model=${response.pdu.vbl[0].value}:sn=${response.pdu.vbl[1].value}"
                 val deviceStatus = mapOf(
                         "time" to startTime,
                         "id" to key,
-                        "type" to "mfp",
+                        "type" to "mfp.mib",
                         "addr" to response.addr,
                         "pdu" to response.pdu,
                 )
@@ -94,9 +94,11 @@ class Agent(val deviceId: String) {
                 val detected = deviceIdMap.remove(key)
                         ?: ProxyDevice(deviceId = key, target = mibtool.Target(addr = response.addr))
                 detectedDeviceMap.put(key, detected)
-                println(key)
+                println("${response.addr} $key")
                 val res1 = db.collection("device").document(key).set(deviceStatus)
                 val res2 = db.collection("devLog").document().set(deviceStatus)
+                //res1.get() // if wait complete db access
+                //res2.get() // if wait complete db access
             } else {
                 //Timeout
                 val agentLog = mapOf(
@@ -112,8 +114,10 @@ class Agent(val deviceId: String) {
                 deviceIdMap.clear()
                 deviceIdMap.putAll(detectedDeviceMap)
 
-                val res3 = db.collection("devLog").document().set(agentLog)
-                val res4 = db.collection("devLog").document(deviceId).set(agentLog)
+                val res1 = db.collection("device").document(deviceId).set(agentLog)
+                val res2 = db.collection("devLog").document().set(agentLog)
+                //res1.get() // if wait complete db access
+                //res2.get() // if wait complete db access
             }
         }
     }
