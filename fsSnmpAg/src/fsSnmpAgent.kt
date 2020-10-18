@@ -128,6 +128,7 @@ class Agent(val deviceId: String) {
 class ProxyDevice(val deviceId: String, val target: Target) {
     val semTerm = Semaphore(1).apply { acquire() }
     fun run() = runBlocking {
+        println("Start Proxy Device: $deviceId")
         //DB更新をチェック
         val db = FirestoreOptions.getDefaultInstance().getService()
         val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視ドキュメント
@@ -152,21 +153,37 @@ class ProxyDevice(val deviceId: String, val target: Target) {
         //定期的なポーリング起動
         // TODO: スケジュールはDBから取得した値をもとに
         launch {
+            var lastDeviceStatus = mutableMapOf<String, Any>()
             while (true) {
                 delay(1000)
 
                 // TODO: broadcastではなくUnicast
                 broadcast(target.addr) { response ->
                     if (response != null) {
-                        val deviceStatus = mapOf(
+                        val deviceStatus = mutableMapOf(
                                 "time" to Date().time,
                                 "id" to deviceId,
                                 "type" to "mfp.mib",
                                 "addr" to response.addr,
                                 "pdu" to response.pdu,
                         )
-                        val res1 = db.collection("device").document(deviceId).set(deviceStatus)
-                        val res2 = db.collection("devLog").document().set(deviceStatus)
+                        if (deviceStatus != lastDeviceStatus) {
+                            val res1 = db.collection("device").document(deviceId).set(deviceStatus)
+                            val res2 = db.collection("devLog").document().set(deviceStatus)
+                            lastDeviceStatus = deviceStatus
+                        }
+                    } else {
+                        val deviceStatus = mutableMapOf<String,Any>(
+                                "time" to Date().time,
+                                "id" to deviceId,
+                                "type" to "mfp.mib",
+                        )
+                        if (deviceStatus != lastDeviceStatus) {
+
+                            val res1 = db.collection("device").document(deviceId).set(deviceStatus)
+                            val res2 = db.collection("devLog").document().set(deviceStatus)
+                            lastDeviceStatus = mutableMapOf<String, Any>()
+                        }
                     }
                 }
             }
