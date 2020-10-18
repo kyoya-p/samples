@@ -1,6 +1,8 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import firestoreInterOp.from
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -125,7 +127,8 @@ class Agent(val deviceId: String) {
 
 class ProxyDevice(val deviceId: String, val target: Target) {
     val semTerm = Semaphore(1).apply { acquire() }
-    fun run() {
+    fun run() = runBlocking {
+        //DB更新をチェック
         val db = FirestoreOptions.getDefaultInstance().getService()
         val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視ドキュメント
 
@@ -145,11 +148,36 @@ class ProxyDevice(val deviceId: String, val target: Target) {
                 }
             }
         })
+
+        //定期的なポーリング起動
+        // TODO: スケジュールはDBから取得した値をもとに
+        launch {
+            while (true) {
+                delay(1000)
+
+                // TODO: broadcastではなくUnicast
+                broadcast(target.addr) { response ->
+                    if (response != null) {
+                        val deviceStatus = mapOf(
+                                "time" to Date().time,
+                                "id" to deviceId,
+                                "type" to "mfp.mib",
+                                "addr" to response.addr,
+                                "pdu" to response.pdu,
+                        )
+                        val res1 = db.collection("device").document(deviceId).set(deviceStatus)
+                        val res2 = db.collection("devLog").document().set(deviceStatus)
+                    }
+                }
+            }
+        }
+
         println("Start listening to Firestore.")
         semTerm.acquire()
         registration.remove()
     }
 
+    // TODO
     fun action(agentRequest: AgentRequest) = runBlocking {
     }
 
