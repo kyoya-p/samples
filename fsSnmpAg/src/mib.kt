@@ -3,7 +3,7 @@ package mibtool
 import kotlinx.serialization.*
 
 @Serializable
-data class SnmpConfig(
+data class SnmpConfigX(
         val req: String = "walk",
         val comm: String = "public",
         val ver: String = "2c"
@@ -13,19 +13,18 @@ data class SnmpConfig(
 data class Request(
         val addr: String,
         val pdu: PDU,
-        val snmpConfig: SnmpConfig,
+        //val snmpConfig: SnmpConfig,
 )
 
 @Serializable
 data class Response(
-        val addr: String,
+        val addr: String, // addr:port e.g. "192.168.1.1"
         val pdu: PDU,
 )
 
 @Serializable
 data class Target(
-        val addr: String,
-        val port: Int = 161,
+        val addr: String, // addr:port e.g. "192.168.1.1"
         val credential: Credential = Credential(),
         val retries: Int = 5,
         val interval: Long = 5000,

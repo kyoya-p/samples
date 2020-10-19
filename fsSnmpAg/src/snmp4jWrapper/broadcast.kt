@@ -1,6 +1,5 @@
 package mibtool.snmp4jWrapper
 
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mibtool.Response
@@ -31,7 +30,6 @@ fun main() {
 fun broadcast(addr: String, op: (Response?) -> Unit) {
     val transport: TransportMapping<*> = DefaultUdpTransportMapping()
 
-    val sem = Semaphore(1).apply { acquire() }
     Snmp(transport).use { snmp ->
         transport.listen()
         val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
@@ -39,7 +37,7 @@ fun broadcast(addr: String, op: (Response?) -> Unit) {
             setAddress(targetAddress)
             community = OctetString("public")
             timeout = 2_000 //ms
-            retries = 2
+            retries = 0
             version = SnmpConstants.version2c
         }
 
@@ -48,26 +46,34 @@ fun broadcast(addr: String, op: (Response?) -> Unit) {
         val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber)
         val pdu = PDU(PDU.GETNEXT, sampleOids.map { VariableBinding(OID(it)) })
 
-        snmp.send(pdu, target, null, object : ResponseListener {
-            override fun <A : Address> onResponse(event: ResponseEvent<A>) {
-                val pdu = event.response
-                if (pdu == null) { //Tomeout
-                    op(null)
-                    sem.release()
-                } else {
-                    op(mibtool.Response(
-                            addr = event.peerAddress.toString(),
-                            pdu = mibtool.PDU(
-                                    type = pdu.type,
-                                    errIdx = pdu.errorIndex,
-                                    errSt = pdu.errorStatus,
-                                    vbl = pdu.variableBindings.map(VariableBinding::toVB)
-                            ),
-                    ))
+        val detectedDevSet = mutableSetOf<String>()
+        val smh = Semaphore(1).apply { acquire() }
+        for (i in 0 until 2) {
+            snmp.send(pdu, target, null, object : ResponseListener {
+                override fun <A : Address> onResponse(event: ResponseEvent<A>) {
+                    val pdu = event.response
+                    if (pdu == null) { //Tomeout
+                        smh.release()
+                    } else {
+                        val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
+                        if (!detectedDevSet.contains(addr)) {
+                            op(mibtool.Response(
+                                    addr = addr,
+                                    pdu = mibtool.PDU(
+                                            type = pdu.type,
+                                            errIdx = pdu.errorIndex,
+                                            errSt = pdu.errorStatus,
+                                            vbl = pdu.variableBindings.map(VariableBinding::toVB)
+                                    ),
+                            ))
+                            detectedDevSet.add(addr)
+                        }
+                    }
                 }
-            }
-        })
-        sem.acquire()
+            })
+            smh.acquire()
+        }
+        op(null) //callback for timeout
     }
 }
 

@@ -4,7 +4,6 @@ import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import mibtool.SnmpConfig
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -18,7 +17,7 @@ import java.net.InetAddress
 data class CommandOption(
         val addr: String,
         val pdu: mibtool.PDU,
-        val snmpConfig: SnmpConfig = SnmpConfig(),
+        //val snmpConfig: SnmpConfig = SnmpConfig(),
 )
 
 
@@ -27,19 +26,19 @@ fun main(args: Array<String>) {
         println("syntax: java -jar walk.jar params...")
         println("example: java -jar walk.jar addr: 192.168.1.2, pdu: { vbl: [ { oid: 1.3.6.1 } ] } ")
         println("params=")
-        println(Yaml.default.encodeToString(SnmpConfig.serializer(), SnmpConfig()))
+        //println(Yaml.default.encodeToString(SnmpConfig.serializer(), SnmpConfig()))
         System.exit(-1)
     }
     val commStr = "{ " + args.joinToString(" ") + " }"
     println(commStr)
     val commandOption = Yaml.default.decodeFromString(CommandOption.serializer(), commStr)
-    val vbl = walk(commandOption.snmpConfig, commandOption.pdu, commandOption.addr).toList()
+    val vbl = walk(commandOption.pdu, commandOption.addr).toList()
     val format = Json { prettyPrint = true }
     println(format.encodeToString(vbl))
 }
 
 
-fun walk(snmpConfig: SnmpConfig, pdu: mibtool.PDU, addr: String) = sequence {
+fun walk(pdu: mibtool.PDU, addr: String) = sequence {
     val transport = DefaultUdpTransportMapping()
     Snmp(transport).use { snmp ->
         transport.listen()
