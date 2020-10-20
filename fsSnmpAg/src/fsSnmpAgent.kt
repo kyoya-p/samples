@@ -12,7 +12,11 @@ import mibtool.Target
 import mibtool.snmp4jWrapper.broadcastCB
 import mibtool.snmp4jWrapper.broadcastFlow
 import mibtool.snmp4jWrapper.scanIpRange
+import org.snmp4j.CommunityTarget
+import org.snmp4j.PDU
 import org.snmp4j.Snmp
+import snmp4jWrapper.broadcastFlow
+import snmp4jWrapper.snmpScopeDefault
 import java.net.InetAddress
 import java.util.*
 import java.util.concurrent.Semaphore
@@ -125,38 +129,38 @@ class Agent(val deviceId: String) {
         }
     }
 
-    /*
-    suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2) = callbackFlow<Response> {
-        val startTime = Date().time
-        val detectedDeviceMap = mutableMapOf<String, ProxyDevice>()
-        val db = FirestoreOptions.getDefaultInstance().getService()
 
-        agentRequest.addrSpecs.forEach { addrSpec ->
-            addrSpec.broadcastAddr?.let {
-                broadcastFlow(snmp, it).collect { offer(it) }
-            }
-            addrSpec.unicastAddr?.let { addr ->
-                val endAddr = addrSpec.unicastAddrUntil ?: addr
-                scanIpRange(addr, endAddr).forEach {
-                    snmp.send()
+    suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2) = callbackFlow<Response> {
+        snmpScopeDefault { snmp ->
+            val startTime = Date().time
+            val detectedDeviceMap = mutableMapOf<String, ProxyDevice>()
+            val db = FirestoreOptions.getDefaultInstance().getService()
+
+            agentRequest.addrSpecs.forEach { addrSpec ->
+                addrSpec.broadcastAddr?.let {
+                    //snmp.broadcastFlow(PDU(PDU.GETNEXT), CommunityTarget()).collect { offer() }
+                }
+                addrSpec.unicastAddr?.let { addr ->
+                    val endAddr = addrSpec.unicastAddrUntil ?: addr
+                    scanIpRange(addr, endAddr).forEach {
+                    }
                 }
             }
-        }
 
-        val agentLog = mapOf(
-                "time" to startTime,
-                "id" to deviceId,
-                "type" to "agent.mfp.mib",
-                "result" to mapOf(
-                        "detected" to detectedDeviceMap.keys.toList(),
-                        //"removed" to devMap.keys.toList()
-                ),
-        )
-        db.collection("device").document(deviceId).set(agentLog).get() // get() wait complete db access
-        db.collection("devLog").document().set(agentLog).get() // get() wait complete db access
+            val agentLog = mapOf(
+                    "time" to startTime,
+                    "id" to deviceId,
+                    "type" to "agent.mfp.mib",
+                    "result" to mapOf(
+                            "detected" to detectedDeviceMap.keys.toList(),
+                            //"removed" to devMap.keys.toList()
+                    ),
+            )
+            db.collection("device").document(deviceId).set(agentLog).get() // get() wait complete db access
+            db.collection("devLog").document().set(agentLog).get() // get() wait complete db access
+        }
     }
-}
-}*/
+
 }
 
 class ProxyDevice(val deviceId: String, val target: Target) {
