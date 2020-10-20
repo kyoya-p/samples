@@ -1,5 +1,9 @@
 package mibtool.snmp4jWrapper
 
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mibtool.Response
@@ -15,10 +19,20 @@ import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 import java.util.concurrent.Semaphore
 
-fun main() {
+suspend fun main() {
+    val transport: TransportMapping<*> = DefaultUdpTransportMapping()
+    Snmp(transport).use { snmp ->
+        transport.listen()
+        broadcastFlow(snmp, "255.255.255.255").collect {
+            println(it)
+        }
+    }
+}
+
+fun main2() {
     runBlocking {
         launch {
-            broadcast("255.255.255.255") {
+            broadcastCB("255.255.255.255") {
                 if (it == null) {
                     println(it)
                 }
@@ -27,14 +41,14 @@ fun main() {
     }
 }
 
-fun broadcast(addr: String, op: (Response?) -> Unit) {
+fun broadcastCB(addr: String, op: (Response?) -> Any?) {
     val transport: TransportMapping<*> = DefaultUdpTransportMapping()
 
     Snmp(transport).use { snmp ->
         transport.listen()
         val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
         val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>().apply {
-            setAddress(targetAddress)
+            address = targetAddress
             community = OctetString("public")
             timeout = 2_000 //ms
             retries = 0
@@ -76,4 +90,59 @@ fun broadcast(addr: String, op: (Response?) -> Unit) {
         op(null) //callback for timeout
     }
 }
+
+fun broadcastFlow2(addr: String) = callbackFlow<Response> {
+    broadcastCB(addr) { res: Response? ->
+        if (res == null) channel.close()
+        else offer(res)
+    }
+    awaitClose()
+}
+
+fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<Response> {
+    val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
+    val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>().apply {
+        address = targetAddress
+        community = OctetString("public")
+        timeout = 2_000 //ms
+        retries = 0
+        version = SnmpConstants.version2c
+    }
+
+    val oid_sysName = ".1.3.6.1.2.1.1.1"
+    val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
+    val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber)
+    val pdu = PDU(PDU.GETNEXT, sampleOids.map { VariableBinding(OID(it)) })
+
+    val detectedDevSet = mutableSetOf<String>()
+
+    for (i in 0 until 5) {
+        snmp.send(pdu, target, null, object : ResponseListener {
+            override fun <A : Address> onResponse(event: ResponseEvent<A>) {
+                val pdu = event.response
+                if (pdu == null) { //Timeout
+                    //smh.release()
+                } else {
+                    val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
+                    if (!detectedDevSet.contains(addr)) {
+                        offer(mibtool.Response(
+                                addr = addr,
+                                pdu = mibtool.PDU(
+                                        type = pdu.type,
+                                        errIdx = pdu.errorIndex,
+                                        errSt = pdu.errorStatus,
+                                        vbl = pdu.variableBindings.map(VariableBinding::toVB)
+                                ),
+                        ))
+                        detectedDevSet.add(addr)
+                    }
+                }
+            }
+        })
+        delay(2000)
+    }
+    channel.close()
+    awaitClose()
+}
+
 

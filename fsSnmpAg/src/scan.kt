@@ -15,9 +15,9 @@ fun main() {
 fun String.toInetAddr() = InetAddress.getByName(this)!!
 fun InetAddress.toBigInt() = BigInteger(address)
 fun BigInteger.toInetAddr() = (ByteArray(16) + toByteArray()).takeLast(if (toByteArray().size <= 4) 4 else 16).toByteArray().let {
-    println(it.joinToString ("."))
+    println(it.joinToString("."))
     InetAddress.getByAddress(it)!!
 }
 
-fun scanIpRange(from: InetAddress, to: InetAddress) = generateSequence(from.toBigInt()) { it + BigInteger.ONE }.takeWhile { it <= to.toBigInt() }.map { it.toInetAddr() }
-
+fun scanIpRange(start: InetAddress, end: InetAddress) = generateSequence(start.toBigInt()) { it + BigInteger.ONE }.takeWhile { it <= end.toBigInt() }.map { it.toInetAddr() }
+fun scanIpRange(start: String, end: String) = scanIpRange(java.net.InetAddress.getByName(start), InetAddress.getByName(end))
