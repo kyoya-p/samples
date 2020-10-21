@@ -5,13 +5,14 @@ import kotlinx.serialization.*
 @Serializable
 data class Request(
         val addr: String,
+//        val target: SnmpTarget,
+
         val pdu: PDU,
-        //val snmpConfig: SnmpConfig,
 )
 
 @Serializable
 data class ResponseEvent(
-        val addr: String, // addr:port e.g. "192.168.1.1"
+        val targetAddr: String, // addr:port e.g. "192.168.1.1"
         val pdu: PDU,
         val requestTarget: SnmpTarget?
 )
@@ -47,12 +48,13 @@ val PDU.Companion.SET: Int get() = -93
 @Serializable
 data class VB(
         val oid: String,
-        val stx: Int = 0,
+        val stx: Int = VB.NULL,
         val value: String = "",
 )
 
 val VB.Companion.ASN_UNIVERSAL get() = 0x00
 val VB.Companion.ASN_APPLICATION get() = 0x40
+val VB.Companion.NULL get() = ASN_UNIVERSAL or 0x05
 val VB.Companion.OCTETSTRING get() = ASN_UNIVERSAL or 0x04
 val VB.Companion.IPADDRESS get() = ASN_APPLICATION or 0x00
 

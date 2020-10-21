@@ -2,6 +2,7 @@ import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import firestoreInterOp.from
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
 import mibtool.Credential
@@ -18,9 +19,8 @@ import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
-import snmp4jWrapper.broadcastFlow
-import snmp4jWrapper.sendFlow
-import snmp4jWrapper.snmpScopeDefault
+import mibtool.snmp4jWrapper.broadcastFlow
+import mibtool.snmp4jWrapper.snmpScopeDefault
 import java.net.InetAddress
 import java.util.*
 import java.util.concurrent.Semaphore
@@ -90,13 +90,15 @@ class MfpMibAgent(val deviceId: String) {
                 })
                 awaitClose { listener.remove() }
             }.collect {
+                // 条件に従い検索
                 println(it.data)
                 val req = AgentRequest2.from(it.data!!)
                 devMap.forEach { s, proxyMfp -> proxyMfp.terminate() }
                 devMap.clear()
                 deviceDetection2(snmp, req).collect { res ->
+                    // 検索結果からProxyデバイスを生成
                     val deviceId = "type=mfp.mib:model=${res.pdu.vbl[0].value}:sn=${res.pdu.vbl[1].value}"
-                    println("${res.addr} $deviceId")
+                    println("${res.targetAddr} $deviceId")
                     val mfp = ProxyMfp(deviceId, res.requestTarget!!)
                     mfp.run()
                     devMap[deviceId] = mfp
@@ -108,7 +110,7 @@ class MfpMibAgent(val deviceId: String) {
 
     suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2) = callbackFlow<ResponseEvent> {
         val startTime = Date().time
-        val detectedDeviceMap = mutableMapOf<String, ProxyMfp>()
+        val detectedDeviceSet = mutableSetOf<String>()
         val db = FirestoreOptions.getDefaultInstance().getService()
 
         agentRequest.addrSpecs.forEach { addrSpec ->
@@ -123,10 +125,11 @@ class MfpMibAgent(val deviceId: String) {
                 )
                 snmp.broadcastFlow(pdu, target, target).collect { ev ->
                     offer(ResponseEvent(
-                            addr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
+                            targetAddr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
                             pdu = ev.response.toPDU(),
                             requestTarget = (ev.userObject as CommunityTarget<UdpAddress>?)?.toSnmpTarget()
                     ))
+                    //detectedDeviceSet.add()
                 }
             }
             addrSpec.unicastAddr?.let { startAddr ->
@@ -146,7 +149,7 @@ class MfpMibAgent(val deviceId: String) {
                 "id" to deviceId,
                 "type" to "agent.mfp.mib",
                 "result" to mapOf(
-                        "detected" to detectedDeviceMap.keys.toList(),
+                        "detected" to detectedDeviceSet.toList(),
                         //"removed" to devMap.keys.toList()
                 ),
         )
@@ -154,65 +157,5 @@ class MfpMibAgent(val deviceId: String) {
         db.collection("devLog").document().set(agentLog).get() // get() wait complete db access
         close()
         awaitClose()
-    }
-}
-
-
-class ProxyDeviceOld(val deviceId: String, val target: SnmpTarget) {
-    val db = FirestoreOptions.getDefaultInstance().getService()
-    var running = Semaphore(1)
-
-    //val smhTerm = Semaphore(1).apply { acquire() }
-    fun run() {
-        running.acquire()
-        //設定を常にチェック
-        val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視ドキュメント
-        val registration = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
-            override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
-                // 基本的に初期設定情報を取得する。変更あれば再初期化
-                if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
-                    println(snapshot.data)
-                    // TODO: ここで設定読み込み処理
-                }
-            }
-        })
-
-        println("Start Proxy Device: $deviceId")
-        while (running.availablePermits() == 0 && polling(target)) {
-            Thread.sleep(5 * 60_000)
-        }
-        println("Terminated Proxy Device: $deviceId")
-
-        registration.remove()
-    }
-
-    fun terminate() {
-        running.release()
-    }
-
-    fun polling(target: SnmpTarget): Boolean {
-        var lastDeviceStatus = mutableMapOf<String, Any>()
-        var alive = false
-        // TODO: Unicastに変更
-        broadcastCB(target.addr) { response ->
-            if (response != null) {
-                alive = true
-                val res = response.pdu.vbl.map { it.value }.joinToString(",")
-                try {
-                    val snmpDeviceLog = mapOf(
-                            "time" to Date().time,
-                            "id" to deviceId,
-                            "type" to "mfp.mib",
-                            "pdu" to response.pdu,
-                    )
-                    println("ProxyDev[$deviceId]: Report: ${target.addr}")
-                    db.collection("device").document(deviceId).set(snmpDeviceLog).get()
-                    db.collection("devLog").document().set(snmpDeviceLog).get()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-        return alive
     }
 }

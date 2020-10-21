@@ -3,11 +3,17 @@ import com.google.cloud.firestore.EventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.serialization.Serializable
+import mibtool.GETNEXT
+import mibtool.PDU
 import mibtool.SnmpTarget
-import mibtool.snmp4jWrapper.broadcastCB
-import snmp4jWrapper.sendFlow
-import snmp4jWrapper.snmpScopeDefault
+import mibtool.VB
+import mibtool.snmp4jWrapper.toSnmp4j
+import mibtool.snmp4jWrapper.sendFlow
+import mibtool.snmp4jWrapper.snmpScopeDefault
+import mibtool.snmp4jWrapper.toPDU
 import java.util.*
 import java.util.concurrent.Semaphore
 
@@ -17,6 +23,21 @@ import java.util.concurrent.Semaphore
  スケジュールに従って情報をアップロード
 */
 class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
+    @Serializable
+    data class Config(
+            val time: Long,
+            val interval: Long,
+    ) //TODO
+
+    @Serializable
+    data class Report(
+            val time: Long,
+            val model: String,
+            val sn: String,
+            val pdu: PDU,
+    ) //TODO
+
+
     val db = FirestoreOptions.getDefaultInstance().getService()
     var running = Semaphore(1)
 
@@ -26,6 +47,7 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
                 if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
                     offer(snapshot)
                 } else {
+                    //offer(null)
                     close()
                 }
             }
@@ -33,48 +55,42 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
         awaitClose { registration.remove() }
     }
 
-    suspend fun run() {
+    suspend fun run() = snmpScopeDefault { snmp ->
         println("Start Proxy Device: $deviceId")
 
-        snmpScopeDefault { snmp ->
+        channelFlow {
             db.collection("devSettings").document(deviceId).toEventFlow().collect {
-                println(it.data)
+                // DBにスケジュール等が登録されていればそれを、なければ interval:60_000 を流す
+                offer(it.data)
             }
+            val defaultSched = mapOf("interval" to 60_000)
+            offer(defaultSched)
+            awaitClose()
+        }.collect {
+            val interval = it?.get("interval") as Int? ?: 60_000
             while (true) {
-                val pdu=PDU()
-                snmp.sendFlow(pdu,target.toSnmp4j())
-                delay(10_000)
+                val pdu = mibtool.PDU(
+                        type = mibtool.PDU.GETNEXT,
+                        vbl = listOf(VB(".1.3"))
+                ).toSnmp4j()
+                snmp.sendFlow(pdu, target.toSnmp4j()).collect { res ->
+
+                    val pdu = res.response.toPDU()
+                    val report = Report(
+                            time = Date().time,
+                            model = pdu.vbl[0].value,
+                            sn = pdu.vbl[0].value,
+                            pdu = pdu,
+                    )
+                    db.collection("device").document(deviceId).set(report)
+                    db.collection("devLog").document().set(report)
+                    println("Sent: $report")
+                }
+                delay(interval.toLong())
             }
         }
         println("Terminated Proxy Device: $deviceId")
     }
 
     fun terminate() = running.release()
-
-
-    fun polling(target: SnmpTarget): Boolean {
-        var lastDeviceStatus = mutableMapOf<String, Any>()
-        var alive = false
-        // TODO: Unicastに変更
-        broadcastCB(target.addr) { response ->
-            if (response != null) {
-                alive = true
-                val res = response.pdu.vbl.map { it.value }.joinToString(",")
-                try {
-                    val snmpDeviceLog = mapOf(
-                            "time" to Date().time,
-                            "id" to deviceId,
-                            "type" to "mfp.mib",
-                            "pdu" to response.pdu,
-                    )
-                    println("ProxyDev[$deviceId]: Report: ${target.addr}")
-                    db.collection("device").document(deviceId).set(snmpDeviceLog).get()
-                    db.collection("devLog").document().set(snmpDeviceLog).get()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-        return alive
-    }
 }

@@ -1,4 +1,4 @@
-package snmp4jWrapper
+package mibtool.snmp4jWrapper
 
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -15,7 +15,7 @@ import kotlin.random.Random
 
 
 suspend fun main() {
-     snmpScopeDefault { snmp ->
+    snmpScopeDefault { snmp ->
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1.3"))))
         val targets = listOf("127.0.0.1", "255.255.255.255").map {
             CommunityTarget<UdpAddress>(
