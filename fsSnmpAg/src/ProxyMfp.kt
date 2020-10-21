@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collect
 import mibtool.SnmpTarget
 import mibtool.snmp4jWrapper.broadcastCB
+import org.snmp4j.PDU
 import snmp4jWrapper.sendFlow
 import snmp4jWrapper.snmpScopeDefault
 import java.util.*
@@ -26,6 +27,7 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
                 if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
                     offer(snapshot)
                 } else {
+                    //offer(null)
                     close()
                 }
             }
@@ -41,7 +43,7 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
                 println(it.data)
             }
             while (true) {
-                val pdu=PDU()
+                val pdu= PDU()
                 snmp.sendFlow(pdu,target.toSnmp4j())
                 delay(10_000)
             }
