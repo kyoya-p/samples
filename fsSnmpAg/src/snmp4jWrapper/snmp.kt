@@ -62,12 +62,12 @@ suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Obje
     awaitClose()
 }
 
-suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Object? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
+suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
     val retries = target.retries
     target.retries = 0
     val detected = mutableSetOf<UdpAddress>()
     for (i in 0..retries) {
-        sendFlow(pdu, target, userHandle).collect {
+        sendFlow(pdu, target, userHandle as Object?).collect {
             if (!detected.contains(it.peerAddress)) {
                 detected.add(it.peerAddress)
                 offer(it)

@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import mibtool.Response
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -41,7 +40,7 @@ fun main2() {
     }
 }
 
-fun broadcastCB(addr: String, op: (Response?) -> Any?) {
+fun broadcastCB(addr: String, op: (mibtool.ResponseEvent?) -> Any?) {
     val transport: TransportMapping<*> = DefaultUdpTransportMapping()
 
     Snmp(transport).use { snmp ->
@@ -71,7 +70,7 @@ fun broadcastCB(addr: String, op: (Response?) -> Any?) {
                     } else {
                         val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
                         if (!detectedDevSet.contains(addr)) {
-                            op(mibtool.Response(
+                            op(mibtool.ResponseEvent(
                                     addr = addr,
                                     pdu = mibtool.PDU(
                                             type = pdu.type,
@@ -79,6 +78,7 @@ fun broadcastCB(addr: String, op: (Response?) -> Any?) {
                                             errSt = pdu.errorStatus,
                                             vbl = pdu.variableBindings.map(VariableBinding::toVB)
                                     ),
+                                    requestTarget = null
                             ))
                             detectedDevSet.add(addr)
                         }
@@ -91,15 +91,15 @@ fun broadcastCB(addr: String, op: (Response?) -> Any?) {
     }
 }
 
-fun broadcastFlow2(addr: String) = callbackFlow<Response> {
-    broadcastCB(addr) { res: Response? ->
+fun broadcastFlow2(addr: String) = callbackFlow<mibtool.ResponseEvent> {
+    broadcastCB(addr) { res: mibtool.ResponseEvent? ->
         if (res == null) channel.close()
         else offer(res)
     }
     awaitClose()
 }
 
-fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<Response> {
+fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<mibtool.ResponseEvent> {
     val targetAddress: UdpAddress = UdpAddress(InetAddress.getByName(addr), 161)
     val target: CommunityTarget<UdpAddress> = CommunityTarget<UdpAddress>().apply {
         address = targetAddress
@@ -125,7 +125,7 @@ fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<Response> {
                 } else {
                     val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
                     if (!detectedDevSet.contains(addr)) {
-                        offer(mibtool.Response(
+                        offer(mibtool.ResponseEvent(
                                 addr = addr,
                                 pdu = mibtool.PDU(
                                         type = pdu.type,
@@ -133,6 +133,7 @@ fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<Response> {
                                         errSt = pdu.errorStatus,
                                         vbl = pdu.variableBindings.map(VariableBinding::toVB)
                                 ),
+                                requestTarget = null,
                         ))
                         detectedDevSet.add(addr)
                     }

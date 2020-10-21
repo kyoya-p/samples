@@ -94,7 +94,6 @@ fun String.toVariable(): Variable {
     }
 }
 
-
 fun String.uncaped() = generateSequence(0 to 0.toByte()) { (i, c) ->
     when {
         i >= length -> null
