@@ -138,7 +138,7 @@ class MfpMibAgent(val deviceId: String) {
 
                 if (req.autoDetectedRegister) {
                     // TODO:Agentが属するClusterにデバイスを自動登録
-                    val s = db.collection("group").document().collection("devices").document(deviceId).get().get()
+                    val s = db.collection("group//devices").document(deviceId).get().get()
                     println("Snapshot ${s.data}")
                 }
             }

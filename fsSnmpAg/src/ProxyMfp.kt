@@ -82,7 +82,7 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
                     val interval = snapshot.data!!["interval"] as Int
                     offer(interval.toLong())
                 }
-                offer(60_000L) // 取得できなかった場合のスケジュール
+                offer(20*60_000L) // 取得できなかった場合のインターバル
             }.collect { interval ->
                 // 定期的にレポートをアップロード
                 while (isActive) {
