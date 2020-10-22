@@ -1,7 +1,7 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import kotlinx.coroutines.*
-import kotlinx.coroutines.NonCancellable.isActive
+
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow

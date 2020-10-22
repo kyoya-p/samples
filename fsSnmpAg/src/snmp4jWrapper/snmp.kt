@@ -39,13 +39,12 @@ suspend fun Snmp.getGlobalRequestID(): Int {
     return r
 }
 
-suspend fun <R> snmpScopeDefault(op: suspend (Snmp) -> R): R {
-    val transport: TransportMapping<*> = DefaultUdpTransportMapping()
-    return Snmp(transport).use {
-        transport.listen()
-        op(it)
-    }
-}
+suspend fun <R> snmpScopeDefault(transport: TransportMapping<*> = DefaultUdpTransportMapping(), op: suspend (Snmp) -> R): R =
+        Snmp(transport).use {
+            transport.listen()
+            op(it)
+        }
+
 
 suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Object? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
     pdu.requestID = Integer32(getGlobalRequestID())
@@ -53,7 +52,7 @@ suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Obje
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
             val pdu = event.response
             if (pdu == null) {
-                channel.close()
+                close()
             } else {
                 offer(event as ResponseEvent<UdpAddress>) // テンプレート型のコールバックはどうすればよいのでしょうね
             }
@@ -66,7 +65,7 @@ suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>, userHandle:
     val retries = target.retries
     target.retries = 0
     val detected = mutableSetOf<UdpAddress>()
-    for (i in 0..retries) {
+    repeat(retries) {
         sendFlow(pdu, target, userHandle as Object?).collect {
             if (!detected.contains(it.peerAddress)) {
                 detected.add(it.peerAddress)
