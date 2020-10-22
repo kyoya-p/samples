@@ -10,8 +10,9 @@ import java.net.InetAddress
 
 fun CommunityTarget<UdpAddress>.toSnmpTarget() = mibtool.SnmpTarget(
         addr = this.address.inetAddress.hostAddress,
+        port = this.address.port,
         credential = mibtool.Credential(
-                type = when (this.version) {
+                ver = when (this.version) {
                     version1 -> "1"
                     version2c -> "2c"
                     version3 -> "3"
@@ -24,7 +25,7 @@ fun CommunityTarget<UdpAddress>.toSnmpTarget() = mibtool.SnmpTarget(
 )
 
 fun SnmpTarget.toSnmp4j() = CommunityTarget<UdpAddress>(
-        UdpAddress(InetAddress.getByName(this.addr),161),
+        UdpAddress(InetAddress.getByName(this.addr), 161),
         OctetString(this.credential.v1commStr),
 )
 

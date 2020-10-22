@@ -71,7 +71,7 @@ fun broadcastCB(addr: String, op: (mibtool.ResponseEvent?) -> Any?) {
                         val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
                         if (!detectedDevSet.contains(addr)) {
                             op(mibtool.ResponseEvent(
-                                    targetAddr = addr,
+                                    peerAddr = addr,
                                     pdu = mibtool.PDU(
                                             type = pdu.type,
                                             errIdx = pdu.errorIndex,
@@ -126,7 +126,7 @@ fun broadcastFlow(snmp: Snmp, addr: String) = callbackFlow<mibtool.ResponseEvent
                     val addr = (event.peerAddress as UdpAddress).inetAddress.hostAddress
                     if (!detectedDevSet.contains(addr)) {
                         offer(mibtool.ResponseEvent(
-                                targetAddr = addr,
+                                peerAddr = addr,
                                 pdu = mibtool.PDU(
                                         type = pdu.type,
                                         errIdx = pdu.errorIndex,

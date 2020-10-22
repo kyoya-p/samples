@@ -12,14 +12,15 @@ data class Request(
 
 @Serializable
 data class ResponseEvent(
-        val targetAddr: String, // addr:port e.g. "192.168.1.1"
+        val peerAddr: String,
         val pdu: PDU,
         val requestTarget: SnmpTarget?
 )
 
 @Serializable
 data class SnmpTarget(
-        val addr: String, // addr:port e.g. "192.168.1.1"
+        val addr: String,
+        val port: Int,
         val credential: Credential = Credential(),
         val retries: Int = 5,
         val interval: Long = 5000,
@@ -27,7 +28,7 @@ data class SnmpTarget(
 
 @Serializable
 data class Credential(
-        val type: String = "2c",
+        val ver: String = "2c",
         val v1commStr: String = "public",
         // v3...
 )
@@ -39,6 +40,9 @@ data class PDU(
         val type: Int = GETNEXT,
         val vbl: List<VB> = listOf<VB>(VB(".1")),
 )
+
+fun PDU.Companion.GET(vbl: List<VB>) = PDU(type = PDU.GET, vbl = vbl)
+fun PDU.Companion.GETNEXT(vbl: List<VB>) = PDU(type = PDU.GETNEXT, vbl = vbl)
 
 val PDU.Companion.GET: Int get() = -96
 val PDU.Companion.GETNEXT: Int get() = -95
@@ -57,26 +61,3 @@ val VB.Companion.ASN_APPLICATION get() = 0x40
 val VB.Companion.NULL get() = ASN_UNIVERSAL or 0x05
 val VB.Companion.OCTETSTRING get() = ASN_UNIVERSAL or 0x04
 val VB.Companion.IPADDRESS get() = ASN_APPLICATION or 0x00
-
-// from Simple OID File
-fun String.toVB(): VB {
-
-    fun String.dropWS() = dropWhile { it.isWhitespace() }
-    fun String.takeNotWS() = takeWhile { !it.isWhitespace() }
-    fun String.dropNotWS() = dropWhile { !it.isWhitespace() }
-
-    val s1 = dropWS()
-    val oid = s1.takeNotWS()
-
-    val s2 = s1.dropNotWS().dropWS()
-    val stx = s2.toInt()
-
-    val s3 = s2.dropNotWS().dropWS()
-    val value = s3.takeNotWS()
-
-    val decValue = when (stx) {
-        VB.OCTETSTRING, VB.IPADDRESS -> value.drop(1).dropLast(1)
-        else -> value
-    }
-    return VB(oid, stx, decValue)
-}

@@ -1,14 +1,15 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import firestoreInterOp.from
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import mibtool.Credential
 import mibtool.ResponseEvent
 import mibtool.SnmpTarget
-import mibtool.snmp4jWrapper.broadcastCB
 import mibtool.snmp4jWrapper.scanIpRange
 import mibtool.snmp4jWrapper.toPDU
 import mibtool.snmp4jWrapper.toSnmpTarget
@@ -23,7 +24,6 @@ import mibtool.snmp4jWrapper.broadcastFlow
 import mibtool.snmp4jWrapper.snmpScopeDefault
 import java.net.InetAddress
 import java.util.*
-import java.util.concurrent.Semaphore
 
 @Serializable
 data class AgentRequest(
@@ -65,9 +65,23 @@ suspend fun main(args: Array<String>) {
 }
 
 class MfpMibAgent(val deviceId: String) {
-    val devMap = mutableMapOf<String, ProxyMfp>()
 
-    suspend fun run() {
+    @Serializable
+    data class Report(
+            val time: Long,
+            val deviceId: String,
+            val deviceType: String = "agent.mfp.mib",
+            val result: Result = Result(),
+    )
+
+    @Serializable
+    data class Result(
+            val detected: List<String> = listOf()
+    )
+
+    val devMap = mutableMapOf<String, Job>()
+
+    suspend fun run() = runBlocking {
         snmpScopeDefault { snmp ->
             val db = FirestoreOptions.getDefaultInstance().getService() //DBインスタンス取得
             val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視するドキュメント
@@ -89,19 +103,43 @@ class MfpMibAgent(val deviceId: String) {
                     }
                 })
                 awaitClose { listener.remove() }
-            }.collect {
+            }.collect { doocSnap ->
                 // 条件に従い検索
-                println(it.data)
-                val req = AgentRequest2.from(it.data!!)
-                devMap.forEach { s, proxyMfp -> proxyMfp.terminate() }
+                println("Received Config: ${doocSnap.data}")
+                val req = AgentRequest2.from(doocSnap.data!!)
+                devMap.forEach { s, job -> job.cancel() }
                 devMap.clear()
                 deviceDetection2(snmp, req).collect { res ->
                     // 検索結果からProxyデバイスを生成
                     val deviceId = "type=mfp.mib:model=${res.pdu.vbl[0].value}:sn=${res.pdu.vbl[1].value}"
-                    println("${res.targetAddr} $deviceId")
-                    val mfp = ProxyMfp(deviceId, res.requestTarget!!)
-                    mfp.run()
-                    devMap[deviceId] = mfp
+                    println("Detected Device: ${res.peerAddr} $deviceId")
+                    val t = SnmpTarget(
+                            addr = res.peerAddr,
+                            port = res.requestTarget?.port ?: 0,
+                            credential = res.requestTarget?.credential ?: Credential(),
+                            retries = res.requestTarget?.retries ?: 0,
+                            interval = res.requestTarget?.interval ?: 0,
+                    )
+                    val mfp = ProxyMfp(deviceId, t)
+                    val job = launch { mfp.run() }
+                    devMap[deviceId] = job
+                }
+                // 検索後、検索結果リストをレポート
+                val agentLog = Report(
+                        time = Date().time,
+                        deviceId = deviceId,
+                        deviceType = "agent.mfp.mib",
+                        result = Result(
+                                detected = devMap.keys.toList()
+                        ),
+                )
+                db.collection("device").document(deviceId).set(agentLog)
+                db.collection("devLog").document().set(agentLog)
+
+                if (req.autoDetectedRegister) {
+                    // TODO:Agentが属するClusterにデバイスを自動登録
+                    val s = db.collection("group").document().collection("devices").document(deviceId).get().get()
+                    println("Snapshot ${s.data}")
                 }
             }
         }
@@ -125,7 +163,7 @@ class MfpMibAgent(val deviceId: String) {
                 )
                 snmp.broadcastFlow(pdu, target, target).collect { ev ->
                     offer(ResponseEvent(
-                            targetAddr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
+                            peerAddr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
                             pdu = ev.response.toPDU(),
                             requestTarget = (ev.userObject as CommunityTarget<UdpAddress>?)?.toSnmpTarget()
                     ))
@@ -144,17 +182,6 @@ class MfpMibAgent(val deviceId: String) {
             }
         }
 
-        val agentLog = mapOf(
-                "time" to startTime,
-                "id" to deviceId,
-                "type" to "agent.mfp.mib",
-                "result" to mapOf(
-                        "detected" to detectedDeviceSet.toList(),
-                        //"removed" to devMap.keys.toList()
-                ),
-        )
-        db.collection("device").document(deviceId).set(agentLog).get() // get() wait complete db access
-        db.collection("devLog").document().set(agentLog).get() // get() wait complete db access
         close()
         awaitClose()
     }
