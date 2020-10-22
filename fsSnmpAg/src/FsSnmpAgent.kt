@@ -1,6 +1,7 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import firestoreInterOp.from
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -10,9 +11,7 @@ import kotlinx.serialization.Serializable
 import mibtool.Credential
 import mibtool.ResponseEvent
 import mibtool.SnmpTarget
-import mibtool.snmp4jWrapper.scanIpRange
-import mibtool.snmp4jWrapper.toPDU
-import mibtool.snmp4jWrapper.toSnmpTarget
+import mibtool.snmp4jWrapper.*
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -20,51 +19,35 @@ import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
-import mibtool.snmp4jWrapper.broadcastFlow
-import mibtool.snmp4jWrapper.snmpScopeDefault
 import java.net.InetAddress
 import java.util.*
 
-@Serializable
-data class AgentRequest(
-        val addrSpec: AddressSpec,
-)
-
-@Serializable
-data class AgentRequest2(
-        val addrSpecs: List<AddressSpec2>,
-        val autoDetectedRegister: Boolean,
-)
-
-@Serializable
-data class AddressSpec(
-        val broadcastAddr: List<String>, // e.g. ["255.255.255.255"]
-        val unicastAddr: List<String>, // e.g. ["192.168.1.1","192.168.100.32"]
-        val unicastAddrUntil: List<String>, // e.g. ["192.168.1.255"] ... 192.168.1.1~192.168.1.254
-        val credential: Credential,
-        val interval: Long,
-        val retries: Int,
-)
-
-@Serializable
-data class AddressSpec2(
-        val broadcastAddr: String?, // e.g. ["255.255.255.255"]
-        val unicastAddr: String?, // e.g. ["192.168.1.1","192.168.100.32"]
-        val unicastAddrUntil: String?, // e.g. ["192.168.1.255"] ... 192.168.1.1~192.168.1.254
-        val port: Int = 161,
-        val credential: Credential,
-        val interval: Long = 5000,
-        val retries: Int = 5,
-)
 
 suspend fun main(args: Array<String>) {
-    val agentId = if (args.size == 0) "snmp1" else args[0]
+    val agentId = if (args.size == 0) "agent1" else args[0]
     val agent = MfpMibAgent(agentId)
     agent.run()
     println("Terminated.")
 }
 
 class MfpMibAgent(val deviceId: String) {
+
+    @Serializable
+    data class AgentRequest2(
+            val addrSpecs: List<AddressSpec2>,
+            val autoDetectedRegister: Boolean,
+    )
+
+    @Serializable
+    data class AddressSpec2(
+            val broadcastAddr: String?,
+            val addr: String?,
+            val addrUntil: String?,
+            val port: Int = 161,
+            val credential: Credential,
+            val interval: Long = 5000,
+            val retries: Int = 5,
+    )
 
     @Serializable
     data class Report(
@@ -79,13 +62,13 @@ class MfpMibAgent(val deviceId: String) {
             val detected: List<String> = listOf()
     )
 
-    val devMap = mutableMapOf<String, Job>()
 
     suspend fun run() = runBlocking {
+        val devMap = mutableMapOf<String, Job>()
         snmpScopeDefault { snmp ->
             val db = FirestoreOptions.getDefaultInstance().getService() //DBインスタンス取得
-            val docRef: DocumentReference = db.collection("devSettings").document(deviceId) // 監視するドキュメント
-            println("Start listening to Firestore.")
+            val docRef: DocumentReference = db.collection("devConfig").document(deviceId) // 監視するドキュメント
+            println("Start listening to Firestore: ${docRef.path}")
             callbackFlow<DocumentSnapshot> { // Firestoreからのイベントを受信しFlowに流す
                 val listener = docRef.addSnapshotListener(object : EventListener<DocumentSnapshot?> {
                     override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
@@ -146,11 +129,8 @@ class MfpMibAgent(val deviceId: String) {
         println("Terminated listening to Firestore.")
     }
 
-    suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2) = callbackFlow<ResponseEvent> {
-        val startTime = Date().time
-        val detectedDeviceSet = mutableSetOf<String>()
-        val db = FirestoreOptions.getDefaultInstance().getService()
-
+    // 検索結果をFlowで返す
+    suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2, detected: MutableSet<String> = mutableSetOf()) = callbackFlow {
         agentRequest.addrSpecs.forEach { addrSpec ->
             val oid_sysName = ".1.3.6.1.2.1.1.1"
             val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
@@ -161,28 +141,37 @@ class MfpMibAgent(val deviceId: String) {
                         UdpAddress(InetAddress.getByName(addr), 161),
                         OctetString("public"),
                 )
-                snmp.broadcastFlow(pdu, target, target).collect { ev ->
-                    offer(ResponseEvent(
-                            peerAddr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
-                            pdu = ev.response.toPDU(),
-                            requestTarget = (ev.userObject as CommunityTarget<UdpAddress>?)?.toSnmpTarget()
-                    ))
-                    //detectedDeviceSet.add()
-                }
+                snmp.broadcastFlow(pdu, target, target).collect { offer(it) }
             }
-            addrSpec.unicastAddr?.let { startAddr ->
-                val endAddr = addrSpec.unicastAddrUntil ?: startAddr
+            addrSpec.addr?.let { startAddr ->
+                val endAddr = addrSpec.addrUntil ?: startAddr
                 scanIpRange(startAddr, endAddr).forEach { addr ->
+                    println(addr)
                     val target = CommunityTarget(
-                            UdpAddress(InetAddress.getByName((addr as UdpAddress).inetAddress.hostAddress), 161),
+                            UdpAddress(InetAddress.getByName(addr.hostAddress), addrSpec.port),
                             OctetString("public"),
-                    )
-//                    snmp.sendFlow(pdu, target)
+                    ).apply{
+                        retries=2
+                        timeout=2000
+                    }
+                    snmp.sendFlow(pdu, target).collect {
+                        // TODO: Broadcastアドレスに対する応答を除去
+                        offer(it)
+                    }
                 }
             }
         }
-
         close()
         awaitClose()
+    }.filter { //重複アドレス除去
+        println(it.peerAddress)
+        val addr = it.peerAddress.toString()
+        (!detected.contains(addr)).also { detected.add(addr) }
+    }.map { ev ->
+        ResponseEvent(
+                peerAddr = (ev.peerAddress as UdpAddress).inetAddress.hostAddress,
+                pdu = ev.response.toPDU(),
+                requestTarget = (ev.userObject as CommunityTarget<UdpAddress>?)?.toSnmpTarget()
+        )
     }
 }

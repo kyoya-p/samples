@@ -1,11 +1,8 @@
 package firestoreInterOp
 
-import AddressSpec
-import AddressSpec2
-import AgentRequest
-import AgentRequest2
+import MfpMibAgent.AgentRequest2
+import MfpMibAgent.AddressSpec2
 import mibtool.Credential
-import mibtool.PDU
 
 fun AgentRequest2.Companion.from(obj: Map<String?, *>) = AgentRequest2(
         addrSpecs = (obj["addrSpecs"] as List<Map<String?, *>>).map { AddressSpec2.from(it) },
@@ -17,8 +14,8 @@ fun AgentRequest2.Companion.from(obj: Map<String?, *>) = AgentRequest2(
 
 fun AddressSpec2.Companion.from(obj: Map<String?, *>) = AddressSpec2(
         broadcastAddr = obj["broadcastAddr"] as String?,
-        unicastAddr = obj["unicastAddr"] as String?,
-        unicastAddrUntil = obj["unicastAddrUntil"] as String?,
+        addr = obj["addr"] as String?,
+        addrUntil = obj["addrUntil"] as String?,
         credential = obj["credential"]?.let { Credential.from(it as Map<String?, Any?>) } ?: Credential(),
         interval = obj["interval"]?.let { it as Long } ?: 5000L,
         retries = obj["retries"]?.let { it as Int } ?: 5,

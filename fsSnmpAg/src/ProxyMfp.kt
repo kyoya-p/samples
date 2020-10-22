@@ -78,7 +78,7 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
         println("Start Proxy Device: $deviceId")
         snmpScopeDefault { snmp ->
             channelFlow { // TODO: もう少しマシなスケジュール設定を流す (今はintervalのみ)
-                db.collection("devSettings").document(deviceId).toEventFlow().collect { snapshot ->
+                db.collection("devConfig").document(deviceId).toEventFlow().collect { snapshot ->
                     val interval = snapshot.data!!["interval"] as Int
                     offer(interval.toLong())
                 }
