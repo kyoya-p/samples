@@ -54,7 +54,7 @@ suspend fun <R> snmpScopeDefault(transport: TransportMapping<*> = DefaultUdpTran
 
 suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Object? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
     println("R= ${target.address}")
-    send(pdu, target, userHandle, object : ResponseListener {
+    if(false) /*TODO*/ send(pdu, target, userHandle, object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
             val pdu = event.response
             if (pdu == null) {
@@ -65,6 +65,7 @@ suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Obje
             }
         }
     })
+    close() /*TODO*/
     awaitClose()
 }
 
@@ -73,11 +74,10 @@ suspend fun Snmp.scanFlow(pdu: PDU, target: Target<UdpAddress>, endAddr: InetAdd
         launch {
             val t2 = target
             t2.address.inetAddress = addr
-            val p2=pdu
+            val p2 = pdu
             p2.requestID = getGlobalRequestID()
-            sendFlow(p2, t2, userHandle).collect {
-                offer(it)
-            }
+            println(t2)
+            sendFlow(p2, t2, userHandle).collect { offer(it) }
         }
     }.toList().forEach { it.join() }
     close()

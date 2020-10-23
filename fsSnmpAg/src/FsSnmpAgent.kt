@@ -1,7 +1,6 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
 import firestoreInterOp.from
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -92,7 +91,7 @@ class MfpMibAgent(val deviceId: String) {
                 val req = AgentRequest2.from(doocSnap.data!!)
                 devMap.forEach { s, job -> job.cancel() }
                 devMap.clear()
-                deviceDetection2(snmp, req).collect { res ->
+                deviceDetection(snmp, req).collect { res ->
                     // 検索結果からProxyデバイスを生成
                     val deviceId = "type=mfp.mib:model=${res.pdu.vbl[0].value}:sn=${res.pdu.vbl[1].value}"
                     println("Detected Device: ${res.peerAddr} $deviceId")
@@ -120,6 +119,7 @@ class MfpMibAgent(val deviceId: String) {
                 db.collection("devLog").document().set(agentLog)
 
                 if (false) /*TODO*/ if (req.autoDetectedRegister) {
+                    // Refer: https://cloud.google.com/firestore/docs/query-data/queries?hl=ja#collection-group-query
                     // TODO:Agentが属するClusterにデバイスを自動登録
                     val s = db.collection("group//devices").document(deviceId).get().get()
                     println("Snapshot ${s.data}")
@@ -130,7 +130,7 @@ class MfpMibAgent(val deviceId: String) {
     }
 
     // 検索結果をFlowで返す
-    suspend fun deviceDetection2(snmp: Snmp, agentRequest: AgentRequest2, detected: MutableSet<String> = mutableSetOf()) = callbackFlow {
+    suspend fun deviceDetection(snmp: Snmp, agentRequest: AgentRequest2, detected: MutableSet<String> = mutableSetOf()) = callbackFlow {
         agentRequest.addrSpecs.forEach { addrSpec ->
             val oid_sysName = ".1.3.6.1.2.1.1.1"
             val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
@@ -138,14 +138,21 @@ class MfpMibAgent(val deviceId: String) {
             val pdu = PDU(PDU.GETNEXT, sampleOids.map { VariableBinding(OID(it)) })
             addrSpec.broadcastAddr?.let { addr ->
                 val target = CommunityTarget(
-                        UdpAddress(InetAddress.getByName(addr), 161),
+                        UdpAddress(InetAddress.getByName(addr), addrSpec.port),
                         OctetString("public"),
                 )
                 snmp.broadcastFlow(pdu, target, target).collect { offer(it) }
             }
             addrSpec.addr?.let { startAddr ->
                 val endAddr = addrSpec.addrUntil ?: startAddr
-                scanIpRange(startAddr, endAddr).forEach { addr ->
+                val target = CommunityTarget(
+                        UdpAddress(InetAddress.getByName(startAddr), addrSpec.port),
+                        OctetString("public"),
+                )
+                snmp.scanFlow(pdu, target, InetAddress.getByName(endAddr)).collect {
+                    println(it.peerAddress)
+                }
+                if (false) /*TODO*/ scanIpRange(startAddr, endAddr).forEach { addr ->
                     println(addr)
                     val target = CommunityTarget(
                             UdpAddress(InetAddress.getByName(addr.hostAddress), addrSpec.port),
@@ -164,7 +171,7 @@ class MfpMibAgent(val deviceId: String) {
         close()
         awaitClose()
     }.filter { //重複アドレス除去
-        println(it.peerAddress)
+        //println(it.peerAddress)
         val addr = it.peerAddress.toString()
         (!detected.contains(addr)).also { detected.add(addr) }
     }.map { ev ->
