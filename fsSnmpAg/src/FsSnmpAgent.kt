@@ -107,22 +107,24 @@ class MfpMibAgent(val deviceId: String) {
                     val job = launch { mfp.run() }
                     devMap[deviceId] = job
                 }
-                // 検索後、検索結果リストをレポート
-                val agentLog = Report(
-                        time = Date().time,
-                        deviceId = deviceId,
-                        deviceType = "agent.mfp.mib",
-                        result = Result(
-                                detected = devMap.keys.toList()
-                        ),
-                )
-                db.collection("device").document(deviceId).set(agentLog)
-                db.collection("devLog").document().set(agentLog)
+                    // 検索後、検索結果リストをレポート
+                    val agentLog = Report(
+                            time = Date().time,
+                            deviceId = deviceId,
+                            deviceType = "agent.mfp.mib",
+                            result = Result(
+                                    detected = devMap.keys.toList()
+                            ),
+                    )
+                    db.collection("device").document(deviceId).set(agentLog)
+                    db.collection("devLog").document().set(agentLog)
 
-                if (req.autoDetectedRegister) {
-                    // TODO:Agentが属するClusterにデバイスを自動登録
-                    val s = db.collection("group//devices").document(deviceId).get().get()
-                    println("Snapshot ${s.data}")
+                if (false) {
+                    if (req.autoDetectedRegister) {
+                        // TODO:Agentが属するClusterにデバイスを自動登録
+                        val s = db.collection("group//devices").document(deviceId).get().get()
+                        println("Snapshot ${s.data}")
+                    }
                 }
             }
         }
@@ -150,9 +152,9 @@ class MfpMibAgent(val deviceId: String) {
                     val target = CommunityTarget(
                             UdpAddress(InetAddress.getByName(addr.hostAddress), addrSpec.port),
                             OctetString("public"),
-                    ).apply{
-                        retries=2
-                        timeout=2000
+                    ).apply {
+                        retries = 2
+                        timeout = 2000
                     }
                     snmp.sendFlow(pdu, target).collect {
                         // TODO: Broadcastアドレスに対する応答を除去
