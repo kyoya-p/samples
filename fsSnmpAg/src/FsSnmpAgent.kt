@@ -119,7 +119,7 @@ class MfpMibAgent(val deviceId: String) {
                 db.collection("device").document(deviceId).set(agentLog)
                 db.collection("devLog").document().set(agentLog)
 
-                if (req.autoDetectedRegister) {
+                if (false) /*TODO*/ if (req.autoDetectedRegister) {
                     // TODO:Agentが属するClusterにデバイスを自動登録
                     val s = db.collection("group//devices").document(deviceId).get().get()
                     println("Snapshot ${s.data}")
@@ -150,9 +150,9 @@ class MfpMibAgent(val deviceId: String) {
                     val target = CommunityTarget(
                             UdpAddress(InetAddress.getByName(addr.hostAddress), addrSpec.port),
                             OctetString("public"),
-                    ).apply{
-                        retries=2
-                        timeout=2000
+                    ).apply {
+                        retries = 2
+                        timeout = 2000
                     }
                     snmp.sendFlow(pdu, target).collect {
                         // TODO: Broadcastアドレスに対する応答を除去
