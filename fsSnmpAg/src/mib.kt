@@ -13,21 +13,20 @@ data class Request(
 
 @Serializable
 data class ResponseEvent(
-        val peerAddr: String,
-        val pdu: PDU,
-        val requestTarget: SnmpTarget?
+        val reqTarget: SnmpTarget,
+        val reqPdu: PDU,
+        val resTarget: SnmpTarget,
+        val resPdu: PDU,
 )
 
 @Serializable
 data class SnmpTarget(
-        val addr: String,
+        val addr: String? = null,
         val port: Int = 161,
         val credential: Credential = Credential(),
         val retries: Int = 5,
         val interval: Long = 5000,
 )
-
-fun SnmpTarget.Companion.from(addr: InetAddress, port: Int, credential: Credential, retries: Int, interval: Long) = SnmpTarget(addr.hostAddress)
 
 @Serializable
 data class Credential(

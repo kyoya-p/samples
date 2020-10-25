@@ -47,9 +47,9 @@ suspend fun <R> snmpScopeDefault(transport: TransportMapping<*> = DefaultUdpTran
         }
 
 
-suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
+suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
     pdu.requestID = getGlobalRequestID()
-    send(pdu, target, userHandle, object : ResponseListener {
+    send(pdu, target, target, object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
             val pdu = event.response
             if (pdu == null) {
@@ -70,14 +70,16 @@ suspend fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: In
             }
         }
     }.toList().forEach { it.join() }
+    close()
+    awaitClose()
 }
 
-suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
+suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
     val retries = target.retries
     target.retries = 0
     val detected = mutableSetOf<UdpAddress>()
     repeat(retries + 1) {
-        sendFlow(pdu, target, userHandle).collect {
+        sendFlow(pdu, target).collect {
             if (!detected.contains(it.peerAddress)) {
                 detected.add(it.peerAddress)
                 offer(it)
