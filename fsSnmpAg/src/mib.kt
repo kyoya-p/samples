@@ -1,6 +1,7 @@
 package mibtool
 
 import kotlinx.serialization.*
+import java.net.InetAddress
 
 @Serializable
 data class Request(
@@ -12,15 +13,16 @@ data class Request(
 
 @Serializable
 data class ResponseEvent(
-        val peerAddr: String,
-        val pdu: PDU,
-        val requestTarget: SnmpTarget?
+        val reqTarget: SnmpTarget,
+        val reqPdu: PDU,
+        val resTarget: SnmpTarget,
+        val resPdu: PDU,
 )
 
 @Serializable
 data class SnmpTarget(
-        val addr: String,
-        val port: Int,
+        val addr: String? = null,
+        val port: Int = 161,
         val credential: Credential = Credential(),
         val retries: Int = 5,
         val interval: Long = 5000,
@@ -35,10 +37,10 @@ data class Credential(
 
 @Serializable
 data class PDU(
+        val type: Int = GETNEXT,
+        val vbl: List<VB> = listOf(VB(".1.3")),
         val errSt: Int = 0,
         val errIdx: Int = 0,
-        val type: Int = GETNEXT,
-        val vbl: List<VB> = listOf<VB>(VB(".1")),
 )
 
 fun PDU.Companion.GET(vbl: List<VB>) = PDU(type = PDU.GET, vbl = vbl)

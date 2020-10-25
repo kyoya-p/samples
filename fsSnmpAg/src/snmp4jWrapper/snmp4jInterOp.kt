@@ -1,5 +1,6 @@
 package mibtool.snmp4jWrapper
 
+import mibtool.ResponseEvent
 import mibtool.SnmpTarget
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -7,21 +8,28 @@ import org.snmp4j.mp.SnmpConstants.*
 import org.snmp4j.smi.*
 import java.net.InetAddress
 
+fun ResponseEvent.Companion.from(res: org.snmp4j.event.ResponseEvent<UdpAddress>) = ResponseEvent(
+        reqTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
+        reqPdu = res.request.toPDU(),
 
-fun CommunityTarget<UdpAddress>.toSnmpTarget() = mibtool.SnmpTarget(
-        addr = this.address.inetAddress.hostAddress,
-        port = this.address.port,
+        resTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
+        resPdu = res.response.toPDU(),
+)
+
+fun SnmpTarget.Companion.from(t: CommunityTarget<UdpAddress>) = SnmpTarget(
+        addr = t.address.inetAddress.hostAddress,
+        port = t.address.port,
         credential = mibtool.Credential(
-                ver = when (this.version) {
+                ver = when (t.version) {
                     version1 -> "1"
                     version2c -> "2c"
                     version3 -> "3"
                     else -> ""
                 },
-                v1commStr = this.community.toString(),
+                v1commStr = t.community.toString(),
         ),
-        retries = this.retries,
-        interval = this.timeout,
+        retries = t.retries,
+        interval = t.timeout,
 )
 
 fun SnmpTarget.toSnmp4j() = CommunityTarget<UdpAddress>(
@@ -41,6 +49,7 @@ fun mibtool.PDU.toSnmp4j() = org.snmp4j.PDU().also {
     //it.requestID
     it.variableBindings = this.vbl.map { it.toSnmp4j() }
 }
+
 
 fun VariableBinding.toVB() = mibtool.VB(
         oid = oid.toOidString(),

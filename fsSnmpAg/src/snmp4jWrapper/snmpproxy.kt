@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
                     }
                 }
         )
-        snmp.listen()
+         snmp.listen()
         println("started.")
         Semaphore(0).acquire()
     }

@@ -1,7 +1,9 @@
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
+import firestoreInterOp.firestoreDocumentFlow
+import firestoreInterOp.firestoreEventFlow
+import firestoreInterOp.firestoreScopeDefault
 import kotlinx.coroutines.*
-
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -18,28 +20,77 @@ import mibtool.snmp4jWrapper.toSnmp4j
 import org.snmp4j.Snmp
 import java.util.*
 
+
 /* MFPデバイスクラス
  実MFPに変わり処理を行う
+
  Firestoreを監視しアクション
  スケジュールに従って情報をアップロード
 */
 class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
 
     @Serializable
+    data class Request(
+            // TODO: スケジュール設定
+            val interval: Long = 1 * 60_000,
+    )
+
+    @Serializable
     data class Report(
-            val time: Long = Date().time,
             val deviceId: String,
+            val type: String = "mfp.mib",
+            val time: Long = Date().time,
             val result: Result,
     )
 
     @Serializable
     data class Result(
             val pdu: PDU,
-            val target: SnmpTarget,
     )
 
-    val db = FirestoreOptions.getDefaultInstance().getService()
-    //var running = Semaphore(1)
+//    val db = FirestoreOptions.getDefaultInstance().getService()
+
+    suspend fun run() = runBlocking {
+        println("Start Proxy Device: $deviceId ${target.addr}")
+        snmpScopeDefault { snmp ->
+            firestoreScopeDefault { db ->
+                channelFlow {
+                    db.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collect { it -> offer(it) }
+                    offer(Request()) //取得できなかった場合はデフォルトのスケジュールを流す
+                }.collect { req ->
+                    println(req)
+                    while (isActive) { // とりあえず定期的にレポートをアップロード
+                        sendReport(snmp, db)
+                        delay(req.interval)
+                    }
+                    cancel()
+                }
+            }
+        }
+        println("Terminated Proxy Device: $deviceId ${target.addr}")
+    }
+/*
+    suspend fun run2() = runBlocking {
+        println("Start Proxy Device: $deviceId ${target.addr}")
+        snmpScopeDefault { snmp ->
+            channelFlow { // TODO: もう少しマシなスケジュール設定を流す (今はintervalのみ)
+                firestoreEventFlow { collection("devConfig").document(deviceId) }.collect {
+                    //TODO
+                } // 取得できればそれを流し続ける
+                offer(Request()) // 取得できなかった場合はデフォルトのスケジュールを流す
+            }.collect { req ->
+                // とりあえず定期的にレポートをアップロード
+                while (isActive) {
+                    sendReport(snmp,db)
+                    delay(req.interval)
+                }
+            }
+        }
+        println("Terminated Proxy Device: $deviceId")
+    }
+
+
+ */
 
     suspend fun DocumentReference.toEventFlow() = callbackFlow<DocumentSnapshot> {
         val registration = addSnapshotListener(object : EventListener<DocumentSnapshot?> {
@@ -54,18 +105,13 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
         awaitClose { registration.remove() }
     }
 
-    suspend fun sendReport(snmp: Snmp) {
-
+    suspend fun sendReport(snmp: Snmp, db: Firestore) {
         val pdu = PDU.GETNEXT(vbl = listOf(VB(".1.3.6"))).toSnmp4j()
         snmp.sendFlow(pdu, target.toSnmp4j()).collect { res ->
             println("Device Recv: ${res.response}")
             val r = Report(
                     deviceId = deviceId,
                     result = Result(
-                            target = SnmpTarget(
-                                    addr = res.peerAddress.inetAddress.hostAddress,
-                                    port = res.peerAddress.port
-                            ),
                             pdu = res.response.toPDU(),
                     ),
             )
@@ -74,24 +120,5 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
         }
     }
 
-    suspend fun run() = runBlocking {
-        println("Start Proxy Device: $deviceId")
-        snmpScopeDefault { snmp ->
-            channelFlow { // TODO: もう少しマシなスケジュール設定を流す (今はintervalのみ)
-                db.collection("devConfig").document(deviceId).toEventFlow().collect { snapshot ->
-                    val interval = snapshot.data!!["interval"] as Int
-                    offer(interval.toLong())
-                }
-                offer(20*60_000L) // 取得できなかった場合のインターバル
-            }.collect { interval ->
-                // 定期的にレポートをアップロード
-                while (isActive) {
-                    sendReport(snmp)
-                    delay(interval)
-                }
-            }
-        }
-        println("Terminated Proxy Device: $deviceId")
-    }
 
 }

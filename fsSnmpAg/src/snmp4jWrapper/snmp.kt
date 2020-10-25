@@ -1,11 +1,12 @@
 package mibtool.snmp4jWrapper
 
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import mibtool.SnmpTarget
 import org.snmp4j.*
 import org.snmp4j.Target
 import org.snmp4j.event.ResponseEvent
@@ -13,30 +14,32 @@ import org.snmp4j.event.ResponseListener
 import org.snmp4j.smi.*
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
-import java.util.*
 import kotlin.random.Random
 
+@Suppress("BlockingMethodInNonBlockingContext")
+fun main(): Unit = runBlocking {
+    launch { delay(1000); println("World") }
+    print("Hello ")
+}
 
-suspend fun main() = runBlocking {
+@Suppress("BlockingMethodInNonBlockingContext")
+suspend fun main2(): Unit = runBlocking {
+    val pdu = mibtool.PDU()
+    val startTarget = SnmpTarget("192.168.3.7").toSnmp4j()
+    val endAddr = InetAddress.getByName("192.168.3.10")
+    val broadcastTarget = SnmpTarget("255.255.255.255").toSnmp4j()
     snmpScopeDefault { snmp ->
-        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1.3"))))
-        val targets = listOf("127.0.0.1", "255.255.255.255").map {
-            CommunityTarget<UdpAddress>(
-                    UdpAddress(InetAddress.getByName(it), 161),
-                    OctetString("public")
-            ).apply {
-                timeout = 1000
-                retries = 0
-            }
-        }
-        snmp.scanFlow(pdu, targets[0], InetAddress.getByName("127.0.0.3")).collect {
-            println(it.peerAddress)
-        }
+        channelFlow {
+            snmp.scanFlow(pdu.toSnmp4j(), startTarget, endAddr).collect { offer(it) }
+            snmp.scanFlow(pdu.toSnmp4j(), startTarget, endAddr).collect { offer(it) }
+            snmp.broadcastFlow(pdu.toSnmp4j(), broadcastTarget).collect { offer(it) }
+        }.toList().distinctBy { it.peerAddress }
+    }.forEach {
+        println(it.peerAddress)
     }
 }
 
-
-var _reqId = Random.nextInt();
+var _reqId = Random.nextInt()
 suspend fun getGlobalRequestID(): Integer32 {
     val mtx = Mutex()
     mtx.lock()
@@ -52,44 +55,40 @@ suspend fun <R> snmpScopeDefault(transport: TransportMapping<*> = DefaultUdpTran
         }
 
 
-suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Object? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
-    println("R= ${target.address}")
-    if(false) /*TODO*/ send(pdu, target, userHandle, object : ResponseListener {
+// TODO
+fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
+    pdu.requestID = getGlobalRequestID()
+    send(pdu, target, target, object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
             val pdu = event.response
             if (pdu == null) {
                 close()
             } else {
-                println("T= ${event.peerAddress}")
                 offer(event as ResponseEvent<UdpAddress>) // テンプレート型のコールバックはどう扱えば?
             }
         }
     })
-    close() /*TODO*/
     awaitClose()
 }
 
-suspend fun Snmp.scanFlow(pdu: PDU, target: Target<UdpAddress>, endAddr: InetAddress, userHandle: Object? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
-    val r = scanIpRange(target.address.inetAddress, endAddr).map { addr ->
+fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: InetAddress) = channelFlow {
+    scanIpRange(startTarget.address.inetAddress, endAddr).map {
         launch {
-            val t2 = target
-            t2.address.inetAddress = addr
-            val p2 = pdu
-            p2.requestID = getGlobalRequestID()
-            println(t2)
-            sendFlow(p2, t2, userHandle).collect { offer(it) }
+            sendFlow(pdu.apply { requestID = getGlobalRequestID() }, SnmpTarget(it.hostAddress).toSnmp4j()).collect {
+                offer(it)
+            }
         }
     }.toList().forEach { it.join() }
     close()
     awaitClose()
 }
 
-suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) = callbackFlow<ResponseEvent<UdpAddress>> {
+suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
     val retries = target.retries
     target.retries = 0
     val detected = mutableSetOf<UdpAddress>()
     repeat(retries + 1) {
-        sendFlow(pdu, target, userHandle as Object?).collect {
+        sendFlow(pdu, target).collect {
             if (!detected.contains(it.peerAddress)) {
                 detected.add(it.peerAddress)
                 offer(it)
