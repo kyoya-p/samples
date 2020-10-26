@@ -12,6 +12,7 @@ import org.snmp4j.Snmp
 import java.net.InetAddress
 import java.util.*
 
+@Suppress("BlockingMethodInNonBlockingContext")
 suspend fun main(args: Array<String>): Unit = runBlocking {
     val agentId = if (args.size == 0) "agent1" else args[0]
     snmpScopeDefault { snmp ->
@@ -78,6 +79,7 @@ class MfpMibAgent(val deviceId: String) {
         }
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun run(snmp: Snmp, db: Firestore) {
         if (false) /*TODO:Tmp*/ {
             val v = db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }.collectLatest { req ->
