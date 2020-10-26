@@ -12,18 +12,22 @@ import org.snmp4j.Snmp
 import java.net.InetAddress
 import java.util.*
 
+
+@ExperimentalCoroutinesApi
+@Suppress("BlockingMethodInNonBlockingContext")
 suspend fun main(args: Array<String>): Unit = runBlocking {
-    val agentId = if (args.size == 0) "agent1" else args[0]
+    val agentId = if (args.isEmpty()) "agent1" else args[0]
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
-            val agent = MfpMibAgent(agentId)
-            agent.run(snmp, db)
+            val agent = MfpMibAgent(db, snmp, agentId)
+            agent.run()
         }
     }
     println("Terminated.")
 }
 
-class MfpMibAgent(val deviceId: String) {
+@ExperimentalCoroutinesApi
+class MfpMibAgent(private val db: Firestore, private val snmp: Snmp, private val deviceId: String) {
 
     @Serializable
     data class AgentRequest(
@@ -58,13 +62,14 @@ class MfpMibAgent(val deviceId: String) {
             val detected: List<String> = listOf()
     )
 
-    suspend fun run2(snmp: Snmp, db: Firestore) = runBlocking {
+    @Suppress("BlockingMethodInNonBlockingContext")
+    suspend fun run2() = runBlocking {
         val devMap = mutableMapOf<String, Job>()
         db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }.collect { req ->
             devMap.forEach { s, job -> job.cancel() }
             devMap.clear()
             println(req)
-            detectDevices(snmp, req)
+            detectDevices(req)
                     .toList() // 検索完了まで待つ(手抜き)
                     .distinctBy { "${it.resTarget.addr}/${it.resTarget.port}" } // IPアドレスでの重複を削除
                     .distinctBy { "${it.resPdu.vbl[0].value}:sn=${it.resPdu.vbl[1].value}" } // idでの重複を削除
@@ -78,41 +83,50 @@ class MfpMibAgent(val deviceId: String) {
         }
     }
 
-    suspend fun run(snmp: Snmp, db: Firestore) {
-        if (false) /*TODO:Tmp*/ {
-            val v = db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }.collectLatest { req ->
-                req.scanAddrSpecs[0].scheduledFlow(snmp, db).collect { a ->
-                    println("${Date()}: ${req.time} ${a.schedule?.interval}")
-                }
-            }
+    @ExperimentalCoroutinesApi
+    suspend fun run() {
+        if (true) /*TODO:Tmp*/ {
+            db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
+                    .collectSchedule {
+                        println("${Date().time / 1000} ${it.schedule?.interval}")
+                    }
         }
 
-        val devMap = mutableMapOf<String, Job>()
-        db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
-                .launchScheduledFlow(snmp, db).collectLatest { addrSpec ->
-                    println("${Date()}: launch schedule: ${addrSpec.schedule?.interval} ${addrSpec.broadcastAddr} ${addrSpec.target.addr}")
-                }
+        /* val devMap = mutableMapOf<String, Job>()
+         db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
+                 .scheduledFlow().collectLatest { addrSpec ->
+                     println("${Date()}: launch schedule: ${addrSpec.schedule?.interval} ${addrSpec.broadcastAddr} ${addrSpec.target.addr}")
+                 }
+    */
     }
 
     // スケジュールされたタイミングで検索要求を流す
-    fun ScanAddrSpec.scheduledFlow(snmp: Snmp, db: Firestore) = channelFlow<ScanAddrSpec> {
-        do {
-            offer(this@scheduledFlow)
-        } while (isActive && schedule?.run { delay(interval);true } ?: false)
-        println("Term. Sched.")
-
-        close()
-        awaitClose()
+    @ExperimentalCoroutinesApi
+    suspend fun Flow<AgentRequest>.collectSchedule(op: (ScanAddrSpec) -> Unit) {
+        collectLatest { req ->
+            channelFlow {
+                req.scanAddrSpecs.forEach { addrSpec ->
+                    launch {
+                        do {
+                            this@channelFlow.offer(addrSpec)
+                        } while (addrSpec.schedule?.run { delay(interval);true } == true)
+                    }
+                }
+            }.collect {
+                op(it)
+            }
+        }
     }
 
-    fun Flow<AgentRequest>.launchScheduledFlow(snmp: Snmp, db: Firestore) = channelFlow<ScanAddrSpec> {
+    @ExperimentalCoroutinesApi
+    fun Flow<AgentRequest>.scheduled2Flow() = channelFlow {
         collectLatest { req ->
             req.scanAddrSpecs.forEach { addrSpec ->
                 launch {
                     do {
                         offer(addrSpec)
-                    } while (isActive && addrSpec.schedule?.run { delay(interval);true } ?: false)
-                    println("Term. Sched.")
+                    } while (addrSpec.schedule?.run { delay(interval);true } == true)
+                    println("Term. Sched")
                 }
             }
         }
@@ -122,11 +136,11 @@ class MfpMibAgent(val deviceId: String) {
 
     // 検索し検索結果を流す
     // 重複処理は呼び出し側で行うこと
-    fun detectDevices(snmp: Snmp, agentRequest: AgentRequest) = channelFlow {
+    private fun detectDevices(agentRequest: AgentRequest) = channelFlow {
         val oid_sysName = ".1.3.6.1.2.1.1.1"
         val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
         val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber).map { VB(it) }
-        val pdu = mibtool.PDU.GETNEXT(sampleOids)
+        val pdu = PDU.GETNEXT(sampleOids)
 
         agentRequest.scanAddrSpecs.forEach { addrSpec ->
             addrSpec.broadcastAddr?.let { bcAddr ->
