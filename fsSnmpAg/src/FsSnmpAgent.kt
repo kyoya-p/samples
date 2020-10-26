@@ -22,6 +22,7 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
             val agent = MfpMibAgent(db, snmp, agentId)
             agent.run()
         }
+        null
     }
     println("Terminated.")
 }
@@ -62,7 +63,7 @@ class MfpMibAgent(private val db: Firestore, private val snmp: Snmp, private val
             val detected: List<String> = listOf()
     )
 
-    @Suppress("BlockingMethodInNonBlockingContext")
+/*    @Suppress("BlockingMethodInNonBlockingContext")
     suspend fun run2() = runBlocking {
         val devMap = mutableMapOf<String, Job>()
         db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }.collect { req ->
@@ -83,26 +84,22 @@ class MfpMibAgent(private val db: Firestore, private val snmp: Snmp, private val
         }
     }
 
+ */
+
     @ExperimentalCoroutinesApi
     suspend fun run() {
-        if (true) /*TODO:Tmp*/ {
-            db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
-                    .collectSchedule {
-                        println("${Date().time / 1000} ${it.schedule?.interval}")
-                    }
-        }
+        db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
+                .collectSchedule {
+                    println("${Date().time / 1000} ${it.schedule?.interval}")
+                    detectDevices(it).collect {
 
-        /* val devMap = mutableMapOf<String, Job>()
-         db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
-                 .scheduledFlow().collectLatest { addrSpec ->
-                     println("${Date()}: launch schedule: ${addrSpec.schedule?.interval} ${addrSpec.broadcastAddr} ${addrSpec.target.addr}")
-                 }
-    */
+                    }
+                }
     }
 
     // スケジュールされたタイミングで検索要求を流す
     @ExperimentalCoroutinesApi
-    suspend fun Flow<AgentRequest>.collectSchedule(op: (ScanAddrSpec) -> Unit) {
+    suspend fun Flow<AgentRequest>.collectSchedule(op: suspend Flow<AgentRequest>.(ScanAddrSpec) -> Unit) {
         collectLatest { req ->
             channelFlow {
                 req.scanAddrSpecs.forEach { addrSpec ->
@@ -113,30 +110,14 @@ class MfpMibAgent(private val db: Firestore, private val snmp: Snmp, private val
                     }
                 }
             }.collect {
-                op(it)
+                this.op(it)
             }
         }
-    }
-
-    @ExperimentalCoroutinesApi
-    fun Flow<AgentRequest>.scheduled2Flow() = channelFlow {
-        collectLatest { req ->
-            req.scanAddrSpecs.forEach { addrSpec ->
-                launch {
-                    do {
-                        offer(addrSpec)
-                    } while (addrSpec.schedule?.run { delay(interval);true } == true)
-                    println("Term. Sched")
-                }
-            }
-        }
-        close()
-        awaitClose()
     }
 
     // 検索し検索結果を流す
-    // 重複処理は呼び出し側で行うこと
-    private fun detectDevices(agentRequest: AgentRequest) = channelFlow {
+// 重複処理は呼び出し側で行うこと
+    fun detectDevices(agentRequest: AgentRequest) = channelFlow {
         val oid_sysName = ".1.3.6.1.2.1.1.1"
         val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
         val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber).map { VB(it) }
@@ -160,5 +141,27 @@ class MfpMibAgent(private val db: Firestore, private val snmp: Snmp, private val
         awaitClose()
     }.map {
         ResponseEvent.from(it)
+    }
+
+    suspend fun detectDevices(addrSpec: ScanAddrSpec) = channelFlow {
+        val oid_sysName = ".1.3.6.1.2.1.1.1"
+        val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
+        val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber).map { VB(it) }
+        val pdu = PDU.GETNEXT(sampleOids)
+
+        addrSpec.broadcastAddr?.let { bcAddr ->
+            val target = SnmpTarget()
+            snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collectLatest {
+                offer(it)
+            }
+        }
+        addrSpec.target.addr?.let { startAddr ->
+            val endAddr = addrSpec.addrUntil ?: startAddr
+            snmp.scanFlow(pdu.toSnmp4j(), addrSpec.target.toSnmp4j(), InetAddress.getByName(endAddr)).collectLatest {
+                offer(it)
+            }
+        }
+        close()
+        awaitClose()
     }
 }
