@@ -27,7 +27,7 @@ import java.util.*
  Firestoreを監視しアクション
  スケジュールに従って情報をアップロード
 */
-class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
+class ProxyMfp (val db: Firestore, val snmp: Snmp, val deviceId: String, val target: SnmpTarget) {
 
     @Serializable
     data class Request(
@@ -69,28 +69,6 @@ class ProxyMfp(val deviceId: String, val target: SnmpTarget) {
         }
         println("Terminated Proxy Device: $deviceId ${target.addr}")
     }
-/*
-    suspend fun run2() = runBlocking {
-        println("Start Proxy Device: $deviceId ${target.addr}")
-        snmpScopeDefault { snmp ->
-            channelFlow { // TODO: もう少しマシなスケジュール設定を流す (今はintervalのみ)
-                firestoreEventFlow { collection("devConfig").document(deviceId) }.collect {
-                    //TODO
-                } // 取得できればそれを流し続ける
-                offer(Request()) // 取得できなかった場合はデフォルトのスケジュールを流す
-            }.collect { req ->
-                // とりあえず定期的にレポートをアップロード
-                while (isActive) {
-                    sendReport(snmp,db)
-                    delay(req.interval)
-                }
-            }
-        }
-        println("Terminated Proxy Device: $deviceId")
-    }
-
-
- */
 
     suspend fun DocumentReference.toEventFlow() = callbackFlow<DocumentSnapshot> {
         val registration = addSnapshotListener(object : EventListener<DocumentSnapshot?> {

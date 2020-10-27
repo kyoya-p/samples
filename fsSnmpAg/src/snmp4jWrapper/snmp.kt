@@ -17,13 +17,7 @@ import java.net.InetAddress
 import kotlin.random.Random
 
 @Suppress("BlockingMethodInNonBlockingContext")
-fun main(): Unit = runBlocking {
-    launch { delay(1000); println("World") }
-    print("Hello ")
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun main2(): Unit = runBlocking {
+suspend fun main(): Unit = runBlocking {
     val pdu = mibtool.PDU()
     val startTarget = SnmpTarget("192.168.3.7").toSnmp4j()
     val endAddr = InetAddress.getByName("192.168.3.10")

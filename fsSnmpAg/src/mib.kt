@@ -4,14 +4,6 @@ import kotlinx.serialization.*
 import java.net.InetAddress
 
 @Serializable
-data class Request(
-        val addr: String,
-//        val target: SnmpTarget,
-
-        val pdu: PDU,
-)
-
-@Serializable
 data class ResponseEvent(
         val reqTarget: SnmpTarget,
         val reqPdu: PDU,
@@ -21,11 +13,14 @@ data class ResponseEvent(
 
 @Serializable
 data class SnmpTarget(
-        val addr: String? = null,
+        val addr: String,
         val port: Int = 161,
         val credential: Credential = Credential(),
         val retries: Int = 5,
         val interval: Long = 5000,
+
+        val isBroadcast: Boolean = false, // for discovery by broadcast
+        val endAddr: String? = null, // for IP ranged discovery
 )
 
 @Serializable
@@ -45,7 +40,6 @@ data class PDU(
 
 fun PDU.Companion.GET(vbl: List<VB>) = PDU(type = PDU.GET, vbl = vbl)
 fun PDU.Companion.GETNEXT(vbl: List<VB>) = PDU(type = PDU.GETNEXT, vbl = vbl)
-
 val PDU.Companion.GET: Int get() = -96
 val PDU.Companion.GETNEXT: Int get() = -95
 val PDU.Companion.RESPONSE: Int get() = -94
