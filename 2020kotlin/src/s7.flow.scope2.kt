@@ -5,14 +5,17 @@ import java.util.*
 
 @ExperimentalCoroutinesApi
 fun main(): Unit = runBlocking {
+    // aTaskが完了するまで次のFlowは保留
     println("sample0-----")
     reset()
-    srcFlow(3, 100).collect { aTask(it) } // aTaskが完了するまで次のFlowは保留
+    srcFlow(3, 100).collect { aTask(it) }
 
+    //collectLatestによって実行中のaTask()はcancelされる
     println("sample1-----")
     reset()
-    srcFlow(3, 100).collectLatest { aTask(it) } //collectLatestによって実行中のaTask()はcancelされる
+    srcFlow(3, 100).collectLatest { aTask(it) }
 
+    // CoroutinScopeの外部からのキャンセル
     println("sample2-----")
     reset()
     val j2 = launch {
@@ -21,10 +24,12 @@ fun main(): Unit = runBlocking {
     delay(200)
     j2.cancel() //全体フローも200msで明示的にcancelされる
 
+
+    // collectブロックをブロックしない
     println("sample3-----")
     reset()
     val j3 = launch {
-        srcFlow(3, 100).collect { launch { aTask(it) } } // aTask()は同時実行される
+        srcFlow(10, 100).collect { launch { aTask(it * 100) } } // aTask()は同時実行される
     }
     delay(500)
     j3.cancel()
@@ -47,11 +52,15 @@ fun reset() {
 
 fun rap() = "000${(Date().time - start) % 10000}".takeLast(4)
 
-suspend fun aTask(id: Int) {
+fun aTask(id: Int) {
     println("${rap()} Start task $id")
-    repeat(5) { j ->
-        println("${rap()} task=$id : $j ${if (j == 4) 'x' else ' '}")
-        delay(100)
+    try {
+        repeat(5) { j ->
+            println("${rap()} task=$id : $j ${if (j == 4) 'x' else ' '}")
+            delay(100)
+        }
+    } finally {
+        println("${rap()} terminated task(${id})")
     }
 }
 
@@ -64,18 +73,3 @@ fun srcFlow(times: Int, inteval: Long) = callbackFlow {
     close()
     awaitClose()
 }
-
-@ExperimentalCoroutinesApi
-fun Flow<Int>.rescheduleFlow(x: Int) = channelFlow {
-    collectLatest { sc ->
-        launch {
-            for (i in 0..x) {
-                offer(sc + i)
-                delay(100)
-            }
-        }
-    }
-    close()
-    awaitClose()
-}
-

@@ -13,12 +13,9 @@ fun main(): Unit = runBlocking {
 
     println("sample2")
     val j1 = launch {
-        flow {
-            repeat(5) {
-                emit(it)
-                delay(100)
-            }
-        }.collect { println(it) }
+        asyncFunc1()
+        // X().memberAsyncFunc1() //エラー
+        X().run { this@launch.memberAsyncFunc1() }
     }
     delay(200)
     j1.cancel()
@@ -54,7 +51,18 @@ fun main(): Unit = runBlocking {
     }
     delay(200)
     j4.cancel()
-
 }
 
+fun CoroutineScope.asyncFunc1() {
+    this.launch {
+        repeat(3) {
+            println(it)
+            delay(100)
+        }
+    }
+}
+
+class X {
+    fun CoroutineScope.memberAsyncFunc1() = this.asyncFunc1()
+}
 
