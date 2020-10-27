@@ -21,7 +21,7 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
             val agent = MfpMibAgent(db, snmp, agentId)
-            agent.run(this)
+            agent.run()
         }
         null
     }
@@ -57,7 +57,7 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
     )
 
     @ExperimentalCoroutinesApi
-    suspend fun run(launchIn: CoroutineScope) {
+    suspend fun run() = runBlocking {
         db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
                 .collectSchedule {
                     val detectedList = detectDevices(it)
@@ -66,12 +66,12 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
                             .distinctBy { "${it.response[0].toString()}/${it.response[1].toString()}" }
                     detectedList.forEach { ev ->
                         // println("${Date()} ${it.peerAddress} ${it.response[0].toString()}/${it.response[1].toString()} ")
-                        val deviceId = "type=mfp.mib:${ev.response[0].toString()}:${ev.response[1].toString()}"
+                        val deviceId = "type=mfp.mib:model=${ev.response[0].variable}:sn=${ev.response[1].variable}"
                         val reqTarget = (ev.userObject as CommunityTarget<UdpAddress>).apply {
                             address = ev.peerAddress
                         }
                         val mfp = ProxyMfp(db, snmp, deviceId, SnmpTarget.from(reqTarget))
-                        launchIn.launch { mfp.run() }
+                        launch { mfp.run() }
                     }
                 }
     }
@@ -79,18 +79,23 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
     // スケジュールされたタイミングで検索要求を流す
     @ExperimentalCoroutinesApi
     suspend fun Flow<AgentRequest>.collectSchedule(op: suspend Flow<AgentRequest>.(SnmpTarget) -> Unit) {
-        collectLatest { req ->
-            channelFlow {
-                do {
-                    req.scanAddrSpecs.forEach { target ->
-                        launch {
-                            this@channelFlow.offer(target)
+        println("Start collectSchedule()")
+        try {
+            collectLatest { req ->
+                channelFlow {
+                    do {
+                        req.scanAddrSpecs.forEach { target ->
+                            launch {
+                                this@channelFlow.offer(target)
+                            }
                         }
-                    }
-                } while (req.schedule?.run { delay(interval);true } == true)
-            }.collect {
-                this.op(it)
+                    } while (req.schedule?.run { delay(interval);true } == true)
+                }.collect {
+                    this.op(it)
+                }
             }
+        } finally {
+            println("Term. collectSchedule()")
         }
     }
 

@@ -27,7 +27,7 @@ import java.util.*
  Firestoreを監視しアクション
  スケジュールに従って情報をアップロード
 */
-class ProxyMfp (val db: Firestore, val snmp: Snmp, val deviceId: String, val target: SnmpTarget) {
+class ProxyMfp(val db: Firestore, val snmp: Snmp, val deviceId: String, val target: SnmpTarget) {
 
     @Serializable
     data class Request(
