@@ -21,7 +21,7 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
             val agent = MfpMibAgent(db, snmp, agentId)
-            agent.run()
+            agent.run2(this)
         }
         null
     }
@@ -29,6 +29,11 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
 }
 
 class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
+
+    @ExperimentalCoroutinesApi
+    fun run2(cs: CoroutineScope) = cs.run {
+        1
+    }
 
     @Serializable
     data class AgentRequest(
@@ -41,6 +46,7 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
     @Serializable
     data class Schedule(
             val interval: Long,
+            val limit: Int = 100, //　回数は有限に。失敗すると破産するから。
     )
 
     @Serializable
@@ -55,6 +61,7 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
     data class Result(
             val detected: List<String> = listOf()
     )
+
 
     @ExperimentalCoroutinesApi
     suspend fun run() = runBlocking {
@@ -99,6 +106,7 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
         }
     }
 
+    @ExperimentalCoroutinesApi
     suspend fun detectDevices(target: SnmpTarget) = channelFlow {
         val oid_sysName = ".1.3.6.1.2.1.1.1"
         val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
