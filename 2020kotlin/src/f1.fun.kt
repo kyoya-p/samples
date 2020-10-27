@@ -6,7 +6,7 @@ import kotlinx.coroutines.runBlocking
 import java.util.*
 
 fun main() {
-    function1(10)
+    function1(5+10)
     5.add(10)
     5 addOp 10
 }
