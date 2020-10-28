@@ -46,7 +46,7 @@ dependencies {
     api group: 'com.google.cloud', name: 'google-cloud-firestore', version: '2.0.0'
 }
 
-mainClassName = 'gdvm.agent.mib.FsSnmpAgentKt'
+mainClassName = 'AgentMainKt'
 
 
 jar {

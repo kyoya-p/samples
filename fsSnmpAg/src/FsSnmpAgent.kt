@@ -3,7 +3,7 @@ package gdvm.agent.mib
 import kotlinx.serialization.Serializable
 import mibtool.*
 import com.google.cloud.firestore.FirestoreOptions
-import firestoreInterOp.firestoreDocumentFlow
+import FirestoreInterOp.firestoreDocumentFlow
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -19,7 +19,7 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
-suspend fun main(args: Array<String>): Unit = runBlocking {
+fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
     runAgent(agentDeviceId)
 }
@@ -90,7 +90,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                         // そこに登録
                         //TODO:BLocking code
                         firestore.collection("group").document(myGr.get().documents[0].id).let {
-                            val devCollection = it.collection("devices")
+                            //val devCollection = it.collection("devices")
 
                         }
                     }

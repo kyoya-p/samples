@@ -1,4 +1,4 @@
-package firestoreInterOp
+package FirestoreInterOp
 
 import com.google.cloud.firestore.*
 import kotlinx.coroutines.channels.awaitClose
