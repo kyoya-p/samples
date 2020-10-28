@@ -1,16 +1,21 @@
-package mfp.mib
+package gdvm.mfp.mib
 
-import agent.mib.AppContext
-import firestoreInterOp.firestoreScopeDefault
+import com.google.cloud.firestore.FirestoreOptions
+import firestoreInterOp.firestoreDocumentFlow
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import mibtool.*
 import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.toSnmp4j
+import org.snmp4j.Snmp
+import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.util.*
 
+val firestore = FirestoreOptions.getDefaultInstance().getService()!!
+val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @Serializable
 data class Request(
@@ -33,28 +38,29 @@ data class Result(
 
 
 @ExperimentalCoroutinesApi
-suspend fun CoroutineScope.runMfp(ac: AppContext, deviceId: String, target: SnmpTarget) {
+suspend fun runMfp(deviceId: String, target: SnmpTarget) = coroutineScope {
     println("Started Device ${deviceId}")
     try {
-        firestoreScopeDefault { db ->
-            val oids = listOf(PDU.sysName, PDU.sysDescr, PDU.sysObjectID, PDU.hrDeviceStatus, PDU.hrPrinterStatus, PDU.hrPrinterDetectedErrorState)
-            val res = ac.snmp.sendFlow(
-                    target = target.toSnmp4j(),
-                    pdu = PDU.GETNEXT(vbl = oids.map { VB(it) }).toSnmp4j()
-            ).first()
+        val oids = listOf(PDU.sysName, PDU.sysDescr, PDU.sysObjectID, PDU.hrDeviceStatus, PDU.hrPrinterStatus, PDU.hrPrinterDetectedErrorState)
+        val res = snmp.sendFlow(
+                target = target.toSnmp4j(),
+                pdu = PDU.GETNEXT(vbl = oids.map { VB(it) }).toSnmp4j()
+        ).first()
 
-            val rep = Report(
-                    deviceId = deviceId, type = "mfp.mib", time = Date().time,
-                    result = Result(
-                            pdu = PDU.from(res.response)
-                    ),
-            )
+        val rep = Report(
+                deviceId = deviceId, type = "mfp.mib", time = Date().time,
+                result = Result(
+                        pdu = PDU.from(res.response)
+                ),
+        )
 
-            db.collection("devLog").document().set(rep).get()
-            db.collection("device").document(deviceId).set(rep).get()
+        // ログと最新状態それぞれ書込み
+        firestore.collection("devLog").document().set(rep).get() //TODO:BLocking code
+        firestore.collection("device").document(deviceId).set(rep).get() //TODO:BLocking code
 
-//        db.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {            println(it) }
-            delay(10000)
+        firestore.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {
+            // インスタンス設定に応じた処理(あれば)
+            println(it)
         }
     } catch (e: Exception) {
         println("Exception in $deviceId")

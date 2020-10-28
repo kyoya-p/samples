@@ -1,39 +1,33 @@
-package agent.mib
+package gdvm.agent.mib
 
 import kotlinx.serialization.Serializable
 import mibtool.*
-import com.google.cloud.firestore.Firestore
+import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.firestoreDocumentFlow
-import firestoreInterOp.firestoreScopeDefault
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import mibtool.snmp4jWrapper.*
 import org.snmp4j.Snmp
 import java.net.InetAddress
-import mfp.mib.runMfp
+import gdvm.mfp.mib.runMfp
+import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.util.*
 
-data class AppContext(
-        val db: Firestore,
-        val snmp: Snmp,
-)
+val firestore = FirestoreOptions.getDefaultInstance().getService()!!
+val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
-    snmpScopeDefault { snmp ->
-        firestoreScopeDefault { db ->
-            runAgent(AppContext(db, snmp), agentId = agentDeviceId)
-        }
-    }
+    runAgent(agentDeviceId)
 }
 
 @Serializable
 data class AgentRequest(
         val scanAddrSpecs: List<SnmpTarget>,
-        val autoDetectedRegister: Boolean,
+        val autoRegister: Boolean,
         val schedule: Schedule = Schedule(1),
         val time: Long,
 )
@@ -59,24 +53,26 @@ data class Result(
 
 
 @ExperimentalCoroutinesApi
-suspend fun runAgent(ac: AppContext, agentId: String) = coroutineScope {
-    ac.db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(agentId) }
+suspend fun runAgent(agentId: String) = coroutineScope {
+    firestore.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(agentId) }
             .toScheduleFlow()
             .collectLatest { req ->
                 val devSet = mutableSetOf<String>()
                 val j = launch {
+                    // 検索とデバイスの生成
                     req.scanAddrSpecs.forEach { tg ->
-                        discoveryDeviceFlow(tg, ac.snmp).collect { ev ->
+                        discoveryDeviceFlow(tg, snmp).collect { ev ->
                             val res = ResponseEvent.from(ev)
                             val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
                             if (!devSet.contains(devId)) {
                                 devSet.add(devId)
                                 launch {
-                                    runMfp(ac, devId, res.resTarget)
+                                    runMfp(devId, res.resTarget)
                                 }
                             }
                         }
                     }
+                    // 検索結果をレポート
                     val rep = Report(
                             time = Date().time,
                             deviceId = agentId,
@@ -84,7 +80,20 @@ suspend fun runAgent(ac: AppContext, agentId: String) = coroutineScope {
                                     detected = devSet.toList()
                             ),
                     )
-                    ac.db.collection("device").document(agentId).set(rep).get()
+                    firestore.collection("device").document(agentId).set(rep).get() //TODO:BLocking code
+
+                    // 検索結果をDBに登録
+                    if (req.autoRegister) {
+                        //自身が登録されているGroupを探す(ルール上1つだけ)
+                        val myGr = firestore.collection("group").whereArrayContains("memberList", agentId).limit(1).get()
+//                        val myMember=
+                        // そこに登録
+                        //TODO:BLocking code
+                        firestore.collection("group").document(myGr.get().documents[0].id).let {
+                            val devCollection = it.collection("devices")
+
+                        }
+                    }
                 }
                 try {
                     j.join()
@@ -128,7 +137,7 @@ suspend fun discoveryDeviceFlow(target: SnmpTarget, snmp: Snmp) = channelFlow {
         snmp.scanFlow(
                 pdu.toSnmp4j(),
                 target.toSnmp4j(),
-                InetAddress.getByName(target.addrRangeEnd ?: target.addr)
+                InetAddress.getByName(target.addrRangeEnd ?: target.addr) //TODO:BLocking code
         ).collect {
             offer(it)
         }
