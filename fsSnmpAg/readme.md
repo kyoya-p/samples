@@ -1,15 +1,16 @@
-Build
+Build Environment
 ----
-gradlew jar
+- Adopt Open JDK 11 https://adoptopenjdk.net/
 
-Run
+Build & Run
 ----
-環境変数を設定:  
-` GOOGLE_APPLICATION_CREDENTIALS=resources/road-to-iot-8efd3bfb2ccd.json`
+``` 
+set GOOGLE_APPLICATION_CREDENTIALS=resources\road-to-iot-8efd3bfb2ccd.json
+gradlew run 
+```
 
 Proxy関連設定: jvm引数に以下を追加:  
 ` -Djdk.http.auth.tunneling.disabledSchemes="" -Dhttps.proxyHost=proxyhost.domain.com -Dhttps.proxyPort=8080 `
-
 
 Reference
 ---
