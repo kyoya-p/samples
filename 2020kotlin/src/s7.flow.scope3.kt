@@ -17,7 +17,7 @@ fun main(): Unit = runBlocking {
             launch {
                 srcFlow(5, 100).collectLatest { b ->
                     launch {
-                        aTask(a * 10 + b, 5, 100)
+                        aTask(a * 10 + b, 100, 5)
                         //println("${rap()} ---  Term. inner $a $b")
                     }.join()
                 }
@@ -38,7 +38,7 @@ fun main(): Unit = runBlocking {
             val j = launch {
                 (0..2).forEach {
                     launch {
-                        aTask(a * 10 + it, 1, 500)
+                        aTask(a * 10 + it, 500, 1)
                     }
                 }
             }
@@ -59,11 +59,11 @@ fun reset() {
 
 fun rap() = "000${(Date().time - start) % 10000}".takeLast(4)
 
-suspend fun aTask(id: Int, times: Int, interval: Long) {
+suspend fun aTask(id: Int, interval: Long, times: Int) {
     try {
         println("${rap()} ---  Start. task=$id")
         repeat(times) { j ->
-            val x = if (j == times - 1) "x" else if (j == 0) "v" else ""
+            //val x = if (j == times - 1) "x" else if (j == 0) "v" else ""
             //println("${rap()} task=$id : $j $x")
             delay(interval)
         }

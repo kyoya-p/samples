@@ -33,6 +33,7 @@ fun main(): Unit = runBlocking {
     }
     delay(500)
     j3.cancel()
+    delay(100)
 
     // 複数の子Coroutineの停止
     println("sample4-----")
