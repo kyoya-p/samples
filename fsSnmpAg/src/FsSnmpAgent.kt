@@ -1,128 +1,136 @@
+package agent.mib
+
+import kotlinx.serialization.Serializable
+import mibtool.*
 import com.google.cloud.firestore.Firestore
 import firestoreInterOp.firestoreDocumentFlow
 import firestoreInterOp.firestoreScopeDefault
 import kotlinx.coroutines.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.Serializable
-import mibtool.*
 import mibtool.snmp4jWrapper.*
-import org.snmp4j.CommunityTarget
 import org.snmp4j.Snmp
-import org.snmp4j.smi.UdpAddress
 import java.net.InetAddress
+import mfp.mib.runMfp
+import java.util.*
 
+data class AppContext(
+        val db: Firestore,
+        val snmp: Snmp,
+)
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun main(args: Array<String>): Unit = runBlocking {
-    val agentId = if (args.isEmpty()) "agent1" else args[0]
+    val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
-            val agent = MfpMibAgent(db, snmp, agentId)
-            agent.run()
+            runAgent(AppContext(db, snmp), agentId = agentDeviceId)
         }
-        null
     }
-    println("Terminated.")
 }
 
-class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
+@Serializable
+data class AgentRequest(
+        val scanAddrSpecs: List<SnmpTarget>,
+        val autoDetectedRegister: Boolean,
+        val schedule: Schedule = Schedule(1),
+        val time: Long,
+)
+
+@Serializable
+data class Schedule(
+        val limit: Int = 1, //　回数は有限に。失敗すると破産するし
+        val interval: Long = 0,
+)
+
+@Serializable
+data class Report(
+        val time: Long,
+        val deviceId: String,
+        val deviceType: String = "agent.mfp.mib",
+        val result: Result = Result(),
+)
+
+@Serializable
+data class Result(
+        val detected: List<String> = listOf()
+)
 
 
-    @Serializable
-    data class AgentRequest(
-            val scanAddrSpecs: List<SnmpTarget>,
-            val autoDetectedRegister: Boolean,
-            val schedule: Schedule = Schedule(1),
-            val time: Long,
-    )
-
-    @Serializable
-    data class Schedule(
-            val limit: Int = 1, //　回数は有限に。失敗すると破産するし
-            val interval: Long = 0,
-    )
-
-    @Serializable
-    data class Report(
-            val time: Long,
-            val deviceId: String,
-            val deviceType: String = "agent.mfp.mib",
-            val result: Result = Result(),
-    )
-
-    @Serializable
-    data class Result(
-            val detected: List<String> = listOf()
-    )
-
-
-    @ExperimentalCoroutinesApi
-    suspend fun run() = runBlocking {
-        db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
-                .collectSchedule {
-                    val detectedList = detectDevices(it)
-                            .toList()
-                            .distinctBy { it.peerAddress }
-                            .distinctBy { "${it.response[0].toString()}/${it.response[1].toString()}" }
-                    detectedList.forEach { ev ->
-                        // println("${Date()} ${it.peerAddress} ${it.response[0].toString()}/${it.response[1].toString()} ")
-                        val deviceId = "type=mfp.mib:model=${ev.response[0].variable}:sn=${ev.response[1].variable}"
-                        val reqTarget = (ev.userObject as CommunityTarget<UdpAddress>).apply {
-                            address = ev.peerAddress
-                        }
-                        val mfp = ProxyMfp(db, snmp, deviceId, SnmpTarget.from(reqTarget))
-                        launch { mfp.run() }
-                    }
-                }
-    }
-
-    // スケジュールされたタイミングで検索要求を流す
-    @ExperimentalCoroutinesApi
-    suspend fun Flow<AgentRequest>.collectSchedule(op: suspend Flow<AgentRequest>.(SnmpTarget) -> Unit) {
-        println("Start collectSchedule()")
-        try {
-            collectLatest { req ->
-                channelFlow {
-                    do {
-                        req.scanAddrSpecs.forEach { target ->
-                            launch {
-                                this@channelFlow.offer(target)
+@ExperimentalCoroutinesApi
+suspend fun runAgent(ac: AppContext, agentId: String) = coroutineScope {
+    ac.db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(agentId) }
+            .toScheduleFlow()
+            .collectLatest { req ->
+                val devSet = mutableSetOf<String>()
+                val j = launch {
+                    req.scanAddrSpecs.forEach { tg ->
+                        discoveryDeviceFlow(tg, ac.snmp).collect { ev ->
+                            val res = ResponseEvent.from(ev)
+                            val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
+                            if (!devSet.contains(devId)) {
+                                devSet.add(devId)
+                                launch {
+                                    runMfp(ac, devId, res.resTarget)
+                                }
                             }
                         }
-                    } while (req.schedule?.run { delay(interval);true } == true)
-                }.collect {
-                    this.op(it)
+                    }
+                    val rep = Report(
+                            time = Date().time,
+                            deviceId = agentId,
+                            result = Result(
+                                    detected = devSet.toList()
+                            ),
+                    )
+                    ac.db.collection("device").document(agentId).set(rep).get()
+                }
+                try {
+                    j.join()
+                } finally {
+                    j.cancel()
+                    j.join()
                 }
             }
+}
+
+
+// Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
+// TODO: 今は一定間隔かワンショットだけ
+@ExperimentalCoroutinesApi
+suspend fun Flow<AgentRequest>.toScheduleFlow() = channelFlow {
+    collectLatest { req ->
+        try {
+            repeat(req.schedule.limit) {
+                offer(req)
+                delay(req.schedule.interval)
+            }
         } finally {
-            println("Term. collectSchedule()")
+            println("terminate toScheduleFlow()")
         }
     }
+    close()
+    awaitClose()
+}
 
-    @ExperimentalCoroutinesApi
-    suspend fun detectDevices(target: SnmpTarget) = channelFlow {
-        val oid_sysName = ".1.3.6.1.2.1.1.1"
-        val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
-        val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber).map { VB(it) }
-        val pdu = PDU.GETNEXT(sampleOids)
+// 指定の条件でSNMP検索し、検索結果を流す
+@ExperimentalCoroutinesApi
+suspend fun discoveryDeviceFlow(target: SnmpTarget, snmp: Snmp) = channelFlow {
+    val sampleOids = listOf(PDU.hrDeviceDescr, PDU.prtGeneralSerialNumber).map { VB(it) }
+    val pdu = PDU.GETNEXT(sampleOids)
 
-        if (target.isBroadcast) {
-            snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collectLatest {
-                offer(it)
-            }
-        } else {
-            snmp.scanFlow(
-                    pdu.toSnmp4j(),
-                    target.toSnmp4j(),
-                    InetAddress.getByName(target.addrRangeEnd ?: target.addr)
-            ).collectLatest {
-                offer(it)
-            }
+    if (target.isBroadcast) {
+        snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collect {
+            offer(it)
         }
-        close()
-        awaitClose()
+    } else {
+        snmp.scanFlow(
+                pdu.toSnmp4j(),
+                target.toSnmp4j(),
+                InetAddress.getByName(target.addrRangeEnd ?: target.addr)
+        ).collect {
+            offer(it)
+        }
     }
 }
