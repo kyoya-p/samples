@@ -18,3 +18,7 @@ Reference
 https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json_transformations.md
 - [Kitlin] [Serialize] マルチプラットフォーム設定
 https://awesomeopensource.com/project/Kotlin/kotlinx.serialization
+- [Firestore] ドキュメント内の要素操作
+  - https://qiita.com/zaru/items/45574cf5919441953b2e
+  - https://qiita.com/zaru/items/7cd24536731e27461a5a
+
