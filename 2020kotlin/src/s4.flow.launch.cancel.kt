@@ -1,6 +1,7 @@
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
 @Suppress("BlockingMethodInNonBlockingContext")
@@ -12,7 +13,7 @@ suspend fun main() = runBlocking {
             offer(i)
             delay(5_000)
         }
-    }.collect { // 以前のFlowを停止し新しいFlowを実行する
+    }.collectLatest { // 以前のFlowを停止し新しいFlowを実行する
         launch {// ただし、このブロックは別のContextで実行されるのでcollectLatest()によって停止させられることはない
             for (i in 0..9) {
                 println("${Date()} $it.$i")

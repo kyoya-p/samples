@@ -7,35 +7,49 @@ import java.util.*
 
 @ExperimentalCoroutinesApi
 fun main(): Unit = runBlocking {
-    val j1 = launch {
-        srcFlow(3, 200).collectLatest { a ->
-            try {
-                srcFlow(3, 100).collect { b ->
-                    aTask(a * 100 + b)
-                }
-            } finally {
-                println("term srcFlow()")
-            }
-        }
-    }
-    reset()
-    delay(700)
-    j1.cancel()
 
-    val j2 = launch {
-        srcFlow(3, 200).collectLatest { a ->
-            try {
-                srcFlow(3, 100).collect { b ->
-                    aTask(a * 100 + b)
+    println("Sample1-----")
+    // 多重Flowから生成されたサブScopeも外部からのキャンセルで停止する
+    // ただし、collectLatestによる中断ではサブScopeはキャンセルされない
+    //   collectLatestの押し出しにより中断された古いcollectブロックから派生したScopeを停止するには?
+    val j1 = launch {
+        srcFlow(3, 100).collectLatest { a ->
+            launch {
+                srcFlow(5, 100).collectLatest { b ->
+                    launch {
+                        aTask(a * 10 + b, 5, 100)
+                        //println("${rap()} ---  Term. inner $a $b")
+                    }.join()
                 }
-            } finally {
-                println("term srcFlow()")
-            }
+                //println("${rap()} ---  Term. outer $a")
+            }.join()
         }
     }
     reset()
-    delay(700)
-    j2.cancel()
+    delay(600)
+    j1.cancel()
+    j1.join()
+
+    println("Sample2-----")
+    // collectLatestの押し出しにより中断された古いcollectブロックから派生したScopeを停止するには?
+    reset()
+    launch {
+        srcFlow(3, 200).collectLatest { a ->
+            val j = launch {
+                (0..2).forEach {
+                    launch {
+                        aTask(a * 10 + it, 1, 500)
+                    }
+                }
+            }
+            try {
+                j.join()
+            } finally {
+                j.cancel() //終了時(停止含む)に中で生成したScopeをcancel()
+            }
+        }
+
+    }
 }
 
 var start = 0L
@@ -45,25 +59,24 @@ fun reset() {
 
 fun rap() = "000${(Date().time - start) % 10000}".takeLast(4)
 
-fun aTask(id: Int) {
+suspend fun aTask(id: Int, times: Int, interval: Long) {
     try {
-        repeat(5) { j ->
-            val x = if (j == 4) "x" else if (j == 0) "v" else ""
-            println("${rap()} task=$id : $j $x")
-            delay(100)
+        println("${rap()} ---  Start. task=$id")
+        repeat(times) { j ->
+            val x = if (j == times - 1) "x" else if (j == 0) "v" else ""
+            //println("${rap()} task=$id : $j $x")
+            delay(interval)
         }
     } finally {
-        println("Term. task=$id")
+        println("${rap()} ---  Term. task=$id")
     }
 }
 
 @ExperimentalCoroutinesApi
-fun srcFlow(times: Int, inteval: Long) = callbackFlow {
+fun srcFlow(times: Int, inteval: Long) = flow<Int> {
     repeat(times) {
-        offer(it)
+        emit(it)
         delay(inteval)
     }
-    close()
-    awaitClose()
 }
 

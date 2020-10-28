@@ -34,6 +34,7 @@ fun main(): Unit = runBlocking {
     delay(500)
     j3.cancel()
 
+    // 複数の子Coroutineの停止
     println("sample4-----")
     reset()
     val j4 = launch {
@@ -41,7 +42,7 @@ fun main(): Unit = runBlocking {
         launch { srcFlow(3, 100).collectLatest { aTask(it + 10) } }
     }
     delay(200)
-    j4.cancel() //複数のフローも200msで明示的にcancelされる
+    j4.cancel() //複数フローも200msで明示的にcancelされる
 
 }
 
@@ -52,7 +53,7 @@ fun reset() {
 
 fun rap() = "000${(Date().time - start) % 10000}".takeLast(4)
 
-fun aTask(id: Int) {
+suspend fun aTask(id: Int) {
     println("${rap()} Start task $id")
     try {
         repeat(5) { j ->
@@ -65,7 +66,7 @@ fun aTask(id: Int) {
 }
 
 @ExperimentalCoroutinesApi
-fun srcFlow(times: Int, inteval: Long) = callbackFlow {
+suspend fun srcFlow(times: Int, inteval: Long) = callbackFlow {
     repeat(times) {
         offer(it)
         delay(inteval)
