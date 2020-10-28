@@ -9,8 +9,10 @@ import mibtool.snmp4jWrapper.*
 import org.snmp4j.Snmp
 import java.net.InetAddress
 import MfpMibAgent.AgentRequest
+import ProxyMfp.Request
+import java.util.*
 
-data class AgentContext(
+data class AppContext(
         val db: Firestore,
         val snmp: Snmp,
 )
@@ -21,40 +23,41 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
-            runAgent(AgentContext(db, snmp), deviceId = agentDeviceId)
+            runAgent(AppContext(db, snmp), agentId = agentDeviceId)
         }
-        null
     }
-    println("Terminated.")
 }
 
 @ExperimentalCoroutinesApi
-suspend fun CoroutineScope.runAgent(ag: AgentContext, deviceId: String) {
-    ag.db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(deviceId) }
+suspend fun CoroutineScope.runAgent(ac: AppContext, agentId: String) {
+    ac.db.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(agentId) }
             .toScheduleFlow()
-            //.toDiscoveryDeviceFlow(ag.snmp)
-            .collectLatest { ev ->
-                try {
-                    flow { repeat(2) { emit(it) } }.collect {
+            .collectLatest { req ->
+                val devSet = mutableSetOf<String>()
+                val j = launch {
+                    req.scanAddrSpecs.forEach { tg ->
+                        discoveryDeviceFlow(tg, ac.snmp).collect { ev ->
 
+                            val res = ResponseEvent.from(ev)
+
+                            //println("${ev.peerAddress}")
+                            val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
+                            if (!devSet.contains(devId)) {
+                                devSet.add(devId)
+                                launch {
+                                    runMfp(ac, devId, res.resTarget)
+                                }
+                            }
+                        }
                     }
+                }
+                try {
+                    j.join()
                 } finally {
-                    println("Terminate terminal-task.")
+                    j.cancel()
+                    j.join()
                 }
             }
-    /*
-        detectedList.forEach { ev ->
-            // println("${Date()} ${it.peerAddress} ${it.response[0].toString()}/${it.response[1].toString()} ")
-            val deviceId = "type=mfp.mib:model=${ev.response[0].variable}:sn=${ev.response[1].variable}"
-            val reqTarget = (ev.userObject as CommunityTarget<UdpAddress>).apply {
-                address = ev.peerAddress
-            }
-            val mfp = ProxyMfp(db, snmp, deviceId, SnmpTarget.from(reqTarget))
-            launch { mfp.run() }
-        }
-    }
-
-     */
 }
 
 // Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
@@ -63,9 +66,10 @@ suspend fun CoroutineScope.runAgent(ag: AgentContext, deviceId: String) {
 suspend fun Flow<AgentRequest>.toScheduleFlow() = channelFlow {
     collectLatest { req ->
         try {
-            do {
+            repeat(req.schedule.limit) {
                 offer(req)
-            } while (req.schedule?.run { delay(interval);true } == true)
+                delay(req.schedule.interval)
+            }
         } finally {
             println("terminate toScheduleFlow()")
         }
@@ -74,32 +78,55 @@ suspend fun Flow<AgentRequest>.toScheduleFlow() = channelFlow {
     awaitClose()
 }
 
-// Flow<AgentRequest>を受け、指定の条件でSNMP検索し、検索結果を流す
+// 指定の条件でSNMP検索し、検索結果を流す
 @ExperimentalCoroutinesApi
-suspend fun Flow<AgentRequest>.toDiscoveryDeviceFlow(snmp: Snmp) = channelFlow {
-    val oid_sysName = ".1.3.6.1.2.1.1.1"
-    val oid_prtGeneralSerialNumber = ".1.3.6.1.2.1.43.5.1.1.17"
-    val sampleOids = listOf(oid_sysName, oid_prtGeneralSerialNumber).map { VB(it) }
+suspend fun discoveryDeviceFlow(target: SnmpTarget, snmp: Snmp) = channelFlow {
+    val sampleOids = listOf(PDU.hrDeviceDescr, PDU.prtGeneralSerialNumber).map { VB(it) }
     val pdu = PDU.GETNEXT(sampleOids)
 
-    collectLatest {
-        it.scanAddrSpecs.forEach { target ->
-            if (target.isBroadcast) {
-                snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collectLatest {
-                    offer(it)
-                }
-            } else {
-                snmp.scanFlow(
-                        pdu.toSnmp4j(),
-                        target.toSnmp4j(),
-                        InetAddress.getByName(target.endAddr ?: target.addr)
-                ).collectLatest {
-                    offer(it)
-                }
-            }
+    if (target.isBroadcast) {
+        snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collect {
+            offer(it)
+        }
+    } else {
+        snmp.scanFlow(
+                pdu.toSnmp4j(),
+                target.toSnmp4j(),
+                InetAddress.getByName(target.addrRangeEnd ?: target.addr)
+        ).collect {
+            offer(it)
         }
     }
-    close()
-    awaitClose()
 }
 
+@ExperimentalCoroutinesApi
+suspend fun CoroutineScope.runMfp(ac: AppContext, deviceId: String, target: SnmpTarget) {
+    println("Started Device ${deviceId}")
+    try {
+        firestoreScopeDefault { db ->
+            val oids = listOf(PDU.sysName, PDU.sysDescr, PDU.sysObjectID, PDU.hrDeviceStatus, PDU.hrPrinterStatus, PDU.hrPrinterDetectedErrorState)
+            val res = ac.snmp.sendFlow(
+                    target = target.toSnmp4j(),
+                    pdu = PDU.GETNEXT(vbl = oids.map { VB(it) }).toSnmp4j()
+            ).first()
+
+            val rep = ProxyMfp.Report(
+                    deviceId = deviceId, type = "mfp.mib", time = Date().time,
+                    result = ProxyMfp.Result(
+                            pdu = PDU.from(res.response)
+                    ),
+            )
+
+            db.collection("devLog").document().set(rep).get()
+            db.collection("device").document(deviceId).set(rep).get()
+
+//        db.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {            println(it) }
+            delay(10000)
+        }
+    } catch (e: Exception) {
+        println("Exception in $deviceId")
+        e.printStackTrace()
+    } finally {
+        println("Terminated Device ${deviceId}")
+    }
+}

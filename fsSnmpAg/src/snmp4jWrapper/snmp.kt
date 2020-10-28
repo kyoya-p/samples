@@ -75,7 +75,7 @@ fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: InetAddres
     }.toList().forEach { it.join() }
     close()
     awaitClose()
-}
+}.buffer(10)
 
 suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
     val retries = target.retries

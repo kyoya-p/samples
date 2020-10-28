@@ -10,10 +10,10 @@ import java.net.InetAddress
 
 fun ResponseEvent.Companion.from(res: org.snmp4j.event.ResponseEvent<UdpAddress>) = ResponseEvent(
         reqTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        reqPdu = res.request.toPDU(),
+        reqPdu = mibtool.PDU.from(res.request),
 
         resTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        resPdu = res.response.toPDU(),
+        resPdu = mibtool.PDU.from(res.response),
 )
 
 fun SnmpTarget.Companion.from(t: CommunityTarget<UdpAddress>) = SnmpTarget(
@@ -37,11 +37,11 @@ fun SnmpTarget.toSnmp4j() = CommunityTarget<UdpAddress>(
         OctetString(this.credential.v1commStr),
 )
 
-fun PDU.toPDU() = mibtool.PDU(
-        errSt = errorStatus,
-        errIdx = errorIndex,
-        type = type,
-        vbl = variableBindings.map { it.toVB() }
+fun mibtool.PDU.Companion.from(pdu: PDU) = mibtool.PDU(
+        errSt = pdu.errorStatus,
+        errIdx = pdu.errorIndex,
+        type = pdu.type,
+        vbl = pdu.variableBindings.map { it.toVB() }
 )
 
 fun mibtool.PDU.toSnmp4j() = org.snmp4j.PDU().also {

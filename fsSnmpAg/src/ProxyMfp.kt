@@ -13,9 +13,9 @@ import mibtool.GETNEXT
 import mibtool.PDU
 import mibtool.SnmpTarget
 import mibtool.VB
+import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.snmpScopeDefault
-import mibtool.snmp4jWrapper.toPDU
 import mibtool.snmp4jWrapper.toSnmp4j
 import org.snmp4j.Snmp
 import java.util.*
@@ -90,7 +90,7 @@ class ProxyMfp(val db: Firestore, val snmp: Snmp, val deviceId: String, val targ
             val r = Report(
                     deviceId = deviceId,
                     result = Result(
-                            pdu = res.response.toPDU(),
+                            pdu = PDU.from(res.response),
                     ),
             )
             db.collection("devLog").document().set(r)

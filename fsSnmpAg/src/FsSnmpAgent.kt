@@ -21,7 +21,7 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
     snmpScopeDefault { snmp ->
         firestoreScopeDefault { db ->
             val agent = MfpMibAgent(db, snmp, agentId)
-            agent.run2(this)
+            agent.run()
         }
         null
     }
@@ -30,23 +30,19 @@ suspend fun main(args: Array<String>): Unit = runBlocking {
 
 class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
 
-    @ExperimentalCoroutinesApi
-    fun run2(cs: CoroutineScope) = cs.run {
-        1
-    }
 
     @Serializable
     data class AgentRequest(
             val scanAddrSpecs: List<SnmpTarget>,
             val autoDetectedRegister: Boolean,
-            val schedule: Schedule? = null,
+            val schedule: Schedule = Schedule(1),
             val time: Long,
     )
 
     @Serializable
     data class Schedule(
-            val interval: Long,
-            val limit: Int = 100, //　回数は有限に。失敗すると破産するから。
+            val limit: Int = 1, //　回数は有限に。失敗すると破産するし
+            val interval: Long = 0,
     )
 
     @Serializable
@@ -121,7 +117,7 @@ class MfpMibAgent(val db: Firestore, val snmp: Snmp, val deviceId: String) {
             snmp.scanFlow(
                     pdu.toSnmp4j(),
                     target.toSnmp4j(),
-                    InetAddress.getByName(target.endAddr ?: target.addr)
+                    InetAddress.getByName(target.addrRangeEnd ?: target.addr)
             ).collectLatest {
                 offer(it)
             }
