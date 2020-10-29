@@ -21,7 +21,9 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 @Suppress("BlockingMethodInNonBlockingContext")
 fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
+    println("Start Agent ${agentDeviceId}")
     runAgent(agentDeviceId)
+    println("Terminated Agent ${agentDeviceId}")
 }
 
 @Serializable
