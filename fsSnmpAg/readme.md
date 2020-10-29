@@ -15,10 +15,12 @@ Proxy関連設定: jvm引数に以下を追加:
 Reference
 ---
 - [Kotlin] [Serialize] 
-https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json_transformations.md
-- [Kitlin] [Serialize] マルチプラットフォーム設定
-https://awesomeopensource.com/project/Kotlin/kotlinx.serialization
+  - https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json_transformations.md
+- [Kotlin] [Serialize] マルチプラットフォーム設定
+  - https://awesomeopensource.com/project/Kotlin/kotlinx.serialization
 - [Firestore] ドキュメント内の要素操作
   - https://qiita.com/zaru/items/45574cf5919441953b2e
   - https://qiita.com/zaru/items/7cd24536731e27461a5a
-
+- [Firestore] collectionGroupを可能にするルール
+  - https://firebase.google.com/docs/firestore/security/rules-query?hl=ja#secure_and_query_documents_based_on_collection_groups
+  

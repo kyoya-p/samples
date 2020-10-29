@@ -1,9 +1,10 @@
 package gdvm.agent.mib
 
+import firestoreInterOp.firestoreDocumentFlow
 import kotlinx.serialization.Serializable
 import mibtool.*
 import com.google.cloud.firestore.FirestoreOptions
-import FirestoreInterOp.firestoreDocumentFlow
+import com.google.cloud.firestore.FieldPath
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -85,13 +86,10 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                     // 検索結果をDBに登録
                     if (req.autoRegister) {
                         //自身が登録されているGroupを探す(ルール上1つだけ)
-                        val myGr = firestore.collection("group").whereArrayContains("memberList", agentId).limit(1).get()
-//                        val myMember=
-                        // そこに登録
-                        //TODO:BLocking code
-                        firestore.collection("group").document(myGr.get().documents[0].id).let {
-                            //val devCollection = it.collection("devices")
-
+                        val myGr = firestore.collection("group")
+                                .whereEqualTo("a", "a").get().get() //TODO: Blocking
+                        if (myGr.documents.size == 1) {
+                            println(myGr.documents[0].id)
                         }
                     }
                 }

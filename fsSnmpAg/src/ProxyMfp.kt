@@ -1,7 +1,7 @@
 package gdvm.mfp.mib
 
 import com.google.cloud.firestore.FirestoreOptions
-import FirestoreInterOp.firestoreDocumentFlow
+import firestoreInterOp.firestoreDocumentFlow
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
