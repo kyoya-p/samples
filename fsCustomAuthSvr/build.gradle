@@ -1,0 +1,47 @@
+buildscript {
+    ext.kotlin_version = '1.4.10'
+    repositories {
+        maven { url "http://10.36.102.80:8080/repository/internal" }
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+        google()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'application'
+apply plugin: 'kotlin'
+
+sourceSets.main.java.srcDirs = ['src']
+sourceSets.main.resources.srcDirs = ['resources']
+sourceSets.test.java.srcDirs = ['test']
+compileJava.options.encoding = "UTF-8"
+
+repositories {
+    maven { url "http://10.36.102.80:8080/repository/internal" }
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    google()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    // for Firebase
+
+    compile group: 'com.google.firebase', name: 'firebase-admin', version: '7.0.1'
+    // https://mvnrepository.com/artifact/com.google.firebase/firebase-admin
+}
+
+mainClassName = 'fsCustomAuthSvrKt'
+
+
+jar {
+    manifest { attributes 'Main-Class': mainClassName }
+    from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
