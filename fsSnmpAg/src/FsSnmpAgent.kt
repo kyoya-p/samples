@@ -82,16 +82,18 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                                     detected = devSet.toList()
                             ),
                     )
-                    firestore.collection("device").document(agentId).set(rep).get() //TODO:BLocking code
+                    firestore.collection("device").document(agentId).set(rep) //.get() //get() is BLocking code
 
                     // 検索結果をDBに登録
+                    // TODO
                     if (req.autoRegister) {
                         //自身が登録されているGroupを探す(ルール上1つだけ)
-                        val myGr = firestore.collection("group")
-                                .whereEqualTo("a", "a").get().get() //TODO: Blocking
+                        /* val myGr = firestore.collection("group")
+                                .whereEqualTo("a", "a").get() //.get() //TODO: Blocking
                         if (myGr.documents.size == 1) {
                             println(myGr.documents[0].id)
                         }
+                         */
                     }
                 }
                 try {
@@ -102,7 +104,6 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                 }
             }
 }
-
 
 // Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
 // TODO: 今は一定間隔かワンショットだけ
