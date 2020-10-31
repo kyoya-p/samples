@@ -4,8 +4,8 @@ Firebase Custom Authorization Service
 Note:
 ----
 このプロジェクトはJava(Kotlin)で記載されていて、サーバFirestore管理者アプリ用である。
-* Firebase Client SDKはAnfroid,iOS,WebBrowser用のみ。
-* AdminSDKは多言語あるが、管理者用であり、ユーザ認証できない。
+* Admin SDKは、Firestore管理者用であり、ユーザ認証できない。
+* Firebase モバイル/Web SDKはAnfroid,iOS,WebBrowser用のみ。Java(Kotlni)版は無い
 
 
 Build Environment
