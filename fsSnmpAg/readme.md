@@ -15,7 +15,7 @@ Proxy関連設定: jvm引数に以下を追加:
 ` -Djdk.http.auth.tunneling.disabledSchemes="" -Dhttps.proxyHost=proxyhost.domain.com -Dhttps.proxyPort=8080 `
 
 
-Component
+機能要件
 ----
 - カスタム認証
   - デバイス認証に必要
@@ -28,6 +28,7 @@ Component
   - 単一ドキュメント監視による
 - スケーラビリティ
   - 要確認
+- データ制約の定義
 
 
 Reference

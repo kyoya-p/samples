@@ -1,11 +1,11 @@
 buildscript {
     ext.kotlin_version = '1.4.10'
     repositories {
-        maven { url "http://10.36.102.80:8080/repository/internal" }
         mavenLocal()
         mavenCentral()
         jcenter()
         google()
+        maven { url "http://10.36.102.80:8080/repository/internal" }
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -21,23 +21,28 @@ sourceSets.test.java.srcDirs = ['test']
 compileJava.options.encoding = "UTF-8"
 
 repositories {
-    maven { url "http://10.36.102.80:8080/repository/internal" }
     mavenLocal()
     mavenCentral()
     jcenter()
     google()
+    maven { url "http://10.36.102.80:8080/repository/internal" }
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    api "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     // for Firebase
-
-    compile group: 'com.google.firebase', name: 'firebase-admin', version: '7.0.1'
+    api group: 'com.google.firebase', name: 'firebase-admin', version: '7.0.1'
     // https://mvnrepository.com/artifact/com.google.firebase/firebase-admin
+    //api group: 'com.google.firebase', name: 'firebase-server-sdk', version: '3.0.3' // obsoleted
+
+    api platform('com.google.firebase:firebase-bom:25.12.0')
+
+    api group: 'com.google.firebase', name: 'firebase-auth', version: '20.0.0'
+
 }
 
-mainClassName = 'fsCustomAuthSvrKt'
+mainClassName = 'fsCustomAuthSvr.FsCustomAuthSvrKt'
 
 
 jar {
