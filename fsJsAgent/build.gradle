@@ -10,6 +10,7 @@ repositories {
 }
 dependencies {
     api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0-M1'
+    api(npm("firebase", "Any"))
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
