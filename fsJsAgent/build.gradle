@@ -1,6 +1,7 @@
 plugins {
     id 'org.jetbrains.kotlin.js' version '1.4.10'
 }
+
 group = 'me.kyoya'
 version = '1.0-SNAPSHOT'
 
@@ -12,7 +13,10 @@ dependencies {
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
-kotlin {
+
+
+kotlin{js{nodejs()}}
+/*kotlin {
     js {
         browser {
             binaries.executable()
@@ -22,5 +26,9 @@ kotlin {
                 }
             }
         }
+
+        nodejs()
     }
 }
+
+*/

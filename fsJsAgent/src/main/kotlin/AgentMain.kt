@@ -1,9 +1,11 @@
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+external fun require(module: String): dynamic //javascriptのrequire()を呼ぶ
 
-@InternalCoroutinesApi
-suspend fun main() {
-    flowOf("Hello,", "frends", ".").onEach { delay(1000) }.collect { print(it) }
+fun main() {
+    val exp = require("express")
+    val svr = exp()
+    svr.get("/") { _, res ->
+        res.send("Kotlin/JS Web Server.")
+    }
+    svr.listen(8080)
 }
 
