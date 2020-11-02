@@ -9,8 +9,8 @@ repositories {
     mavenCentral()
 }
 dependencies {
-    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0-M1'
-    api(npm("firebase", "Any"))
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
+    api(npm("firebase","8.0.0"))
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
