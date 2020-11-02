@@ -10,6 +10,8 @@ repositories {
 }
 dependencies {
     api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
+    api "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
+
     api(npm("firebase","8.0.0"))
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
