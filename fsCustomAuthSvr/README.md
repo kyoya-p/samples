@@ -17,7 +17,9 @@ Build & Run
 ``` 
 git clone https://github.com/kyoya-p/samples
 cd samples/fsCustomAuthSvr
-set GOOGLE_APPLICATION_CREDENTIALS=resources\road-to-iot-8efd3bfb2ccd.json
+// unzip road-to-iot-8efd3bfb2ccd.zip
+set GOOGLE_APPLICATION_CREDENTIALS=road-to-iot-8efd3bfb2ccd.json
+
 gradlew run 
 ```
 
