@@ -24,22 +24,22 @@ class Firebase(apiKey: String, authDomain: String, projectId: String) {
 
         @ExperimentalCoroutinesApi
         fun onAuthStateChanged() = callbackFlow {
-            _auth.onAuthStateChanged { user ->
-                println("Callbacked")
-                if (user) offer(user)
-            }
+            _auth.onAuthStateChanged { user -> if (user) offer(user) }
             awaitClose {} // 一生closeしないけど..
         }
     }
 
+    @ExperimentalCoroutinesApi
     class Firestore(val _firestore: dynamic) {
         fun collection(path: String) = CollectionReference(_firestore.collect(path))
     }
 
+    @ExperimentalCoroutinesApi
     class CollectionReference(val _collectionRef: dynamic) {
         fun document(path: String) = DocumentReference(_collectionRef.document(path))
     }
 
+    @ExperimentalCoroutinesApi
     class DocumentReference(val _documentRef: dynamic) {
         suspend fun get() = callbackFlow {
             _documentRef.get().then { doc -> offer(DocumentSnapshot(doc)) }

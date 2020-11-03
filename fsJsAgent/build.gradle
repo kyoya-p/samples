@@ -1,6 +1,4 @@
-plugins {
-    id 'org.jetbrains.kotlin.js' version '1.4.10'
-}
+plugins { id 'org.jetbrains.kotlin.js' version '1.4.10' }
 
 group = 'me.kyoya'
 version = '1.0-SNAPSHOT'
@@ -12,13 +10,13 @@ dependencies {
     api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
     api "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
 
-    api(npm("firebase","8.0.0"))
+    api(npm("firebase", "8.0.0"))
 
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
 
 
-kotlin{js{nodejs()}}
+kotlin { js { nodejs() } }
 /*kotlin {
     js {
         browser {
