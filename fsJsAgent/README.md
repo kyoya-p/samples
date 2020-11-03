@@ -7,14 +7,14 @@ Firebase Custom Token 認証
 ----
 https://sequencediagram.org/
 ```
-device <-	operator:					Enter(serviceAccountCredentialInfo,decieId)
+device <-   operator:                   Enter(serviceAccountCredentialInfo,decieId)
 
-device ->	customSvr: 					makeCustomToken(deviceId,password)
-			customSvr ->	Firebase:	authorize(serviceAccountCredentialInfo)
-			customSvr ->	Firebase:	pw=getDevicePassword(deviceId)
-            customSvr -> 	customSvr:	check password
-            customSvr -> 	customSvr:	create custom claimes info
-            customSvr -> 	Firebase:	createCustomToken()
-device <--  customSvr:					customToken
-device ->				 	Firebase:	loginWithCustomToken(custoToken)
+device ->   customSvr:                  makeCustomToken(deviceId,password)
+			customSvr ->    Firebase:   authorize(serviceAccountCredentialInfo)
+			customSvr ->    Firebase:   pw=getDevicePassword(deviceId)
+            customSvr ->    customSvr:  check password
+            customSvr ->    customSvr:  create custom claimes info
+            customSvr ->    Firebase:   createCustomToken()
+device <--  customSvr:                  customToken
+device ->                   Firebase:   loginWithCustomToken(custoToken)
 ```
