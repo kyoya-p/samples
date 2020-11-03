@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 external fun require(module: String): dynamic //javascriptのrequire()を呼ぶ
 
+@ExperimentalCoroutinesApi
 class Firebase(apiKey: String, authDomain: String, projectId: String) {
     val _firebase: dynamic = initializeApp(apiKey, authDomain, projectId)
 
@@ -19,24 +20,28 @@ class Firebase(apiKey: String, authDomain: String, projectId: String) {
     }
 
     class Auth(val _auth: dynamic) {
-        fun signInWithEmailAndPassword(email: String, password: String) =
+        fun signInWithEmailAndPassword(email: String, password: String): Unit =
             _auth.signInWithEmailAndPassword(email, password)
 
+        fun signInWithCustomToken(token: String): Unit =
+            _auth.signInWithCustomToken(token)
+
         @ExperimentalCoroutinesApi
-        fun onAuthStateChanged() = callbackFlow {
+        fun onAuthStateChangedFlow() = callbackFlow {
             _auth.onAuthStateChanged { user -> if (user) offer(user) }
             awaitClose {} // 一生closeしないけど..
         }
+
     }
 
     @ExperimentalCoroutinesApi
     class Firestore(val _firestore: dynamic) {
-        fun collection(path: String) = CollectionReference(_firestore.collect(path))
+        fun collection(path: String) = CollectionReference(_firestore.collection(path))
     }
 
     @ExperimentalCoroutinesApi
     class CollectionReference(val _collectionRef: dynamic) {
-        fun document(path: String) = DocumentReference(_collectionRef.document(path))
+        fun document(path: String) = DocumentReference(_collectionRef.doc(path))
     }
 
     @ExperimentalCoroutinesApi
@@ -52,7 +57,7 @@ class Firebase(apiKey: String, authDomain: String, projectId: String) {
     }
 
     class DocumentSnapshot(val _documentSnapshot: dynamic) {
-        val data get() :Map<String, Any> = _documentSnapshot.data()
+        fun data(): dynamic = _documentSnapshot.data() //ここから先はdynamic型で許してください
     }
 
     val auth = Auth(_firebase.auth())

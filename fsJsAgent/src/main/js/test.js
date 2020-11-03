@@ -31,6 +31,9 @@ function dbOperation() {
     docRef.get().then(function(doc) {
         if (doc.exists) {
             console.log("Document data:", doc.data());
+            var data=doc.data()
+            console.log("data.deviceId:", data.deviceId);
+            console.log("data.deviceId:", data["deviceId"]);
         } else {
             console.log("No such document!");
         }
