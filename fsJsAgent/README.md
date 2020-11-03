@@ -6,7 +6,8 @@ Firebase Custom Token 認証
 認証Sequence
 ----
 https://sequencediagram.org/
-```
+
+```sequence:
 device <-   operator:                   Enter(serviceAccountCredentialInfo,decieId)
 
 device ->   customSvr:                  makeCustomToken(deviceId,password)
