@@ -25,12 +25,12 @@ https://sequencediagram.org/
 ```sequence:
 device <-   operator:                   Enter(serviceAccountCredentialInfo,decieId)
 
-device ->   customSvr:                  makeCustomToken(deviceId,password)
-            customSvr ->    Firebase:   authorize(serviceAccountCredentialInfo)
-            customSvr ->    Firebase:   pw=getDevicePassword(deviceId)
-            customSvr ->    customSvr:  check password
-            customSvr ->    customSvr:  create custom claimes info
-            customSvr ->    Firebase:   createCustomToken()
-device <--  customSvr:                  customToken
+device ->   cstmTknSvr:                 makeCustomToken(deviceId,password)
+            cstmTknSvr ->   Firebase:   authorize(serviceAccountCredentialInfo)
+            cstmTknSvr ->   Firebase:   pw=getDevicePassword(deviceId)
+            cstmTknSvr ->   cstmTknSvr: check password
+            cstmTknSvr ->   cstmTknSvr: create custom claimes info
+            cstmTknSvr ->   Firebase:   createCustomToken()
+device <--  cstmTknSvr:                 return(customToken)
 device ->                   Firebase:   loginWithCustomToken(custoToken)
 ```
