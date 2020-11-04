@@ -27,7 +27,7 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 @Serializable
-data class AgentRequest(
+data class SnmpAgentRequest(
         val scanAddrSpecs: List<SnmpTarget>,
         val autoRegister: Boolean,
         val schedule: Schedule = Schedule(1),
@@ -56,7 +56,7 @@ data class Result(
 
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
-    firestore.firestoreDocumentFlow<AgentRequest> { collection("devConfig").document(agentId) }
+    firestore.firestoreDocumentFlow<SnmpAgentRequest> { collection("devConfig").document(agentId) }
             .toScheduleFlow()
             .collectLatest { req ->
                 val devSet = mutableSetOf<String>()
@@ -82,7 +82,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                                     detected = devSet.toList()
                             ),
                     )
-                    firestore.collection("device").document(agentId).set(rep) //.get() //get() is BLocking code
+                    firestore.collection("devStatus").document(agentId).set(rep) //.get() //get() is BLocking code
 
                     // 検索結果をDBに登録
                     // TODO
@@ -108,7 +108,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
 // Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
 // TODO: 今は一定間隔かワンショットだけ
 @ExperimentalCoroutinesApi
-suspend fun Flow<AgentRequest>.toScheduleFlow() = channelFlow {
+suspend fun Flow<SnmpAgentRequest>.toScheduleFlow() = channelFlow {
     collectLatest { req ->
         try {
             repeat(req.schedule.limit) {
