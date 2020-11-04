@@ -7,6 +7,7 @@ Build & Run
 ``` 
 git clone https://github.com/kyoya-p/samples
 cd samples/fsSnmpAg
+//unzip resource/road-to-iot-8efd3bfb2ccd.zip
 set GOOGLE_APPLICATION_CREDENTIALS=resources\road-to-iot-8efd3bfb2ccd.json
 gradlew run 
 ```

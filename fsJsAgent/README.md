@@ -15,7 +15,7 @@ git clone https://github.com/kyoya-p/samples
 cd samples/fsJsAgent
 // unzip road-to-iot-8efd3bfb2ccd.json.zip
 set GOOGLE_APPLICATION_CREDENTIALS=road-to-iot-8efd3bfb2ccd.json
-graglew build
+gradlew build
 
 node build\js\packages\FsJsAgent\kotlin\FsJsAgent.js
 ```
