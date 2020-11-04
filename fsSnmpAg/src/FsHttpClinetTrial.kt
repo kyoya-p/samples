@@ -41,15 +41,15 @@ suspend fun runHttpAgent(agentId: String) {
     firestore.firestoreDocumentFlow<HttpAgentRequest> { collection("devConfig").document(agentId) }.collectLatest { req ->
         println(req)
         runCatching {
-            val res = httpClient.request<ByteArray> {
+            val res = httpClient.request<String> {
                 url(req.request.url)
                 method = HttpMethod(req.request.method.methodString)
                 req.request.headers.map { (k, v) -> header(k, v) }
                 body = req.request.body
             }
-            firestore.collection("devStatus").document(agentId).set(res)
+            firestore.collection("devStatus").document(agentId).set(mapOf("response" to res))
         }.onFailure {
-
+            it.printStackTrace()
         }
     }
 }
