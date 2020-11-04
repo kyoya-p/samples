@@ -15,10 +15,10 @@ buildscript {
 apply plugin: 'application'
 apply plugin: 'kotlin'
 
-sourceSets.main.java.srcDirs = ['src']
-sourceSets.main.resources.srcDirs = ['resources']
-sourceSets.test.java.srcDirs = ['test']
-compileJava.options.encoding = "UTF-8"
+//sourceSets.main.java.srcDirs = ['src']
+//sourceSets.main.resources.srcDirs = ['resources']
+//sourceSets.test.java.srcDirs = ['test']
+//compileJava.options.encoding = "UTF-8"
 
 repositories {
     mavenLocal()
@@ -31,7 +31,6 @@ repositories {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
-
     compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
 
     // for Firebase
@@ -45,11 +44,13 @@ dependencies {
     compile group: 'io.ktor', name: 'ktor-locations', version: '1.4.1'
 }
 
-mainClassName = 'fsCustomAuthSvr.FsCustomAuthSvrKt'
+//mainClassName = 'fsCustomAuthSvr.FsCustomAuthSvrKt'
+mainClassName = 'FsCustomAuthSvrKt'
 
 
 jar {
     manifest { attributes 'Main-Class': mainClassName }
     from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+
 }
 

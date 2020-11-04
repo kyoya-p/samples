@@ -12,7 +12,7 @@
 
  */
 
-package fsCustomAuthSvr
+//package fsCustomAuthSvr
 
 import com.google.cloud.firestore.FirestoreOptions
 import com.google.firebase.FirebaseApp
