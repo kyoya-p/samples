@@ -56,7 +56,7 @@ suspend fun runMfp(deviceId: String, target: SnmpTarget) = coroutineScope {
 
         // ログと最新状態それぞれ書込み
         firestore.collection("devLog").document().set(rep).get() //TODO:BLocking code
-        firestore.collection("device").document(deviceId).set(rep).get() //TODO:BLocking code
+        firestore.collection("devStatus").document(deviceId).set(rep).get() //TODO:BLocking code
 
         firestore.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {
             // インスタンス設定に応じた処理(あれば)
