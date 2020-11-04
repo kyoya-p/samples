@@ -50,6 +50,7 @@ suspend fun runHttpAgent(agentId: String) {
             firestore.collection("devStatus").document(agentId).set(mapOf("response" to res))
         }.onFailure {
             it.printStackTrace()
+            firestore.collection("devStatus").document(agentId).set(mapOf("stacktrace" to it.stackTraceToString()))
         }
     }
 }
