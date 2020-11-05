@@ -31,6 +31,10 @@ import io.ktor.server.netty.*
 val db = FirestoreOptions.getDefaultInstance().getService()!!
 
 @KtorExperimentalLocationsAPI
+@Location("/customToken")
+data class Credential(val id: String, val pw: String)
+
+@KtorExperimentalLocationsAPI
 fun main(args: Array<String>) {
     val port = if (args.size != 1) 8080 else args[0].toInt()
 
@@ -42,31 +46,29 @@ fun main(args: Array<String>) {
         install(Locations)
         routing {
             get<Credential> { credential ->
-                val customToken = createCustomToken(credential)
-                call.respondText(customToken, ContentType.Text.Html)
+                val res = createCustomToken(credential)
+                println("Res=${res}")
+                call.respondText(res, ContentType.Text.Plain)
             }
         }
     }.start(wait = true)
 }
 
-@KtorExperimentalLocationsAPI
-@Location("/customToken")
-data class Credential(val id: String, val pw: String)
 
 //@Serializable
 //data class CustomClaimes(val id:String, val clusterId:String,)
 
 @KtorExperimentalLocationsAPI
 fun createCustomToken(credential: Credential): String {
-    println("Credential: $credential")
+    println("Requested with credential: $credential")
 
     // Check parameters by Firestore document
     val devPasswd = db.collection("device").document(credential.id).get().get()?.data?.get("password") as String?
-    if (devPasswd == null || devPasswd != credential.pw) return "Error(1). //TODO"
+    if (devPasswd == null || devPasswd != credential.pw) return ""
 
     // Get clusterId of this device
     val clusterId = db.collection("group").whereEqualTo("member.${credential.id}", true).limit(1).get().get()?.documents?.get(0)?.id
-    if (clusterId == null) return "Error(2). //TODO"
+    if (clusterId == null) return ""
 
     // Make Custom Token with custom Claims
     val additionalClaims = mapOf(
