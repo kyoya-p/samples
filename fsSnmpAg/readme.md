@@ -15,7 +15,6 @@ gradlew run
 Proxy関連設定: jvm引数に以下を追加:  
 ` -Djdk.http.auth.tunneling.disabledSchemes="" -Dhttps.proxyHost=proxyhost.domain.com -Dhttps.proxyPort=8080 `
 
-
 機能要件
 ----
 - カスタム認証
