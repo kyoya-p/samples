@@ -37,9 +37,11 @@ data class HttpRequest(
 fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceIds = if (args.isEmpty()) listOf("httpAgent1") else args.map { it }
     agentDeviceIds.forEach {
-        println("Start Agent ${agentDeviceIds}")
-        launch { runHttpAgent(it) }
-        println("Terminated Agent ${agentDeviceIds}")
+        launch {
+            println("Start Agent ${agentDeviceIds}")
+            runHttpAgent(it)
+            println("Terminated Agent ${agentDeviceIds}")
+        }
     }
 }
 
