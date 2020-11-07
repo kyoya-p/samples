@@ -1,4 +1,0 @@
-rootProject.name = 'root'
-rootProject.projectDir = new File(settingsDir, '.')
-
-includeFlat("fsSnmpAgent")

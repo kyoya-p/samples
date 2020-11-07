@@ -1,20 +1,24 @@
 package gifts
 
+import com.google.cloud.firestore.DocumentReference
 import com.google.cloud.firestore.Firestore
 import db
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.locations.*
 import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.util.*
 import io.ktor.util.pipeline.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 @KtorExperimentalLocationsAPI
 @Location("/rsp/{ch}/{url}")
 data class RspRequest(val url: String, val ch: String)
 
-fun RspRequest.rspReq(pipelineContext: PipelineContext<Unit, ApplicationCall>) {
+fun RspRequest.rsp(pipelineContext: PipelineContext<Unit, ApplicationCall>) {
     println(this)
 
     val method = when (pipelineContext.context.request.httpMethod) {
@@ -32,10 +36,16 @@ fun RspRequest.rspReq(pipelineContext: PipelineContext<Unit, ApplicationCall>) {
                     body = "", //TODO
             )
     )
-    println(fsReq)
+    println("Request URL: ${url}")
+    val fsRes = db.collection("devStatus").document(ch).get()
     db.collection("devConfig").document(ch).set(fsReq).get() // blocking
-    val res = db.collection("devStatus").document(ch).get().get() // blocking
-    println(res.data)
+
+    val res = fsRes.get().data!!.toJsonObject().decode<HttpResponse>()
+    //println(res)
+    res.headers.forEach { (k, v) ->
+        pipelineContext.context.response.header(k, v)
+    }
+    pipelineContext.context.respondText(res.body)
 }
 
 /*
@@ -57,7 +67,7 @@ data class HttpRequest(
         val headers: Map<String, String> = mapOf(),
         val body: String,
 ) {
-    public enum class Method(val methodString: String) {
+    enum class Method(val methodString: String) {
         GET("GET"),
         POST("POST"),
     }
@@ -68,4 +78,42 @@ data class Schedule(
         val limit: Int = 1, //　回数は有限に。失敗すると破産するし
         val interval: Long = 0,
 )
+
+
+@Serializable
+data class HttpResponse(
+        val code: Int,
+        val httpVer: String,
+        val headers: Map<String, String> = mapOf(),
+        val body: String,
+)
+
+inline fun <reified T : Any> JsonObject.decode() = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<T>(this)
+//inline fun <reified T > Map<String, Any>.decode() = toJsonObject().decode<T>()
+
+fun Map<String, Any>.toJsonObject(): JsonObject = buildJsonObject {
+    forEach { (k, v) ->
+        when (v) {
+            is Number -> put(k, v)
+            is String -> put(k, v)
+            is Boolean -> put(k, v)
+            is Map<*, *> -> put(k, (v as Map<String, Any>).toJsonObject())
+            is List<*> -> put(k, (v as List<Any>).toJsonArray())
+        }
+    }
+}
+
+fun List<Any>.toJsonArray(): JsonArray = buildJsonArray {
+    forEach { v ->
+        when (v) {
+            is Number -> add(v)
+            is String -> add(v)
+            is Boolean -> add(v)
+            is Map<*, *> -> add((v as Map<String, Any>).toJsonObject())
+            is List<*> -> add((v as List<Any>).toJsonArray())
+        }
+    }
+}
+
+
 

@@ -32,15 +32,14 @@ data class HttpRequest(
     }
 }
 
+
 @InternalCoroutinesApi
 fun main(args: Array<String>): Unit = runBlocking {
     val agentDeviceIds = if (args.isEmpty()) listOf("httpAgent1") else args.map { it }
     agentDeviceIds.forEach {
-        launch {
-            println("Start Agent ${it}")
-            runHttpAgent(it)
-            println("Terminated Agent ${it}")
-        }
+        println("Start Agent ${agentDeviceIds}")
+        launch { runHttpAgent(it) }
+        println("Terminated Agent ${agentDeviceIds}")
     }
 }
 

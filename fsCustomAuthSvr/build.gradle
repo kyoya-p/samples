@@ -32,6 +32,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
     compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
+    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-runtime', version: '1.0-M1-1.4.0-rc'
 
     // for Firebase
     compile platform('com.google.firebase:firebase-bom:25.12.0')
@@ -50,7 +51,6 @@ mainClassName = 'FsCustomAuthSvrKt'
 
 jar {
     manifest { attributes 'Main-Class': mainClassName }
-    from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-
+    //from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
 }
 

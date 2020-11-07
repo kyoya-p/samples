@@ -18,7 +18,7 @@ import com.google.cloud.firestore.FirestoreOptions
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import gifts.RspRequest
-import gifts.rspReq
+import gifts.rsp
 import java.util.*
 
 
@@ -53,8 +53,8 @@ fun main(args: Array<String>) {
                 call.respondText(res, ContentType.Text.Plain)
             }
 
-            get<RspRequest> { it.rspReq(this) }
-            post<RspRequest> { it.rspReq(this) }
+            get<RspRequest> { it.rsp(this) }
+            post<RspRequest> { it.rsp(this) }
         }
     }.start(wait = true)
 }
