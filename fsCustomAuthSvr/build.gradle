@@ -39,10 +39,14 @@ dependencies {
     compile group: 'com.google.firebase', name: 'firebase-admin', version: '7.0.1'
     compile group: 'com.google.firebase', name: 'firebase-auth', version: '20.0.0'
 
-    // for ktor webserver
+    // for Ktor Server
     compile group: 'io.ktor', name: 'ktor-server-core', version: '1.4.1'
     compile group: 'io.ktor', name: 'ktor-server-netty', version: '1.4.1'
     compile group: 'io.ktor', name: 'ktor-locations', version: '1.4.1'
+
+    // for Ktor Clinet
+    compile group: 'io.ktor', name: 'ktor-client-core', version: '1.4.1'
+    compile group: 'io.ktor', name: 'ktor-client-cio', version: '1.4.1'
 }
 
 //mainClassName = 'fsCustomAuthSvr.FsCustomAuthSvrKt'

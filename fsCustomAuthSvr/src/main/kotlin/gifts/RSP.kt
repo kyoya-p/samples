@@ -1,16 +1,12 @@
 package gifts
 
-import com.google.cloud.firestore.DocumentReference
-import com.google.cloud.firestore.Firestore
 import db
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.locations.*
 import io.ktor.request.*
-import io.ktor.response.*
 import io.ktor.util.*
 import io.ktor.util.pipeline.*
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
@@ -18,34 +14,27 @@ import kotlinx.serialization.json.*
 @Location("/rsp/{ch}/{url}")
 data class RspRequest(val url: String, val ch: String)
 
-fun RspRequest.rsp(pipelineContext: PipelineContext<Unit, ApplicationCall>) {
-    println(this)
-
-    val method = when (pipelineContext.context.request.httpMethod) {
-        HttpMethod.Get -> HttpRequest.Method.GET
-        HttpMethod.Post -> HttpRequest.Method.POST
-        else -> HttpRequest.Method.GET
+suspend fun PipelineContext<Unit, ApplicationCall>.proxy(req: RspRequest, op: suspend (Map<String,Any>) -> Unit) {
+    println("Req: ${req.url}")
+    val method = when (call.request.httpMethod) {
+        HttpMethod.Get -> FsHttpRequest.Method.GET
+        HttpMethod.Post -> FsHttpRequest.Method.POST
+        else -> FsHttpRequest.Method.GET
     }
-    val headers = pipelineContext.context.request.headers
-//    val body=pipelineContext.context.request.
+    val headers = call.request.headers
     val fsReq = HttpAgentRequest(
-            request = HttpRequest(
-                    url = url,
+            request = FsHttpRequest(
+                    url = req.url,
                     method = method,
                     headers = headers.toMap().map { (k, v) -> k to v[0] }.toMap(),
                     body = "", //TODO
             )
     )
-    println("Request URL: ${url}")
-    val fsRes = db.collection("devStatus").document(ch).get()
-    db.collection("devConfig").document(ch).set(fsReq).get() // blocking
-
-    val res = fsRes.get().data!!.toJsonObject().decode<HttpResponse>()
-    //println(res)
-    res.headers.forEach { (k, v) ->
-        pipelineContext.context.response.header(k, v)
+    db.collection("devConfig").document(req.ch).set(fsReq).get() // blocking
+    db.collection("devStatus").document(req.ch).get().get().data?.let { res ->
+        val body = res["body"] as String
+        op(res)
     }
-    pipelineContext.context.respondText(res.body)
 }
 
 /*
@@ -57,11 +46,11 @@ http%3A%2F%2Fa.b.c%3A8080%2F%3Fa%3D5%26b%3D4
 @Serializable
 data class HttpAgentRequest(
         val schedule: Schedule = Schedule(1),
-        val request: HttpRequest,
+        val request: FsHttpRequest,
 )
 
 @Serializable
-data class HttpRequest(
+data class FsHttpRequest(
         val url: String,
         val method: Method = Method.GET,
         val headers: Map<String, String> = mapOf(),
@@ -79,17 +68,16 @@ data class Schedule(
         val interval: Long = 0,
 )
 
-
 @Serializable
-data class HttpResponse(
-        val code: Int,
+data class FsHttpResponse(
+        val status: Int,
         val httpVer: String,
         val headers: Map<String, String> = mapOf(),
         val body: String,
 )
 
-inline fun <reified T : Any> JsonObject.decode() = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<T>(this)
-//inline fun <reified T > Map<String, Any>.decode() = toJsonObject().decode<T>()
+
+inline fun <reified T : Any> JsonObject.decode() = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<T>(this.toJsonObject())
 
 fun Map<String, Any>.toJsonObject(): JsonObject = buildJsonObject {
     forEach { (k, v) ->
@@ -114,6 +102,5 @@ fun List<Any>.toJsonArray(): JsonArray = buildJsonArray {
         }
     }
 }
-
 
 

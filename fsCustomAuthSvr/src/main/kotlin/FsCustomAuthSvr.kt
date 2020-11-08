@@ -18,7 +18,7 @@ import com.google.cloud.firestore.FirestoreOptions
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import gifts.RspRequest
-import gifts.rsp
+import gifts.proxy
 import java.util.*
 
 
@@ -29,6 +29,7 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import org.apache.http.HttpStatus
 
 val db = FirestoreOptions.getDefaultInstance().getService()!!
 
@@ -53,8 +54,19 @@ fun main(args: Array<String>) {
                 call.respondText(res, ContentType.Text.Plain)
             }
 
-            get<RspRequest> { it.rsp(this) }
-            post<RspRequest> { it.rsp(this) }
+            get<RspRequest> {
+                proxy(it) {
+                    (it["headers"] as Map<String, String>).forEach { (k, v) ->
+                        println("$k:$v")
+                        when (k) {
+                            "Content-Length", "Content-Type" -> Unit
+                            else -> call.response.header(k, v)
+                        }
+                    }
+                    call.respond(status = HttpStatusCode(400, ""), message = it["body"] as String)
+                }
+            }
+            post<RspRequest> { proxy(it) { call.respondText("aaa") } }
         }
     }.start(wait = true)
 }
