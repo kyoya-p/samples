@@ -20,18 +20,25 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 fun main(args: Array<String>): Unit = runBlocking {
-    val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
-    println("Start Agent ${agentDeviceId}")
-    runAgent(agentDeviceId)
-    println("Terminated Agent ${agentDeviceId}")
+    runCatching {
+        val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
+        println("Start Agent ${agentDeviceId}")
+        runAgent2(agentDeviceId)
+        println("Terminated Agent ${agentDeviceId}")
+    }.onFailure { it.printStackTrace() }
 }
 
 @Serializable
-data class SnmpAgentRequest(
+data class SnmpAgentDevice(
+        val config: SnmpAgentConfig? = null
+)
+
+@Serializable
+data class SnmpAgentConfig(
         val scanAddrSpecs: List<SnmpTarget>,
-        val autoRegister: Boolean,
+        val autoRegistration: Boolean,
         val schedule: Schedule = Schedule(1),
-        val time: Long,
+        val time: Long? = null,
 )
 
 @Serializable
@@ -44,7 +51,7 @@ data class Schedule(
 data class Report(
         val time: Long,
         val deviceId: String,
-        val deviceType: String = "agent.mfp.mib",
+        val type: String = "agent.mfp.mib",
         val result: Result = Result(),
 )
 
@@ -56,8 +63,8 @@ data class Result(
 
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
-    firestore.firestoreDocumentFlow<SnmpAgentRequest> { collection("devConfig").document(agentId) }
-            .toScheduleFlow()
+    firestore.firestoreDocumentFlow<SnmpAgentConfig> { collection("devConfig").document(agentId) }
+            .snmpAgentscheduledFlow()
             .collectLatest { req ->
                 val devSet = mutableSetOf<String>()
                 val j = launch {
@@ -86,7 +93,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
 
                     // 検索結果をDBに登録
                     // TODO
-                    if (req.autoRegister) {
+                    if (req.autoRegistration) {
                         //自身が登録されているGroupを探す(ルール上1つだけ)
                         /* val myGr = firestore.collection("group")
                                 .whereEqualTo("a", "a").get() //.get() //TODO: Blocking
@@ -94,6 +101,51 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                             println(myGr.documents[0].id)
                         }
                          */
+                    }
+                }
+                try {
+                    j.join()
+                } finally {
+                    j.cancelAndJoin()
+                }
+            }
+}
+
+
+@ExperimentalCoroutinesApi
+suspend fun runAgent2(agentId: String) = coroutineScope {
+    firestore.firestoreDocumentFlow<SnmpAgentDevice> { collection("device").document(agentId) }
+            .map { println(it.config);it.config!! }
+            .snmpAgentscheduledFlow()
+            .collectLatest { req ->
+                val devSet = mutableSetOf<String>()
+                val j = launch {
+                    // 検索とProxyデバイスの生成
+                    req.scanAddrSpecs.forEach { target ->
+                        discoveryDeviceFlow(target, snmp).collect { ev ->
+                            val res = ResponseEvent.from(ev)
+                            val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
+                            if (!devSet.contains(devId)) {
+                                devSet.add(devId)
+                                launch {
+                                    runMfp(devId, res.resTarget)
+                                }
+                            }
+                        }
+                    }
+                    // 検索結果をレポート
+                    val rep = Report(
+                            time = Date().time,
+                            deviceId = agentId,
+                            result = Result(
+                                    detected = devSet.toList()
+                            ),
+                    )
+                    // 検索結果をDBに登録
+                    firestore.collection("device").document(agentId).collection("logs").document().set(rep)
+                    firestore.collection("device").document(agentId).collection("state").document("discovery").set(rep)
+                    // TODO
+                    if (req.autoRegistration) {
                     }
                 }
                 try {
@@ -108,7 +160,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
 // Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
 // TODO: 今は一定間隔かワンショットだけ
 @ExperimentalCoroutinesApi
-suspend fun Flow<SnmpAgentRequest>.toScheduleFlow() = channelFlow {
+suspend fun Flow<SnmpAgentConfig>.snmpAgentscheduledFlow() = channelFlow {
     collectLatest { req ->
         try {
             repeat(req.schedule.limit) {

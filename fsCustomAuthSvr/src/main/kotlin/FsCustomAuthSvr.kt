@@ -12,16 +12,12 @@
 
  */
 
-//package fsCustomAuthSvr
-
 import com.google.cloud.firestore.FirestoreOptions
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import gifts.RspRequest
 import gifts.proxy
 import java.util.*
-
-
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.locations.*
@@ -29,7 +25,6 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
-import org.apache.http.HttpStatus
 
 val db = FirestoreOptions.getDefaultInstance().getService()!!
 
@@ -70,10 +65,6 @@ fun main(args: Array<String>) {
         }
     }.start(wait = true)
 }
-
-
-//@Serializable
-//data class CustomClaimes(val id:String, val clusterId:String,)
 
 @KtorExperimentalLocationsAPI
 fun createCustomToken(credential: Credential): String {
