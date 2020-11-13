@@ -1,5 +1,5 @@
 /*
- Provider of custom token for devide authorization
+ Provider of custom token for device authorization
  This module should be run in backend.
 
  Refer:
@@ -17,7 +17,6 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import gifts.RspRequest
 import gifts.proxy
-import java.util.*
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.locations.*
@@ -26,7 +25,7 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
-val db = FirestoreOptions.getDefaultInstance().getService()!!
+val db = FirestoreOptions.getDefaultInstance().service!!
 
 @KtorExperimentalLocationsAPI
 @Location("/customToken")
@@ -44,14 +43,18 @@ fun main(args: Array<String>) {
         install(Locations)
         routing {
             get<Credential> { credential ->
+                println("Requested with credential: $credential")
                 val res = createCustomToken(credential)
-                println("Res=${res}")
+                println("Response token: $res")
                 call.respondText(res, ContentType.Text.Plain)
             }
 
-            get<RspRequest> {
-                proxy(it) {
-                    (it["headers"] as Map<String, String>).forEach { (k, v) ->
+            /* Just Trial*/
+            get<RspRequest> { rspReq ->
+                proxy(rspReq) {
+                    (it["headers"] as Map<*, *>).forEach { (k, v) ->
+                        k as String
+                        v as String
                         println("$k:$v")
                         when (k) {
                             "Content-Length", "Content-Type" -> Unit
@@ -68,26 +71,24 @@ fun main(args: Array<String>) {
 
 @KtorExperimentalLocationsAPI
 fun createCustomToken(credential: Credential): String {
-    println("Requested with credential: $credential")
 
     // Check parameters by Firestore document
-    val devPasswd = db.collection("device").document(credential.id).get().get()?.data?.get("password") as String?
-    if (devPasswd == null || devPasswd != credential.pw) return ""
+    val dev = db.collection("device").document(credential.id).get().get()?.data
+    val devPw = dev?.get("password") as String?
+    if (devPw == null || devPw != credential.pw) return ""
 
-    // Get clusterId of this device
-    val clusterId = db.collection("group").whereEqualTo("member.${credential.id}", true).limit(1).get().get()?.documents?.get(0)?.id
-    if (clusterId == null) return ""
+    val devClusterId = dev?.get("cluster") as String? ?: return ""
 
     // Make Custom Token with custom Claims
     val additionalClaims = mapOf(
             "id" to credential.id,
-            "clusterId" to clusterId,
+            "clusterId" to devClusterId,
     )
 
     val mAuth = FirebaseAuth.getInstance()
     val serviceUserId = "firebase-adminsdk-rc191@road-to-iot.iam.gserviceaccount.com"
     val customJwtToken = mAuth.createCustomToken(serviceUserId, additionalClaims)
-    customJwtToken.split(".").take(2).map { println(String(Base64.getDecoder().decode(it))) }
+    // customJwtToken.split(".").take(2).map { println(String(Base64.getDecoder().decode(it))) }
 
     return customJwtToken
 }

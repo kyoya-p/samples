@@ -42,7 +42,6 @@ http://a.b.c:8080/?a=5&b=4
 http%3A%2F%2Fa.b.c%3A8080%2F%3Fa%3D5%26b%3D4
  */
 
-
 @Serializable
 data class HttpAgentRequest(
         val schedule: Schedule = Schedule(1),
@@ -77,7 +76,7 @@ data class FsHttpResponse(
 )
 
 
-inline fun <reified T : Any> JsonObject.decode() = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<T>(this.toJsonObject())
+//inline fun <reified T : Any> JsonObject.decode() = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<T>(this.toJsonObject())
 
 fun Map<String, Any>.toJsonObject(): JsonObject = buildJsonObject {
     forEach { (k, v) ->
