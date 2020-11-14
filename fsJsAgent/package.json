@@ -11,6 +11,7 @@
   "dependencies": {
     "express": "^4.17.1",
     "firebase": "^8.0.0",
-    "kotlin": "^1.4.10"
+    "kotlin": "^1.4.10",
+    "net-snmp": "^2.9.7"
   }
 }

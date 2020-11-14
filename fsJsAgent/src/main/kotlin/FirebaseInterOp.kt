@@ -1,65 +1,59 @@
 package firebaseInterOp
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
-
+import kotlin.js.Json
 
 external fun require(module: String): dynamic //javascriptのrequire()を呼ぶ
 
-@ExperimentalCoroutinesApi
-class Firebase(apiKey: String, authDomain: String, projectId: String) {
-    val _firebase: dynamic = initializeApp(apiKey, authDomain, projectId)
+class Firebase(private val fb: dynamic) {
 
-    fun initializeApp(apiKey: String, authDomain: String, projectId: String): dynamic {
-        val firebase = require("firebase/app")
-        require("firebase/auth")
-        require("firebase/firestore")
-        class Config(val apiKey: String, val authDomain: String, val projectId: String)
-        return firebase.initializeApp(Config(apiKey, authDomain, projectId))
+    companion object {
+        fun initializeApp(apiKey: String, authDomain: String, projectId: String): Firebase {
+            val firebase = require("firebase/app")
+            require("firebase/auth")
+            require("firebase/firestore")
+            data class Config(val apiKey: String, val authDomain: String, val projectId: String)
+            return Firebase(firebase.initializeApp(Config(apiKey, authDomain, projectId)))
+        }
     }
 
-    class Auth(val _auth: dynamic) {
+    val auth get() = Auth(fb.auth())
+    val firestore get() = Firestore(fb.firestore())
+
+    class Auth(private val auth: dynamic) {
         fun signInWithEmailAndPassword(email: String, password: String): Unit =
-            _auth.signInWithEmailAndPassword(email, password)
+            auth.signInWithEmailAndPassword(email, password)
 
         fun signInWithCustomToken(token: String): Unit =
-            _auth.signInWithCustomToken(token)
+            auth.signInWithCustomToken(token)
 
-        @ExperimentalCoroutinesApi
-        fun onAuthStateChangedFlow() = callbackFlow {
-            _auth.onAuthStateChanged { user -> if (user) offer(user) }
-            awaitClose {} // 一生closeしないけど..
-        }
+        fun onAuthStateChanged(op: (User?) -> Unit) =
+            auth.onAuthStateChanged { user -> op(if (user != null) User(user) else null) }
 
+        val currentUser = User(auth.currentUser)
     }
 
-    @ExperimentalCoroutinesApi
-    class Firestore(val _firestore: dynamic) {
-        fun collection(path: String) = CollectionReference(_firestore.collection(path))
+    // https://firebase.google.com/docs/reference/js/firebase.User
+    data class User(private val user: dynamic) {
+        val uid: String get() = user.uid
+    }
+}
+
+class Firestore(private val firestore: dynamic) {
+    fun collection(path: String) = CollectionReference(firestore.collection(path))
+
+    open class Query
+
+    class CollectionReference(private val collectionRef: dynamic) : Query() {
+        fun document(path: String) = DocumentReference(collectionRef.doc(path))
+        fun document() = DocumentReference(collectionRef.doc())
     }
 
-    @ExperimentalCoroutinesApi
-    class CollectionReference(val _collectionRef: dynamic) {
-        fun document(path: String) = DocumentReference(_collectionRef.doc(path))
+    class DocumentReference(private val documentRef: dynamic) : Query() {
+        fun get(op: (documentSnapshot: DocumentSnapshot) -> Any?): Unit =
+            documentRef.get().then({ v: dynamic -> op(DocumentSnapshot(v)) })
     }
 
-    @ExperimentalCoroutinesApi
-    class DocumentReference(val _documentRef: dynamic) {
-        suspend fun get() = callbackFlow {
-            _documentRef.get().then { doc -> offer(DocumentSnapshot(doc)) }
-            awaitClose { }
-        }
-
-        fun snapshotFlow() = callbackFlow<DocumentSnapshot> {
-//TODO
-        }
+    class DocumentSnapshot(private val documentSnapshot: dynamic) {
+        val data get() = documentSnapshot.data()
     }
-
-    class DocumentSnapshot(val _documentSnapshot: dynamic) {
-        fun data(): dynamic = _documentSnapshot.data() //ここから先はdynamic型で許してください
-    }
-
-    val auth = Auth(_firebase.auth())
-    val firestore = Firestore(_firebase.firestore())
 }

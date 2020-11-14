@@ -14,11 +14,17 @@ Build & Run
 git clone https://github.com/kyoya-p/samples
 cd samples/fsJsAgent
 // unzip road-to-iot-8efd3bfb2ccd.json.zip
-set GOOGLE_APPLICATION_CREDENTIALS=road-to-iot-8efd3bfb2ccd.json
+// set GOOGLE_APPLICATION_CREDENTIALS=road-to-iot-8efd3bfb2ccd.json
+gradlew kotlinNpmInstall
 gradlew build
 
-node build\js\packages\FsJsAgent\kotlin\FsJsAgent.js
+node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js http://shokkaa.0t0.jp:8080 agent1 1234XXXX
 ```
+
+IntteliJ
+----
+- build.gradleを開き、Import
+
 
 Reference
 ----
