@@ -6,8 +6,6 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.*
 
-inline fun firestoreScopeDefault(op: (Firestore) -> Unit) = op(FirestoreOptions.getDefaultInstance().getService()!!)
-
 inline fun Firestore.firestoreEventFlow(noinline query: Firestore.() -> DocumentReference) = channelFlow<DocumentSnapshot> {
     val listener = query().addSnapshotListener(object : EventListener<DocumentSnapshot?> {
         override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) { // ドキュメントRead/Update時ハンドラ
