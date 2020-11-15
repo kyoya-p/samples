@@ -1,14 +1,19 @@
 import firebaseInterOp.Firebase
+import gdvm.agent.mib.SnmpAgentDevice
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import netSnmp.Snmp
+import kotlinx.serialization.json.Json
+import kotlin.math.min
 
 
 val snmpOptions = mapOf(
@@ -57,12 +62,9 @@ suspend fun main(): Unit = GlobalScope.launch {
     }
     customToken.split(".").take(2).forEach { println(it.toB64()) } //TODO: debug
 
-
     firebase.auth.signInWithCustomToken(customToken)
-
     callbackFlow { firebase.auth.onAuthStateChanged { offer(it) };awaitClose() }.collectLatest { user ->
         if (user != null) runSnmpAgent(agentId)
-
     }
 }.join()
 
@@ -71,8 +73,32 @@ suspend fun main(): Unit = GlobalScope.launch {
 suspend fun runSnmpAgent(agentId: String) {
     val docDev = firebase.firestore.collection("device").document(agentId)
     callbackFlow { docDev.get { offer(it) };awaitClose() }.collectLatest { docSnapshot ->
-        
-        println(docSnapshot.data)
+        val docDevJson = JSON.stringify(docSnapshot.data)
+        val docSnmpAg: SnmpAgentDevice = Json { ignoreUnknownKeys = true }.decodeFromString(docDevJson)
+        println("$docSnmpAg")
+    }
+}
+
+suspend fun agentMain(docSnmpAgent: SnmpAgentDevice) {
+    val config = docSnmpAgent.config!!
+    flow {
+        repeat(config.schedule.limit) {
+            emit(docSnmpAgent)
+            delay(min(config.schedule.interval, 30_000))
+        }
+    }.collectLatest {
+        config.scanAddrSpecs.forEach { target ->
+            if (target.isBroadcast) {
+                Snmp.createSession(target.addr, "public").getNext(arrayOf("1.3.6")) { error, varbinds ->
+                    if (error == null) {
+                        varbinds.forEach { println("${it.oid} = ${it.value}") }
+                    } else {
+                        println("Error: ${error}")
+                    }
+                }
+            }
+
+        }
     }
 }
 

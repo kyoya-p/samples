@@ -1,5 +1,7 @@
 /*
  Sample: Js dynamic object to kotlin data class
+ dynamic Type => Json String => data class
+
  */
 
 import kotlinx.serialization.KSerializer
@@ -14,17 +16,3 @@ data class CustomClass(
     val id: Int,
     val name: String,
 )
-
-@Serializer(forClass = CustomClass::class)
-object CustomClassSerializer: KSerializer<CustomClass>{
-    override fun deserialize(decoder: Decoder): CustomClass {
-        TODO("Not yet implemented")
-    }
-
-    override val descriptor: SerialDescriptor
-        get() = TODO("Not yet implemented")
-
-    override fun serialize(encoder: Encoder, value: CustomClass) {
-        TODO("Not yet implemented")
-    }
-}

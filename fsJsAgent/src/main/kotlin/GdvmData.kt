@@ -5,7 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SnmpAgentDevice(
-    val config: SnmpAgentConfig? = null
+    val cluster: String,
+    val confidPath: String? = null,
+    val config: SnmpAgentConfig? = null,
+    val time: Long? = 0,
 )
 
 @Serializable
