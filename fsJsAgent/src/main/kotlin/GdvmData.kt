@@ -2,6 +2,20 @@ package gdvm.agent.mib
 
 import kotlinx.serialization.Serializable
 
+@Serializable
+data class GdvmDevice(
+    val cluster: String,
+    val name: String = "anonymous",
+    val password: String = "",
+    val confidPath: String? = null,
+    val config: DeviceConfig? = null,
+)
+
+@Serializable
+data class DeviceConfig(
+    val schedule: Schedule = Schedule(1),
+    val time: Long? = null,
+)
 
 @Serializable
 data class SnmpAgentDevice(
@@ -43,22 +57,22 @@ val GETNEXT: Int get() = -95
 val RESPONSE: Int get() = -94
 val SET: Int get() = -93
 
-val sysDescr get() = ".1.3.6.1.2.1.1.1"
-val sysObjectID get() = ".1.3.6.1.2.1.1.2"
-val sysName get() = ".1.3.6.1.2.1.1.5"
-val sysLocation get() = ".1.3.6.1.2.1.1.6"
+val sysDescr get() = "1.3.6.1.2.1.1.1"
+val sysObjectID get() = "1.3.6.1.2.1.1.2"
+val sysName get() = "1.3.6.1.2.1.1.5"
+val sysLocation get() = "1.3.6.1.2.1.1.6"
 
-val hrDeviceStatus get() = ".1.3.6.1.4.1.11.2.3.9.4.2.3.3.2.1.5"
-val hrDeviceDescr get() = ".1.3.6.1.2.1.25.3.2.1.3"
-val hrPrinterStatus get() = ".1.3.6.1.2.1.25.3.5.1.1"
-val hrPrinterDetectedErrorState get() = ".1.3.6.1.2.1.25.3.5.1.2"
-val prtGeneralSerialNumber get() = ".1.3.6.1.2.1.43.5.1.1.17"
+val hrDeviceStatus get() = "1.3.6.1.4.1.11.2.3.9.4.2.3.3.2.1.5"
+val hrDeviceDescr get() = "1.3.6.1.2.1.25.3.2.1.3"
+val hrPrinterStatus get() = "1.3.6.1.2.1.25.3.5.1.1"
+val hrPrinterDetectedErrorState get() = "1.3.6.1.2.1.25.3.5.1.2"
+val prtGeneralSerialNumber get() = "1.3.6.1.2.1.43.5.1.1.17"
 
 
 @Serializable
 data class PDU(
     val type: Int = GETNEXT,
-    val vbl: List<VB> = listOf(VB(".1.3")),
+    val vbl: List<VB> = listOf(VB("1.3")),
     val errSt: Int = 0,
     val errIdx: Int = 0,
 )
