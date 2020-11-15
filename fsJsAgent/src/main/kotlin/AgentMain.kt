@@ -1,5 +1,4 @@
 import firebaseInterOp.Firebase
-import firebaseInterOp.Firebase.User
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -8,7 +7,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import netSnmp.Snmp
+
 
 val snmpOptions = mapOf(
     "port" to 161,
@@ -19,6 +20,13 @@ val snmpOptions = mapOf(
 
 external val process: dynamic
 val args: Array<String> get() = process.argv
+
+
+val firebase = Firebase.initializeApp(
+    apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
+    authDomain = "road-to-iot.firebaseapp.com",
+    projectId = "road-to-iot"
+)
 
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
@@ -58,16 +66,12 @@ suspend fun main(): Unit = GlobalScope.launch {
     }
 }.join()
 
-val firebase = Firebase.initializeApp(
-    apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
-    authDomain = "road-to-iot.firebaseapp.com",
-    projectId = "road-to-iot"
-)
 
 @ExperimentalCoroutinesApi
 suspend fun runSnmpAgent(agentId: String) {
     val docDev = firebase.firestore.collection("device").document(agentId)
     callbackFlow { docDev.get { offer(it) };awaitClose() }.collectLatest { docSnapshot ->
+        
         println(docSnapshot.data)
     }
 }
