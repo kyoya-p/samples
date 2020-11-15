@@ -1,25 +1,27 @@
 package mibtool.snmp4jWrapper
 
+import gdvm.agent.mib.Credential
+import gdvm.agent.mib.PDU
+import gdvm.agent.mib.SnmpTarget
+import gdvm.agent.mib.VB
 import mibtool.ResponseEvent
-import mibtool.SnmpTarget
 import org.snmp4j.CommunityTarget
-import org.snmp4j.PDU
 import org.snmp4j.mp.SnmpConstants.*
 import org.snmp4j.smi.*
 import java.net.InetAddress
 
 fun ResponseEvent.Companion.from(res: org.snmp4j.event.ResponseEvent<UdpAddress>) = ResponseEvent(
         reqTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        reqPdu = mibtool.PDU.from(res.request),
+        reqPdu = PDU.from(res.request),
 
         resTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        resPdu = mibtool.PDU.from(res.response),
+        resPdu = PDU.from(res.response),
 )
 
 fun SnmpTarget.Companion.from(t: CommunityTarget<UdpAddress>) = SnmpTarget(
         addr = t.address.inetAddress.hostAddress,
         port = t.address.port,
-        credential = mibtool.Credential(
+        credential = Credential(
                 ver = when (t.version) {
                     version1 -> "1"
                     version2c -> "2c"
@@ -37,27 +39,27 @@ fun SnmpTarget.toSnmp4j() = CommunityTarget<UdpAddress>(
         OctetString(this.credential.v1commStr),
 )
 
-fun mibtool.PDU.Companion.from(pdu: PDU) = mibtool.PDU(
+fun PDU.Companion.from(pdu: org.snmp4j.PDU) = PDU(
         errSt = pdu.errorStatus,
         errIdx = pdu.errorIndex,
         type = pdu.type,
         vbl = pdu.variableBindings.map { it.toVB() }
 )
 
-fun mibtool.PDU.toSnmp4j() = org.snmp4j.PDU().also {
+fun PDU.toSnmp4j() = org.snmp4j.PDU().also {
     it.type = this.type
     //it.requestID
     it.variableBindings = this.vbl.map { it.toSnmp4j() }
 }
 
 
-fun VariableBinding.toVB() = mibtool.VB(
+fun VariableBinding.toVB() = VB(
         oid = oid.toOidString(),
         stx = syntax,
         value = toValueString(),
 )
 
-fun mibtool.VB.toSnmp4j() = org.snmp4j.smi.VariableBinding().also {
+fun VB.toSnmp4j() = org.snmp4j.smi.VariableBinding().also {
     it.oid = OID(this.oid)
     val v = value
     it.variable = when (stx) {

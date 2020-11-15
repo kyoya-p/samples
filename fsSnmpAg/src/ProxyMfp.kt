@@ -2,11 +2,11 @@ package gdvm.mfp.mib
 
 import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.firestoreDocumentFlow
+import gdvm.agent.mib.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
-import mibtool.*
 import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.toSnmp4j
@@ -41,10 +41,10 @@ data class Result(
 suspend fun runMfp(deviceId: String, target: SnmpTarget) = coroutineScope {
     println("Started Device ${deviceId}")
     try {
-        val oids = listOf(PDU.sysName, PDU.sysDescr, PDU.sysObjectID, PDU.hrDeviceStatus, PDU.hrPrinterStatus, PDU.hrPrinterDetectedErrorState)
+        val oids = listOf(sysName, sysDescr, sysObjectID, hrDeviceStatus, hrPrinterStatus, hrPrinterDetectedErrorState)
         val res = snmp.sendFlow(
                 target = target.toSnmp4j(),
-                pdu = PDU.GETNEXT(vbl = oids.map { VB(it) }).toSnmp4j()
+                pdu = PDU(GETNEXT,vbl = oids.map { VB(it) }).toSnmp4j()
         ).first()
 
         val rep = Report(

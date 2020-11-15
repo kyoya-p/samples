@@ -1,11 +1,11 @@
 package mibtool.snmp4jWrapper
 
+import gdvm.agent.mib.SnmpTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.launch
-import mibtool.SnmpTarget
 import org.snmp4j.*
 import org.snmp4j.Target
 import org.snmp4j.event.ResponseEvent
@@ -43,11 +43,12 @@ fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseE
 @ExperimentalCoroutinesApi
 fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: InetAddress) = channelFlow {
     scanIpRange(startTarget.address.inetAddress, endAddr).map {
-        launch {
+        val launch = launch {
             sendFlow(pdu.apply { requestID = getGlobalRequestID() }, SnmpTarget(it.hostAddress).toSnmp4j()).collect {
                 offer(it)
             }
         }
+        launch
     }.toList().forEach { it.join() }
     close()
     awaitClose()

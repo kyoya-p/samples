@@ -28,38 +28,6 @@ fun main(args: Array<String>): Unit = runBlocking {
     }.onFailure { it.printStackTrace() }
 }
 
-@Serializable
-data class SnmpAgentDevice(
-        val config: SnmpAgentConfig? = null
-)
-
-@Serializable
-data class SnmpAgentConfig(
-        val scanAddrSpecs: List<SnmpTarget>,
-        val autoRegistration: Boolean,
-        val schedule: Schedule = Schedule(1),
-        val time: Long? = null,
-)
-
-@Serializable
-data class Schedule(
-        val limit: Int = 1, //　回数は有限に。失敗すると破産するし
-        val interval: Long = 0,
-)
-
-@Serializable
-data class Report(
-        val time: Long,
-        val deviceId: String,
-        val type: String = "agent.mfp.mib",
-        val result: Result = Result(),
-)
-
-@Serializable
-data class Result(
-        val detected: List<String> = listOf()
-)
-
 
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
@@ -178,8 +146,8 @@ suspend fun Flow<SnmpAgentConfig>.snmpAgentscheduledFlow() = channelFlow {
 // 指定の条件でSNMP検索し、検索結果を流す
 @ExperimentalCoroutinesApi
 suspend fun discoveryDeviceFlow(target: SnmpTarget, snmp: Snmp) = channelFlow {
-    val sampleOids = listOf(PDU.hrDeviceDescr, PDU.prtGeneralSerialNumber).map { VB(it) }
-    val pdu = PDU.GETNEXT(sampleOids)
+    val sampleOids = listOf(hrDeviceDescr, prtGeneralSerialNumber).map { VB(it) }
+    val pdu = PDU(GETNEXT,sampleOids)
 
     if (target.isBroadcast) {
         snmp.broadcastFlow(pdu.toSnmp4j(), target.toSnmp4j()).collect {
