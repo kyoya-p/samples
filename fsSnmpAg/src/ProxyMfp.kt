@@ -39,8 +39,10 @@ data class Result(
 
 @ExperimentalCoroutinesApi
 suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = coroutineScope {
-    println("Started Device ${deviceId} ${target.addr}:${target.port}")
+    println("Started Device $deviceId $target.addr:$target.port")
     try {
+        // TODO: Device Authentication
+
         val oids = listOf(sysName, sysDescr, sysObjectID, hrDeviceStatus, hrPrinterStatus, hrPrinterDetectedErrorState)
         val res = snmp.sendFlow(
                 target = target.toSnmp4j(),
