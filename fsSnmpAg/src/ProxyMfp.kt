@@ -38,13 +38,13 @@ data class Result(
 
 
 @ExperimentalCoroutinesApi
-suspend fun runMfp(deviceId: String, target: SnmpTarget) = coroutineScope {
-    println("Started Device ${deviceId}")
+suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = coroutineScope {
+    println("Started Device ${deviceId} ${target.addr}:${target.port}")
     try {
         val oids = listOf(sysName, sysDescr, sysObjectID, hrDeviceStatus, hrPrinterStatus, hrPrinterDetectedErrorState)
         val res = snmp.sendFlow(
                 target = target.toSnmp4j(),
-                pdu = PDU(GETNEXT,vbl = oids.map { VB(it) }).toSnmp4j()
+                pdu = PDU(GETNEXT, vbl = oids.map { VB(it) }).toSnmp4j()
         ).first()
 
         val rep = Report(
@@ -55,15 +55,15 @@ suspend fun runMfp(deviceId: String, target: SnmpTarget) = coroutineScope {
         )
 
         // ログと最新状態それぞれ書込み
-        firestore.collection("devLog").document().set(rep).get() //TODO:BLocking code
-        firestore.collection("devStatus").document(deviceId).set(rep).get() //TODO:BLocking code
+        firestore.collection("devLog").document().set(rep)
+        firestore.collection("devStatus").document(deviceId).set(rep)
 
         firestore.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {
             // インスタンス設定に応じた処理(あれば)
             println(it)
         }
     } catch (e: Exception) {
-        println("Exception in $deviceId")
+        println("Exception in ${deviceId}/${target.addr}")
         e.printStackTrace()
     } finally {
         println("Terminated Device ${deviceId}")

@@ -10,14 +10,6 @@ import org.snmp4j.mp.SnmpConstants.*
 import org.snmp4j.smi.*
 import java.net.InetAddress
 
-fun ResponseEvent.Companion.from(res: org.snmp4j.event.ResponseEvent<UdpAddress>) = ResponseEvent(
-        reqTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        reqPdu = PDU.from(res.request),
-
-        resTarget = SnmpTarget.from(res.userObject as CommunityTarget<UdpAddress>),
-        resPdu = PDU.from(res.response),
-)
-
 fun SnmpTarget.Companion.from(t: CommunityTarget<UdpAddress>) = SnmpTarget(
         addr = t.address.inetAddress.hostAddress,
         port = t.address.port,
@@ -59,7 +51,7 @@ fun VariableBinding.toVB() = VB(
         value = toValueString(),
 )
 
-fun VB.toSnmp4j() = org.snmp4j.smi.VariableBinding().also {
+fun VB.toSnmp4j() = VariableBinding().also {
     it.oid = OID(this.oid)
     val v = value
     it.variable = when (stx) {

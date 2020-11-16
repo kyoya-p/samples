@@ -2,14 +2,41 @@ package gdvm.agent.mib
 
 import kotlinx.serialization.Serializable
 
+@Serializable
+data class GdvmDevice<T1, T2>(
+        val cluster: String,
+        val name: String = "anonymous",
+        val password: String = "Sharp_#1",
+        val confidPath: String? = null,
+        val config: T1? = null,
+        val info: T2? = null,
+)
+typealias MfpMibDevice = GdvmDevice<MfpMibDeviceConfig, MfpMibDeviceInfo>
+typealias MfpMibAgentDevice = GdvmDevice<MfpMibAgentConfig, Unit>
 
 @Serializable
-data class SnmpAgentDevice(
-        val config: SnmpAgentConfig? = null
+data class MfpMibDeviceConfig(
+        val schedule: Schedule = Schedule(1),
+        val time: Long? = null,
 )
 
 @Serializable
-data class SnmpAgentConfig(
+data class MfpMibDeviceInfo(
+        val model: String,
+        val sn: String,
+)
+
+@Serializable
+data class SnmpAgentDeviceXX(
+        val cluster: String,
+        val name: String = "anonymous",
+        val password: String = "Sharp_#1",
+        val confidPath: String? = null,
+        val config: MfpMibAgentConfig? = null
+)
+
+@Serializable
+data class MfpMibAgentConfig(
         val scanAddrSpecs: List<SnmpTarget>,
         val autoRegistration: Boolean,
         val schedule: Schedule = Schedule(1),
@@ -30,7 +57,7 @@ data class SnmpTarget(
 
 @Serializable
 data class Credential(
-        val ver: String = "2c",
+        val ver: String = "1",
         val v1commStr: String = "public",
         // v3...
 )
