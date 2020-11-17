@@ -57,8 +57,8 @@ suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = cor
         )
 
         // ログと最新状態それぞれ書込み
-        firestore.collection("devLog").document().set(rep)
-        firestore.collection("devStatus").document(deviceId).set(rep)
+        firestore.collection("device").document(deviceId).collection("state").document("mib").set(rep)
+        firestore.collection("device").document(deviceId).collection("logs").document().set(rep)
 
         firestore.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {
             // インスタンス設定に応じた処理(あれば)
