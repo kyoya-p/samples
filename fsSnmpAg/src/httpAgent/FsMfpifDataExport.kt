@@ -6,7 +6,7 @@ import org.dom4j.io.SAXReader
 import java.io.StringReader
 import java.nio.charset.StandardCharsets
 
-suspend fun mfpifDataExportRequest(req: HttpAgentRequest) {
+suspend fun mfpifDataExportRequest() {
     HttpClient().use { client ->
         val requestBody = """
             <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"

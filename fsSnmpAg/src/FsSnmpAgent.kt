@@ -26,10 +26,14 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 @Suppress("BlockingMethodInNonBlockingContext")
 fun main(args: Array<String>): Unit = runBlocking {
     runCatching {
-        val agentDeviceId = if (args.isEmpty()) "agent1" else args[0]
-        println("Start Agent ${agentDeviceId}")
-        runAgent(agentDeviceId)
-        println("Terminated Agent ${agentDeviceId}")
+        val agentDeviceIds = if (args.isEmpty()) arrayOf("agent1") else args
+        for (agentDeviceId in agentDeviceIds) {
+            launch {
+                println("Start Agent ${agentDeviceId}")
+                runAgent(agentDeviceId)
+                println("Terminated Agent ${agentDeviceId}")
+            }
+        }
     }.onFailure { it.printStackTrace() }
 }
 
