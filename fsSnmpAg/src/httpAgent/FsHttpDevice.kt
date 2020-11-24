@@ -69,10 +69,12 @@ fun main(args: Array<String>) {
             }
         }
     }.mapLatest { httpRes ->
-        HttpProxyResponse(
+       /* HttpProxyResponse(
                 status = httpRes.,
                 headers = httpRes.headers
                 val body : String,
         )
+
+        */
     }
 }
