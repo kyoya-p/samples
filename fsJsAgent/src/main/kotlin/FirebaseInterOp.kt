@@ -1,10 +1,9 @@
 package firebaseInterOp
 
-import kotlin.js.Json
 
 external fun require(module: String): dynamic //javascriptのrequire()を呼ぶ
 
-class Firebase(private val fb: dynamic) {
+class Firebase(val raw: dynamic) {
 
     companion object {
         fun initializeApp(apiKey: String, authDomain: String, projectId: String): Firebase {
@@ -16,44 +15,50 @@ class Firebase(private val fb: dynamic) {
         }
     }
 
-    val auth get() = Auth(fb.auth())
-    val firestore get() = Firestore(fb.firestore())
+    val auth get() = Auth(raw.auth())
+    val firestore get() = Firestore(raw.firestore())
 
-    class Auth(private val auth: dynamic) {
+    class Auth(val raw: dynamic) {
         fun signInWithEmailAndPassword(email: String, password: String): Unit =
-            auth.signInWithEmailAndPassword(email, password)
+            raw.signInWithEmailAndPassword(email, password)
 
         fun signInWithCustomToken(token: String): Unit =
-            auth.signInWithCustomToken(token)
+            raw.signInWithCustomToken(token)
 
         fun onAuthStateChanged(op: (User?) -> Unit) =
-            auth.onAuthStateChanged { user -> op(if (user != null) User(user) else null) }
+            raw.onAuthStateChanged { user -> op(if (user != null) User(user) else null) }
 
-        val currentUser = User(auth.currentUser)
+        val currentUser = User(raw.currentUser)
     }
 
     // https://firebase.google.com/docs/reference/js/firebase.User
-    data class User(private val user: dynamic) {
-        val uid: String get() = user.uid
+    data class User(private val raw: dynamic) {
+        val uid: String get() = raw.uid
     }
 }
 
-class Firestore(private val firestore: dynamic) {
-    fun collection(path: String) = CollectionReference(firestore.collection(path))
+class Firestore(val raw: dynamic) {
+    fun collection(path: String) = CollectionReference(raw.collection(path))
 
-    open class Query
-
-    class CollectionReference(private val collectionRef: dynamic) : Query() {
-        fun document(path: String) = DocumentReference(collectionRef.doc(path))
-        fun document() = DocumentReference(collectionRef.doc())
+    open class Query {
     }
 
-    class DocumentReference(private val documentRef: dynamic) : Query() {
-        fun get(op: (documentSnapshot: DocumentSnapshot) -> Any?): Unit =
-            documentRef.get().then({ v: dynamic -> op(DocumentSnapshot(v)) })
+    class CollectionReference(val raw: dynamic) : Query() {
+        fun doc(path: String) = DocumentReference(raw.doc(path))
+        fun doc() = DocumentReference(raw.doc())
     }
 
-    class DocumentSnapshot(private val documentSnapshot: dynamic) {
-        val data get() = documentSnapshot.data()
+    class DocumentReference(val raw: dynamic) : Query() {
+        fun <R> get(op: (documentSnapshot: DocumentSnapshot) -> R): R =
+            raw.get().then({ v: dynamic -> op(DocumentSnapshot(v)) })
+
+        //fun set(doc: Map<String, Any?>) = documentRef.set(doc)
+        fun set(doc: Any, op: () -> Unit): Unit = raw.set(doc).then(op)
+
+        fun collection(id: String) = CollectionReference(raw.collection(id))
+    }
+
+    class DocumentSnapshot(val raw: dynamic) {
+        val data get() = raw.data()
     }
 }

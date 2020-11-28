@@ -1,18 +1,12 @@
 import firebaseInterOp.Firebase
-import firebaseInterOp.Firestore
-import firebaseInterOp.Firestore.DocumentSnapshot
 import gdvm.agent.mib.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.decodeFromString
 import netSnmp.Snmp
-import kotlinx.serialization.json.Json
-import kotlin.js.Date
-import kotlin.math.min
-import kotlin.time.milliseconds
+import kotlin.js.json
 
 
 val snmpOptions = mapOf(
@@ -35,15 +29,6 @@ val firebase = Firebase.initializeApp(
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
 
-    //TODO: テスト
-    Snmp.createSession("192.168.3.19", "public").getNext(arrayOf("1.3.6")) { error, varbinds ->
-        if (error == null) {
-            varbinds.forEach { println("${it.oid} = ${it.value}") }
-        } else {
-            println("Error: ${error}")
-        }
-    }
-
     if (args.size != 5) {
         println("syntax: node FsJsAgent.js <customTokernSvr> <agentId> <secret>")
         return@launch
@@ -59,15 +44,23 @@ suspend fun main(): Unit = GlobalScope.launch {
         println("Custom Authentication Error")
         return@launch
     }
-    customToken.split(".").take(2).forEach { println(it.toB64()) } //TODO: debug
+    customToken.split(".").drop(1).take(1).forEach {
+        println("Token=${it.toB64()}")
+    } //TODO: debug
 
-    firebase.auth.signInWithCustomToken(customToken)
-    callbackFlow { firebase.auth.onAuthStateChanged { offer(it) };awaitClose() }.collectLatest { user ->
-        if (user != null) runSnmpAgent(agentId)
+    callbackFlow {
+        firebase.auth.signInWithCustomToken(customToken)
+        firebase.auth.onAuthStateChanged { offer(it) }
+        awaitClose()
+    }.flatMapLatest {
+        runLoadAgent(agentId)
+    }.collect { (devDoc, n) ->
+        runSubAgent(devDoc, n)
     }
+
 }.join()
 
-
+/*
 @ExperimentalCoroutinesApi
 suspend fun runSnmpAgent(agentId: String) {
     val docDev = firebase.firestore.collection("device").document(agentId)
@@ -108,60 +101,11 @@ suspend fun agentMain(docSnmpAgent: SnmpAgentDevice) {
     }
 }
 
+
+ */
+
 // debug
 fun String.toB64() = chunked(4).map {
     it.map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(it) }
         .foldIndexed(0) { i, a, e -> a or (e shl (18 - 6 * i)) }
 }.flatMap { (0..2).map { i -> (it shr (16 - 8 * i) and 255).toChar() } }.joinToString("")
-
-
-@ExperimentalCoroutinesApi
-suspend fun runAgent2(agentId: String, ipAddr: String) = coroutineScope {
-    val db = firebase.firestore
-    callbackFlow<Firestore.DocumentSnapshot> { db.collection("device").document(agentId) }
-        .map { docSnapshot ->
-            val docDevJson = JSON.stringify(docSnapshot.data)
-            Json { ignoreUnknownKeys = true }.decodeFromString<GdvmDevice>(docDevJson)
-        }.flatMapLatest { docSnmpDevice ->
-            db.config.schedule
-        }
-        .snmpAgentscheduledFlow()
-        .collectLatest { req ->
-            val devSet = mutableSetOf<String>()
-            val j = launch {
-                // 検索とProxyデバイスの生成
-                req.scanAddrSpecs.forEach { target ->
-                    discoveryDeviceFlow(target, snmp).collect { ev ->
-                        val res = ResponseEvent.from(ev)
-                        val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
-                        if (!devSet.contains(devId)) {
-                            devSet.add(devId)
-                            launch {
-                                runMfp(devId, res.resTarget)
-                            }
-                        }
-                    }
-                }
-                // 検索結果をレポート
-                val rep = Report(
-                    time = Date.now(),
-                    deviceId = agentId,
-                    result = Result(
-                        detected = devSet.toList()
-                    ),
-                )
-                // 検索結果をDBに登録
-                db.collection("device").document(agentId).collection("logs").document().set(rep)
-                db.collection("device").document(agentId).collection("state").document("discovery").set(rep)
-                // TODO
-                if (req.autoRegistration) {
-                }
-            }
-            try {
-                j.join()
-            } finally {
-                j.cancel()
-                j.join()
-            }
-        }
-}

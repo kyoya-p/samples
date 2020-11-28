@@ -89,7 +89,7 @@ fun createCustomToken(credential: Credential): String {
     // Make Custom Token with custom Claims
     val additionalClaims = mapOf(
             "id" to credential.id,
-            "clusterId" to devClusterId,
+            "cluster" to devClusterId,
     )
 
     val mAuth = FirebaseAuth.getInstance()

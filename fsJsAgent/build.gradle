@@ -1,6 +1,7 @@
 plugins {
     id "org.jetbrains.kotlin.js" version "1.4.10"
     id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.10'
+    id "com.github.node-gradle.node" version "2.2.4"
 }
 
 group = 'jp.0t0.shokkaa'
@@ -22,9 +23,14 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 
 
-    implementation fileTree(dir: '../fsSnmpAg/src')
+    //implementation fileTree(dir: '../fsSnmpAg/src')
 }
 
+task runAgent(type: NodeTask, dependsOn: build) {
+    //script = file('build\\js\\packages\\FsJsAgent\\kotlin\\FsJsAgent.js')
+    script = file('build/js/packages/FsJsAgent/kotlin/FsJsAgent.js')
+    args = ['http://192.168.3.102:8080', 'loadAgent1', 'aaaaaaaa']
+}
 
 kotlin { js { nodejs() } }
 /*kotlin {
