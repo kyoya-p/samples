@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseAuth
 import gifts.RspRequest
 import gifts.proxy
 import io.ktor.application.*
+import io.ktor.features.*
 import io.ktor.http.*
 import io.ktor.locations.*
 import io.ktor.response.*
@@ -25,7 +26,7 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
-val db = FirestoreOptions.getDefaultInstance().service!!
+//val db = FirestoreOptions.getDefaultInstance().service!!
 
 @KtorExperimentalLocationsAPI
 @Location("/customToken")
@@ -41,7 +42,12 @@ fun main(args: Array<String>) {
 
     embeddedServer(Netty, port) {
         install(Locations)
+        install(CORS) {
+            header("CrossDomain")
+            header("X-CSRF-Token")
+        }
         routing {
+
             get<Credential> { credential ->
                 println("Requested with credential: $credential")
                 val res = createCustomToken(credential)
@@ -51,7 +57,7 @@ fun main(args: Array<String>) {
 
             /* Just Trial*/
             get<RspRequest> { rspReq ->
-                proxy(rspReq) {
+                proxy(rspReq) { it ->
                     (it["headers"] as Map<*, *>).forEach { (k, v) ->
                         k as String
                         v as String
@@ -71,6 +77,7 @@ fun main(args: Array<String>) {
 
 @KtorExperimentalLocationsAPI
 fun createCustomToken(credential: Credential): String {
+    val db = FirestoreOptions.getDefaultInstance().service!!
 
     // Check parameters by Firestore document
     val dev = db.collection("device").document(credential.id).get().get()?.data

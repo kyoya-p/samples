@@ -1,6 +1,6 @@
 package gifts
 
-import db
+import com.google.cloud.firestore.FirestoreOptions
 import io.ktor.application.*
 import io.ktor.http.*
 import io.ktor.locations.*
@@ -14,7 +14,8 @@ import kotlinx.serialization.json.*
 @Location("/rsp/{ch}/{url}")
 data class RspRequest(val url: String, val ch: String)
 
-suspend fun PipelineContext<Unit, ApplicationCall>.proxy(req: RspRequest, op: suspend (Map<String,Any>) -> Unit) {
+@KtorExperimentalLocationsAPI
+suspend fun PipelineContext<Unit, ApplicationCall>.proxy(req: RspRequest, op: suspend (Map<String, Any>) -> Unit) {
     println("Req: ${req.url}")
     val method = when (call.request.httpMethod) {
         HttpMethod.Get -> FsHttpRequest.Method.GET
@@ -30,9 +31,11 @@ suspend fun PipelineContext<Unit, ApplicationCall>.proxy(req: RspRequest, op: su
                     body = "", //TODO
             )
     )
-    db.collection("devConfig").document(req.ch).set(fsReq).get() // blocking
+    val db = FirestoreOptions.getDefaultInstance().service!!
+
+    db.collection("devConfig").document(req.ch).set(fsReq).get() // TODO: blocking
     db.collection("devStatus").document(req.ch).get().get().data?.let { res ->
-        val body = res["body"] as String
+        val body = res["body"] as String //TODO
         op(res)
     }
 }
@@ -80,6 +83,7 @@ data class FsHttpResponse(
 
 fun Map<String, Any>.toJsonObject(): JsonObject = buildJsonObject {
     forEach { (k, v) ->
+        @Suppress("UNCHECKED_CAST")
         when (v) {
             is Number -> put(k, v)
             is String -> put(k, v)
@@ -92,6 +96,7 @@ fun Map<String, Any>.toJsonObject(): JsonObject = buildJsonObject {
 
 fun List<Any>.toJsonArray(): JsonArray = buildJsonArray {
     forEach { v ->
+        @Suppress("UNCHECKED_CAST")
         when (v) {
             is Number -> add(v)
             is String -> add(v)
