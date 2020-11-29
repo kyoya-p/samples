@@ -1,7 +1,16 @@
 package firebaseInterOp
 
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.js.Promise
+
 
 external fun require(module: String): dynamic //javascriptのrequire()を呼ぶ
+
+suspend fun <T> Promise<T>.await(): T = suspendCoroutine { cont ->
+    then({ cont.resume(it) }, { cont.resumeWithException(it) })
+}
 
 class Firebase(val raw: dynamic) {
 
@@ -49,16 +58,14 @@ class Firestore(val raw: dynamic) {
     }
 
     class DocumentReference(val raw: dynamic) : Query() {
-        fun <R> get(op: (documentSnapshot: DocumentSnapshot) -> R): R =
-            raw.get().then({ v: dynamic -> op(DocumentSnapshot(v)) })
 
-        //fun set(doc: Map<String, Any?>) = documentRef.set(doc)
-        fun set(doc: Any, op: () -> Unit): Unit = raw.set(doc).then(op)
-
+        fun get(): Promise<DocumentSnapshot> = raw.get()
+        fun get(id: String): Promise<DocumentSnapshot> = raw.get(id)
+        fun set(doc: Any): Promise<Unit> = raw.set(doc)
         fun collection(id: String) = CollectionReference(raw.collection(id))
     }
 
     class DocumentSnapshot(val raw: dynamic) {
-        val data get() = raw.data()
+        fun data(): Map<String, Any> = raw.data()
     }
 }
