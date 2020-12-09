@@ -55,7 +55,7 @@ fun main(args: Array<String>) {
                 call.respondText(res, ContentType.Text.Plain)
             }
 
-            /* Just Trial*/
+            /* Just Trial
             get<RspRequest> { rspReq ->
                 proxy(rspReq) { it ->
                     (it["headers"] as Map<*, *>).forEach { (k, v) ->
@@ -71,6 +71,7 @@ fun main(args: Array<String>) {
                 }
             }
             post<RspRequest> { proxy(it) { call.respondText("aaa") } }
+            */
         }
     }.start(wait = true)
 }

@@ -1,11 +1,8 @@
 package gdvm.agent.mib
 
-import com.google.cloud.firestore.DocumentSnapshot
+import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
-import com.google.cloud.firestore.FirestoreException
-import firestoreInterOp.firestoreDocumentFlow
 import mibtool.*
-import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.toJsonObject
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
@@ -41,25 +38,47 @@ fun main(args: Array<String>): Unit = runBlocking {
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
     data class DeviceInfo(val id: String, val password: String, val target: SnmpTarget) //TODO:
-
-    callbackFlow<DocumentSnapshot> {  // Firestoreから設定を読めれば(または更新されたら)、内容を流す
+    data class Work(val agent: MfpMibAgentDevice, val query: MfpMibAgentQuery)
+    callbackFlow<MfpMibAgentDevice> {  // Agent情報をチェックし変更あればflow
         val listener = firestore.collection("device").document(agentId).addSnapshotListener(object : EventListener<DocumentSnapshot?> {
             override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) {
-                if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) offer(snapshot)
-                else close()
+                if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
+                    val ag = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentDevice>(snapshot.data!!.toJsonObject())
+                    offer(ag)
+                } else close()
             }
         })
         awaitClose { listener.remove() }
-    }.mapLatest { it -> // Jsonを介して構造体に格納
-        Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentDevice>(it.data!!.toJsonObject())
-    }.flatMapLatest { docAg -> // スケジュール時間になれば、次に進む
-        channelFlow { docAg.config?.schedule?.limit?.let { repeat(it) { offer(docAg);delay(docAg.config.schedule.interval) } } }
-    }.flatMapLatest { docAg -> // SNMP検索し、
+    }.flatMapLatest { agent -> // クエリをチェックしあればflow
+        val queryCollectionPath = agent.dev.confidPath
+                ?: firestore.collection("device").document(agentId).collection("query").path
+        println("Q=$queryCollectionPath") //TODO
+        callbackFlow<Work> {
+            val listener = firestore.collection(queryCollectionPath).addSnapshotListener(object : EventListener<QuerySnapshot?> {
+                override fun onEvent(value: QuerySnapshot?, error: FirestoreException?) {
+                    if (error == null && value != null) for (e in value.documents) {
+                        val query = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentQuery>(e.data.toJsonObject())
+                        offer(Work(agent, query))
+                        println("query:$query")
+                    } else close()
+                }
+            })
+            awaitClose { listener.remove() }
+        }
+    }.flatMapLatest { params -> // スケジュール時間になれば、次に進む
+        channelFlow {
+            params.query.schedule.limit.let {
+                repeat(it) {
+                    offer(params)
+                    delay(params.query.schedule.interval)
+                }
+            }
+        }
+    }.flatMapLatest { params -> // SNMP検索し、
         val devSet = mutableSetOf<String>()
         channelFlow<DeviceInfo> {
-            val config = docAg.config!!
             launch {
-                config.scanAddrSpecs.forEach { target ->
+                params.query.scanAddrSpecs.forEach { target ->
                     discoveryDeviceFlow(target, snmp).collect { ev -> // 発見デバイス情報を次に流す
                         val res = ResponseEvent(reqPdu = PDU.from(ev.request), reqTarget = target, resPdu = PDU.from(ev.response),
                                 resTarget = SnmpTarget(
@@ -67,18 +86,16 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                                         credential = target.credential, retries = target.retries, interval = target.interval))
                         println(res.resTarget.addr)
                         val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
-                        if (config.autoRegistration) { // 自己デバイス登録
+                        if (params.query.autoRegistration) { // 自己デバイス登録
                             firestore.collection("device").document(devId).set(MfpMibDevice(
-                                    cluster = docAg.cluster, // Agentと同じものを登録
-                                    password = docAg.password, // (デフォルトPWのほうがよいだろうか?)
-                                    info = MfpMibDeviceInfo(
-                                            model = res.resPdu.vbl[0].value,
-                                            sn = res.resPdu.vbl[1].value,
+                                    dev = GdvmDeviceInfo(
+                                            cluster = params.agent.dev.cluster, // Agentと同じものを登録
+                                            password = params.agent.dev.password, // (デフォルトPWのほうがよいだろうか?)
                                     )
                             ))
                         }
                         devSet.add(devId)
-                        offer(DeviceInfo(devId, docAg.password, res.resTarget))
+                        offer(DeviceInfo(devId, params.agent.dev.password, res.resTarget))
                     }
                 }
             }.join()
@@ -96,59 +113,10 @@ suspend fun runAgent(agentId: String) = coroutineScope {
     }
 }
 
-
-@ExperimentalCoroutinesApi
-suspend fun runAgent2(agentId: String) = coroutineScope {
-    firestore.firestoreDocumentFlow<MfpMibAgentDevice> { collection("device").document(agentId) }
-            .map { println(it.config);it.config!! }
-            .snmpAgentscheduledFlow()
-            .collectLatest { req ->
-                val devSet = mutableSetOf<String>()
-                val j = launch {
-                    // 検索とProxyデバイスの生成
-                    req.scanAddrSpecs.forEach { target ->
-                        discoveryDeviceFlow(target, snmp).collect { ev ->
-                            val res = ResponseEvent(reqPdu = PDU.from(ev.request), reqTarget = target, resPdu = PDU.from(ev.response),
-                                    resTarget = SnmpTarget(
-                                            addr = ev.peerAddress.syntaxString, port = ev.peerAddress.port,
-                                            credential = target.credential, retries = target.retries, interval = target.interval))
-                            val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
-                            if (!devSet.contains(devId)) {
-                                devSet.add(devId)
-                                launch {
-                                    runMfp(devId, "Sharp-#1", res.resTarget)
-                                }
-                            }
-                        }
-                    }
-                    // 検索結果をレポート
-                    val rep = Report(
-                            time = Date().time,
-                            deviceId = agentId,
-                            result = Result(
-                                    detected = devSet.toList()
-                            ),
-                    )
-                    // 検索結果をDBに登録
-                    firestore.collection("device").document(agentId).collection("logs").document().set(rep)
-                    firestore.collection("device").document(agentId).collection("state").document("discovery").set(rep)
-                    if (req.autoRegistration) {                    // TODO
-
-                    }
-                }
-                try {
-                    j.join()
-                } finally {
-                    j.cancel()
-                    j.join()
-                }
-            }
-}
-
 // Flow<AgentRequest>を受けスケジュールされたタイミングでAgentRequestを流す
 // TODO: 今は一定間隔かワンショットだけ
 @ExperimentalCoroutinesApi
-suspend fun Flow<MfpMibAgentConfig>.snmpAgentscheduledFlow() = channelFlow {
+suspend fun Flow<MfpMibAgentQuery>.snmpAgentscheduledFlow() = channelFlow {
     collectLatest { req ->
         try {
             repeat(req.schedule.limit) {
