@@ -7,8 +7,6 @@ data class GdvmDevice(
     val cluster: String,
     val name: String = "anonymous",
     val password: String = "",
-    val confidPath: String? = null,
-    val config: DeviceConfig? = null,
 )
 
 @Serializable

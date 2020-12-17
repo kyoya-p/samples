@@ -16,16 +16,17 @@ val firebase = Firebase.initializeApp(
     projectId = "road-to-iot"
 )
 
+val customTokernSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
+
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
 
-    if (args.size != 5) {
-        println("syntax: node FsJsAgent.js <customTokernSvr> <agentId> <secret>")
+    if (args.size != 4) {
+        println("syntax: node FsJsAgent.js <agentId> <secret>")
         return@launch
     }
-    val customTokenSvr = args[2]
-    val agentId = args[3]
-    val secret = args[4]
+    val agentId = args[2]
+    val secret = args[3]
 
     println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
 

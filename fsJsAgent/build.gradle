@@ -27,9 +27,8 @@ dependencies {
 }
 
 task runAgent(type: NodeTask, dependsOn: build) {
-    //script = file('build\\js\\packages\\FsJsAgent\\kotlin\\FsJsAgent.js')
     script = file('build/js/packages/FsJsAgent/kotlin/FsJsAgent.js')
-    args = ['http://192.168.3.102:8080', 'loadAgent1', 'aaaaaaaa']
+    args = ['loadAgent1', 'aaaaaaaa']
 }
 
 kotlin { js { nodejs() } }

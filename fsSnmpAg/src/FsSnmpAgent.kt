@@ -38,64 +38,67 @@ fun main(args: Array<String>): Unit = runBlocking {
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
     data class DeviceInfo(val id: String, val password: String, val target: SnmpTarget) //TODO:
-    data class Work(val agent: MfpMibAgentDevice, val query: MfpMibAgentQuery)
-    callbackFlow<MfpMibAgentDevice> {  // Agent情報をチェックし変更あればflow
+    data class Agent(val snapshot: DocumentSnapshot, val data: MfpMibAgentDevice)
+    data class Query(val snapshot: DocumentSnapshot, val data: MfpMibAgentQuery, val agent: Agent)
+
+    callbackFlow<Agent> {  // Agent情報をチェックし、存在すれば/更新されれば flow
         val listener = firestore.collection("device").document(agentId).addSnapshotListener(object : EventListener<DocumentSnapshot?> {
             override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) {
                 if (ex == null && snapshot != null && snapshot.exists() && snapshot.data != null) {
                     val ag = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentDevice>(snapshot.data!!.toJsonObject())
-                    offer(ag)
+                    offer(Agent(snapshot, ag))
                 } else close()
             }
         })
         awaitClose { listener.remove() }
-    }.flatMapLatest { agent -> // クエリをチェックしあればflow
-        val queryCollectionPath = agent.dev.confidPath
+    }.flatMapLatest { agent -> // クエリをチェックし、未処理のクエリがあれば クエリ毎に実行
+        val queryCollectionPath = agent.data.dev.confidPath
                 ?: firestore.collection("device").document(agentId).collection("query").path
-        println("Q=$queryCollectionPath") //TODO
-        callbackFlow<Work> {
+        callbackFlow<Query> {
             val listener = firestore.collection(queryCollectionPath).addSnapshotListener(object : EventListener<QuerySnapshot?> {
                 override fun onEvent(value: QuerySnapshot?, error: FirestoreException?) {
-                    if (error == null && value != null) for (e in value.documents) {
-                        val query = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentQuery>(e.data.toJsonObject())
-                        offer(Work(agent, query))
-                        println("query:$query")
+                    if (error == null && value != null) {
+                        for (e in value.documents) {
+                            val query = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<MfpMibAgentQuery>(e.data.toJsonObject())
+                            offer(Query(e, query, agent))
+                        }
                     } else close()
                 }
             })
             awaitClose { listener.remove() }
         }
-    }.flatMapLatest { params -> // スケジュール時間になれば、次に進む
+    }.flatMapLatest { query -> // スケジュール時間になれば、次に進む //TODO
         channelFlow {
-            params.query.schedule.limit.let {
+            query.data.schedule.limit.let {
                 repeat(it) {
-                    offer(params)
-                    delay(params.query.schedule.interval)
+                    offer(query)
+                    delay(query.data.schedule.interval)
                 }
             }
         }
-    }.flatMapLatest { params -> // SNMP検索し、
+    }.flatMapLatest { query -> // SNMP検索し、
         val devSet = mutableSetOf<String>()
         channelFlow<DeviceInfo> {
             launch {
-                params.query.scanAddrSpecs.forEach { target ->
+                query.data.scanAddrSpecs.forEach { target ->
                     discoveryDeviceFlow(target, snmp).collect { ev -> // 発見デバイス情報を次に流す
                         val res = ResponseEvent(reqPdu = PDU.from(ev.request), reqTarget = target, resPdu = PDU.from(ev.response),
                                 resTarget = SnmpTarget(
                                         addr = ev.peerAddress.inetAddress.hostAddress, port = ev.peerAddress.port,
                                         credential = target.credential, retries = target.retries, interval = target.interval))
-                        println(res.resTarget.addr)
+                        println("Detected: ${res.resTarget.addr}")
                         val devId = "type=mfp.mib:model=${res.resPdu.vbl[0].value}:sn=${res.resPdu.vbl[1].value}"
-                        if (params.query.autoRegistration) { // 自己デバイス登録
+                        if (query.data.autoRegistration) { // 自己デバイス登録
                             firestore.collection("device").document(devId).set(MfpMibDevice(
                                     dev = GdvmDeviceInfo(
-                                            cluster = params.agent.dev.cluster, // Agentと同じものを登録
-                                            password = params.agent.dev.password, // (デフォルトPWのほうがよいだろうか?)
+                                            cluster = query.agent.data.dev.cluster, // Agentと同じものを登録
+                                            password = query.agent.data.dev.password, // (デフォルトPWのほうがよいだろうか?)
+                                            name = devId,
                                     )
                             ))
                         }
                         devSet.add(devId)
-                        offer(DeviceInfo(devId, params.agent.dev.password, res.resTarget))
+                        offer(DeviceInfo(devId, query.agent.data.dev.password, res.resTarget))
                     }
                 }
             }.join()
@@ -105,8 +108,8 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                     deviceId = agentId,
                     result = Result(detected = devSet.toList()),
             )
-            firestore.collection("device").document(agentId).collection("state").document("discovery").set(rep)
-            firestore.collection("device").document(agentId).collection("logs").document().set(rep)
+            query.snapshot.reference.collection("results").document().set(rep)
+            query.agent.snapshot.reference.collection("logs").document().set(rep)
         }
     }.collect { devInfo -> //検索されたデバイス毎の処理を起動
         runMfp(devInfo.id, devInfo.password, devInfo.target)

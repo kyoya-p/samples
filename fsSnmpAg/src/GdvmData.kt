@@ -5,9 +5,22 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GdvmDeviceInfo(
         val cluster: String,
-        val name: String = "anonymous",
+        val name: String,
         val password: String = "Sharp_#1",
         val confidPath: String? = null,//e.g. "/device/dev1/query"
+)
+
+@Serializable
+data class GdvmGroupInfo(
+        val parent: String,
+        val name: String,
+        val users: List<String>,
+)
+
+@Serializable
+data class GdvmMessageInfo(
+        val id: String, // DocumentId
+        val timeRec: Long, // posted time
 )
 
 @Serializable
@@ -20,31 +33,11 @@ data class MfpMibAgentDevice(
         val dev: GdvmDeviceInfo,
 )
 
-@Serializable
-data class MfpMibDeviceConfig(
-        val schedule: Schedule = Schedule(1),
-        val time: Long? = null,
-)
-
-@Serializable
-data class MfpMibDeviceInfo(
-        val model: String,
-        val sn: String,
-)
-
-@Serializable
-data class SnmpAgentDeviceXX(
-        val cluster: String,
-        val name: String = "anonymous",
-        val password: String = "Sharp_#1",
-        val confidPath: String? = null,
-        val config: MfpMibAgentQuery? = null
-)
 
 @Serializable
 data class MfpMibAgentQuery(
         val scanAddrSpecs: List<SnmpTarget>,
-        val autoRegistration: Boolean=false,
+        val autoRegistration: Boolean = false,
         val schedule: Schedule = Schedule(1),
         val time: Long? = null,
 )
