@@ -58,7 +58,6 @@ class Firestore(val raw: dynamic) {
     }
 
     class DocumentReference(val raw: dynamic) : Query() {
-
         fun get(): Promise<DocumentSnapshot> = raw.get()
         fun get(id: String): Promise<DocumentSnapshot> = raw.get(id)
         fun set(doc: Any): Promise<Unit> = raw.set(doc)

@@ -6,6 +6,7 @@ import gdvm.agent.mib.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
@@ -24,6 +25,7 @@ val db = firebase.firestore
 val customTokenSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
 
 
+@InternalCoroutinesApi
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
     if (args.size != 4) {
@@ -66,9 +68,17 @@ data class TargetInfo(
     val password: String,
 )
 
+@InternalCoroutinesApi
 suspend fun runMainAgent(agentId: String) {
-    val agent: MainAgent = fromJson(db.collection("device").doc(agentId).get().await().data())
-    print(agent)
+    flow {
+        while (currentCoroutineContext().isActive) {
+            val agent: MainAgent = fromJson(db.collection("device").doc(agentId).get().await().data())
+            print(agent)
+            emit(agent)
+        }
+    }.collectLatest {agent->
+
+    }
 }
 
 
