@@ -16,7 +16,7 @@ val firebase = Firebase.initializeApp(
     projectId = "road-to-iot"
 )
 
-val customTokernSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
+val customTokenSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
 
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
