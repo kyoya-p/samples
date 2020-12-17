@@ -1,11 +1,15 @@
 import firebaseInterOp.Firebase
-import gdvm.agent.loadAgent.runLoadAgent
+import gdvm.agent.loadAgent.fromJson
+import gdvm.agent.loadAgent.runStressTestAgent
+import gdvm.agent.loadAgent.toJson
 import gdvm.agent.mib.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 external val process: dynamic
 val args: Array<String> get() = process.argv
@@ -15,12 +19,13 @@ val firebase = Firebase.initializeApp(
     authDomain = "road-to-iot.firebaseapp.com",
     projectId = "road-to-iot"
 )
+val db = firebase.firestore
 
 val customTokenSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
 
+
 @ExperimentalCoroutinesApi
 suspend fun main(): Unit = GlobalScope.launch {
-
     if (args.size != 4) {
         println("syntax: node FsJsAgent.js <agentId> <secret>")
         return@launch
@@ -44,9 +49,28 @@ suspend fun main(): Unit = GlobalScope.launch {
         firebase.auth.onAuthStateChanged { if (it != null) offer(it) }
         awaitClose()
     }.collectLatest {
-        runLoadAgent(agentId)
+        //runStressTestAgent(agentId)
+        runMainAgent(agentId)
     }
 }.join()
+
+@Serializable
+data class MainAgent(
+    val dev: GdvmDeviceInfo,
+    val type: JsonObject, // "type":{"dev":{"agent":{"launcher":{}}}}
+    val targets: Map<String/*deviceId*/, TargetInfo>,
+)
+
+@Serializable
+data class TargetInfo(
+    val password: String,
+)
+
+suspend fun runMainAgent(agentId: String) {
+    val agent: MainAgent = fromJson(db.collection("device").doc(agentId).get().await().data())
+    print(agent)
+}
+
 
 // debug
 fun String.toB64() = chunked(4).map {

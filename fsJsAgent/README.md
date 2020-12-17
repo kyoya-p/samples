@@ -1,24 +1,24 @@
-Firebase Custom Token 認証 Sample Code
+NodeJS Agent Sample
 ====
+- Firebase Custom Token 認証 Sample Code
+- kotlin/JS code on node.js runtime
 
 Environment
 ----
 - Node.js: [node-v14.15.0](https://nodejs.org/ja/download/)
-- Java: [AdoptOpenJDK 11](https://adoptopenjdk.net/)
+- Kotlin 1.4
 
 Build & Run
 ----
-- 事前にfsCustomAuthSvrをlocalhostに起動しておく
+- Custom Token server 起動していること
 
 ```
 git clone https://github.com/kyoya-p/samples
 cd samples/fsJsAgent
-// unzip road-to-iot-8efd3bfb2ccd.json.zip
-// set GOOGLE_APPLICATION_CREDENTIALS=road-to-iot-8efd3bfb2ccd.json
-gradlew kotlinNpmInstall
+npm update
 gradlew build
 
-node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js http://shokkaa.0t0.jp:8080 agent1 1234XXXX
+node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js agent1 1234XXXX
 ```
 
 IntteliJ

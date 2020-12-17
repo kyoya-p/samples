@@ -36,7 +36,7 @@ data class DeviceQuery(
 
 val db = firebase.firestore
 
-suspend fun runLoadAgent(agentId: String) = GlobalScope.launch {
+suspend fun runStressTestAgent(agentId: String) = GlobalScope.launch {
     println("Start Agent($agentId)")
     val devDoc = db.collection("device").doc(agentId).get().await()
     val devQueryDoc = db.collection("device").doc(agentId).collection("query").doc("startup").get().await()

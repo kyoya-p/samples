@@ -28,7 +28,7 @@ dependencies {
 
 task runAgent(type: NodeTask, dependsOn: build) {
     script = file('build/js/packages/FsJsAgent/kotlin/FsJsAgent.js')
-    args = ['loadAgent1', 'aaaaaaaa']
+    args = ['MetaAgent1', 'aaaaaaaa']
 }
 
 kotlin { js { nodejs() } }
