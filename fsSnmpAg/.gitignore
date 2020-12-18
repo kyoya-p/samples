@@ -2,3 +2,5 @@
 /.gradle/
 /build/
 /resources/road-to-iot-8efd3bfb2ccd.json
+/src/httpAgent/.idea/
+/src/httpAgent/httpAgent.iml
