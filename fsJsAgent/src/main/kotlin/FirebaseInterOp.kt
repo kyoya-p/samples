@@ -50,6 +50,7 @@ class Firestore(val raw: dynamic) {
     fun collection(path: String) = CollectionReference(raw.collection(path))
 
     open class Query {
+        fun onSnapshot(observer:)
     }
 
     class CollectionReference(val raw: dynamic) : Query() {

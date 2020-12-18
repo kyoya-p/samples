@@ -1,16 +1,28 @@
 NodeJS Agent Sample
 ====
-- Firebase Custom Token 認証 Sample Code
+Demonstration point:
+- Firebase Custom Token 認証 
 - kotlin/JS code on node.js runtime
 
 Environment
 ----
-- Node.js: [node-v14.15.0](https://nodejs.org/ja/download/)
-- Kotlin 1.4
+- Node.js: [node-v14.15.3](https://nodejs.org/ja/download/)
+```
+sudo apt install nodejs npm
+sudo npm install -g n
+sudo n 14.15.3
+sudo apt purge nodejs npm
+```
+
+- Java: (for gradle) openjdk-11-jdk
 
 Build & Run
 ----
 - Custom Token server 起動していること
+- node のバージョンはFirebase SDKがサポートするバージョンに合わせる
+  - 2020/12/18現在 10.10以上
+
+
 
 ```
 git clone https://github.com/kyoya-p/samples
@@ -18,7 +30,7 @@ cd samples/fsJsAgent
 npm update
 gradlew build
 
-node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js agent1 1234XXXX
+node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js MetaAgent1 1234xxxx
 ```
 
 IntteliJ

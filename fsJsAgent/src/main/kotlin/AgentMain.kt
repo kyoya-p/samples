@@ -1,12 +1,7 @@
-import firebaseInterOp.Firebase
-import gdvm.agent.loadAgent.fromJson
-import gdvm.agent.loadAgent.runStressTestAgent
-import gdvm.agent.loadAgent.toJson
 import gdvm.agent.mib.*
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
@@ -70,13 +65,10 @@ data class TargetInfo(
 
 @InternalCoroutinesApi
 suspend fun runMainAgent(agentId: String) {
-    flow {
-        while (currentCoroutineContext().isActive) {
-            val agent: MainAgent = fromJson(db.collection("device").doc(agentId).get().await().data())
-            print(agent)
-            emit(agent)
-        }
-    }.collectLatest {agent->
+    callbackFlow {
+        db.collection("device").doc(agentId).get()
+    }.collectLatest { agent ->
+        print(agent)
 
     }
 }
