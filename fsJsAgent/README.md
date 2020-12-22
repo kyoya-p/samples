@@ -10,8 +10,10 @@ Environment
 ```
 sudo apt install nodejs npm
 sudo npm install -g n
+// sudo n ls-remote
 sudo n 14.15.3
 sudo apt purge nodejs npm
+// shell restart
 ```
 
 - Java: (for gradle) openjdk-11-jdk

@@ -1,6 +1,11 @@
 package gdvm.agent.mib
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonObject
 
 // /device/{GdvmGenericDevice}
@@ -45,8 +50,16 @@ data class GdvmGenericGroup(
 @Serializable
 data class GdvmDeviceInfo(
     val cluster: String,
-    val name: String = "anonymous",
+    //val name: String = "anonymous",
     val password: String = "",
+) {
+    companion object
+}
+
+fun GdvmDeviceInfo.Companion.fromJson(j: JsonObject): GdvmDeviceInfo = GdvmDeviceInfo(
+    cluster = j["cluster"].toString(),
+    //name = j["name"] as String? ?: "noname",
+    password = j["password"].toString()
 )
 
 @Serializable
