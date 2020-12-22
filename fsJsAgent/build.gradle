@@ -3,16 +3,12 @@ Setting up a Kotlin/JS project:  https://kotlinlang.org/docs/reference/js-projec
 
 */
 
-
 plugins {
     id "org.jetbrains.kotlin.js" version "1.4.21"
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.21'
-    id "com.github.node-gradle.node" version "2.2.4"
+    id "com.github.node-gradle.node" version "2.2.0"
+    //id "com.github.node-gradle.node" version "2.2.4"
+
 }
-
-
-//group = 'jp.0t0.shokkaa'
-//version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -20,21 +16,13 @@ repositories {
 
 dependencies {
     //implementation(kotlin("stdlib-js"))
-    //implementation(npm("escape-html", "1.0.3"))
-    //implementation(npm("@types/escape-html", "0.0.20"))
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.2'
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines', version: '0.19.2'
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-core', version:'1.0.0' // kotlin 1.4以降
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json', version:'1.0.1'
 
-
-    api "org.jetbrains.kotlin:kotlin-stdlib:1.4.10"
-    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
-    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-runtime', version: '1.0-M1-1.4.0-rc'
-
-    api "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
-    api "org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1"
-
-    //api group: 'io.ktor', name: 'ktor-client-js', version: '1.4.1'
-
+    api group: 'io.ktor', name: 'ktor-client-js', version: '1.4.3'
     api(npm("firebase", "8.0.0"))
-
     //testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
 
