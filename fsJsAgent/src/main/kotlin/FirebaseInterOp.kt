@@ -131,9 +131,7 @@ fun Any.toJsonArray(): JsonArray {
     if (t is JsonArray) return t
     if (t is List<*>) {
         t as List<Any>
-        return buildJsonArray {
-            t.forEach { add(it.toJsonElement()) }
-        }
+        return buildJsonArray { t.forEach { add(it.toJsonElement())} }
     }
     throw IllegalStateException("Any.toJsonArray() this=$this")
 }

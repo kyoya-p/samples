@@ -2,6 +2,7 @@ package launcherAgent
 
 import firebaseInterOp.Firebase
 import firebaseInterOp.Firestore.*
+import firebaseInterOp.toJsonArray
 import firebaseInterOp.toJsonObject
 import gdvm.agent.mib.*
 import io.ktor.client.*
@@ -11,6 +12,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 external val process: dynamic
 val args: Array<String> get() = process.argv
@@ -62,7 +64,7 @@ suspend fun main(): Unit = GlobalScope.launch {
 data class MainAgentLauncher(
     val dev: GdvmDeviceInfo,
     val type: JsonObject, // "type":{"dev":{"agent":{"launcher":{}}}}
-    val targets: Map<String/*deviceId*/, TargetInfo>,
+    val targets: List<TargetInfo>,
 ) {
     companion object
 }
@@ -71,7 +73,8 @@ fun MainAgentLauncher.Companion.fromJson(j: JsonObject) =
     MainAgentLauncher(
         dev = GdvmDeviceInfo.fromJson(j["dev"]!!.toJsonObject()),
         type = j["type"]!!.toJsonObject(),
-        targets = j["targets"]!!.toJsonObject().mapValues { (k, v) -> TargetInfo.fromJson(v.toJsonObject()) }
+        targets = j["targets"]!!.toJsonArray()
+            .map { println("fromJson: $it -> id=${it.toJsonObject()["id"]}"); TargetInfo.fromJson(it.toJsonObject()) }
     )
 
 
@@ -84,8 +87,8 @@ data class TargetInfo(
 }
 
 fun TargetInfo.Companion.fromJson(j: JsonObject) = TargetInfo(
-    id = j["id"].toString(),
-    password = j["password"].toString(),
+    id = (j["id"] as JsonPrimitive).content,
+    password = (j["password"] as JsonPrimitive).content,
 )
 
 @InternalCoroutinesApi
@@ -100,27 +103,25 @@ suspend fun runMainAgent(agentId: String) = coroutineScope {
             }
         awaitClose { listenerRegister.remove() }
     }.collectLatest { agent ->
-        println(agent)
-        agent.targets.forEach { (devId, tg) ->
-            launch { runSubAgent(devId, tg) }
-        }
+        agent.targets.forEach { tg -> launch { runSubAgent(tg) } }
     }
 }
 
-suspend fun runSubAgent(id: String, tg: TargetInfo) {
-    println("Start SubAgent. id:$id")
+suspend fun runSubAgent(tg: TargetInfo) {
+    println("Start SubAgent. id:${tg.id}")
 
     val app = Firebase.initializeApp(
         apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
         authDomain = "road-to-iot.firebaseapp.com",
         projectId = "road-to-iot",
-        name = id,
+        name = tg.id,
     )
 
     val auth = app.auth()
 
-    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=$id&pw=${tg.password}")
-    if (customToken.isEmpty()) return
+    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=${tg.id}&pw=${tg.password}")
+    //if (customToken.isEmpty()) return
+    println("Claims: ${(customToken.split(".")[1]).fromBase64()}")
     auth.signInWithCustomToken(customToken)
     callbackFlow {
         auth.onAuthStateChanged { user ->
@@ -128,9 +129,11 @@ suspend fun runSubAgent(id: String, tg: TargetInfo) {
         }
         awaitClose()
     }.collectLatest {
-        val db = firebase.firestore()
-        db.collection("device").document(id).get().await().data?.let {
-            println("$id ${it["type"]}")
+        println("Login with SubAgent accont ${it.uid}")
+        val db = app.firestore()
+        db.collection("device").document(tg.id).get().await().data?.let {
+            println("${it}")
+            println("${it["type"]}")
         }
         suspend fun runMainAgent(agentId: String) = coroutineScope {
             println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
@@ -151,35 +154,6 @@ suspend fun runSubAgent(id: String, tg: TargetInfo) {
         }
     }
 }
-
-suspend fun runSubAgent(tg: TargetInfo) {
-    println("Start SubAgent. id:${tg.id}")
-
-    val app = Firebase.initializeApp(
-        apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
-        authDomain = "road-to-iot.firebaseapp.com",
-        projectId = "road-to-iot",
-        name = tg.id,
-    )
-
-    val auth = app.auth()
-
-    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=${tg.id}&pw=${tg.password}")
-    if (customToken.isEmpty()) return
-    println("${tg.id} ${tg.password} $customToken") //TODO
-    auth.signInWithCustomToken(customToken)
-    callbackFlow {
-        auth.onAuthStateChanged { user -> if (user != null) offer(user) }
-        awaitClose()
-    }.collectLatest { user ->
-        println("UID=${user.uid}") //TODO
-        val db = firebase.firestore()
-        db.collection("device").document(tg.id).get().await().data?.let {
-            println("${tg.id} ${it["type"]}")
-        }
-    }
-}
-
 
 // debug
 fun String.fromBase64() = chunked(4).map {

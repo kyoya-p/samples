@@ -5,6 +5,7 @@ Setting up a Kotlin/JS project:  https://kotlinlang.org/docs/reference/js-projec
 
 
 plugins {
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.21'
     id "org.jetbrains.kotlin.js" version "1.4.21"
     id "com.github.node-gradle.node" version "2.2.0"
     //id 'kotlin2js' version '1.4.21'
@@ -25,7 +26,7 @@ dependencies {
 
     api group: 'io.ktor', name: 'ktor-client-js', version: '1.5.0'
     api(npm("firebase", "8.0.0"))
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
+    //implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
     //testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
 }
 

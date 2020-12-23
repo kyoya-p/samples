@@ -30,11 +30,15 @@ Build & Run
 git clone https://github.com/kyoya-p/samples
 cd samples/fsJsAgent
 npm update
-gradlew build
-
+./gradlew build
 node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js MetaAgent1 1234xxxx
 ```
 
+or 
+
+```
+./gradlew runAgent
+```
 IntteliJ
 ----
 - build.gradleを開き、Import
