@@ -131,10 +131,10 @@ suspend fun runSubAgent(tg: TargetInfo) {
     }.collectLatest {
         println("Login with SubAgent accont ${it.uid}")
         val db = app.firestore()
-        db.collection("device").document(tg.id).get().await().data?.let {
-            println("${it}")
-            println("${it["type"]}")
-        }
+        val x = db.collection("device").document(tg.id).raw.get().then({ d ->
+            println("GET ${d.data()["dev"]}") // TODO
+        }) //TODO
+
         suspend fun runMainAgent(agentId: String) = coroutineScope {
             println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
 
