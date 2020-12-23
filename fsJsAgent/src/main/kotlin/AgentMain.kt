@@ -2,7 +2,6 @@ package launcherAgent
 
 import firebaseInterOp.Firebase
 import firebaseInterOp.Firestore.*
-import firebaseInterOp.toJsonArray
 import firebaseInterOp.toJsonObject
 import gdvm.agent.mib.*
 import io.ktor.client.*
@@ -36,6 +35,7 @@ suspend fun main(): Unit = GlobalScope.launch {
     val agentId = args[2]
     val secret = args[3]
 
+    println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
 
     val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=$agentId&pw=$secret")
     if (customToken.isEmpty()) {
@@ -62,16 +62,17 @@ suspend fun main(): Unit = GlobalScope.launch {
 data class MainAgentLauncher(
     val dev: GdvmDeviceInfo,
     val type: JsonObject, // "type":{"dev":{"agent":{"launcher":{}}}}
-    val targets: List<TargetInfo>,
+    val targets: Map<String/*deviceId*/, TargetInfo>,
 ) {
     companion object
 }
 
-fun MainAgentLauncher.Companion.fromJson(j: JsonObject) = MainAgentLauncher(
-    dev = GdvmDeviceInfo.fromJson(j["dev"]!!.toJsonObject()),
-    type = j["type"]!!.toJsonObject(),
-    targets = j["targets"]!!.toJsonArray().map { TargetInfo.fromJson(it.toJsonObject()) }
-)
+fun MainAgentLauncher.Companion.fromJson(j: JsonObject) =
+    MainAgentLauncher(
+        dev = GdvmDeviceInfo.fromJson(j["dev"]!!.toJsonObject()),
+        type = j["type"]!!.toJsonObject(),
+        targets = j["targets"]!!.toJsonObject().mapValues { (k, v) -> TargetInfo.fromJson(v.toJsonObject()) }
+    )
 
 
 @Serializable
@@ -99,8 +100,53 @@ suspend fun runMainAgent(agentId: String) = coroutineScope {
             }
         awaitClose { listenerRegister.remove() }
     }.collectLatest { agent ->
-        println(agent) //TODO
-        agent.targets.forEach { tg -> launch { runSubAgent(tg) } }
+        println(agent)
+        agent.targets.forEach { (devId, tg) ->
+            launch { runSubAgent(devId, tg) }
+        }
+    }
+}
+
+suspend fun runSubAgent(id: String, tg: TargetInfo) {
+    println("Start SubAgent. id:$id")
+
+    val app = Firebase.initializeApp(
+        apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
+        authDomain = "road-to-iot.firebaseapp.com",
+        projectId = "road-to-iot",
+        name = id,
+    )
+
+    val auth = app.auth()
+
+    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=$id&pw=${tg.password}")
+    if (customToken.isEmpty()) return
+    auth.signInWithCustomToken(customToken)
+    callbackFlow {
+        auth.onAuthStateChanged { user ->
+            if (user != null) offer(user)
+        }
+        awaitClose()
+    }.collectLatest {
+        val db = firebase.firestore()
+        db.collection("device").document(id).get().await().data?.let {
+            println("$id ${it["type"]}")
+        }
+        suspend fun runMainAgent(agentId: String) = coroutineScope {
+            println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
+
+            callbackFlow<MainAgentLauncher> {
+                val listenerRegister = db.collection("device").document(agentId)
+                    .addSnapshotListener { doc ->
+                        val d = doc?.data ?: return@addSnapshotListener
+                        offer(MainAgentLauncher.fromJson(d))
+                    }
+                awaitClose { listenerRegister.remove() }
+            }.collectLatest { agent ->
+                println(agent) //TODO
+                agent.targets.forEach { tg -> launch { runSubAgent(tg) } }
+            }
+        }
     }
 }
 
@@ -131,6 +177,7 @@ suspend fun runSubAgent(tg: TargetInfo) {
         }
     }
 }
+
 
 // debug
 fun String.fromBase64() = chunked(4).map {
