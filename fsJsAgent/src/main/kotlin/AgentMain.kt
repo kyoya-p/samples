@@ -144,7 +144,9 @@ suspend fun runSubAgent(id: String, tg: TargetInfo) {
                 awaitClose { listenerRegister.remove() }
             }.collectLatest { agent ->
                 println(agent) //TODO
-                agent.targets.forEach { tg -> launch { runSubAgent(tg) } }
+                agent.targets.forEach {
+                    launch { runSubAgent(it) }
+                }
             }
         }
     }
