@@ -18,18 +18,21 @@ sudo apt purge nodejs npm
 
 - Java: (for gradle) openjdk-11-jdk
 
+
+* Source Code 
+```
+git clone https://github.com/kyoya-p/samples
+cd samples/fsJsAgent
+npm update
+```
+
 Build & Run
 ----
 - Custom Token server 起動していること
 - node のバージョンはFirebase SDKがサポートするバージョンに合わせる
   - 2020/12/18現在 10.10以上
 
-
-
 ```
-git clone https://github.com/kyoya-p/samples
-cd samples/fsJsAgent
-npm update
 ./gradlew build
 node build/js/packages/FsJsAgent/kotlin/FsJsAgent.js MetaAgent1 1234xxxx
 ```
