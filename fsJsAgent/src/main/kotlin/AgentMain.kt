@@ -1,18 +1,23 @@
 package launcherAgent
 
+import SnmpAgent
 import firebaseInterOp.Firebase
 import firebaseInterOp.Firestore.*
+import firebaseInterOp.decodeFrom
 import firebaseInterOp.toJsonArray
 import firebaseInterOp.toJsonObject
 import gdvm.agent.mib.*
+import gdvm.agent.stressTestAgent.runStressTestAgent
 import io.ktor.client.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import runSnmpMfpDevice
 
 external val process: dynamic
 val args: Array<String> get() = process.argv
@@ -34,30 +39,9 @@ suspend fun main(): Unit = GlobalScope.launch {
         println("syntax: node FsJsAgent.js <agentId> <secret>")
         return@launch
     }
-    val agentId = args[2]
+    val deviceId = args[2]
     val secret = args[3]
-
-    println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
-
-    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=$agentId&pw=$secret")
-    if (customToken.isEmpty()) {
-        println("Custom Authentication Error")
-        return@launch
-    }
-    println("Received Custom Token: $agentId ")
-
-//    customToken.split(".").drop(1).take(1).forEach {
-//        println("Token=${it.toB64()}")
-//    } //TODO: debug
-
-    callbackFlow {
-        firebase.auth().signInWithCustomToken(customToken)
-        firebase.auth().onAuthStateChanged { if (it != null) offer(it) }
-        awaitClose()
-    }.collectLatest {
-        println("Signed-in: $agentId")
-        runMainAgent(agentId)
-    }
+    runGenericDevice(deviceId, secret)
 }.join()
 
 @Serializable // kotlin/js (1.4)では暗黙のserializerは実行時エラーになるようだ
@@ -91,20 +75,50 @@ fun TargetInfo.Companion.fromJson(j: JsonObject) = TargetInfo(
     password = (j["password"] as JsonPrimitive).content,
 )
 
+// 認証後、与えられたidに対応するtype情報を取得し、応じたProxyDevice/Agentを起動する
 @InternalCoroutinesApi
-suspend fun runMainAgent(agentId: String) = coroutineScope {
-    println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
+suspend fun runGenericDevice(deviceId: String, secret: String) = coroutineScope {
+    println("Start Device ID:$deviceId    (Ctrl-C to Terminate)")
 
-    callbackFlow<MainAgentLauncher> {
-        val listenerRegister = db.collection("device").document(agentId)
-            .addSnapshotListener { doc ->
-                val d = doc?.data ?: return@addSnapshotListener
-                offer(MainAgentLauncher.fromJson(d))
-            }
-        awaitClose { listenerRegister.remove() }
-    }.collectLatest { agent ->
-        agent.targets.forEach { tg -> launch { runSubAgent(tg) } }
+    val firebase = Firebase.initializeApp(
+        apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
+        authDomain = "road-to-iot.firebaseapp.com",
+        projectId = "road-to-iot",
+        name = deviceId,
+    )
+
+    // Login Flow
+    // CustomTokenは一時間で切れるので、再ログイン(Token再発行)が必要
+    callbackFlow {
+        val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=$deviceId&pw=$secret")
+        if (customToken.isEmpty()) {
+            println("Custom Authentication Error")
+            return@callbackFlow
+        }
+        firebase.auth().signInWithCustomToken(customToken)
+        firebase.auth().onAuthStateChanged { if (it != null) offer(it) }
+        awaitClose()
+    }.flatMapLatest {
+        println("Signed-in: $deviceId")
+        // デバイス対応識別情報を取得
+        channelFlow {
+            val db = firebase.firestore()
+            val dev = db.collection("device").document(deviceId).get().await().data
+            dev?.get("type")?.let { offer(it) }
+            awaitClose()
+        }
+    }.collectLatest { type ->
+        println("Device Type: ${type}")
+        when {
+            type["dev"]["mfp"]["snmp"] != null -> runSnmpMfpDevice(firebase, deviceId, secret)
+            type["dev"]["agent"]["stressTest"] != null -> runStressTestAgent(firebase, deviceId, secret)
+        }
     }
+}
+
+operator fun JsonElement?.get(key: String): JsonElement? {
+    if (this == null || !(this is JsonObject)) return null
+    return this[key]
 }
 
 suspend fun runSubAgent(tg: TargetInfo) {
@@ -131,29 +145,11 @@ suspend fun runSubAgent(tg: TargetInfo) {
     }.collectLatest {
         println("Login with SubAgent accont ${it.uid}")
         val db = app.firestore()
-        val x = db.collection("device").document(tg.id).raw.get().then({ d ->
-            println("GET ${d.data()["dev"]}") // TODO
-        }) //TODO
-
-        suspend fun runMainAgent(agentId: String) = coroutineScope {
-            println("Start SampleAgent/NodeJS. agentId:${agentId}  (Ctrl-C to Terminate)")
-
-            callbackFlow<MainAgentLauncher> {
-                val listenerRegister = db.collection("device").document(agentId)
-                    .addSnapshotListener { doc ->
-                        val d = doc?.data ?: return@addSnapshotListener
-                        offer(MainAgentLauncher.fromJson(d))
-                    }
-                awaitClose { listenerRegister.remove() }
-            }.collectLatest { agent ->
-                println(agent) //TODO
-                agent.targets.forEach {
-                    launch { runSubAgent(it) }
-                }
-            }
-        }
+        val d = db.collection("device").document(tg.id).get().await()
+        val ag: SnmpAgent = decodeFrom<SnmpAgent>(d.data)
     }
 }
+
 
 // debug
 fun String.fromBase64() = chunked(4).map {

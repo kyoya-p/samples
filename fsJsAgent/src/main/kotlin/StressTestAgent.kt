@@ -1,5 +1,7 @@
 package gdvm.agent.stressTestAgent
 
+import firebaseInterOp.Firebase
+import firebaseInterOp.Firestore
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -34,22 +36,22 @@ data class DeviceQuery(
     companion object
 }
 
-val db = firebase.firestore()
 
-suspend fun runStressTestAgent(agentId: String) = GlobalScope.launch {
+suspend fun runStressTestAgent(firebase: Firebase, agentId: String, secret: String) = GlobalScope.launch {
     println("Start Agent($agentId)")
+    val db = firebase.firestore()
     val devDoc = db.collection("device").document(agentId).get().await()
     val devQueryDoc = db.collection("device").document(agentId).collection("query").document("startup").get().await()
     val dev: Device = fromJson(devDoc.data)
     val devQuery: DeviceQuery = fromJson(devQueryDoc.data)
     for (i in 0 until devQuery.instance) {
         launch {
-            runStressTestSubAgent(dev, devQuery, i)
+            runStressTestSubAgent(db,dev, devQuery, i)
         }
     }
 }.join()
 
-suspend fun runStressTestSubAgent(dev: Device, query: DeviceQuery, number: Int) {
+suspend fun runStressTestSubAgent(db: Firestore, dev: Device, query: DeviceQuery, number: Int) {
     println("Start SubAgent($number)")
     repeat(query.repeat) {
         delay(query.interval.toLong())
@@ -60,13 +62,14 @@ suspend fun runStressTestSubAgent(dev: Device, query: DeviceQuery, number: Int) 
             "seq" to it,
         )
         db.collection("device").document(dev.dev.id).collection("logs").document().set(log)
-        val d=Date()
+        val d = Date()
 
         println("${d} ${d.getMilliseconds()} pushed log[$it]")
     }
     println("Completed SubAgent($number)")
 }
 
-inline fun <reified T> fromJson(j: Any?): T = Json { ignoreUnknownKeys = true }.decodeFromString(JSON.stringify(j))
+inline fun <reified R> fromJson(obj: Any?): R = Json { ignoreUnknownKeys = true }.decodeFromString(JSON.stringify(obj))
+inline fun <reified R> Any?.fromJson(): R = fromJson(this)
 inline fun <reified T> T.toJson(): Any = JSON.parse(Json { ignoreUnknownKeys = true }.encodeToString(this))
 

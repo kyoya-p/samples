@@ -1,6 +1,12 @@
 package firebaseInterOp
 
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.promise
+import kotlinx.serialization.Serializer
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -56,26 +62,30 @@ class Firebase(val raw: dynamic) {
 class Firestore(val raw: dynamic) {
     fun collection(path: String) = CollectionReference(raw.collection(path))
 
-    open class Query {}
+    open class Query(val raw: dynamic) {
+        fun select(vararg fields: String) = Query(raw.select(fields))
+    }
 
     class ListenerRegistration(val raw: dynamic) {
         fun remove(): Unit = raw()
     }
 
-    class CollectionReference(val raw: dynamic) : Query() {
-        fun document(path: String) = DocumentReference(raw.doc(path))
-        fun doc(path: String) = document(path)
+    class CollectionReference(raw: dynamic) : Query(raw) {
         fun document() = DocumentReference(raw.doc())
         fun doc() = document()
 
     }
 
-    class DocumentReference(val raw: dynamic) : Query() {
+    class DocumentReference(raw: dynamic) : Query(raw) {
         fun collection(id: String) = CollectionReference(raw.collection(id))
 
-        fun get(): Promise<DocumentSnapshot> = raw.get()
-        fun get(id: String): Promise<DocumentSnapshot> = raw.get(id)
-        fun set(doc: Any): Promise<Unit> = raw.set(doc)
+        fun get(): Promise<DocumentSnapshot> =
+            GlobalScope.promise { raw.get().then { d -> return@then DocumentSnapshot(d) } }
+
+        fun get(field: String): Promise<DocumentSnapshot> =
+            GlobalScope.promise { raw.get(field).then { d -> return@then DocumentSnapshot(d) } }
+
+        fun set(doc: Any): Promise<Unit> = GlobalScope.promise { raw.set(doc).then { return@then Unit } }
         fun addSnapshotListener(listener: EventListener<DocumentSnapshot>): ListenerRegistration =
             ListenerRegistration(raw.onSnapshot { doc -> listener.onEvent(DocumentSnapshot(doc)) })
 
@@ -90,13 +100,18 @@ class Firestore(val raw: dynamic) {
     class DocumentSnapshot(val raw: dynamic) {
         val data: JsonObject?
             get() {
-                raw?.data ?: return null
+                raw?.data() ?: return null
                 val j = JSON.stringify(raw.data())
                 return Json {}.decodeFromString(j)
             }
+
+        val id: String get() = raw.id
     }
 }
 
+
+inline fun <reified R> decodeFrom(obj: Any?): R =
+    Json { ignoreUnknownKeys = true }.decodeFromString(obj.toString())
 
 @Suppress("UNCHECKED_CAST")
 fun Any?.toJsonElement(): JsonElement {
@@ -131,7 +146,7 @@ fun Any.toJsonArray(): JsonArray {
     if (t is JsonArray) return t
     if (t is List<*>) {
         t as List<Any>
-        return buildJsonArray { t.forEach { add(it.toJsonElement())} }
+        return buildJsonArray { t.forEach { add(it.toJsonElement()) } }
     }
     throw IllegalStateException("Any.toJsonArray() this=$this")
 }

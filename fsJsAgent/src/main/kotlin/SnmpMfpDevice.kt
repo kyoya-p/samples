@@ -1,25 +1,36 @@
+import firebaseInterOp.Firebase
+import gdvm.agent.mib.GdvmDeviceInfo
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
+// device/{SnmpAgent}
 @Serializable
-data class HttpAgentQuery(
-    val schedule: Schedule = Schedule(1),
-    val time: Long? = null,
+data class SnmpAgent(
+    val dev: GdvmDeviceInfo,
+    val type: JsonObject, // "type":{"dev":{"agent":{"snmp":{}}}}
 )
 
+// device/{SnmpAgent}/query/{SnmpAgentQuery_Discovery}
 @Serializable
-data class SnmpAgentDevice(
-    val cluster: String,
-    val confidPath: String? = null,
-    val config: SnmpAgentConfig? = null,
-    val time: Long? = 0,
-)
-
-@Serializable
-data class SnmpAgentConfig(
+data class SnmpAgentQuery_Discovery(
     val scanAddrSpecs: List<SnmpTarget>,
     val autoRegistration: Boolean,
     val schedule: Schedule = Schedule(1),
     val time: Long? = null,
+)
+
+// device/{SnmpAgent}/query/{SnmpAgentQuery_DeviceBridge}
+@Serializable
+data class SnmpAgentQuery_DeviceBridge(
+    val targets: List<SnmpDevice>,
+    val time: Long? = null,
+)
+
+@Serializable
+data class SnmpDevice(
+    val target: SnmpTarget,
+    val deviceId: String? = null, // if defined, connecet platform with this ID.
+    val password: String = "#1_Sharp",
 )
 
 @Serializable
@@ -30,7 +41,7 @@ data class SnmpTarget(
     val retries: Int = 5,
     val interval: Long = 5000,
 
-    val isBroadcast: Boolean = false, // for discovery by broadcast
+    val isBroadcast: Boolean? = false, // for discovery by broadcast
     val addrRangeEnd: String? = null, // for IP ranged discovery
 )
 
@@ -97,3 +108,8 @@ data class Report(
 data class Result(
     val detected: List<String> = listOf()
 )
+
+
+fun runSnmpMfpDevice(firebase: Firebase, deviceId: String, secret: String) {
+
+}
