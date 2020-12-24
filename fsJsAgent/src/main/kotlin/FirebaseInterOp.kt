@@ -71,6 +71,8 @@ class Firestore(val raw: dynamic) {
     }
 
     class CollectionReference(raw: dynamic) : Query(raw) {
+        fun document(path: String) = DocumentReference(raw.doc(path))
+        fun doc(path: String) = document(path)
         fun document() = DocumentReference(raw.doc())
         fun doc() = document()
 
@@ -94,7 +96,7 @@ class Firestore(val raw: dynamic) {
     }
 
     fun interface EventListener<T> {
-        fun onEvent(snapshot: T?): Unit
+        fun onEvent(snapshot: T?): Unit //TODO
     }
 
     class DocumentSnapshot(val raw: dynamic) {
@@ -133,7 +135,7 @@ fun Any.toJsonObject(): JsonObject {
     val t = this
     if (t is JsonObject) return t
     if (t is Map<*, *>) {
-        t as Map<String, Any>
+        t as Map<String, *>
         return buildJsonObject {
             t.forEach { (k, v) -> put(k, v.toJsonElement()) }
         }
@@ -145,7 +147,6 @@ fun Any.toJsonArray(): JsonArray {
     val t = this
     if (t is JsonArray) return t
     if (t is List<*>) {
-        t as List<Any>
         return buildJsonArray { t.forEach { add(it.toJsonElement()) } }
     }
     throw IllegalStateException("Any.toJsonArray() this=$this")

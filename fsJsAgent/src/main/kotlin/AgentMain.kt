@@ -109,44 +109,29 @@ suspend fun runGenericDevice(deviceId: String, secret: String) = coroutineScope 
         }
     }.collectLatest { type ->
         println("Device Type: ${type}")
+
+        operator fun JsonElement?.get(key: String): JsonElement? = if (this is JsonObject) this[key] else null
         when {
             type["dev"]["mfp"]["snmp"] != null -> runSnmpMfpDevice(firebase, deviceId, secret)
             type["dev"]["agent"]["stressTest"] != null -> runStressTestAgent(firebase, deviceId, secret)
+            type["dev"]["agent"]["launcher"] != null -> runLauncherAgent(firebase, deviceId, secret)
         }
     }
 }
 
-operator fun JsonElement?.get(key: String): JsonElement? {
-    if (this == null || !(this is JsonObject)) return null
-    return this[key]
-}
 
-suspend fun runSubAgent(tg: TargetInfo) {
-    println("Start SubAgent. id:${tg.id}")
+suspend fun runLauncherAgent(firebase: Firebase, deviceId: String, secret: String) {
+    println("Start runLauncherAgent. id:$deviceId")
 
-    val app = Firebase.initializeApp(
-        apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
-        authDomain = "road-to-iot.firebaseapp.com",
-        projectId = "road-to-iot",
-        name = tg.id,
-    )
+    val db = firebase.firestore()
 
-    val auth = app.auth()
-
-    val customToken = HttpClient().get<String>("$customTokenSvr/customToken?id=${tg.id}&pw=${tg.password}")
-    //if (customToken.isEmpty()) return
-    println("Claims: ${(customToken.split(".")[1]).fromBase64()}")
-    auth.signInWithCustomToken(customToken)
     callbackFlow {
-        auth.onAuthStateChanged { user ->
-            if (user != null) offer(user)
+        val d = db.collection("device").document(deviceId).addSnapshotListener { devSS ->
+            devSS?.data?.let { offer(decodeFrom<MainAgentLauncher>(it)) }
         }
         awaitClose()
-    }.collectLatest {
-        println("Login with SubAgent accont ${it.uid}")
-        val db = app.firestore()
-        val d = db.collection("device").document(tg.id).get().await()
-        val ag: SnmpAgent = decodeFrom<SnmpAgent>(d.data)
+    }.collectLatest {agLauncher->
+        println(agLauncher) //TODO
     }
 }
 
