@@ -94,7 +94,7 @@ fun createCustomToken(credential: Credential): String {
     )
 
     val mAuth = FirebaseAuth.getInstance()
-    val serviceUserId = "firebase-adminsdk-rc191@road-to-iot.iam.gserviceaccount.com"
+        val serviceUserId = "firebase-adminsdk-rc191@road-to-iot.iam.gserviceaccount.com"
     val customJwtToken = mAuth.createCustomToken(serviceUserId, additionalClaims)
     //customJwtToken.split(".").take(2).map { println(String(Base64.getDecoder().decode(it))) }
 

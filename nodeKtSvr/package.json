@@ -1,5 +1,5 @@
 {
-  "name": "fsjsagent",
+  "name": "nodeKtSvr",
   "version": "1.0.0",
   "description": "no",
   "main": "index.js",
@@ -10,8 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
-    "firebase": "^8.0.0",
-    "kotlin": "^1.4.10",
-    "net-snmp": "^2.10.1"
+    "kotlin": "^1.4.21",
+    "multer": "1.4.2"
   }
 }

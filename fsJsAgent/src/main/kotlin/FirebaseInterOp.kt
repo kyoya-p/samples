@@ -1,12 +1,8 @@
 package firebaseInterOp
 
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.promise
-import kotlinx.serialization.Serializer
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -20,25 +16,28 @@ suspend fun <T> Promise<T>.await(): T = suspendCoroutine { cont ->
     then({ cont.resume(it) }, { cont.resumeWithException(it) })
 }
 
-class Firebase(val raw: dynamic) {
+class Firebase {
     companion object {
-        fun initializeApp(apiKey: String, authDomain: String, projectId: String, name: String? = null): Firebase {
+        fun initializeApp(apiKey: String, authDomain: String, projectId: String, name: String? = null): App {
             val firebase = require("firebase/app")
             require("firebase/auth")
             require("firebase/firestore")
             data class Config(val apiKey: String, val authDomain: String, val projectId: String)
-            name ?: return Firebase(firebase.initializeApp(Config(apiKey, authDomain, projectId)))
-            return Firebase(firebase.initializeApp(Config(apiKey, authDomain, projectId), name))
+            name ?: return firebaseInterOp.App(firebase.initializeApp(Config(apiKey, authDomain, projectId)))
+            return firebaseInterOp.App(firebase.initializeApp(Config(apiKey, authDomain, projectId), name))
         }
     }
+}
 
+class App(val raw: dynamic) {
     fun app(appName: String) = App(raw.app(appName))
     fun auth() = Auth(raw.auth())
     fun auth(app: App) = Auth(raw.auth(app.raw))
     fun firestore() = Firestore(raw.firestore())
     fun firestore(app: App) = Firestore(raw.firestore(app.raw))
 
-    class App(val raw: dynamic)
+    val name: String get() = raw.name
+    fun delete(): Promise<Any> = raw.delete()
 
     class Auth(val raw: dynamic) {
         fun signInWithEmailAndPassword(email: String, password: String): Unit =
