@@ -16,6 +16,13 @@ data class GdvmGenericDevice(
     val time: Int, // create/update time in msec from epoch
 )
 
+@Serializable
+data class GdvmDeviceInfo(
+    val cluster: String,
+    val name: String = "anonymous",
+    val password: String = "Sharp_#1",
+)
+
 // /device/{GdvmGenericDevice}/query/{GdvmDeviceQuery}
 @Serializable
 data class GdvmDeviceQuery(
