@@ -1,60 +1,21 @@
-buildscript {
-    ext.kotlin_version = '1.4.10'
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        jcenter()
-        google()
-        maven { url "http://10.36.102.80:8080/repository/internal" }
-    }
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
+plugins {
+    id "org.jetbrains.kotlin.js" version "1.4.21"
+    id "com.github.node-gradle.node" version "2.2.4"
 }
 
-apply plugin: 'application'
-apply plugin: 'kotlin'
-
-sourceSets.main.java.srcDirs = ['src/main/kotlin']
-//sourceSets.main.resources.srcDirs = ['resources']
-//sourceSets.test.java.srcDirs = ['test']
-//compileJava.options.encoding = "UTF-8"
-
 repositories {
-    mavenLocal()
     mavenCentral()
     jcenter()
-    google()
-    maven { url "http://10.36.102.80:8080/repository/internal" }
 }
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0" // kotlin 1.4以降
-    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.0'
-    compile group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-runtime', version: '1.0-M1-1.4.0-rc'
+    //api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.2'
+    //api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines', version: '0.19.2'
+    //api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-core', version:'1.0.0' // kotlin 1.4以降
+    //api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json', version:'1.0.1'
 
-    // for Firebase
-    compile platform('com.google.firebase:firebase-bom:25.12.0')
-    compile group: 'com.google.firebase', name: 'firebase-admin', version: '7.0.1'
-    compile group: 'com.google.firebase', name: 'firebase-auth', version: '20.0.0'
-
-    // for Ktor Server
-    compile group: 'io.ktor', name: 'ktor-server-core', version: '1.4.1'
-    compile group: 'io.ktor', name: 'ktor-server-netty', version: '1.4.1'
-    compile group: 'io.ktor', name: 'ktor-locations', version: '1.4.1'
-
-    // for Ktor Clinet
-    compile group: 'io.ktor', name: 'ktor-client-core', version: '1.4.1'
-    compile group: 'io.ktor', name: 'ktor-client-cio', version: '1.4.1'
+    api group: 'org.jetbrains.kotlin', name: 'kotlin-stdlib-js', version: '1.4.21'
+    api "org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7"
 }
 
-//mainClassName = 'fsCustomAuthSvr.FsCustomAuthSvrKt'
-mainClassName = 'FsCustomAuthSvrKt'
-
-
-jar {
-    manifest { attributes 'Main-Class': mainClassName }
-    //from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-}
-
+kotlin { js { nodejs() } }

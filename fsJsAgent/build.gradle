@@ -5,7 +5,8 @@ Setting up a Kotlin/JS project:  https://kotlinlang.org/docs/reference/js-projec
 
 
 plugins {
-    id 'org.jetbrains.kotlin.plugin.serialization' version '1.4.21'
+    //id "org.jetbrains.intellij" version "0.6.5"
+    id "org.jetbrains.kotlin.plugin.serialization" version "1.4.21"
     id "org.jetbrains.kotlin.js" version "1.4.21"
     id "com.github.node-gradle.node" version "2.2.4"
 }
@@ -18,13 +19,19 @@ dependencies {
     //implementation(kotlin("stdlib-js"))
     api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines-core', version: '1.4.2'
     api group: 'org.jetbrains.kotlinx', name: 'kotlinx-coroutines', version: '0.19.2'
-    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-core', version:'1.0.0' // kotlin 1.4以降
-    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json', version:'1.0.1'
+    //api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-core', version: '1.0.0' // kotlin 1.4以降
+    api group: 'org.jetbrains.kotlinx', name: 'kotlinx-serialization-json', version: '1.0.1'
 
     api group: 'io.ktor', name: 'ktor-client-js', version: '1.5.0'
     api(npm("firebase", "8.0.0"))
     //implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
-    //testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-js'
+}
+
+kotlin {
+    js {
+        nodejs()
+    }
 }
 
 task runAgent(type: NodeTask, dependsOn: build) {
@@ -32,7 +39,6 @@ task runAgent(type: NodeTask, dependsOn: build) {
     args = ['MetaAgent1', '1234xxxx']
 }
 
-kotlin { js { nodejs() } }
 /*kotlin {
     js {
         browser {
@@ -47,5 +53,4 @@ kotlin { js { nodejs() } }
         nodejs()
     }
 }
-*/
-
+ */

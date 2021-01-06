@@ -1,13 +1,12 @@
 package gdvm.agent.stressTestAgent
 
-import firebaseInterOp.Firebase
+import firebaseInterOp.App
 import firebaseInterOp.Firestore
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import launcherAgent.firebase
 import kotlin.js.Date
 import kotlin.js.json
 
@@ -37,7 +36,7 @@ data class DeviceQuery(
 }
 
 
-suspend fun runStressTestAgent(firebase: Firebase, agentId: String, secret: String) = GlobalScope.launch {
+suspend fun runStressTestAgent(firebase: App, agentId: String, secret: String) = GlobalScope.launch {
     println("Start Agent($agentId)")
     val db = firebase.firestore()
     val devDoc = db.collection("device").document(agentId).get().await()
