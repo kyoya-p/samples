@@ -2,7 +2,10 @@ package mibtool.snmp4jWrapper
 
 import gdvm.agent.mib.SnmpTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.launch
@@ -25,8 +28,9 @@ suspend fun getGlobalRequestID(): Integer32 {
 }
 
 @ExperimentalCoroutinesApi
-fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
+suspend fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {
     pdu.requestID = getGlobalRequestID()
+    println("Target: ${target.address}")
     send(pdu, target, target, object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
             val resPdu = event.response
@@ -42,9 +46,9 @@ fun Snmp.sendFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseE
 
 @ExperimentalCoroutinesApi
 fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: InetAddress) = channelFlow {
-    scanIpRange(startTarget.address.inetAddress, endAddr).map {
+    scanIpRange(startTarget.address.inetAddress, endAddr).map { addr ->
         val launch = launch {
-            sendFlow(pdu.apply { requestID = getGlobalRequestID() }, SnmpTarget(it.hostAddress).toSnmp4j()).collect {
+            sendFlow(pdu.apply { requestID = getGlobalRequestID() }, SnmpTarget(addr.hostAddress).toSnmp4j()).collect {
                 offer(it)
             }
         }
@@ -53,6 +57,7 @@ fun Snmp.scanFlow(pdu: PDU, startTarget: Target<UdpAddress>, endAddr: InetAddres
     close()
     awaitClose()
 }
+
 
 @ExperimentalCoroutinesApi
 suspend fun Snmp.broadcastFlow(pdu: PDU, target: Target<UdpAddress>) = callbackFlow<ResponseEvent<UdpAddress>> {

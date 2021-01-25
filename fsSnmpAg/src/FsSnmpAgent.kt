@@ -25,11 +25,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     runCatching {
         val agentDeviceIds = if (args.isEmpty()) arrayOf("agent1") else args
         for (agentDeviceId in agentDeviceIds) {
-            launch {
-                println("Start Agent ${agentDeviceId}")
-                runAgent(agentDeviceId)
-                println("Terminated Agent ${agentDeviceId}")
-            }
+            launch { runAgent(agentDeviceId) }
         }
     }.onFailure { it.printStackTrace() }
 }
@@ -37,24 +33,27 @@ fun main(args: Array<String>): Unit = runBlocking {
 
 @ExperimentalCoroutinesApi
 suspend fun runAgent(agentId: String) = coroutineScope {
-    data class DeviceInfo(val id: String, val password: String, val target: SnmpTarget) //TODO:
+    data class DeviceInfo(val id: String, val password: String, val target: SnmpTarget)
     data class Agent(val snapshot: DocumentSnapshot, val data: MfpMibAgentDevice)
     data class Query(val snapshot: DocumentSnapshot, val data: MfpMibAgentQuery, val agent: Agent)
 
+    println("runAgent ${agentId}")
     callbackFlow<Agent> {  // Agent情報をチェックし、存在すれば/更新されれば flow
         val listener = firestore.collection("device").document(agentId)
             .addSnapshotListener(object : EventListener<DocumentSnapshot?> {
                 override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) {
                     if (ex == null && snapshot != null && snapshot.data != null) {
-                        val ag = Json {
-                            ignoreUnknownKeys = true
-                        }.decodeFromJsonElement<MfpMibAgentDevice>(snapshot.data!!.toJsonObject())
+                        val ag = Json { ignoreUnknownKeys = true }
+                            .decodeFromJsonElement<MfpMibAgentDevice>(snapshot.data!!.toJsonObject())
                         offer(Agent(snapshot, ag))
-                    } else close()
+                    } else {
+                        close()
+                    }
                 }
             })
         awaitClose { listener.remove() }
     }.flatMapLatest { agent -> // クエリをチェックし、未処理のクエリがあれば クエリ毎に実行
+        println("Agent: $agent")
         val queryCollectionPath = agent.data.dev.confidPath
             ?: firestore.collection("device").document(agentId).collection("query").path
         callbackFlow<Query> {
@@ -107,6 +106,8 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                                     )
                                 )
                             )
+                            //TODO 仮クエリ設定
+                            //firestore.collection("device").document(devId).collection("query").document("default").set()
                         }
                         devSet.add(devId)
                         offer(DeviceInfo(devId, query.agent.data.dev.password, res.resTarget))
@@ -160,7 +161,7 @@ suspend fun discoveryDeviceFlow(target: SnmpTarget, snmp: Snmp) = channelFlow {
         snmp.scanFlow(
             pdu.toSnmp4j(),
             target.toSnmp4j(),
-            InetAddress.getByName(target.addrRangeEnd ?: target.addr) //TODO:BLocking code
+            InetAddress.getByName(target.addrRangeEnd ?: target.addr)
         ).collect {
             offer(it)
         }

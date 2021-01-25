@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GdvmDeviceInfo(
         val cluster: String,
-        val name: String,
+        val name: String="",
         val password: String = "Sharp_#1",
         val confidPath: String? = null,//e.g. "/device/dev1/query"
 )
