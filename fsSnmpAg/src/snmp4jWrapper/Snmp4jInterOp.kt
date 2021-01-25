@@ -1,10 +1,9 @@
 package mibtool.snmp4jWrapper
 
-import gdvm.agent.mib.Credential
-import gdvm.agent.mib.PDU
-import gdvm.agent.mib.SnmpTarget
-import gdvm.agent.mib.VB
-import mibtool.ResponseEvent
+import gdvm.device.Credential
+import gdvm.device.PDU
+import gdvm.device.SnmpTarget
+import gdvm.device.VB
 import org.snmp4j.CommunityTarget
 import org.snmp4j.mp.SnmpConstants.*
 import org.snmp4j.smi.*

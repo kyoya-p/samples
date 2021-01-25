@@ -3,6 +3,7 @@ package gdvm.mfp.mib
 import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.firestoreDocumentFlow
 import gdvm.agent.mib.*
+import gdvm.device.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -33,7 +34,7 @@ data class Report(
 
 @Serializable
 data class Result(
-        val pdu: PDU,
+    val pdu: PDU,
 )
 
 

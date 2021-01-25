@@ -2,8 +2,10 @@ package gdvm.agent.mib
 
 import com.google.cloud.firestore.*
 import com.google.cloud.firestore.EventListener
+import mibtool.snmp4jWrapper.*
 import mibtool.*
 import firestoreInterOp.toJsonObject
+import gdvm.device.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
@@ -54,7 +56,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
         awaitClose { listener.remove() }
     }.flatMapLatest { agent -> // クエリをチェックし、未処理のクエリがあれば クエリ毎に実行
         println("Agent: $agent")
-        val queryCollectionPath = agent.data.dev.confidPath
+        val queryCollectionPath = agent.data.dev.notification
             ?: firestore.collection("device").document(agentId).collection("query").path
         callbackFlow<Query> {
             val listener =
