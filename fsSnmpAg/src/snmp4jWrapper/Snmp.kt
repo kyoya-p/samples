@@ -1,11 +1,8 @@
 package mibtool.snmp4jWrapper
 
-import gdvm.agent.mib.SnmpTarget
+import gdvm.device.SnmpTarget
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.launch

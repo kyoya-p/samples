@@ -1,7 +1,7 @@
 package mibtool
 
-import gdvm.agent.mib.PDU
-import gdvm.agent.mib.SnmpTarget
+import gdvm.device.PDU
+import gdvm.device.SnmpTarget
 import kotlinx.serialization.*
 import java.net.InetAddress
 

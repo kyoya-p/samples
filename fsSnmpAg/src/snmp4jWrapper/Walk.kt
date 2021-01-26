@@ -1,12 +1,12 @@
 package mibtool.snmp4jWrapper
 
 import com.charleskorn.kaml.Yaml
-import gdvm.agent.mib.GETNEXT
-import gdvm.agent.mib.PDU
+import gdvm.device.PDU
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.snmp4j.CommunityTarget
+import org.snmp4j.PDU.GETNEXT
 import org.snmp4j.Snmp
 import org.snmp4j.asn1.BER.ENDOFMIBVIEW
 import org.snmp4j.mp.SnmpConstants
@@ -16,9 +16,9 @@ import java.net.InetAddress
 
 @Serializable
 data class CommandOption(
-        val addr: String,
-        val pdu: PDU,
-        //val snmpConfig: SnmpConfig = SnmpConfig(),
+    val addr: String,
+    val pdu: PDU,
+    //val snmpConfig: SnmpConfig = SnmpConfig(),
 )
 
 
@@ -45,8 +45,8 @@ fun walk(pdu: PDU, addr: String) = sequence {
         transport.listen()
 
         val target = CommunityTarget(
-                UdpAddress(InetAddress.getByName(addr), 161),
-                OctetString("public"),
+            UdpAddress(InetAddress.getByName(addr), 161),
+            OctetString("public"),
         )
         target.version = SnmpConstants.version2c
         target.timeout = 5_000 //ms
@@ -57,10 +57,16 @@ fun walk(pdu: PDU, addr: String) = sequence {
     }
 }
 
-fun <A : Address> Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<A>) = generateSequence(initVbl) { vbl ->
-    send(org.snmp4j.PDU(org.snmp4j.PDU.GETNEXT, vbl), target).response?.variableBindings
-}.drop(1).takeWhile { it.zip(initVbl).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
+fun <A : Address> Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<A>) =
+    generateSequence(initVbl) { vbl ->
+        send(org.snmp4j.PDU(org.snmp4j.PDU.GETNEXT, vbl), target).response?.variableBindings
+    }.drop(1).takeWhile { it.zip(initVbl).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
 
 fun <A : Address> Snmp.walk(initPDU: org.snmp4j.PDU, target: CommunityTarget<A>) = generateSequence(initPDU) { pdu ->
-    send(pdu.apply { type = org.snmp4j.PDU.GETNEXT; variableBindings = variableBindings.map { VariableBinding(it.oid) } }, target).response
-}.drop(1).takeWhile { it.variableBindings.zip(initPDU.variableBindings).any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) } }
+    send(pdu.apply {
+        type = org.snmp4j.PDU.GETNEXT; variableBindings = variableBindings.map { VariableBinding(it.oid) }
+    }, target).response
+}.drop(1).takeWhile {
+    it.variableBindings.zip(initPDU.variableBindings)
+        .any { (vb, ivb) -> vb.syntax != ENDOFMIBVIEW && vb.oid.startsWith(ivb.oid) }
+}

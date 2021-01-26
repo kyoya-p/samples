@@ -20,16 +20,16 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @Serializable
 data class Request(
-        // TODO: スケジュール設定
-        val interval: Long = 1 * 60_000,
+    // TODO: スケジュール設定
+    val interval: Long = 1 * 60_000,
 )
 
 @Serializable
 data class Report(
-        val deviceId: String,
-        val type: String = "mfp.mib",
-        val time: Long = Date().time,
-        val result: Result,
+    val target: String,
+    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
+    val time: Long = Date().time,
+    val result: Result,
 )
 
 @Serializable
@@ -46,15 +46,15 @@ suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = cor
 
         val oids = listOf(sysName, sysDescr, sysObjectID, hrDeviceStatus, hrPrinterStatus, hrPrinterDetectedErrorState)
         val res = snmp.sendFlow(
-                target = target.toSnmp4j(),
-                pdu = PDU(GETNEXT, vbl = oids.map { VB(it) }).toSnmp4j()
+            target = target.toSnmp4j(),
+            pdu = PDU(GETNEXT, vbl = oids.map { VB(it) }).toSnmp4j()
         ).first()
 
         val rep = Report(
-                deviceId = deviceId, type = "mfp.mib", time = Date().time,
-                result = Result(
-                        pdu = PDU.from(res.response)
-                ),
+            target = deviceId,
+            result = Result(
+                pdu = PDU.from(res.response)
+            ),
         )
 
         // ログと最新状態それぞれ書込み

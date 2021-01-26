@@ -9,7 +9,6 @@ import gdvm.device.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
-import mibtool.snmp4jWrapper.*
 import org.snmp4j.Snmp
 import java.net.InetAddress
 import gdvm.mfp.mib.runMfp
@@ -25,8 +24,11 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 @Suppress("BlockingMethodInNonBlockingContext")
 fun main(args: Array<String>): Unit = runBlocking {
     runCatching {
-        val agentDeviceIds = if (args.isEmpty()) arrayOf("agent1") else args
-        for (agentDeviceId in agentDeviceIds) {
+        if (args.isEmpty()) {
+            println("usage: java -jar fsSnmpAg.jar <agentId>")
+            return@runCatching -1
+        }
+        for (agentDeviceId in args) {
             launch { runAgent(agentDeviceId) }
         }
     }.onFailure { it.printStackTrace() }

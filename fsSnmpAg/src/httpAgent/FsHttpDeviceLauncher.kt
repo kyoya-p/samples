@@ -1,6 +1,6 @@
 package httpAgent
 
-import gdvm.agent.mib.Schedule
+import gdvm.device.Schedule
 import kotlinx.serialization.Serializable
 
 @Serializable
