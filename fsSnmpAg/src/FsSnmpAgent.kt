@@ -104,10 +104,16 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                             firestore.collection("device").document(devId).set(
                                 MfpMibDevice(
                                     dev = GdvmDeviceInfo(
-                                        cluster = query.agent.data.dev.cluster, // Agentと同じものを登録
+                                        cluster = query.agent.data.dev.cluster, // Agentと同じClusterに登録
                                         password = query.agent.data.dev.password, // (デフォルトPWのほうがよいだろうか?)
                                         name = devId,
-                                    )
+                                    ),
+                                    tags = listOf(
+                                        "detectedBy:$agentId", //TODO
+                                        "cluster:${query.agent.data.dev.cluster}", //TODO
+                                        "testTag1", //TODO
+                                        "testTag2", //TODO
+                                    ),
                                 )
                             )
                             //TODO 仮クエリ設定

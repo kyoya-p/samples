@@ -29,6 +29,7 @@ data class GdvmMessageInfo(
 data class MfpMibDevice(
     val time: Long = Date().time,
     val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
+    val tags: List<String> = listOf(),
     val dev: GdvmDeviceInfo,
 )
 

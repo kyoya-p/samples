@@ -26,9 +26,10 @@ data class Request(
 
 @Serializable
 data class Report(
+    val time: Long = Date().time,
     val target: String,
     val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
-    val time: Long = Date().time,
+    val tags: List<String> = listOf(),
     val result: Result,
 )
 
