@@ -106,7 +106,7 @@ data class VB(
 
 @Serializable
 data class Schedule(
-    val limit: Int = 1, //　回数は有限に。失敗すると破産するし
+    val limit: Int = 1, //　0は実行しない
     val interval: Long = 0,
 )
 

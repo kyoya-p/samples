@@ -2,12 +2,15 @@ package gdvm.mfp.mib
 
 import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.firestoreDocumentFlow
+import firestoreInterOp.toJsonObject
 import gdvm.agent.mib.*
 import gdvm.device.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.toSnmp4j
@@ -51,15 +54,20 @@ suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = cor
             pdu = PDU(GETNEXT, vbl = oids.map { VB(it) }).toSnmp4j()
         ).first()
 
+        val devData = firestore.collection("device").document(deviceId).get().get().data!!
+        val s = Json { ignoreUnknownKeys = true }.encodeToString(devData.toJsonObject())
+        val dev = Json { ignoreUnknownKeys = true }.decodeFromString(MfpMibDevice.serializer(), s)
+
         val rep = Report(
             target = deviceId,
             result = Result(
                 pdu = PDU.from(res.response)
             ),
+            tags = dev.tags,
         )
 
         // ログと最新状態それぞれ書込み
-        firestore.collection("device").document(deviceId).collection("state").document("mib").set(rep)
+        firestore.collection("device").document(deviceId).collection("state").document("snmp").set(rep)
         firestore.collection("device").document(deviceId).collection("logs").document().set(rep)
 
         firestore.firestoreDocumentFlow<Request> { collection("devConfig").document(deviceId) }.collectLatest {
