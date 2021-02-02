@@ -46,7 +46,9 @@ suspend fun runAgent(agentId: String) = coroutineScope {
         val listener = firestore.collection("device").document(agentId)
             .addSnapshotListener(object : EventListener<DocumentSnapshot?> {
                 override fun onEvent(snapshot: DocumentSnapshot?, ex: FirestoreException?) {
+                    println("called: ") //TODO
                     if (ex == null && snapshot != null && snapshot.data != null) {
+                        println("called: ${snapshot.data!!.toJsonObject()}") //TODO
                         val ag = Json { ignoreUnknownKeys = true }
                             .decodeFromJsonElement<MfpMibAgentDevice>(snapshot.data!!.toJsonObject())
                         offer(Agent(snapshot, ag))
@@ -103,6 +105,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                         if (query.data.autoRegistration) { // 自己デバイス登録
                             firestore.collection("device").document(devId).set(
                                 MfpMibDevice(
+                                    id = devId,
                                     dev = GdvmDeviceInfo(
                                         cluster = query.agent.data.dev.cluster, // Agentと同じClusterに登録
                                         password = query.agent.data.dev.password, // (デフォルトPWのほうがよいだろうか?)

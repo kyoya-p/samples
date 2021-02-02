@@ -73,7 +73,7 @@ suspend fun runEchoAgent(agentId: String) = coroutineScope {
         awaitClose { listener.remove() }
     }.collectLatest { echoAgent ->        // Agentが勝手にデバイス登録し、各echoDeviceを起動
         echoAgent.devList.forEach { devId ->
-            val echoDev = EchoDevice(dev = GdvmDeviceInfo(cluster = echoAgent.dev.cluster, name = devId))
+            val echoDev = EchoDevice( dev = GdvmDeviceInfo(cluster = echoAgent.dev.cluster, name = devId))
             firestore.collection("device").document(devId).set(echoDev)
             launch {
                 runEchoDevice(devId)

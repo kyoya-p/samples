@@ -27,15 +27,19 @@ data class GdvmMessageInfo(
 
 @Serializable
 data class MfpMibDevice(
+    val id: String,
+    val dev: GdvmDeviceInfo,
+
     val time: Long = Date().time,
     val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
     val tags: List<String> = listOf(),
-    val dev: GdvmDeviceInfo,
 )
 
 @Serializable
 data class MfpMibAgentDevice(
+    val id: String,
     val dev: GdvmDeviceInfo,
+
 )
 
 
