@@ -40,7 +40,7 @@ data class MfpMibAgentDevice(
     val id: String,
     val dev: GdvmDeviceInfo,
 
-)
+    )
 
 
 @Serializable
@@ -115,10 +115,17 @@ data class Schedule(
 )
 
 @Serializable
-data class Report(
+data class GdvmLog(
+    val cluster: String,
+    val targets: List<String> = listOf(),
+)
+
+@Serializable
+data class LogReport(
     val time: Long,
     val deviceId: String,
-    val type: String = "agent.mfp.mib",
+    val type: List<String> = listOf("log", "log.dev", "log.dev.agent", "log.dev.agent.mfp", "log.dev.agent.mfp.snmp"),
+    val log: GdvmLog,
     val result: Result = Result(),
 )
 

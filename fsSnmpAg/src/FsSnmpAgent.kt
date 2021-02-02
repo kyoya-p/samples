@@ -128,9 +128,10 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                 }
             }.join()
             // 検索後、結果をレポート
-            val rep = Report(
+            val rep = LogReport(
                 time = Date().time,
                 deviceId = agentId,
+                log = GdvmLog(cluster = query.agent.data.dev.cluster, targets = listOf("device.${agentId}")),
                 result = Result(detected = devSet.toList()),
             )
             query.snapshot.reference.collection("results").document().set(rep)
