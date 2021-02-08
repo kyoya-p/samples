@@ -22,8 +22,8 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
-fun main(args: Array<String>): Unit = runBlocking {
-    runCatching {
+    fun main(args: Array<String>): Unit = runBlocking {
+        runCatching {
         if (args.isEmpty()) {
             println("usage: java -jar fsSnmpAg.jar <agentId>")
             return@runCatching -1
