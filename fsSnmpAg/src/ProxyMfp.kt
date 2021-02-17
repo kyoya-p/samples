@@ -31,7 +31,7 @@ data class Request(
 data class Report(
     val time: Long = Date().time,
     val target: String,
-    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
+    val type: List<String> = listOf("log", "dev", "dev.mfp", "dev.mfp.snmp"),
     val tags: List<String> = listOf(),
     val result: Result,
 )
