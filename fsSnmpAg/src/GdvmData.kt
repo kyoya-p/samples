@@ -31,7 +31,7 @@ data class MfpMibDevice(
     val dev: GdvmDeviceInfo,
 
     val time: Long = Date().time,
-    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp"),
+    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp","dev.detected"),
     val tags: List<String> = listOf(),
 )
 

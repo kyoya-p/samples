@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.json
 import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.toSnmp4j
@@ -30,8 +32,9 @@ data class Request(
 @Serializable
 data class Report(
     val time: Long = Date().time,
+    val cluster: String,
     val target: String,
-    val type: List<String> = listOf("log", "dev", "dev.mfp", "dev.mfp.snmp"),
+    val type: List<String> = listOf("rep", "dev", "dev.mfp", "dev.mfp.snmp"),
     val tags: List<String> = listOf(),
     val result: Result,
 )
@@ -64,6 +67,7 @@ suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = cor
                 pdu = PDU.from(res.response)
             ),
             tags = dev.tags,
+            cluster = dev.dev.cluster,
         )
 
         // ログと最新状態それぞれ書込み
