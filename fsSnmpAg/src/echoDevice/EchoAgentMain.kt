@@ -20,6 +20,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 
 @Serializable
 data class EchoAgent(
+    val cluster: String,
     val dev: GdvmDeviceInfo,
     val type: Map<String, Map<String, Map<String, Map<String, String>>>> = mapOf("dev" to mapOf("agent" to mapOf("echo" to mapOf()))),
     val devList: List<String>,
@@ -27,6 +28,7 @@ data class EchoAgent(
 
 @Serializable
 data class EchoDevice(
+    val cluster: String,
     val dev: GdvmDeviceInfo,
     val type: Map<String, Map<String, Map<String, String>>> = mapOf("dev" to mapOf("echo" to mapOf())),
 )
@@ -73,7 +75,7 @@ suspend fun runEchoAgent(agentId: String) = coroutineScope {
         awaitClose { listener.remove() }
     }.collectLatest { echoAgent ->        // Agentが勝手にデバイス登録し、各echoDeviceを起動
         echoAgent.devList.forEach { devId ->
-            val echoDev = EchoDevice( dev = GdvmDeviceInfo(cluster = echoAgent.dev.cluster, name = devId))
+            val echoDev = EchoDevice( cluster = echoAgent.cluster,dev = GdvmDeviceInfo(name = devId))
             firestore.collection("device").document(devId).set(echoDev)
             launch {
                 runEchoDevice(devId)
@@ -102,7 +104,7 @@ suspend fun runEchoDevice(deviceId: String) = coroutineScope {
         awaitClose { listener.remove() }
     }.collectLatest { echoDevice ->
         // 所属Group全てのqueryを参照
-        generateSequence(echoDevice.dev.cluster) { grId ->
+        generateSequence(echoDevice.cluster) { grId ->
             firestore.collection("group").document(grId).get().get()["parent"] as String?
         }.forEach { ancestor ->
             launch {

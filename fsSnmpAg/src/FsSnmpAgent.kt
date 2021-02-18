@@ -22,8 +22,8 @@ val snmp = Snmp(DefaultUdpTransportMapping().apply { listen() })
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
-    fun main(args: Array<String>): Unit = runBlocking {
-        runCatching {
+fun main(args: Array<String>): Unit = runBlocking {
+    runCatching {
         if (args.isEmpty()) {
             println("usage: java -jar fsSnmpAg.jar <agentId>")
             return@runCatching -1
@@ -106,14 +106,14 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                             firestore.collection("device").document(devId).set(
                                 MfpMibDevice(
                                     id = devId,
+                                    cluster = query.agent.data.cluster, // Agentと同じClusterに登録
                                     dev = GdvmDeviceInfo(
-                                        cluster = query.agent.data.dev.cluster, // Agentと同じClusterに登録
                                         password = query.agent.data.dev.password, // (デフォルトPWのほうがよいだろうか?)
                                         name = devId,
                                     ),
                                     tags = listOf(
                                         "detectedBy:$agentId", //TODO
-                                        "cluster:${query.agent.data.dev.cluster}", //TODO
+                                        "cluster:${query.agent.data.cluster}", //TODO
                                         "testTag1", //TODO
                                         "testTag2", //TODO
                                     ),
@@ -131,7 +131,7 @@ suspend fun runAgent(agentId: String) = coroutineScope {
             val rep = LogReport(
                 time = Date().time,
                 deviceId = agentId,
-                log = GdvmLog(cluster = query.agent.data.dev.cluster, targets = listOf("device/${agentId}")),
+                log = GdvmLog(cluster = query.agent.data.cluster, targets = listOf("device/${agentId}")),
                 result = Result(detected = devSet.toList()),
             )
             query.snapshot.reference.collection("results").document().set(rep)

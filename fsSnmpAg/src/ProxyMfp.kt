@@ -3,7 +3,6 @@ package gdvm.mfp.mib
 import com.google.cloud.firestore.FirestoreOptions
 import firestoreInterOp.firestoreDocumentFlow
 import firestoreInterOp.toJsonObject
-import gdvm.agent.mib.*
 import gdvm.device.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
@@ -11,8 +10,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.json
 import mibtool.snmp4jWrapper.from
 import mibtool.snmp4jWrapper.sendFlow
 import mibtool.snmp4jWrapper.toSnmp4j
@@ -30,10 +27,10 @@ data class Request(
 )
 
 @Serializable
-data class Report(
+data class MfpReport(
     val time: Long = Date().time,
     val cluster: String,
-    val target: String,
+    val targetDev: String,
     val type: List<String> = listOf("rep", "dev", "dev.mfp", "dev.mfp.snmp"),
     val tags: List<String> = listOf(),
     val result: Result,
@@ -61,13 +58,13 @@ suspend fun runMfp(deviceId: String, password: String, target: SnmpTarget) = cor
         val s = Json { ignoreUnknownKeys = true }.encodeToString(devData.toJsonObject())
         val dev = Json { ignoreUnknownKeys = true }.decodeFromString(MfpMibDevice.serializer(), s)
 
-        val rep = Report(
-            target = deviceId,
+        val rep = MfpReport(
+            targetDev = deviceId,
             result = Result(
                 pdu = PDU.from(res.response)
             ),
             tags = dev.tags,
-            cluster = dev.dev.cluster,
+            cluster = dev.cluster,
         )
 
         // ログと最新状態それぞれ書込み

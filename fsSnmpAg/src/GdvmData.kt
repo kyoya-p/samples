@@ -6,7 +6,7 @@ import java.util.*
 
 @Serializable
 data class GdvmDeviceInfo(
-    val cluster: String,
+//    val cluster: String,
     val name: String = "",
     val password: String = "Sharp_#1",
     val notification: String? = null,//e.g. "/device/dev1/query"
@@ -27,20 +27,21 @@ data class GdvmMessageInfo(
 
 @Serializable
 data class MfpMibDevice(
-    val id: String,
-    val dev: GdvmDeviceInfo,
-
     val time: Long = Date().time,
-    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp","dev.detected"),
+    val id: String,
+    val cluster: String,
+
+    val dev: GdvmDeviceInfo,
+    val type: List<String> = listOf("dev", "dev.mfp", "dev.mfp.snmp", "dev.detected"),
     val tags: List<String> = listOf(),
 )
 
 @Serializable
 data class MfpMibAgentDevice(
     val id: String,
+    val cluster: String,
     val dev: GdvmDeviceInfo,
-
-    )
+)
 
 
 @Serializable
