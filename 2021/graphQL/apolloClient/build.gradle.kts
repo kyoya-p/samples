@@ -9,6 +9,10 @@ plugins {
     id("com.apollographql.apollo") version "2.5.3" // https://plugins.gradle.org/plugin/com.apollographql.apollo
 }
 
+apollo {
+    generateKotlinModels.set(true)
+}
+
 group = "org.example"
 version = "1.0-SNAPSHOT"
 
@@ -23,6 +27,4 @@ dependencies {
     //testCompile("junit", "junit", "4.12")
 }
 
-apollo { //
-    generateKotlinModels.set(true)
-}
+
