@@ -16,5 +16,4 @@ fun main() {
     val requestMessage = MqttMessage("Request{....}".toByteArray())
     mqtt.publish("tpoic/device/DEV1/request/MSG1", requestMessage)
 
-
 }
