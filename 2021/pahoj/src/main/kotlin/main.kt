@@ -8,7 +8,7 @@ fun main() {
 
     val listener = object : IMqttMessageListener {
         override fun messageArrived(topic: String?, message: MqttMessage?) {
-            TODO("Not yet implemented")
+            TODO("ここでDevice初期化処理を行う")
         }
     }
     mqtt.connect()
