@@ -4,7 +4,7 @@ https://www.apollographql.com/docs/android/essentials/get-started-kotlin/
 
  */
 plugins {
-    //java
+    java
     kotlin("jvm") version "1.4.30"
     id("com.apollographql.apollo") version "2.5.3" // https://plugins.gradle.org/plugin/com.apollographql.apollo
 }
