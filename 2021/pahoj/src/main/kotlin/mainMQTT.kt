@@ -4,6 +4,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 
 // Paho SDK使用
 fun main() {
+    // ----------------------------------------
     // Deviceの初期化の処理
     // 認証略
 
@@ -17,14 +18,14 @@ fun main() {
     mqtt.connect()
     mqtt.subscribe("topic/device/DEV1/response/MSG1", listener)
 
-    val request = """
+    val wup = """
         device(id:"DEV1") {  //topicからdeviceIdが回収できるならid指定は不要
             schedule
             ipRange
             snmpCred
         }
     """.trimIndent()
-    val requestMessage = MqttMessage(request.toByteArray())
+    val requestMessage = MqttMessage(wup.toByteArray())
     mqtt.publish("topic/device/DEV1/request/MSG1", requestMessage)
 
     // タイムアウトやエラーを検知した場合、publishをリトライする必要あり
