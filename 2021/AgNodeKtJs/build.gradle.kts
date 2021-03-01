@@ -12,6 +12,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
+    implementation("io.ktor:ktor-server:1.5.2")
 }
 
 kotlin {

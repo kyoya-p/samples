@@ -6,12 +6,13 @@ group = "org.example"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    jcenter()
     mavenCentral()
 }
 
 dependencies {
     implementation(kotlin("stdlib-js"))
-    //implementation("io.ktor:ktor-server-js:1.5.2")
+    implementation("io.ktor:ktor-server-js:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-nodejs
 
