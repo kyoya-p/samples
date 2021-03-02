@@ -45,9 +45,13 @@ suspend fun mainGenericDevice(deviceId: String, secret: String) = coroutineScope
         when {
             dev.type.contains("dev.mfp.snmp") -> println(dev)
             dev.type.contains("dev.agent.snmp") -> println(dev)
-            //type["dev"]["agent"]["stressTest"] != null -> runStressTestAgent(firebase, deviceId, secret)
+            dev.type.contains("dev.agent.idp.sc") -> runIdpScAgent(dev)
         }
     }
+}
+
+fun runIdpScAgent(dev: GdvmGenericDevice) {
+    TODO("Not yet implemented")
 }
 
 

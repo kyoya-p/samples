@@ -10,6 +10,8 @@ data class GdvmDeviceInfo(
     val name: String = "",
     val password: String = "Sharp_#1",
     val notification: String? = null,//e.g. "/device/dev1/query"
+    val ip: String = "",
+    val host: String = "",
 )
 
 @Serializable

@@ -110,6 +110,8 @@ suspend fun runAgent(agentId: String) = coroutineScope {
                                     dev = GdvmDeviceInfo(
                                         password = query.agent.data.dev.password, // (デフォルトPWのほうがよいだろうか?)
                                         name = devId,
+                                        ip = ev.peerAddress.inetAddress.hostAddress,
+                                        host = ev.peerAddress.inetAddress.hostAddress,
                                     ),
                                     tags = listOf(
                                         "detectedBy:$agentId", //TODO
