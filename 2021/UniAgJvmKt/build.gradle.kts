@@ -1,6 +1,7 @@
 plugins {
-    application
     kotlin("jvm") version "1.4.31"
+    //kotlin("serialization")
+    application
 }
 
 group = "org.example"
