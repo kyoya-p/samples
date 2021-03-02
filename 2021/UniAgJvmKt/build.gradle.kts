@@ -19,5 +19,6 @@ dependencies {
     //implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serializationVersion")
     implementation("io.ktor:ktor-server:$ktorVersion")
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
-    implementation("io.ktor:ktor-locations:$ktorVersion")
+    implementation("io.ktor:ktor-websockets:$ktorVersion")
+    //implementation("io.ktor:ktor-locations:$ktorVersion")
 }
