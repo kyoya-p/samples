@@ -1,7 +1,7 @@
 import io.ktor.application.*
+import io.ktor.features.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
-import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
