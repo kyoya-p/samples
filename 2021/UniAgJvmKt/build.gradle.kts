@@ -22,6 +22,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     //implementation("io.ktor:ktor-locations:$ktorVersion")
+    implementation("io.ktor:ktor-network-tls-certificates:$ktorVersion")  // https://ktor.io/docs/self-signed-certificate.html
 }
 
 
