@@ -1,7 +1,8 @@
 plugins {
+    application
     kotlin("jvm") version "1.4.31"
     kotlin("plugin.serialization") version "1.4.31"
-    application
+    //id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
 val serializationVersion = "1.1.0" // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization
@@ -18,7 +19,12 @@ dependencies {
     implementation(kotlin("stdlib"))
     //implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serializationVersion")
     implementation("io.ktor:ktor-server:$ktorVersion")
-    implementation("io.ktor:ktor-server-cio:$ktorVersion")
+    implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-websockets:$ktorVersion")
     //implementation("io.ktor:ktor-locations:$ktorVersion")
 }
+
+
+
+
+
