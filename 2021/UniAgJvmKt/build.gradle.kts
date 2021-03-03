@@ -10,6 +10,7 @@ val ktorVersion = "1.5.2" // https://mvnrepository.com/artifact/io.ktor
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
+application.mainClassName = "io.ktor.server.netty.EngineMain"
 
 repositories {
     mavenCentral()

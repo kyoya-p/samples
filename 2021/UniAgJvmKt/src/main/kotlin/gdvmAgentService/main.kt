@@ -1,3 +1,5 @@
+package  gdvmAgentService
+
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.http.*
@@ -13,11 +15,30 @@ import java.io.File
 // Websocket:
 // https://jp.ktor.work/servers/features/websockets.html
 
+@Suppress("unused")
+fun Application.module() {
+    routing {
+        get("/") {
+            call.respondText("First Sample", ContentType.Text.Html)
+        }
+    }
+}
+
+/*
 fun main() {
     val file = File("build/temporary.jks")
     if (!file.exists()) {
         file.parentFile.mkdirs()
         generateCertificate(file)
+    }
+    val env = applicationEngineEnvironment {
+        module {
+            main()
+        }
+        sslConnector(keyStore = keyStore,keyAlias = "gdvmag",keyStorePassword = ){
+            host="0.0.0.0"
+            port=28086
+        }
     }
 
     embeddedServer(Netty, port = 8000) {
@@ -51,3 +72,6 @@ fun main() {
         }
     }.start(wait = true)
 }
+
+
+ */
