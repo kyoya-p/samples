@@ -12,7 +12,9 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-js"))
-    implementation("io.ktor:ktor-server-js:1.5.2")
+    implementation("io.ktor:ktor-client-core:1.5.2")
+    //implementation("io.ktor:ktor-client-js:1.5.2")
+    //implementation("io.ktor:ktor-servers:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-nodejs
 
@@ -20,8 +22,9 @@ dependencies {
 
 kotlin {
     js {
-        nodejs {
-        }
+        nodejs {}
         binaries.executable()
+        useCommonJs()
+
     }
 }
