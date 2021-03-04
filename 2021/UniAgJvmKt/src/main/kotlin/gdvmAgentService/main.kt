@@ -15,7 +15,15 @@ import java.io.File
 // https://jp.ktor.work/servers/features/websockets.html
 
 
-fun main(args: Array<String>) = io.ktor.server.netty.EngineMain.main(args)  // application.confを読込む場合
+fun main(args: Array<String>) {
+    val file = File("build/temporary.jks")
+    if (!file.exists()) {
+        file.parentFile.mkdirs()
+        generateCertificate(file)
+    }
+
+    io.ktor.server.netty.EngineMain.main(args)
+}  // application.confを読込む場合
 
 @Suppress("unused")
 fun Application.module() {
