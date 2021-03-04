@@ -27,9 +27,32 @@ fun main(args: Array<String>) {
 
 @Suppress("unused")
 fun Application.module() {
+    install(CORS) {
+        method(HttpMethod.Options)
+        header(HttpHeaders.XForwardedProto)
+        anyHost()
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
+    }
+    install(WebSockets)
     routing {
         get("/") {
             call.respondText("First Sample", ContentType.Text.Html)
+        }
+        webSocket("/ws") {
+            println("onConnect")
+            for (frame in incoming) {
+                when (frame) {
+                    is Frame.Text -> {
+                        val text = frame.readText()
+                        outgoing.send(Frame.Text("YOU SAID: $text"))
+                        if (text.equals("bye", ignoreCase = true)) {
+                            close(CloseReason(CloseReason.Codes.NORMAL, "Client said BYE"))
+                        }
+                    }
+                }
+            }
+            println("onClosed")
         }
     }
 }
