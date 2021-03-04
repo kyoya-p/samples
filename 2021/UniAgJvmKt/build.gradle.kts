@@ -8,7 +8,7 @@ plugins {
 val serializationVersion = "1.1.0" // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization
 val ktorVersion = "1.5.2" // https://mvnrepository.com/artifact/io.ktor
 
-group = "org.example"
+group = "gdvmAgentService"
 version = "1.0-SNAPSHOT"
 application.mainClass.set("io.ktor.server.netty.EngineMain")
 

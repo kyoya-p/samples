@@ -8,12 +8,14 @@ import io.ktor.network.tls.certificates.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
-import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import java.io.File
 
 // Websocket:
 // https://jp.ktor.work/servers/features/websockets.html
+
+
+fun main(args: Array<String>) = io.ktor.server.netty.EngineMain.main(args)  // application.confを読込む場合
 
 @Suppress("unused")
 fun Application.module() {
