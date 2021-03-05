@@ -9,20 +9,20 @@ import gdvm.agent.mib.GdvmGenericDevice
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import kotlinx.browser.document
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlin.js.Date
 
+
+
+
+@ExperimentalCoroutinesApi
 suspend fun main() {
-    println("start client")
     process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0" // TLS証明書チェックをバイパス
-
-    val client = HttpClient()
-    val httpRes = client.get<String>("https://kyoya-p.github.io/test/build/web/version.json")
-    println(httpRes)
-
+    process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080"
+    require("global-agent/bootstrap")
 
     val opts = FirebaseOptions(
         applicationId = "1:307495712434:web:acc483c0c300549ff33bab",
@@ -32,28 +32,38 @@ suspend fun main() {
     )
     Firebase.initialize(context = null, options = opts)
 
+    println("start client")
     mainGenericDevice("PSDD", "1234eeee") //TODO
 }
 
+@ExperimentalCoroutinesApi
 suspend fun mainGenericDevice(deviceId: String, secret: String) = coroutineScope {
-    // CustomTokenは一時間で切れるので、再ログイン(Token再発行)が必要
     val db = Firebase.firestore
+    // CustomTokenは一時間で切れるので、再ログイン(Token再発行)が必要
     siginInWithCustomToken(deviceId, secret).flatMapLatest { // ログイン後、デバイス情報取得
         println("Signed-in: $deviceId ${Date().toTimeString()}")
         callbackFlow {
-            db.collection("device").document(deviceId).snapshots.collect {
-                offer(it.data<GdvmGenericDevice>())
-            }
+            db.collection("device").document(deviceId).snapshots.collect { offer(it.data<GdvmGenericDevice>()) }
             awaitClose()
         }
     }.collectLatest { dev ->
         println("Device: ${dev}")
-        document.writeln("$dev")
         when {
-            dev.type.contains("dev.mfp.snmp") -> println(dev)
-            dev.type.contains("dev.agent.snmp") -> println(dev)
+            //dev.type.contains("dev.mfp.snmp") -> println(dev)
+            dev.type.contains("dev.idp.sc") -> runIdpDevice(dev)
+            //dev.type.contains("dev.agent.snmp") -> println(dev)
             //dev.type.contains("dev.agent.idp.sc") -> runIdpScAgent(dev)
         }
+    }
+}
+
+@ExperimentalCoroutinesApi
+suspend fun runIdpDevice(dev: GdvmGenericDevice) {
+    val db = Firebase.firestore
+    db.collection("device").document(dev.id).collection("query").snapshots.flatMapLatest {
+        channelFlow { it.documents.forEach { offer(it.data<IdpScDeviceQuery>()) } }
+    }.collectLatest {
+        println(it)
     }
 }
 
@@ -64,9 +74,7 @@ suspend fun siginInWithCustomToken(deviceId: String, secret: String): Flow<Fireb
     println("Request Custom Token: $urlCustomToken")
     val customToken = HttpClient().get<String>(urlCustomToken)
     println("Custom Token Claim ${customToken.claim()}") //TODO debug
-    if (customToken.isEmpty()) {
-        println("Custom Authentication Error")
-    }
+
     val auth = Firebase.auth
     auth.signInWithCustomToken(customToken)
     return auth.authStateChanged

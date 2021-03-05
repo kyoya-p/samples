@@ -1,19 +1,15 @@
 package gdvm.agent.mib
 
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Serializer
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonObject
 
-typealias GdvmTime=Long
-typealias GdvmObjectType=List<String>
+typealias GdvmTime = Long
+typealias GdvmObjectType = List<String>
 
 // /device/{GdvmGenericDevice}
 @Serializable
-data class GdvmGenericDevice( // this is abstract definition for GDVM Object
+data class GdvmGenericDevice(
+    // this is abstract definition for GDVM Object
     val id: String, // same as document.id
     val type: GdvmObjectType = listOf("dev"),
     val time: GdvmTime, // create/update time in msec from epoch
@@ -25,6 +21,13 @@ data class GdvmGenericDevice( // this is abstract definition for GDVM Object
 data class GdvmDeviceQuery(
     // アプリケーション定義
     val time: Int, // create/update time in msec from epoch
+)
+
+@Serializable
+data class Schedule(
+    val start: Int = 0, // 0 = 1970/1/1 0:00 UTC
+    val interval: Int,
+    val limit: Int,
 )
 
 // /device/{GdvmGenericDevice}/query/{GdvmDeviceQuery}/result/{GdvmDeviceQueryResult}
@@ -50,7 +53,6 @@ data class GdvmGenericGroup(
     val type: JsonObject, //"type:{group:{}}"
     val time: Int, // create/update time in msec from epoch
 )
-
 
 @Serializable
 data class GdvmDeviceInfo(
