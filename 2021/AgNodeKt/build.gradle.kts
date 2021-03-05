@@ -32,7 +32,6 @@ kotlin {
     js {
         nodejs {}
         binaries.executable()
-        useCommonJs()
-
+        useCommonJs() // import NodeJS.set で必要
     }
 }
