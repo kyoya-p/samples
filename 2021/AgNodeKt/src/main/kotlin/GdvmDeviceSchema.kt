@@ -16,42 +16,11 @@ data class GdvmGenericDevice(
     val dev: GdvmDeviceInfo,
 )
 
-// /device/{GdvmGenericDevice}/query/{GdvmDeviceQuery}
-@Serializable
-data class GdvmDeviceQuery(
-    // アプリケーション定義
-    val time: Int, // create/update time in msec from epoch
-)
-
 @Serializable
 data class Schedule(
     val start: Int = 0, // 0 = 1970/1/1 0:00 UTC
     val interval: Int,
     val limit: Int,
-)
-
-// /device/{GdvmGenericDevice}/query/{GdvmDeviceQuery}/result/{GdvmDeviceQueryResult}
-@Serializable
-data class GdvmDeviceQueryResult(
-    // アプリケーション定義
-    val time: Int, // create/update time in msec from epoch
-)
-
-
-// /device/{GdvmGenericDevice}/log/{GdvmGenericLog}
-@Serializable
-data class GdvmGenericLog(
-    // アプリケーション定義
-    val type: JsonObject, //"type:{log:{}}"
-    val time: Int, // create/update time in msec from epoch
-)
-
-// /group/{GdvmGenericGroup}
-@Serializable
-data class GdvmGenericGroup(
-    val group: GdvmGroupInfo,
-    val type: JsonObject, //"type:{group:{}}"
-    val time: Int, // create/update time in msec from epoch
 )
 
 @Serializable
@@ -61,16 +30,3 @@ data class GdvmDeviceInfo(
 ) {
     companion object
 }
-
-fun GdvmDeviceInfo.Companion.fromJson(j: JsonObject): GdvmDeviceInfo = GdvmDeviceInfo(
-    cluster = j["cluster"].toString(),
-    //name = j["name"] as String? ?: "noname",
-    password = j["password"].toString()
-)
-
-@Serializable
-data class GdvmGroupInfo(
-    val parent: String,
-    val users: List<String>, // UserIDs
-)
-

@@ -15,25 +15,29 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlin.js.Date
 
-
-
-
 @ExperimentalCoroutinesApi
 suspend fun main() {
-    process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0" // TLS証明書チェックをバイパス
-    process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080"
-    require("global-agent/bootstrap")
+    try {
+        println("Start client")
 
-    val opts = FirebaseOptions(
-        applicationId = "1:307495712434:web:acc483c0c300549ff33bab",
-        apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
-        databaseUrl = "https://road-to-iot.firebaseio.com",
-        projectId = "road-to-iot",
-    )
-    Firebase.initialize(context = null, options = opts)
+        //process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0" // TLS証明書チェックをバイパス
+        //process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080"
+        require("global-agent/bootstrap")
 
-    println("start client")
-    mainGenericDevice("PSDD", "1234eeee") //TODO
+        val opts = FirebaseOptions(
+            applicationId = "1:307495712434:web:acc483c0c300549ff33bab",
+            apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
+            databaseUrl = "https://road-to-iot.firebaseio.com",
+            projectId = "road-to-iot",
+        )
+        Firebase.initialize(context = null, options = opts)
+
+        println("Initialized Database")
+        mainGenericDevice("Display", "1234eeee") //TODO
+        println("Terminated clint")
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
 }
 
 @ExperimentalCoroutinesApi
@@ -46,6 +50,7 @@ suspend fun mainGenericDevice(deviceId: String, secret: String) = coroutineScope
             db.collection("device").document(deviceId).snapshots.collect { offer(it.data<GdvmGenericDevice>()) }
             awaitClose()
         }
+
     }.collectLatest { dev ->
         println("Device: ${dev}")
         when {
