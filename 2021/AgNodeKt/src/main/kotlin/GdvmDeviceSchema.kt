@@ -11,6 +11,7 @@ typealias GdvmObjectType = List<String>
 data class GdvmGenericDevice(
     // this is abstract definition for GDVM Object
     val id: String, // same as document.id
+    val cluster: String,
     val type: GdvmObjectType = listOf("dev"),
     val time: GdvmTime, // create/update time in msec from epoch
     val dev: GdvmDeviceInfo,
@@ -25,7 +26,6 @@ data class Schedule(
 
 @Serializable
 data class GdvmDeviceInfo(
-    val cluster: String,
     val password: String = "Sharp_#1",
 ) {
     companion object
