@@ -21,7 +21,7 @@ suspend fun main() {
         println("Start client")
 
         //process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0" // TLS証明書チェックをバイパス
-        //process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080"
+        //process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080/"
         require("global-agent/bootstrap")
 
         val opts = FirebaseOptions(
