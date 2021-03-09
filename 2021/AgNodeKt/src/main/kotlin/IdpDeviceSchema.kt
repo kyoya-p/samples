@@ -17,11 +17,12 @@ data class IdpScDevice(
 @Serializable
 data class IdpScDeviceQuery(
     // device/{IdpScDevice}/query/{IdpScDeviceQuery}
+    val cluster: String,
     val time: Int, // Requested time
     val schedule: Schedule = Schedule(0, 0, 1),
-    val scCommand: List<String>,
-    val resultTime: Int, // Finished time, 0==Unfinished
-    val result: List<String>?,
+    val commands: List<String> = listOf(),
+    val resultTime: Int = 0, // Finished time, 0==Unfinished
+    val result: List<String>? = null,
 )
 
 
