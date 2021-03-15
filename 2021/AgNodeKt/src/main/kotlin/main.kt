@@ -4,6 +4,7 @@ import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import dev.gitlive.firebase.firestore.where
 import dev.gitlive.firebase.initialize
 import gdvm.agent.mib.GdvmGenericDevice
 import io.ktor.client.*
@@ -65,8 +66,14 @@ suspend fun mainGenericDevice(deviceId: String, secret: String) = coroutineScope
 @ExperimentalCoroutinesApi
 suspend fun runIdpDevice(dev: GdvmGenericDevice) {
     val db = Firebase.firestore
-    db.collection("device").document(dev.id).collection("query").snapshots.flatMapLatest {
-        channelFlow { it.documents.forEach { offer(it.data<IdpScDeviceQuery>()) } }
+    db.collection("device").document(dev.id).collection("query")
+        .where("cluster", equalTo = dev.cluster).snapshots.flatMapLatest {
+        channelFlow {
+            it.documents.forEach {
+                println("Data: ${it.data<String>()}")
+                offer(it.data<IdpScDeviceQuery>())
+            }
+        }
     }.collectLatest {
         println(it)
     }
