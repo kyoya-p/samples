@@ -15,8 +15,8 @@ dependencies {
 
 kotlin {
     js {
-        nodejs {
-        }
+        nodejs { }
+        // browser()
         binaries.executable()
     }
 }

@@ -1,3 +1,6 @@
+external val process: dynamic
+val args: Array<String> get() = process.argv
+
 fun main() {
-    println("Hello")
+    println("Hello: args= $args")
 }
