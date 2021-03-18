@@ -23,7 +23,8 @@ dependencies {
 
 
 application {
-    mainClassName = "io.ktor.server.netty.EngineMain"
+    //mainClassName = "io.ktor.server.netty.EngineMain"
+    mainClassName = "KtorServer_SSL_JVMKt"
 }
 
 tasks.withType<Jar> {

@@ -1,3 +1,17 @@
+Configuration
+----
+build.gradle.kts の下記に実行クラス名を記述
+```
+application.mainClassName 
+```
+
+Build
+----
+sh gradlew shadowJar
+
+Run
+----
+java -jar build\libs\ktorSvrJvm-1.0-SNAPSHOT-all.jar
 
 
 Note:
