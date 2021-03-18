@@ -50,6 +50,8 @@ val appWebsocket: Application.() -> Unit = {
                     is ClosedReceiveChannelException -> println("onClose ${closeReason.await()}")
                     else -> println("onError ${closeReason.await()}")
                 }
+            }.onSuccess {
+                println("onClose ${closeReason.await()}");
             }
         }
     }
