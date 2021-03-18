@@ -15,10 +15,11 @@ import kotlin.text.toCharArray
 // https://proandroiddev.com/ssl-with-kotlin-and-ktor-61b3d7dccbc5
 
 
+@KtorExperimentalAPI
 fun main() {
     val keyStoreFile = File("build/temp.jks")
     val certAlias = "certificateAlias"
-    val storePass = "1234xxxx"
+    val storePass = "12345678"
     val keystore = buildKeyStore {
         certificate(certAlias) {
             hash = HashAlgorithm.SHA256
