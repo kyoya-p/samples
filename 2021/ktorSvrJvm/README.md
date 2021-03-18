@@ -7,11 +7,22 @@ application.mainClassName
 
 Build
 ----
-sh gradlew shadowJar
+sh ./gradlew shadowJar
 
 Run
 ----
-java -jar build\libs\ktorSvrJvm-1.0-SNAPSHOT-all.jar
+java -jar build/libs/ktorSvrJvm-1.0-SNAPSHOT-all.jar
+
+
+Test:
+----
+- open Chrome Dev Tools
+```
+var ws = new WebSocket('ws://address:port');
+ws.onmessage = function(data) { console.log(data); }
+
+ws.
+```
 
 
 Note:
