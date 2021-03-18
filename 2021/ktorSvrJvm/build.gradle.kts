@@ -23,12 +23,11 @@ dependencies {
 
 
 application {
-    mainClass.set("io.ktor.server.netty.EngineMain")
+    mainClassName = "io.ktor.server.netty.EngineMain"
 }
 
 tasks.withType<Jar> {
     manifest {
-        attributes(mapOf("Main-Class" to application.mainClass))
+        attributes(mapOf("Main-Class" to application.mainClassName))
     }
-    copy{from}
 }
