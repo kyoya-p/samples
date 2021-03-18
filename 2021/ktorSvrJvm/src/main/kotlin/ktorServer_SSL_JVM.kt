@@ -5,9 +5,7 @@ import io.ktor.network.tls.extensions.HashAlgorithm
 import io.ktor.network.tls.extensions.SignatureAlgorithm
 import io.ktor.response.*
 import io.ktor.routing.*
-import io.ktor.server.engine.applicationEngineEnvironment
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.engine.sslConnector
+import io.ktor.server.engine.*
 import io.ktor.server.netty.Netty
 import io.ktor.util.*
 import java.io.File
@@ -32,14 +30,16 @@ fun main() {
     keystore.saveToFile(keyStoreFile, storePass)
 
     fun appEnv(module: Application.() -> Unit) = applicationEngineEnvironment {
-        sslConnector(keystore,
-            certAlias,
-            { "".toCharArray() },
-            { storePass.toCharArray() }) {
+        connector {
+            port = 8080
+            module(module)
+        }
+        sslConnector(keystore, certAlias, { "".toCharArray() }, { storePass.toCharArray() }) {
             port = 8443
             keyStorePath = keyStoreFile.absoluteFile
             module(module)
         }
+
     }
 
     val server = embeddedServer(Netty, appEnv {
@@ -51,6 +51,6 @@ fun main() {
             }
         }
     })
-    println("Start Ktor Server port:${server.environment.connectors[0].port}")
+    println("Start Ktor Server port:${server.environment.connectors[0].port} sslPort:${server.environment.connectors[1].port}")
     server.start(wait = true)
 }
