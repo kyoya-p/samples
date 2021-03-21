@@ -27,7 +27,7 @@ fun main() {
                 hash = HashAlgorithm.SHA256
                 sign = SignatureAlgorithm.ECDSA
                 keySizeInBits = 256
-                password = storePass
+                password = certPass
             }
         }.apply { saveToFile(keyStoreFile, storePass) }
     }
