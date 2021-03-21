@@ -18,7 +18,7 @@ fun main() {
     val keyStoreFile = File("keystore.jks")
     val certAlias = "mycert"
     val storePass = "changeit"
-    val certPass = "mycert"
+    val certPass = "Soft2cream"
     val keystore = if (keyStoreFile.exists()) {
         KeyStore.getInstance(keyStoreFile, storePass.toCharArray())
     } else {
