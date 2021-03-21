@@ -34,7 +34,11 @@ fun main() {
 
     fun appEnv(module: Application.() -> Unit) = applicationEngineEnvironment {
         connector { port = 80 }
-        sslConnector(keystore, certAlias, { certPass.toCharArray() }, { storePass.toCharArray() }) {
+        sslConnector(
+            keyStore = keystore,
+            keyAlias = certAlias,
+            keyStorePassword = { storePass.toCharArray() },
+            privateKeyPassword = { certPass.toCharArray() }) {
             port = 443
             //keyStorePath = keyStoreFile.absoluteFile
         }
