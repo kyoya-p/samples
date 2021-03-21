@@ -27,8 +27,9 @@ ws.
 
 Note:
 ----
+- Linuxではport=80や443は一般権限では開けない。1024以上
 
-Proxy - HTTP CONNECT
+### Proxy - HTTP CONNECT
 ```
 export http_proxy=...
 curl http://api.github.com/zen
