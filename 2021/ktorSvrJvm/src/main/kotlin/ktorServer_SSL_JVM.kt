@@ -16,8 +16,9 @@ import kotlin.text.toCharArray
 @KtorExperimentalAPI
 fun main() {
     val keyStoreFile = File("build/temp.jks")
-    val certAlias = "certificateAlias"
-    val storePass = "12345678"
+    val certAlias = "mycert"
+    val storePass = "changeit"
+    val certPass = "Soft2cream"
     val keystore = buildKeyStore {
         certificate(certAlias) {
             hash = HashAlgorithm.SHA256
@@ -29,9 +30,9 @@ fun main() {
     keystore.saveToFile(keyStoreFile, storePass)
 
     fun appEnv(module: Application.() -> Unit) = applicationEngineEnvironment {
-        connector { port = 8080 }
-        sslConnector(keystore, certAlias, { "".toCharArray() }, { storePass.toCharArray() }) {
-            port = 8443
+        connector { port = 80 }
+        sslConnector(keystore, certAlias, { certPass.toCharArray() }, { storePass.toCharArray() }) {
+            port = 443
             keyStorePath = keyStoreFile.absoluteFile
         }
         module(module)
