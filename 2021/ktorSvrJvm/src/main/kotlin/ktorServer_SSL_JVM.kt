@@ -40,7 +40,7 @@ fun main() {
             keyStorePassword = { storePass.toCharArray() },
             privateKeyPassword = { certPass.toCharArray() }) {
             port = 443
-            //keyStorePath = keyStoreFile.absoluteFile
+            keyStorePath = keyStoreFile.absoluteFile
         }
         module(module)
     }
