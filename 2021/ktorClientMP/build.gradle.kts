@@ -1,4 +1,5 @@
 plugins {
+    application
     kotlin("multiplatform") version "1.4.31"
 }
 
@@ -10,9 +11,12 @@ repositories {
 }
 
 kotlin {
-    /* Targets configuration omitted. 
-    *  To find out how to configure the targets, please follow the link:
-    *  https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#setting-up-targets */
+    // https://kotlinlang.org/docs/mpp-set-up-targets.html
+    mingwX64("native") {
+        binaries {
+            executable()
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
