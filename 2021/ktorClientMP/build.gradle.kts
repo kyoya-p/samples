@@ -1,5 +1,5 @@
 plugins {
-    application
+    //application
     kotlin("multiplatform") version "1.4.31"
 }
 
@@ -12,9 +12,14 @@ repositories {
 
 kotlin {
     // https://kotlinlang.org/docs/mpp-set-up-targets.html
-    mingwX64("native") {
-        binaries {
-            executable()
+    mingwX64("mingwX64") {
+        binaries { executable() }
+        compilations.getByName("main") {
+            val libcurl by cinterops.creating {
+                defFile = File(projectDir,"posix/cinterop/libcurl.def")
+                includeDirs.headerFilterOnly("curl/include/curl")
+
+            }
         }
     }
 
