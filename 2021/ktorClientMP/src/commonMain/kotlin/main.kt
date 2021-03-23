@@ -1,4 +1,5 @@
-
 fun main() {
-    println("aaa")
+    println(f())
 }
+
+expect fun f(): String
