@@ -1,5 +1,8 @@
 fun main() {
-    println(f())
+    winDialog_Sample()
+    readFile()
 }
 
-expect fun f(): String
+expect fun winDialog_Sample()
+expect fun readFile()
+
