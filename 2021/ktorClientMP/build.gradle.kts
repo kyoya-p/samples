@@ -18,7 +18,6 @@ kotlin {
             val libcurl by cinterops.creating {
                 defFile = File(projectDir,"posix/cinterop/libcurl.def")
                 includeDirs.headerFilterOnly("curl/include/curl")
-
             }
         }
     }
