@@ -1,12 +1,14 @@
 import kotlinx.cinterop.*
 import platform.posix.*
 
-actual fun readFile() {
+actual fun readFile_SAMPLE() {
     val fd: Int = open("README.md", O_RDONLY)
-    val buf = ByteArray(2048)
+
+    val buf = nativeHeap.allocArray<ByteVar>(2048)
     buf.usePinned {
-        read(fd, buf as CValuesRef<CPointed>, 256)
+        read(fd, buf, 2048)
     }
     val contents = buf.toKString()
+    nativeHeap.free(buf)
     println("file: $contents")
 }

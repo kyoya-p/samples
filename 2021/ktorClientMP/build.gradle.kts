@@ -16,10 +16,10 @@ kotlin {
     mingwX64("mingwX64") {
         binaries { executable() }
         compilations.getByName("main") {
-            val libcurl by cinterops.creating {
-                defFile = File(projectDir, "posix/cinterop/libcurl.def")
-                includeDirs.headerFilterOnly("curl/include/curl")
-            }
+           // val libcurl by cinterops.creating {
+           //     defFile = File(projectDir, "posix/cinterop/libcurl.def")
+           //     includeDirs.headerFilterOnly("curl/include/curl")
+           // }
             dependencies {
                 implementation(kotlin("stdlib"))
                 implementation(kotlin("stdlib-common"))

@@ -1,7 +1,7 @@
 import kotlinx.cinterop.*
 import platform.windows.*
 
-actual fun winDialog_Sample() {
+actual fun winDialog_SAMPLE() {
     val message = StringBuilder()
     memScoped {
         val buffer = allocArray<UShortVar>(MAX_PATH)
