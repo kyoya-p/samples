@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-js"))
-    implementation("io.ktor:ktor-client-core:1.5.2")
+    implementation("io.ktor:ktor-client-core:1.5.3") // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
     implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutineVersion") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-android
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$serializationVersion")
