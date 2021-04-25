@@ -1,5 +1,7 @@
 plugins {
     kotlin("jvm") version "1.4.32"
+    kotlin("plugin.serialization") version "1.4.32"
+    application
 }
 
 group = "org.example"
@@ -11,4 +13,6 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib"))
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.1")
 }
