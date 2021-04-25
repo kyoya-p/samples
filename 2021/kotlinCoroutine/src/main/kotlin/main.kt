@@ -11,6 +11,8 @@ fun main(): Unit = runBlocking {
 
 }
 
+
+// 子Aが停止しても、親T,子Bは停止しない
 suspend fun main1()= coroutineScope {
     tStart = Date().time
     launch {
@@ -22,6 +24,7 @@ suspend fun main1()= coroutineScope {
     }
 }
 
+// 親Tの巻き添えで子A,子Bともに停止
 suspend fun main2()= coroutineScope {
     tStart = Date().time
     launch {
@@ -35,7 +38,7 @@ suspend fun main2()= coroutineScope {
 }
 
 
-// GlobalScope.launch{}は終了しない
+// 親Tが停止しても、子B:GlobalScope.launch{}は停止しない
 suspend fun main3()= coroutineScope {
     tStart = Date().time
     launch {
