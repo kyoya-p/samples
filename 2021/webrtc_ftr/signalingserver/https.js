@@ -12,8 +12,8 @@ const options = {
 
 const server = http.createServer(options,
     (request, response) => {
-    const url=request.url;
-        fs.readFile(url, 'UTF-8',
+	const url = request.url;
+        fs.readFile("."+url, 'UTF-8',
         (error, data) => {
             response.writeHead(200, {'Content-Type':'text/html'});
             response.write(data);
