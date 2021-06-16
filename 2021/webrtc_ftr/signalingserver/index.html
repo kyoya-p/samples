@@ -19,10 +19,11 @@
     <button type="button" onclick="connect()" >Connect</button>
     <button type="button" onclick="hangUp()" >Hang Up</button>
     <section class="video">
-        <video id="local-video" autoplay control class="video-box"></video>
-        <video id="remote-video" autoplay control class="video-box"></video>
+        <video id="local-video" autoplay playsinline control class="video-box"></video>
+        <video id="remote-video" autoplay playsinline control class="video-box"></video>
     </section>
 </div>
+<script src="screen-cap.js"></script>
 <script type="text/javascript">
     let localVideo = document.getElementById('local-video');
     let localStream = null;
