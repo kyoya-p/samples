@@ -4,11 +4,11 @@ const mediaStreamConstraints = {
   video: true
 };
 
-const localScreen = document.getElementById("local-video");
+//const localScreen = document.getElementById("local-video");
 
 function gotLocalMediaStream(mediaStream) {
-  const localStream = mediaStream;
-  localScreen.srcObject = mediaStream;
+  localStream = mediaStream;
+  localVideo.srcObject = mediaStream;
 }
 
 function handleLocalMediaStreamError(error) {
