@@ -10,31 +10,14 @@
             height: 240px;
             width: 320px;
         }
-
-        .outlined-button {
-            background-color: #2196f3;
-            border-radius: 4px;
-            border: none;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            line-height: 36px;
-            margin-left: 4px;
-            outline: none;
-            padding: 0 16px;
-            text-align: center;
-        }
     </style>
 </head>
 <body>
-<div>
-    <p>シグナリングサーバを利用して２つのマシンで通信を行います。</p>
-</div>
 <div id="main-container">
-    <button onclick="startVideo()" class="outlined-button">Start</button>
-    <button onclick="stopVideo()" class="outlined-button">Stop</button>
-    <button type="button" onclick="connect()" class="outlined-button">Connect</button>
-    <button type="button" onclick="hangUp()" class="outlined-button">Hang Up</button>
+    <button onclick="startVideo()" >Start</button>
+    <button onclick="stopVideo()" >Stop</button>
+    <button type="button" onclick="connect()" >Connect</button>
+    <button type="button" onclick="hangUp()" >Hang Up</button>
     <section class="video">
         <video id="local-video" autoplay control class="video-box"></video>
         <video id="remote-video" autoplay control class="video-box"></video>
@@ -50,7 +33,7 @@
     RTCPeerConnection = window.RTCPeerConnection;
 
     // connect-server
-    let wsUrl = 'wss://127.0.0.1:3010';
+    let wsUrl = 'ws://192.168.3.102:3010';
     let ws = new WebSocket(wsUrl);
     ws.onopen = function(event) {
         // nop.
@@ -83,6 +66,7 @@
             console.error('mediaDevice.getUserMedia() error:', error);
             return;
         });
+	
     }
 
     function stopVideo() {

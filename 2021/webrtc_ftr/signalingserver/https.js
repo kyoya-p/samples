@@ -1,16 +1,18 @@
-const https = require('https');
+//const https = require('https');
+const http = require('http');
 const fs = require('fs');
-const sslServerKey = 'server-key.pem';
-const sslServerCrt = 'server-crt.pem';
+//const sslServerKey = 'server-key.pem';
+//const sslServerCrt = 'server-crt.pem';
+const port = 3080;
 
 const options = {
-    key: fs.readFileSync(sslServerKey),
-    cert: fs.readFileSync(sslServerCrt)
+//    key: fs.readFileSync(sslServerKey),
+//    cert: fs.readFileSync(sslServerCrt)
 };
 
-const server = https.createServer(options,
+const server = http.createServer(options,
     (request, response) => {
-        fs.readFile('./index2.html', 'UTF-8',
+        fs.readFile('./index.html', 'UTF-8',
         (error, data) => {
             response.writeHead(200, {'Content-Type':'text/html'});
             response.write(data);
@@ -18,5 +20,5 @@ const server = https.createServer(options,
         });
     }
 );
-server.listen(3001);
-console.log('server running...')
+server.listen(port);
+console.log('server running port:'+port)
