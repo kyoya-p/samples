@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>BS Shop Battle Map</title>
+</head>
+<body>
+    <div id="maps" style="width:100%; height:600px"></div>
+    <script type="text/javascript">
+        function initMap() {
+            var opts = {
+                zoom: 13,
+                center: new google.maps.LatLng(35.17117347046399, 136.8825592840424)
+            };
+            var map = new google.maps.Map(document.getElementById("maps"), opts);
+            var pin1=new google.maps.Marker({
+                position: new google.maps.LatLng(35.17117347046399, 136.8825592840424),
+                map: map, 
+                title: "名古屋駅"
+            });
+            var infowindow = new google.maps.InfoWindow({
+                content: '名古屋駅'
+            });
+            infowindow.open(map, pin1);
+            new google.maps.Marker({
+                position: new google.maps.LatLng(35.18408206790739, 136.8991675219179),
+                map: map, 
+                title: "名古屋城"
+            });
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI&callback=initMap"></script>
+</body>
+</html>
+
