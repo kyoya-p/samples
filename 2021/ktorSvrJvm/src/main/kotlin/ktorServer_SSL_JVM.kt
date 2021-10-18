@@ -42,3 +42,4 @@ fun main() {
     println("Start Ktor Server port:${server.environment.connectors[0].port} sslPort:${server.environment.connectors[1].port}")
     server.start(wait = true)
 }
+
