@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC P2P</title>
+    <style>
+        .video-box {
+            border: 1px solid #000;
+            height: 240px;
+            width: 320px;
+        }
+    </style>
+</head>
+<body>
+<div id="main-container">
+    <button onclick="startVideo()" >Start</button>
+    <button onclick="stopVideo()" >Stop</button>
+    <button type="button" onclick="connect()" >Connect</button>
+    <button type="button" onclick="hangUp()" >Hang Up</button>
+    <section class="video">
+        <video id="local-video" autoplay playsinline control class="video-box"></video>
+        <video id="remote-video" autoplay playsinline control class="video-box"></video>
+    </section>
+</div>
+<script type="text/javascript" src="screen-cap.js"></script>
+<script type="text/javascript">
+    let localVideo = document.getElementById('local-video');
+    let localStream = null;
+    let remoteVideo = document.getElementById('remote-video');
+    let peerConnection = null;
+    let sdpValue = '';
+
+    RTCPeerConnection = window.RTCPeerConnection;
+
+    // connect-server
+    let wsUrl = 'ws://192.168.3.102:3010';
+    let ws = new WebSocket(wsUrl);
+    ws.onopen = function(event) {
+        // nop.
+    };
+    ws.onerror = function(error) {
+        // nop.
+    };
+    ws.onclose = function(event) {
+        // nop.
+    };
+    ws.onmessage = function(event) {
+        let message = JSON.parse(event.data);
+        if (message.type === 'offer') {
+            let offer = new window.RTCSessionDescription(message);
+            setOffer(offer);
+        }
+        if (message.type === 'answer') {
+            let answer = new window.RTCSessionDescription(message);
+            setAnswer(answer);
+        }
+    };
+
+    function startVideo() {
+        navigator.mediaDevices.getUserMedia({ video:true, audio:true })
+        .then(function(stream) {
+            localStream = stream;
+            localVideo.srcObject = stream;
+            localVideo.play();
+        }).catch(function(error) {
+            console.error('mediaDevice.getUserMedia() error:', error);
+            return;
+        });
+	
+    }
+
+    function stopVideo() {
+        if (localStream == null) {
+            return;
+        }
+        for (let track of localStream.getTracks()) {
+            track.stop();
+        }
+        localStream = null;
+
+        // kill local video.
+        localVideo.pause();
+        localVideo.srcObject = null;
+    }
+
+    function connect() {
+        if (peerConnection) {
+            console.log('already connecting.')
+            return;
+        }
+        makeOffer();
+    }
+
+    function makeOffer() {
+        peerConnection = prepareNewConnection();
+        peerConnection.createOffer()
+        .then(function(sessionDescription) {
+            console.log('-- createOffer() succsess in promise');
+            return peerConnection.setLocalDescription(sessionDescription);
+        }).then(function() {
+            console.log('-- setLocalDescription() succsess in promise');
+        }).catch(function(error) {
+            console.error(error);
+        });
+    }
+
+    function setAnswer(sessionDescription) {
+        if (!peerConnection) {
+            return;
+        }
+        peerConnection.setRemoteDescription(sessionDescription)
+        .then(function() {
+            console.log('setRemoteDescription(answer) succsess in promise');
+        }).catch(function(error) {
+            console.error('setRemoteDescription(answer) ERROR: ', error);
+        });
+    }
+
+    function setOffer(sessionDescription) {
+        if (peerConnection) {
+            console.error('setOffer ERROR');
+        }
+        peerConnection = prepareNewConnection();
+        peerConnection.setRemoteDescription(sessionDescription)
+        .then(function() {
+            makeAnswer();
+        }).catch(function(error) {
+            console.error('setRemoteDescription(offer) ERROR: ', error);
+        });
+    }
+
+    function makeAnswer() {
+        if (!peerConnection) {
+            return;
+        }
+        peerConnection.createAnswer()
+        .then(function(sessionDescription) {
+            return peerConnection.setLocalDescription(sessionDescription);
+        }).then(function() {
+            console.log('setLocalDescription() succsess in promise');
+        }).catch(function(error) {
+            console.log(error);
+        });
+    }
+
+
+    function prepareNewConnection() {
+        let pcConfig = {"iceServers":[]};
+        let peer = new RTCPeerConnection(pcConfig);
+
+        if ('ontrack' in peer) {
+            console.log('-- ontrack');
+            peer.ontrack = function(event) {
+                let stream = event.streams[0];
+                remoteVideo.srcObject = stream;
+                remoteVideo.play();
+            };
+        } else {
+            console.log('-- onaddstream');
+            peer.onaddstream = function(event) {
+                let stream = event.stream;
+                remoteVideo.srcObject = stream;
+                remoteVideo.play();
+            }
+        }
+
+        peer.onicecandidate = function(event) {
+            if (event.candidate) {
+                //
+            } else {
+                sdpValue = peer.localDescription.sdp;
+
+                // sending server.
+                // オブジェクトをJSONの文字列に置き換え.
+                let message = JSON.stringify(peer.localDescription);
+                ws.send(message);
+            }
+        }
+
+        peer.oniceconnectionstatechange = function() {
+            if (peer.iceConnectionState === 'disconnected') {
+                hangUp();
+            }
+        };
+
+        peer.onremovestream = function(event) {
+            // kill remote video.
+            remoteVideo.pause();
+            remoteVideo.srcObject = null;
+        }
+
+        // localStreamの追加.
+        if (localStream) {
+            peer.addStream(localStream);
+        }
+
+        return peer;
+    }
+
+    function hangUp() {
+        if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+            // kill remote video.
+            remoteVideo.pause();
+            remoteVideo.srcObject = null;
+        }
+    }
+
+</script>
+</body>
+</html>

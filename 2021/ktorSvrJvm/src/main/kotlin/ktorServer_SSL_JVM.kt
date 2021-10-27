@@ -1,6 +1,5 @@
 import io.ktor.application.*
-import io.ktor.network.tls.certificates.buildKeyStore
-import io.ktor.network.tls.certificates.saveToFile
+import io.ktor.network.tls.certificates.*
 import io.ktor.network.tls.extensions.HashAlgorithm
 import io.ktor.network.tls.extensions.SignatureAlgorithm
 import io.ktor.server.engine.*
@@ -13,24 +12,18 @@ import kotlin.text.toCharArray
 // https://proandroiddev.com/ssl-with-kotlin-and-ktor-61b3d7dccbc5
 
 
-@KtorExperimentalAPI
 fun main() {
     val keyStoreFile = File("keystore.jks")
     val certAlias = "mycert"
     val storePass = "changeit"
     val certPass = "Soft2cream"
-    val keystore = if (keyStoreFile.exists()) {
-        KeyStore.getInstance(keyStoreFile, storePass.toCharArray())
-    } else {
-        buildKeyStore {
-            certificate(certAlias) {
-                hash = HashAlgorithm.SHA256
-                sign = SignatureAlgorithm.ECDSA
-                keySizeInBits = 256
-                password = certPass
-            }
-        }.apply { saveToFile(keyStoreFile, storePass) }
-    }
+
+    val keystore = generateCertificate(
+        file = keyStoreFile,
+        keyAlias = "mycert",
+        keyPassword = "Soft2cream",
+        jksPassword = "changeit"
+    )
 
     fun appEnv(module: Application.() -> Unit) = applicationEngineEnvironment {
         connector { port = 80 }
@@ -49,3 +42,4 @@ fun main() {
     println("Start Ktor Server port:${server.environment.connectors[0].port} sslPort:${server.environment.connectors[1].port}")
     server.start(wait = true)
 }
+

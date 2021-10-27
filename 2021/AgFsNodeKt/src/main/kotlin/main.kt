@@ -1,5 +1,6 @@
 import NodeJS.set
 import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.FirebaseApp
 import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.auth
@@ -25,7 +26,7 @@ suspend fun main() {
         //process.env["GLOBAL_AGENT_HTTP_PROXY"] = "http://10.144.98.32:3080/"
         require("global-agent/bootstrap")
 
-        val  opts = FirebaseOptions(
+        val opts = FirebaseOptions(
             applicationId = "1:307495712434:web:acc483c0c300549ff33bab",
             apiKey = "AIzaSyDrO7W7Sb6RCpHTsY3GaP-zODRP_HtY4nI",
             databaseUrl = "https://road-to-iot.firebaseio.com",
@@ -68,18 +69,18 @@ suspend fun runIdpDevice(dev: GdvmGenericDevice) {
     val db = Firebase.firestore
     db.collection("device").document(dev.id).collection("query")
         .where("cluster", equalTo = dev.cluster).snapshots.flatMapLatest {
-        channelFlow {
-            it.documents.forEach {
-                println("Data: ${it.data<String>()}")
-                offer(it.data<IdpScDeviceQuery>())
+            channelFlow {
+                it.documents.forEach {
+                    println("Data: ${it.data<String>()}")
+                    offer(it.data<IdpScDeviceQuery>())
+                }
             }
+        }.collectLatest {
+            println(it)
         }
-    }.collectLatest {
-        println(it)
-    }
 }
 
-suspend fun siginInWithCustomToken(deviceId: String, secret: String): Flow<FirebaseUser?> = run {
+suspend fun siginInWithCustomToken( deviceId: String, secret: String): Flow<FirebaseUser?> = run {
     val customTokenSvr = "https://us-central1-road-to-iot.cloudfunctions.net/requestToken"
     val urlQuery = listOf("id" to deviceId, "pw" to secret).formUrlEncode()
     val urlCustomToken = "$customTokenSvr/customToken?$urlQuery"
