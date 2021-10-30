@@ -1,5 +1,7 @@
 plugins {
+    application
     java
+    id("org.jetbrains.kotlin.jvm") version "1.5.31" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
 }
 
 group = "org.example"
