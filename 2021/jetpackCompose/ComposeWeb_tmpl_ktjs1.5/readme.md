@@ -9,6 +9,9 @@ Gradle Plugin
 ---
 https://plugins.gradle.org/plugin/org.jetbrains.compose
 
+Build/Run
+---
+./gradlew jbBrowserRun
 
 Trouble Shooting
 ---
