@@ -4,7 +4,7 @@ fun main() {
     val si = Scanner(System.`in`)
     val width = si.nextInt()
     val height = si.nextInt()
-    val field = Array(height) { IntArray(width) { si.nextInt() } }
+    val field = List(height) { List(width) { si.nextInt() } }
 
     val max = (0 until height).maxOf { y ->
         (0 until width).maxOf { x ->
@@ -17,5 +17,5 @@ fun main() {
             listOf(r, d, ld, rd).maxOf { it }
         }
     }
-    println(max)
+    println("max=$max")
 }
