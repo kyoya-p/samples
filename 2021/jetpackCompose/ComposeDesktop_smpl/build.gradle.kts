@@ -18,6 +18,11 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    api(compose.desktop.common)
+    api(compose.runtime)
+    api(compose.foundation)
+    api(compose.material)
+    api(compose.materialIconsExtended)
 }
 
 tasks.withType<KotlinCompile>() {
