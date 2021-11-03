@@ -1,7 +1,4 @@
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -12,6 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import org.snmp4j.CommunityTarget
@@ -21,10 +19,12 @@ import org.snmp4j.Snmp
 import org.snmp4j.asn1.BER
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
+import java.io.File
 import java.net.InetAddress
 import kotlin.experimental.and
 
 
+@ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
 fun main(args: Array<String>) {
     if (args.size == 0) {
@@ -37,24 +37,26 @@ fun main(args: Array<String>) {
     val snmp = SnmpBuilder().udp().v1().threads(2).build()!!
     snmp.listen()
 
-    val module = SerializersModule {
-        contextual(VariableBindingAsStringSerializer)
-    }
-
     val json = Json {
         prettyPrint = true
-        serializersModule = module
+        serializersModule = SerializersModule {
+            contextual(VariableBindingAsStringSerializer)
+        }
     }
 
-    runBlocking {
+    val res = runBlocking {
         runCatching {
             val topPdu = PDU().apply { variableBindings = listOf(VariableBinding(topOid)) }
             val target = CommunityTarget(UdpAddress(addr, 161), OctetString("public"))
-            val res = snmp.walkFlow(topPdu, target).toList()
-            println(json.encodeToString(res))
-        }.onFailure { it.printStackTrace() }
+            snmp.walkFlow(topPdu, target).toList()
+        }.onFailure { it.printStackTrace() }.getOrNull()
     }
     snmp.close()
+
+    //println(json.encodeToString(res))
+    File("${addr.hostAddress}.mib").outputStream().use {
+        json.encodeToStream(res, it)
+    }
 }
 
 @ExperimentalCoroutinesApi
