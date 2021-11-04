@@ -1,43 +1,65 @@
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Semaphore
 import org.snmp4j.PDU
+import org.snmp4j.Snmp
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
-import org.snmp4j.fluent.PduBuilder
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
+import org.snmp4j.Target
 import java.math.BigInteger
 import java.net.InetAddress
-import java.nio.ByteBuffer
-import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 
-fun main(args: Array<String>) {
+@FlowPreview
+suspend fun main(args: Array<String>) = runBlocking {
     val netAdr = BigInteger(InetAddress.getByName(args.getOrNull(0) ?: "192.168.0.0").address).toLong()
     val scanMask = args.getOrNull(1)?.toInt() ?: 16
 
     val snmpBuilder = SnmpBuilder()
-    val snmp = snmpBuilder.udp().v1().threads(2).build()
+    val snmp = snmpBuilder.udp().v1().threads(1).build()
     snmp.listen()
 
-    for (i in 0L until (1 shl scanMask)) {
-        val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
-        val udpAdr = UdpAddress(InetAddress.getByAddress(adrBytes), 161)
-        val targetBuilder = snmpBuilder.target(udpAdr)
-        val target = targetBuilder.community(OctetString("public"))
-            .timeout(500).retries(10)
-            .build()
-        val pdu = PDU().apply {
-            type = PDU.GETNEXT
-            variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
-        }
-        snmp.send(pdu, target, null, object : ResponseListener {
-            override fun <A : Address?> onResponse(event: ResponseEvent<A>?) {
-                //TODO("Not yet implemented")
-                println("${event?.peerAddress}  ${event?.response?.variableBindings?.getOrNull(0)}")
+    var c = 0
+    (0L until (1 shl scanMask)).forEach { i ->
+        launch {
+            val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
+            val udpAdr = UdpAddress(InetAddress.getByAddress(adrBytes), 161)
+            val targetBuilder = snmpBuilder.target(udpAdr)
+            val target = targetBuilder.community(OctetString("public"))
+                .timeout(5000).retries(5)
+                .build()
+            val pdu = PDU().apply {
+                type = PDU.GETNEXT
+                variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
             }
-        })
+
+            print("%d/%d/%d\r".format(i, 1 shl scanMask, c++))
+            val event = snmp.sendCor(pdu, target)
+            if (event.response != null) {
+                println("${i.toString(16)} ${udpAdr.inetAddress.hostAddress} ${event.peerAddress}  ${
+                    event.response?.variableBindings?.getOrNull(0)
+                }")
+            }
+            c--
+        }
+        delay(10)
     }
     snmp.close()
 }
+
+// callbackをcoroutineに変換
+suspend fun Snmp.sendCor(pdu: PDU, target: Target<UdpAddress>) =
+    suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+        send(pdu, target, null, object : ResponseListener {
+            override fun <A : Address?> onResponse(event: ResponseEvent<A>?) {
+                continuation.resume(event as ResponseEvent<UdpAddress>)
+            }
+        })
+    }
 
 fun Long.reverseBit32(width: Int = 32): Long {
     var x = this
