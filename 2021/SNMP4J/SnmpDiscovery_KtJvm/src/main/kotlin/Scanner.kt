@@ -1,6 +1,4 @@
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.Semaphore
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
 import org.snmp4j.event.ResponseEvent
@@ -26,37 +24,52 @@ suspend fun main(args: Array<String>) = runBlocking {
     var c = 0
     (0L until (1 shl scanMask)).forEach { i ->
         launch {
-            val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
+            val adrBytes = (netAdr or i).toBigInteger().toByteArray()
+            //val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
             val udpAdr = UdpAddress(InetAddress.getByAddress(adrBytes), 161)
+            print("%s/%d/%d\r".format(udpAdr.inetAddress.hostAddress, 1 shl scanMask, ++c))
             val targetBuilder = snmpBuilder.target(udpAdr)
             val target = targetBuilder.community(OctetString("public"))
-                .timeout(5000).retries(5)
+                .timeout(3000).retries(9)
                 .build()
             val pdu = PDU().apply {
                 type = PDU.GETNEXT
+                requestID = Integer32(i.toInt())
                 variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
             }
 
-            print("%d/%d/%d\r".format(i, 1 shl scanMask, c++))
-            val event = snmp.sendCor(pdu, target)
-            if (event.response != null) {
-                println("${i.toString(16)} ${udpAdr.inetAddress.hostAddress} ${event.peerAddress}  ${
-                    event.response?.variableBindings?.getOrNull(0)
-                }")
+            snmp.sendCor(pdu, target)?.let { ev ->
+                println(
+                    "${udpAdr.inetAddress.hostAddress} ${ev.peerAddress}  ${
+                        ev.response?.variableBindings?.getOrNull(0)
+                    }"
+                )
             }
             c--
         }
-        delay(10)
+        delay(100)
     }
     snmp.close()
 }
 
 // callbackをcoroutineに変換
 suspend fun Snmp.sendCor(pdu: PDU, target: Target<UdpAddress>) =
-    suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+    suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
         send(pdu, target, null, object : ResponseListener {
-            override fun <A : Address?> onResponse(event: ResponseEvent<A>?) {
-                continuation.resume(event as ResponseEvent<UdpAddress>)
+            override fun <A : Address?> onResponse(ev: ResponseEvent<A>?) {
+                when {
+                    ev == null || ev.response == null -> {
+                        this@sendCor.cancel(pdu, this)
+                        continuation.resume(null)
+                        return
+                    }
+                    ev.peerAddress == target.address -> {
+                        this@sendCor.cancel(pdu, this)
+                        continuation.resume(ev as ResponseEvent<UdpAddress>)
+                        return
+                    }
+                }
+                println("${target.address}")
             }
         })
     }
