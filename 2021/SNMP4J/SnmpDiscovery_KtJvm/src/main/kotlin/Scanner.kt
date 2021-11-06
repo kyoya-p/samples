@@ -14,8 +14,8 @@ import kotlin.coroutines.suspendCoroutine
 
 @FlowPreview
 suspend fun main(args: Array<String>) = runBlocking {
-    val netAdr = BigInteger(InetAddress.getByName(args.getOrNull(0) ?: "192.168.0.0").address).toLong()
-    val scanMask = args.getOrNull(1)?.toInt() ?: 16
+    val netAdr = BigInteger(InetAddress.getByName(args.getOrNull(0) ?: "192.168.3.0").address).toLong()
+    val scanMask = args.getOrNull(1)?.toInt() ?: 4
 
     val snmpBuilder = SnmpBuilder()
     val snmp = snmpBuilder.udp().v1().threads(1).build()
@@ -24,13 +24,13 @@ suspend fun main(args: Array<String>) = runBlocking {
     var c = 0
     (0L until (1 shl scanMask)).forEach { i ->
         launch {
-            val adrBytes = (netAdr or i).toBigInteger().toByteArray()
-            //val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
+            // val adrBytes = (netAdr or i).toBigInteger().toByteArray()
+            val adrBytes = (netAdr or i.reverseBit32(scanMask)).toBigInteger().toByteArray()
             val udpAdr = UdpAddress(InetAddress.getByAddress(adrBytes), 161)
-            print("%s/%d/%d\r".format(udpAdr.inetAddress.hostAddress, 1 shl scanMask, ++c))
+            print("\r%d/%s/%d/%d: ".format(i, udpAdr.inetAddress.hostAddress, 1 shl scanMask, ++c))
             val targetBuilder = snmpBuilder.target(udpAdr)
             val target = targetBuilder.community(OctetString("public"))
-                .timeout(3000).retries(9)
+                .timeout(1000).retries(5)
                 .build()
             val pdu = PDU().apply {
                 type = PDU.GETNEXT
@@ -38,7 +38,9 @@ suspend fun main(args: Array<String>) = runBlocking {
                 variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
             }
 
-            snmp.sendCor(pdu, target)?.let { ev ->
+            val r = snmp.sendCor(pdu, target)
+            println(r)
+            r?.let { ev ->
                 println(
                     "${udpAdr.inetAddress.hostAddress} ${ev.peerAddress}  ${
                         ev.response?.variableBindings?.getOrNull(0)
@@ -47,7 +49,7 @@ suspend fun main(args: Array<String>) = runBlocking {
             }
             c--
         }
-        delay(100)
+        delay(10)
     }
     snmp.close()
 }
@@ -57,19 +59,12 @@ suspend fun Snmp.sendCor(pdu: PDU, target: Target<UdpAddress>) =
     suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
         send(pdu, target, null, object : ResponseListener {
             override fun <A : Address?> onResponse(ev: ResponseEvent<A>?) {
-                when {
-                    ev == null || ev.response == null -> {
-                        this@sendCor.cancel(pdu, this)
-                        continuation.resume(null)
-                        return
-                    }
-                    ev.peerAddress == target.address -> {
-                        this@sendCor.cancel(pdu, this)
-                        continuation.resume(ev as ResponseEvent<UdpAddress>)
-                        return
-                    }
-                }
-                println("${target.address}")
+                continuation.resume(when {
+                    ev == null || ev.response == null -> null
+                    ev.peerAddress == target.address -> ev as ResponseEvent<UdpAddress>
+                    else -> null
+                })
+                //this@sendCor.cancel(pdu, this)
             }
         })
     }
