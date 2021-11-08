@@ -91,7 +91,7 @@ suspend fun main(args: Array<String>) {
 }
 
 @Serializable
-data class Device(
+private data class Device(
     val ip: String,
     val vbl: List<@Contextual VariableBinding>,
 )
@@ -106,7 +106,7 @@ fun Long.reverseBit32(width: Int = 32): Long {
     return ((x shl 16) or (x ushr 16)) ushr (32 - width)
 }
 
-enum class TargetOID(val oid: String, val oidName: String) {
+private enum class TargetOID(val oid: String, val oidName: String) {
     sysDescr("1.3.6.1.2.1.1.1", "sysDescr"),
     sysName("1.3.6.1.2.1.1.5", "sysName"),
     hrDeviceDescr("1.3.6.1.2.1.25.3.2.1.3", "hrDeviceDescr"),
