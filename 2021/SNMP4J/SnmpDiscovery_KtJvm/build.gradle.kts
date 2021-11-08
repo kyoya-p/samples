@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.5.31"
+    `maven-publish`
 }
 
 group = "org.example"
@@ -17,4 +18,19 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
     implementation("org.snmp4j:snmp4j:3.5.1")     // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+}
+
+publishing {
+    val myGroupId = "jp.live-on.shokkaa"
+    val myArtifactId = "snmp4jutils"
+    val myVersion = "1.1"
+
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = myGroupId
+            artifactId = myArtifactId
+            version = myVersion
+            from(components["kotlin"])
+        }
+    }
 }
