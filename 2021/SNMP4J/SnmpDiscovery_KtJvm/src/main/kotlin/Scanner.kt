@@ -84,7 +84,7 @@ suspend fun main(args: Array<String>) {
         }.toList()
         println("\n${now()} Complete.")
 
-        println(jsonSnmp4j.encodeToStream(res, File("res.json").outputStream()))
+        println(jsonSnmp4j.encodeToStream(res, File("build/res.json").outputStream()))
         //, File("res.json").outputStream()))
 
     }.onFailure { it.printStackTrace() }.getOrNull()
@@ -93,7 +93,7 @@ suspend fun main(args: Array<String>) {
 }
 
 @Serializable
-private data class Device(
+internal data class Device(
     val ip: String,
     val vbl: List<@Contextual VariableBinding>,
 )
