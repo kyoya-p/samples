@@ -14,6 +14,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import org.snmp4j.PDU
@@ -22,6 +23,7 @@ import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
+import java.io.File
 import java.math.BigInteger
 import java.net.InetAddress
 import kotlin.experimental.and
@@ -35,7 +37,7 @@ import kotlin.time.ExperimentalTime
 suspend fun main(args: Array<String>) {
     fun String.toLong() = BigInteger(InetAddress.getByName(this).address).toLong()
     fun Long.toAddr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())
-    val interval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 20)
+    val interval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
 
     val scanMask = args.getOrNull(1)?.toInt() ?: 8
     val baseAdr = (args.getOrNull(0) ?: "192.168.3.0").toLong() and (-1L shl scanMask)
@@ -82,7 +84,7 @@ suspend fun main(args: Array<String>) {
         }.toList()
         println("\n${now()} Complete.")
 
-        println(jsonSnmp4j.encodeToString(res))
+        println(jsonSnmp4j.encodeToStream(res, File("res.json").outputStream()))
         //, File("res.json").outputStream()))
 
     }.onFailure { it.printStackTrace() }.getOrNull()
@@ -164,12 +166,13 @@ object VariableBindingAsStringSerializer : KSerializer<VariableBinding> {
         }.map { it.toByte() }.toByteArray()
     }.decodeToString()
 
-    fun String.unescaped(): ByteArray = encodeToByteArray().let { ba ->
+    fun String.unescaped(): ByteArray = also{println(it)}.encodeToByteArray().let { ba ->
         generateSequence(0 to 0.toByte()) { (i, _) ->
             when {
-                ba[i] == ':'.code.toByte() -> i + 3 to ((ba[i + 1] - z) / 0x10 + (ba[i + 2] and 0xf)).toByte()
+                i >= ba.size -> null
+                ba[i] == ':'.code.toByte() -> (i + 3) to ((ba[i + 1] - z) / 0x10 + (ba[i + 2] and 0xf)).toByte()
                 else -> i + 1 to ba[i]
             }
-        }.takeWhile { (i, _) -> i < ba.size }.map { it.second }.toList().toByteArray()
+        }.map { it.second }.toList().toByteArray()
     }
 }
