@@ -1,11 +1,9 @@
 package jp.`live-on`.shokkaa
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -18,6 +16,7 @@ import kotlinx.serialization.json.encodeToStream
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
 import org.snmp4j.PDU
+import org.snmp4j.Snmp
 import org.snmp4j.asn1.BER
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
@@ -26,21 +25,18 @@ import org.snmp4j.smi.*
 import java.io.File
 import java.math.BigInteger
 import java.net.InetAddress
-import kotlin.experimental.and
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
+import org.snmp4j.Target
 
-
+@FlowPreview
 @ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
 @ExperimentalTime
-suspend fun main(args: Array<String>) {
-    fun String.toLong() = BigInteger(InetAddress.getByName(this).address).toLong()
-    fun Long.toAddr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())
-    val interval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
-
+suspend fun main(args: Array<String>) = runBlocking {
     val scanMask = args.getOrNull(1)?.toInt() ?: 8
-    val baseAdr = (args.getOrNull(0) ?: "192.168.3.0").toLong() and (-1L shl scanMask)
+    val baseAdr = InetAddress.getByName(args.getOrNull(0) ?: "192.168.3.0")!!
+    val interval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
 
     val snmpBuilder = SnmpBuilder()
 
@@ -52,32 +48,21 @@ suspend fun main(args: Array<String>) {
         val start = Clock.System.now()
         fun now() = (Clock.System.now() - start).inWholeMilliseconds
 
-        val res = callbackFlow {
-            (0L until (1 shl scanMask)).forEach { i ->
-                launch {
-                    val adr = baseAdr or i.reverseBit32(scanMask)
-                    val udpAdr = UdpAddress(adr.toAddr(), 161)
-                    val targetBuilder = snmpBuilder.target(udpAdr)
-                    val target = targetBuilder.community(OctetString("public")).timeout(5000).retries(5).build()!!
-                    val pdu = PDU().apply {
-                        requestID = Integer32(i.toInt())
-                        type = PDU.GETNEXT
-                        variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
-                    }
-                    print("\r$i ${now()} ${target.address} ")
-                    @Suppress("BlockingMethodInNonBlockingContext")
-                    snmp.getNext(pdu, target, null, object : ResponseListener {
-                        override fun <A : Address?> onResponse(r: ResponseEvent<A>?) {
-                            r?.peerAddress?.let {
-                                @Suppress("UNCHECKED_CAST")
-                                trySend(r as ResponseEvent<UdpAddress>)
-                            }
-                        }
-                    })
+        val res = scrambledIpV4AddressFlow(baseAdr, scanMask).flatMapConcat { adr ->
+            callbackFlow<ResponseEvent<UdpAddress>> {
+                val udpAdr = UdpAddress(adr, 161)
+                val targetBuilder = snmpBuilder.target(udpAdr)
+                val target = targetBuilder.community(OctetString("public")).timeout(5000).retries(5).build()!!
+                val pdu = PDU().apply {
+                    requestID = Integer32(adr.toIPv4Long().toInt())
+                    type = PDU.GETNEXT
+                    variableBindings = TargetOID.values().map { VariableBinding(OID(it.oid)) }
                 }
-                delay(interval)
+                snmp.getNext(pdu, target) {
+                    println(it.response)
+                    trySend(it)
+                }
             }
-            close()
         }.map { r: ResponseEvent<UdpAddress> ->
             println("${now()} ${r.peerAddress} ${r.response} ")
             Device(r.peerAddress.inetAddress.hostAddress!!, r.response.variableBindings)
@@ -92,6 +77,32 @@ suspend fun main(args: Array<String>) {
     snmp.close()
 }
 
+fun Snmp.getNext(
+    pdu: PDU,
+    target: Target<UdpAddress>,
+    userHandle: Any? = null,
+    cb: (ResponseEvent<UdpAddress>) -> Unit,
+) {
+    @Suppress("BlockingMethodInNonBlockingContext")
+    getNext(pdu, target, userHandle, object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>?) {
+            r?.peerAddress?.let {
+                @Suppress("UNCHECKED_CAST")
+                cb(r as ResponseEvent<UdpAddress>)
+            }
+        }
+    })
+}
+
+// IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
+private fun Long.toIpv4Addr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
+private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
+
+fun scrambledIpV4AddressFlow(netAdr: InetAddress, bitWidth: Int) =
+    (0L until (1 shl bitWidth)).asFlow()
+        .map { (netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth) }
+        .map { it.toIpv4Addr() }
+
 @Serializable
 internal data class Device(
     val ip: String,
@@ -99,7 +110,7 @@ internal data class Device(
 )
 
 
-fun Long.reverseBit32(width: Int = 32): Long {
+private fun Long.reverseBit32(width: Int = 32): Long {
     var x = this
     x = ((x and 0x55555555) shl 1) or ((x and 0xAAAAAAAA) ushr 1)
     x = ((x and 0x33333333) shl 2) or ((x and 0xCCCCCCCC) ushr 2)
@@ -108,7 +119,7 @@ fun Long.reverseBit32(width: Int = 32): Long {
     return ((x shl 16) or (x ushr 16)) ushr (32 - width)
 }
 
-private enum class TargetOID(val oid: String, val oidName: String) {
+ enum class TargetOID(val oid: String, val oidName: String) {
     sysDescr("1.3.6.1.2.1.1.1", "sysDescr"),
     sysName("1.3.6.1.2.1.1.5", "sysName"),
     hrDeviceDescr("1.3.6.1.2.1.25.3.2.1.3", "hrDeviceDescr"),

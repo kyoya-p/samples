@@ -18,7 +18,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
-    implementation("org.snmp4j:snmp4j:3.5.1")     // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+    implementation("org.snmp4j:snmp4j:3.5.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 publishing {
@@ -35,8 +40,6 @@ publishing {
         }
     }
 }
-
-
 
 kover {
     isEnabled = true                        // false to disable instrumentation of all test tasks in all modules
