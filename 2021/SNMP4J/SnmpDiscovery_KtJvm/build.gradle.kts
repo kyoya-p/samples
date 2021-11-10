@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "1.5.31"
     kotlin("plugin.serialization") version "1.5.31"
+    id("org.jetbrains.kotlinx.kover") version "0.4.1"
     `maven-publish`
 }
 
@@ -32,5 +33,24 @@ publishing {
             version = myVersion
             from(components["kotlin"])
         }
+    }
+}
+
+
+
+kover {
+    isEnabled = true                        // false to disable instrumentation of all test tasks in all modules
+    coverageEngine.set(kotlinx.kover.api.CoverageEngine.INTELLIJ) // change instrumentation agent and reporter
+    intellijEngineVersion.set("1.0.614")    // change version of IntelliJ agent and reporter
+    jacocoEngineVersion.set("0.8.7")        // change version of JaCoCo agent and reporter
+    generateReportOnCheck.set(true)         // false to do not execute `koverReport` task before `check` task
+}
+
+tasks.test {
+    extensions.configure(kotlinx.kover.api.KoverTaskExtension::class) {
+        isEnabled = true
+        binaryReportFile.set(file("$buildDir/custom/result.bin"))
+        includes = listOf("com\\.example\\..*")
+        excludes = listOf("com\\.example\\.subpackage\\..*")
     }
 }
