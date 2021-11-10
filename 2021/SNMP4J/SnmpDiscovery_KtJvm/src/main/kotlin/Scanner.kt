@@ -160,7 +160,6 @@ object VariableBindingAsStringSerializer : KSerializer<VariableBinding> {
 
 }
 
-private val z = '0'.code.toUByte().toInt()
 private val digit = "0123456789abcdef".map { it.code.toByte() }
 private val ascii = List(256) {
     when {
@@ -184,7 +183,6 @@ fun String.unescaped() = encodeToByteArray().let { ba ->
         when {
             i >= ba.size -> null
             ba[i] == ':'.code.toByte() -> {
-                // println(i)
                 if (i >= ba.size - 2) throw Exception("Illegal Escape Position: Index=$i: \"${ba.joinToString()}\" ")
                 val c1 = ascii[ba[i + 1].toUByte().toInt()]
                 val c2 = ascii[ba[i + 2].toUByte().toInt()]
