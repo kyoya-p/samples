@@ -11,6 +11,7 @@ import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
+import java.io.File
 import java.net.InetAddress
 
 @Suppress("ClassName")
@@ -20,7 +21,7 @@ class Test_Snmp {
 
     @Test
     fun test_start_dummyAgent() {
-        SNMPAgent()
+        //SNMPAgent(File(""))
     }
 
     @Test
