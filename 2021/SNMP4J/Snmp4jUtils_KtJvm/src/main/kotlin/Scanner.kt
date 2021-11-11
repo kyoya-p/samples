@@ -41,7 +41,7 @@ suspend fun main(args: Array<String>) = runBlocking {
     val snmpBuilder = SnmpBuilder()
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    val snmp = snmpBuilder.udp().v1().threads(1).build()!!
+    val snmp = snmpBuilder.udp().v1().build()!!
     runCatching {
         snmp.listen()
 
