@@ -18,7 +18,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
-    implementation("org.snmp4j:snmp4j:3.5.1")
+    implementation("org.snmp4j:snmp4j:3.6.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
 }
 
