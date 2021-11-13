@@ -1,5 +1,6 @@
 package jp.`live-on`.shokkaa
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import org.snmp4j.*
 import org.snmp4j.mp.MPv1
@@ -15,14 +16,14 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.util.*
 
-typealias MibMap = TreeMap<OID, VariableBinding>
-
 fun interface MIBMapper {
     fun requestEvent(ev: CommandResponderEvent<UdpAddress>): PDU?
 }
 
 
 fun OID(vararg ints: Int) = OID(ints)
+
+@Suppress("unused")
 val mibTest = sortedMapOf<OID, Variable>(
     OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("AAAA"),
     OID(1, 3, 6, 1, 2, 1, 1, 2) to OID(1, 3, 6, 1, 2, 1, 1, 1, 1, 1),
@@ -33,17 +34,19 @@ val mibTest = sortedMapOf<OID, Variable>(
 ).mapValues { (oid, v) -> VariableBinding(oid, v) }
 
 
+@Suppress("unused")
 class SNMPAgent(
     val snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))),
     val mibMapper: MIBMapper,
 ) {
     companion object {
+        @ExperimentalSerializationApi
         fun from(snmp: Snmp, mibFile: File): SNMPAgent {
             val vbl = TreeMap<OID, VariableBinding>()
             jsonSnmp4j.decodeFromStream<List<VariableBinding>>(mibFile.inputStream()).forEach {
                 vbl[it.oid] = it
             }
-            return SNMPAgent.from(snmp, vbl)
+            return from(snmp, vbl)
         }
 
         fun from(snmp: Snmp, mibMap: TreeMap<OID, VariableBinding>): SNMPAgent {
@@ -131,6 +134,7 @@ class SNMPAgent(
 fun Snmp.addCommandResponder(op: (CommandResponderEvent<UdpAddress>) -> Unit) =
     addCommandResponder(object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
             op(event as CommandResponderEvent<UdpAddress>)
         }
     })
