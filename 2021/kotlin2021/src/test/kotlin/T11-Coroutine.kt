@@ -1,4 +1,5 @@
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Test
@@ -10,17 +11,6 @@ import kotlin.time.ExperimentalTime
 @ExperimentalTime
 @Suppress("NonAsciiCharacters")
 class `T11-Coroutine` {
-
-    @ExperimentalTime
-    class Watch(private val start: Instant = Clock.System.now()) {
-        fun now() = (Clock.System.now() - start).inWholeMilliseconds.toInt()
-    }
-
-    @ExperimentalTime
-//    suspend fun <T> stopWatch(op: suspend Watch.() -> T) = Watch().op()
-    suspend fun <T> stopWatch(op: suspend (Watch) -> T) = op(Watch())
-
-
     @Test
     fun t1_非同期実行() = runBlocking {
         stopWatch { w ->
@@ -102,4 +92,21 @@ class `T11-Coroutine` {
             }
         }
     }
+
+    @Test
+    fun t4_スループットの調整_セマフォ() = runBlocking {
+        stopWatch { w ->
+            val sem = Semaphore(3)
+            (1..5).map {
+                sem.acquire()
+                async {
+                    delay(100)
+                    sem.release()
+                }
+            }.awaitAll()
+            println(w.now())
+            assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので
+        }
+    }
+
 }
