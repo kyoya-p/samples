@@ -11,7 +11,7 @@ import kotlin.time.ExperimentalTime
 @Suppress("NonAsciiCharacters")
 class `T11-Coroutine` {
     @Test
-    fun t1_非同期実行() = runBlocking {
+    fun `t01-非同期実行`() = runBlocking {
         stopWatch { w ->
             val job1 = async {
                 delay(100) // coroutine負荷
@@ -33,7 +33,7 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun t2_ThreadとCoroutine() = runBlocking {
+    fun `t02-ThreadとCoroutine`() = runBlocking {
         fun threadBlocker() = Thread.sleep(100)
         suspend fun coroutineLoad() = delay(100)
 
@@ -64,7 +64,7 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun t3_ブロック関数をサスペンドで待つ() {
+    fun `t03-ブロック関数をサスペンドで待つ`() {
         fun threadBlocker() = Thread.sleep(100)
 
         suspend fun threadBlockerToSuspendable() = suspendCoroutine<Unit> { continuation ->
@@ -93,7 +93,7 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun t4_スループットの調整_セマフォ() = runBlocking {
+    fun `t04-スループットの調整_セマフォ`() = runBlocking {
         stopWatch { w ->
             val sem = Semaphore(3)
             (1..5).map {
@@ -110,12 +110,12 @@ class `T11-Coroutine` {
 
     @Test
     // Coroutineのキャンセル
-    fun t11_キャンセル(): Unit = runBlocking {
+    fun `t11-キャンセル`(): Unit = runBlocking {
         var counter = 0
         val job = async { // 100msに1ずつカウントアップ
             assertThrows<CancellationException> { // cancel()された場合例外が発生する。必要ならcatchして終了処理
-                repeat(10) {
-                    delay(100)
+                while (isActive) { // while(true)の代わりにwhile(isActive)でループ
+                    delay(100) // コンテキストスイッチでcancel()されるので、Thread.sleep()はご法度
                     counter++
                 }
             }
