@@ -14,13 +14,14 @@ import org.snmp4j.smi.VariableBinding
 import suspendable
 import java.math.BigInteger
 import java.net.InetAddress
+import javax.swing.text.DefaultStyledDocument
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalTime
-suspend fun main(args: Array<String>) = runBlocking {
+suspend fun main(args: Array<String>) = runBlocking(Dispatchers.Default) {
     @Suppress("BlockingMethodInNonBlockingContext")
     val baseAdr = InetAddress.getByName(args.getOrNull(0) ?: "192.168.3.0")!!
     val scanMask = args.getOrNull(1)?.toInt() ?: 8
@@ -36,20 +37,19 @@ suspend fun main(args: Array<String>) = runBlocking {
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
 
     val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
-    scrambledIpV4AddressSequence(baseAdr, scanMask).asFlow().map { ip ->
+    ipV4AddressSequence(baseAdr, scanMask).asFlow().map { ip ->
         async {
             val udpAdr = UdpAddress(ip, 161)
-            print("$udpAdr ")
             val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
                 .timeout(1000).retries(1)
                 .build()
-            print("${now()}: send() -> ")
+            println("${now()}: send() -> ${udpAdr}")
             snmp.send(PDU(PDU.GETNEXT, sampleVBs), target)
         }
-    }.map { it.await() }.collect { ev ->
-        println("${now()} ${ev.peerAddress} ${ev.response?.variableBindings}")
-        delay(interval)
-    }
+    }.onEach { delay(interval) }.buffer().mapNotNull { it.await().peerAddress }
+        .collect {
+            println(it)
+        }
 
     snmp.close()
 }
@@ -59,7 +59,9 @@ private fun Long.toIpv4Addr() = InetAddress.getByAddress(BigInteger.valueOf(this
 private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
 
 fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int) =
-    (0L until (1 shl bitWidth)).asSequence().map { it.toIpv4Addr() }
+    (0L until (1 shl bitWidth)).asSequence()
+        .map { (netAdr.toIPv4Long() and (-1L shl bitWidth)) or it }
+        .map { it.toIpv4Addr() }
 
 fun scrambledIpV4AddressSequence(netAdr: InetAddress, bitWidth: Int) =
     (0L until (1 shl bitWidth)).asSequence()

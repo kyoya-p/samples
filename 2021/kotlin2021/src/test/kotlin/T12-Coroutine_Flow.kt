@@ -1,4 +1,7 @@
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.DEFAULT_BUFFER_PROPERTY_NAME
 import kotlinx.coroutines.flow.*
 import org.junit.jupiter.api.Test
 import kotlin.time.ExperimentalTime
@@ -67,7 +70,7 @@ class `T12-Coroutine_Flow` {
                     assert((0..100).contains(w.now()))
                     emit(i)
                 }
-            }.buffer(5).collect { i ->
+            }.buffer().collect { i ->
                 assert(((i * 100)..(i * 100 + 100)).contains(w.now()))
                 delay(100)
             }
@@ -75,5 +78,11 @@ class `T12-Coroutine_Flow` {
             println(w.now())
             assert((500..600).contains(w.now()))
         }
+
+        // キュー可能なメッセージ数を整数で指定する以外にいくつかの指定方法がある
+        fun <T> Flow<T>.buffer_UNLIMITED() = buffer(Channel.UNLIMITED)  //無制限(Int.MAX_VALUE)
+        fun <T> Flow<T>.buffer_RENDEZVOUS() = buffer(Channel.RENDEZVOUS)  //バッファ無し(0)
+        fun <T> Flow<T>.buffer_CONFLATED() = buffer(Channel.CONFLATED)  // シンクの処理が間に合わないメッセージは破棄(上書き)
+        fun <T> Flow<T>.buffer_BUFFERED() = buffer(Channel.BUFFERED)  // デフォルト(suspendなら64、非suspendなら1)
     }
 }

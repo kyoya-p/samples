@@ -1,8 +1,7 @@
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.ExperimentalTime
@@ -108,5 +107,29 @@ class `T11-Coroutine` {
             assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので
         }
     }
+
+    @Test
+    // Coroutineのキャンセル
+    fun t11_キャンセル(): Unit = runBlocking {
+        var counter = 0
+        val job = async { // 100msに1ずつカウントアップ
+            assertThrows<CancellationException> { // cancel()された場合例外が発生する。必要ならcatchして終了処理
+                repeat(10) {
+                    delay(100)
+                    counter++
+                }
+            }
+        }
+        delay(350) // カウントが3に上がったころに
+        job.cancel() // ...中断
+        delay(300)
+        assert(counter == 3)
+
+        // cancel()後のawait()は例外を発生させる
+        assertThrows<CancellationException> {
+            job.await() //例外
+        }
+    }
+
 
 }
