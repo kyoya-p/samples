@@ -1,31 +1,40 @@
 package jp.`live-on`.shokkaa
 
+import com.charleskorn.kaml.Yaml
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
+import kotlinx.datetime.todayAt
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.decodeFromStream
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.smi.OID
-import org.snmp4j.smi.OctetString
-import org.snmp4j.smi.UdpAddress
-import org.snmp4j.smi.VariableBinding
+import org.snmp4j.smi.*
 import suspendable
+import toMibString
+import java.io.File
 import java.math.BigInteger
 import java.net.InetAddress
-import javax.swing.text.DefaultStyledDocument
+import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
+@ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalTime
-suspend fun main(args: Array<String>) = runBlocking(Dispatchers.Default) {
+suspend fun main(args: Array<String>) = runBlocking {
+
     @Suppress("BlockingMethodInNonBlockingContext")
     val baseAdr = InetAddress.getByName(args.getOrNull(0) ?: "192.168.3.0")!!
-    val scanMask = args.getOrNull(1)?.toInt() ?: 8
-    val interval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
+    val scanBits = args.getOrNull(1)?.toInt() ?: 8
+    val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
 
     val snmpBuilder = SnmpBuilder()
 
@@ -35,38 +44,59 @@ suspend fun main(args: Array<String>) = runBlocking(Dispatchers.Default) {
 
     val start by lazy { Clock.System.now() }
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
-
+    val today = Clock.System.todayAt(currentSystemDefault())
     val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
-    ipV4AddressSequence(baseAdr, scanMask).asFlow().map { ip ->
+    //val sampleVBs = listOf<VariableBinding>()
+
+    var c = 0
+    scrambledIpV4AddressSequence(baseAdr, scanBits).asFlow().map { (i, ip) ->
         async {
             val udpAdr = UdpAddress(ip, 161)
             val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
-                .timeout(1000).retries(1)
+                .timeout(5000).retries(1)
                 .build()
-            println("${now()}: send() -> ${udpAdr}")
+            print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> ${udpAdr} [${++c}] ")
             snmp.send(PDU(PDU.GETNEXT, sampleVBs), target)
         }
-    }.onEach { delay(interval) }.buffer().mapNotNull { it.await().peerAddress }
-        .collect {
-            println(it)
+    }
+        .onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
+        .map { it.await() }
+        .onEach { c-- }
+        .filter { it.peerAddress != null && it.response != null }
+        .map { ev ->
+            val vbs = ev.response.variableBindings.map { vb -> VBS(vb.oid.toMibString(), vb.variable) }
+            Dev(ev.peerAddress.toString(), vbs)
+        }.collect {
+            val writer = File("samples/scanner.$today.yaml")
+            @Suppress("BlockingMethodInNonBlockingContext")
+            writer.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(it)))
+            @Suppress("BlockingMethodInNonBlockingContext")
+            writer.appendText("\n")
         }
-
     snmp.close()
 }
+
+
+@Serializable
+data class VBS(val mib: String, @Contextual val value: Variable)
+
+@Serializable
+data class Dev(val ip: String, val vbs: List<VBS>)
+
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
 private fun Long.toIpv4Addr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
 private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
 
-fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int) =
-    (0L until (1 shl bitWidth)).asSequence()
-        .map { (netAdr.toIPv4Long() and (-1L shl bitWidth)) or it }
-        .map { it.toIpv4Addr() }
+fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
+    (startIndex until (1 shl bitWidth)).asSequence()
+        .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it) }
+        .map { (i, a) -> i to a.toIpv4Addr() }
 
-fun scrambledIpV4AddressSequence(netAdr: InetAddress, bitWidth: Int) =
+fun scrambledIpV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
     (0L until (1 shl bitWidth)).asSequence()
-        .map { (netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth) }
-        .map { it.toIpv4Addr() }
+        .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth)) }
+        .map { (i, a) -> i to a.toIpv4Addr() }
 
 @Serializable
 internal data class Device(
@@ -84,12 +114,16 @@ private fun Long.reverseBit32(width: Int = 32): Long {
     return ((x shl 16) or (x ushr 16)) ushr (32 - width)
 }
 
-enum class SampleOID(val oid: String, val oidName: String) {
-    sysDescr("1.3.6.1.2.1.1.1", "sysDescr"),
-    sysName("1.3.6.1.2.1.1.5", "sysName"),
-    hrDeviceDescr("1.3.6.1.2.1.25.3.2.1.3", "hrDeviceDescr"),
-    prtGeneralPrinterName("1.3.6.1.2.1.43.5.1.1.16", "prtGeneralPrinterName"),
-    prtInputVendorName("1.3.6.1.2.1.43.8.2.1.14", "prtInputVendorName"),
-    prtOutputVendorName("1.3.6.1.2.1.43.9.2.1.8", "prtOutputVendorName"),
+@ExperimentalTime
+suspend fun delayUntilNextPeriod(
+    interval: Duration,
+    now: Instant = Clock.System.now(),
+    start: Instant = Instant.fromEpochMilliseconds(0),
+): Instant {
+    val runTime = when {
+        now < start -> start
+        else -> start + Duration.milliseconds(interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong())
+    }
+    delay(runTime - now)
+    return runTime
 }
-
