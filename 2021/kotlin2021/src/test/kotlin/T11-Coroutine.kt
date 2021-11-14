@@ -78,7 +78,7 @@ class `T11-Coroutine` {
             stopWatch { w ->
                 (1..2).map { async { threadBlockerToSuspendable() } }.awaitAll()
                 println(w.now())
-                assert((200..300).contains(w.now()))
+                assert((200..300).contains(w.now())) // 200ms必要
             }
         }
 
@@ -87,7 +87,7 @@ class `T11-Coroutine` {
             stopWatch { w ->
                 (1..2).map { async { threadBlockerToSuspendable() } }.awaitAll()
                 println(w.now())
-                assert((100..200).contains(w.now()))
+                assert((100..200).contains(w.now())) // 100msで終わる
             }
         }
     }
