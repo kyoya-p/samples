@@ -36,10 +36,10 @@ suspend fun main(args: Array<String>) = runBlocking {
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
     val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
     val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
-
     val baseAdr = baseIp.toIpv4Addr()
+
     val today = Clock.System.todayAt(currentSystemDefault())
-    val resultFile = File("${baseAdr.hostAddress}-$scanBits-$today.yaml")
+    val resultFile = File("samples/${baseAdr.hostAddress}-$scanBits-$today.yaml")
 
     val snmpBuilder = SnmpBuilder()
 
@@ -49,9 +49,11 @@ suspend fun main(args: Array<String>) = runBlocking {
 
     val start by lazy { Clock.System.now() }
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
-    val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
+    //val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
     //val sampleVBs = listOf<VariableBinding>()
+    val sampleVBs = listOf(SampleOID.sysDescr).map { VariableBinding(it.oid) }
 
+    val detectedIps = mutableSetOf<String>()
     var c = 0
     scrambledIpV4AddressSequence(baseAdr, scanBits).asFlow().map { (i, ip) ->
         async {
@@ -71,11 +73,14 @@ suspend fun main(args: Array<String>) = runBlocking {
             val vbs = ev.response.variableBindings.map { vb -> VBS(vb.oid.toMibString(), vb.variable) }
             Dev(ev.peerAddress.inetAddress.hostAddress, vbs)
         }.collect { dev ->
-            println(dev.ip)
-            @Suppress("BlockingMethodInNonBlockingContext")
-            resultFile.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(dev)))
-            @Suppress("BlockingMethodInNonBlockingContext")
-            resultFile.appendText("\n")
+            if (!detectedIps.contains(dev.ip)) {
+                detectedIps.add(dev.ip)
+                println(dev.ip)
+                @Suppress("BlockingMethodInNonBlockingContext")
+                resultFile.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(dev)))
+                @Suppress("BlockingMethodInNonBlockingContext")
+                resultFile.appendText("\n")
+            }
         }
     snmp.close()
 }
