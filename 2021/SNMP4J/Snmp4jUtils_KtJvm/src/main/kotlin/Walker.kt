@@ -1,6 +1,7 @@
 package jp.`live-on`.shokkaa
 
 import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -11,31 +12,44 @@ import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.io.File
 import java.net.InetAddress
 
+@Serializable
+data class VBYaml(val mib: String, val value: String)
+
+@Serializable
+data class DevYaml(val ip: String, val vbs: List<VBYaml>)
+
 fun main(args: Array<String>) {
-    val devIps = Yaml.default.decodeFromString<List<Dev>>(File(args[0]).readText())
+    val devIps =
+        Yaml.default.decodeFromString<List<DevYaml>>(File(args[0]).readText())
+            .map { dev -> dev.ip }
+            .distinct()
     println(devIps)
+    println(devIps.size)
+    return
 
     val transport = DefaultUdpTransportMapping()
     val snmp = Snmp(transport)
     transport.listen()
 
-    val targetAddress = UdpAddress(InetAddress.getByName("localhost"), 161)
-    val target = CommunityTarget<UdpAddress>(targetAddress, OctetString("public"))
-    target.version = SnmpConstants.version2c
+    devIps.forEach { ip ->
+        val targetAddress = UdpAddress(InetAddress.getByName(ip), 161)
+        val target = CommunityTarget<UdpAddress>(targetAddress, OctetString("public"))
+        target.version = SnmpConstants.version2c
 
-    var rep = ""
-    var repIndex = 0
+        var rep = ""
+        var repIndex = 0
 
-    val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
-    snmp.walk(initVbl, target).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
-        rep = rep + vbl.joinToString("\n", "", "\n")
-        if (rep.length >= 256) {
-            sendReport(repIndex, rep, false)
-            rep = ""
-            repIndex++
+        val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
+        snmp.walk(initVbl, target).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
+            rep = rep + vbl.joinToString("\n", "", "\n")
+            if (rep.length >= 256) {
+                sendReport(repIndex, rep, false)
+                rep = ""
+                repIndex++
+            }
         }
+        sendReport(repIndex, rep, true) //空でもcmplのためにレポートを送信する場合がある
     }
-    sendReport(repIndex, rep, true) //空でもcmplのためにレポートを送信する場合がある
 }
 
 fun Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<UdpAddress>) =
