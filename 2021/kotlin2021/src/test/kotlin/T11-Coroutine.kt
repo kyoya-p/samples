@@ -104,7 +104,7 @@ class `T11-Coroutine` {
                 }
             }.awaitAll()
             println(w.now())
-            assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので
+            assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので200msぐらい
         }
     }
 
@@ -120,8 +120,8 @@ class `T11-Coroutine` {
                 }
             }
         }
-        delay(350) // カウントが3に上がったころに
-        job.cancel() // ...中断
+        delay(350) // カウントが3に上がったころに..
+        job.cancel() // ..中断
         delay(300)
         assert(counter == 3)
 
