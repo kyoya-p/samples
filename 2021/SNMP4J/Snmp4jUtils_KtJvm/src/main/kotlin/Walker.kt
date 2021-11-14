@@ -1,16 +1,20 @@
 package jp.`live-on`.shokkaa
 
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import com.charleskorn.kaml.Yaml
+import kotlinx.serialization.decodeFromString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
 import org.snmp4j.mp.SnmpConstants
 import org.snmp4j.smi.*
 import org.snmp4j.transport.DefaultUdpTransportMapping
+import java.io.File
 import java.net.InetAddress
 
-fun main() {
+fun main(args: Array<String>) {
+    val devIps = Yaml.default.decodeFromString<List<Dev>>(File(args[0]).readText())
+    println(devIps)
+
     val transport = DefaultUdpTransportMapping()
     val snmp = Snmp(transport)
     transport.listen()

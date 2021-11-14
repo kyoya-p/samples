@@ -12,7 +12,6 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.decodeFromStream
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
@@ -25,6 +24,7 @@ import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
+@Suppress("BlockingMethodInNonBlockingContext")
 @ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
 @FlowPreview
@@ -34,7 +34,7 @@ suspend fun main(args: Array<String>) = runBlocking {
     @Suppress("BlockingMethodInNonBlockingContext")
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
-    val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
+    @Suppress("BlockingMethodInNonBlockingContext") val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
     val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
     val baseAdr = baseIp.toIpv4Addr()
 
