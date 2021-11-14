@@ -32,9 +32,14 @@ import kotlin.time.ExperimentalTime
 suspend fun main(args: Array<String>) = runBlocking {
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    val baseAdr = InetAddress.getByName(args.getOrNull(0) ?: "192.168.3.0")!!
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
+    val baseHost = args.getOrNull(0) ?: "192.168.3.0"
+    val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
     val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
+
+    val baseAdr = baseIp.toIpv4Addr()
+    val today = Clock.System.todayAt(currentSystemDefault())
+    val resultFile = File("${baseAdr.hostAddress}-$scanBits-$today.yaml")
 
     val snmpBuilder = SnmpBuilder()
 
@@ -44,7 +49,6 @@ suspend fun main(args: Array<String>) = runBlocking {
 
     val start by lazy { Clock.System.now() }
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
-    val today = Clock.System.todayAt(currentSystemDefault())
     val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
     //val sampleVBs = listOf<VariableBinding>()
 
@@ -53,7 +57,7 @@ suspend fun main(args: Array<String>) = runBlocking {
         async {
             val udpAdr = UdpAddress(ip, 161)
             val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
-                .timeout(5000).retries(1)
+                .timeout(5000).retries(2)
                 .build()
             print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> ${udpAdr} [${++c}] ")
             snmp.send(PDU(PDU.GETNEXT, sampleVBs), target)
@@ -65,13 +69,13 @@ suspend fun main(args: Array<String>) = runBlocking {
         .filter { it.peerAddress != null && it.response != null }
         .map { ev ->
             val vbs = ev.response.variableBindings.map { vb -> VBS(vb.oid.toMibString(), vb.variable) }
-            Dev(ev.peerAddress.toString(), vbs)
-        }.collect {
-            val writer = File("samples/scanner.$today.yaml")
+            Dev(ev.peerAddress.inetAddress.hostAddress, vbs)
+        }.collect { dev ->
+            println(dev.ip)
             @Suppress("BlockingMethodInNonBlockingContext")
-            writer.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(it)))
+            resultFile.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(dev)))
             @Suppress("BlockingMethodInNonBlockingContext")
-            writer.appendText("\n")
+            resultFile.appendText("\n")
         }
     snmp.close()
 }
