@@ -1,0 +1,8 @@
+- ip: "192.168.3.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M6050"
+- ip: "192.168.3.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M6050"
