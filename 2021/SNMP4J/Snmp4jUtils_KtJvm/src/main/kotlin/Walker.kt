@@ -1,6 +1,7 @@
 package jp.`live-on`.shokkaa
 
 import com.charleskorn.kaml.Yaml
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import org.snmp4j.CommunityTarget
@@ -13,19 +14,15 @@ import java.io.File
 import java.net.InetAddress
 
 @Serializable
-data class VBYaml(val mib: String, val value: String)
-
-@Serializable
-data class DevYaml(val ip: String, val vbs: List<VBYaml>)
+data class DevYaml(val ip: String, val vbs: List<VB>) {
+    @Serializable
+    data class VB(val mib: String, val value: String)
+}
 
 fun main(args: Array<String>) {
-    val devIps =
-        Yaml.default.decodeFromString<List<DevYaml>>(File(args[0]).readText())
-            .map { dev -> dev.ip }
-            .distinct()
-    println(devIps)
-    println(devIps.size)
-    return
+    val devIps = Yaml.default.decodeFromString<List<DevYaml>>(File(args[0]).readText())
+        .map { dev -> dev.ip }
+        .distinct()
 
     val transport = DefaultUdpTransportMapping()
     val snmp = Snmp(transport)
