@@ -108,28 +108,5 @@ class `T11-Coroutine` {
         }
     }
 
-    @Test
-    // Coroutineのキャンセル
-    fun `t11-キャンセル`(): Unit = runBlocking {
-        var counter = 0
-        val job = async { // 100msに1ずつカウントアップ
-            assertThrows<CancellationException> { // cancel()された場合例外が発生する。必要ならcatchして終了処理
-                while (isActive) { // while(true)の代わりにwhile(isActive)でループ
-                    delay(100) // コンテキストスイッチでcancel()されるので、Thread.sleep()はご法度
-                    counter++
-                }
-            }
-        }
-        delay(350) // カウントが3に上がったころに..
-        job.cancel() // ..中断
-        delay(300)
-        assert(counter == 3)
-
-        // cancel()後のawait()は例外を発生させる
-        assertThrows<CancellationException> {
-            job.await() //例外
-        }
-    }
-
 
 }
