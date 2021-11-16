@@ -34,7 +34,8 @@ suspend fun main(args: Array<String>) = runBlocking {
     @Suppress("BlockingMethodInNonBlockingContext")
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
-    @Suppress("BlockingMethodInNonBlockingContext") val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
+    @Suppress("BlockingMethodInNonBlockingContext") val baseIp =
+        InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
     val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
     val baseAdr = baseIp.toIpv4Addr()
 
@@ -97,16 +98,22 @@ data class Dev(val ip: String, val vbs: List<VBS>)
 private fun Long.toIpv4Addr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
 private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
 
+@Suppress("unused")
 fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
     (startIndex until (1 shl bitWidth)).asSequence()
         .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it) }
         .map { (i, a) -> i to a.toIpv4Addr() }
 
-fun scrambledIpV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
+fun scrambledIpV4AddressSequence(
+    netAdr: InetAddress, bitWidth: Int,
+    @Suppress("UNUSED_PARAMETER")
+    startIndex: Long = 0,
+) =
     (0L until (1 shl bitWidth)).asSequence()
         .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth)) }
         .map { (i, a) -> i to a.toIpv4Addr() }
 
+@Suppress("unused")
 @Serializable
 internal data class Device(
     val ip: String,
@@ -123,6 +130,7 @@ private fun Long.reverseBit32(width: Int = 32): Long {
     return ((x shl 16) or (x ushr 16)) ushr (32 - width)
 }
 
+@Suppress("unused")
 @ExperimentalTime
 suspend fun delayUntilNextPeriod(
     interval: Duration,
