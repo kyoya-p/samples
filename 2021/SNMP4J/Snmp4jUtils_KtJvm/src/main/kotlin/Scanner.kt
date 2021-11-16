@@ -1,6 +1,5 @@
-package jp.`live-on`.shokkaa
-
 import com.charleskorn.kaml.Yaml
+import jp.`live-on`.shokkaa.serializersModule
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
@@ -15,8 +14,6 @@ import kotlinx.serialization.encodeToString
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
-import suspendable
-import toMibString
 import java.io.File
 import java.math.BigInteger
 import java.net.InetAddress
@@ -37,7 +34,7 @@ suspend fun main(args: Array<String>) = runBlocking {
     @Suppress("BlockingMethodInNonBlockingContext") val baseIp =
         InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
     val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
-    val baseAdr = baseIp.toIpv4Addr()
+    val baseAdr = baseIp.toIpv4Adr()
 
     val today = Clock.System.todayAt(currentSystemDefault())
     val resultFile = File("samples/${baseAdr.hostAddress}-$scanBits-$today.yaml")
@@ -95,14 +92,14 @@ data class Dev(val ip: String, val vbs: List<VBS>)
 
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
-private fun Long.toIpv4Addr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
+private fun Long.toIpv4Adr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
 private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
 
 @Suppress("unused")
 fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
     (startIndex until (1 shl bitWidth)).asSequence()
         .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it) }
-        .map { (i, a) -> i to a.toIpv4Addr() }
+        .map { (i, a) -> i to a.toIpv4Adr() }
 
 fun scrambledIpV4AddressSequence(
     netAdr: InetAddress, bitWidth: Int,
@@ -111,7 +108,7 @@ fun scrambledIpV4AddressSequence(
 ) =
     (0L until (1 shl bitWidth)).asSequence()
         .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth)) }
-        .map { (i, a) -> i to a.toIpv4Addr() }
+        .map { (i, a) -> i to a.toIpv4Adr() }
 
 @Suppress("unused")
 @Serializable
