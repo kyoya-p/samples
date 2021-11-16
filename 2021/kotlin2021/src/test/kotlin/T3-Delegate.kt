@@ -18,21 +18,17 @@ class `T3-Delegate` {
 
     @Test
     fun `t02-デリゲートの定義`() {
-        class Mod5 {
-            var a = 0
-            operator fun getValue(thisRef: Any?, property: KProperty<*>): Int {
-                return a
-            }
-
+        class Mod5(private var a: Int = 0) {
+            operator fun getValue(thisRef: Any?, property: KProperty<*>) = a
             operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
                 a = value % 5
             }
         }
 
         var a by Mod5()
-        a = 3
-        assert(a == 3)
-        a = a + a
-        assert(a == 1)
+        a = 4
+        assert(a == 4)
+        a = a + 1
+        assert(a == 0)
     }
 }
