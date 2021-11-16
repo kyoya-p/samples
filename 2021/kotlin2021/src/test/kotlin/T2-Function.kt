@@ -1,7 +1,7 @@
 import org.junit.jupiter.api.Test
 
 @Suppress("NonAsciiCharacters")
-class `T1-Function` {
+class `T2-Function` {
     @Test
     fun t1_引数を与える値を返す関数() {
         fun add(a: Int, b: Int): Int {

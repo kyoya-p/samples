@@ -8,7 +8,7 @@ import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
 @Suppress("NonAsciiCharacters")
-class `T12-Coroutine_Flow` {
+class `T16-Coroutine_Flow` {
 
     @Test
     fun t1_flow() = runBlocking {

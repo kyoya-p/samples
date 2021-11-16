@@ -2,8 +2,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.*
+import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
@@ -57,11 +59,11 @@ class `T21-DateTime` {
 
     @Test
     @ExperimentalTime
-    fun `t11-周期的な実行`() = runBlocking {
+    fun `t11-周期的な実行1`() = runBlocking {
         suspend fun timer(interval: Duration, start: Instant = Clock.System.now(), op: (scheduled: Instant) -> Unit) {
             while (true) {
                 // 実行時刻まで待つ
-                val now = Clock.System.now()
+                val now = now()
                 val runTime = when {
                     now < start -> start
                     else -> start + interval * ((now - start + interval) / interval).roundToInt()
@@ -77,4 +79,29 @@ class `T21-DateTime` {
             job.cancel()
         }
     }
+
+    @ExperimentalTime
+    @Test
+    fun `t12-周期的な実行2`() = runBlocking {
+        stopWatch { w ->
+            for (i in 1..5) {
+                delayUntilNextPeriod(Duration.milliseconds(100))
+                println(w.now())
+            }
+        }
+    }
+}
+
+@ExperimentalTime
+suspend fun delayUntilNextPeriod(
+    interval: Duration,
+    now: Instant = now(),
+    start: Instant = Instant.fromEpochMilliseconds(0),
+): Instant {
+    val runTime = when {
+        now < start -> start
+        else -> start + Duration.milliseconds(interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong())
+    }
+    delay(runTime - now)
+    return runTime
 }
