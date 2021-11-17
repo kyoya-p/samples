@@ -1,3 +1,11 @@
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ChannelIterator
+import kotlinx.coroutines.channels.ChannelResult
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.selects.SelectClause1
+import kotlinx.coroutines.selects.SelectClause2
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KProperty
 
@@ -18,6 +26,7 @@ class `T1-Variable_Class` {
     fun `t02-クラスと継承`() {
         class C(val a: Int)
 
+        @Suppress("UNUSED_VARIABLE")
         val v = C(1)
 
         // class Sub() : C // syntax error: 基底クラスはopenで無ければならない
