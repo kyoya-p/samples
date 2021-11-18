@@ -7,9 +7,13 @@ import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 @Suppress("NonAsciiCharacters")
+// Kotlin 1.6~
 class `T21-DateTime` {
     @Test
     fun `t1-時刻`() {
@@ -36,7 +40,7 @@ class `T21-DateTime` {
 
         assert(dtUtc.hour == 0)
         assert(dtJpn.hour == 9)
-        assert(dtUtc.toInstant(TimeZone.UTC) - dtJpn.toInstant(TimeZone.of("Japan")) == Duration.hours(0))
+        assert(dtUtc.toInstant(TimeZone.UTC) - dtJpn.toInstant(TimeZone.of("Japan")) == 0.hours)
     }
 
     @ExperimentalTime
@@ -44,23 +48,23 @@ class `T21-DateTime` {
     fun `t3-期間`() {
         val t0 = Instant.fromEpochMilliseconds(0)
         val t1h = Instant.parse("1970-01-01T01:00:00Z")
-        val hour1 = Duration.hours(1)
+        val hour1 = 1.hours
         println(t0 + hour1)
         assert(t0 + hour1 == t1h)
         assert(t1h - hour1 == t0)
 
         fun daysOfFeb(year: Int) = Instant.parse("$year-03-01T00:00:00Z") - Instant.parse("$year-02-01T00:00:00Z")
-        assert(daysOfFeb(2000) == Duration.days(29))
-        assert(daysOfFeb(2001) == Duration.days(28))
-        assert(daysOfFeb(2003) == Duration.days(28))
-        assert(daysOfFeb(2004) == Duration.days(29))
-        assert(daysOfFeb(2100) == Duration.days(28))
+        assert(daysOfFeb(2000) == 29.days)
+        assert(daysOfFeb(2001) == 28.days)
+        assert(daysOfFeb(2003) == 28.days)
+        assert(daysOfFeb(2004) == 29.days)
+        assert(daysOfFeb(2100) == 28.days)
     }
 
     @Test
     @ExperimentalTime
     fun `t11-周期的な実行1`() = runBlocking {
-        suspend fun timer(interval: Duration, start: Instant = Clock.System.now(), op: (scheduled: Instant) -> Unit) {
+        suspend fun timer(interval: Duration, start: Instant = now(), op: (scheduled: Instant) -> Unit) {
             while (true) {
                 // 実行時刻まで待つ
                 val now = now()
@@ -74,7 +78,7 @@ class `T21-DateTime` {
         }
         stopWatch { w ->
             println("${w.now()}")
-            val job = launch { timer(Duration.milliseconds(100)) { println("${w.now()} ${Clock.System.now()}: $it") } }
+            val job = launch { timer(100.milliseconds) { println("${w.now()} ${now()}: $it") } }
             delay(600)
             job.cancel()
         }
@@ -85,7 +89,7 @@ class `T21-DateTime` {
     fun `t12-周期的な実行2`() = runBlocking {
         stopWatch { w ->
             for (i in 1..5) {
-                delayUntilNextPeriod(Duration.milliseconds(100))
+                delayUntilNextPeriod(100.milliseconds)
                 println(w.now())
             }
         }
@@ -100,7 +104,7 @@ suspend fun delayUntilNextPeriod(
 ): Instant {
     val runTime = when {
         now < start -> start
-        else -> start + Duration.milliseconds(interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong())
+        else -> start + (interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong()).milliseconds
     }
     delay(runTime - now)
     return runTime

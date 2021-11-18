@@ -1,13 +1,10 @@
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.onFailure
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.selects.select
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import kotlin.reflect.KProperty
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
@@ -51,7 +48,7 @@ class `T3-Delegate` {
             val n by lazy { now() }
             override suspend fun receive(): E {
 
-                delayUntilNextPeriod(milliseconds(30), start = n)
+                delayUntilNextPeriod(30.milliseconds, start = n)
                 return inner.receive()
             }
         }

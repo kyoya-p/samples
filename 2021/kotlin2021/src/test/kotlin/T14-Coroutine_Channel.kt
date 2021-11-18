@@ -1,11 +1,8 @@
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.getOrElse
 import kotlinx.coroutines.channels.onFailure
-import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 
@@ -33,11 +30,11 @@ class `T14-Coroutine_Channel` {
     fun `t02-スロットル付きQueue`(): Unit = runBlocking {
         val queIn = Channel<Int>(5)
         val queOut = Channel<Int>()
-        val que = launch {
+        launch {
             runCatching {
                 while (true) {
                     queOut.send(queIn.receive())
-                    delayUntilNextPeriod(Duration.Companion.milliseconds(50))
+                    delayUntilNextPeriod(50.milliseconds)
                 }
             }.getOrNull()
             queOut.close()
@@ -48,7 +45,7 @@ class `T14-Coroutine_Channel` {
                 while (true) {
                     val q = queOut.receiveCatching().onFailure { return@launch }.getOrNull()!!
                     val n = w.now()
-                    println("${w.now() / q.toDouble()} + ${n - last} : ${q}")
+                    println("${w.now() / q.toDouble()} + ${n - last} : $q")
                     last = n
                 }
             }

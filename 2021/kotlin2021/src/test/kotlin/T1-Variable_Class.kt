@@ -1,13 +1,4 @@
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ChannelIterator
-import kotlinx.coroutines.channels.ChannelResult
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.selects.SelectClause1
-import kotlinx.coroutines.selects.SelectClause2
 import org.junit.jupiter.api.Test
-import kotlin.reflect.KProperty
 
 @Suppress("NonAsciiCharacters")
 class `T1-Variable_Class` {
@@ -22,8 +13,10 @@ class `T1-Variable_Class` {
         println(c)
     }
 
+    @Suppress("unused")
     @Test
     fun `t02-クラスと継承`() {
+        @Suppress("UNUSED_VARIABLE")
         class C(val a: Int)
 
         @Suppress("UNUSED_VARIABLE")
@@ -31,8 +24,9 @@ class `T1-Variable_Class` {
 
         // class Sub() : C // syntax error: 基底クラスはopenで無ければならない
         open class Base(val a: Int)
-        class Sub(a: Int) : Base(a) {}
 
+        @Suppress("UNUSED_VARIABLE")
+        class Sub(a: Int) : Base(a)
     }
 
     @Test
