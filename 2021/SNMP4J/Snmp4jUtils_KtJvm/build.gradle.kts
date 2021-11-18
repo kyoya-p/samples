@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.0"
     kotlin("plugin.serialization") version "1.5.31"
     id("org.jetbrains.kotlinx.kover") version "0.4.1"
     `maven-publish`
@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.5.31")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
@@ -41,6 +41,13 @@ publishing {
             from(components["kotlin"])
         }
     }
+
+    repositories {
+        maven {
+            url = uri(layout.buildDirectory.dir("repo"))
+        }
+    }
+
 }
 
 kover {

@@ -1,7 +1,6 @@
 package jp.`live-on`.shokkaa
 
 import com.charleskorn.kaml.Yaml
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import org.snmp4j.CommunityTarget
@@ -23,6 +22,8 @@ fun main(args: Array<String>) {
     val devIps = Yaml.default.decodeFromString<List<DevYaml>>(File(args[0]).readText())
         .map { dev -> dev.ip }
         .distinct()
+    devIps.forEach { println(it) }
+    return
 
     val transport = DefaultUdpTransportMapping()
     val snmp = Snmp(transport)
@@ -45,7 +46,7 @@ fun main(args: Array<String>) {
                 repIndex++
             }
         }
-        sendReport(repIndex, rep, true) //空でもcmplのためにレポートを送信する場合がある
+        sendReport(repIndex, rep, true) //空でもcomplete通知のためにレポートを送信する場合がある
     }
 }
 
@@ -56,10 +57,10 @@ fun Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<UdpAddress
         vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
     }
 
-fun sendReport(index: Int, rep: String, cmpl: Boolean) {
+fun sendReport(index: Int, rep: String, complete: Boolean) {
     println("Report: {")
     println("  index: $index,")
-    println("  complete: $cmpl,")
+    println("  complete: $complete,")
     print(rep)
     println("}")
 }

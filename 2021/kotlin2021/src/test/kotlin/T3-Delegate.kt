@@ -24,19 +24,21 @@ class `T3-Delegate` {
     }
 
     @Test
-    fun `t02-デリゲートの定義_関数デリゲート`() {
-        class Mod5(private var a: Int = 0) {
+    fun `t02-デリゲートの定義_プロパティデリゲート`() {
+        class month(private var a: Int = 1) {
             operator fun getValue(thisRef: Any?, property: KProperty<*>) = a
             operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
-                a = value % 5
+                a = (value - 1) % 12 + 1
             }
         }
 
-        var a by Mod5()
-        a = 4
-        assert(a == 4)
-        a = a + 1
-        assert(a == 0)
+        var a by month()
+        a = 12
+        assert(a == 12)
+        a += 1
+        assert(a == 1)
+        a -= 2
+        assert(a == 11)
     }
 
     @ExperimentalTime
@@ -47,7 +49,6 @@ class `T3-Delegate` {
         ) : Channel<E> by inner {
             val n by lazy { now() }
             override suspend fun receive(): E {
-
                 delayUntilNextPeriod(30.milliseconds, start = n)
                 return inner.receive()
             }
