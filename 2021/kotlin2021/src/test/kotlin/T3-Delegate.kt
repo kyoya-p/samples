@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.*
 import kotlin.NoSuchElementException
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.milliseconds
@@ -30,7 +31,7 @@ class `T3-Delegate` {
         class month(private var a: Int = 1) {
             operator fun getValue(thisRef: Any?, property: KProperty<*>) = a
             operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
-                a = (value - 1) % 12 + 1
+                a = (value - 1).mod(12) + 1
             }
         }
 
@@ -40,6 +41,7 @@ class `T3-Delegate` {
         a += 1
         assert(a == 1)
         a -= 2
+        println(a)
         assert(a == 11)
     }
 
@@ -93,5 +95,12 @@ class `T3-Delegate` {
         b = "new"
         println(m)
         assert(m["b"] == "new")
+
+        // JavaのDictionaryもOK
+        val props = Properties()
+        var ja: String by props
+        ja = "value of ja"
+        println(props)
+        assert(props["ja"] == "value of ja")
     }
 }
