@@ -4,6 +4,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import kotlin.NoSuchElementException
 import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
@@ -72,4 +74,24 @@ class `T3-Delegate` {
         }
     }
 
+    @Suppress("UNUSED_VALUE")
+    @Test
+    fun `t04-by Map`() {
+        val m = mutableMapOf("a" to "b")
+        var a: String by m
+        println(a)
+        assert(a == "b")
+
+        a = "z"
+        println(m)
+        assert(m["a"] == "z")
+
+        var b: String by m
+        assertThrows<NoSuchElementException> {
+            println(b)
+        }
+        b = "new"
+        println(m)
+        assert(m["b"] == "new")
+    }
 }
