@@ -40,6 +40,7 @@ publishing {
                 password = "8e1c50c5-ef52-4942-8030-d65ac39e1dd4" // System.getenv("MAVEN_TOKEN")
             }
         }
+
         maven {
             name = "GitHub" // nameを明示した場合、publishMavenPublicationToGitHubRepository などが使える
             url = uri("https://kyoya-p.github.io/samples/myrepos")

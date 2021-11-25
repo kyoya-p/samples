@@ -1,4 +1,6 @@
 import io.ktor.client.*
+import io.ktor.client.engine.*
+import io.ktor.client.engine.ProxyBuilder.http
 import io.ktor.client.engine.cio.*
 import io.ktor.client.features.*
 import io.ktor.client.request.*
@@ -9,7 +11,11 @@ import java.net.URL
 class KtorClient_CIO {
     @Test
     fun t1(): Unit = runBlocking {
-        val client = HttpClient(CIO)
+        val client = HttpClient(CIO) {
+            engine {
+                proxy = ProxyBuilder.http("http://192.168.81.175:3080")
+            }
+        }
         val r = client.get<String>(URL("https://google.com"))
         println(r)
     }
