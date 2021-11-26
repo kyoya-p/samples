@@ -49,7 +49,7 @@ public class mk211127 {
 
     @Test
     void d5_split2() {
-        String[] r = ("0x" + "X1X2X3").split("[^\\d]+");
+        String[] r = ("0z" + "X1X2X3").split("[^\\d]+");
         int s = 0;
         for (String e : r) {
             s += Integer.parseInt(e);
