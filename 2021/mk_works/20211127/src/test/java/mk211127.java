@@ -30,7 +30,7 @@ public class mk211127 {
     }
 
     @Test
-    void d3() {
+    void d3_StringFormat() {
         String[] people = new String[]{"pa", "pb"};
         String[] verbs = new String[]{"v1", "v2"};
         String[] nouns = new String[]{"n1", "n2"};
