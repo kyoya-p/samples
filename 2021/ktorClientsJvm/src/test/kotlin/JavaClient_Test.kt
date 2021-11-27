@@ -12,4 +12,9 @@ class JavaClient_Test {
         val r = client.send(req, HttpResponse.BodyHandlers.ofString())
         println(r.body())
     }
+
+    @Test
+    fun t22() {
+        println(System.getProperty("jdk.tls.disabledAlgorithm"))
+    }
 }

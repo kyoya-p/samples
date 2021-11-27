@@ -17,7 +17,8 @@ public class JavaClient {
 
     public JavaClient() throws KeyManagementException, NoSuchAlgorithmException {
         sslParameters = new SSLParameters();
-        sslParameters.setProtocols(new String[]{"TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"});
+        //sslParameters.setProtocols(new String[]{"TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"});
+        sslParameters.setProtocols(new String[]{"TLSv1", "TLSv1.1", "TLSv1.3"});
         sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
         final Properties props = System.getProperties();
