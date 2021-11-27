@@ -29,10 +29,10 @@ class KtorClient_Apache {
     fun t1(): Unit = runBlocking {
         val client = HttpClient(Apache) {
             engine {
-                sslContext = SSLContext.getInstance("TLS")
-                    .apply {
-                        init(null, arrayOf(TrustAllX509TrustManager()), SecureRandom())
-                    }
+                sslContext = SSLContext.getInstance("TLS").apply {
+                    init(null, arrayOf(TrustAllX509TrustManager()), SecureRandom())
+                    protocol
+                }
 
             }
         }
@@ -40,7 +40,4 @@ class KtorClient_Apache {
         println(r)
     }
 
-    @Test
-    fun t2() {
-    }
 }
