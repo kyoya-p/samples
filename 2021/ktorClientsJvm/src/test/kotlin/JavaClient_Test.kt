@@ -1,6 +1,5 @@
 import org.junit.jupiter.api.Test
 import java.net.URI
-import java.net.URL
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
