@@ -24,6 +24,7 @@ class KtorClient_CIO {
                 https {
                     val alias = "target"
                     val keystore = buildKeyStore {
+
                         certificate(alias) {
                             hash = HashAlgorithm.SHA256
                             sign = SignatureAlgorithm.ECDSA
@@ -31,7 +32,7 @@ class KtorClient_CIO {
                             password = "changeit"
                         }
                     }
-                    keystore.load()
+                    keystore.load(File(""))
 
                     addKeyStore(keystore, "changeit".toCharArray() as CharArray?, "target")
                 }
