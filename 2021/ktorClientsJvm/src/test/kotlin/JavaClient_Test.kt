@@ -7,7 +7,7 @@ class JavaClient_Test {
     @Test
     fun test() {
         val client = JavaClient().httplClient
-        val req = HttpRequest.newBuilder().uri(URI.create("https://sec-auth03.nara.sharp.co.jp"))
+        val req = HttpRequest.newBuilder().uri(URI.create("https://localhost"))
             .build()
         val r = client.send(req, HttpResponse.BodyHandlers.ofString())
         println(r.body())

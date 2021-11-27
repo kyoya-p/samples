@@ -43,7 +43,7 @@ class KtorClient_CIO {
                 }
             }
         }
-        val r = client.get<String>(URL("https://sec-auth03.nara.sharp.co.jp"))
+        val r = client.get<String>(URL("http://localhost"))
         println(r)
     }
 
