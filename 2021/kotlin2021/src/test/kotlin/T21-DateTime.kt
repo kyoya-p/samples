@@ -12,7 +12,8 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-@Suppress("NonAsciiCharacters")
+@ExperimentalTime
+@Suppress("NonAsciiCharacters", "ClassName")
 // Kotlin 1.6~
 class `T21-DateTime` {
     @Test

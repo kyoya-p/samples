@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.6.0")
+
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
