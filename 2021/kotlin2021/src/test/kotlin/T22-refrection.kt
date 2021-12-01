@@ -42,7 +42,7 @@ class `T22-refrection` {
     fun t5_companionObject() {
         println(A::class.companionObject?.members)
         println(A::class.companionObject?.declaredFunctions)
-        println(A::extFuncOfA::class.supertypes)
+        println(A::class.supertypes)
     }
 
     @Test
