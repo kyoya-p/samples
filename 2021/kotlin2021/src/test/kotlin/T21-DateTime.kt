@@ -5,7 +5,6 @@ import kotlinx.datetime.*
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -95,19 +94,5 @@ class `T21-DateTime` {
             }
         }
     }
-
-    @ExperimentalTime
-    suspend fun delayUntilNextPeriod(
-        interval: Duration,
-        now: Instant = now(),
-        start: Instant = Instant.fromEpochMilliseconds(0),
-    ): Instant {
-        val runTime = when {
-            now < start -> start
-            else -> start + (interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong()).milliseconds
-        }
-        delay(runTime - now)
-        return runTime
-    }
-
 }
+

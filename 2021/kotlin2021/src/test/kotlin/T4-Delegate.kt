@@ -12,7 +12,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 @Suppress("NonAsciiCharacters")
-class `T3-Delegate` {
+class `T4-Delegate` {
     @Test
     fun `t01-lazy遅延初期化`() {
         var c = 3
@@ -39,6 +39,7 @@ class `T3-Delegate` {
         a = 12
         assert(a == 12)
         a += 1
+        @Suppress("KotlinConstantConditions")
         assert(a == 1)
         a -= 2
         println(a)
@@ -98,6 +99,8 @@ class `T3-Delegate` {
 
         // JavaのDictionaryもOK
         val props = Properties()
+
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
         var ja: String by props
         ja = "value of ja"
         println(props)
