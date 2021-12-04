@@ -1,13 +1,12 @@
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.DEFAULT_BUFFER_PROPERTY_NAME
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import kotlin.time.ExperimentalTime
 
 @ExperimentalTime
-@Suppress("NonAsciiCharacters")
+@Suppress("NonAsciiCharacters", "TestFunctionName", "ClassName")
 class `T16-Coroutine_Flow` {
 
     @Test
@@ -62,6 +61,7 @@ class `T16-Coroutine_Flow` {
     }
 
     @Test
+    @Suppress("unused")
     // シンクの処理が遅くても、バッファを設定することでソースだけは高速で出力できる
     fun t5_スループット_buffer() = runBlocking {
         stopWatch { w ->

@@ -49,22 +49,23 @@ class `T22-refrection` {
     fun t6_misc() {
         println(Any::class)
     }
-}
 
-@Suppress("ClassName", "unused")
-class A {
-    class sub1A
-    class sub2A
 
-    fun funOfA() {}
-    val propOfA: Int = 1
+    @Suppress("unused")
+    fun A.extFuncOfA() {}
+    @Suppress("unused")
+    val A.extPropOfA: Int get() = 1
 
-    companion object {
-        fun staticFunOfA() {}
+    @Suppress("ClassName", "unused")
+    class A {
+        class sub1A
+        class sub2A
+
+        fun funOfA() {}
+        val propOfA: Int = 1
+
+        companion object {
+            fun staticFunOfA() {}
+        }
     }
 }
-
-@Suppress("unused")
-fun A.extFuncOfA() {}
-@Suppress("unused")
-val A.extPropOfA: Int get() = 1

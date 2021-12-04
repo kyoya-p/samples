@@ -95,18 +95,19 @@ class `T21-DateTime` {
             }
         }
     }
-}
 
-@ExperimentalTime
-suspend fun delayUntilNextPeriod(
-    interval: Duration,
-    now: Instant = now(),
-    start: Instant = Instant.fromEpochMilliseconds(0),
-): Instant {
-    val runTime = when {
-        now < start -> start
-        else -> start + (interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong()).milliseconds
+    @ExperimentalTime
+    suspend fun delayUntilNextPeriod(
+        interval: Duration,
+        now: Instant = now(),
+        start: Instant = Instant.fromEpochMilliseconds(0),
+    ): Instant {
+        val runTime = when {
+            now < start -> start
+            else -> start + (interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong()).milliseconds
+        }
+        delay(runTime - now)
+        return runTime
     }
-    delay(runTime - now)
-    return runTime
+
 }
