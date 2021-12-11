@@ -14,10 +14,13 @@ repositories {
     google()
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+
+    mavenLocal()
 }
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
 }
 
 tasks.withType<KotlinCompile> {

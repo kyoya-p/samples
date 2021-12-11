@@ -25,6 +25,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 }
 
+// usage sample
+dependencies {
+    implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
+}
+
 tasks.test {
     useJUnitPlatform()
 }

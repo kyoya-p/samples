@@ -19,6 +19,7 @@ import java.math.BigInteger
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 @Suppress("BlockingMethodInNonBlockingContext")
@@ -31,9 +32,10 @@ suspend fun main(args: Array<String>) = runBlocking {
     @Suppress("BlockingMethodInNonBlockingContext")
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
-    @Suppress("BlockingMethodInNonBlockingContext") val baseIp =
-        InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
-    val sendInterval = Duration.milliseconds(args.getOrNull(2)?.toInt() ?: 100)
+
+    @Suppress("BlockingMethodInNonBlockingContext")
+    val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
+    val sendInterval = (args.getOrNull(2)?.toInt() ?: 100).milliseconds
     val baseAdr = baseIp.toIpv4Adr()
 
     val today = Clock.System.todayAt(currentSystemDefault())
@@ -59,7 +61,7 @@ suspend fun main(args: Array<String>) = runBlocking {
             val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
                 .timeout(5000).retries(2)
                 .build()
-            print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> ${udpAdr} [${++c}] ")
+            print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> $udpAdr [${++c}] ")
             snmp.send(PDU(PDU.GETNEXT, sampleVBs), target)
         }
     }
@@ -136,7 +138,7 @@ suspend fun delayUntilNextPeriod(
 ): Instant {
     val runTime = when {
         now < start -> start
-        else -> start + Duration.milliseconds(interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong())
+        else -> start + (interval.inWholeMilliseconds * ((now - start + interval) / interval).roundToLong()).milliseconds
     }
     delay(runTime - now)
     return runTime

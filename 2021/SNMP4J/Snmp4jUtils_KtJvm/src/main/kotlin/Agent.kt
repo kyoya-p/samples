@@ -16,6 +16,59 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.util.*
 
+
+typealias ResponderEvent = CommandResponderEvent<UdpAddress>
+
+suspend fun snmpAgent(
+    snmp: Snmp,
+    cbResponse: (req: ResponderEvent) -> PDU,
+) {
+    snmp.addCommandResponder { ev: CommandResponderEvent<UdpAddress> ->
+        val target = CommunityTarget<UdpAddress>().apply {
+            community = OctetString("public")
+            address = ev.peerAddress
+            version = SnmpConstants.version1
+            timeout = 0
+            retries = 0
+        }
+        snmp.send(cbResponse(ev), target)
+    }
+    snmp.listen()
+}
+
+@Suppress("BlockingMethodInNonBlockingContext")
+suspend fun snmpAgent(
+    host: String = "0.0.0.0",
+    port: Int = 161,
+    cbResponse: (req: ResponderEvent) -> PDU,
+) = snmpAgent(Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName(host), port))), cbResponse)
+
+@Suppress("BlockingMethodInNonBlockingContext")
+suspend fun snmpAgent(
+    mibMap: TreeMap<OID, VariableBinding>,
+    host: String = "0.0.0.0",
+    port: Int = 161,
+) = snmpAgent(Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName(host), port)))) { ev ->
+    val resPdu = ev.pdu
+    resPdu.apply {
+        type = PDU.RESPONSE
+        errorIndex = 0
+        errorStatus = PDU.noError
+        variableBindings = ev.pdu.variableBindings.mapIndexed { i, vb ->
+            when (ev.pdu.type) {
+                PDU.GETNEXT -> mibMap.get(vb.oid)
+                else -> mibMap.higherEntry(vb.oid).value
+            } ?: VariableBinding(vb.oid, noSuchObject).also {
+                errorStatus = PDU.noSuchName
+                if (errorIndex == 0) errorIndex = i
+            }
+        }
+    }
+}
+
+
+// ----------------------------------------------
+
 fun interface MIBMapper {
     fun requestEvent(ev: CommandResponderEvent<UdpAddress>): PDU?
 }

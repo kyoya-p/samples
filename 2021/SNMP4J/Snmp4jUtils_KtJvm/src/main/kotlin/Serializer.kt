@@ -20,6 +20,7 @@ import org.snmp4j.smi.*
 // Valueに関して、0~0x1f,0x80~0xff,':', 以外は':xx'にエスケープ
 // TODO 手抜き:本来はJsonObjectに変換すべき
 
+@ExperimentalSerializationApi
 val serializersModule = SerializersModule {
     contextual(VariableAsStringSerializer)
     contextual(VariableBindingAsStringSerializer)
@@ -28,7 +29,7 @@ val serializersModule = SerializersModule {
 @ExperimentalSerializationApi
 val jsonSnmp4j = Json {
     prettyPrint = true
-    serializersModule = serializersModule
+    this.serializersModule = serializersModule
 }
 
 @ExperimentalSerializationApi
