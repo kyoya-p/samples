@@ -1,6 +1,7 @@
 package jp.`live-on`.shokkaa
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -33,7 +34,7 @@ suspend fun snmpAgentFlow(snmp: Snmp) = callbackFlow {
     }
     runCatching {
         snmp.addCommandResponder(commandResponder)
-        awaitClose()
+        awaitClose { cancel() }
         snmp.removeCommandResponder(commandResponder)
     }.onFailure {
         snmp.removeCommandResponder(commandResponder)
