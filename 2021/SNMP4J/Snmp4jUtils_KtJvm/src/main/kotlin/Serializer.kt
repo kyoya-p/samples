@@ -36,12 +36,12 @@ val jsonSnmp4j = Json {
 @Serializer(forClass = VariableBinding::class)
 object VariableAsStringSerializer : KSerializer<Variable> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("VariableBinding", PrimitiveKind.STRING)
-    override fun serialize(encoder: Encoder, v: Variable) {
-        val sValue = when (v) {
-            is OctetString -> v.value.escaped()
-            else -> v.toString()
+    override fun serialize(encoder: Encoder, value: Variable) {
+        val sValue = when (value) {
+            is OctetString -> value.value.escaped()
+            else -> value.toString()
         }
-        encoder.encodeString("%s %s".format(v.syntax, sValue))
+        encoder.encodeString("%s %s".format(value.syntax, sValue))
     }
 
     override fun deserialize(decoder: Decoder): Variable {

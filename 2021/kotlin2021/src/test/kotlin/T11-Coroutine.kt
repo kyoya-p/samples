@@ -1,7 +1,11 @@
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.sync.Semaphore
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.concurrent.thread
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.ExperimentalTime
@@ -64,7 +68,7 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun `t03-ブロック関数をサスペンドで待つ`() {
+    fun `t03-ブロッキング関数をサスペンドに変換`() {
         fun threadBlocker() = Thread.sleep(100)
 
         suspend fun threadBlockerToSuspendable() = suspendCoroutine<Unit> { continuation ->
@@ -73,7 +77,7 @@ class `T11-Coroutine` {
         }
 
         // デフォルトでCoroutineはシングルスレッド(Dispatchers.Main)で実行される
-        // 結局Thread Breakerによって全体がブロックされる。
+        // 結局Thread Blockerによって全体がブロックされる。
         runBlocking {
             stopWatch { w ->
                 (1..2).map { async { threadBlockerToSuspendable() } }.awaitAll()
@@ -89,6 +93,43 @@ class `T11-Coroutine` {
                 println(w.now())
                 assert((100..200).contains(w.now())) // 100msで終わる
             }
+        }
+    }
+
+    @ExperimentalCoroutinesApi
+    @Test
+    fun `t04-コールバック関数をサスペンドに変換`() {
+        fun callbackWithAnotherThread(callback: (Int) -> Unit) {
+            thread {
+                Thread.sleep(100)
+                callback(1)
+                Thread.sleep(100)
+                callback(2)
+            }
+        }
+
+        suspend fun collbackWithCoroutine(callback: suspend (Int) -> Unit) = callbackFlow {
+            callbackWithAnotherThread {
+                trySend(it)
+                if (it == 2) close() // 終了したい場合
+            }
+            awaitClose()
+        }.collectLatest {
+            callback(it)
+        }
+
+        runBlocking() {
+            stopWatch { w ->
+                launch {
+                    collbackWithCoroutine {
+                        println("${w.now()} $it")
+                    }
+                }
+                collbackWithCoroutine {
+                    println("${w.now()} $it")
+                }
+            }
+
         }
     }
 
