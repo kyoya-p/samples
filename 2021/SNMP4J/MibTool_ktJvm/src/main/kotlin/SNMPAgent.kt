@@ -176,10 +176,6 @@ class SNMPAgent(val mib: TreeMap<OID, VariableBinding>
 
     fun run(): SNMPAgent {
         snmp.listen()
-        snmp.addCommandResponder{
-
-        }
-
         snmp.addCommandResponder { ev ->
             print(ev.pdu)
             val resPdu = PDU(ev.pdu).apply {

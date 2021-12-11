@@ -1,4 +1,3 @@
-import kotlinx.coroutines.cancel
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
 import org.snmp4j.Target
