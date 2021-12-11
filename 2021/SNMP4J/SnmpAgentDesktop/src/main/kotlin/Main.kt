@@ -6,22 +6,26 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import jp.`live-on`.shokkaa.mibTest
+import jp.`live-on`.shokkaa.mibMapTest
 import jp.`live-on`.shokkaa.snmpAgent
+import kotlinx.coroutines.delay
 
 @Composable
 @Preview
 fun App() {
-    var text by remember { mutableStateOf("Hello, World!") }
+    var isRunning by remember { mutableStateOf(false) }
 
     MaterialTheme {
-        LaunchedEffect(Unit) {
-            snmpAgent(mibMapTest)
+        LaunchedEffect(isRunning) {
+            while (isRunning) {
+                snmpAgent(mibMapTest)
+                delay(500)
+            }
         }
         Button(onClick = {
-            text = "Hello, Desktop!"
+            isRunning = !isRunning
         }) {
-            Text(text)
+            Text("$isRunning")
         }
     }
 }

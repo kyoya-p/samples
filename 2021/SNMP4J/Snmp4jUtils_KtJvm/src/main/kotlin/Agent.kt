@@ -34,8 +34,10 @@ suspend fun snmpAgentFlow(snmp: Snmp) = callbackFlow {
     runCatching {
         snmp.addCommandResponder(commandResponder)
         awaitClose()
+        snmp.removeCommandResponder(commandResponder)
+    }.onFailure {
+        snmp.removeCommandResponder(commandResponder)
     }
-    snmp.removeCommandResponder(commandResponder)
 }
 
 @Suppress("BlockingMethodInNonBlockingContext", "unused")
