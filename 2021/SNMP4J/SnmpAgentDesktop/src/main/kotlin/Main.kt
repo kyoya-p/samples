@@ -27,15 +27,15 @@ fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
 @Preview
 fun App() {
     var isRunning by remember { mutableStateOf(true) }
-    var logs by remember { mutableStateOf("") }
+    var logs by remember { mutableStateOf("Logs------------------") }
 
     MaterialTheme {
         LaunchedEffect(isRunning) {
             while (isRunning) {
                 snmpAgentFlow(mibMapTest) { ev, pdu ->
-                    val log = "${now().toString()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]"
-                    println(log)
-                    logs += log + "\n"
+                    val log = "${now()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]"
+                    logs = "$logs\n$log"
+                    println(logs)
                     pdu
                 }.collect { }
                 delay(500)
@@ -57,6 +57,7 @@ fun App() {
     }
 }
 
+@ExperimentalCoroutinesApi
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
         App()
@@ -65,9 +66,8 @@ fun main() = application {
 
 @Composable
 fun Logs(logs: String) {
-    var logs by remember { mutableStateOf(logs) }
     val stateScroll = rememberScrollState()
 
-    LaunchedEffect(logs) { stateScroll.animateScrollTo(stateScroll.maxValue) }
+    LaunchedEffect(stateScroll) { stateScroll.animateScrollTo(stateScroll.maxValue) }
     Text(logs, modifier = Modifier.verticalScroll(stateScroll))
 }
