@@ -16,7 +16,7 @@ import kotlin.time.ExperimentalTime
 // Kotlin 1.6~
 class `T21-DateTime` {
     @Test
-    fun `t1-時刻`() {
+    fun `t01-時刻`() {
         val t0 = Instant.fromEpochMilliseconds(0)
         val t01 = Instant.parse("1970-01-01T00:00:00Z") //タイムz－ン'Z'は必要
 
@@ -27,7 +27,7 @@ class `T21-DateTime` {
 
     @ExperimentalTime
     @Test
-    fun `t2-タイムゾーン付き時刻`() {
+    fun `t02-タイムゾーン付き時刻`() {
         // ZoneId定義
         assert(TimeZone.availableZoneIds.contains("Asia/Tokyo"))
         assert(TimeZone.availableZoneIds.contains("Japan"))
@@ -45,7 +45,7 @@ class `T21-DateTime` {
 
     @ExperimentalTime
     @Test
-    fun `t3-期間`() {
+    fun `t03-期間`() {
         val t0 = Instant.fromEpochMilliseconds(0)
         val t1h = Instant.parse("1970-01-01T01:00:00Z")
         val hour1 = 1.hours
@@ -93,6 +93,14 @@ class `T21-DateTime` {
                 println(w.now())
             }
         }
+    }
+
+    @Test
+    fun `t31-formatting_成形`() {
+        fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+            .run { "%04d%02d%02d.%02d%02d%02dZ".format(year, monthNumber, dayOfMonth, hour, minute, second) }
+
+        assert(now().matches(Regex("""\d{8}\.\d{6}Z""")))
     }
 }
 

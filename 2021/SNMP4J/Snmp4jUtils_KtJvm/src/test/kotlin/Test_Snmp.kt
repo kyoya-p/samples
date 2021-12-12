@@ -1,4 +1,3 @@
-import jp.`live-on`.shokkaa.SampleOID
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget

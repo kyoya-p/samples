@@ -11,8 +11,11 @@ import jp.`live-on`.shokkaa.snmpAgent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+
+fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+    .run { "%04d%02d%02d.%02d%02d%02dZ".format(year, monthNumber, dayOfMonth, hour, minute, second) }
 
 @ExperimentalCoroutinesApi
 @Composable
@@ -24,7 +27,7 @@ fun App() {
         LaunchedEffect(isRunning) {
             while (isRunning) {
                 snmpAgent(mibMapTest) { ev, pdu ->
-                    println("${now()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]")
+                    println("${now().toString()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]")
                     pdu
                 }
                 delay(500)
