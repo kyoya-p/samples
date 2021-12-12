@@ -1,23 +1,13 @@
 package jp.`live-on`.shokkaa
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.decodeFromStream
 import org.snmp4j.*
-import org.snmp4j.mp.MPv1
-import org.snmp4j.mp.MPv3
-import org.snmp4j.mp.SnmpConstants
-import org.snmp4j.security.SecurityProtocols
-import org.snmp4j.security.USM
 import org.snmp4j.smi.*
 import org.snmp4j.smi.Null.noSuchObject
 import org.snmp4j.transport.DefaultUdpTransportMapping
-import java.io.File
-import java.net.Inet4Address
 import java.net.InetAddress
 import java.util.*
 
@@ -48,10 +38,11 @@ suspend fun snmpAgent(
     mibMap: TreeMap<OID, VariableBinding>,
     host: String = "0.0.0.0",
     port: Int = 161,
+    op: (ev: ResponderEvent, resPdu: PDU) -> PDU? = { _, pdu -> pdu },
 ) = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName(host), port))).use { snmp ->
     snmpAgentFlow(snmp).collectLatest { ev ->
-        val resPdu = ev.pdu
-        resPdu.apply {
+        println("${ev.peerAddress}")//TODO
+        val resPdu0 = PDU().apply {
             type = PDU.RESPONSE
             errorIndex = 0
             errorStatus = PDU.noError
@@ -64,6 +55,10 @@ suspend fun snmpAgent(
                     if (errorIndex == 0) errorIndex = i
                 }
             }
+        }
+        op(ev, resPdu0)?.let { resPdu ->
+            val resTarget = CommunityTarget(ev.peerAddress, OctetString("public"))
+            snmp.send(resPdu, resTarget)
         }
     }
 }

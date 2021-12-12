@@ -21,10 +21,11 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
+    implementation("org.snmp4j:snmp4j:3.6.0")
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "16"
 }
 
 compose.desktop {

@@ -8,8 +8,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import jp.`live-on`.shokkaa.mibMapTest
 import jp.`live-on`.shokkaa.snmpAgent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 
+@ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun App() {
@@ -18,14 +20,21 @@ fun App() {
     MaterialTheme {
         LaunchedEffect(isRunning) {
             while (isRunning) {
-                snmpAgent(mibMapTest)
+                snmpAgent(mibMapTest) { ev, pdu ->
+                    println("${ev.peerAddress}")
+                    pdu
+                }
                 delay(500)
             }
         }
         Button(onClick = {
             isRunning = !isRunning
         }) {
-            Text("$isRunning")
+            val btnFace = when (isRunning) {
+                true -> "Running/Stop"
+                false -> "Run"
+            }
+            Text(btnFace)
         }
     }
 }
