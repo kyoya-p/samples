@@ -10,18 +10,21 @@ import jp.`live-on`.shokkaa.mibMapTest
 import jp.`live-on`.shokkaa.snmpAgent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.toLocalDateTime
 
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun App() {
-    var isRunning by remember { mutableStateOf(false) }
+    var isRunning by remember { mutableStateOf(true) }
 
     MaterialTheme {
         LaunchedEffect(isRunning) {
             while (isRunning) {
                 snmpAgent(mibMapTest) { ev, pdu ->
-                    println("${ev.peerAddress}[${ev.pdu[0]}]->")
+                    println("${now()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]")
                     pdu
                 }
                 delay(500)

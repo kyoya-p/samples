@@ -20,6 +20,8 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
+
     implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
     implementation("org.snmp4j:snmp4j:3.6.0")
 }

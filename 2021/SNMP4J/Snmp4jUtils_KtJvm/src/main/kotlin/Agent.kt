@@ -48,8 +48,8 @@ suspend fun snmpAgent(
             errorStatus = PDU.noError
             variableBindings = ev.pdu.variableBindings.mapIndexed { i, vb ->
                 when (ev.pdu.type) {
-                    PDU.GETNEXT -> mibMap.get(vb.oid)
-                    else -> mibMap.higherEntry(vb.oid).value
+                    PDU.GETNEXT -> mibMap.higherEntry(vb.oid).value
+                    else -> mibMap.get(vb.oid)
                 } ?: VariableBinding(vb.oid, noSuchObject).also {
                     errorStatus = PDU.noSuchName
                     if (errorIndex == 0) errorIndex = i
