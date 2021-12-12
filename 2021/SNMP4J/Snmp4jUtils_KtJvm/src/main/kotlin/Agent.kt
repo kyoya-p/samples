@@ -3,7 +3,6 @@ package jp.`live-on`.shokkaa
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collectLatest
 import org.snmp4j.*
 import org.snmp4j.smi.*
 import org.snmp4j.smi.Null.noSuchObject
@@ -11,57 +10,57 @@ import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 import java.util.*
 
-
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
 
+@Suppress("BlockingMethodInNonBlockingContext")
 @ExperimentalCoroutinesApi
-suspend fun snmpAgentFlow(snmp: Snmp) = callbackFlow {
+suspend fun snmpAgentFlow(
+    mibMap: TreeMap<OID, VariableBinding>,
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
+    op: (ev: ResponderEvent, resPdu: PDU) -> PDU? = { _, pdu -> pdu },
+) = callbackFlow {
     val commandResponder = object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            println("processPdu()")
+            if (event == null) return
+            val resPdu = PDU().run {
+                type = PDU.RESPONSE
+                requestID = event.pdu.requestID
+                errorIndex = 0
+                errorStatus = PDU.noError
+                variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
+                    when (event.pdu.type) {
+                        PDU.GETNEXT -> mibMap.higherEntry(vb.oid).value
+                        else -> mibMap.get(vb.oid)
+                    } ?: VariableBinding(vb.oid, noSuchObject).also {
+                        errorStatus = PDU.noSuchName
+                        if (errorIndex == 0) errorIndex = i
+                    }
+                }
+                @Suppress("UNCHECKED_CAST")
+                op(event as ResponderEvent, this)
+            }
+
+            val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
+            snmp.send(resPdu, resTarget)
+            println("snmp.send()")
+
             @Suppress("UNCHECKED_CAST")
             trySend(event as ResponderEvent)
         }
     }
-    println("startAgent")
-    kotlin.runCatching {
+
+    runCatching {
         snmp.addCommandResponder(commandResponder)
+        println("started Agent")
         awaitClose {
             snmp.removeCommandResponder(commandResponder)
+            println("canceled Agent")
         }
     }.onFailure { close() }
-    println("endAgent")
+    println("finished Agent")
 }
 
-@Suppress("BlockingMethodInNonBlockingContext", "unused")
-@ExperimentalCoroutinesApi
-suspend fun snmpAgent(
-    mibMap: TreeMap<OID, VariableBinding>,
-    host: String = "0.0.0.0",
-    port: Int = 161,
-    op: (ev: ResponderEvent, resPdu: PDU) -> PDU? = { _, pdu -> pdu },
-) = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName(host), port))).use { snmp ->
-    snmp.listen()
-    snmpAgentFlow(snmp).collectLatest { ev ->
-        val resPdu0 = PDU().apply {
-            type = PDU.RESPONSE
-            errorIndex = 0
-            errorStatus = PDU.noError
-            variableBindings = ev.pdu.variableBindings.mapIndexed { i, vb ->
-                when (ev.pdu.type) {
-                    PDU.GETNEXT -> mibMap.higherEntry(vb.oid).value
-                    else -> mibMap.get(vb.oid)
-                } ?: VariableBinding(vb.oid, noSuchObject).also {
-                    errorStatus = PDU.noSuchName
-                    if (errorIndex == 0) errorIndex = i
-                }
-            }
-        }
-        op(ev, resPdu0)?.let { resPdu ->
-            val resTarget = CommunityTarget(ev.peerAddress, OctetString("public"))
-            snmp.send(resPdu, resTarget)
-        }
-    }
-}
 
 @Suppress("unused")
 val mibMapTest = sortedMapOf<OID, Variable>(

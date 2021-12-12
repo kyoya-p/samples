@@ -12,16 +12,17 @@ import java.net.InetAddress
 @Suppress("ClassName")
 class Test_Snmp {
 
-    val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
+    private val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
 
     @Test
     fun test_start_dummyAgent() {
         //SNMPAgent(File(""))
     }
 
+    @Suppress("RemoveExplicitTypeArguments", "BlockingMethodInNonBlockingContext")
     @Test
     fun test_getNext() = runBlocking {
-        val pdu = PDU().apply { variableBindings = listOf(VariableBinding(OID(SampleOID.sysDescr.oid))) }
+        val pdu = PDU().apply { variableBindings = listOf(VariableBinding(SampleOID.sysDescr.oid)) }
         val tg = CommunityTarget<UdpAddress>(UdpAddress(InetAddress.getByName("localhost"), 161), OctetString("public"))
         val r0 = snmp.snmp.getNext(pdu, tg)
         val r1 = snmp.getNext(pdu, tg)
@@ -33,9 +34,12 @@ class Test_Snmp {
         println(r0.response.variableBindings)
     }
 
+    @Suppress("BlockingMethodInNonBlockingContext")
     @Test
     fun test_getNext_Timeout() = runBlocking {
         val pdu = PDU().apply { variableBindings = listOf(VariableBinding(OID(SampleOID.sysDescr.oid))) }
+
+        @Suppress("RemoveExplicitTypeArguments")
         val tg = CommunityTarget<UdpAddress>(UdpAddress(InetAddress.getByName("1.2.3.4"), 161), OctetString("public"))
         val r1 = snmp.getNext(pdu, tg)
         assert(r1.peerAddress == null)

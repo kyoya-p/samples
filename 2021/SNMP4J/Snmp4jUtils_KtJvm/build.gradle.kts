@@ -1,4 +1,3 @@
-
 plugins {
     kotlin("jvm") version "1.6.0"
     kotlin("plugin.serialization") version "1.5.31"
@@ -24,12 +23,10 @@ dependencies {
     implementation("com.charleskorn.kaml:kaml:0.37.0") // https://github.com/charleskorn/kaml/releases/latest
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+
+    // implementation("jp.live-on.shokkaa:snmp4jutils:1.1") // Usage sample
 }
 
-// usage sample
-dependencies {
-    implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
-}
 
 tasks.test {
     useJUnitPlatform()
