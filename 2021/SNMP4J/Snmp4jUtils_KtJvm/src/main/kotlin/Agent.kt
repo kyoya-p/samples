@@ -40,8 +40,8 @@ suspend fun snmpAgent(
     port: Int = 161,
     op: (ev: ResponderEvent, resPdu: PDU) -> PDU? = { _, pdu -> pdu },
 ) = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName(host), port))).use { snmp ->
+    snmp.listen()
     snmpAgentFlow(snmp).collectLatest { ev ->
-        println("${ev.peerAddress}")//TODO
         val resPdu0 = PDU().apply {
             type = PDU.RESPONSE
             errorIndex = 0

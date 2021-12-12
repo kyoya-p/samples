@@ -21,7 +21,7 @@ fun App() {
         LaunchedEffect(isRunning) {
             while (isRunning) {
                 snmpAgent(mibMapTest) { ev, pdu ->
-                    println("${ev.peerAddress}")
+                    println("${ev.peerAddress}[${ev.pdu[0]}]->")
                     pdu
                 }
                 delay(500)
