@@ -1,4 +1,4 @@
-package jp.`live-on`.shokkaa
+package jp.pgw.shokkaa
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer

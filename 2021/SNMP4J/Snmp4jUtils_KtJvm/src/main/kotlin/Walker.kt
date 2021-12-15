@@ -1,4 +1,4 @@
-package jp.`live-on`.shokkaa
+package jp.pgw.shokkaa
 
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.Serializable
@@ -24,7 +24,7 @@ fun main(args: Array<String>) {
         .distinct()
     devIps.forEach { println(it) }
     return
-
+    //TODO
     val transport = DefaultUdpTransportMapping()
     val snmp = Snmp(transport)
     transport.listen()

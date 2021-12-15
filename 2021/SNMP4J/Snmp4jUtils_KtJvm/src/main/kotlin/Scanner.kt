@@ -1,5 +1,5 @@
 import com.charleskorn.kaml.Yaml
-import jp.`live-on`.shokkaa.serializersModule
+import jp.pgw.shokkaa.serializersModule
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
@@ -22,14 +22,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-@Suppress("BlockingMethodInNonBlockingContext")
 @ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalTime
 suspend fun main(args: Array<String>) = runBlocking {
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
 
@@ -43,15 +41,14 @@ suspend fun main(args: Array<String>) = runBlocking {
 
     val snmpBuilder = SnmpBuilder()
 
-    @Suppress("BlockingMethodInNonBlockingContext")
     val snmp = snmpBuilder.udp().v1().build().suspendable()
     snmp.listen()
 
     val start by lazy { Clock.System.now() }
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
-    //val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
+    val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
     //val sampleVBs = listOf<VariableBinding>()
-    val sampleVBs = listOf(SampleOID.sysDescr).map { VariableBinding(it.oid) }
+    //val sampleVBs = listOf(SampleOID.sysDescr).map { VariableBinding(it.oid) }
 
     val detectedIps = mutableSetOf<String>()
     var c = 0

@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.5.31"
     id("org.jetbrains.compose") version "1.0.0"
 }
 
@@ -21,8 +22,8 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
-
-    implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
+    implementation("com.charleskorn.kaml:kaml:0.38.0") // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
+    implementation("jp.pgw.shokkaa:snmp4jutils:1.1")
     implementation("org.snmp4j:snmp4j:3.6.0")
 }
 

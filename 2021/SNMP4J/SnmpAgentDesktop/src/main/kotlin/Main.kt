@@ -3,15 +3,14 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import jp.`live-on`.shokkaa.mibMapTest
-import jp.`live-on`.shokkaa.snmpAgentFlow
+import jp.pgw.shokkaa.mibMapTest
+import jp.pgw.shokkaa.snmpAgentFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -25,11 +24,18 @@ fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
-fun App() {
+fun App(window: ComposeWindow) = MaterialTheme {
     var isRunning by remember { mutableStateOf(true) }
+    var isActiveSettingDialog by remember { mutableStateOf(false) }
+    var isActiveOpenDialog by remember { mutableStateOf(false) }
     var logs by remember { mutableStateOf("Logs------------------") }
 
-    MaterialTheme {
+    Scaffold(topBar = {
+        TopAppBar {
+            Button(onClick = { isActiveSettingDialog = true }) { Text("Settings") }
+            Button(onClick = { }) { Text("AAA") }
+        }
+    }) {
         LaunchedEffect(isRunning) {
             while (isRunning) {
                 snmpAgentFlow(mibMapTest) { ev, pdu ->
@@ -54,13 +60,24 @@ fun App() {
 
             Logs(logs)
         }
+
+
+        if (isActiveOpenDialog) {
+            FileDialog(window = window, title = "Notepad", isLoad = true) {
+                isActiveOpenDialog = false
+                println(it)
+            }
+
+        }
+
+        if (isActiveSettingDialog) SettingsDialog { isActiveSettingDialog = false }
     }
 }
 
 @ExperimentalCoroutinesApi
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
-        App()
+        App(window)
     }
 }
 

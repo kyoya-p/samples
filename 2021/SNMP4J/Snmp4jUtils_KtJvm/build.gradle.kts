@@ -19,7 +19,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
-    implementation("org.snmp4j:snmp4j:3.6.0")
+    implementation("org.snmp4j:snmp4j:3.6.2")
     implementation("com.charleskorn.kaml:kaml:0.37.0") // https://github.com/charleskorn/kaml/releases/latest
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
@@ -33,7 +33,7 @@ tasks.test {
 }
 
 publishing {
-    val myGroupId = "jp.live-on.shokkaa"
+    val myGroupId = "jp.pgw.shokkaa"
     val myArtifactId = "snmp4jutils"
     val myVersion = "1.1"
 

@@ -1,4 +1,4 @@
-package jp.`live-on`.shokkaa
+package jp.pgw.shokkaa
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose

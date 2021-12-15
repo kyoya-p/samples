@@ -1,12 +1,13 @@
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.window.AwtWindow
-import androidx.compose.ui.window.FrameWindowScope
 import java.awt.FileDialog
 import java.io.File
 import java.nio.file.Path
 
 @Composable
-fun FrameWindowScope.FileDialog(
+fun FileDialog(
+    window: ComposeWindow,
     title: String,
     isLoad: Boolean,
     onResult: (result: Path?) -> Unit
