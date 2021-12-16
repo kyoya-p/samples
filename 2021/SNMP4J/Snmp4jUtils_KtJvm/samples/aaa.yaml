@@ -1,4 +1,0 @@
-- ip: "10.36.125.0"
-  vbs:
-    - mib: "sysDescr.0"
-      value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3aWindows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
