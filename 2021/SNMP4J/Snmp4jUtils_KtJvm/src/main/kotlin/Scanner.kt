@@ -1,5 +1,5 @@
 import com.charleskorn.kaml.Yaml
-import jp.pgw.shokkaa.serializersModule
+import jp.pgw.shokkaa.snmp4jSerializersModule
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
@@ -33,7 +33,7 @@ suspend fun main(args: Array<String>) = runBlocking {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
-    val sendInterval = (args.getOrNull(2)?.toInt() ?: 100).milliseconds
+    val sendInterval = (args.getOrNull(2)?.toInt() ?: 30).milliseconds
     val baseAdr = baseIp.toIpv4Adr()
 
     val today = Clock.System.todayAt(currentSystemDefault())
@@ -67,14 +67,13 @@ suspend fun main(args: Array<String>) = runBlocking {
         .onEach { c-- }
         .filter { it.peerAddress != null && it.response != null }
         .map { ev ->
-            val vbs = ev.response.variableBindings.map { vb -> VBS(vb.oid.toMibString(), vb.variable) }
-            Dev(ev.peerAddress.inetAddress.hostAddress, vbs)
-        }.collect { dev ->
-            if (!detectedIps.contains(dev.ip)) {
-                detectedIps.add(dev.ip)
-                println(dev.ip)
+            SNMPLog(ev.peerAddress.inetAddress.hostAddress, ev.response.variableBindings)
+        }.collect { snmpLog ->
+            if (!detectedIps.contains(snmpLog.ip)) {
+                detectedIps.add(snmpLog.ip)
+                println(snmpLog.ip)
                 @Suppress("BlockingMethodInNonBlockingContext")
-                resultFile.appendText(Yaml(serializersModule = serializersModule).encodeToString(listOf(dev)))
+                resultFile.appendText(Yaml(serializersModule = snmp4jSerializersModule).encodeToString(listOf(snmpLog)))
                 @Suppress("BlockingMethodInNonBlockingContext")
                 resultFile.appendText("\n")
             }
@@ -82,13 +81,8 @@ suspend fun main(args: Array<String>) = runBlocking {
     snmp.close()
 }
 
-
 @Serializable
-data class VBS(val mib: String, @Contextual val value: Variable)
-
-@Serializable
-data class Dev(val ip: String, val vbs: List<VBS>)
-
+data class SNMPLog(val ip: String, val vbs: List<@Contextual VariableBinding>)
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
 private fun Long.toIpv4Adr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!

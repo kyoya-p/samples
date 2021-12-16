@@ -4,10 +4,10 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.net.InetAddress
 
-class Test_scrambledIpV4AddressFlow {
+class Test_Scanner {
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test
-    fun test1_1() = runBlocking {
+    fun test1_scrambledIpV4AddressFlow_1() = runBlocking {
         val adr = InetAddress.getByName("1.2.3.4")
         val res = scrambledIpV4AddressSequence(adr, 8).toList()
         assert(res[0].second.hostAddress.apply(::println) == "1.2.3.0")
@@ -19,7 +19,7 @@ class Test_scrambledIpV4AddressFlow {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test
-    fun test1_2() = runBlocking {
+    fun test1_scrambledIpV4AddressFlow_2() = runBlocking {
         val adr = InetAddress.getByName("1.2.3.4")
         val res = scrambledIpV4AddressSequence(adr, 0).toList()
         assert(res.size == 1)
@@ -28,7 +28,7 @@ class Test_scrambledIpV4AddressFlow {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test
-    fun test1_3() = runBlocking {
+    fun test1_scrambledIpV4AddressFlow_3() = runBlocking {
         val adr = InetAddress.getByName("1.2.3.4")
         val res = scrambledIpV4AddressSequence(adr, 1).toList()
         assert(res.size == 2)

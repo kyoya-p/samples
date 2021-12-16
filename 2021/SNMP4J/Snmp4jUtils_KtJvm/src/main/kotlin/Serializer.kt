@@ -15,13 +15,9 @@ import org.snmp4j.asn1.BER
 import org.snmp4j.smi.*
 
 
-// VariableBindingを1つの文字列にエンコード/デコード
-// OID ' ' Syntax ' ' Value
-// Valueに関して、0~0x1f,0x80~0xff,':', 以外は':xx'にエスケープ
-// TODO 手抜き:本来はJsonObjectに変換すべき
 
 @ExperimentalSerializationApi
-val serializersModule = SerializersModule {
+val snmp4jSerializersModule = SerializersModule {
     contextual(VariableAsStringSerializer)
     contextual(VariableBindingAsStringSerializer)
 }
@@ -29,11 +25,11 @@ val serializersModule = SerializersModule {
 @ExperimentalSerializationApi
 val jsonSnmp4j = Json {
     prettyPrint = true
-    this.serializersModule = serializersModule
+    this.serializersModule = snmp4jSerializersModule
 }
 
 @ExperimentalSerializationApi
-@Serializer(forClass = VariableBinding::class)
+@Serializer(forClass = Variable::class)
 object VariableAsStringSerializer : KSerializer<Variable> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("VariableBinding", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: Variable) {
@@ -50,7 +46,7 @@ object VariableAsStringSerializer : KSerializer<Variable> {
         val value = when (stx) {
             BER.INTEGER32, BER.COUNTER32 -> Integer32(sValue.toInt())
             BER.OCTETSTRING -> OctetString(sValue.unescaped())
-            BER.OID -> org.snmp4j.smi.OID(sValue)
+            BER.OID -> OID(sValue)
             BER.NULL -> Null()
             // TODO 中略...
             else -> throw Exception("Illegal Syntax :${stx}")
@@ -58,6 +54,12 @@ object VariableAsStringSerializer : KSerializer<Variable> {
         return value
     }
 }
+
+// VariableBindingを1つの文字列にエンコード/デコード
+// OID ' ' Syntax ' ' Value
+// Valueに関して、0~0x1f,0x80~0xff,':', 以外は':xx'にエスケープ
+// Note: JsonObjectに変換すべきかもしれないが、コンパクトさを重視し１つのStringに
+
 
 @ExperimentalSerializationApi
 @Serializer(forClass = VariableBinding::class)
@@ -78,12 +80,12 @@ object VariableBindingAsStringSerializer : KSerializer<VariableBinding> {
         val value = when (stx) {
             BER.INTEGER32, BER.COUNTER32 -> Integer32(sValue.toInt())
             BER.OCTETSTRING -> OctetString(sValue.unescaped())
-            BER.OID -> org.snmp4j.smi.OID(sValue)
+            BER.OID -> OID(sValue)
             BER.NULL -> Null()
             // TODO 中略...
             else -> throw Exception("Illegal Syntax :${stx}")
         }
-        return VariableBinding(org.snmp4j.smi.OID(sOid), value)
+        return VariableBinding(OID(sOid), value)
     }
 
 }
