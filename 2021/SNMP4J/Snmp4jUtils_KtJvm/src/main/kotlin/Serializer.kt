@@ -14,8 +14,6 @@ import kotlinx.serialization.modules.contextual
 import org.snmp4j.asn1.BER
 import org.snmp4j.smi.*
 
-
-
 @ExperimentalSerializationApi
 val snmp4jSerializersModule = SerializersModule {
     contextual(VariableAsStringSerializer)
@@ -59,7 +57,6 @@ object VariableAsStringSerializer : KSerializer<Variable> {
 // OID ' ' Syntax ' ' Value
 // Valueに関して、0~0x1f,0x80~0xff,':', 以外は':xx'にエスケープ
 // Note: JsonObjectに変換すべきかもしれないが、コンパクトさを重視し１つのStringに
-
 
 @ExperimentalSerializationApi
 @Serializer(forClass = VariableBinding::class)

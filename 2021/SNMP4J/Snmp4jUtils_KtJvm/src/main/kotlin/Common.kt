@@ -9,10 +9,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class SnmpSuspendable(val snmp: Snmp) {
-    suspend fun send(pdu: PDU, target: Target<UdpAddress>) =
+    suspend fun send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
         suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
             @Suppress("BlockingMethodInNonBlockingContext")
-            snmp.send(pdu, target, null, object : ResponseListener {
+            snmp.send(pdu, target, userHandle, object : ResponseListener {
                 override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
                     snmp.cancel(pdu, this)
                     @Suppress("UNCHECKED_CAST")

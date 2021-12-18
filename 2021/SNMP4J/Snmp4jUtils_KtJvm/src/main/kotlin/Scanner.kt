@@ -33,7 +33,7 @@ suspend fun main(args: Array<String>) = runBlocking {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
-    val sendInterval = (args.getOrNull(2)?.toInt() ?: 30).milliseconds
+    val sendInterval = (args.getOrNull(2)?.toInt() ?: 50).milliseconds
     val baseAdr = baseIp.toIpv4Adr()
 
     val today = Clock.System.todayAt(currentSystemDefault())
@@ -59,13 +59,12 @@ suspend fun main(args: Array<String>) = runBlocking {
                 .timeout(5000).retries(2)
                 .build()
             print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> $udpAdr [${++c}] ")
-            snmp.send(PDU(PDU.GETNEXT, sampleVBs), target)
+            snmp.send(PDU(PDU.GETNEXT, sampleVBs), target, udpAdr)
         }
-    }
-        .onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
+    }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
         .map { it.await() }
         .onEach { c-- }
-        .filter { it.peerAddress != null && it.response != null }
+        .filter { it.peerAddress != null && it.response != null && (it.userObject as UdpAddress) == it.peerAddress }
         .map { ev ->
             SNMPLog(ev.peerAddress.inetAddress.hostAddress, ev.response.variableBindings)
         }.collect { snmpLog ->
