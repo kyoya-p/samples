@@ -26,10 +26,9 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalTime
-suspend fun main(args: Array<String>) = runBlocking {
-
-    val scanBits = args.getOrNull(1)?.toInt() ?: 8
+fun main(args: Array<String>) = runBlocking {
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
+    val scanBits = args.getOrNull(1)?.toInt() ?: 8
 
     @Suppress("BlockingMethodInNonBlockingContext")
     val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
