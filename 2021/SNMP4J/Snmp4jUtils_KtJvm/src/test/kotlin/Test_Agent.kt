@@ -12,7 +12,9 @@ import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
+import java.net.Inet6Address
 import java.net.InetAddress
+import java.net.NetworkInterface
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
@@ -82,5 +84,28 @@ class Test_Agent {
         sem.acquire()
         test_assertSnmpResponse()
         agTask.cancel()
+    }
+
+    @Test
+    fun iflist() {
+        fun Boolean.t(t: String, f: String = "") = if (this) t else f
+
+        for (i in NetworkInterface.getNetworkInterfaces()) {
+            for (a in i.inetAddresses) {
+                val ipv = when (a) {
+                    is Inet6Address -> "v6"
+                    else -> "v4"
+                }
+
+                println("%d: %s%s%s%s %s %s".format(i.index,
+                    ipv,
+                    a.isMulticastAddress.t("-MC"),
+                    a.isLoopbackAddress.t("-LP"),
+                    a.isLinkLocalAddress.t("-LL"),
+                    a.hostName,
+                    a.address.joinToString(".") { "%d".format(it.toUByte().toInt()) })
+                )
+            }
+        }
     }
 }

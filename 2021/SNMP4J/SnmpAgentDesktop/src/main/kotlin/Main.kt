@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import jp.pgw.shokkaa.SnmpAgent
 import jp.pgw.shokkaa.mibMapTest
-import jp.pgw.shokkaa.snmpAgentFlow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -20,6 +20,8 @@ import kotlinx.datetime.toLocalDateTime
 
 fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
     .run { "%04d%02d%02d.%02d%02d%02dZ".format(year, monthNumber, dayOfMonth, hour, minute, second) }
+
+val agentList = mutableListOf<SnmpAgent>()
 
 @ExperimentalCoroutinesApi
 @Composable
@@ -38,7 +40,8 @@ fun App(window: ComposeWindow) = MaterialTheme {
     }) {
         LaunchedEffect(isRunning) {
             while (isRunning) {
-                snmpAgentFlow(mibMapTest) { ev, pdu ->
+                SnmpAgent(mibMapTest)
+                { ev, pdu ->
                     val log = "${now()} ${ev.peerAddress}[${ev.pdu[0]}]->[${pdu[0]}]"
                     logs = "$logs\n$log"
                     println(logs)

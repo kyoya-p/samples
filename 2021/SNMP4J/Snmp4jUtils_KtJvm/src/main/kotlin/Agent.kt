@@ -82,7 +82,6 @@ class SnmpAgent(
     }
 }
 
-
 @Suppress("unused")
 val mibMapTest = sortedMapOf<OID, Variable>(
     OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("AAAA"),
