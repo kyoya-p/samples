@@ -11,54 +11,75 @@ import java.net.InetAddress
 import java.util.*
 
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
+typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
 
-@Suppress("BlockingMethodInNonBlockingContext")
-@ExperimentalCoroutinesApi
-suspend fun snmpAgentFlow(
-    mibMap: TreeMap<OID, VariableBinding>,
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
-    op: (ev: ResponderEvent, resPdu: PDU) -> PDU? = { _, pdu -> pdu },
-) = callbackFlow {
-    val commandResponder = object : CommandResponder {
+class SnmpAgent(
+    val mibMap: Map<OID, Variable>,
+    val snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
+        161))).apply { listen() },
+) {
+    val oidVBMap = TreeMap<OID, VariableBinding>().apply {
+        mibMap.forEach { oid, v -> put(oid, VariableBinding(oid, v)) }
+    }
+
+    fun commandResponder(
+        responseHandler: (ResponderEvent, PDU?) -> PDU? = { _, pdu -> pdu },
+    ) = object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            println("processPdu()")
             if (event == null) return
-            val resPdu = PDU().run {
+            val resPdu: PDU? = PDU().run {
                 type = PDU.RESPONSE
                 requestID = event.pdu.requestID
                 errorIndex = 0
                 errorStatus = PDU.noError
                 variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
                     when (event.pdu.type) {
-                        PDU.GETNEXT -> mibMap.higherEntry(vb.oid).value
-                        else -> mibMap.get(vb.oid)
+                        PDU.GETNEXT -> oidVBMap.higherEntry(vb.oid).value
+                        else -> oidVBMap.get(vb.oid)
                     } ?: VariableBinding(vb.oid, noSuchObject).also {
                         errorStatus = PDU.noSuchName
                         if (errorIndex == 0) errorIndex = i
                     }
                 }
                 @Suppress("UNCHECKED_CAST")
-                op(event as ResponderEvent, this)
+                responseHandler(event as ResponderEvent, this)
             }
+            if (resPdu == null) return
 
             val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
             snmp.send(resPdu, resTarget)
-            println("snmp.send()")
-
-            @Suppress("UNCHECKED_CAST")
-            trySend(event as ResponderEvent)
         }
     }
 
-    runCatching {
-        snmp.addCommandResponder(commandResponder)
-        println("started Agent")
-        awaitClose {
-            snmp.removeCommandResponder(commandResponder)
-            println("canceled Agent")
+    fun start(resHandler: ResponseHandler = { _, pdu -> pdu }) =
+        commandResponder(resHandler).also { snmp.addCommandResponder(it) }
+
+    fun stop(commandRdesponder: CommandResponder) = snmp.removeCommandResponder(commandRdesponder)
+    fun close() = snmp.close()
+
+    fun <R> use(block: (SnmpAgent) -> R): R {
+        val handler = start()
+        val r = block(this)
+        stop(handler)
+        close()
+        return r
+    }
+
+    @ExperimentalCoroutinesApi
+    suspend fun serviceFlow(onClose: () -> Unit = {}, onStart: () -> Unit = {}) = callbackFlow {
+        val responderHandler = start { event, pdu ->
+            trySend(event)
+            pdu
         }
-    }.onFailure { close() }
-    println("finished Agent")
+        println("onStart()")
+        onStart()
+        awaitClose {
+            println("awaitClose()")
+            stop(responderHandler)
+            snmp.close()
+            onClose()
+        }
+    }
 }
 
 

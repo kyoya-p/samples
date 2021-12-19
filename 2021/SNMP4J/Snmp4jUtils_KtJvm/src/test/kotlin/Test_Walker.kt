@@ -1,4 +1,4 @@
-import jp.`live-on`.shokkaa.*
+import jp.pgw.shokkaa.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
 import org.junit.jupiter.api.Test
