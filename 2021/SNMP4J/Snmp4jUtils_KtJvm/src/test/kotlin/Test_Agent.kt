@@ -1,3 +1,5 @@
+import com.sun.jna.Library
+import com.sun.jna.Native
 import jp.pgw.shokkaa.SnmpAgent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -18,9 +20,10 @@ import java.net.NetworkInterface
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
+
 class Test_Agent {
     fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
-        .run { "%04d%02d%02d.%02d%02d%02dZ".format(year, monthNumber, dayOfMonth, hour, minute, second) }
+        .run { "%4d%02d%02d.%03dZ".format(hour, minute, second, nanosecond/1000/1000) }
 
     fun test_assertSnmpResponse() {
         val testTarget =
@@ -90,14 +93,14 @@ class Test_Agent {
     fun iflist() {
         fun Boolean.t(t: String, f: String = "") = if (this) t else f
 
-        for (i in NetworkInterface.getNetworkInterfaces()) {
-            for (a in i.inetAddresses) {
+        for (ni in NetworkInterface.getNetworkInterfaces()) {
+            for (a in ni.inetAddresses) {
                 val ipv = when (a) {
                     is Inet6Address -> "v6"
                     else -> "v4"
                 }
 
-                println("%d: %s%s%s%s %s %s".format(i.index,
+                println("%d: %s%s%s%s %s %s".format(ni.index,
                     ipv,
                     a.isMulticastAddress.t("-MC"),
                     a.isLoopbackAddress.t("-LP"),
@@ -106,6 +109,30 @@ class Test_Agent {
                     a.address.joinToString(".") { "%d".format(it.toUByte().toInt()) })
                 )
             }
+            for (a in ni.interfaceAddresses) {
+                println("%d-IA %s %s".format(
+                    ni.index,
+                    a.address,
+                    a.broadcast,
+                ))
+            }
         }
     }
+
+    @Test
+    fun jna1() {
+        println("${now()}: started")
+        Kernel32.INSTANCE.Sleep(1000)
+        println("${now()}: finished")
+    }
+    interface Kernel32 : Library {
+        fun Sleep(dwMilliseconds: Int)
+
+        companion object {
+            val INSTANCE = Native.load("kernel32", Kernel32::class.java) as Kernel32
+        }
+    }
+
+
 }
+

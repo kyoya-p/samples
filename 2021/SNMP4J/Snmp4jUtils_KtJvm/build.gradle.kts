@@ -25,6 +25,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 
     // implementation("jp.live-on.shokkaa:snmp4jutils:1.1") // Usage sample
+
+
+    testImplementation("net.java.dev.jna:jna:5.9.0")
+    testImplementation("net.java.dev.jna:jna-platform:5.9.0")
+
 }
 
 
