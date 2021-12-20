@@ -1,6 +1,8 @@
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -20,12 +22,20 @@ class `T41-JNA` {
 
     interface Kernel32 : Library {
         fun Sleep(dwMilliseconds: Int)
-        fun MessageBoxA(hWnd: Pointer?, lpText: String?, lpCaption: String?, uType: Int): Int
 
         companion object {
             val instance by lazy { Native.load("kernel32", Kernel32::class.java) as Kernel32 }
         }
     }
+
+    interface User32 : Library {
+        fun MessageBoxA(hWnd: Pointer?, lpText: String?, lpCaption: String?, uType: Int): Int
+
+        companion object {
+            val instance by lazy { Native.load("user32", User32::class.java) as User32 }
+        }
+    }
+
 
     @Test
     fun t1_jna1() {
@@ -35,8 +45,8 @@ class `T41-JNA` {
     }
 
     @Test
-    fun t2_msgbox() {
-        Kernel32.instance.MessageBoxA(null, "Test", "Caption", 0)
-        //TODO Error
+    fun t2_msgbox() = runBlocking {
+        //User32.instance.MessageBoxA(null, "テスト", "Caption", 0)
+        // 開いたダイアログをクローズできない...
     }
 }
