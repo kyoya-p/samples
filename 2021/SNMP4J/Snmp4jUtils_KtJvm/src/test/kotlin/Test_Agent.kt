@@ -132,7 +132,5 @@ class Test_Agent {
             val INSTANCE = Native.load("kernel32", Kernel32::class.java) as Kernel32
         }
     }
-
-
 }
 
