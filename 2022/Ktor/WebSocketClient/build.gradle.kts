@@ -12,6 +12,5 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("io.ktor:ktor-client-cio:1.6.7") // CIO-Clientの場合
-
-
+    implementation("ch.qos.logback:logback-classic:1.2.9") //ログを取る場合
 }
