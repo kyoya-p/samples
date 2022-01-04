@@ -1,4 +1,4 @@
-import jp.pgw.shokkaa.SnmpAgent
+import jp.wjg.shokkaa.SnmpAgent
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

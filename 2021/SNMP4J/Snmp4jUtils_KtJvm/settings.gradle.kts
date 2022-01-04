@@ -1,2 +1,2 @@
-rootProject.name = "Snmp4jUtils_KtJvm"
+rootProject.name = "Snmp4jUtils"
 

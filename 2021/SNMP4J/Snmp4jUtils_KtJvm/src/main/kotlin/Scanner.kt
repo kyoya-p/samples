@@ -1,5 +1,5 @@
 import com.charleskorn.kaml.Yaml
-import jp.pgw.shokkaa.snmp4jSerializersModule
+import jp.wjg.shokkaa.snmp4jSerializersModule
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*

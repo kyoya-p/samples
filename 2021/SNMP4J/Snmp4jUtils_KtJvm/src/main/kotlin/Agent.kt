@@ -1,4 +1,4 @@
-package jp.pgw.shokkaa
+package jp.wjg.shokkaa
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
