@@ -1,3 +1,6 @@
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
+import org.snmp4j.CommandResponderEvent
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
 import org.snmp4j.Target
@@ -5,9 +8,11 @@ import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.UdpAddress
+import org.snmp4j.smi.VariableBinding
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+@Suppress("unused")
 class SnmpSuspendable(val snmp: Snmp) {
     suspend fun send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
         suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
@@ -33,7 +38,7 @@ class SnmpSuspendable(val snmp: Snmp) {
 
 fun Snmp.suspendable() = SnmpSuspendable(this)
 
-@Suppress("EnumEntryName", "SpellCheckingInspection")
+@Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
 enum class SampleOID(val oid: OID, val oidName: String) {
     sysDescr(OID("1.3.6.1.2.1.1.1"), "sysDescr"),
     sysName(OID("1.3.6.1.2.1.1.5"), "sysName"),
@@ -43,12 +48,14 @@ enum class SampleOID(val oid: OID, val oidName: String) {
     prtOutputVendorName(OID("1.3.6.1.2.1.43.9.2.1.8"), "prtOutputVendorName"),
 }
 
-fun OID.toMibString(): String {
-    for (knownOid in SampleOID.values()) {
-        if (startsWith(knownOid.oid)) {
-            return knownOid.oidName + "." + value.drop(knownOid.oid.size()).joinToString(".")
-        }
-    }
-    return toDottedString()
-}
+fun OID(vararg ints: Int) = OID(ints)
 
+typealias ResponderEvent = CommandResponderEvent<UdpAddress>
+typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
+
+@Suppress("unused")
+@Serializable
+internal data class Device(
+    val ip: String,
+    val vbl: List<@Contextual VariableBinding>,
+)

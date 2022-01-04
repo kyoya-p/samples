@@ -1,5 +1,8 @@
 package jp.wjg.shokkaa
 
+import OID
+import ResponderEvent
+import ResponseHandler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
@@ -9,9 +12,6 @@ import org.snmp4j.smi.Null.noSuchObject
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 import java.util.*
-
-typealias ResponderEvent = CommandResponderEvent<UdpAddress>
-typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
 
 class SnmpAgent(
     val mibMap: Map<OID, Variable>,
@@ -92,8 +92,6 @@ val mibMapTest = sortedMapOf<OID, Variable>(
     OID(1, 3, 6, 9, 1, 2, 3) to OctetString("1.3.6.9.1.2.3")
 ).mapValues { (oid, v) -> VariableBinding(oid, v) }
     .entries.fold(TreeMap<OID, VariableBinding>()) { tree, e -> tree.apply { put(e.key, e.value) } }
-
-fun OID(vararg ints: Int) = OID(ints)
 
 
 

@@ -1,5 +1,6 @@
 package jp.wjg.shokkaa
 
+import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializer
@@ -23,8 +24,11 @@ val snmp4jSerializersModule = SerializersModule {
 @ExperimentalSerializationApi
 val jsonSnmp4j = Json {
     prettyPrint = true
-    this.serializersModule = snmp4jSerializersModule
+    serializersModule = snmp4jSerializersModule
 }
+
+@ExperimentalSerializationApi
+val yamlSnmp4j = Yaml(serializersModule = snmp4jSerializersModule)
 
 @ExperimentalSerializationApi
 @Serializer(forClass = Variable::class)
