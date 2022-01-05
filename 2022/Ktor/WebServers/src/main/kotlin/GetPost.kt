@@ -4,18 +4,23 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import io.ktor.util.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
+
+@Suppress("JSON_FORMAT_REDUNDANT")
 fun main() {
     embeddedServer(Netty, port = 8080) {
         routing {
             get("/") {
                 println("get/")
-                call.respondText("Hello Get Request!", ContentType.Text.Plain)
-            }
+                val h = Json { prettyPrint = true }.encodeToString(call.request.headers.toMap())
+                call.respondText("Hello Get Request! \n$h", ContentType.Text.Plain)            }
             post("/") {
                 println("post/")
-                call.respondText("Hello Post Request!", ContentType.Text.Plain)
-            }
+                val h = Json { prettyPrint = true }.encodeToString(call.request.headers.toMap())
+                call.respondText("Hello Post Request! \n$h", ContentType.Text.Plain)            }
         }
     }.start(wait = true)
 }
