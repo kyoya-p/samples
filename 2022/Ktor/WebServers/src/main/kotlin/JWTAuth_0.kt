@@ -22,7 +22,7 @@ fun main() {
         val jwtRealm = environment.config.property("jwt.realm").getString()
 
         val algorithm = Algorithm.HMAC256("secret")
-        fun makeJwtVerifier(issuer: String, audience: String): JWTVerifier = JWT
+        fun makeJwtVerifier(issuer: String, audience: String) = JWT
             .require(algorithm)
             .withAudience(audience)
             .withIssuer(issuer)
