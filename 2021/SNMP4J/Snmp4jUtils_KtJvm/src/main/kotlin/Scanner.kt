@@ -36,7 +36,7 @@ fun main(args: Array<String>) = runBlocking {
     val baseAdr = baseIp.toIpv4Adr()
 
     val today = Clock.System.todayAt(currentSystemDefault())
-    val resultFile = File("samples/${baseAdr.hostAddress}-$scanBits-$today.yaml")
+    val resultFile = File("samples/$today-${baseAdr.hostAddress}-$scanBits.yaml")
 
     val snmpBuilder = SnmpBuilder()
 
