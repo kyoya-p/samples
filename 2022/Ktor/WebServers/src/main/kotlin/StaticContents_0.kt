@@ -13,7 +13,7 @@ fun main() {
         routing {
             static("static") {
                 // コンテンツのルートフォルダのデフォルトはカレント実行ディレクトリ(プロジェクトルート)
-                staticRootFolder = File("C:\\works\\git.github.kyoyap.samples\\2022\\Ktor\\WebServers") // デフォルト以外を指定する場合
+                staticRootFolder = File(System.getProperty("user.dir")) // デフォルト以外を指定する場合
                 files("css")
                 files("js")
                 file("image.png")

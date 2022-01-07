@@ -8,6 +8,8 @@ import io.ktor.util.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+// implementation("io.ktor:ktor-server-core:1.6.7")
+// implementation("io.ktor:ktor-server-netty:1.6.7")
 
 @Suppress("JSON_FORMAT_REDUNDANT")
 fun main() {

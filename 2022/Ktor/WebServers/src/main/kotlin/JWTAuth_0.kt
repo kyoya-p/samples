@@ -17,8 +17,6 @@ import kotlinx.serialization.json.Json
 //    implementation("io.ktor:ktor-auth:1.6.7") // Basic認証,Digest認証等
 //    implementation("io.ktor:ktor-auth-jwt:1.6.7") // JWT認証
 
-
-
 // TODO!!
 @Suppress("JSON_FORMAT_REDUNDANT")
 fun main() {
