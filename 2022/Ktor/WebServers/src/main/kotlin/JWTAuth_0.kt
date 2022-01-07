@@ -1,5 +1,4 @@
 import com.auth0.jwt.JWT
-import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -12,6 +11,13 @@ import io.ktor.server.netty.*
 import io.ktor.util.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+
+//    implementation("io.ktor:ktor-server-core:1.6.7") // Serverを作成する場合
+//    implementation("io.ktor:ktor-server-netty:1.6.7") // Nettyを使用する場合
+//    implementation("io.ktor:ktor-auth:1.6.7") // Basic認証,Digest認証等
+//    implementation("io.ktor:ktor-auth-jwt:1.6.7") // JWT認証
+
+
 
 // TODO!!
 @Suppress("JSON_FORMAT_REDUNDANT")
