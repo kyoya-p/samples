@@ -1,16 +1,10 @@
 import io.ktor.application.*
 import io.ktor.network.tls.certificates.*
-import io.ktor.network.tls.extensions.HashAlgorithm
-import io.ktor.network.tls.extensions.SignatureAlgorithm
 import io.ktor.server.engine.*
-import io.ktor.server.netty.Netty
-import io.ktor.util.*
+import io.ktor.server.netty.*
 import java.io.File
-import java.security.KeyStore
-import kotlin.text.toCharArray
 
 // https://proandroiddev.com/ssl-with-kotlin-and-ktor-61b3d7dccbc5
-
 
 fun main() {
     val keyStoreFile = File("keystore.jks")
