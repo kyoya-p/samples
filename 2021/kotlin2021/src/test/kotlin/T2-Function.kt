@@ -48,7 +48,7 @@ class `T2-Function` {
     class A
     class B {
         companion object //静的拡張関数のためにこの行が必要
-    }
+    }  // Javaクラスに対しては companion object が用意できず不可能
 
     @Test
     fun t21_静的拡張メソッド() {
