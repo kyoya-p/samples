@@ -44,4 +44,24 @@ class `T2-Function` {
 
         assert(add(4, 5) == 9)
     }
+
+    class A
+    class B {
+        companion object //静的拡張関数のためにこの行が必要
+    }
+
+    @Test
+    fun t21_静的拡張メソッド() {
+        @Suppress("unused")
+        fun A.func() {
+            println("A.func()")
+        }
+        A().func()
+
+        fun B.Companion.func() {
+            println("B.Companion.func()")
+        }
+
+        B.func()
+    }
 }
