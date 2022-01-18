@@ -3,24 +3,31 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+
+enum class NavType {
+    HOME, SEARCH, LIBRARY
+}
 
 @Composable
 @Preview
-fun App1() {
+fun AppMain() {
+
     MaterialTheme {
         val navItemState = remember { mutableStateOf(NavType.HOME) }
         Column {
             TopAppBar(
-                title = { Text(text = "App1") },
+                title = { Text(text = "AppMain") },
                 elevation = 8.dp,
             )
-//            Spacer(modifier = Modifier.height(8.dp))
+            {
+                when (navItemState.value) {
+                    NavType.HOME -> SampleField()
+                }
+            }
             BottomNavigation(backgroundColor = MaterialTheme.colors.surface) {
                 BottomNavigationItem(
                     icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
@@ -44,3 +51,4 @@ fun App1() {
         }
     }
 }
+

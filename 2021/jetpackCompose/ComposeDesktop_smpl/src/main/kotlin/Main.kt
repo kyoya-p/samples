@@ -21,7 +21,7 @@ fun TitleText(title: String, modifier: Modifier = Modifier) {
 
 @Composable
 @Preview
-fun AppMain() {
+fun AppMainX() {
     var dialogId by remember { mutableStateOf(0) }
     Column {
         Button(onClick = { dialogId = 1 }) {
@@ -38,13 +38,9 @@ fun AppMain() {
         content = w)
 
     when (dialogId) {
-        1 -> appDialog { App1() }
-        2 -> appDialog { App1() }
+        1 -> appDialog { AppMain() }
+        2 -> appDialog { AppMain() }
     }
-}
-
-enum class NavType {
-    HOME, SEARCH, LIBRARY
 }
 
 @Composable
@@ -72,7 +68,7 @@ fun main() = application {
         title = "Compose Desktop Sample",
         onCloseRequest = ::exitApplication,
     ) {
-        App1()
+        AppMain()
     }
 }
 
