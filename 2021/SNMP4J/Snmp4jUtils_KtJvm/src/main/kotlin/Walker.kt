@@ -1,6 +1,6 @@
-package jp.wjg.shokkaa
+package jp.wjg.shokkaa.snmp4jutils
 
-import Device
+
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayAt

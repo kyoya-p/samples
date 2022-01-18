@@ -1,3 +1,5 @@
+package jp.wjg.shokkaa.snmp4jutils
+
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.snmp4j.CommandResponderEvent

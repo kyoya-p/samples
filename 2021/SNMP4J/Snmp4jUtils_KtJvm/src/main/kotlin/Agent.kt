@@ -1,8 +1,5 @@
-package jp.wjg.shokkaa
+package jp.wjg.shokkaa.snmp4jutils
 
-import OID
-import ResponderEvent
-import ResponseHandler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow

@@ -1,5 +1,6 @@
+package jp.wjg.shokkaa.snmp4jutils
+
 import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jSerializersModule
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*

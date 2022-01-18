@@ -7,7 +7,7 @@ plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
-val myGroupId = "jp.wpg.shokkaa"
+val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
 val myVersion = "1.1"
 
@@ -25,7 +25,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
-    implementation("org.snmp4j:snmp4j:3.6.2")
+    implementation("org.snmp4j:snmp4j:3.6.3")
     implementation("com.charleskorn.kaml:kaml:0.38.0") // https://github.com/charleskorn/kaml/releases/latest
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")

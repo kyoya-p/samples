@@ -17,7 +17,7 @@ repositories{
     mavenLocal()
 }
 dependencies {
-    implementation("jp.live-on.shokkaa:snmp4jutils:1.1")
+    implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
 }
 
 ```

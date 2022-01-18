@@ -1,4 +1,4 @@
-package jp.wjg.shokkaa
+package jp.wjg.shokkaa.snmp4jutils
 
 import com.charleskorn.kaml.Yaml
 import kotlinx.serialization.ExperimentalSerializationApi
