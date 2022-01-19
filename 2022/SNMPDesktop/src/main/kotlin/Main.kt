@@ -39,8 +39,6 @@ fun App() {
                     }) {
                         Text("Scan")
                     }
-
-
                 }
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState())

@@ -1,4 +1,5 @@
-import jp.wjg.shokkaa.SnmpAgent
+import jp.wjg.shokkaa.snmp4jutils.SampleOID
+import jp.wjg.shokkaa.snmp4jutils.SnmpAgent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.datetime.Clock
