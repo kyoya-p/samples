@@ -29,7 +29,9 @@ class Test_snmpAgent {
 
         // TODO Error
         val t = """
-            id: 
+            ip: "123"
+            vbl: 
+            - "1.3.6 4 aaaaa"
         """.trimIndent()
 
         println(t)
