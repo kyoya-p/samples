@@ -1,4 +1,6 @@
 import jp.wjg.shokkaa.*
+import jp.wjg.shokkaa.snmp4jutils.jsonSnmp4j
+import jp.wjg.shokkaa.snmp4jutils.walk
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
 import org.junit.jupiter.api.Test

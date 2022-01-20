@@ -1,4 +1,6 @@
-import jp.wjg.shokkaa.SnmpAgent
+import jp.wjg.shokkaa.snmp4jutils.SampleOID
+import jp.wjg.shokkaa.snmp4jutils.SnmpAgent
+import jp.wjg.shokkaa.snmp4jutils.suspendable
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

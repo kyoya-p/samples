@@ -6,27 +6,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import jp.wjg.shokkaa.snmp4jutils.broadcastFlow
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collectLatest
 
 import java.net.InetAddress
 
+@InternalCoroutinesApi
 @Composable
 @Preview
 fun App() {
     var adrSpec by remember { mutableStateOf("192.168.0.1-192.168.0.254") }
-    var text by remember { mutableStateOf("Hello, World!") }
 
     MaterialTheme {
         Scaffold {
             Column {
+                LaunchedEffect(adrSpec) {
+                    broadcastFlow().buffer(100).collectLatest {
+                        println(it.inetAddress)
+                    }
+                }
+
                 Row {
                     TextField(
                         value = adrSpec,
@@ -35,7 +41,6 @@ fun App() {
                     Button(onClick = {
                         val (s, e) = adrSpec.split("-")
                         ipv4Sequence(s, e).forEach { println(it.hostAddress) }
-
                     }) {
                         Text("Scan")
                     }
@@ -52,6 +57,7 @@ fun App() {
     }
 }
 
+@InternalCoroutinesApi
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
         App()

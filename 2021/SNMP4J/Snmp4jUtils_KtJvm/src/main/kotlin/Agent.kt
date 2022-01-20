@@ -3,12 +3,69 @@ package jp.wjg.shokkaa.snmp4jutils
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.serialization.*
 import org.snmp4j.*
 import org.snmp4j.smi.*
 import org.snmp4j.smi.Null.noSuchObject
 import org.snmp4j.transport.DefaultUdpTransportMapping
+import java.io.File
 import java.net.InetAddress
 import java.util.*
+
+@ExperimentalSerializationApi
+fun main(args: Array<String>) {
+    val dev: Device = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
+    SnmpAgent(dev.vbl.associate { it.oid to it.variable })
+}
+
+suspend fun snmpAgent(
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
+        161))).apply { listen() },
+    mibMap: Map<OID, Variable>,
+) {
+    val oidVBMap = TreeMap<OID, VariableBinding>().apply {
+        mibMap.forEach { oid, v -> put(oid, VariableBinding(oid, v)) }
+    }
+    snmpAgent(snmp) { event ->
+        val resPdu = PDU().apply {
+            type = PDU.RESPONSE
+            requestID = event.pdu.requestID
+            errorIndex = 0
+            errorStatus = PDU.noError
+            variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
+                when (event.pdu.type) {
+                    PDU.GETNEXT -> oidVBMap.higherEntry(vb.oid).value
+                    else -> oidVBMap.get(vb.oid)
+                } ?: VariableBinding(vb.oid, noSuchObject).also {
+                    errorStatus = PDU.noSuchName
+                    if (errorIndex == 0) errorIndex = i
+                }
+            }
+        }
+
+        val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
+        snmp.send(resPdu, resTarget)
+    }
+}
+
+suspend fun snmpAgent(
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
+        161))).apply { listen() },
+    responseHandler: suspend (ResponderEvent) -> Unit,
+) {
+    fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
+        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
+            responseHandler(event as CommandResponderEvent<UdpAddress>)
+        }
+    }
+    callbackFlow {
+        snmp.addCommandResponder(commandResponder { trySend(it) })
+        awaitClose { }
+    }.collect {
+        responseHandler(it)
+    }
+}
 
 class SnmpAgent(
     val mibMap: Map<OID, Variable>,

@@ -12,8 +12,10 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.contextual
+import kotlinx.serialization.serializer
 import org.snmp4j.asn1.BER
 import org.snmp4j.smi.*
+import java.io.InputStream
 
 @ExperimentalSerializationApi
 val snmp4jSerializersModule = SerializersModule {
@@ -29,6 +31,9 @@ val jsonSnmp4j = Json {
 
 @ExperimentalSerializationApi
 val yamlSnmp4j = Yaml(serializersModule = snmp4jSerializersModule)
+
+inline fun <reified R> Yaml.decodeFromStream(s: InputStream): R = decodeFromStream(serializersModule.serializer(), s)
+inline fun <reified R> Yaml.decodeFromString(s: String): R = decodeFromString(serializersModule.serializer(), s)
 
 @ExperimentalSerializationApi
 @Serializer(forClass = Variable::class)

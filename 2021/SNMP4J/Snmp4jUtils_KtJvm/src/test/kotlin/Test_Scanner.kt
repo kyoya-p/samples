@@ -1,5 +1,6 @@
 @file:Suppress("ClassName")
 
+import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import java.net.InetAddress
