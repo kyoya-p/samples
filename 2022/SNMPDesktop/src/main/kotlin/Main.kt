@@ -13,8 +13,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import jp.wjg.shokkaa.snmp4jutils.broadcastFlow
 import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.flow.buffer
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
+import org.snmp4j.Snmp
+import org.snmp4j.transport.DefaultUdpTransportMapping
+
 
 import java.net.InetAddress
 
@@ -22,15 +24,20 @@ import java.net.InetAddress
 @Composable
 @Preview
 fun App() {
-    var adrSpec by remember { mutableStateOf("192.168.0.1-192.168.0.254") }
+    var adrSpec by remember { mutableStateOf("255.255.255.255") }
 
     MaterialTheme {
         Scaffold {
             Column {
                 LaunchedEffect(adrSpec) {
-                    broadcastFlow().buffer(100).collectLatest {
-                        println(it.inetAddress)
+                    println("aaaa")
+                    val transport = DefaultUdpTransportMapping()
+                    val snmp = Snmp(transport)
+                    snmp.listen()
+                    broadcastFlow(snmp).collect {
+                        println(it.inetAddress.hostAddress)
                     }
+                    println("bbbb")
                 }
 
                 Row {
