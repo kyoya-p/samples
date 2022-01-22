@@ -28,7 +28,6 @@ fun broadcastFlow(
     target = CommunityTarget(UdpAddress(InetAddress.getByName(adr), 161), OctetString("public"))
 )
 
-@Suppress("UNCHECKED_CAST")
 fun broadcastFlow(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
     target: CommunityTarget<UdpAddress>,
@@ -39,7 +38,7 @@ fun broadcastFlow(
             if (event == null || event.response == null) {
                 close()
             } else {
-                //trySend(event.peerAddress as UdpAddress)
+                @Suppress("UNCHECKED_CAST")
                 trySend(event as ResponseEvent<UdpAddress>)
             }
         }
