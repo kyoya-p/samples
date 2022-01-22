@@ -17,15 +17,22 @@ suspend fun main() {
     }
 }
 
+
 fun broadcastFlow(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
-    target: CommunityTarget<UdpAddress> = CommunityTarget(
-        UdpAddress(InetAddress.getByName("255.255.255.255"), 161),
-        OctetString("public"),
-    ),
-    pdu: PDU = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1.3.6")))),
+    adr: String = "255.255.255.255",
+    oid: OID = OID(".1.3.6"),
+) = broadcastFlow(
+    snmp = snmp,
+    pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(oid))),
+    target = CommunityTarget(UdpAddress(java.net.InetAddress.getByName(adr), 161), OctetString("public"))
+)
 
-    ) = callbackFlow {
+fun broadcastFlow(
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
+    target: CommunityTarget<UdpAddress>,
+    pdu: PDU,
+) = callbackFlow {
     snmp.send(pdu, target, null, object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>?) {
             if (event == null || event.response == null) {

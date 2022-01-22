@@ -1,21 +1,18 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import jp.wjg.shokkaa.snmp4jutils.broadcastFlow
 import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
-import org.snmp4j.Snmp
-import org.snmp4j.transport.DefaultUdpTransportMapping
+import kotlinx.coroutines.flow.mapNotNull
 
 
 import java.net.InetAddress
@@ -25,19 +22,21 @@ import java.net.InetAddress
 @Preview
 fun App() {
     var adrSpec by remember { mutableStateOf("255.255.255.255") }
+    val devList by remember { mutableStateOf(mutableSetOf<String>()) }
 
     MaterialTheme {
         Scaffold {
             Column {
                 LaunchedEffect(adrSpec) {
-                    println("aaaa")
-                    val transport = DefaultUdpTransportMapping()
-                    val snmp = Snmp(transport)
-                    snmp.listen()
-                    broadcastFlow(snmp).collect {
-                        println(it.inetAddress.hostAddress)
-                    }
-                    println("bbbb")
+                    runCatching {
+                        val newDevList = mutableSetOf<String>()
+                        broadcastFlow(adr = adrSpec).mapNotNull { it.inetAddress.hostAddress }.collect {
+                            devList.add(it)
+                            newDevList.add(it)
+                        }
+                        // devList .union(newDevList)
+                    }.onFailure { it.printStackTrace() }
+                    delay(1000)
                 }
 
                 Row {
@@ -53,10 +52,10 @@ fun App() {
                     }
                 }
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState())
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) {
-                    repeat(10) {
-                        Text("Item $it", modifier = Modifier.padding(2.dp).clickable { println("$it") })
+                    devList.forEach { adr ->
+                        Text("Device: $adr")
                     }
                 }
             }
