@@ -26,7 +26,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
 
     implementation("org.snmp4j:snmp4j:3.6.3")
-    implementation("com.charleskorn.kaml:kaml:0.38.0") // https://github.com/charleskorn/kaml/releases/latest
+    implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 
