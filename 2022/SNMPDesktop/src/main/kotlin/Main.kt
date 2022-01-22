@@ -8,35 +8,44 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import jp.wjg.shokkaa.snmp4jutils.SampleOID
 import jp.wjg.shokkaa.snmp4jutils.broadcastFlow
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.toSet
 
 
 import java.net.InetAddress
 
+var a = 0
+
+
+@OptIn(ExperimentalMaterialApi::class)
 @InternalCoroutinesApi
 @Composable
 @Preview
 fun App() {
     var adrSpec by remember { mutableStateOf("255.255.255.255") }
-    val devList by remember { mutableStateOf(mutableSetOf<String>()) }
+    var devList by remember { mutableStateOf(mutableSetOf<String>()) }
 
     MaterialTheme {
         Scaffold {
             Column {
                 LaunchedEffect(adrSpec) {
+                    println(adrSpec)
                     runCatching {
-                        val newDevList = mutableSetOf<String>()
-                        broadcastFlow(adr = adrSpec).mapNotNull { it.inetAddress.hostAddress }.collect {
-                            devList.add(it)
-                            newDevList.add(it)
+                        val oids = listOf(SampleOID.hrDeviceDescr.oid, SampleOID.hrDeviceID.oid)
+                        devList = mutableSetOf()
+                        broadcastFlow(adr = adrSpec, oidList = oids).mapNotNull {
+                            "${it.peerAddress.inetAddress.hostAddress} ${it.response[0].variable} ${it.response[1].variable}"
+                        }.collect {
+                            devList = (devList + it).toMutableSet()
+                            delay(300) // effect
                         }
-                        // devList .union(newDevList)
-                    }.onFailure { it.printStackTrace() }
-                    delay(1000)
+                    }.onFailure { }
                 }
 
                 Row {
@@ -44,18 +53,14 @@ fun App() {
                         value = adrSpec,
                         onValueChange = { adrSpec = it }
                     )
-                    Button(onClick = {
-                        val (s, e) = adrSpec.split("-")
-                        ipv4Sequence(s, e).forEach { println(it.hostAddress) }
-                    }) {
-                        Text("Scan")
-                    }
                 }
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) {
                     devList.forEach { adr ->
-                        Text("Device: $adr")
+                        Card(onClick = {}) {
+                            Text(adr)
+                        }
                     }
                 }
             }

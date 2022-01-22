@@ -45,6 +45,8 @@ enum class SampleOID(val oid: OID, val oidName: String) {
     sysDescr(OID("1.3.6.1.2.1.1.1"), "sysDescr"),
     sysName(OID("1.3.6.1.2.1.1.5"), "sysName"),
     hrDeviceDescr(OID("1.3.6.1.2.1.25.3.2.1.3"), "hrDeviceDescr"),
+    hrDeviceID(OID("1.3.6.1.2.1.25.3.2.1.4"), "hrDeviceID"),
+    hrDeviceStatus(OID("1.3.6.1.2.1.25.3.2.1.5"), "hrDeviceStatus"),
     prtGeneralPrinterName(OID("1.3.6.1.2.1.43.5.1.1.16"), "prtGeneralPrinterName"),
     prtInputVendorName(OID("1.3.6.1.2.1.43.8.2.1.14"), "prtInputVendorName"),
     prtOutputVendorName(OID("1.3.6.1.2.1.43.9.2.1.8"), "prtOutputVendorName"),

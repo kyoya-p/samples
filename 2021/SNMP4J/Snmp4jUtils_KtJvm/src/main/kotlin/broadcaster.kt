@@ -13,7 +13,7 @@ import java.net.InetAddress
 
 suspend fun main() {
     broadcastFlow().collect {
-        println(it.inetAddress.hostAddress)
+        println(it.peerAddress.inetAddress.hostAddress)
     }
 }
 
@@ -21,13 +21,14 @@ suspend fun main() {
 fun broadcastFlow(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
     adr: String = "255.255.255.255",
-    oid: OID = OID(".1.3.6"),
+    oidList: List<OID> = listOf(OID(".1.3.6")),
 ) = broadcastFlow(
     snmp = snmp,
-    pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(oid))),
-    target = CommunityTarget(UdpAddress(java.net.InetAddress.getByName(adr), 161), OctetString("public"))
+    pdu = PDU(PDU.GETNEXT, oidList.map { VariableBinding(it) }),
+    target = CommunityTarget(UdpAddress(InetAddress.getByName(adr), 161), OctetString("public"))
 )
 
+@Suppress("UNCHECKED_CAST")
 fun broadcastFlow(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
     target: CommunityTarget<UdpAddress>,
@@ -38,7 +39,8 @@ fun broadcastFlow(
             if (event == null || event.response == null) {
                 close()
             } else {
-                trySend(event.peerAddress as UdpAddress)
+                //trySend(event.peerAddress as UdpAddress)
+                trySend(event as ResponseEvent<UdpAddress>)
             }
         }
     })
