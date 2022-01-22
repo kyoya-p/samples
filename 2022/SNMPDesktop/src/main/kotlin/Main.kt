@@ -14,14 +14,12 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.toSet
+import androidx.ui.material.DataTable
 
 
 import java.net.InetAddress
 
 var a = 0
-
 
 @OptIn(ExperimentalMaterialApi::class)
 @InternalCoroutinesApi
@@ -54,13 +52,15 @@ fun App() {
                         onValueChange = { adrSpec = it }
                     )
                 }
-                Column(
+                DataTable(
+                    columns = 3,
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) {
                     devList.forEach { adr ->
                         Card(onClick = {}) {
                             Text(adr)
                         }
+                        ListItem { }
                     }
                 }
             }
