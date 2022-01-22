@@ -20,8 +20,11 @@ repositories {
 }
 
 dependencies {
+    api(compose.preview)
+    api(compose.runtime)
+    api(compose.foundation)
+    api(compose.material)
     implementation(compose.desktop.currentOs)
-
     implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
     implementation("org.snmp4j:snmp4j:3.6.3")
 }
