@@ -4,8 +4,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import jp.wjg.shokkaa.snmp4jutils.SampleOID
@@ -14,24 +20,37 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
-import androidx.ui.material.DataTable
-
-
 import java.net.InetAddress
 
-var a = 0
+fun rgb(r: Int, g: Int, b: Int) = Color(r, g, b)
+val tealColor = lightColors(
+    // https://materialui.co/colors
+    primary = rgb(0, 150, 136),
+    primaryVariant = rgb(0, 137, 123),
+    secondary = rgb(109, 76, 65),
+    secondaryVariant = rgb(93, 64, 55),
+    background = rgb(236, 239, 241),
+    surface = Color.White,
+    error = rgb(233, 30, 99),
+)
+
 
 @OptIn(ExperimentalMaterialApi::class)
-@InternalCoroutinesApi
 @Composable
-@Preview
 fun App() {
     var adrSpec by remember { mutableStateOf("255.255.255.255") }
     var devList by remember { mutableStateOf(mutableSetOf<String>()) }
 
-    MaterialTheme {
-        Scaffold {
-            Column {
+    MaterialTheme(colors = tealColor) {
+        Scaffold(
+            topBar = {
+                TopAppBar {
+                    Icon(Icons.Filled.Search, "app")
+                    Text("Device Discovery & Update Tool")
+                }
+            }
+        ) {
+            Scaffold {
                 LaunchedEffect(adrSpec) {
                     println(adrSpec)
                     runCatching {
@@ -52,15 +71,13 @@ fun App() {
                         onValueChange = { adrSpec = it }
                     )
                 }
-                DataTable(
-                    columns = 3,
+                Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                 ) {
                     devList.forEach { adr ->
                         Card(onClick = {}) {
                             Text(adr)
                         }
-                        ListItem { }
                     }
                 }
             }
