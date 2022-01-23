@@ -14,12 +14,8 @@ import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
-import androidx.ui.material.DataTable
-
 
 import java.net.InetAddress
-
-var a = 0
 
 @OptIn(ExperimentalMaterialApi::class)
 @InternalCoroutinesApi
