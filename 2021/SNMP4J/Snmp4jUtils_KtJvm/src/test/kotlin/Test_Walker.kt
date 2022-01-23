@@ -1,4 +1,3 @@
-import jp.wjg.shokkaa.*
 import jp.wjg.shokkaa.snmp4jutils.jsonSnmp4j
 import jp.wjg.shokkaa.snmp4jutils.walk
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -19,7 +18,7 @@ class Test_Walker {
     @ExperimentalSerializationApi
     @Test
     fun test_walker1() {
-        val res = snmp.walk(listOf(VariableBinding(OID(".1"))), target).map { it.first() }.toList()
+        val res = snmp.walk(target, listOf(VariableBinding(OID(".1")))).map { it.first() }.toList()
         jsonSnmp4j.encodeToStream(res, File("samples/MX-M6050.json").outputStream())
     }
 }

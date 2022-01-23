@@ -32,11 +32,14 @@ fun main(args: Array<String>): Unit = runCatching {
     target.version = SnmpConstants.version2c
 
     val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
-    val vbl = snmp.walk(initVbl, target).flatMap { it }.toList()
+    snmp.walk(target, initVbl).forEach {
+        println(it)
+    }
+    val vbl = snmp.walk(target, initVbl).flatMap { it }.toList()
     val dev = Device(tgIp, vbl)
     resultFile.appendText(yamlSnmp4j.encodeToString(dev))
 }.onFailure {
-    println("usage java -jar ")
+    println("usage java -jar ip-address")
 }.getOrThrow()
 
 @Suppress("unused")
@@ -55,7 +58,7 @@ fun mainSplit(args: Array<String>): Unit = runCatching {
     var repIndex = 0
 
     val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
-    snmp.walk(initVbl, target).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
+    snmp.walk(target, initVbl).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
         rep = rep + vbl.joinToString("\n", "", "\n")
         if (rep.length >= 256) {
             sendReport(repIndex, rep, false)
@@ -70,15 +73,24 @@ fun mainSplit(args: Array<String>): Unit = runCatching {
 
 }.getOrThrow()
 
-fun Snmp.walk(initVbl: List<VariableBinding>, target: CommunityTarget<UdpAddress>) =
-    generateSequence(initVbl) { vbl -> // SNMP-Walk
-        send(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
-    }.drop(1).takeWhile { vb -> // 全要素 EndOfViewか初期OIDを超えたら終了
-        vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
-    }
+fun Snmp.walk(
+    targetHost: String,
+    initVbl: List<VariableBinding> = listOf(VariableBinding(OID(".1.3.6"))),
+): Sequence<List<VariableBinding>> = walk(
+    CommunityTarget<UdpAddress>(UdpAddress(InetAddress.getByName(targetHost), 161), OctetString("public")),
+    initVbl,
+)
 
+fun Snmp.walk(
+    target: CommunityTarget<UdpAddress>,
+    initVbl: List<VariableBinding>,
+) = generateSequence(initVbl) { vbl -> // SNMP-Walk
+    send(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
+}.drop(1).takeWhile { vb -> // 全要素 EndOfViewか初期OIDを超えたら終了
+    vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
+}
 
-fun sendReport(index: Int, rep: String, complete: Boolean) {
+private fun sendReport(index: Int, rep: String, complete: Boolean) {
     println("Report: {")
     println("  index: $index,")
     println("  complete: $complete,")

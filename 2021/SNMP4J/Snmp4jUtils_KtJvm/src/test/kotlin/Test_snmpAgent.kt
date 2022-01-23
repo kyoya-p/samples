@@ -1,51 +1,47 @@
-import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
+import jp.wjg.shokkaa.snmp4jutils.snmpAgent
+import jp.wjg.shokkaa.snmp4jutils.walk
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.*
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.encodeToString
 import org.junit.jupiter.api.Test
+import org.snmp4j.Snmp
 import org.snmp4j.smi.VariableBinding
+import org.snmp4j.transport.DefaultUdpTransportMapping
+import java.io.File
 
 @ExperimentalSerializationApi
 class Test_snmpAgent {
     @Test
-    fun t0(): Unit = runBlocking {
-
-//        val dev = yamlSnmp4j.decodeFromStream<Device>(File("samples/192.168.3.108-2022-01-05.yaml").inputStream())
-
-        // TODO Error
-        val t = """
-            ip: "123"
-            vbl:
-              - "1.3.6 4 aaaaa"
-              - "1.3.6.4 4 bbbb"
-        """.trimIndent()
-        val t2 = """
-            "1.3.6 4 aaaaa"
-        """.trimIndent()
-        val t3 = """
-            ip: "123"
-            vbl: []
-        """.trimIndent()
-
-        println(t)
-        //val dev = yamlSnmp4j.decodeFromString<Device>(t)
-//        snmpAgent(mibMap = dev.vbl.associate { it.oid to it.variable })
-
+    fun t_snmpAgent(): Unit = runBlocking(Dispatchers.Default) {
         @Serializable
         data class D2(
             val ip: String,
             val vbl: List<String>,
-        )
-        String.serializer()
+        ) //TODO カスタムシリアライザがyamlでdecode時にエラーとなるため、一旦VBLをList<String>してデコード
 
-        val dev = yamlSnmp4j.decodeFromString<Device>(t)
-        println(dev)
+        val file = File("samples/mibWalktest1.yaml")
+        val d2 = yamlSnmp4j.decodeFromStream<D2>(file.inputStream())
+        val vbl = d2.vbl.map { yamlSnmp4j.encodeToString(it) }.map { yamlSnmp4j.decodeFromString<VariableBinding>(it) }
+
+        val job = launch {
+            println("start snmp agent in coroutine")
+            snmpAgent(vbl = vbl)
+        }
+        println("start walker")
+        delay(1000)
+
+        val transport = DefaultUdpTransportMapping()
+        val snmp = Snmp(transport)
+        transport.listen()
+
+        val r = snmp.walk("localhost").flatMap { it }.toList()
+        assert(r.size == vbl.size)
+        assert(r.zip(vbl).all { (a, b) -> a == b })
+        job.cancelAndJoin()
     }
-
 }
 

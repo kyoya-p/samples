@@ -15,7 +15,9 @@ import kotlinx.serialization.modules.contextual
 import kotlinx.serialization.serializer
 import org.snmp4j.asn1.BER
 import org.snmp4j.smi.*
+import org.snmp4j.smi.SMIConstants.*
 import java.io.InputStream
+import java.net.InetAddress
 
 @ExperimentalSerializationApi
 val snmp4jSerializersModule = SerializersModule {
@@ -73,21 +75,54 @@ object VariableBindingAsStringSerializer : KSerializer<VariableBinding> {
     override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("VariableBinding", PrimitiveKind.STRING)
     override fun serialize(encoder: Encoder, value: VariableBinding) {
         val v = value.variable
+
+        // for type of value.variable.value
         val sValue = when (v) {
-            is OctetString -> v.value.escaped()
+            is OctetString /*BitString,Opaque,SecretOctetString,*/ -> v.value.escaped()
+            is UnsignedInteger32 /*TimeTicks,Counter32,Gauge32*/ -> v.value.toString()
+            is Integer32 -> v.value.toString()
+            is Counter64 -> v.value.toString()
+            is OID -> v.value.joinToString(separator = ".")
+            is IpAddress -> v.inetAddress.hostAddress!!
+            is Null -> ""
             else -> v.toString()
         }
+
+        // for SMIConstants
+//        val sValue = when (value.syntax) {
+//            SMIConstants.SYNTAX_INTEGER -> (v as Integer32).value.toString()
+//            SMIConstants.SYNTAX_OCTET_STRING -> (v as OctetString).value.escaped()
+//            SMIConstants.SYNTAX_NULL -> (v as Null).toString()
+//            SMIConstants.SYNTAX_OBJECT_IDENTIFIER -> (v as OID).toString()
+//            SMIConstants.SYNTAX_IPADDRESS -> (v as).toString()
+//            SMIConstants.SYNTAX_INTEGER32 -> (v as).toString()
+//            SMIConstants.SYNTAX_COUNTER32 -> (v as).toString()
+//            SMIConstants.SYNTAX_GAUGE32 -> (v as).toString()
+//            SMIConstants.SYNTAX_UNSIGNED_INTEGER32 -> (v as).toString()
+//            SMIConstants.SYNTAX_TIMETICKS -> (v as).toString()
+//            SMIConstants.SYNTAX_OPAQUE -> (v as).toString()
+//            SMIConstants.SYNTAX_COUNTER64 -> (v as).toString()
+//            SMIConstants.SYNTAX_BITS -> (v as).toString()
+//            SMIConstants.EXCEPTION_NO_SUCH_OBJECT -> (v as).toString()
+//            SMIConstants.EXCEPTION_NO_SUCH_INSTANCE -> (v as).toString()
+//            SMIConstants.EXCEPTION_END_OF_MIB_VIEW -> (v as).toString()
+//            else -> v.toString()
+//        }
         encoder.encodeString("%s %s %s".format(value.oid.toDottedString(), value.syntax, sValue))
     }
 
     override fun deserialize(decoder: Decoder): VariableBinding {
         val (sOid, sStx, sValue) = decoder.decodeString().split(" ", limit = 3)
-        val stx = sStx.toByte()
+        val stx = sStx.toInt()
+
+        // for SMIConstants
         val value = when (stx) {
-            BER.INTEGER32, BER.COUNTER32 -> Integer32(sValue.toInt())
-            BER.OCTETSTRING -> OctetString(sValue.unescaped())
-            BER.OID -> OID(sValue)
-            BER.NULL -> Null()
+            SYNTAX_OCTET_STRING, SYNTAX_OPAQUE -> OctetString(sValue.unescaped())
+            SYNTAX_INTEGER, SYNTAX_COUNTER32, SYNTAX_GAUGE32, SYNTAX_TIMETICKS -> Integer32(sValue.toInt())
+            SYNTAX_COUNTER64 -> Counter64(sValue.toLong())
+            SYNTAX_OBJECT_IDENTIFIER -> OID(sValue)
+            SYNTAX_IPADDRESS -> IpAddress(InetAddress.getByName(sValue))
+            SYNTAX_NULL -> Null()
             // TODO 中略...
             else -> throw Exception("Illegal Syntax :${stx}")
         }
