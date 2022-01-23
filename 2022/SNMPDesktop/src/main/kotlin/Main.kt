@@ -1,26 +1,27 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import jp.wjg.shokkaa.snmp4jutils.Device
 import jp.wjg.shokkaa.snmp4jutils.SampleOID
 import jp.wjg.shokkaa.snmp4jutils.broadcastFlow
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.mapNotNull
+import java.io.File
 import java.net.InetAddress
+import javax.imageio.ImageIO
 
 fun rgb(r: Int, g: Int, b: Int) = Color(r, g, b)
 val tealColor = lightColors(
@@ -39,14 +40,14 @@ val tealColor = lightColors(
 @Composable
 fun App() {
     var adrSpec by remember { mutableStateOf("255.255.255.255") }
-    var devList by remember { mutableStateOf(mutableSetOf<String>()) }
+    var devList by remember { mutableStateOf(mutableSetOf<Device>()) }
 
     MaterialTheme(colors = tealColor) {
         Scaffold(
             topBar = {
                 TopAppBar {
                     Icon(Icons.Filled.Search, "app")
-                    Text("Device Discovery & Update Tool")
+                    Text("Device Discovery Tool")
                 }
             }
         ) {
@@ -54,10 +55,17 @@ fun App() {
                 LaunchedEffect(adrSpec) {
                     println(adrSpec)
                     runCatching {
-                        val oids = listOf(SampleOID.hrDeviceDescr.oid, SampleOID.hrDeviceID.oid)
+                        val oids = listOf(
+                            SampleOID.hrDeviceDescr,
+                            SampleOID.hrDeviceID,
+                            SampleOID.sysDescr,
+                            SampleOID.sysName,
+                            //SampleOID.prtGeneralPrinterName,
+                            //SampleOID.prtInputVendorName
+                        )
                         devList = mutableSetOf()
-                        broadcastFlow(adr = adrSpec, oidList = oids).mapNotNull {
-                            "${it.peerAddress.inetAddress.hostAddress} ${it.response[0].variable} ${it.response[1].variable}"
+                        broadcastFlow(adr = adrSpec, oidList = oids.map { it.oid }).mapNotNull {
+                            Device(ip = it.peerAddress.inetAddress.hostAddress, vbl = it.response.variableBindings)
                         }.collect {
                             devList = (devList + it).toMutableSet()
                             delay(300) // effect
@@ -65,19 +73,15 @@ fun App() {
                     }.onFailure { }
                 }
 
-                Row {
+                Column {
                     TextField(
                         value = adrSpec,
                         onValueChange = { adrSpec = it }
                     )
-                }
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                ) {
-                    devList.forEach { adr ->
-                        Card(onClick = {}) {
-                            Text(adr)
-                        }
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                    ) {
+                        devList.forEach { dev -> card1(dev) }
                     }
                 }
             }
@@ -85,9 +89,25 @@ fun App() {
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun card1(dev: Device) = Card(onClick = {}, modifier = Modifier.size(240.dp, 120.dp).padding(2.dp)) {
+    @Composable
+    fun text(face: String) = Text(face, maxLines = 1, color = MaterialTheme.colors.onPrimary)
+    Box(modifier = Modifier.background(MaterialTheme.colors.primaryVariant)) {
+        Column {
+            text(dev.ip)
+            dev.vbl.forEach { text(it.variable.toString()) }
+        }
+    }
+}
+
 @InternalCoroutinesApi
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
+    Window(
+        onCloseRequest = ::exitApplication,
+//        undecorated = true,
+    ) {
         App()
     }
 }

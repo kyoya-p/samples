@@ -59,7 +59,7 @@ typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
 
 @Suppress("unused")
 @Serializable
-internal data class Device(
+data class Device(
     val ip: String,
     val vbl: List<@Contextual VariableBinding>,
 )
