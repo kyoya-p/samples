@@ -2,14 +2,13 @@ package jp.wjg.shokkaa.snmp4jutils
 
 
 import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
+import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
 import kotlinx.datetime.todayAt
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
-import org.snmp4j.mp.SnmpConstants
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
@@ -21,23 +20,11 @@ import java.net.InetAddress
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runCatching {
     val tgIp = args[0]
-    val resultFile = File("samples/$tgIp-${Clock.System.todayAt(TimeZone.currentSystemDefault())}.yaml")
+    val resultFile = File("samples/${Clock.System.todayAt(currentSystemDefault())}-walk-$tgIp.yaml")
 
-    val transport = DefaultUdpTransportMapping()
-    val snmp = Snmp(transport)
-    transport.listen()
-
-    val targetAddress = UdpAddress(InetAddress.getByName(tgIp), 161)
-    val target = CommunityTarget<UdpAddress>(targetAddress, OctetString("public"))
-    target.version = SnmpConstants.version2c
-
-    val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
-    snmp.walk(target, initVbl).forEach {
-        println(it)
-    }
-    val vbl = snmp.walk(target, initVbl).flatMap { it }.toList()
+    val vbl = walk(tgIp).flatMap { it }.onEach { println(it) }.toList()
     val dev = Device(tgIp, vbl)
-    resultFile.appendText(yamlSnmp4j.encodeToString(dev))
+    resultFile.writeText(yamlSnmp4j.encodeToString(dev))
 }.onFailure {
     println("usage java -jar ip-address")
 }.getOrThrow()
@@ -46,19 +33,9 @@ fun main(args: Array<String>): Unit = runCatching {
 fun mainSplit(args: Array<String>): Unit = runCatching {
     val tgIp = args[0]
 
-    val transport = DefaultUdpTransportMapping()
-    val snmp = Snmp(transport)
-    transport.listen()
-
-    val targetAddress = UdpAddress(InetAddress.getByName(tgIp), 161)
-    val target = CommunityTarget<UdpAddress>(targetAddress, OctetString("public"))
-    target.version = SnmpConstants.version2c
-
     var rep = ""
     var repIndex = 0
-
-    val initVbl = listOf(VariableBinding(OID(".1"))/*(お試し)複数OID取得*/)
-    snmp.walk(target, initVbl).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
+    walk(tgIp).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
         rep = rep + vbl.joinToString("\n", "", "\n")
         if (rep.length >= 256) {
             sendReport(repIndex, rep, false)
@@ -73,22 +50,26 @@ fun mainSplit(args: Array<String>): Unit = runCatching {
 
 }.getOrThrow()
 
-fun Snmp.walk(
+fun walk(
     targetHost: String,
-    initVbl: List<VariableBinding> = listOf(VariableBinding(OID(".1.3.6"))),
+    reqOidList: List<String> = listOf(".1.3.6"),
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping().apply { listen() }),
 ): Sequence<List<VariableBinding>> = walk(
     CommunityTarget<UdpAddress>(UdpAddress(InetAddress.getByName(targetHost), 161), OctetString("public")),
-    initVbl,
+    reqOidList.map { VariableBinding(OID(it)) },
+    snmp,
 )
 
-fun Snmp.walk(
+fun walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
+    snmp: Snmp,
 ) = generateSequence(initVbl) { vbl -> // SNMP-Walk
-    send(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
+    snmp.send(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
 }.drop(1).takeWhile { vb -> // 全要素 EndOfViewか初期OIDを超えたら終了
     vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
 }
+
 
 private fun sendReport(index: Int, rep: String, complete: Boolean) {
     println("Report: {")
