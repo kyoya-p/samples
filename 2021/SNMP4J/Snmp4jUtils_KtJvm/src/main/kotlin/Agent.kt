@@ -21,10 +21,10 @@ fun main(args: Array<String>) {
 suspend fun snmpAgent(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
         161))).apply { listen() },
-    mibMap: Map<OID, Variable>,
+    vbl: List<VariableBinding>,
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
-        mibMap.forEach { oid, v -> put(oid, VariableBinding(oid, v)) }
+        vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }
     snmpAgent(snmp) { event ->
         val resPdu = PDU().apply {
@@ -34,7 +34,7 @@ suspend fun snmpAgent(
             errorStatus = PDU.noError
             variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
                 when (event.pdu.type) {
-                    PDU.GETNEXT -> oidVBMap.higherEntry(vb.oid).value
+                    PDU.GETNEXT -> oidVBMap.higherEntry(vb.oid)?.value
                     else -> oidVBMap.get(vb.oid)
                 } ?: VariableBinding(vb.oid, noSuchObject).also {
                     errorStatus = PDU.noSuchName
