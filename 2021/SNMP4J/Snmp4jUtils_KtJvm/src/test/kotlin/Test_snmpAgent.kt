@@ -23,7 +23,7 @@ class Test_snmpAgent {
             val vbl: List<String>,
         ) //TODO カスタムシリアライザがyamlでdecode時にエラーとなるため、一旦VBLをList<String>してデコード
 
-        val file = File("samples/mibWalktest1.yaml")
+        val file = File("mibWalktest1.yaml")
         val d2 = yamlSnmp4j.decodeFromStream<D2>(file.inputStream())
         val vbl = d2.vbl.map { yamlSnmp4j.encodeToString(it) }.map { yamlSnmp4j.decodeFromString<VariableBinding>(it) }
 
@@ -38,7 +38,7 @@ class Test_snmpAgent {
         val snmp = Snmp(transport)
         transport.listen()
 
-        val r = snmp.walk("localhost").flatMap { it }.toList()
+        val r = walk("localhost").flatMap { it }.toList()
         assert(r.size == vbl.size)
         assert(r.zip(vbl).all { (a, b) -> a == b })
         job.cancelAndJoin()

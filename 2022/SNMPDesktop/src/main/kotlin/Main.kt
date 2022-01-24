@@ -1,8 +1,5 @@
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
@@ -43,55 +40,48 @@ fun App() {
     var devList by remember { mutableStateOf(mutableSetOf<Device>()) }
 
     MaterialTheme(colors = tealColor) {
-        Scaffold(
-            topBar = {
-                TopAppBar {
-                    Icon(Icons.Filled.Search, "app")
-                    Text("Device Discovery Tool")
-                }
-            }
-        ) {
-            Scaffold {
-                LaunchedEffect(adrSpec) {
-                    println(adrSpec)
-                    runCatching {
-                        val oids = listOf(
-                            SampleOID.hrDeviceDescr,
-                            SampleOID.hrDeviceID,
-                            SampleOID.sysDescr,
-                            SampleOID.sysName,
-                            //SampleOID.prtGeneralPrinterName,
-                            //SampleOID.prtInputVendorName
-                        )
-                        devList = mutableSetOf()
-                        broadcastFlow(adr = adrSpec, oidList = oids.map { it.oid }).mapNotNull {
-                            Device(ip = it.peerAddress.inetAddress.hostAddress, vbl = it.response.variableBindings)
-                        }.collect {
-                            devList = (devList + it).toMutableSet()
-                            delay(300) // effect
-                        }
-                    }.onFailure { }
-                }
-
-                Column {
-                    TextField(
-                        value = adrSpec,
-                        onValueChange = { adrSpec = it }
+        Scaffold {
+            LaunchedEffect(adrSpec) {
+                println(adrSpec)
+                runCatching {
+                    val oids = listOf(
+                        SampleOID.hrDeviceDescr,
+                        SampleOID.hrDeviceStatus,
+                        //SampleOID.hrDeviceID,
+                        //SampleOID.sysDescr,
+                        //SampleOID.sysName,
+                        //SampleOID.prtGeneralPrinterName,
+                        //SampleOID.prtInputVendorName
                     )
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                    ) {
-                        devList.forEach { dev -> card1(dev) }
+                    devList = mutableSetOf()
+                    broadcastFlow(adr = adrSpec, oidList = oids.map { it.oid }).mapNotNull {
+                        Device(ip = it.peerAddress.inetAddress.hostAddress, vbl = it.response.variableBindings)
+                    }.collect {
+                        devList = (devList + it).toMutableSet()
+                        delay(100) // effect
                     }
+                }.onFailure { }
+            }
+
+            Column {
+                TextField(
+                    value = adrSpec,
+                    onValueChange = { adrSpec = it }
+                )
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                ) {
+                    devList.forEach { dev -> card1(dev) }
                 }
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-fun card1(dev: Device) = Card(onClick = {}, modifier = Modifier.size(240.dp, 120.dp).padding(2.dp)) {
+fun card1(dev: Device) = Card(onClick = {}, modifier = Modifier.width(240.dp).padding(2.dp)) {
     @Composable
     fun text(face: String) = Text(face, maxLines = 1, color = MaterialTheme.colors.onPrimary)
     Box(modifier = Modifier.background(MaterialTheme.colors.primaryVariant)) {
