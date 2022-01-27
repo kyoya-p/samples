@@ -27,6 +27,13 @@ class `T41-JNA` {
         }
     }
 
+    @Test
+    fun t1_jna1() {
+        println("${now()}: started")
+        Kernel32.instance.Sleep(1000)
+        println("${now()}: finished")
+    }
+
     interface User32 : Library {
         fun MessageBoxA(hWnd: Pointer?, lpText: String?, lpCaption: String?, uType: Int): Int
 
@@ -35,17 +42,22 @@ class `T41-JNA` {
         }
     }
 
-
     @Test
-    fun t1_jna1() {
-        println("${now()}: started")
-        Kernel32.instance.Sleep(1000)
-        println("${now()}: finished")
-    }
-
-    @Test
-    fun t2_msgbox() = runBlocking {
+    fun t2_msgbox() {
         //User32.instance.MessageBoxA(null, "テスト", "Caption", 0)
         // 開いたダイアログをクローズできない...
     }
+
+    interface IpHlpAPI : Library {
+        fun GetInterfaceInfo(hWnd: Pointer?, lpText: String?, lpCaption: String?, uType: Int): Int
+    }
+
+    @Test
+    fun t3_TODO() {
+        //TODO
+        val iphlpapi = Native.load("iphlpapi", IpHlpAPI::class.java)
+        iphlpapi.GetInterfaceInfo(null, "テスト", "Caption", 0)
+    }
+
+
 }
