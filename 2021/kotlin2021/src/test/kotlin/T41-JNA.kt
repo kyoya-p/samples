@@ -1,13 +1,14 @@
 @file:Suppress("NonAsciiCharacters", "TestFunctionName")
 
-import com.sun.jna.Library
-import com.sun.jna.Native
-import com.sun.jna.Pointer
+import com.sun.jna.*
+import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.ptr.IntByReference
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.junit.jupiter.api.Test
+import java.lang.Byte.SIZE
+import java.util.*
 
 
 @Suppress("ClassName")
@@ -58,7 +59,7 @@ class `T41-JNA` {
 
     @Test
     fun t3_参照渡し() {
-        val k32=Kernel32.instance!!
+        val k32 = Kernel32.instance!!
         val lenComputerName = IntByReference()
         k32.GetComputerNameW(null, lenComputerName)
         val computerNameW = CharArray(lenComputerName.value)
@@ -81,5 +82,38 @@ class `T41-JNA` {
         User32.instance!!.GetCursorPos(pos)
         println(pos.x)
         println(pos.y)
+    }
+
+    abstract class IP_ADAPTER_INDEX_MAP : Structure() {
+        override fun getFieldOrder(): MutableList<String> {
+            return Arrays.asList(
+                "lStructSize", "hwndOwner", "hInstance", "lpstrFilter", "lpstrCustomFilter", "nMaxCustFilter",
+                "nFilterIndex", "lpstrFile", "nMaxFile", "lpstrFileTitle", "nMaxFileTitle", "lpstrInitialDir",
+                "lpstrTitle", "Flags", "nFileOffset", "nFileExtension", "lpstrDefExt", "lCustData", "lpfnHook",
+                "lpTemplateName", "pvReserved", "dwReserved", "FlagsEx"
+            );
+        }
+
+        val MAX_ADAPTER_NAME = 128
+        abstract var Index: WinDef.ULONG
+        var Name: Arrays<UCHAR>
+
+    }
+    // https://gist.github.com/Jire/9d6360068efcefc86756
+    fun <T : PointerType> ptrTypeToPtr(objects: Array<T>): Pointer {
+        val memory = Memory(Pointer. SIZE * objects.size.toLong())
+        var offset = 0L
+        for (obj in objects) {
+            memory.setPointer(Pointer.SIZE * offset, obj.pointer)
+            offset++
+        }
+        return memory
+    }
+    @Test
+    fun t5_可変長構造体() {
+        // https://docs.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_interface_info
+
+
+        // TODO
     }
 }
