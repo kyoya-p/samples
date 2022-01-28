@@ -1,14 +1,14 @@
 @file:Suppress("NonAsciiCharacters", "TestFunctionName")
 
-import com.sun.jna.*
-import com.sun.jna.platform.win32.IPHlpAPI
+import com.sun.jna.Library
+import com.sun.jna.Native
+import com.sun.jna.Pointer
+import com.sun.jna.Structure
 import com.sun.jna.ptr.IntByReference
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.junit.jupiter.api.Test
-import java.util.*
-import java.util.Arrays.*
 
 
 @Suppress("ClassName")
@@ -85,6 +85,7 @@ class `T41-JNA` {
     }
 
     abstract class IP_ADAPTER_INDEX_MAP : Structure() {
+        @Suppress("SpellCheckingInspection")
         override fun getFieldOrder(): MutableList<String> = mutableListOf(
             "lStructSize", "hwndOwner", "hInstance", "lpstrFilter", "lpstrCustomFilter", "nMaxCustFilter",
             "nFilterIndex", "lpstrFile", "nMaxFile", "lpstrFileTitle", "nMaxFileTitle", "lpstrInitialDir",
