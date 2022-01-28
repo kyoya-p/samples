@@ -1,12 +1,14 @@
 @file:Suppress("NonAsciiCharacters", "TestFunctionName")
 
 import com.sun.jna.*
+import com.sun.jna.platform.win32.IPHlpAPI
 import com.sun.jna.ptr.IntByReference
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.junit.jupiter.api.Test
 import java.util.*
+import java.util.Arrays.*
 
 
 @Suppress("ClassName")
@@ -83,20 +85,18 @@ class `T41-JNA` {
     }
 
     abstract class IP_ADAPTER_INDEX_MAP : Structure() {
-        override fun getFieldOrder(): MutableList<String> {
-            return Arrays.asList(
-                "lStructSize", "hwndOwner", "hInstance", "lpstrFilter", "lpstrCustomFilter", "nMaxCustFilter",
-                "nFilterIndex", "lpstrFile", "nMaxFile", "lpstrFileTitle", "nMaxFileTitle", "lpstrInitialDir",
-                "lpstrTitle", "Flags", "nFileOffset", "nFileExtension", "lpstrDefExt", "lCustData", "lpfnHook",
-                "lpTemplateName", "pvReserved", "dwReserved", "FlagsEx"
-            )
-        }
+        override fun getFieldOrder(): MutableList<String> = mutableListOf(
+            "lStructSize", "hwndOwner", "hInstance", "lpstrFilter", "lpstrCustomFilter", "nMaxCustFilter",
+            "nFilterIndex", "lpstrFile", "nMaxFile", "lpstrFileTitle", "nMaxFileTitle", "lpstrInitialDir",
+            "lpstrTitle", "Flags", "nFileOffset", "nFileExtension", "lpstrDefExt", "lCustData", "lpfnHook",
+            "lpTemplateName", "pvReserved", "dwReserved", "FlagsEx"
+        )
     }
+
 
     @Test
     fun t5_可変長構造体() {
         // https://docs.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_interface_info
-
 
         // TODO
     }
