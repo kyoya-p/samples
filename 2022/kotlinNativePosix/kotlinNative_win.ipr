@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="17" />
+  </component>
+  <component name="ExternalStorageConfigurationManager" enabled="true" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+  <component name="InspectionProjectProfileManager">
+    <profile version="1.0">
+      <option name="myName" value="Project Default" />
+    </profile>
+    <version value="1.0" />
+  </component>
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/kotlinNative_win.iml" filepath="$PROJECT_DIR$/kotlinNative_win.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlinNative_win.commonMain.iml" filepath="$PROJECT_DIR$/kotlinNative_win.commonMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlinNative_win.commonTest.iml" filepath="$PROJECT_DIR$/kotlinNative_win.commonTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlinNative_win.nativeMain.iml" filepath="$PROJECT_DIR$/kotlinNative_win.nativeMain.iml" />
+      <module fileurl="file://$PROJECT_DIR$/kotlinNative_win.nativeTest.iml" filepath="$PROJECT_DIR$/kotlinNative_win.nativeTest.iml" />
+    </modules>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_17_PREVIEW" project-jdk-name="openjdk-17" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/out" />
+  </component>
+  <component name="RemoteRepositoriesConfiguration">
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenRepo" />
+      <option name="name" value="MavenRepo" />
+      <option name="url" value="https://repo.maven.apache.org/maven2/" />
+    </remote-repository>
+  </component>
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+  </component>
+  <component name="libraryTable">
+    <library name="Kotlin/Native 1.6.10 - builtin | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.builtin" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - gdiplus | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.gdiplus" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - iconv | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.iconv" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - opengl32 | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.opengl32" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - posix | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.posix" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - stdlib" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/common/stdlib" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/sources/kotlin-stdlib-native-sources.zip!/" />
+      </SOURCES>
+    </library>
+    <library name="Kotlin/Native 1.6.10 - windows | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.windows" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Kotlin/Native 1.6.10 - zlib | mingw_x64" type="kotlin.native">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.konan/kotlin-native-prebuilt-windows-x86_64-1.6.10/klib/platform/mingw_x64/org.jetbrains.kotlin.native.platform.zlib" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+  </component>
+</project>
