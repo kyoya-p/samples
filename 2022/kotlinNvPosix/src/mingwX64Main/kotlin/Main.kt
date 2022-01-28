@@ -2,9 +2,6 @@ import kotlinx.cinterop.*
 import platform.windows.*
 
 
-fun main2() {
-    commonMain()
-}
 
 // https://github-com.translate.goog/JetBrains/kotlin/blob/master/kotlin-native/samples/win32/src/win32Main/kotlin/MessageBox.kt?_x_tr_sl=en&_x_tr_tl=ja&_x_tr_hl=ja&_x_tr_pto=op,sc
 //
