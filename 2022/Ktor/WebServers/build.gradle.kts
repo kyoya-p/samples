@@ -22,5 +22,5 @@ dependencies {
     implementation("io.ktor:ktor-auth-jwt:1.6.7") // JWT認証
 
     implementation("ch.qos.logback:logback-classic:1.2.10") // ログを取得する場合
-    implementation("org.apache.logging.log4j:log4j:2.17.1")  //脆弱性チェック
+    //implementation("org.apache.logging.log4j:log4j:2.17.1")  //脆弱性チェック
 }
