@@ -17,4 +17,5 @@ class `T5-Collections` {
 
         sequenceOf(1, 2, 3).repeat(2).forEach { println(it) }
     }
+
 }
