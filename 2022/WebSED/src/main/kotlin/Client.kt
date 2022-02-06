@@ -22,5 +22,6 @@ fun Node.sayHello() {
 @ExperimentalJsExport
 @JsExport
 fun hello() {
-    window.alert("Yah")
+    document.body?.sayHello()
 }
+
