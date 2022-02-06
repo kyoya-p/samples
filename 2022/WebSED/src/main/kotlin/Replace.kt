@@ -5,8 +5,8 @@ import org.w3c.dom.Text
 
 @ExperimentalJsExport
 @JsExport
-fun r() {
-    replaceNodeText(document.body) { "[$it]" }
+fun r(repOp: (String) -> String = { it.reversed() }) {
+    replaceNodeText(document.body, repOp)
 }
 
 @ExperimentalJsExport

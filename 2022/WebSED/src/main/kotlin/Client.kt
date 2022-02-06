@@ -8,7 +8,7 @@ import org.w3c.dom.Text
 
 @ExperimentalJsExport
 fun main() {
-    r()
+    r{it.reversed()}
 }
 
 
