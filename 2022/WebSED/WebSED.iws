@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="36d52c3b-9dd6-435c-8e7c-f47a241019f3" name="変更" comment="n">
-      <change beforePath="$PROJECT_DIR$/WebSED.iws" beforeDir="false" afterPath="$PROJECT_DIR$/WebSED.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Client.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Client.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" afterDir="false" />
-    </list>
+    <list default="true" id="36d52c3b-9dd6-435c-8e7c-f47a241019f3" name="変更" comment="n" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -282,7 +278,14 @@
       <option name="project" value="LOCAL" />
       <updated>1644159185753</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="n">
+      <created>1644159621936</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1644159621936</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
