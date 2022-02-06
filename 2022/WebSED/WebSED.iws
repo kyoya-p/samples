@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="AutoImportSettings">
-    <option name="autoReloadType" value="SELECTIVE" />
+    <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="36d52c3b-9dd6-435c-8e7c-f47a241019f3" name="変更" comment="n">
+      <change beforePath="$PROJECT_DIR$/WebSED.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/WebSED.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WebSED.iws" beforeDir="false" afterPath="$PROJECT_DIR$/WebSED.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WebSED.main.iml" beforeDir="false" afterPath="$PROJECT_DIR$/WebSED.main.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/kotlin/Client.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Client.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/kotlin/TestClient.kt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,15 +90,17 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="com.intellij.openapi.externalSystem.service.settings.ExternalSystemGroupConfigurable" value="ALL" />
     <property name="ignore.preview.features.used" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="build.tools" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="F:\Works\samples\2022\WebSED" />
     </key>
   </component>
-  <component name="RunManager" selected="Gradle.WebSED [browserRun]">
+  <component name="RunManager" selected="Gradle.WebSED [build]">
     <configuration name="BrowserDevelopmentRun in continuous mode" type="GradleRunConfiguration" factoryName="Gradle">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -182,8 +187,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Gradle.WebSED [browserRun]" />
         <item itemvalue="Gradle.WebSED [build]" />
+        <item itemvalue="Gradle.WebSED [browserRun]" />
       </list>
     </recent_temporary>
   </component>
@@ -231,7 +236,21 @@
       <option name="project" value="LOCAL" />
       <updated>1644148574106</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="n">
+      <created>1644149468189</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1644149468189</updated>
+    </task>
+    <task id="LOCAL-00007" summary="n">
+      <created>1644149549540</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1644149549540</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
