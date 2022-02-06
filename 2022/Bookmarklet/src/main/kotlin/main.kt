@@ -1,5 +1,0 @@
-import kotlinx.browser.document
-
-fun hello() {
-    document.write("Hello, world!")
-}
