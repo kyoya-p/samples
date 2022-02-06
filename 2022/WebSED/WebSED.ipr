@@ -36,6 +36,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/WebSED.iml" filepath="$PROJECT_DIR$/WebSED.iml" />
       <module fileurl="file://$PROJECT_DIR$/WebSED.main.iml" filepath="$PROJECT_DIR$/WebSED.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/WebSED.test.iml" filepath="$PROJECT_DIR$/WebSED.test.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_17_PREVIEW" project-jdk-name="openjdk-17" project-jdk-type="JavaSDK">
@@ -83,6 +84,33 @@
       <JAVADOC />
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib-js/1.6.10/3592edbed7b845b7d5402fc1d30f4f99e87f8f71/kotlin-stdlib-js-1.6.10-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.jetbrains.kotlinx:atomicfu-js:klib:0.17.0" type="kotlin.js">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-js/0.17.0/58d57419f8fd338452b27dc78e983faa507ec34e/atomicfu-jsir-0.17.0.klib!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/atomicfu-js/0.17.0/d1d4220bf93dbde7d7ef748ee563ed068e0cc5ee/atomicfu-js-0.17.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.jetbrains.kotlinx:kotlinx-coroutines-core-js:klib:1.6.0" type="kotlin.js">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-js/1.6.0/d0f8eb37d570b546770c41e6cbeccc88c1930673/kotlinx-coroutines-core-jsir-1.6.0.klib!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-js/1.6.0/edfd048a61bdde5884c4d3cafce28cc2c1f117fa/kotlinx-coroutines-core-js-1.6.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:klib:1.0-M1-1.4.0-rc" type="kotlin.js">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-runtime-js/1.0-M1-1.4.0-rc/8704f67ce92375cb6b7d918c74227e191c1ad34b/kotlinx-serialization-runtime-jsir-1.0-M1-1.4.0-rc.klib!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-runtime-js/1.0-M1-1.4.0-rc/eb42f970325fa81af5df8140e2903293b311e94/kotlinx-serialization-runtime-js-1.0-M1-1.4.0-rc-sources.jar!/" />
       </SOURCES>
     </library>
   </component>
