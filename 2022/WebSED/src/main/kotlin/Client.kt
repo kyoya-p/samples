@@ -7,7 +7,8 @@ import org.w3c.dom.Element
 import org.w3c.dom.Text
 
 fun main() {
-    window.onload = { document.body?.sayHello() }
+    //window.onload = { document.body?.sayHello() }
+    r()
 }
 
 fun Node.sayHello() {

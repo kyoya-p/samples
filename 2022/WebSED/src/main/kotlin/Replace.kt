@@ -11,14 +11,12 @@ fun r() {
 
 @ExperimentalJsExport
 @JsExport
-fun replaceNodeText(rootElement: Element?, repOp: (String) -> String = { "[$it]" }) {
+fun replaceNodeText(rootElement: Element?, repOp: (String) -> String) {
     var n = rootElement?.firstChild
     while (n != null) {
-        if (n is Text) {
-            println("[${n.textContent}]")
-            n.textContent = n.textContent?.let { repOp(it) }
-        } else if (n is Element) {
-            replaceNodeText(n)
+        when (n) {
+            is Text -> n.textContent = n.textContent?.let { repOp(it) }
+            is Element -> replaceNodeText(n, repOp)
         }
         n = n.nextSibling
     }
