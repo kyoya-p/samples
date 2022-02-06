@@ -6,7 +6,7 @@ import org.w3c.dom.Text
 @ExperimentalJsExport
 @JsExport
 fun r() {
-    replaceNodeText(document.body) { it }
+    replaceNodeText(document.body) { "[$it]" }
 }
 
 @ExperimentalJsExport
