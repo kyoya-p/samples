@@ -6,7 +6,7 @@ import org.w3c.dom.Text
 @ExperimentalJsExport
 @JsExport
 fun r() {
-    val regexTable = mapOf("a" to "A", "A" to "a")
+    val regexTable = mapOf("[aA]" to "[Aa]")
     replaceNodeText(document.body) { sed(it, regexTable) }
 }
 
