@@ -30,3 +30,14 @@ kotlin {
         }
     }
 }
+
+tasks["build"]!!.apply {
+    doLast {
+        copy {
+            from("$buildDir/distributions")
+            into("$projectDir/dist")
+        }
+    }
+}
+
+

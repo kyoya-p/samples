@@ -5,12 +5,11 @@ import org.w3c.dom.Text
 
 @ExperimentalJsExport
 @JsExport
-fun r(repOp: (String) -> String = { it.reversed() }) {
-    replaceNodeText(document.body, repOp)
+fun r() {
+    val regexTable = mapOf("a" to "A", "A" to "a")
+    replaceNodeText(document.body) { sed(it, regexTable) }
 }
 
-@ExperimentalJsExport
-@JsExport
 fun replaceNodeText(rootElement: Element?, repOp: (String) -> String) {
     var n = rootElement?.firstChild
     while (n != null) {
@@ -20,4 +19,8 @@ fun replaceNodeText(rootElement: Element?, repOp: (String) -> String) {
         }
         n = n.nextSibling
     }
+}
+
+fun sed(str: String, regexTable: Map<String, String>) = regexTable.entries.fold(str) { s, (regex, repl) ->
+    s.replace(Regex(regex), repl)
 }
