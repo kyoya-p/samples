@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f6ac07d7-9219-4261-a072-0f95285e4db5" name="変更" comment="n">
+    <list default="true" id="60852338-4269-4828-a25e-aec3eb55c121" name="変更" comment="">
       <change beforePath="$PROJECT_DIR$/WebSED.iws" beforeDir="false" afterPath="$PROJECT_DIR$/WebSED.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/kotlin/Replace.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/WebSED.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/WebSED.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/WebSED.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/dist/WebSED.js.map" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,12 +44,6 @@
                 <item name="Tasks" type="e4a08cd1:TasksNode" />
                 <item name="build" type="c8890929:TasksNode$1" />
               </path>
-              <path>
-                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
-                <item name="WebSED" type="f1a62948:ProjectNode" />
-                <item name="Tasks" type="e4a08cd1:TasksNode" />
-                <item name="other" type="c8890929:TasksNode$1" />
-              </path>
             </expand>
             <select />
           </tree_state>
@@ -61,7 +57,7 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectId" id="24mifcViukd5fg5OF9S1Uc5f7FI" />
+  <component name="ProjectId" id="24nv2JSJXNnVdV35eR22oBsqC54" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="false" id="Update" />
   </component>
@@ -71,14 +67,18 @@
     <option name="showMembers" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="com.intellij.openapi.externalSystem.service.settings.ExternalSystemGroupConfigurable" value="ALL" />
-    <property name="last_opened_file_path" value="C:/Works" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/samples" />
     <property name="settings.editor.selected.configurable" value="build.tools" />
   </component>
-  <component name="RunManager" selected="Gradle.WebSED [build]">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="F:\Works\samples\2022\WebSED\samples" />
+    </key>
+  </component>
+  <component name="RunManager">
     <configuration name="WebSED [build]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
       <ExternalSystemSettings>
         <option name="executionName" />
@@ -100,58 +100,14 @@
       <DebugAllEnabled>false</DebugAllEnabled>
       <method v="2" />
     </configuration>
-    <configuration name="WebSED [copyTarget]" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
-      <ExternalSystemSettings>
-        <option name="executionName" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="externalSystemIdString" value="GRADLE" />
-        <option name="scriptParameters" />
-        <option name="taskDescriptions">
-          <list />
-        </option>
-        <option name="taskNames">
-          <list>
-            <option value="copyTarget" />
-          </list>
-        </option>
-        <option name="vmOptions" />
-      </ExternalSystemSettings>
-      <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
-      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-      <DebugAllEnabled>false</DebugAllEnabled>
-      <method v="2" />
-    </configuration>
     <recent_temporary>
       <list>
         <item itemvalue="Gradle.WebSED [build]" />
-        <item itemvalue="Gradle.WebSED [copyTarget]" />
       </list>
     </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="アプリケーションレベル" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
-    <task active="true" id="Default" summary="デフォルトタスク">
-      <changelist id="f6ac07d7-9219-4261-a072-0f95285e4db5" name="変更" comment="" />
-      <created>1644242270843</created>
-      <option name="number" value="Default" />
-      <option name="presentableId" value="Default" />
-      <updated>1644242270843</updated>
-    </task>
-    <task id="LOCAL-00001" summary="n">
-      <created>1644242314338</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1644242314338</updated>
-    </task>
-    <task id="LOCAL-00002" summary="n">
-      <created>1644273128466</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1644273128466</updated>
-    </task>
-    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -164,9 +120,5 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="VcsManagerConfiguration">
-    <MESSAGE value="n" />
-    <option name="LAST_COMMIT_MESSAGE" value="n" />
   </component>
 </project>

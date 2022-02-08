@@ -16,6 +16,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:1.0-M1-1.4.0-rc")
 
+    // https://github.com/SheetJS/sheetjs
+    implementation("org.webjars.bowergithub.sheetjs:sheetjs:0.17.5") // https://mvnrepository.com/artifact/org.webjars.bowergithub.sheetjs/sheetjs
+
     //testImplementation(kotlin("test"))
     //implementation("org.jetbrains.kotlinx:kotlinx-html:0.7.2")
 }
@@ -31,12 +34,10 @@ kotlin {
     }
 }
 
-tasks["build"]!!.apply {
-    doLast {
-        copy {
-            from("$buildDir/distributions")
-            into("$projectDir/dist")
-        }
+tasks["build"].doLast {
+    copy {
+        from("$buildDir/distributions")
+        into("$projectDir/dist")
     }
 }
 
