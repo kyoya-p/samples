@@ -41,4 +41,5 @@ tasks["build"].doLast {
     }
 }
 
+tasks.withType<Jar> { duplicatesStrategy = DuplicatesStrategy.INHERIT }
 
