@@ -18,6 +18,7 @@ kotlin {
         browser {
             webpackTask {
                 cssSupport.enabled = true
+                output.libraryTarget = "commonjs2"
             }
 
             runTask {
