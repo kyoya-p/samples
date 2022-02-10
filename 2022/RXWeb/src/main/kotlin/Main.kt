@@ -2,10 +2,8 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 
 fun main() {
-    //document.write("Hello, world!")
-    document.onload={
-        window.alert("aaa")
-    }
+
+    window.alert(document.body?.outerHTML?: "nobody")
 
 }
 
