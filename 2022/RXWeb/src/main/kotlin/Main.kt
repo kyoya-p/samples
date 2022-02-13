@@ -3,8 +3,10 @@ import kotlinx.browser.window
 
 fun main() {
 
-    window.alert(document.body?.outerHTML?: "nobody")
-
+    document.onload = {
+        window.alert("onload ${document.body?.outerHTML }")
+    }
+    window.alert(document.body?.outerHTML ?: "nobody")
 }
 
 //suspend fun load(url: String) = window.fetch(url).await().text().await()
