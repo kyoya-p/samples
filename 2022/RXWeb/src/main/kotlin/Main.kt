@@ -1,8 +1,6 @@
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
-import org.w3c.fetch.CORS
-import org.w3c.fetch.RequestMode
 
 //@JsName("CryptoJS")
 //external fun CryptoJS()
