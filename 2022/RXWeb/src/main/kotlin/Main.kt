@@ -1,5 +1,6 @@
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.await
 
 @JsName("CryptoJS")
 external fun CryptoJS()
