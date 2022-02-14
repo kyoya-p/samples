@@ -35,3 +35,10 @@ kotlin {
         binaries.executable()
     }
 }
+
+tasks["build"].doLast {
+    copy {
+        from("$buildDir/distributions")
+        into("$projectDir/dist")
+    }
+}

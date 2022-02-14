@@ -2,11 +2,10 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import org.w3c.fetch.CORS
-import org.w3c.fetch.RequestInit
 import org.w3c.fetch.RequestMode
 
-@JsName("CryptoJS")
-external fun CryptoJS()
+//@JsName("CryptoJS")
+//external fun CryptoJS()
 
 suspend fun main() {
     load("https://cdnjs.com/libraries/crypto-js")
@@ -19,7 +18,9 @@ suspend fun main() {
 //    window.alert(document.body?.outerHTML ?: "nobody")
 }
 
-suspend fun load(url: String) = window.fetch(url, RequestInit(mode = RequestMode.CORS)).await().text().await()
+suspend fun load(url: String) = window.fetch(url,
+).await().text().await()
+
 //fun function(jscode: String) = js("window.Function(jscode)")
 //fun requireJsModule(module: String) = js("require(module)")
 
