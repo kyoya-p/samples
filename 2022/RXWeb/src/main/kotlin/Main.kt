@@ -2,6 +2,7 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import org.w3c.fetch.CORS
+import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import org.w3c.fetch.RequestMode
 
@@ -23,7 +24,8 @@ suspend fun main() {
 suspend fun load(url: String) = window.fetch(
     url,
     RequestInit(
-        //headers = Headers().apply { set("Access-Control-Allow-Origin", url) },
+//        headers = Headers().apply { set("Access-Control-Allow-Origin", url) },
+        headers = Headers().apply { set("myheader", url) },
         mode = RequestMode.CORS,
     ),
 ).await().text().await()
