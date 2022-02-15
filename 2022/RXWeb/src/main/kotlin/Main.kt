@@ -11,7 +11,8 @@ import org.w3c.fetch.RequestMode
 
 suspend fun main() {
     window.alert("start 1")
-    load("https://cdnjs.com/libraries/crypto-js")
+//    load("https://cdnjs.com/libraries/crypto-js")
+    load("https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js")
     val hash = js("CryptoJS.MD5('Message')")
     window.alert(hash)
 
