@@ -25,7 +25,7 @@ suspend fun main() {
 suspend fun load(url: String) = window.fetch(
     url,
     RequestInit(
-//        headers = Headers().apply { set("Access-Control-Allow-Origin", url) },
+        headers = Headers().apply { set("Access-Control-Allow-Origin", url) },
         //headers = Headers().apply { set("myheader", url) },
         //mode = RequestMode.CORS,
     ),
