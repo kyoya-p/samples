@@ -10,7 +10,7 @@ import org.w3c.fetch.RequestMode
 //external fun CryptoJS()
 
 suspend fun main() {
-    window.alert("start 1")
+    window.alert("start 2")
 //    load("https://cdnjs.com/libraries/crypto-js")
     load("https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js")
     val hash = js("CryptoJS.MD5('Message')")
@@ -27,7 +27,7 @@ suspend fun load(url: String) = window.fetch(
     RequestInit(
         headers = Headers().apply { set("Access-Control-Allow-Origin", url) },
         //headers = Headers().apply { set("myheader", url) },
-        //mode = RequestMode.CORS,
+        mode = RequestMode.CORS,
     ),
 ).await().text().await()
 
