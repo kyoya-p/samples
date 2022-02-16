@@ -10,6 +10,7 @@ const val cryptJs = "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/cr
 fun main() {
 
     js("""
+            window.alert("aaa");
 window.crypto.subtle.generateKey(
     {
         name: "AES-CBC",
@@ -20,11 +21,12 @@ window.crypto.subtle.generateKey(
 )
 .then(function(key){
     //returns a key object
-    console.log(key);
+    console.log(key); 
+    window.alert(key);
 })
 .catch(function(err){
     console.error(err);
-});        
+});
     """)
 
     js(
