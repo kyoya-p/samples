@@ -6,8 +6,13 @@ gradlew build
 git push
 
 ## Run
+```
+gradlew browserRun
+or
+gradlew browserDevelopmentRun
+or
 https://kyoya-p.github.io/samples/2022/RXWeb/dist/index.html
-
+```
 
 ## 資料
 
