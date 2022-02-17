@@ -13,7 +13,6 @@ dependencies {
     implementation(kotlin("stdlib-js"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-html:0.7.3")
 }
 
 kotlin {
