@@ -12,7 +12,8 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-js"))
 
-    implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.7.3") //https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-html-js
+    implementation("io.ktor:ktor-client-js:1.6.7") // https://mvnrepository.com/artifact/io.ktor/ktor-client-js
 }
 
 kotlin {
