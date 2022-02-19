@@ -15,5 +15,6 @@ suspend fun main() {
     val httpClient = HttpClient()
     val r = httpClient.get<String>("test.ods")
 
-        window.alert(r)
+    window.alert(r)
+
 }
