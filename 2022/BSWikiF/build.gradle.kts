@@ -8,17 +8,19 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    //maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    //google()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    google()
 }
 
 dependencies {
     implementation(kotlin("stdlib-js"))
     implementation("org.jetbrains.kotlinx:kotlinx-html-js:0.7.3")
+    implementation(compose.web.core)
+    implementation(compose.runtime)
 }
 
 kotlin {
-    js {
+    js(IR) {
         browser {
             webpackTask {
                 cssSupport.enabled = true
