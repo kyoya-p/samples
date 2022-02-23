@@ -11,5 +11,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "compose-web-lp"
+rootProject.name = "compose-web"
 

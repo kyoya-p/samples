@@ -9,4 +9,5 @@ gradlew jsRun
 ```
 ブラウザが起動しサンプルページが表示される。
 
-[メモ - Qiita]()
+
+[メモ - Qiita](https://qiita.com/drafts/994f30733b03dad20bd3/edit)
