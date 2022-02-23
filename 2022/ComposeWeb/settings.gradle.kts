@@ -12,4 +12,3 @@ pluginManagement {
 }
 
 rootProject.name = "compose-web"
-
