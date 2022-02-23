@@ -6,32 +6,41 @@ import org.jetbrains.compose.web.renderComposable
 import com.sample.components.*
 import com.sample.content.*
 import com.sample.style.AppStylesheet
+import kotlinx.browser.window
 import org.jetbrains.compose.web.css.GridAutoFlow
-import org.jetbrains.compose.web.css.selectors.CSSSelector
 import org.jetbrains.compose.web.dom.Button
 import org.jetbrains.compose.web.dom.Text
 
 fun main() {
     renderComposable(rootElementId = "root") {
-        Style(AppStylesheet)
-
-        Layout {
-//            Header()
-            MainContentLayout {
-//                Intro()
-//                ComposeWebLibraries()
-//                GetStarted()
-//                CodeSamples()
-                //JoinUs()
-                MyButton()
-            }
-//            PageFooter()
-        }
+        MyButton()
     }
 }
 
 @Composable
 fun MyButton() {
-    //Button()
-    Text("Text Sample3")
+    Button({
+        onClick { window.alert("Clicked!") }
+    }) {
+        Text("Show Dialog")
+    }
+}
+
+
+fun main_bak() {
+    renderComposable(rootElementId = "root") {
+        Style(AppStylesheet)
+
+        Layout {
+            Header()
+            MainContentLayout {
+                Intro()
+                ComposeWebLibraries()
+                GetStarted()
+                CodeSamples()
+                JoinUs()
+            }
+            PageFooter()
+        }
+    }
 }
