@@ -23,6 +23,7 @@ kotlin {
                 implementation(npm("highlight.js", "10.7.2"))
                 implementation(compose.web.core)
                 implementation(compose.runtime)
+                implementation(npm("material-components-web","13.0.0")) //https://www.npmjs.com/package/material-components-web
             }
         }
     }
