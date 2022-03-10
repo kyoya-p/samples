@@ -10,12 +10,40 @@ class `T1-Variable_Class` {
 
         var c = 1 // mutableな変数
         c++
-        println(c)
+        assert(c == 2)
+    }
+
+    @Suppress("UNUSED_VARIABLE", "unused")
+    @Test
+    fun `t02-クラス`() {
+        class C0 // 空のクラス
+
+        val c0 = C0()
+
+        class C1(val v: Int) // プライマリコンストラクタでメンバ定数の宣言と初期化
+
+        val c1 = C1(1)
+
+        class C2<T>(var rs: Iterable<T>) {
+            init { //初期化ブロック
+                rs = rs.reversed()
+            }
+        }
+
+        val c2 = C2("123".toList())
+        assert(c2.rs == "321".toList())
+
+        class C3(val f: Float) {
+            constructor(i: Int) : this(i.toFloat()) //セカンダリコンストラクタ
+        }
+
+        val c3 = C3(5)
+        assert(c3.f == 5.toFloat())
     }
 
     @Suppress("unused")
     @Test
-    fun `t02-クラスと継承`() {
+    fun `t03-クラスと継承`() {
         @Suppress("UNUSED_VARIABLE")
         class C(val a: Int)
 

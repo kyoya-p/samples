@@ -4,7 +4,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.sync.Semaphore
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import java.io.PipedReader
+import java.io.PipedWriter
+import java.io.PrintWriter
 import kotlin.concurrent.thread
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -64,6 +66,25 @@ class `T11-Coroutine` {
             (1..5).map { async { coroutineLoad() } }.awaitAll()
             println(w.now())
             assert((100..200).contains(w.now()))
+        }
+    }
+
+    @Test
+    fun `t02a-コルーチンの入力待ち`(): Unit = runBlocking(Dispatchers.Default) { // Coroutine Context注意
+        val o = PipedWriter()
+        val i = PipedReader()
+        i.connect(o)
+
+        launch {
+            println("Reader Waiting: ")
+            println(i.buffered().readLine()) // 入力等は見落としがち
+            println("Reader Done: ")
+        }
+        launch {
+            println("Writer Pause:")
+            delay(100)
+            PrintWriter(o).println("aaa")
+            println("Writer Done:")
         }
     }
 
@@ -148,6 +169,5 @@ class `T11-Coroutine` {
             assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので200msぐらい
         }
     }
-
 
 }
