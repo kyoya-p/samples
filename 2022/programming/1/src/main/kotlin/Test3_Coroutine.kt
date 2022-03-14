@@ -1,25 +1,27 @@
-package test2
+package test3
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.io.PrintStream
-import kotlin.concurrent.thread
 
-
-fun main() {
+@Suppress("BlockingMethodInNonBlockingContext")
+fun main() = runBlocking(Dispatchers.Default) {
     val rawStdin = System.`in`
     val rawStdout = System.out
 
     val stdinIntake = PipedOutputStream()
     val stdin = PipedInputStream(stdinIntake)
     val stdout = PipedOutputStream()
-    val stdoutDrain = PipedInputStream(stdout)
+    val stdoutOutlet = PipedInputStream(stdout)
     System.setIn(stdin)
     System.setOut(PrintStream(stdout))
 
-    thread {
+    launch {
         stdinIntake.write("ABC\n".toByteArray())
-        val r = stdoutDrain.bufferedReader().readLine()
+        val r = stdoutOutlet.bufferedReader().readLine()
         rawStdout.println("Thanks to reply [$r]")
     }
     main.main()
