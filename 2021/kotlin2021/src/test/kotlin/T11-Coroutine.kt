@@ -3,7 +3,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.sync.Semaphore
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
 import java.io.PipedReader
 import java.io.PipedWriter
 import java.io.PrintWriter
@@ -62,7 +64,7 @@ class `T11-Coroutine` {
             assert((500..600).contains(w.now()))
         }
         stopWatch { w ->
-            // Coroutineはasyncで一時処理を中断し次のasyncを開始する
+            // Coroutineはasyncで一時処理を中断し別のasyncを開始する
             (1..5).map { async { coroutineLoad() } }.awaitAll()
             println(w.now())
             assert((100..200).contains(w.now()))
@@ -169,5 +171,4 @@ class `T11-Coroutine` {
             assert((200..300).contains(w.now())) // 5個の非同期関数を3個まで同時に実行するので200msぐらい
         }
     }
-
 }
