@@ -16,7 +16,7 @@ fun main() {
 
     System.setIn(siba)
     System.setOut(PrintStream(soba))
-    main.main()
+    main2.main()
     System.setIn(stdin)
     System.setOut(stdout)
 

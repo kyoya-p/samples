@@ -22,7 +22,7 @@ fun main() {
         val r = stdoutDrain.bufferedReader().readLine()
         rawStdout.println("Thanks to reply [$r]")
     }
-    main.main()
+    main2.main()
 
     System.setIn(rawStdin)
     System.setOut(rawStdout)

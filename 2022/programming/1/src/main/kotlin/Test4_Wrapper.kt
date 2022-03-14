@@ -7,7 +7,23 @@ import java.io.PrintStream
 
 class Env {
     inner class Pipe {
-        val intake = PipedOutputStream()
+        val intake = object : PipedOutputStream() {
+            override fun write(b: ByteArray) {
+                rawStdout.println("write($b)")
+                super.write(b)
+            }
+
+            override fun write(b: Int) {
+                rawStdout.println("write($b)")
+                super.write(b)
+            }
+
+            override fun write(b: ByteArray, off: Int, len: Int) {
+                rawStdout.println("write(${String(b, off, len)})")
+                super.write(b, off, len)
+            }
+
+        }
         val outlet = PipedInputStream(intake)
     }
 
@@ -24,8 +40,19 @@ suspend fun <R> stdioEmulatior(envSvr: suspend Env.() -> Unit, target: suspend (
     val env = Env()
     System.setIn(env.emuStdin.outlet)
     System.setOut(PrintStream(env.emuStdout.intake))
-    launch { env.envSvr() }
+    val thEnv = launch {
+        kotlin.runCatching {
+            env.rawStdout.println("Test Environment Start.")
+            env.envSvr()
+            env.rawStdout.println("Test Environment Complete.")
+        }.onFailure { it.printStackTrace(System.err) }
+    }
+
+    env.rawStdout.println("Target Start.")
     val r = target()
+    env.rawStdout.println("Target Complete.")
+
+    thEnv.join()
     System.setIn(env.rawStdin)
     System.setOut(env.rawStdout)
     return@coroutineScope r
@@ -33,15 +60,11 @@ suspend fun <R> stdioEmulatior(envSvr: suspend Env.() -> Unit, target: suspend (
 
 fun main() = runBlocking(Dispatchers.Default) {
     stdioEmulatior({
-        rawStdout.println("T1")
         PrintStream(intake).println("ABC")
-        rawStdout.println("T2")
         val r = outlet.bufferedReader().readLine()
-        rawStdout.println("T3")
         rawStdout.println("Thanks to reply [$r]")
-
     }) {
-        main.main()
+        main2.main()
     }
 }
 

@@ -24,7 +24,7 @@ fun main() = runBlocking(Dispatchers.Default) {
         val r = stdoutOutlet.bufferedReader().readLine()
         rawStdout.println("Thanks to reply [$r]")
     }
-    main.main()
+    main2.main()
 
     System.setIn(rawStdin)
     System.setOut(rawStdout)
