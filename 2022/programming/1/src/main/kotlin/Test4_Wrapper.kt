@@ -6,34 +6,33 @@ import java.io.PipedOutputStream
 import java.io.PrintStream
 
 class Env {
-    inner class Pipe {
+    inner class Pipe(val pipeName: String) {
         val intake = object : PipedOutputStream() {
             override fun write(b: ByteArray) {
-                rawStdout.println("write($b)")
+                rawStdout.print("$pipeName $b")
                 super.write(b)
             }
 
             override fun write(b: Int) {
-                rawStdout.println("write($b)")
+                rawStdout.print("$pipeName $b")
                 super.write(b)
             }
 
             override fun write(b: ByteArray, off: Int, len: Int) {
-                rawStdout.println("write(${String(b, off, len)})")
+                rawStdout.print("$pipeName ${String(b, off, len)}")
                 super.write(b, off, len)
             }
-
         }
         val outlet = PipedInputStream(intake)
     }
 
     val rawStdin = System.`in`
     val rawStdout = System.out
-    val emuStdin = Pipe()
-    val emuStdout = Pipe()
+    val emuStdin = Pipe("stdin <<")
+    val emuStdout = Pipe("stdout>>")
 
-    val intake get() = emuStdin.intake
-    val outlet get() = emuStdout.outlet
+    val intake = PrintStream(emuStdin.intake)
+    val outlet = emuStdout.outlet.bufferedReader()
 }
 
 suspend fun <R> stdioEmulatior(envSvr: suspend Env.() -> Unit, target: suspend () -> R) = coroutineScope {
@@ -60,8 +59,8 @@ suspend fun <R> stdioEmulatior(envSvr: suspend Env.() -> Unit, target: suspend (
 
 fun main() = runBlocking(Dispatchers.Default) {
     stdioEmulatior({
-        PrintStream(intake).println("ABC")
-        val r = outlet.bufferedReader().readLine()
+        intake.println("ABC")
+        val r = outlet.readLine()
         rawStdout.println("Thanks to reply [$r]")
     }) {
         main2.main()
