@@ -1,4 +1,4 @@
-package testEnv
+package testEnvironment
 
 import kotlinx.coroutines.*
 import test4.stdioEmulatior
@@ -6,19 +6,23 @@ import test4.stdioEmulatior
 
 fun main() = runBlocking(Dispatchers.Default) {
     stdioEmulatior({
-        val N = 3
+        val N = 6
         val Q = 4
-        val rndList = (0 until N).shuffled()
-        fun weight(label: String): Int = rndList[label[0] - 'A']
+        val rm = ('A' until 'Z').take(N).shuffled().withIndex().associate { it.value to it.index }
+        val ans = rm.entries.sortedBy { it.value }.map { it.key }.joinToString("")
+        rawStdout.println(ans)
         intake.println("$N $Q")
-        while (isActive) {
-            val c = outlet.readLine()!!.split(" ")
-            when (c[0]) {
-                "!" -> break
-                "?" -> intake.println(if (weight(c[1]) > weight(c[2])) "<" else ">")
-                else -> throw Exception()
+        val res = let {
+            outlet.lineSequence().map { it.split(" ") }.forEach { c ->
+                when (c[0]) {
+                    "!" -> return@let c[1]
+                    "?" -> intake.println(if (rm[c[1][0]]!! > rm[c[2][0]]!!) ">" else "<")
+                    else -> throw Exception()
+                }
             }
+            throw Exception()
         }
+        if(res==ans) rawStdout.println("Passed")
     }) {
         main.main()
     }
