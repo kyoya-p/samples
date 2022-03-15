@@ -11,10 +11,10 @@ fun main() = runBlocking(Dispatchers.Default) {
         val rndList = (0 until N).shuffled()
         fun weight(label: String): Int = rndList[label[0] - 'A']
         intake.println("$N $Q")
-        repeat(Q) {
+        while (isActive) {
             val c = outlet.readLine()!!.split(" ")
             when (c[0]) {
-                "!" -> return@repeat
+                "!" -> break
                 "?" -> intake.println(if (weight(c[1]) > weight(c[2])) "<" else ">")
                 else -> throw Exception()
             }
