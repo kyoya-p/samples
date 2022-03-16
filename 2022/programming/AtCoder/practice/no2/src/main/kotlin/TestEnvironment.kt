@@ -5,7 +5,7 @@ import java.io.PipedOutputStream
 import java.io.PrintStream
 import kotlin.concurrent.thread
 
-class Env {
+class TestEnv {
     inner class Pipe(val pipeName: String) {
         val intake = object : PipedOutputStream() {
             override fun write(b: ByteArray) {
@@ -40,8 +40,8 @@ class Env {
     fun <T> print(v: T) = rawSo.print(v)
 }
 
-fun <R> stdioEmulatior(envSvr: Env.() -> Unit, target: () -> R): R {
-    val env = Env()
+fun <R> stdioEmulatior(envSvr: TestEnv.() -> Unit, target: () -> R): R {
+    val env = TestEnv()
     System.setIn(env.si.outlet)
     System.setOut(PrintStream(env.so.intake))
     val thEnv = thread {
