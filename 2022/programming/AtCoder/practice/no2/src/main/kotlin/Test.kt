@@ -1,10 +1,12 @@
 package testEnvironment
 
+import testenv.Env
 import testenv.stdioEmulatior
 
+fun testEnv(e: Env.() -> Unit) = e
 
-fun main()  {
-    stdioEmulatior({
+fun main() {
+    val env = testEnv {
         val N = 6
         val Q = 4
         val rm = ('A' until 'Z').take(N).shuffled().withIndex().associate { it.value to it.index }
@@ -21,8 +23,10 @@ fun main()  {
             }
             throw Exception()
         }
-        if(res==ans) println("Passed") else println("Failed")
-    }) {
+        if (res == ans) println("Passed") else println("Failed")
+    }
+
+    stdioEmulatior(env) {
         main.main()
     }
 }
