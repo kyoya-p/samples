@@ -1,9 +1,7 @@
 package testEnvironment
 
-import testenv.TestEnv
 import testenv.stdioEmulatior
-
-fun testEnv(e: TestEnv.() -> Unit) = e
+import testenv.testEnv
 
 val env = testEnv {
     val N = 6

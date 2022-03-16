@@ -62,4 +62,5 @@ fun <R> stdioEmulatior(envSvr: TestEnv.() -> Unit, target: () -> R): R {
     return r
 }
 
+fun testEnv(e: TestEnv.() -> Unit) = e
 
