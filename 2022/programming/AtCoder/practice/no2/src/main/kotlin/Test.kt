@@ -10,10 +10,10 @@ val env = testEnv {
     val ans = rm.entries.sortedBy { it.value }.map { it.key }.joinToString("")
     println(ans)
     intake.println("$N $Q")
-    val res = let {
+    val res = run {
         outlet.lineSequence().map { it.split(" ") }.forEach { c ->
             when (c[0]) {
-                "!" -> return@let c[1]
+                "!" -> return@run c[1]
                 "?" -> intake.println(if (rm[c[1][0]]!! > rm[c[2][0]]!!) ">" else "<")
                 else -> throw Exception()
             }
