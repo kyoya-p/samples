@@ -34,20 +34,26 @@ fun main() {
         System.err.println(N)
         System.err.println(X)
         val D = readLine()!!
+
+        //        fun String.toBinList() = generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { (it % 2) == 1L }.toList().reversed()
         fun String.toBinList() =
-            generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { (it % 2) == 1L }.toList().reversed()
+            generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { if ((it % 2) == 1L) '1' else '0' }
+                .toList().reversed()
+
+        val sb = StringBuffer(X.toBinList().joinToString { "" })
         System.err.println(X.toBinList())
-        val res = D.toList().fold(X.toBinList()) { r, e ->
+        D.forEach { e ->
             when (e) {
-                'L' -> r + false
-                'R' -> r + true
-                else -> r.dropLast(1)
+                'L' -> sb.append('0')
+                'R' -> sb.append('1')
+                else -> sb.dropLast(1)
             }
         }
 
         fun List<Int>.toLong() = fold(0L) { a, e -> a * 2 + e }
         fun List<Boolean>.toLong() = fold(0L) { a, e -> a * 2 + if (e) 1 else 0 }
-        println(res.toLong())
+        fun List<Char>.toLong() = fold(0L) { a, e -> a * 2 + if (e=='1') 1 else 0 }
+        println(sb.toList().toLong())
         Long.MAX_VALUE
     }
     stdioEmulatior(envs) {
