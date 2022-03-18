@@ -1,7 +1,6 @@
 package testEnvironment
 
 import kotlinx.coroutines.*
-import test4.stdioEmulatior
 
 fun main() = runBlocking(Dispatchers.Default) {
     stdioEmulatior({

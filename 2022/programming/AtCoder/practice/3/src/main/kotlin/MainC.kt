@@ -2,17 +2,18 @@ package main.c
 
 import testenv.stdioEmulatior
 import testenv.testEnv
-import java.math.BigInteger
 
 
 val env = testEnv {
-    intake.println("""3
+    intake.println(
+        """3
 2 3
 1 1
 4 1
 RRL
-    """.trimIndent())
-    println(outlet.readLine() == "Yes")
+    """.trimIndent()
+    )
+    outlet.readLine() == "Yes"
 }
 
 fun main() {

@@ -6,53 +6,55 @@ import testenv.testEnv
 
 val envs = listOf(
     testEnv {
-        intake.println("""
+        intake.println(
+            """
             3 2
             URL
-            """.trimIndent())
-        println(outlet.readLine() == "6")
+            """.trimIndent()
+        )
+        outlet.readLine() == "6"
     },
     testEnv {
-        intake.println("""
+        intake.println(
+            """
             4 500000000000000000
             RRUU
-            """.trimIndent())
-        println(outlet.readLine() == "500000000000000000")
+            """.trimIndent()
+        )
+        outlet.readLine() == "500000000000000000"
     },
     testEnv {
-        intake.println("""
+        debug = true
+        intake.println(
+            """
             30 123456789
             LRULURLURLULULRURRLRULRRRUURRU
-            """.trimIndent())
-        println(outlet.readLine() == "126419752371")
+            """.trimIndent()
+        )
+        outlet.readLine() == "126419752371"
     }
 )
 
 fun main() {
     fun main() {
-        val (N, X) = readLine()!!.split(" ")
-        System.err.println(N)
-        System.err.println(X)
+        val (_, X) = readLine()!!.split(" ")
         val D = readLine()!!
 
-        //        fun String.toBinList() = generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { (it % 2) == 1L }.toList().reversed()
         fun String.toBinList() =
             generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { if ((it % 2) == 1L) '1' else '0' }
                 .toList().reversed()
-
-        val sb = StringBuffer(X.toBinList().joinToString { "" })
-        System.err.println(X.toBinList())
+        System.err.println(X.toBinList().joinToString(""))
+        val sb = StringBuffer(X.toBinList().joinToString(""))
         D.forEach { e ->
             when (e) {
                 'L' -> sb.append('0')
                 'R' -> sb.append('1')
-                else -> sb.dropLast(1)
+                else -> sb.delete(sb.length-1,sb.length)
             }
+            System.err.println(sb)
         }
 
-        fun List<Int>.toLong() = fold(0L) { a, e -> a * 2 + e }
-        fun List<Boolean>.toLong() = fold(0L) { a, e -> a * 2 + if (e) 1 else 0 }
-        fun List<Char>.toLong() = fold(0L) { a, e -> a * 2 + if (e=='1') 1 else 0 }
+        fun List<Char>.toLong() = fold(0L) { a, e -> a * 2 + if (e == '1') 1 else 0 }
         println(sb.toList().toLong())
         Long.MAX_VALUE
     }
