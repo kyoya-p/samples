@@ -43,7 +43,7 @@ fun main() {
         fun String.toBinList() =
             generateSequence(toLong()) { it / 2 }.takeWhile { it >= 1 }.map { if ((it % 2) == 1L) '1' else '0' }
                 .toList().reversed()
-        System.err.println(X.toBinList().joinToString(""))
+        //System.err.println(X.toBinList().joinToString(""))
         val sb = StringBuffer(X.toBinList().joinToString(""))
         D.forEach { e ->
             when (e) {
@@ -51,7 +51,7 @@ fun main() {
                 'R' -> sb.append('1')
                 else -> sb.delete(sb.length-1,sb.length)
             }
-            System.err.println(sb)
+            //System.err.println(sb)
         }
 
         fun List<Char>.toLong() = fold(0L) { a, e -> a * 2 + if (e == '1') 1 else 0 }
