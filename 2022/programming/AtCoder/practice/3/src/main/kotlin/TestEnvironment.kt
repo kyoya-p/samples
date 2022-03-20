@@ -4,6 +4,7 @@ import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.io.PrintStream
 import kotlin.concurrent.thread
+import kotlin.time.ExperimentalTime
 
 class TestEnv {
     inner class Pipe(val pipeName: String) {
@@ -56,9 +57,9 @@ fun <TR> stdioEmulatior(envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolea
     }
 
     //env.rawSo.println("Target Start.")
+    //val start = Clock.System.now().toEpochMilliseconds()
     target()
-    //env.rawSo.println("Target Complete.")
-
+    //val lap = Clock.System.now().toEpochMilliseconds() - start
     thEnv.join()
     System.setIn(env.rawSi)
     System.setOut(env.rawSo)
