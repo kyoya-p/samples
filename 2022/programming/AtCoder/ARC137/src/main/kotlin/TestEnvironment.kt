@@ -42,8 +42,8 @@ class TestEnv(val debug: Boolean = false) {
     fun <T> print(v: T) = if (debug) rawSo.print(v) else Unit
 }
 
-fun <TR> stdioEmulatior(envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolean {
-    val env = TestEnv()
+fun <TR> stdioEmulatior(debug: Boolean = false, envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolean {
+    val env = TestEnv(debug)
     System.setIn(env.si.outlet)
     System.setOut(PrintStream(env.so.intake))
     var thRes: Boolean? = null
@@ -67,17 +67,17 @@ fun <TR> stdioEmulatior(envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolea
 
 fun <TR> stdioEmulatior(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) =
     envSvrs.asSequence().withIndex().all { (i, it) ->
-        stdioEmulatior(it, target)
+        stdioEmulatior(true, it, target)
             .also { rc -> System.err.println("Test[${i + 1}] $: $rc -----------") }
     }.also { rc -> System.err.println("All Test: $rc -----------") }
 
-fun <R> testEnv(debug0: Boolean = false, e: TestEnv.() -> R): TestEnv.() -> R = e
+fun <R> testEnv( e: TestEnv.() -> R): TestEnv.() -> R = e
 
 
 fun testEnv_AtCoder(testDir: String, testName: String, debug: Boolean = false): List<TestEnv.() -> Boolean> =
     File("$testDir/$testName/in").listFiles()!!.map { inFile ->
         val outFile = File("$testDir/$testName/out/${inFile.name}")
-        testEnv(debug) {
+        testEnv {
             intake.println(inFile.readText())
             outlet.readLine() == outFile.bufferedReader().readLine()!!
         }
