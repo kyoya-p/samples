@@ -60,8 +60,7 @@ val envs = listOf(
             """.trimIndent()
         )
         outlet.readLine() == "5"
-    },
-    ex
+    }
 )
 
 
@@ -96,7 +95,6 @@ fun main() {
         return edgeMap
     }
 
-    //fun edgeWeights(n: Int) = MutableList(n) { MutableList(n) { 1000000000 } }
     fun MutableList<MutableList<Int>>.floydWarshall() {
         val e = this
         asSequence().withIndex().flatMap { (i, n1) ->
@@ -110,25 +108,37 @@ fun main() {
     }
 
 
-    class MutableMatrix2<T : Number>(val n: Int, val init: (Int, Int) -> T) {
+    class MutableMatrix2<T : Number>(val n: Int, val init: (Int, Int) -> T) : Iterable<Triple<Int, Int, T>> {
         val m = MutableList(n * n) { init(it % n, it / n) }
-        operator fun get(n1: Int, n2: Int) = m[n1 + n2 * n]
-        operator fun get(node: Pair<Int, Int>) = m[node.first + node.second * n]
-        operator fun set(n1: Int, n2: Int, w: T) = { m[n1 * n + n2] = w }()
-        fun clone() = MutableMatrix2(n) { i, j -> m[i + j * n] }
+        fun ad(i: Int, j: Int) = if (i > j) i * n + j else j * n + i
+        operator fun get(n1: Int, n2: Int) = m[ad(n1, n2)]
+
+        //operator fun get(node: Pair<Int, Int>) = this[node.first, node.second]
+        operator fun set(n1: Int, n2: Int, w: T) = { m[ad(n1, n2)] = w }()
+
+        //operator fun set(node: Pair<Int, Int>, w: T) = { m[ad(node.first, node.second)] = w }()
+        fun clone() = MutableMatrix2(n) { i, j -> m[ad(i, j)] }
         fun replace(op: (Pair<Int, Int>, T) -> T) = apply { m.mapIndexed { i, e -> m[i] = op(i % n to i / n, e) } }
         fun <R> mapIndexed(op: (Pair<Int, Int>, T) -> R) = m.mapIndexed { i, e -> op(i % n to i / n, e) }
-        fun <R> forEachIndexed(op: (Pair<Int, Int>, T) -> R) = m.forEachIndexed { i, e -> op(i % n to i / n, e) }
+        fun <R> forEachIndexed(op: (Pair<Int, Int>, T) -> R) = entries.map { op(it.i to it.j, it.w) }
 
-        inner class Entry(val i: Int, val j: Int, val w: T)
 
-        val entries get() = m.mapIndexed { i, e -> Entry(i % n, i / n, e) }
+        val entries get() = (0 until n).flatMap { i -> (0 until i).map { j -> Entry(i, j, m[ad(i, j)]) } }
+
+        inner class Entry(val i: Int, val j: Int, val w: T) {
+            override fun toString() = "(${i + 1},${j + 1})=$w"
+        }
+
+        override fun iterator(): Iterator<Triple<Int, Int, T>> {
+            TODO("Not yet implemented")
+        }
     }
 
     @Suppress("LocalVariableName")
     fun main() {
         val (N, M) = readLine()!!.split(" ").map { it.toInt() }
-        val W = MutableMatrix2(N) { i, j -> 1000000000 }
+        val MaxValue = 1000000000
+        val W = MutableMatrix2(N) { i, j -> MaxValue }
         repeat(M) {
             val (a, b, w) = readLine()!!.split(" ").map { it.toInt() }
             W[a - 1, b - 1] = w
@@ -142,11 +152,12 @@ fun main() {
                 }
             }
         }
-        val r =
-            Wmin.entries.filter { it.w < 1000000000 }
-                .map { "(${it.i+1},${it.j+1})=${it.w}" }
-                .joinToString(prefix = "[", postfix = "]")
-        System.err.println(r)
+        System.err.println(W.entries)
+        System.err.println(Wmin.entries)
+        val d0 = W.entries.filter { it.w < MaxValue }.count()
+        val d = W.entries.filter { it.w < MaxValue }.filter { Wmin[it.i, it.j] != it.w }.count()
+        System.err.println("d=$d W.count=$d0")
+        println(d)
     }
 
     fun main2() {

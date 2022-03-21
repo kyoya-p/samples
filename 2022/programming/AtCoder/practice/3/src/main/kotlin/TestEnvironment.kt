@@ -67,11 +67,10 @@ fun <TR> stdioEmulatior(envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolea
 }
 
 fun <TR> stdioEmulatior(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) =
-    envSvrs.asSequence().mapIndexed { i, it ->
-        System.err.println("Test ${i + 1}: -----------")
-        val rc = stdioEmulatior(it, target)
-        System.err.println("Test ${i + 1}: $rc")
-    }.toList()
+    envSvrs.asSequence().withIndex().all { (i, it) ->
+        stdioEmulatior(it, target)
+            .also { rc -> System.err.println("Test ${i + 1}: $rc -----------") }
+    }.also { rc -> System.err.println("All Test: $rc -----------") }
 
 fun <R> testEnv(e: TestEnv.() -> R) = e
 
