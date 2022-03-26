@@ -71,7 +71,7 @@ fun <TR> stdioEmulatior(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) 
             .also { rc -> System.err.println("Test[${i + 1}] $: $rc -----------") }
     }.also { rc -> System.err.println("All Test: $rc -----------") }
 
-fun <R> testEnv( e: TestEnv.() -> R): TestEnv.() -> R = e
+fun <R> testEnv(e: TestEnv.() -> R): TestEnv.() -> R = e
 
 
 fun testEnv_AtCoder(testDir: String, testName: String, debug: Boolean = false): List<TestEnv.() -> Boolean> =
@@ -79,7 +79,9 @@ fun testEnv_AtCoder(testDir: String, testName: String, debug: Boolean = false): 
         val outFile = File("$testDir/$testName/out/${inFile.name}")
         testEnv {
             intake.println(inFile.readText())
-            outlet.readLine() == outFile.bufferedReader().readLine()!!
+            val tg = outFile.bufferedReader().readLine()!!
+            rawSo.println("exp:$tg")
+            outlet.readLine() == tg
         }
     }
 
