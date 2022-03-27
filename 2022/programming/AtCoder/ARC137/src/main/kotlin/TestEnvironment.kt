@@ -65,11 +65,12 @@ fun <TR> stdioEmulatior(debug: Boolean = false, envSvr: TestEnv.() -> Boolean, t
     return thRes!!
 }
 
-fun <TR> stdioEmulatior(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) =
+fun <TR> stdioEmulatiors(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) {
     envSvrs.asSequence().withIndex().all { (i, it) ->
         stdioEmulatior(true, it, target)
             .also { rc -> System.err.println("Test[${i + 1}] $: $rc -----------") }
     }.also { rc -> System.err.println("All Test: $rc -----------") }
+}
 
 fun <R> testEnv(e: TestEnv.() -> R): TestEnv.() -> R = e
 

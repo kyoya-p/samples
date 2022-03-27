@@ -1,6 +1,6 @@
 package main.b
 
-import testenv.stdioEmulatior
+import testenv.stdioEmulatiors
 import testenv.testEnv_AtCoder
 
 import java.lang.Integer.max
@@ -14,23 +14,19 @@ val rlni get() = rln.toInt()
 val String.sp get() = split(" ")
 val Iterable<String>.mapi get() = map { it.toInt() }
 
-fun main() {
-    // --------------------------------
-    fun main() {
-        var (d01, dmin, dmax, amax, amin) = listOf(0, 0, 0, 0, 0)
-        val N = rlni
-        rln.sp.mapi.forEach { e ->
-            if (e == 0) --d01 else ++d01
-            amin = min(amin, d01 - dmax)
-            amax = max(amax, d01 - dmin)
-            dmin = min(dmin, d01)
-            dmax = max(dmax, d01)
-            //"$e : $dmax, $dmin, $amax, $amin".errln
-        }
-        println(amax - amin + 1)
+
+fun main(): Unit = stdioEmulatiors(testEnv_AtCoder("ARC137", "B")) {
+    var (d01, dmin, dmax, amax, amin) = listOf(0, 0, 0, 0, 0)
+    rlni
+    rln.sp.mapi.forEach { e ->
+        if (e == 0) --d01 else ++d01
+        amin = min(amin, d01 - dmax)
+        amax = max(amax, d01 - dmin)
+        dmin = min(dmin, d01)
+        dmax = max(dmax, d01)
+        //"$e : $dmax, $dmin, $amax, $amin".errln
     }
-// --------------------------------
-    stdioEmulatior(testEnv_AtCoder("ARC137", "B")) {
-        main()
-    }
+    println(amax - amin + 1)
 }
+
+
