@@ -3,9 +3,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.sync.Semaphore
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
 import java.io.PipedReader
 import java.io.PipedWriter
 import java.io.PrintWriter
@@ -16,7 +14,7 @@ import kotlin.time.ExperimentalTime
 
 
 @ExperimentalTime
-@Suppress("NonAsciiCharacters")
+@Suppress("NonAsciiCharacters", "ClassName")
 class `T11-Coroutine` {
     @Test
     fun `t01-非同期実行`() = runBlocking {
@@ -41,8 +39,10 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun `t02-ThreadとCoroutine`() = runBlocking {
-        fun threadBlocker() = Thread.sleep(100)
+    fun `t02-ThreadとCoroutine`():Unit = runBlocking {
+        suspend fun threadBlocker() = withContext(Dispatchers.IO) {
+            Thread.sleep(100)
+        }
         suspend fun coroutineLoad() = delay(100)
 
         // ThreadのブロックとCoroutineのサスペンド、一時停止する点では同じように見えるが
@@ -75,11 +75,15 @@ class `T11-Coroutine` {
     fun `t02a-コルーチンの入力待ち`(): Unit = runBlocking(Dispatchers.Default) { // Coroutine Context注意
         val o = PipedWriter()
         val i = PipedReader()
-        i.connect(o)
+        withContext(Dispatchers.IO) {
+            i.connect(o)
+        }
 
         launch {
             println("Reader Waiting: ")
-            println(i.buffered().readLine()) // 入力等は見落としがち
+            println(withContext(Dispatchers.IO) {
+                i.buffered().readLine()
+            }) // 入力等は見落としがち
             println("Reader Done: ")
         }
         launch {
@@ -131,7 +135,7 @@ class `T11-Coroutine` {
             }
         }
 
-        suspend fun collbackWithCoroutine(callback: suspend (Int) -> Unit) = callbackFlow {
+        suspend fun callbackWithCoroutine(callback: suspend (Int) -> Unit) = callbackFlow {
             callbackWithAnotherThread {
                 trySend(it)
                 if (it == 2) close() // 終了したい場合
@@ -141,14 +145,14 @@ class `T11-Coroutine` {
             callback(it)
         }
 
-        runBlocking() {
+        runBlocking {
             stopWatch { w ->
                 launch {
-                    collbackWithCoroutine {
+                    callbackWithCoroutine {
                         println("${w.now()} $it")
                     }
                 }
-                collbackWithCoroutine {
+                callbackWithCoroutine {
                     println("${w.now()} $it")
                 }
             }

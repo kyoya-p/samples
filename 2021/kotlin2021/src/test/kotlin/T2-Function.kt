@@ -1,6 +1,7 @@
+import kotlinx.datetime.Clock
 import org.junit.jupiter.api.Test
 
-@Suppress("NonAsciiCharacters")
+@Suppress("NonAsciiCharacters", "TestFunctionName", "ClassName")
 class `T2-Function` {
     @Test
     fun t1_引数を与える値を返す関数() {
@@ -63,5 +64,15 @@ class `T2-Function` {
         }
 
         B.func()
+    }
+
+    private val time get() = Clock.System.now().toString()
+    private var io
+        get() = readln()
+        set(s) = println(s)
+
+    @Test
+    fun t22_getterSetter() {
+        io = time
     }
 }
