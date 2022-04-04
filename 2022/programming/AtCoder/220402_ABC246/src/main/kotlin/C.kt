@@ -1,7 +1,9 @@
+@file:Suppress("unused", "EXPERIMENTAL_IS_NOT_ENABLED")
+
 package main.c
 
 import testenv.stdioEmulatiors
-import testenv.testEnv_AtCoder
+import testenv.testEnv
 
 val <T> T.err get() = also { System.err.print("[$it]") }
 val <T> T.errln get() = also { System.err.println(it) }
@@ -14,29 +16,38 @@ val rln get() = readLine()!!
 val rlni get() = rln.toInt()
 val String.sp get() = split(" ")
 val Iterable<String>.mapi get() = map { it.toInt() }
+val Iterable<String>.mapf get() = map { it.toFloat() }
 val rlnvi get() = rln.sp.mapi
+val rlnvf get() = rln.sp.mapf
 
-fun main(): Unit = stdioEmulatiors(testEnv_AtCoder("ARC137", "C")) {
+//val testEnvs = testEnv_AtCoder("ARC137", "C")
+val testEnvsSample = listOf(testEnv {
+    intake.println("INPUT")
+    outlet.readLine() == "ANS"
+})
+
+val testEnvs = listOf(
+    testEnv {
+        intake.println("5 4 7")
+        intake.println("8 3 10 5 13")
+        outlet.readLine() == "12"
+    }, testEnv {
+        intake.println("5 100 7")
+        intake.println("8 3 10 5 13")
+        outlet.readLine() == "0"
+    }
+)
+
+fun main(): Unit = stdioEmulatiors(testEnvs) {
 //    fun main(): Unit {
-    val N = rlni
-    val A = rlnvi
-    var (mx1, mx2) = listOf(0, 0)
-    A.forEach { e ->
-        when {
-            e > mx2 && e < mx1 -> mx2 = e
-            e > mx2 && e > mx1 -> {
-                mx2 = mx1
-                mx1 = e
-            }
-        }
-    }
 
-    //"$N $mx1 $mx2".errln
-    if (mx1 - mx2 >= 2) {
-        println("Alice")
-    } else {
-        if (N % 2 == mx1 % 2) println("Alice") else println("Bob")
-    }
+    val (_, K, X) = rlnvi
+    val A = rlnvi
+    val Asyo = A.map { it / X }
+    val Aama = A.map { it % X }.sortedDescending()
+    val s = Asyo.sum()
+    val r = Aama.drop(K - s).sum()
+    println(r)
 }
 
 
