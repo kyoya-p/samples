@@ -6,10 +6,12 @@ import testenv.stdioEmulatiors
 import testenv.testEnv
 
 // Debugging
-val <T> T.p get() = also { System.err.print("[$it]") }
+val <T> T.p get() = also { System.err.print(it) }
 val <T> T.pl get() = also { System.err.println(it) }
+val <T> T.ppl get() = also { println(it) }
+fun <T> p(v: T) = System.err.print(v)
+fun <T> pl(v: T) = System.err.println(v)
 val <T : Collection<T>> T.pv get() = forEach { System.err.println(it) }
-//val <K, V> Map<K, V>.pm get() = also { it.entries.forEach { System.err.println(it) } }
 
 // Sortcuts
 val rln get() = readLine()!!
@@ -27,6 +29,8 @@ fun <T : Comparable<T>> max(vararg a: T) = a.max()!!
 fun <T : Comparable<T>> min(vararg a: T) = a.min()!!
 data class P<T>(var x: T, var y: T)
 
+fun <T, R> T.If(test: (T) -> Boolean, t: R) = if (test(this)) t else null
+
 fun graph_FloydWarshall(d: MutableList<MutableList<Long>>) = d.forEachIndexed { i, ei ->
     ei.forEachIndexed { j, c ->
         for (k in 0 until d.size) if (d[i][k] > d[i][k] + d[k][j]) d[i][j] = d[i][k] + d[k][j]
@@ -40,29 +44,57 @@ val testEnvsSample = listOf(testEnv {
     outlet.readLine() == "ANS"
 })
 
-val testEnvs = listOf(
-    testEnv {
-        intake.println("5")
-        intake.println("1 3")
-        intake.println("3 5")
-        intake.println("....#")
-        intake.println("...#.")
-        intake.println(".....")
-        intake.println(".#...")
-        intake.println("#....")
-        outlet.readLine() == "3"
-    }
-)
 
+val testSample1 = testEnv {
+    intake.println("5")
+    intake.println("1 3")
+    intake.println("3 5")
+    intake.println("....#")
+    intake.println("...#.")
+    intake.println(".....")
+    intake.println(".#...")
+    intake.println("#....")
+    outlet.readLine() == "3"
+}
+
+val testSample2 = testEnv {
+    intake.print("""
+            18
+            18 1
+            1 18
+            ..................
+            .####.............
+            .#..#..####.......
+            .####..#..#..####.
+            .#..#..###...#....
+            .#..#..#..#..#....
+            .......####..#....
+            .............####.
+            ..................
+            ..................
+            .####.............
+            ....#..#..#.......
+            .####..#..#..####.
+            .#.....####..#....
+            .####.....#..####.
+            ..........#..#..#.
+            .............####.
+            ..................
+
+        """.trimIndent()
+    )
+    outlet.readLine() == "9"
+}
+
+@Suppress("OPT_IN_IS_NOT_ENABLED")
 @OptIn(ExperimentalStdlibApi::class)
-fun main(): Unit = stdioEmulatiors(testEnvs) {
+fun main(): Unit = stdioEmulatiors(listOf(testSample2)) {
     //    fun main(): Unit {
     data class Node(val x: Int, val y: Int, val slash: Int /* 1='\', -1='/', 0=start */)
 
     val N = rlni
     val nStart = rlnvi.run { Node(this[0], this[1], 0) }
     val (ex, ey) = rlnvi
-    //val (S, E, SL, BSL) = "se/\\".toList()
 
     val nodes = (1..N).flatMap { y ->
         rln.toList().zip((1..N)).flatMap { (e, x) ->
@@ -88,7 +120,8 @@ fun main(): Unit = stdioEmulatiors(testEnvs) {
         distList[start] = 0L
         val q = ArrayDeque(listOf(start))
         while (q.isNotEmpty()) {
-            val n = q.removeFirst().p
+            "${q.size}\r".p
+            val n = q.removeFirst()
             edges[n]!!.forEach { eg ->
                 val d = distList[n]!! + eg.w
                 if (d < distList[eg.n2]!!) {
@@ -102,14 +135,13 @@ fun main(): Unit = stdioEmulatiors(testEnvs) {
         }
     }
 
-    //val m = listOf(MutableList(9) { 9L })
-    val m = 0.r(N, N) { _, e -> mutableListOf(9L,9L) }
+    val m = 0.r(N, N) { _, e -> mutableListOf(Long.MAX_VALUE, Long.MAX_VALUE) }
     graph_01BFS(edges, nStart, dist)
-    dist[Node(ex, ey, -1)]!!.pl
-    dist[Node(ex, ey, 1)]!!.pl
 
-    dist.forEach { k, v -> if (v != 1_000_000_000_000L) m[k.y - 1][k.x - 1][if(k.slash==1)0 else 1] = v }
-    m.onEach { it.pl }
+    dist.forEach { k, v -> if (v != 1_000_000_000_000L) m[k.y - 1][k.x - 1][if (k.slash == 1) 0 else 1] = v }
+    m.onEach { it.onEach { it.min().let { if (it != Long.MAX_VALUE) "$it" else "." }.p }; pl("") }
+
+    min(dist[Node(ex, ey, 1)]!!, dist[Node(ex, ey, -1)]!!).ppl
 }
 
 
