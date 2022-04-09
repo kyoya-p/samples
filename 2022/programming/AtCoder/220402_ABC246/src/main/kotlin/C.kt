@@ -20,6 +20,20 @@ val Iterable<String>.mapf get() = map { it.toFloat() }
 val rlnvi get() = rln.sp.mapi
 val rlnvf get() = rln.sp.mapf
 
+fun main(): Unit = stdioEmulatiors(testEnvs) {
+//    fun main(): Unit {
+
+    val (_, K, X) = rlnvi
+    val A = rlnvi
+    val Asyo = A.map { it / X }
+    val Aama = A.map { it % X }.sortedDescending()
+    val s = Asyo.sum()
+    val r = Aama.drop(K - s).sum()
+    println(r)
+}
+
+
+
 //val testEnvs = testEnv_AtCoder("ARC137", "C")
 val testEnvsSample = listOf(testEnv {
     intake.println("INPUT")
@@ -37,17 +51,5 @@ val testEnvs = listOf(
         outlet.readLine() == "0"
     }
 )
-
-fun main(): Unit = stdioEmulatiors(testEnvs) {
-//    fun main(): Unit {
-
-    val (_, K, X) = rlnvi
-    val A = rlnvi
-    val Asyo = A.map { it / X }
-    val Aama = A.map { it % X }.sortedDescending()
-    val s = Asyo.sum()
-    val r = Aama.drop(K - s).sum()
-    println(r)
-}
 
 

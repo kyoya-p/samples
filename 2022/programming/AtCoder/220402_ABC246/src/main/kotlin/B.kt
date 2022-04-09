@@ -21,18 +21,6 @@ val Iterable<String>.mapf get() = map { it.toFloat() }
 val rlnvi get() = rln.sp.mapi
 val rlnvf get() = rln.sp.mapf
 
-//val testEnvs = testEnv_AtCoder("ARC137", "C")
-val testEnvsSample = listOf(testEnv {
-    intake.println("INPUT")
-    outlet.readLine() == "ANS"
-})
-
-val testEnvs = listOf(
-    testEnv {
-        intake.println("3 4")
-        outlet.readLine() == "0.6 0.8"
-    }
-)
 
 fun main(): Unit = stdioEmulatiors(testEnvs) {
 //    fun main(): Unit {
@@ -47,3 +35,16 @@ fun main(): Unit = stdioEmulatiors(testEnvs) {
 }
 
 
+
+//val testEnvs = testEnv_AtCoder("ARC137", "C")
+val testEnvsSample = listOf(testEnv {
+    intake.println("INPUT")
+    outlet.readLine() == "ANS"
+})
+
+val testEnvs = listOf(
+    testEnv {
+        intake.println("3 4")
+        outlet.readLine() == "0.6 0.8"
+    }
+)
