@@ -45,7 +45,6 @@ fun <T : Comparable<T>> max(a: T, b: T) = if (a >= b) a else b
 fun <T : Comparable<T>> min(a: T, b: T) = if (a < b) a else b
 fun <T : Comparable<T>> max(vararg a: T) = a.max()!!
 fun <T : Comparable<T>> min(vararg a: T) = a.min()!!
-data class P<T>(var x: T, var y: T)
 
 // Control Structure
 fun <T> T.letIf(test: T, t: T) = if (test == this) t else this
