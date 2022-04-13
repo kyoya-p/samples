@@ -29,7 +29,7 @@ class V1_6_20 {
     }
 
 
-    // 複数のコンテキストレシーバ
+    // コンテキストレシーバ
     // 1.6.20ではコンパイルオプション -Xcontext-receivers が必要
 
     fun interface CurrentDirectoryContext {
@@ -37,19 +37,15 @@ class V1_6_20 {
     }
 
     context(CurrentDirectoryContext)
-    fun ls() = cwd().listFiles()!!.mapNotNull { it }
+    fun ls() = if (cwd().isDirectory()) cwd().listFiles()!!.mapNotNull { it }.asSequence() else sequenceOf()
 
     context(CurrentDirectoryContext)
-    fun lsr() = if (cwd().isDirectory)
-
-        context(CurrentDirectoryContext)
-
-    fun <R> cd(dir: File, op: () -> R) = with(CurrentDirectoryContext { dir }) { op() }
+    fun <R> cd(dir: File, op: CurrentDirectoryContext.() -> R) = CurrentDirectoryContext { dir }.op()
 
     @Test
     fun コンテキストレシーバ() {
         with(CurrentDirectoryContext { File(".") }) {
-            ls().forEach { if (it.isDirectory) cd(it) { println(it.path) } }
+            ls().forEach { cd(it) { println(cwd().absolutePath) } }
         }
     }
 
