@@ -1,7 +1,6 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     kotlin("jvm") version "1.6.20"
+    idea
 }
 
 group = "org.example"
@@ -30,7 +29,11 @@ tasks.test {
     useJUnitPlatform()
 }
 
-val compileTestKotlin: KotlinCompile by tasks
+
+
+val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
 compileTestKotlin.kotlinOptions {
     languageVersion = "1.7"
+    freeCompilerArgs = listOf("-Xcontext-receivers")
 }
+
