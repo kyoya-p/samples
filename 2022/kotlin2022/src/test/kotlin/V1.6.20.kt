@@ -49,4 +49,30 @@ class V1_6_20 {
         }
     }
 
+    @Test
+    fun 複数のコンテキストレシーバ() {
+        val ca = A()
+        val cb = B()
+        with(ca) { // context A
+            //f()  // compile error: No required context receiver found
+            with(cb) { // context A+B
+                f()
+            }
+        }
+    }
+
+    class A {
+        fun a(): String = "A"
+    }
+
+    class B {
+        fun b(): String = "B"
+    }
+
+    context(A, B)
+    fun f() {
+        println(a())
+        println(b())
+    }
+
 }
