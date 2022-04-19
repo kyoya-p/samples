@@ -18,10 +18,12 @@ fun main(args: Array<String>) {
     SnmpAgent(dev.vbl.associate { it.oid to it.variable })
 }
 
+@Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
         161))).apply { listen() },
     vbl: List<VariableBinding>,
+    hook: (PDU) -> PDU = { it },
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
@@ -44,10 +46,11 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        snmp.send(resPdu, resTarget)
+        snmp.send(hook(resPdu), resTarget)
     }
 }
 
+@Suppress("BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
         161))).apply { listen() },

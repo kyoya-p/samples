@@ -23,8 +23,10 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
     implementation("com.charleskorn.kaml:kaml:0.38.0") // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
-    implementation("jp.pgw.shokkaa:snmp4jutils:1.1")
     implementation("org.snmp4j:snmp4j:3.6.0")
+
+//    implementation("jp.pgw.shokkaa:snmp4jutils:1.1")
+    implementation(project(":Snmp4jUtils_KtJvm"))
 }
 
 tasks.withType<KotlinCompile> {
