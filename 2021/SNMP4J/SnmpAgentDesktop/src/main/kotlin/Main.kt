@@ -28,14 +28,14 @@ fun now() = Clock.System.now().toLocalDateTime(TimeZone.UTC)
 @Preview
 fun App(window: ComposeWindow) = MaterialTheme {
     var isRunning by remember { mutableStateOf(true) }
-    var isActiveSettingDialog by remember { mutableStateOf(false) }
+    var isActiveCloningDialog by remember { mutableStateOf(false) }
     var isActiveOpenDialog by remember { mutableStateOf(false) }
     var logs by remember { mutableStateOf("Logs------------------\n") }
 
     Scaffold(topBar = {
         TopAppBar {
             //Button(onClick = { isActiveSettingDialog = true }) { Text("Settings") }
-            //Button(onClick = { }) { Text("AAA") }
+            Button(onClick = { isActiveCloningDialog = true }) { Text("Clone") }
         }
     }) {
         LaunchedEffect(isRunning) {
@@ -68,7 +68,7 @@ fun App(window: ComposeWindow) = MaterialTheme {
 
         }
 
-        if (isActiveSettingDialog) SettingsDialog { isActiveSettingDialog = false }
+        if (isActiveCloningDialog) SettingsDialog { isActiveCloningDialog = false }
     }
 }
 
