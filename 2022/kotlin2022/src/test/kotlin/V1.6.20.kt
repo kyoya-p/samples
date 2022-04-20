@@ -74,5 +74,4 @@ class V1_6_20 {
         println(a())
         println(b())
     }
-
 }

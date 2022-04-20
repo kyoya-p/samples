@@ -68,7 +68,9 @@ fun App(window: ComposeWindow) = MaterialTheme {
 
         }
 
-        if (isActiveCloningDialog) SettingsDialog { isActiveCloningDialog = false }
+        if (isActiveCloningDialog) SettingsDialog(onClose = { isActiveCloningDialog = false }) {
+
+        }
     }
 }
 
