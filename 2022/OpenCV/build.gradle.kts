@@ -4,7 +4,6 @@ plugins {
     kotlin("jvm") version "1.6.20"
     //id("io.freefair.compress.7z") version "6.4.3"  // https://plugins.gradle.org/plugin/io.freefair.compress.7z
     id("de.undercouch.download") version "5.0.5"  // https://github.com/michel-kraemer/gradle-download-task
-    id("eu.emundo.sevenz") version "1.0.5" // https://plugins.gradle.org/plugin/eu.emundo.sevenz
 }
 
 group = "jp.wjg.shokkaa"
