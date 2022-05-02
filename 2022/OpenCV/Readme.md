@@ -1,7 +1,7 @@
 
-
-
+### 環境
+- Windows10/amd64 ※Windows版OpenCVに依存
 
 ### 参照
 - [JavaCV](https://docs.opencv.org/4.x/d1/d0a/tutorial_java_eclipse.html)
-
+- [Gradleタスク 外部コマンドの出力結果を利用する方法](https://programwiz.org/2022/01/23/gradle-task-using-external-command/)
