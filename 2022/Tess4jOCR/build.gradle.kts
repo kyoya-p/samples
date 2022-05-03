@@ -30,16 +30,12 @@ tasks.withType<KotlinCompile> {
 
 val urlTess4j = "https://sourceforge.net/projects/tess4j/files/latest/download"
 val downloadTess by tasks.registering {
-    doLast {
-        download.run {
-            src(urlTess4j)
-            dest("$buildDir/libs/tess-src.zip")
-        }
+    download.run {
+        src(urlTess4j)
+        dest("$buildDir/libs/tess-src.zip")
     }
-    doLast {
-        copy{
-            from(zipTree("$buildDir/libs/tess-src.zip"))
-            into("$buildDir/tess")
-        }
+    copy {
+        from(zipTree("$buildDir/libs/tess-src.zip"))
+        into("$buildDir/tess")
     }
 }
