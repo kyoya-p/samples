@@ -4,17 +4,26 @@ import org.opencv.core.Core.hconcat
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Rect
+import org.opencv.highgui.HighGui.imshow
 import org.opencv.imgcodecs.Imgcodecs.imread
 import org.opencv.imgcodecs.Imgcodecs.imwrite
 import java.io.File
 
 
-class TestOpenCVtext {
+@Suppress("TestFunctionName", "NonAsciiCharacters")
+class TestOpenCV {
     @Test
-    fun Mat() {
+    fun 画像型_二次元配列() {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
         val mat = Mat.eye(3, 3, CvType.CV_8UC1)
         System.out.println("mat = " + mat.dump())
+    }
+
+    @Test
+    fun 画像表示_失敗() {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
+        val mat = Mat.eye(3, 3, CvType.CV_8UC1)
+        imshow("A", mat)
     }
 
     @Test
@@ -43,10 +52,9 @@ class TestOpenCVtext {
         return Mat(this, rect)
     }
 
-
     @Test
     fun 文字認識() {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-
+        //TODO
     }
 }
