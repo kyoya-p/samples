@@ -1,0 +1,2 @@
+class Tess4j {
+}
