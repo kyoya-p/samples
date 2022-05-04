@@ -1,6 +1,4 @@
-import org.gradle.api.internal.file.archive.ZipFileTree
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.zip.ZipFile
 
 plugins {
     kotlin("jvm") version "1.6.20"
@@ -16,6 +14,7 @@ repositories {
 
 dependencies {
     implementation("net.sourceforge.tess4j:tess4j:5.2.1") // https://mvnrepository.com/artifact/net.sourceforge.tess4j/tess4j
+    implementation("org.slf4j:slf4j-simple:1.7.36") // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
 
     testImplementation(kotlin("test"))
 }
@@ -28,14 +27,37 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-val urlTess4j = "https://sourceforge.net/projects/tess4j/files/latest/download"
 val downloadTess by tasks.registering {
-    download.run {
-        src(urlTess4j)
-        dest("$buildDir/libs/tess-src.zip")
+    doLast {
+        download.run {
+            src("https://sourceforge.net/projects/tess4j/files/latest/download")
+            dest("$buildDir/libs/tess-src.zip")
+        }
+        copy {
+            from(zipTree("$buildDir/libs/tess-src.zip"))
+            into("$buildDir/tess")
+        }
+        download.run {
+            src("https://github.com/tesseract-ocr/tessdata/raw/main/jpn.traineddata")
+            dest("$buildDir/tess/Tess4J/tessdata/")
+        }
+        download.run {
+            src("https://pbs.twimg.com/media/FRaETtQVsAAoX4S?format=jpg&name=large")
+            dest("$buildDir/samples/s1.jpg")
+        }
     }
-    copy {
-        from(zipTree("$buildDir/libs/tess-src.zip"))
-        into("$buildDir/tess")
+}
+
+val ocrRun by tasks.registering {
+    doLast {
+//        exec {
+//            environment("TESSDATA_PREFIX" to "build/tess/Tess4J/tessdata")
+//            commandLine("java.exe","TessMainKt")
+//        }
+        javaexec {
+            environment("TESSDATA_PREFIX" to "$buildDir/tess/Tess4J/tessdata")
+            mainClass.set("TessMainKt")
+        }
     }
+    dependsOn(tasks.build)
 }
