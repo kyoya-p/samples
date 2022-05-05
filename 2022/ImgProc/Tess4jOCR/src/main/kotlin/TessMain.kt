@@ -10,6 +10,7 @@ import javax.imageio.ImageIO.write
 
 
 fun main() {
+
     val tess = Tesseract()
     tess.setDatapath("build/tess/Tess4J/tessdata")
     tess.setLanguage("eng")
