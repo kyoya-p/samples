@@ -3,7 +3,6 @@
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
@@ -47,7 +46,7 @@ data class Pixel(val x: Int, val y: Int, val v: Int)
 
 typealias WB = MutableList<MutableList<Int>>
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun wb(pixels: WB) {
     val pixelSize = 10
@@ -81,7 +80,7 @@ fun wb(pixels: WB) {
                 pixFlow.value = Pixel(p.x, p.v, drawColor)
             }
         }
-        .onPointerEvent(PointerEventType.Release) { ev -> msPress = false }
+        .onPointerEvent(PointerEventType.Release) { msPress = false }
     ) {
         println(pixChg.value) // DrawScope内でStateを参照しないと画面が更新されない
         for (y in pixels.indices) {
