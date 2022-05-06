@@ -1,5 +1,4 @@
 // Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
-@file:Suppress("OPT_IN_IS_NOT_ENABLED")
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Canvas
@@ -46,6 +45,7 @@ data class Pixel(val x: Int, val y: Int, val v: Int)
 
 typealias WB = MutableList<MutableList<Int>>
 
+@Suppress("OPT_IN_IS_NOT_ENABLED")
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun wb(pixels: WB) {
@@ -86,7 +86,8 @@ fun wb(pixels: WB) {
         for (y in pixels.indices) {
             for (x in pixels[y].indices) {
                 val color = if (pixels[y][x] == 0) Color.Black else Color.White
-                drawRect(color,
+                drawRect(
+                    color,
                     Offset(x * pixelSize.toFloat(), y * pixelSize.toFloat()),
                     Size(pixelSize.toFloat(), pixelSize.toFloat())
                 )
