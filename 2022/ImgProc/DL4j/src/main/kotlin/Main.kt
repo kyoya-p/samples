@@ -1,9 +1,36 @@
+import jp.wjg.shokkaa.whiteboard.WB
+import jp.wjg.shokkaa.whiteboard.wbApp
+import org.datavec.image.loader.ImageLoader
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
+import java.awt.image.BufferedImage
+import java.awt.image.BufferedImage.TYPE_BYTE_GRAY
+import java.io.File
 
 fun main() {
-    val model = MultiLayerNetwork(model1)
+    val weight = Nd4j.read(File("weight.json").inputStream())!!
+    val nn = MultiLayerNetwork(nnModel1, weight)
+
+    wbApp { wb ->
+        println(wb)
+        val bi = BufferedImage(28, 28, TYPE_BYTE_GRAY)
+        val loader = ImageLoader(28, 28, 1)
+        val imageDataArr = loader.asMatrix()
+
+        val res = nn.output()
+    }
+}
+
+fun WB.toINDArray(): INDArray {
+    val bi = BufferedImage(28, 28, TYPE_BYTE_GRAY)
+    bi.setRGB(0,0,28,28,buf,0,28)
+    val imageDataArr = loader.asMatrix(bi)
+}
+
+fun main2() {
+    val model = MultiLayerNetwork(nnModel1)
     model.init()
 
 //    val imageLoader = NativeImageLoader(28, 28)
@@ -25,7 +52,7 @@ fun main() {
 
     val mnistTrain = MnistDataSetIterator(100, true, 3456)
 
-    model.fit(mnistTrain)
-    Nd4j.writeTxt(model.params(), "build/weight.json")
+    //model.fit(mnistTrain)
+    //Nd4j.writeTxt(model.params(), "build/weight.json")
 
 }

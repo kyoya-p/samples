@@ -6,7 +6,7 @@ import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.linalg.lossfunctions.LossFunctions
 
-val model1 = NeuralNetConfiguration.Builder()
+val nnModel1 = NeuralNetConfiguration.Builder()
     .seed(7890)
     .l2(0.0005)
     .weightInit(WeightInit.XAVIER)

@@ -1,22 +1,20 @@
 import org.jetbrains.compose.compose
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
+    `maven-publish`
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0-SNAPSHOT"
+version = "1.0.0"
 
 repositories {
     google()
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
-
-
 
 kotlin {
     jvm {
@@ -41,8 +39,22 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "wb"
+            packageName = "whiteboard"
             packageVersion = "1.0.0"
+        }
+    }
+}
+
+publishing {
+    val myArtifactId = "whiteboard"
+    val myVersion = "1.0"
+
+    publications {
+        create<MavenPublication>("maven") {
+            //groupId = group.toString()
+            //artifactId = myArtifactId
+            //version = myVersion
+            //from(components["kotlin"])
         }
     }
 }

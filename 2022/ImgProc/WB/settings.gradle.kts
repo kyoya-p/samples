@@ -13,5 +13,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "wb"
-
+rootProject.name = "whiteboard"

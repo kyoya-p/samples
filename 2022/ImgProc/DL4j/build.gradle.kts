@@ -10,6 +10,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
@@ -17,20 +18,14 @@ dependencies {
     implementation("org.nd4j:nd4j-native-platform:1.0.0-M2") //https://mvnrepository.com/artifact/org.nd4j/nd4j-native-platform
     implementation("org.slf4j:slf4j-jdk14:1.7.36") //https://mvnrepository.com/artifact/org.slf4j/slf4j-jdk14
     implementation("org.nd4j:nd4j-api:1.0.0-M2") //https://mvnrepository.com/artifact/org.nd4j/nd4j-api
+    implementation("jp.wjg.shokkaa:whiteboard-jvm:1.0.0") // local
 
-//Thanks for using https://jar-download.com
-
-    testImplementation(kotlin("test"))
+    //testImplementation(kotlin("test"))
     implementation(kotlin("stdlib-jdk8"))
 }
 
-tasks.test {
-    useJUnitPlatform()
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
-}
+//tasks.test { useJUnitPlatform() }
+//tasks.withType<KotlinCompile> { kotlinOptions.jvmTarget = "1.8" }
 
 
 val downloadDataset by tasks.registering {
