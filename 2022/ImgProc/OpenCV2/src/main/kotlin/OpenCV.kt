@@ -73,29 +73,3 @@ fun 画像表示_失敗() {
     val mat = Mat.eye(3, 3, CvType.CV_8UC1)
     imshow("A", mat)
 }
-
-@Suppress("FunctionName", "unused", "NonAsciiCharacters")
-fun 画像切抜x3() {
-    System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-    File("\\\\192.168.11.14\\public\\tmp\\aaaa").walk().filter { it.name.endsWith(".out.png") }.forEach {
-        println(it.name)
-        val srcImg = imread(it.path)!!
-        val dstImg = srcImg.trim(41).tile3()
-        imwrite("build/${it.name}", dstImg)
-    }
-}
-
-fun Mat.tile3(): Mat {
-    val dst = clone()!!
-    hconcat(listOf(this, this, this), dst)
-    return dst
-}
-
-fun Mat.trim(w: Int): Mat {
-    val left = w
-    val top = w
-    val width = width() - w - left
-    val height = height() - w - top
-    val rect = Rect(left, top, width, height)
-    return Mat(this, rect)
-}
