@@ -1,4 +1,6 @@
+import org.apache.tools.ant.taskdefs.ExecuteJava
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.lang.System.*
 
 plugins {
     application
@@ -10,7 +12,7 @@ group = "jp.wjg.shokkaa"
 version = "1.0-SNAPSHOT"
 
 application {
-    mainClass.set("OpenCVKt")
+    mainClass.set("RtMakeKt")
 }
 
 repositories {
@@ -31,6 +33,9 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
+tasks.withType<JavaExec> {
+    systemProperty("java.library.path", getProperty("java.library.path"))
+}
 
 val downloadFiles by tasks.registering {
     doLast {

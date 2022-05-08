@@ -6,7 +6,8 @@ SHELL ["/bin/bash", "-l", "-c"]
 COPY tools tools
 WORKDIR /opt/tools
 RUN sh ./gradlew build
-RUN sh ./gradlew run 0
+RUN apt-get install -y libopencv-dev
+RUN sh ./gradlew run -stacktrace
 
 #ENTRYPOINT ["/bin/sh","./main.sh"]
 
