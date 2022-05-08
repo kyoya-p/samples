@@ -4,8 +4,8 @@ WORKDIR /opt
 RUN apt update && apt -y upgrade && apt install -y curl zip bash
 RUN apt-get install -y libopencv-dev
 SHELL ["/bin/bash", "-l", "-c"]
-COPY tools tools
-WORKDIR /opt/tools
+COPY . RTMake
+WORKDIR /opt/RTMake
 RUN sh ./gradlew build
 RUN sh ./gradlew run -stacktrace -Djava.library.path=/
 
