@@ -9,7 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes
 val File.attrs get() = Files.readAttributes(this.toPath(), BasicFileAttributes::class.java)
 
 fun main(args: Array<String>) {
-    val interval = args.getOrNull(0)?.toInt() ?: 0
+    val interval = args.getOrNull(0)?.toInt() ?: 3
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
 
     val newExt = "x3.png"
