@@ -1,4 +1,6 @@
 import org.opencv.core.Core
+import org.opencv.core.Mat
+import org.opencv.core.Rect
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.File
 import java.nio.file.Files
@@ -30,4 +32,19 @@ fun main(args: Array<String>) {
         if (interval == 0) break
         Thread.sleep(interval * 1000L)
     } while (true)
+}
+
+fun Mat.tile3(): Mat {
+    val dst = clone()!!
+    Core.hconcat(listOf(this, this, this), dst)
+    return dst
+}
+
+fun Mat.trim(w: Int): Mat {
+    val left = w
+    val top = w
+    val width = width() - w - left
+    val height = height() - w - top
+    val rect = Rect(left, top, width, height)
+    return Mat(this, rect)
 }
