@@ -7,9 +7,7 @@ COPY . RTMake
 WORKDIR /opt/RTMake
 RUN sh ./gradlew shadowJar
 
-WORKDIR /host
-#ENTRYPOINT ["/bin/sh","/usr/bin/java","-Djava.library.path=/usr/lib/jni","-jar","/opt/RTMake/build/libs/RTMake-1.0-SNAPSHOT-all.jar", "/host"]
-#ENTRYPOINT ["/bin/sh","/usr/bin/java","-Djava.library.path=/usr/lib/jni","-jar","/opt/RTMake/build/libs/RTMake-1.0-SNAPSHOT-all.jar", "/host"]
+ENTRYPOINT ["/bin/bash","/usr/local/openjdk-19/bin/java","-Djava.library.path=/usr/lib/jni","-jar","/opt/RTMake/build/libs/RTMake-1.0-SNAPSHOT-all.jar", "/host"]
 
 # sudo docker build -t kyoyap/tools:image-adj1 .
 # sudo docker push kyoyap/tools:image-adj1
