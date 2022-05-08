@@ -3,7 +3,7 @@ FROM openjdk:19-slim
 WORKDIR /opt
 RUN apt update && apt -y upgrade && apt install -y curl zip bash
 RUN apt install -y libopencv-dev
-SHELL ["/bin/bash", "-l", "-c"]
+#SHELL ["/bin/bash", "-l", "-c"]
 COPY . RTMake
 WORKDIR /opt/RTMake
 RUN sh ./gradlew build
