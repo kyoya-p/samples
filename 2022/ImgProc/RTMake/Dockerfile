@@ -6,6 +6,7 @@ SHELL ["/bin/bash", "-l", "-c"]
 COPY tools tools
 WORKDIR /opt/tools
 RUN sh ./gradlew build
+RUN sh ./gradlew run 0
 
 #ENTRYPOINT ["/bin/sh","./main.sh"]
 
