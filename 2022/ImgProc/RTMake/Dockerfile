@@ -5,11 +5,11 @@ RUN apt update && apt -y upgrade && apt install -y curl zip bash
 RUN apt install -y libopencv-dev=4.5.1+dfsg-5
 COPY . RTMake
 WORKDIR /opt/RTMake
-RUN sh ./gradlew build
-#RUN sh ./gradlew run -stacktrace -Djava.library.path=/usr/lib/jni
+RUN sh ./gradlew shadowJar
 
 WORKDIR /host
-ENTRYPOINT ["/bin/sh","/opt/RTMake/gradlew","-p","/opt/RTMake","run","-Djava.library.path=/usr/lib/jni"]
+#ENTRYPOINT ["/bin/sh","/usr/bin/java","-Djava.library.path=/usr/lib/jni","-jar","/opt/RTMake/build/libs/RTMake-1.0-SNAPSHOT-all.jar", "/host"]
+#ENTRYPOINT ["/bin/sh","/usr/bin/java","-Djava.library.path=/usr/lib/jni","-jar","/opt/RTMake/build/libs/RTMake-1.0-SNAPSHOT-all.jar", "/host"]
 
 # sudo docker build -t kyoyap/tools:image-adj1 .
 # sudo docker push kyoyap/tools:image-adj1

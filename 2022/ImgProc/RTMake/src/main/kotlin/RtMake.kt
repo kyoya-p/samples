@@ -9,13 +9,15 @@ import java.nio.file.attribute.BasicFileAttributes
 val File.attrs get() = Files.readAttributes(this.toPath(), BasicFileAttributes::class.java)
 
 fun main(args: Array<String>) {
-    val interval = args.getOrNull(0)?.toInt() ?: 3
+    val monitoringDir = File(args.getOrNull(0)?: ".").absoluteFile
+    val interval = args.getOrNull(1)?.toInt() ?: 3
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
 
+    println("Start monitoring directory: ${monitoringDir.path}")
     val newExt = "x3.png"
     fun File.targetFile() = File("$path.$newExt")
     do {
-        File(".").walk().onEach {}.filter { file ->
+        monitoringDir.walk().onEach {}.filter { file ->
             file.isFile()
                     && file.extension == "png"
                     && !file.name.endsWith(newExt)

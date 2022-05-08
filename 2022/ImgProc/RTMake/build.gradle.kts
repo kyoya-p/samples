@@ -4,6 +4,7 @@ import java.lang.System.*
 plugins {
     application
     kotlin("jvm") version "1.6.20"
+    id("com.github.johnrengelman.shadow") version "7.1.2" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
     id("de.undercouch.download") version "5.0.5"  // https://github.com/michel-kraemer/gradle-download-task
 }
 
