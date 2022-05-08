@@ -4,13 +4,21 @@ import org.opencv.core.Rect
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.File
 
-fun main() {
+fun main(args: Array<String>) {
+    if (args.size < 2) {
+        println("usage: ")
+        throw Exception("Illegal Parameter")
+    }
+    val sourceDir = args[0]
+    val ext = args[1]
+    fun File.targetFile() = File("$path.$ext.png")
+
     System.loadLibrary(Core.NATIVE_LIBRARY_NAME)
-    File("\\\\192.168.11.14\\public\\tmp\\aaaa").walk().filter { it.name.endsWith(".out.png") }.forEach {
+    File(sourceDir).walk().onEach{}.filter { it.isFile() && it.name.endsWith(".png") && !it.name.contains(ext) && !it.targetFile().exists() }.forEach {
         println(it.name)
         val srcImg = Imgcodecs.imread(it.path)!!
         val dstImg = srcImg.trim(41).tile3()
-        Imgcodecs.imwrite("build/${it.name}", dstImg)
+        Imgcodecs.imwrite(it.targetFile().path, dstImg)
     }
 }
 

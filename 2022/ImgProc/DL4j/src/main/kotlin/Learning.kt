@@ -1,36 +1,9 @@
-import jp.wjg.shokkaa.whiteboard.wbApp
-import org.datavec.image.loader.ImageLoader
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.nd4j.linalg.factory.Nd4j
-import java.awt.image.BufferedImage
-import java.awt.image.BufferedImage.TYPE_BYTE_GRAY
-import java.io.File
-
-fun main() {
-    val weight = Nd4j.readTxtString(File("samples/weight.json").inputStream())!!
-    val nn = MultiLayerNetwork(nnModel1, weight)
-
-    val bi = BufferedImage(28, 28, TYPE_BYTE_GRAY)
-    val loader = ImageLoader(28, 28, 1)
-    val input = loader.asMatrix(bi).reshape(1, 28, 28, 1)
-    val res = nn.output(input)
-}
-
-fun main3() {
-    val weight = Nd4j.readTxtString(File("samples/weight.json").inputStream())!!
-    val nn = MultiLayerNetwork(nnModel1, weight)
-
-    wbApp { wb ->
-        val loader = ImageLoader(28, 28, 1)
-        val input = loader.asMatrix(wb).reshape(1, 28, 28, 1)
-        val res = nn.output(input)
-        println(res)
-    }
-}
 
 // 学習
-fun main2() {
+fun main() {
     val model = MultiLayerNetwork(nnModel1)
     model.init()
 
