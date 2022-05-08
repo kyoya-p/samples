@@ -7,7 +7,7 @@ SHELL ["/bin/bash", "-l", "-c"]
 COPY . RTMake
 WORKDIR /opt/RTMake
 RUN sh ./gradlew build
-RUN sh ./gradlew run -stacktrace -Djava.library.path=/
+RUN sh ./gradlew run -stacktrace -Djava.library.path=/usr/lib/jni
 
 #ENTRYPOINT ["/bin/sh","./main.sh"]
 
