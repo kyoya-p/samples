@@ -11,7 +11,7 @@ val File.attrs get() = Files.readAttributes(this.toPath(), BasicFileAttributes::
 fun main(args: Array<String>) {
     val monitoringDir = File(args.getOrNull(0)?: ".").absoluteFile
     val interval = args.getOrNull(1)?.toInt() ?: 3
-    val libopencv="opencv_java454" // Core.NATIVE_LIBRARY_NAME
+    val libopencv="opencv_java420" // Core.NATIVE_LIBRARY_NAME
     System.loadLibrary(libopencv)
 
     println("Start monitoring directory: ${monitoringDir.path}")

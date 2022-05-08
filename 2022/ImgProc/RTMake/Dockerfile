@@ -2,8 +2,10 @@
 FROM adoptopenjdk/openjdk11
 WORKDIR /opt
 RUN apt update && apt -y upgrade && apt install -y curl zip bash
-RUN apt install -y libopencv-dev=4.5.4+dfsg-9+b5
-#COPY . RTMake
+#RUN apt install -y libopencv-dev=4.5.1+dfsg-5
+#RUN apt install -y libopencv-dev=4.5.4+dfsg-9ubuntu4
+RUN apt install -y libopencv-dev=4.2.0+dfsg-5
+COPY . RTMake
 WORKDIR /opt/RTMake
 #RUN sh ./gradlew shadowJar
 COPY build/libs RTMake/build/libs
