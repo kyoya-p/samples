@@ -19,7 +19,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.bytedeco:opencv-platform:4.5.5-1.5.7")// https://mvnrepository.com/artifact/org.bytedeco/opencv-platform
+    implementation("org.bytedeco:opencv-platform:4.5.1-1.5.5")// https://mvnrepository.com/artifact/org.bytedeco/opencv-platform
     implementation("com.quickbirdstudios:opencv-contrib:3.4.5") // https://mavenlibs.com/maven/dependency/com.quickbirdstudios/opencv-contrib
     implementation("org.jetbrains.kotlin:kotlin-script-util:1.6.21") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-script-util
 }
