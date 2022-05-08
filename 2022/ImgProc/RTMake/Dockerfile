@@ -9,7 +9,7 @@ RUN sh ./gradlew build
 #RUN sh ./gradlew run -stacktrace -Djava.library.path=/usr/lib/jni
 
 WORKDIR /host
-ENTRYPOINT ["/bin/sh","/opt/RtMake/gradlew","run","-Djava.library.path=/usr/lib/jni"]
+ENTRYPOINT ["/bin/sh","/opt/RTMake/gradlew","run","-Djava.library.path=/usr/lib/jni"]
 
 # sudo docker build -t kyoyap/tools:image-adj1 .
 # sudo docker push kyoyap/tools:image-adj1
