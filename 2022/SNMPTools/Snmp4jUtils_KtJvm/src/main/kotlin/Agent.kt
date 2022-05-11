@@ -20,10 +20,16 @@ fun main(args: Array<String>) {
 
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
-        161))).apply { listen() },
+    snmp: Snmp = Snmp(
+        DefaultUdpTransportMapping(
+            UdpAddress(
+                InetAddress.getByName("0.0.0.0"),
+                161
+            )
+        )
+    ).apply { listen() },
     vbl: List<VariableBinding>,
-    hook: (PDU) -> PDU = { it },
+    hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
@@ -46,14 +52,20 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        snmp.send(hook(resPdu), resTarget)
+        snmp.send(hook(event, resPdu), resTarget)
     }
 }
 
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
-        161))).apply { listen() },
+    snmp: Snmp = Snmp(
+        DefaultUdpTransportMapping(
+            UdpAddress(
+                InetAddress.getByName("0.0.0.0"),
+                161
+            )
+        )
+    ).apply { listen() },
     responseHandler: suspend (ResponderEvent) -> Unit,
 ) {
     fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
@@ -72,8 +84,14 @@ suspend fun snmpAgent(
 
 class SnmpAgent(
     val mibMap: Map<OID, Variable>,
-    val snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"),
-        161))).apply { listen() },
+    val snmp: Snmp = Snmp(
+        DefaultUdpTransportMapping(
+            UdpAddress(
+                InetAddress.getByName("0.0.0.0"),
+                161
+            )
+        )
+    ).apply { listen() },
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         mibMap.forEach { oid, v -> put(oid, VariableBinding(oid, v)) }
