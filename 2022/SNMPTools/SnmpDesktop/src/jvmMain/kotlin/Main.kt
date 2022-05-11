@@ -51,37 +51,7 @@ fun App(window: ComposeWindow) = MaterialTheme {
                 delay(500)
             }
         }
-        Logs(logs)
-//        LogBox2(logs)
-
-//        Box(
-//            modifier = Modifier.fillMaxSize()
-//        ) {
-//            val stateVertical = rememberScrollState(0)
-//            val stateHorizontal = rememberScrollState(0)
-//
-//            Text(
-//                logs, fontSize = 16.sp,
-//                modifier = Modifier
-//                    .fillMaxSize()
-//                    .verticalScroll(stateVertical)
-//                    .padding(end = 12.dp, bottom = 12.dp)
-//                    .horizontalScroll(stateHorizontal)
-//            )
-//            VerticalScrollbar(
-//                modifier = Modifier.align(Alignment.CenterEnd)
-//                    .fillMaxHeight(),
-//                adapter = rememberScrollbarAdapter(stateVertical)
-//            )
-//            HorizontalScrollbar(
-//                modifier = Modifier.align(Alignment.BottomStart)
-//                    .fillMaxWidth()
-//                    .padding(end = 12.dp),
-//                adapter = rememberScrollbarAdapter(stateHorizontal)
-//            )
-//
-//        }
-
+        AutoScrollBox()
 
         if (isActiveOpenDialog) {
             FileDialog(window = window, title = "Notepad", isLoad = true) {
@@ -105,16 +75,36 @@ fun main() = application {
 }
 
 @Composable
-fun Logs(logs: String) {
-    val stateVertical = rememberScrollState()
+private fun AutoScrollBox() {
+    Column {
+        var target by remember { mutableStateOf(0) }
+        Button(onClick = { target += 5 }) { Text("$target") }
 
-    LaunchedEffect(stateVertical) { stateVertical.animateScrollTo(stateVertical.maxValue) }
-    Text(
-        logs, fontSize = 12.sp,
-        modifier = Modifier.verticalScroll(stateVertical)
-    )
+        val state = rememberScrollState()
+        LaunchedEffect(state.maxValue) {
+            println(state.value)
+            state.animateScrollTo(state.maxValue)
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(state)
+        ) {
+            repeat(target) {
+                Text("Item $it", modifier = Modifier.padding(2.dp))
+            }
+        }
+    }
 }
 
+
+@Composable
+fun Logs(logs: String) {
+    val stateScroll = rememberScrollState()
+    LaunchedEffect(stateScroll) { stateScroll.animateScrollTo(stateScroll.maxValue) }
+    Text(logs, modifier = Modifier.verticalScroll(stateScroll))
+}
 
 @Composable
 fun LogBox1(logs: String) {
@@ -126,6 +116,7 @@ fun LogBox1(logs: String) {
         logs, fontSize = 12.sp,
         modifier = Modifier.verticalScroll(stateVertical)
             .horizontalScroll(stateHorizontal)
+
     )
 }
 
