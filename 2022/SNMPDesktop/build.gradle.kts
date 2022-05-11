@@ -3,12 +3,12 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.6.10"
-    id("org.jetbrains.compose") version "1.0.1"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.6.10"
+    kotlin("multiplatform")
+    id("org.jetbrains.compose") // https://plugins.gradle.org/plugin/org.jetbrains.compose
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
-group = "me.kyoya"
+group = "jp.wjg.shokkaa"
 version = "1.0"
 
 repositories {
@@ -29,8 +29,21 @@ dependencies {
     implementation("org.snmp4j:snmp4j:3.6.3")
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+kotlin {
+    jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "11"
+        }
+        withJava()
+    }
+    sourceSets {
+        val jvmMain by getting {
+            dependencies {
+                implementation(compose.desktop.currentOs)
+            }
+        }
+        val jvmTest by getting
+    }
 }
 
 compose.desktop {
