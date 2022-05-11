@@ -1,0 +1,1963 @@
+- ip: "192.168.94.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, ISR Software (X86_64_LINUX_IOSD-UNIVERSALK9-M),\
+      \ Version 15.5(3)S4b, RELEASE SOFTWARE (fc1):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2016 by Cisco Systems, Inc.:0d:0aCompiled Mon 17-Oct-16 20:3a23 by\
+      \ mcpre"
+- ip: "192.168.140.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.134.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.142.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.133.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.141.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "172.25.193.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SSC-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.107.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C1900 Software (C1900-UNIVERSALK9-M), Version 15.2(4)M5,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2013 by Cisco Systems, Inc.:0d:0aCompiled Fri 13-Sep-13 13:3a51 by\
+      \ prod_rel_team"
+- ip: "192.168.135.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.143.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.95.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "172.25.193.73"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SBI-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.95.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.121.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "172.25.193.5"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SEID-Karawang-MPLS 2.6.38.6-rc1\
+      \ #1 VXOA 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.95.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.132.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX DocuCentre-V C3373;ESS1.3.19,IOT 40.67.0,ADF 12.8.0,FAX 1.1.14,PANEL\
+      \ 10.16.4,BOOT 1.0.31,SJFI3.5.0,SSMI1.21.0,CNTS 1.0.0"
+- ip: "192.168.95.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "172.25.193.57"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SMM-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.95.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "172.25.193.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SMEF-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.183.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M265NV"
+- ip: "192.168.95.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.95.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.168.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141N"
+- ip: "192.168.182.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD153,EEPROM JSI24110014,CIDATE\
+      \ 07/25/2020"
+- ip: "192.168.181.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.01,JETDIRECT EX,JD34,EEPROM H.08.81"
+- ip: "192.168.95.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.193.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M315NV"
+- ip: "192.168.81.80"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3631DS"
+- ip: "192.168.13.48"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2960 Software (C2960-LANBASEK9-M), Version 12.2(44)SE,\
+      \ RELEASE SOFTWARE (fc1):0d:0aCopyright (c) 1986-2008 by Cisco Systems, Inc.:0d:0aCompiled\
+      \ Sat 05-Jan-08 00:3a42 by weiliu"
+- ip: "172.25.193.85"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SSI-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.176.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M502N"
+- ip: "192.168.28.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2314N"
+- ip: "192.168.138.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Samsung CLX-6220 Series; 2.00.01.15 Jul-05-2011;Engine 1.04.55;NIC V4.01.22(CLX-6220)\
+      \ 06-29-2011;S/N Z30YBAHBC00073H"
+- ip: "192.168.134.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM V.29.11,JETDIRECT,JD115,EEPROM V.29.13,CIDATE\
+      \ 08/11/2005"
+- ip: "192.168.13.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.116.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX MKC B.11.00 U 9000/800"
+- ip: "172.25.193.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SSDI-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.90.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4111N"
+- ip: "192.168.120.129"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SPC-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.60.200"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HPE OfficeConnect Switch 1850-48G 4XGT JL171A, PC.01.04, Linux 3.6.5-1cc05dd9,\
+      \ U-Boot 2012.10-00215-g574236f (Mar 10 2016 - 07:3a54:3a35)"
+- ip: "192.168.94.200"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 RouterOS CCR2004-1G-12S+2XS"
+- ip: "192.168.168.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 TANDBERG Codec:0aSoftW:3a F7.2 PAL:0aMCU:3a TANDBERG Edge 95MXP:0aDate:3a\
+      \ 2008-10-31:0aS/N:3a 26A40634:0aBootSW:3a Rev. 1.15, 2008-01-04:0aBoard:3a\
+      \ 101070 rev. 07"
+- ip: "192.168.24.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.4.0 PN:3aapc_hw05_aos_640.bin\
+      \ AF1:3av6.4.0 AN1:3aapc_hw05_sumx_640.bin MN:3aAP9630 HR:3a08 SN:3a ZA1649008028\
+      \ MD:3a12/08/2016) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.178.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2310U"
+- ip: "192.168.141.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070V"
+- ip: "192.168.11.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SOEM-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.94.168"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MarkNet Pro 1  Version 2.10.10  Ethernet Combo."
+- ip: "172.25.193.105"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECUS:0aLinux SVN-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.120.104"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M356N"
+- ip: "192.168.180.232"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.20"
+- ip: "192.168.116.232"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5001N"
+- ip: "192.168.208.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M464N"
+- ip: "192.168.92.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.14.0007, ROM YA.15.13 (/ws/swbuildm/YA_rel_memphis_qaoff/code/build/lakes(swbuildm_YA_rel_memphis_qaoff_rel_memphis))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.90.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 PROCURVE J9080A - VB.02.09"
+- ip: "192.168.89.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.08.0001, ROM YA.15.20 (/ws/swbuildm/rel_yakima_qaoff/code/build/lakes(swbuildm_rel_yakima_qaoff_rel_yakima))\
+      \ (Formerly ProCurve)"
+- ip: "172.25.193.49"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SEM-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "172.25.193.65"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SCNZ-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.124.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Fibre Channel Switch."
+- ip: "192.168.184.216"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MG-MB3180"
+- ip: "192.168.188.216"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM F.08.09,JETDIRECT EX,JD00,EEPROM F.08.60"
+- ip: "172.25.193.89"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SEID-Jakarta-MPLS 2.6.38.6-rc1\
+      \ #1 VXOA 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.116.184"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ProCurve J9279A Switch 2510G-24, revision Y.11.12, ROM N.10.02 (/sw/code/build/cod(cod11))"
+- ip: "172.25.193.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SIL-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.95.120"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.80.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux CactiEZ.local 2.6.32-71.el6.x86_64 #1 SMP Fri May 20 03:3a51:3a51\
+      \ BST 2011 x86_64"
+- ip: "192.168.184.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,SN:3aPHCFB06012,FN:3a1L50V8L,SVCID:3a28192,PID:3aHP\
+      \ LaserJet M402n"
+- ip: "192.168.132.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.1(4)M4,\
+      \ RELEASE SOFTWARE (fc1):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2012 by Cisco Systems, Inc.:0d:0aCompiled Tue 20-Mar-12 18:3a57 by\
+      \ prod_rel_team"
+- ip: "192.168.193.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.132.132"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.232.68"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3071"
+- ip: "192.168.175.36"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3051"
+- ip: "192.168.213.164"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "172.25.160.1"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SMV-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.168.228"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2640N"
+- ip: "192.168.182.228"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.184.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM J.08.08,JETDIRECT EX,JD35,EEPROM J.08.20"
+- ip: "192.168.132.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.212.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2630N"
+- ip: "192.168.89.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.08.0001, ROM YA.15.20 (/ws/swbuildm/rel_yakima_qaoff/code/build/lakes(swbuildm_rel_yakima_qaoff_rel_yakima))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.77.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 3Com SuperStack II"
+- ip: "192.168.91.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.14.0007, ROM YA.15.13 (/ws/swbuildm/YA_rel_memphis_qaoff/code/build/lakes(swbuildm_YA_rel_memphis_qaoff_rel_memphis))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.135.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.115.212"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.50, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.124.116"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.4.0 PN:3aapc_hw05_aos_640.bin\
+      \ AF1:3av6.4.0 AN1:3aapc_hw05_sumx_640.bin MN:3aAP9631 HR:3a08 SN:3a 5A1633T32780\
+      \ MD:3a08/16/2016) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.134.116"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Xerox WorkCentre 5335;System 53.20.41,ESS1.205.7,IOT 40.2.0,ADF 7.10.0,SJFI3.0.18,SSMI1.16.0"
+- ip: "192.168.19.116"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.152.244"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.12.0007, ROM YA.15.12 (/ws/swbuildm/YA_rel_knoxville_qaoff/code/build/lakes(swbuildm_YA_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.132.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.116.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M465N"
+- ip: "192.168.186.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD143,EEPROM V.36.47,CIDATE\
+      \ 12/01/2010"
+- ip: "192.168.107.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M550N"
+- ip: "192.168.127.76"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3140N"
+- ip: "192.168.21.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 KYOCERA MITA Printing System"
+- ip: "192.168.77.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 15 Model 3 Stepping 4 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Multiprocessor Free)"
+- ip: "192.168.95.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.141.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2600N"
+- ip: "192.168.95.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM P.22.01,JETDIRECT,JD86,EEPROM P.25.14,CIDATE\
+      \ 09/24/2003"
+- ip: "192.168.174.172"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5071"
+- ip: "172.25.193.101"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECUS:0aLinux S-STEC-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.95.108"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M354N"
+- ip: "192.168.168.236"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6070N"
+- ip: "192.168.54.92"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "192.168.183.220"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.124.60"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco Codec:0aSoftW:3a TC6.2.0.20b1616:0aMCU:3a Cisco TelePresence SX20:0aDate:3a\
+      \ 2013-07-02:0aS/N:3a FTT174003P4:0aBootSW:3a :0aBoard:3a 101790-7 [No Object\
+      \ level]"
+- ip: "192.168.132.124"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ETHERNET MULTI_ENVIRONMENT,ROM H_07_19,JETDIRECT EX,JD28,EEPROM 3.51"
+- ip: "192.168.100.124"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3050V"
+- ip: "192.168.8.250"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECM:0aLinux Hub-MPLS 2.6.38.6-rc1 #1 VXOA\
+      \ 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.168.252"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.8.2 PN:3aapc_hw05_aos_682.bin\
+      \ AF1:3av6.8.0 AN1:3aapc_hw05_sumx_680.bin MN:3aAP9630 HR:3a05 SN:3a ZA1237014294\
+      \ MD:3a09/05/2012) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.132.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.134.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.133.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.107.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C1900 Software (C1900-UNIVERSALK9-M), Version 15.2(4)M5,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2013 by Cisco Systems, Inc.:0d:0aCompiled Fri 13-Sep-13 13:3a51 by\
+      \ prod_rel_team"
+- ip: "192.168.135.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.95.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.2.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 \"Fluke Networks Visual TruView, Copyright (c) 2008 - 2014 Fluke Corporation\""
+- ip: "192.168.22.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ZebraNet PrintServer"
+- ip: "192.168.24.34"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630 HR:3a05 SN:3a ZA1451018200\
+      \ MD:3a12/20/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.117.34"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX DocuCentre-V C4476;ESS1.3.6,IOT 42.84.0,ADF 23.26.0,FAX 1.1.14,PANEL\
+      \ 10.18.4,BOOT 1.0.44,SJFI3.10.0,SSMI1.25.20"
+- ip: "192.168.81.98"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-PE13 70 80"
+- ip: "192.168.168.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3071"
+- ip: "192.168.181.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.175.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 OKI OkiLAN 9400g Rev.01.00 10/100/1000BASE Ethernet PrintServer:3a Attached\
+      \ to Pro1050 Rev.A1.08 :3a Copyright (c) 2018 Oki Data Corporation. All rights\
+      \ reserved."
+- ip: "192.168.212.18"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.172.18"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "192.168.60.18"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.113.146"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP 2920 Switch Stack, revision WB.15.12.0015, ROM WB.15.04 (/ws/swbuildm/WB_rel_knoxville_qaoff/code/build/anm(swbuildm_WB_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.24.82"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "192.168.120.82"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Integrated PrintNet Enterprise Version 1.4.40.11 3-3-3"
+- ip: "192.168.81.82"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-PE10"
+- ip: "192.168.184.210"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD149,EEPROM V50251131008,CIDATE\
+      \ 11/30/2011"
+- ip: "192.168.95.210"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP AR-5623N"
+- ip: "192.168.121.50"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "192.168.180.242"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.01,JETDIRECT EX,JD34,EEPROM H.08.81"
+- ip: "192.168.13.242"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.184.10"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.55"
+- ip: "192.168.24.74"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "192.168.21.202"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SINDOH D420"
+- ip: "192.168.104.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT"
+- ip: "192.168.193.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.141.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M753U"
+- ip: "192.168.95.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MarkNet Pro 1  Version 2.10.10  Ethernet Combo."
+- ip: "192.168.95.106"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.176.234"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M363N"
+- ip: "192.168.116.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX mke B.11.00 A 9000/800"
+- ip: "192.168.92.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.14.0007, ROM YA.15.13 (/ws/swbuildm/YA_rel_memphis_qaoff/code/build/lakes(swbuildm_YA_rel_memphis_qaoff_rel_memphis))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.124.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070N"
+- ip: "192.168.90.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 PROCURVE J9080A - VB.02.09"
+- ip: "192.168.107.90"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux Sharp-Roxy-Subang 2.6.32 #1 SMP Sat May 30 11:3a29:3a05 PDT 2020\
+      \ x86_64"
+- ip: "192.168.184.218"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MG-MB3180"
+- ip: "192.168.186.218"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.182.218"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MG-MB3280"
+- ip: "192.168.183.218"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.81.58"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3060N"
+- ip: "192.168.100.122"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M464N"
+- ip: "192.168.141.122"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco Codec:0aSoftW:3a TC7.1.4.908e4a9:0aMCU:3a Cisco TelePresence SX20:0aDate:3a\
+      \ 2014-06-12:0aS/N:3a FTT1839031V:0aBootSW:3a :0aBoard:3a 101790-7 [B0]"
+- ip: "192.168.19.122"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.168.250"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.8.2 PN:3aapc_hw05_aos_682.bin\
+      \ AF1:3av6.8.0 AN1:3aapc_hw05_sumx_680.bin MN:3aAP9631 HR:3a05 SN:3a ZA1518080231\
+      \ MD:3a04/28/2015) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.188.250"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.232.6"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3570N"
+- ip: "192.168.172.6"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070V"
+- ip: "192.168.106.6"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Ethernet Routing Switch 4524GT        HW:3a01       FW:3a5.1.0.7   SW:3av5.1.0.000\
+      \ BN:3a00 (c) Nortel Networks"
+- ip: "192.168.113.6"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX server5 B.11.11 U 9000/800 3109054086"
+- ip: "192.168.94.38"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Global Network UPS"
+- ip: "192.168.141.38"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M564N"
+- ip: "192.168.168.230"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141N"
+- ip: "192.168.88.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.77, ROM F.02.01  (/sw/code/build/info(F_info5))"
+- ip: "192.168.90.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.77, ROM F.02.01  (/sw/code/build/info(F_info5))"
+- ip: "192.168.89.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.08.0001, ROM YA.15.20 (/ws/swbuildm/rel_yakima_qaoff/code/build/lakes(swbuildm_rel_yakima_qaoff_rel_yakima))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.117.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX ApeosPort-IV C2275 ;ESS1.131.20,IOT 84.32.0,ADF 12.8.0,FAX\
+      \ 1.1.14,BOOT 1.0.54,SJFI3.3.0,SSMI1.20.1"
+- ip: "192.168.91.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.80, ROM F.02.01  (/sw/code/build/info)"
+- ip: "192.168.113.150"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP MSA 2040 SAN"
+- ip: "192.168.215.150"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.114.214"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.50, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.19.118"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.8.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECMB:0aLinux Hub-Internet 2.6.38.6-rc1 #1\
+      \ VXOA 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.184.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.116.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 NET Agent II"
+- ip: "192.168.208.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD137,EEPROM V.37.12,CIDATE\
+      \ 07/12/2010"
+- ip: "192.168.116.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av5.1.6 PN:3aapc_hw05_aos_516.bin\
+      \ AF1:3av5.1.6 AN1:3aapc_hw05_sumx_516.bin MN:3aAP9631 HR:3a05 SN:3a ZA1204009856\
+      \ MD:3a01/18/2012) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.138.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJIXEROX DocuWide6035 V1.3.27.00 Printer"
+- ip: "192.168.90.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux syslog.sem.global.sharp.co.jp 2.6.18-128.el5 #1 SMP Wed Dec 17\
+      \ 11:3a42:3a39 EST 2008 i686"
+- ip: "192.168.137.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX ApeosPort-V C2275;ESS1.5.0,IOT 40.84.0,ADF 12.8.0,FAX 1.1.14,PANEL\
+      \ 10.17.4,BOOT 1.0.49,SJFI3.5.2,SSMI1.21.20,CNTS 1.0.0"
+- ip: "192.168.171.78"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "192.168.127.78"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6070V"
+- ip: "192.168.168.206"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3071"
+- ip: "192.168.114.206"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.50, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.113.206"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.17, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.233.46"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2640N"
+- ip: "192.168.141.46"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3560N"
+- ip: "192.168.180.110"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2960 Software (C2960-LANLITE-M), Version 12.2(37)EY,\
+      \ RELEASE SOFTWARE (fc2):0d:0aCopyright (c) 1986-2007 by Cisco Systems, Inc.:0d:0aCompiled\
+      \ Thu 28-Jun-07 18:3a07 by antonino"
+- ip: "192.168.81.110"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-PE13 70 80"
+- ip: "192.168.176.238"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M264N"
+- ip: "192.168.168.238"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141N"
+- ip: "192.168.132.238"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX DocuScan C3200 A-AP;ESS 002.000.006,IIT 001.000.005,ADF "
+- ip: "192.168.132.30"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 45 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "192.168.132.94"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.8.2 PN:3aapc_hw05_aos_682.bin\
+      \ AF1:3av6.8.0 AN1:3aapc_hw05_sumx_680.bin MN:3aAP9631 HR:3a05 SN:3a ZA1120020454\
+      \ MD:3a05/12/2011) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.168.222"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141N"
+- ip: "192.168.174.222"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070N"
+- ip: "192.168.101.62"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 AXIS 5400+ Network Print Server V6.43 Nov 24 2003"
+- ip: "192.168.184.190"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.81.126"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,SN:3aCNC1101102,FN:3aQ5037RP,SVCID:3a22351,PID:3aHP\
+      \ LaserJet 400 color M451dn"
+- ip: "192.168.178.254"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M362N"
+- ip: "192.168.5.35"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4819A ProCurve Switch 5308xl, revision E.10.37, ROM E.05.04 (/sw/code/build/alpmo(m35))"
+- ip: "192.168.140.1"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.142.1"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.141.1"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.143.1"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.95.129"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.132.65"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM V.29.11,JETDIRECT,JD115,EEPROM V.29.13,CIDATE\
+      \ 08/11/2005"
+- ip: "192.168.95.65"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.80.193"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av3.8.6 PF:3av5.1.3 PN:3aapc_hw05_aos_513.bin\
+      \ AF1:3av5.1.3 AN1:3aapc_hw05_sumx_513.bin MN:3aAP9631CH HR:3a05 SN:3a 5A1110T29054\
+      \ MD:3a03/03/2011) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.132.193"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM C.25.80,JETDIRECT,JD115,EEPROM V.28.06,CIDATE\
+      \ 04/27/2004"
+- ip: "192.168.175.193"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 KYOCERA Document Solutions Printing System"
+- ip: "192.168.95.193"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.184.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.20"
+- ip: "192.168.120.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "192.168.188.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.01,JETDIRECT EX,JD34,EEPROM H.08.81"
+- ip: "192.168.175.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "192.168.95.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.95.161"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.132.97"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJI XEROX DocuScan C3200 A-AP;ESS 002.000.006,IIT 001.000.005,ADF "
+- ip: "192.168.95.97"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.182.225"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.181.225"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.01,JETDIRECT EX,JD34,EEPROM H.08.81"
+- ip: "192.168.95.225"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.80.17"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Switched Rack PDU (MB:3av3.6.4 PF:3av2.2.7 PN:3aapc_hw02_aos_227.bin\
+      \ AF1:3av2.2.0 AN1:3aapc_hw02_rpdu_220.bin MN:3aAP7921 HR:3aB2 SN:3a JA0408060788\
+      \ MD:3a02/22/2004) "
+- ip: "192.168.100.17"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD149,EEPROM V50251131008,CIDATE\
+      \ 11/30/2011"
+- ip: "192.168.212.17"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.116.17"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX MKA B.11.11 U 9000/800 1089826440"
+- ip: "192.168.138.17"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.113.145"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP 2920 Switch Stack, revision WB.15.12.0015, ROM WB.15.04 (/ws/swbuildm/WB_rel_knoxville_qaoff/code/build/anm(swbuildm_WB_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.168.209"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070N"
+- ip: "192.168.141.49"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C303"
+- ip: "192.168.183.49"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M265NV"
+- ip: "192.168.132.177"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Xerox WorkCentre 5335;System 53.20.41,ESS1.202.3,IOT 40.2.0,ADF 7.10.0,FAX\
+      \ 1.1.14,SJFI3.0.18,SSMI1.16.0"
+- ip: "192.168.174.177"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070N"
+- ip: "192.168.120.113"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Silver Peak Systems, Inc. ECXS:0aLinux SPC-INTERNET 2.6.38.6-rc1 #1\
+      \ VXOA 8.1.9.7_77259 SMP Tue Dec 31 12:3a57:3a44 PST 2019 x86_64"
+- ip: "192.168.90.113"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4101N"
+- ip: "192.168.128.241"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 CS121 v 4.29.15"
+- ip: "192.168.13.241"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.5.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4819A ProCurve Switch 5308xl, revision E.10.37, ROM E.05.04 (/sw/code/build/alpmo(m35))"
+- ip: "192.168.116.9"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX MKB B.11.00 A 9000/800 1116414695"
+- ip: "192.168.103.137"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4070V"
+- ip: "192.168.24.73"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.22.201"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,SN:3aVNH3K07062,FN:3aX680DHW,SVCID:3a24070,PID:3aHP\
+      \ LaserJet 400 M401dn"
+- ip: "192.168.188.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT"
+- ip: "192.168.213.169"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.180.105"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2960 Software (C2960-LANLITEK9-M), Version 15.0(2)SE8,\
+      \ RELEASE SOFTWARE (fc1):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Thu 14-May-15 02:3a39 by\
+      \ prod_rel_team"
+- ip: "192.168.95.105"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.176.233"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.128.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.172.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 OKI OkiLAN 9400g Rev.01.00 10/100/1000BASE Ethernet PrintServer:3a Attached\
+      \ to Pro1050 Rev.A1.08 :3a Copyright (c) 2018 Oki Data Corporation. All rights\
+      \ reserved."
+- ip: "192.168.92.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.14.0007, ROM YA.15.13 (/ws/swbuildm/YA_rel_memphis_qaoff/code/build/lakes(swbuildm_YA_rel_memphis_qaoff_rel_memphis))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.24.89"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.121.89"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "124.197.244.167"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux Sharp-Roxy-Subang 2.6.32 #1 SMP Sat May 30 11:3a29:3a05 PDT 2020\
+      \ x86_64"
+- ip: "192.168.184.217"
+  vbs:
+  - mib: "1.3.6.1.2.1.1.2.0"
+    value: "6 1.3.6.1.4.1.34278.10.4"
+- ip: "192.168.186.217"
+  vbs:
+  - mib: "1.3.6.1.2.1.1.2.0"
+    value: "6 1.3.6.1.4.1.34278.10.4"
+- ip: "192.168.182.217"
+  vbs:
+  - mib: "1.3.6.1.2.1.1.2.0"
+    value: "6 1.3.6.1.4.1.34278.10.4"
+- ip: "192.168.115.217"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.17, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.183.217"
+  vbs:
+  - mib: "1.3.6.1.2.1.1.2.0"
+    value: "6 1.3.6.1.4.1.34278.10.4"
+- ip: "192.168.95.217"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.19.121"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.180.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ETHERNET MULTI_ENVIRONMENT,ROM H_07_19,JETDIRECT EX,JD28,EEPROM 3.51"
+- ip: "192.168.138.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M464N"
+- ip: "192.168.182.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SATO CL4NX 203dpi"
+- ip: "192.168.137.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD128,EEPROM V.33.15,CIDATE\
+      \ 11/10/2006"
+- ip: "192.168.184.5"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD149,EEPROM V50251131008,CIDATE\
+      \ 11/30/2011"
+- ip: "192.168.102.69"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,SN:3aPHCNH12923,FN:3a1L66FD7,SVCID:3a28087,PID:3aHP\
+      \ LaserJet M402dn"
+- ip: "192.168.175.197"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-8090N"
+- ip: "192.168.124.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070N"
+- ip: "192.168.106.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows CE Version 7.0 (Build 2864)"
+- ip: "192.168.141.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M6050"
+- ip: "192.168.175.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5071"
+- ip: "192.168.104.165"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3050N"
+- ip: "192.168.178.165"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP AR-5623N"
+- ip: "192.168.174.165"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-7090N"
+- ip: "192.168.213.165"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.208.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M564N"
+- ip: "192.168.88.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.77, ROM F.02.01  (/sw/code/build/info(F_info5))"
+- ip: "192.168.89.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.08.0001, ROM YA.15.20 (/ws/swbuildm/rel_yakima_qaoff/code/build/lakes(swbuildm_rel_yakima_qaoff_rel_yakima))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.91.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.14.0007, ROM YA.15.13 (/ws/swbuildm/YA_rel_memphis_qaoff/code/build/lakes(swbuildm_YA_rel_memphis_qaoff_rel_memphis))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.103.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.100.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3550N"
+- ip: "192.168.113.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP MSA 2040 SAN"
+- ip: "192.168.24.85"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.168.213"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070N"
+- ip: "192.168.184.181"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.184.245"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.01,JETDIRECT EX,JD34,EEPROM H.08.81"
+- ip: "192.168.102.245"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3561"
+- ip: "192.168.113.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX jhrsap1 B.11.11 U 9000/800 2492128333"
+- ip: "192.168.193.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2651"
+- ip: "192.168.125.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C301W"
+- ip: "192.168.107.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M450U"
+- ip: "192.168.175.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows CE Version 7.0 (Build 2824)"
+- ip: "192.168.175.141"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 KYOCERA Document Solutions Printing System"
+- ip: "192.168.125.77"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2651"
+- ip: "192.168.80.205"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av5.1.6 PN:3aapc_hw05_aos_516.bin\
+      \ AF1:3av5.1.6 AN1:3aapc_hw05_sumx_516.bin MN:3aAP9631CH HR:3a05 SN:3a 5A1144T14198\
+      \ MD:3a10/30/2011) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.175.205"
+  vbs:
+  - mib: "sysDescr."
+    value: "5 Null"
+- ip: "192.168.95.205"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ETHERNET MULTI_ENVIRONMENT,ROM H_07_19,JETDIRECT EX,JD28,EEPROM 3.51"
+- ip: "192.168.141.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.173.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2310U"
+- ip: "192.168.95.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.90.173"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.134.173"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM V.29.11,JETDIRECT,JD115,EEPROM V.29.13,CIDATE\
+      \ 08/11/2005"
+- ip: "192.168.19.109"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.176.237"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2314N"
+- ip: "192.168.24.29"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630 HR:3a05 SN:3a ZA1439002788\
+      \ MD:3a09/23/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.140.29"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.5.0 PN:3aapc_hw05_aos_650.bin\
+      \ AF1:3av6.5.0 AN1:3aapc_hw05_sumx_650.bin MN:3aAP9537SUM HR:3a05 SN:3a 5A1807T52991\
+      \ MD:3a02/13/2018) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.91.29"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.80, ROM F.02.01  (/sw/code/build/info)"
+- ip: "192.168.104.157"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4070V"
+- ip: "192.168.132.93"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.8.2 PN:3aapc_hw05_aos_682.bin\
+      \ AF1:3av6.8.0 AN1:3aapc_hw05_sumx_680.bin MN:3aAP9630 HR:3a05 SN:3a ZA1348021776\
+      \ MD:3a11/29/2013) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.168.221"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4070N"
+- ip: "192.168.90.221"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M550N"
+- ip: "192.168.183.221"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM V.29.11,JETDIRECT,JD115,EEPROM V.29.13,CIDATE\
+      \ 08/11/2005"
+- ip: "192.168.95.221"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2300G"
+- ip: "192.168.19.125"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.137.253"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M363N"
+- ip: "192.168.154.3"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4101N"
+- ip: "192.168.141.67"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco Codec:0aSoftW:3a TC6.1.1.7d7af15:0aMCU:3a Cisco TelePresence SX20:0aDate:3a\
+      \ 2013-04-26:0aS/N:3a FTT172101GS:0aBootSW:3a :0aBoard:3a 101790-7 [B0]"
+- ip: "192.168.213.195"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.173.195"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070V"
+- ip: "192.168.141.35"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3560N"
+- ip: "192.168.213.163"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.100.99"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux GEDE-SNMP-UPS-Interface 2.6.30 #53 Wed May 1 19:3a21:3a20 CST\
+      \ 2013 armv5tejl"
+- ip: "192.168.54.227"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DP-301P+ Print Server"
+- ip: "192.168.128.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.80.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av3.9.2 PF:3av3.7.3 PN:3aapc_hw02_aos_373.bin\
+      \ AF1:3av3.7.2 AN1:3aapc_hw02_sumx_372.bin MN:3aAP9619 HR:3aA10 SN:3a PA1031232009\
+      \ MD:3a08/08/2010) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.208.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M464N"
+- ip: "192.168.184.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.60"
+- ip: "192.168.60.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.134.211"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM J.sp.00,JETDIRECT EX,JD28 EEPROM 5.58"
+- ip: "192.168.175.211"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-PE13 70 80"
+- ip: "192.168.173.51"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2640N"
+- ip: "192.168.175.51"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Built-in Gigabit Ether Print Server"
+- ip: "192.168.140.243"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2960S Software (C2960S-UNIVERSALK9-M), Version\
+      \ 15.0(2)SE6, RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2014 by Cisco Systems, Inc.:0d:0aCompiled Wed 09-Apr-14 03:3a09 by\
+      \ prod_rel_team"
+- ip: "192.168.132.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.116.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Management Processor (MP) for HP Integrity and HP9000 servers"
+- ip: "192.168.171.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3570N"
+- ip: "192.168.107.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MarkNet Pro 1  Version 2.10.10  Ethernet Combo."
+- ip: "192.168.184.75"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Honeywell PM42;L10.14.014620"
+- ip: "192.168.81.75"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-PE15 70 80"
+- ip: "192.168.127.75"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3140N"
+- ip: "192.168.90.203"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M453N"
+- ip: "192.168.21.203"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 AXIS 5600 Network Print Server V7.03.0 Feb 15 2005"
+- ip: "192.168.95.203"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.141.43"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M753U"
+- ip: "192.168.95.43"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MarkNet Pro 1  Version 2.10.10  Ethernet Combo."
+- ip: "192.168.168.107"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C357F"
+- ip: "192.168.120.107"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3051"
+- ip: "192.168.176.235"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M362N"
+- ip: "192.168.152.235"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.12.0007, ROM YA.15.12 (/ws/swbuildm/YA_rel_knoxville_qaoff/code/build/lakes(swbuildm_YA_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.121.235"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4900B ProCurve Switch 2626, revision H.08.60, ROM H.08.02 (/sw/code/build/fish(f04))"
+- ip: "192.168.95.235"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MarkNet Pro 1  Version 2.10.10  Ethernet Combo."
+- ip: "192.168.154.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 FUJIXEROX DocuWide6035 V1.1.29.00 Printer"
+- ip: "192.168.89.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.08.0001, ROM YA.15.20 (/ws/swbuildm/rel_yakima_qaoff/code/build/lakes(swbuildm_rel_yakima_qaoff_rel_yakima))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.81.91"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MX-PE12 65 75 (Sharp)"
+- ip: "192.168.168.219"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141N"
+- ip: "192.168.184.219"
+  vbs:
+  - mib: "1.3.6.1.2.1.1.2.0"
+    value: "6 1.3.6.1.4.1.34278.10.4"
+- ip: "192.168.100.219"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.132.187"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM none,JETDIRECT,JD149,EEPROM JDI24100001,CIDATE\
+      \ 11/27/2019"
+- ip: "192.168.168.251"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.8.2 PN:3aapc_hw05_aos_682.bin\
+      \ AF1:3av6.8.0 AN1:3aapc_hw05_sumx_680.bin MN:3aAP9630 HR:3a05 SN:3a ZA1514081173\
+      \ MD:3a04/02/2015) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "192.168.152.251"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.12.0007, ROM YA.15.12 (/ws/swbuildm/YA_rel_knoxville_qaoff/code/build/lakes(swbuildm_YA_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.164.7"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux SCAJP 3.4.52-52EXINDAsmp #0 SMP Fri Oct 11 19:3a04:3a00 EST 2013\
+      \ x86_64"
+- ip: "192.168.24.71"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.213.71"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3114N"
+- ip: "192.168.95.71"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.106.199"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows CE Version 7.0 (Build 2864)"
+- ip: "192.168.132.39"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT,ROM H.08.08,JETDIRECT EX,JD34,EEPROM H.08.55"
+- ip: "192.168.141.39"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C303"
+- ip: "192.168.100.167"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3550N"
+- ip: "192.168.25.167"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M464N"
+- ip: "192.168.176.231"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M452N"
+- ip: "192.168.208.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 TallyCom III,Version:3a S80 608.167,Component:3a 01447.447/81445.132,Emulation\
+      \ type:3a JETDIRECT,JD33"
+- ip: "192.168.92.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.80, ROM F.02.01  (/sw/code/build/info)"
+- ip: "192.168.74.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.1.0 PF:3av6.4.6 PN:3aapc_hw05_aos_646.bin\
+      \ AF1:3av6.4.7 AN1:3aapc_hw05_ats4g_647.bin MN:3aAP4423 HR:3aR01 SN:3a 5A1907T74292\
+      \ MD:3a02/16/2019) "
+- ip: "192.168.89.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 PROCURVE J9080A - VB.02.09"
+- ip: "192.168.91.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.80, ROM F.02.01  (/sw/code/build/info)"
+- ip: "192.168.24.87"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.124.87"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Fibre Channel Switch."
+- ip: "192.168.182.215"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "192.168.173.55"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2314N"
+- ip: "192.168.101.247"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M7570"
+- ip: "192.168.80.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Switched Rack PDU (MB:3av3.6.4 PF:3av2.2.7 PN:3aapc_hw02_aos_227.bin\
+      \ AF1:3av2.2.0 AN1:3aapc_hw02_rpdu_220.bin MN:3aAP7921 HR:3aB2 SN:3a JA0409000518\
+      \ MD:3a02/23/2004) "
+- ip: "192.168.113.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP-UX jhrsap2 B.11.11 U 9000/800 "
+- ip: "192.168.90.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux syslog.sem.global.sharp.co.jp 2.6.18-128.el5 #1 SMP Wed Dec 17\
+      \ 11:3a42:3a39 EST 2008 i686"
+- ip: "192.168.193.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.173.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 OKI OkiLAN 9400g Rev.01.00 10/100/1000BASE Ethernet PrintServer:3a Attached\
+      \ to Pro1050 Rev.A1.08 :3a Copyright (c) 2018 Oki Data Corporation. All rights\
+      \ reserved."
+- ip: "192.168.24.79"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 D-Link DPR-1061 Print Server"
+- ip: "192.168.112.207"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J4813A ProCurve Switch 2524, revision F.05.50, ROM F.02.01  (/sw/code/build/info(s02))"
+- ip: "192.168.232.47"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070N"
+- ip: "192.168.124.111"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux netbotz916042 2.6.12 #307 Thu Nov 29 15:3a45:3a05 EST 2018 ppc"
+- ip: "192.168.171.111"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2640N"
+- ip: "192.168.176.239"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M310N"
+- ip: "192.168.152.239"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.15.12.0007, ROM YA.15.12 (/ws/swbuildm/YA_rel_knoxville_qaoff/code/build/lakes(swbuildm_YA_rel_knoxville_qaoff_rel_knoxville))\
+      \ (Formerly ProCurve)"
+- ip: "192.168.121.239"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2614N"
+- ip: "192.168.124.31"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5070N"
+- ip: "192.168.95.31"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.174.159"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3070N"
+- ip: "192.168.95.159"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.95.95"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.181.223"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M5050"
+- ip: "192.168.95.223"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.95.63"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.95.191"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.100.127"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 AXIS 5400+ Network Print Server V6.43 Nov 24 2003"
+- ip: "192.168.19.127"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Microsoft Windows XP Embedded"
+- ip: "192.168.95.127"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
+- ip: "192.168.132.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.1(4)M4,\
+      \ RELEASE SOFTWARE (fc1):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2012 by Cisco Systems, Inc.:0d:0aCompiled Tue 20-Mar-12 18:3a57 by\
+      \ prod_rel_team"
+- ip: "192.168.140.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.134.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.142.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.133.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.141.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.107.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C1900 Software (C1900-UNIVERSALK9-M), Version 15.2(4)M5,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2013 by Cisco Systems, Inc.:0d:0aCompiled Fri 13-Sep-13 13:3a51 by\
+      \ prod_rel_team"
+- ip: "192.168.135.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, IOS-XE Software, Catalyst 4500 L3 Switch  Software\
+      \ (cat4500es8-UNIVERSALK9-M), Version 03.07.03.E RELEASE SOFTWARE (fc3):0d:0aTechnical\
+      \ Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright (c) 1986-2016\
+      \ by Cisco Systems, Inc.:0d:0aCompiled Thu"
+- ip: "192.168.143.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software [Gibraltar], Catalyst L3 Switch Software (CAT9K_IOSXE),\
+      \ Version 16.12.4, RELEASE SOFTWARE (fc5):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2020 by Cisco Systems, Inc.:0d:0aCompiled Thu 09-Jul-20 21:3a49 by\
+      \ mcpre"
+- ip: "192.168.95.255"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2900 Software (C2900-UNIVERSALK9-M), Version 15.4(3)M3,\
+      \ RELEASE SOFTWARE (fc2):0d:0aTechnical Support:3a http:3a//www.cisco.com/techsupport:0d:0aCopyright\
+      \ (c) 1986-2015 by Cisco Systems, Inc.:0d:0aCompiled Fri 05-Jun-15 13:3a24 by\
+      \ prod_rel_team"
