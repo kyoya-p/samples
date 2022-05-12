@@ -76,10 +76,8 @@ suspend fun snmpAgent(
     }
     callbackFlow {
         snmp.addCommandResponder(commandResponder { trySend(it) })
-        awaitClose { }
-    }.collect {
-        responseHandler(it)
-    }
+        awaitClose {snmp.close() }
+    }.collect { responseHandler(it) }
 }
 
 class SnmpAgent(
