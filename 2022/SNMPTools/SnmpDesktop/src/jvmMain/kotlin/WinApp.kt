@@ -1,12 +1,13 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.wjg.shokkaa.snmp4jutils.mibMapTest
 import jp.wjg.shokkaa.snmp4jutils.snmpAgent
@@ -34,8 +35,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
 
     Scaffold(topBar = {
         TopAppBar {
-            //Button(onClick = { isActiveSettingDialog = true }) { Text("Settings") }
-            Button(onClick = { isActiveCloningDialog = true }) { Text("Clone") }
+            Button(onClick = { isActiveCloningDialog = true }) { Text("Simulate") }
         }
     }) {
         LaunchedEffect(isRunning) {
@@ -57,7 +57,6 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
                 isActiveOpenDialog = false
                 println(it)
             }
-
         }
 
         if (isActiveCloningDialog) SettingsDialog(onClose = { isActiveCloningDialog = false }) {
