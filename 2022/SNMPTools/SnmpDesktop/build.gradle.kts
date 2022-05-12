@@ -43,8 +43,11 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "demo1"
+            packageName = "SNMPAgentDesktop"
             packageVersion = "1.0.0"
+            windows {
+                menuGroup = "SNMP Agent Desktop"
+            }
         }
     }
 }
