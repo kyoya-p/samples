@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     kotlin("multiplatform")
+    kotlin("plugin.serialization") version "1.5.31"
     id("org.jetbrains.compose")
 }
 
@@ -26,15 +27,17 @@ kotlin {
         withJava()
     }
     sourceSets {
-        val jvmMain by getting {
+        @Suppress("UNUSED_VARIABLE") val jvmMain by getting {
             dependencies {
-                implementation(compose.desktop.currentOs)
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
+                implementation(compose.desktop.currentOs)
+                implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
                 implementation("org.snmp4j:snmp4j:3.6.3")
+                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
             }
         }
-        val jvmTest by getting
+        @Suppress("UNUSED_VARIABLE") val jvmTest by getting
     }
 }
 

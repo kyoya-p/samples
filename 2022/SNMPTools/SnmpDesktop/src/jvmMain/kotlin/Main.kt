@@ -5,7 +5,5 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 @ExperimentalCoroutinesApi
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
-        WinApp(window)
-    }
+    Window(onCloseRequest = ::exitApplication, title = "SNMP Agent Desktop") { WinApp(window) }
 }

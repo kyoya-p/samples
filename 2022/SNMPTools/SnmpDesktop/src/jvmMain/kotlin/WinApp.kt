@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.AwtWindow
+import com.charleskorn.kaml.Yaml
 import jp.wjg.shokkaa.snmp4jutils.mibMapTest
 import jp.wjg.shokkaa.snmp4jutils.snmpAgent
 import jp.wjg.shokkaa.snmp4jutils.walk
@@ -18,19 +19,26 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.serializer
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
 
 val currentTime get() = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 val today get() = currentTime.run { "%04d%02d%02d".format(year, monthNumber, dayOfMonth) }
 val now get() = currentTime.run { "%02d%02d%02d".format(hour, minute, second) }
+inline fun <reified R> Yaml.decodeFromStream(s: InputStream): R = decodeFromStream(serializersModule.serializer(), s)
+inline fun <reified R> Yaml.encodeToStream(v: R, s: OutputStream) = encodeToStream(serializersModule.serializer(), v, s)
 
+@OptIn(ExperimentalSerializationApi::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun WinApp(window: ComposeWindow) = MaterialTheme {
-    var logs by remember { mutableStateOf("") }
+    var logs by remember { mutableStateOf("$now Start $today.$now --------------------\n") }
     var mib by remember { mutableStateOf(mibMapTest.values.toList()) }
 
     val snmpAccessInfoDialog = SnmpAccessInfoDialog { ip ->
@@ -41,23 +49,31 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         }
     }
     val saveDialog = AwtFileDialog(mode = FileDialog.SAVE) { dir, res ->
-        yamlSnmp4j.encodeToStream(mib, File(dir + "/" + res).outputStream())
+        yamlSnmp4j.encodeToStream(mib, File("$dir/$res").outputStream())
+    }
+    val loadDialog = AwtFileDialog(mode = FileDialog.LOAD) { dir, res ->
+        mib = yamlSnmp4j.decodeFromStream(File("$dir/$res").inputStream())
+    }
+
+    LaunchedEffect(mib) {
+        logs += "$now Start Agent $today.$now ----------\n"
+        snmpAgent(vbl = mib) { ev, pdu ->
+            logs += "$now ${ev.peerAddress} > $pdu\n"
+            pdu
+        }
     }
 
     Scaffold(topBar = {
         TopAppBar {
             Button(onClick = { snmpAccessInfoDialog.open() }) { Text("Simulate Device") }
-            Button(onClick = { saveDialog.open() }) { Text("Save[TBD]") }
-            Button(onClick = { }) { Text("Load[TBD]") }
+            Button(onClick = { saveDialog.open() }) { Text("Save") }
+            Button(onClick = { loadDialog.open() }) { Text("Load") }
         }
     }) {
-        LaunchedEffect(mib) {
-            logs += "\n$now Start $today.$now ------------------\n"
-            snmpAgent(vbl = mib) { ev, pdu -> pdu }
-        }
         snmpAccessInfoDialog.placing()
         saveDialog.placing()
-        AutoScrollBox { Text(logs, fontSize = 14.sp, modifier = Modifier.fillMaxSize()) }
+        loadDialog.placing()
+        AutoScrollBox { Text(logs, fontSize = 14.sp, softWrap = false, modifier = Modifier.fillMaxSize()) }
     }
 }
 
@@ -102,6 +118,8 @@ private fun AwtFileDialog(
                         dialog.close()
                     }
                 }
+            }.apply {
+                setFilenameFilter { dir, name -> File("$dir/$name").extension == "yaml" }
             }
         },
         dispose = FileDialog::dispose
