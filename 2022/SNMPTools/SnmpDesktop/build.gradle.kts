@@ -37,7 +37,6 @@ kotlin {
                 implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
             }
         }
-        @Suppress("UNUSED_VARIABLE") val jvmTest by getting
     }
 }
 

@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.AwtWindow
 import com.charleskorn.kaml.Yaml
 import jp.wjg.shokkaa.snmp4jutils.mibMapTest
 import jp.wjg.shokkaa.snmp4jutils.snmpAgent
@@ -22,7 +21,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
 import java.awt.FileDialog
-import java.awt.Frame
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -82,46 +80,4 @@ private fun AutoScrollBox(contents: @Composable() BoxScope.() -> Unit) {
     val stateVertical = rememberScrollState()
     LaunchedEffect(stateVertical.maxValue) { stateVertical.animateScrollTo(stateVertical.maxValue) }
     Box(modifier = Modifier.fillMaxSize().verticalScroll(stateVertical)) { contents() }
-}
-
-class DialogHandler(val dialogBuilder: @Composable (DialogHandler) -> Unit) {
-    var show by mutableStateOf(false)
-
-    @Composable
-    fun placing() {
-        if (show) dialogBuilder(this)
-    }
-
-    fun open() {
-        show = true
-    }
-
-    fun close() {
-        show = false
-    }
-}
-
-@Composable
-private fun AwtFileDialog(
-    parent: Frame? = null,
-    title: String = "Choose a file",
-    mode: Int = FileDialog.LOAD,
-    onCloseRequest: (dir: String, file: String) -> Unit,
-) = DialogHandler { dialog ->
-    AwtWindow(
-        create = {
-            object : FileDialog(parent, title, mode) {
-                override fun setVisible(value: Boolean) {
-                    super.setVisible(value)
-                    if (value) {
-                        if (directory != null && file != null) onCloseRequest(directory, file)
-                        dialog.close()
-                    }
-                }
-            }.apply {
-                setFilenameFilter { dir, name -> File("$dir/$name").extension == "yaml" }
-            }
-        },
-        dispose = FileDialog::dispose
-    )
 }
