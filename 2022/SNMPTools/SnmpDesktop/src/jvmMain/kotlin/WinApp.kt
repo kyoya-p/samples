@@ -1,3 +1,5 @@
+@file:Suppress("OPT_IN_IS_NOT_ENABLED")
+
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -63,7 +65,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
 
     Scaffold(topBar = {
         TopAppBar {
-            Button(onClick = { snmpAccessInfoDialog.open() }) { Text("Simulate Device") }
+            Button(onClick = { snmpAccessInfoDialog.open() }) { Text("Capture Device") }
             Button(onClick = { saveDialog.open() }) { Text("Save") }
             Button(onClick = { loadDialog.open() }) { Text("Load") }
         }
