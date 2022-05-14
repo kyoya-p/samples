@@ -9,28 +9,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Dialog
+import org.snmp4j.CommunityTarget
+import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.UdpAddress
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
+import java.net.InetAddress
 
-data class SNMPV1Info(val ip: String, val commStr: String)
+typealias SnmpTarget = CommunityTarget<UdpAddress>
+
+fun snmpTarget(ip: String, port: Int, comm: String) =
+    SnmpTarget(UdpAddress(InetAddress.getByName(ip), port), OctetString(comm))
+
+val SnmpTarget.ip get() = address.inetAddress.hostName!!
+val SnmpTarget.port get() = address.port
+val SnmpTarget.comm get() = community.value!!.decodeToString()
+fun SnmpTarget.copy(ip: String = this.ip, port: Int = this.port, comm: String = this.comm) = snmpTarget(ip, port, comm)
+
+
+val defaultCommunityTarget = snmpTarget("localhost", 161, "public")
 
 @Composable
-fun SnmpAccessInfoDialog(onSettingsClose: (ip: String) -> Unit) = DialogHandler { dialog ->
+fun SnmpAccessInfoDialog(onSettingsClose: (v1: SnmpTarget) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
-        val modBtn = Modifier.padding(8.dp)
-        var ip by remember { mutableStateOf("192.168.11.19") }
-        var commStr by remember { mutableStateOf("public") }
+        val styleBtn = Modifier.padding(8.dp)
+        var v1 by remember { mutableStateOf(defaultCommunityTarget) }
 
         Column(modifier = Modifier.padding(8.dp)) {
-            TextField(ip, label = { Text("IP") }, onValueChange = { ip = it })
-            TextField(commStr, label = { Text("Community String") }, onValueChange = { commStr = it })
+            TextField(v1.ip, label = { Text("IP") }, onValueChange = { v1 = v1.copy(ip = it) })
+            TextField(v1.comm, label = { Text("Community String") }, onValueChange = { v1 = v1.copy(comm = it) })
             Row {
-                Button(modifier = modBtn, onClick = {
-                    dialog.close()
-                    onSettingsClose(ip)
-                }) { Text("OK") }
-                Button(modifier = modBtn, onClick = { dialog.close() }) { Text("Cancel") }
+                Button(modifier = styleBtn, onClick = { dialog.close(); onSettingsClose(v1) }) { Text("OK") }
+                Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
             }
         }
     }

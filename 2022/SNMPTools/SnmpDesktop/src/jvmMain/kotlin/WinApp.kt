@@ -41,11 +41,11 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     var logs by remember { mutableStateOf("$now Start $today.$now --------------------\n") }
     var mib by remember { mutableStateOf(mibMapTest.values.toList()) }
 
-    val snmpAccessInfoDialog = SnmpAccessInfoDialog { ip ->
-        val r = walk(ip).flatMap { it }.onEach { logs += "$now $it\n" }.toList()
+    val snmpAccessInfoDialog = SnmpAccessInfoDialog { v1 ->
+        val r = walk(v1.ip).flatMap { it }.onEach { logs += "$now $it\n" }.toList()
         when {
             r.isNotEmpty() -> mib = r
-            else -> logs += "$now Could not get MIB from [$ip].\n"
+            else -> logs += "$now Could not get MIB from [$v1.ip].\n"
         }
     }
     val saveDialog = AwtFileDialog(mode = FileDialog.SAVE) { dir, res ->

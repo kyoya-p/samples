@@ -63,13 +63,12 @@ fun walk(
 fun walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
-    snmp: Snmp,
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping().apply { listen() }),
 ) = generateSequence(initVbl) { vbl -> // SNMP-Walk
     snmp.send(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
 }.drop(1).takeWhile { vb -> // 全要素 EndOfViewか初期OIDを超えたら終了
     vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
 }
-
 
 private fun sendReport(index: Int, rep: String, complete: Boolean) {
     println("Report: {")
