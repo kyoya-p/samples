@@ -12,7 +12,7 @@ import kotlin.reflect.KProperty
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-@Suppress("NonAsciiCharacters")
+@Suppress("NonAsciiCharacters", "ClassName")
 class `T4-Delegate` {
     @Test
     fun `t01-lazy遅延初期化`() {
@@ -78,7 +78,7 @@ class `T4-Delegate` {
         }
     }
 
-    @Suppress("UNUSED_VALUE")
+    @Suppress("TestFunctionName")
     @Test
     fun `t04-by Map`() {
         val m = mutableMapOf("a" to "b")
@@ -86,6 +86,7 @@ class `T4-Delegate` {
         println(a)
         assert(a == "b")
 
+        @Suppress("UNUSED_VALUE")
         a = "z"
         println(m)
         assert(m["a"] == "z")
@@ -103,11 +104,13 @@ class `T4-Delegate` {
 
         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
         var ja: String by props
+        @Suppress("UNUSED_VALUE")
         ja = "value of ja"
         println(props)
         assert(props["ja"] == "value of ja")
     }
 
+    @Suppress("TestFunctionName")
     @Test
     fun t05_PropertiesFile_変数名を参照() {
         class MyFileProperty(val actualPropName: String? = null) {
