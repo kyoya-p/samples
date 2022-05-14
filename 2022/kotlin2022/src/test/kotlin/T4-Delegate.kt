@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.File
 import java.util.*
 import kotlin.NoSuchElementException
 import kotlin.reflect.KProperty
@@ -28,10 +29,10 @@ class `T4-Delegate` {
 
     @Test
     fun `t02-デリゲートの定義_プロパティデリゲート`() {
-        class month(private var a: Int = 1) {
-            operator fun getValue(thisRef: Any?, property: KProperty<*>) = a
+        class month(private var v: Int = 1) {
+            operator fun getValue(thisRef: Any?, property: KProperty<*>) = v
             operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
-                a = (value - 1).mod(12) + 1
+                v = (value - 1).mod(12) + 1
             }
         }
 
@@ -106,4 +107,47 @@ class `T4-Delegate` {
         println(props)
         assert(props["ja"] == "value of ja")
     }
+
+    @Test
+    fun t05_PropertiesFile_変数名を参照() {
+        class MyFileProperty(val actualPropName: String? = null) {
+            val propFile = File("build/my.properties")
+            operator fun getValue(thisRef: String?, property: KProperty<*>): String? {
+                val prop = Properties()
+                if (propFile.exists()) prop.load(propFile.inputStream())
+                return prop.getProperty(actualPropName ?: property.name)
+            }
+
+            operator fun setValue(thisRef: String?, property: KProperty<*>, value: String?) {
+                val prop = Properties()
+                if (propFile.exists()) prop.load(propFile.inputStream())
+                prop.setProperty(actualPropName ?: property.name, value)
+                prop.store(propFile.outputStream(), "Comment for propertied file")
+            }
+        }
+
+        run {
+            @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE", "UNUSED_VARIABLE")
+            var userName by MyFileProperty()
+
+            @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE", "UNUSED_VARIABLE")
+            var count by MyFileProperty()
+
+            @Suppress("UNUSED_VALUE")
+            userName = "root"
+            @Suppress("UNUSED_VALUE")
+            count = 100.toString()
+        }
+
+        println(File("build/my.properties").readText())
+
+        run {
+            val userName by MyFileProperty()
+            val count by MyFileProperty()
+
+            assert(userName == "root")
+            assert(count == "100")
+        }
+    }
 }
+

@@ -39,10 +39,11 @@ class `T11-Coroutine` {
     }
 
     @Test
-    fun `t02-ThreadとCoroutine`():Unit = runBlocking {
-        suspend fun threadBlocker() = withContext(Dispatchers.IO) {
-            Thread.sleep(100)
+    fun `t02-ThreadとCoroutine`(): Unit = runBlocking {
+        fun threadBlocker() {
+            Thread.sleep(100) // IDEによってブロック警告
         }
+
         suspend fun coroutineLoad() = delay(100)
 
         // ThreadのブロックとCoroutineのサスペンド、一時停止する点では同じように見えるが
@@ -58,9 +59,10 @@ class `T11-Coroutine` {
         }
 
         stopWatch { w ->
-            // Threadはasyncでブロックし次のasyncを開始しない
+            // デフォルトのCoroutineコンテキストはシングルスレッドなのでThread.sleepはasyncでもブロックし次のasyncを開始しない
             (1..5).map { async { threadBlocker() } }.awaitAll()
             println(w.now())
+
             assert((500..600).contains(w.now()))
         }
         stopWatch { w ->
