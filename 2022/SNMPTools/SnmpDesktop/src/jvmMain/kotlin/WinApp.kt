@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.mibMapTest
 import jp.wjg.shokkaa.snmp4jutils.snmpAgent
 import jp.wjg.shokkaa.snmp4jutils.walk
 import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
@@ -22,7 +21,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
-import java.awt.FileDialog
+import org.snmp4j.smi.VariableBinding
+import java.awt.FileDialog.LOAD
+import java.awt.FileDialog.SAVE
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -34,12 +35,22 @@ inline fun <reified R> Yaml.decodeFromStream(s: InputStream): R = decodeFromStre
 inline fun <reified R> Yaml.encodeToStream(v: R, s: OutputStream) = encodeToStream(serializersModule.serializer(), v, s)
 
 @OptIn(ExperimentalSerializationApi::class)
+fun saveMib(mib: List<VariableBinding>, path: String) = yamlSnmp4j.encodeToStream(mib, File(path).outputStream())
+
+@OptIn(ExperimentalSerializationApi::class)
+fun loadMib(path: String): List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(path).inputStream())
+
+@OptIn(ExperimentalSerializationApi::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun WinApp(window: ComposeWindow) = MaterialTheme {
-    var logs by remember { mutableStateOf("$now Start $today.$now --------------------\n") }
-    var mib by remember { mutableStateOf(mibMapTest.values.toList()) }
+    var logs by remember { mutableStateOf("$now Application Start $today.$now --------------------\n") }
+    var mib: List<VariableBinding> by remember {
+        val mib = app.mibFile?.let { loadMib(it) } ?: listOf()
+        logs += now + if (mib.isEmpty()) " Error: Empty MIB... Load or Capture Device first.\n" else " Loaded #${mib.size} Entries.\n"
+        mutableStateOf(mib)
+    }
 
     val snmpAccessInfoDialog = SnmpAccessInfoDialog { v1 ->
         val r = walk(v1.ip).flatMap { it }.onEach { logs += "$now $it\n" }.toList()
@@ -48,12 +59,8 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
             else -> logs += "$now Could not get MIB from [$v1.ip].\n"
         }
     }
-    val saveDialog = AwtFileDialog(mode = FileDialog.SAVE) { dir, res ->
-        yamlSnmp4j.encodeToStream(mib, File("$dir/$res").outputStream())
-    }
-    val loadDialog = AwtFileDialog(mode = FileDialog.LOAD) { dir, res ->
-        mib = yamlSnmp4j.decodeFromStream(File("$dir/$res").inputStream())
-    }
+    val saveDlg = AwtFileDialog(mode = SAVE) { d, f -> saveMib(mib, "$d/$f"); app.mibFile = "$d/$f" }
+    val loadDlg = AwtFileDialog(mode = LOAD) { d, f -> mib = loadMib("$d/$f"); app.mibFile = "$d/$f" }
 
     LaunchedEffect(mib) {
         logs += "$now Start Agent $today.$now ----------\n"
@@ -66,19 +73,19 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     Scaffold(topBar = {
         TopAppBar {
             Button(onClick = { snmpAccessInfoDialog.open() }) { Text("Capture Device") }
-            Button(onClick = { saveDialog.open() }) { Text("Save") }
-            Button(onClick = { loadDialog.open() }) { Text("Load") }
+            Button(onClick = { saveDlg.open() }) { Text("Save") }
+            Button(onClick = { loadDlg.open() }) { Text("Load") }
         }
     }) {
         snmpAccessInfoDialog.placing()
-        saveDialog.placing()
-        loadDialog.placing()
+        saveDlg.placing()
+        loadDlg.placing()
         AutoScrollBox { Text(logs, fontSize = 14.sp, softWrap = false, modifier = Modifier.fillMaxSize()) }
     }
 }
 
 @Composable
-private fun AutoScrollBox(contents: @Composable() BoxScope.() -> Unit) {
+fun AutoScrollBox(contents: @Composable() BoxScope.() -> Unit) {
     val stateVertical = rememberScrollState()
     LaunchedEffect(stateVertical.maxValue) { stateVertical.animateScrollTo(stateVertical.maxValue) }
     Box(modifier = Modifier.fillMaxSize().verticalScroll(stateVertical)) { contents() }

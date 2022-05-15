@@ -11,14 +11,15 @@ import org.snmp4j.event.ResponseListener
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+
 @Suppress("unused")
 class SnmpSuspendable(val snmp: Snmp = Snmp()) {
-    suspend fun send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
+    suspend fun sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
         suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
-            @Suppress("BlockingMethodInNonBlockingContext")
             snmp.send(pdu, target, userHandle, object : ResponseListener {
                 override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
                     snmp.cancel(pdu, this)
@@ -26,11 +27,11 @@ class SnmpSuspendable(val snmp: Snmp = Snmp()) {
                     continuation.resume(r as ResponseEvent<UdpAddress>)
                 }
             })
-            return@suspendCoroutine
+           // return@suspendCoroutine
         }
 
-    suspend fun get(pdu: PDU, target: Target<UdpAddress>) = send(pdu.apply { type = PDU.GET }, target)
-    suspend fun getNext(pdu: PDU, target: Target<UdpAddress>) = send(pdu.apply { type = PDU.GETNEXT }, target)
+    suspend fun getAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GET }, target)
+    suspend fun getNextAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GETNEXT }, target)
 
     @Suppress("unused")
     fun cancel(pdu: PDU, listener: ResponseListener) = snmp.cancel(pdu, listener)

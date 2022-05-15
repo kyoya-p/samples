@@ -20,6 +20,7 @@ fun main(args: Array<String>) {
 
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
+    vbl: List<VariableBinding>,
     snmp: Snmp = Snmp(
         DefaultUdpTransportMapping(
             UdpAddress(
@@ -28,7 +29,6 @@ suspend fun snmpAgent(
             )
         )
     ).apply { listen() },
-    vbl: List<VariableBinding>,
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
@@ -58,14 +58,7 @@ suspend fun snmpAgent(
 
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
-    snmp: Snmp = Snmp(
-        DefaultUdpTransportMapping(
-            UdpAddress(
-                InetAddress.getByName("0.0.0.0"),
-                161
-            )
-        )
-    ).apply { listen() },
+    snmp: Snmp,
     responseHandler: suspend (ResponderEvent) -> Unit,
 ) {
     fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {

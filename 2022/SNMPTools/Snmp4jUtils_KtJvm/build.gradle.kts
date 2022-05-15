@@ -1,10 +1,12 @@
 plugins {
     application
-    kotlin("jvm") version "1.6.0"
-    kotlin("plugin.serialization") version "1.5.31"
-    id("org.jetbrains.kotlinx.kover") version "0.4.1"
+    kotlin("jvm") version "1.6.21"
+    kotlin("plugin.serialization") version "1.6.21"
+//    id("org.jetbrains.kotlinx.kover") version "0.4.1"
     `maven-publish`
     id("com.github.johnrengelman.shadow") version "7.0.0"
+
+    idea
 }
 
 val myGroupId = "jp.wjg.shokkaa"
@@ -20,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
@@ -34,6 +36,12 @@ dependencies {
 
 application {
     mainClass.set("mypackage.MainKt") // package mypackageかつファイル名main.ktのmain()を実行する場合
+}
+
+val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
+compileTestKotlin.kotlinOptions {
+    languageVersion = "1.7"
+    freeCompilerArgs = listOf("-Xcontext-receivers")
 }
 
 tasks.test {

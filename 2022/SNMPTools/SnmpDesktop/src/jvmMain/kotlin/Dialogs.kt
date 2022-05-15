@@ -9,15 +9,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Dialog
+import jp.wjg.shokkaa.snmp4jutils.*
+import kotlinx.coroutines.delay
 import org.snmp4j.CommunityTarget
+import org.snmp4j.PDU
+import org.snmp4j.Snmp
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
+import org.snmp4j.smi.VariableBinding
 import java.awt.FileDialog
 import java.awt.Frame
-import java.io.File
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.ExperimentalTime
 
-typealias SnmpTarget = CommunityTarget<UdpAddress>
 
 fun snmpTarget(ip: String, port: Int, comm: String) =
     SnmpTarget(UdpAddress(InetAddress.getByName(ip), port), OctetString(comm))
@@ -25,23 +30,83 @@ fun snmpTarget(ip: String, port: Int, comm: String) =
 val SnmpTarget.ip get() = address.inetAddress.hostName!!
 val SnmpTarget.port get() = address.port
 val SnmpTarget.comm get() = community.value!!.decodeToString()
-fun SnmpTarget.copy(ip: String = this.ip, port: Int = this.port, comm: String = this.comm) = snmpTarget(ip, port, comm)
 
-
-val defaultCommunityTarget = snmpTarget("localhost", 161, "public")
-
+@OptIn(ExperimentalTime::class)
 @Composable
 fun SnmpAccessInfoDialog(onSettingsClose: (v1: SnmpTarget) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         val styleBtn = Modifier.padding(8.dp)
-        var v1 by remember { mutableStateOf(defaultCommunityTarget) }
+        var ipSpec by remember { mutableStateOf(app.ip ?: "127.0.0.1") }
+        var comm by remember { mutableStateOf(app.commStr ?: "public") }
+        Column(modifier = Modifier.padding(8.dp)) {
+            TextField(ipSpec, label = { Text("IP") }, onValueChange = { ipSpec = it;app.ip = it })
+            TextField(comm, label = { Text("Community String") }, onValueChange = { comm = it;app.commStr = it })
+            Row {
+                Button(modifier = styleBtn, onClick = {
+                    dialog.close()
+                    onSettingsClose(snmpTarget(ipSpec, 161, comm))
+                }) { Text("OK") }
+                Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
+            }
+        }
+        LaunchedEffect(ipSpec) {
+            runCatching {
+                println("IPSpec: $ipSpec")
+                ipSequence(ipSpec).forEach {
+                    print("${it.hostAddress}\r")
+                    delay(10.milliseconds)
+                }
+            }.onFailure { println("Illegal IP Spec.") }
+        }
+    }
+}
+
+fun ipSequence(ipSpec: String) = ipSpec.split(",").asSequence().flatMap { ipRange ->
+    val range = ipRange.split("-")
+    when {
+        range.size == 1 -> sequenceOf(range.first()).map { InetAddress.getByName(it)!! }
+        range.size == 2 -> {
+            val (s, e) = range.map { if (it == "") error("Illegal IP") else InetAddress.getByName(it)!! }
+            println("s=${range[0]}/${s.hostAddress}/${s.toIPv4ULong()} e=${range[1]}/${e.toIPv4ULong()}")
+            ipV4AddressRangeSequence(s, e)
+        }
+        else -> sequenceOf()
+    }
+}
+
+@Composable
+fun SnmpScanDialog(onClose: (SnmpTarget) -> Unit) = DialogHandler { dialog ->
+    Dialog(title = "SNMP Scan and Capture", onCloseRequest = { dialog.close() }) {
+        val styleBtn = Modifier.padding(8.dp)
+        var ipRange by remember { mutableStateOf(app.ipRange) }
+        var comm by remember { mutableStateOf(app.commStr) }
+        val ipList = mutableListOf<InetAddress>()
 
         Column(modifier = Modifier.padding(8.dp)) {
-            TextField(v1.ip, label = { Text("IP") }, onValueChange = { v1 = v1.copy(ip = it) })
-            TextField(v1.comm, label = { Text("Community String") }, onValueChange = { v1 = v1.copy(comm = it) })
+            TextField(ipRange, label = { Text("Start-End") }, onValueChange = { ipRange = it;app.ipRange = it; })
+            TextField(comm, label = { Text("Community String") }, onValueChange = { comm = it;app.commStr = it })
             Row {
-                Button(modifier = styleBtn, onClick = { dialog.close(); onSettingsClose(v1) }) { Text("OK") }
+                Button(modifier = styleBtn, onClick = {
+                    dialog.close()
+                    onClose(snmpTarget(ipRange, 161, comm))
+                }) { Text("OK") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
+            }
+            AutoScrollBox {
+                Column {
+                    ipList.forEach { Button(onClick = {}) { Text("[${it.hostName}]") } }
+                }
+            }
+        }
+        LaunchedEffect(ipRange) {
+            val (start, end) = ipRange.split("-").mapNotNull { InetAddress.getByName(it) }
+            val snmp = Snmp().suspendable()
+            ipV4AddressRangeSequence(start, end).forEach { adr ->
+                val res = snmp.send(
+                    PDU(PDU.GETNEXT, listOf(VariableBinding(SampleOID.sysDescr.oid))),
+                    CommunityTarget(UdpAddress(adr, 161), OctetString("public"))
+                )
+                res.peerAddress
             }
         }
     }
@@ -81,8 +146,6 @@ fun AwtFileDialog(
                         dialog.close()
                     }
                 }
-            }.apply {
-                setFilenameFilter { dir, name -> File("$dir/$name").extension == "yaml" }
             }
         },
         dispose = FileDialog::dispose
