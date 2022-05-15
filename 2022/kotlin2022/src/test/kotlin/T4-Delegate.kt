@@ -27,34 +27,28 @@ class `T4-Delegate` {
         assert(d == 3)
     }
 
+    @Suppress("KotlinConstantConditions")
     @Test
-    fun `t02-デリゲートの定義_プロパティデリゲート`() {
-        class month(private var v: Int = 1) {
-            operator fun getValue(thisRef: Any?, property: KProperty<*>) = v
-            operator fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
-                v = (value - 1).mod(12) + 1
-            }
+    fun `t02-移譲_プロパティ移譲`() {
+        class Max<T : Comparable<T>>(private var v: T) { // 現在値より小さい値は格納されない
+            operator fun getValue(r: Any?, property: KProperty<*>) = v
+            operator fun setValue(r: Any?, property: KProperty<*>, value: T) = apply { if (v < value) v = value }
         }
 
-        var a by month()
-        a = 12
-        assert(a == 12)
-        a += 1
-        @Suppress("KotlinConstantConditions")
-        assert(a == 1)
-        a -= 2
-        println(a)
-        assert(a == 11)
+        var a by Max(0)
+        a = 99; assert(a == 99)
+        a = 100; assert(a == 100)
+        a = 99; assert(a == 100) // IntelliJは「常にa==99」と言って警告するが..
     }
 
     @ExperimentalTime
     @Test
-    fun `t03-デリゲートの定義_クラスデリゲート`(): Unit = runBlocking {
+    fun `t03-移譲_クラス移譲`(): Unit = runBlocking {
         class ThrottledQueue<E>(
             val inner: Channel<E> = Channel(Channel.RENDEZVOUS),
         ) : Channel<E> by inner {
             val n by lazy { now() }
-            override suspend fun receive(): E {
+            override suspend fun receive(): E { // 帯域制限付きreceive。投入(send)を制限すべきか..
                 delayUntilNextPeriod(30.milliseconds, start = n)
                 return inner.receive()
             }
