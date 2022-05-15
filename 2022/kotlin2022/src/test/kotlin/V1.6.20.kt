@@ -1,7 +1,5 @@
 @file:Suppress("UNUSED_VARIABLE", "UseExpressionBody")
 
-/*
-
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -9,7 +7,7 @@ import java.io.File
 @Suppress("ClassName", "NonAsciiCharacters", "TestFunctionName")
 class V1_6_20 {
     @Test
-    fun nullを許容しないジェネリクス型() { // Ktlin 1.6.20~
+    fun nullを許容しないジェネリクス型() { // Kotlin 1.6.20~
         fun <T> nullable(x: T): T = x
         fun <T> nonnullable(x: T & Any): T & Any = x
 
@@ -20,34 +18,50 @@ class V1_6_20 {
         // val nn2 :Nothing? = nonnullable(null) // Compile Error
     }
 
-    @Test
-    fun 関数インタフェースと実装() {
-        val edge1 = Edge { "node1" to "node2" }
-        println(edge1.nodes())
+
+    interface OldEdge<N> {
+        fun nodes(): Pair<N, N>
     }
 
     fun interface Edge<N> {
-        fun nodes(): Pair<N, N>
+        fun nodes(): Pair<N, N> // メソッドは1個だけ
+    }
+
+    @Test
+    fun 関数インタフェースと実装() {
+        // val oldEdge = OldEdge { "node1" to "node2" } // Compile Error: コンストラクタがない
+        val oldEdge = object : OldEdge<String> {
+            override fun nodes() = "node1" to "node2"
+        }
+        println(oldEdge.nodes())
+
+        val edge = Edge { "node1" to "node2" } // こう書ける
+
+        println(edge.nodes())
     }
 
 
     // コンテキストレシーバ
-    // 1.6.20ではコンパイルオプション -Xcontext-receivers が必要
+    // 1.6.20ではコンパイルオプション -Xcontext-receivers が必要(build.gradle.kts参照)
 
     fun interface CurrentDirectoryContext {
         fun cwd(): File
     }
 
-    context(CurrentDirectoryContext)
+    private context(CurrentDirectoryContext)
     fun ls() = if (cwd().isDirectory()) cwd().listFiles()!!.mapNotNull { it }.asSequence() else sequenceOf()
 
-    context(CurrentDirectoryContext)
+    private context(CurrentDirectoryContext)
     fun <R> cd(dir: File, op: CurrentDirectoryContext.() -> R) = CurrentDirectoryContext { dir }.op()
 
     @Test
     fun コンテキストレシーバ() {
         with(CurrentDirectoryContext { File(".") }) {
-            ls().forEach { cd(it) { println(cwd().absolutePath) } }
+            ls().forEach {
+                cd(it) {// Context: カレントディレクトリがサブディレクトリになってる
+                    println(cwd().absolutePath)
+                }
+            }
         }
     }
 
@@ -71,11 +85,10 @@ class V1_6_20 {
         fun b(): String = "B"
     }
 
-    context(A, B)
+    private context(A, B)
     fun f() {
         println(a())
         println(b())
     }
 }
- */
 
