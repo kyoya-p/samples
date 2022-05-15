@@ -35,7 +35,7 @@ val jsonSnmp4j = Json {
 val yamlSnmp4j = Yaml(serializersModule = snmp4jSerializersModule)
 
 inline fun <reified R> Yaml.decodeFromStream(s: InputStream): R = decodeFromStream(serializersModule.serializer(), s)
-inline fun <reified R> Yaml.decodeFromString(s: String): R = decodeFromString(serializersModule.serializer(), s)
+//inline fun <reified R> Yaml.decodeFromString(s: String): R = decodeFromString(serializersModule.serializer(), s)
 
 @ExperimentalSerializationApi
 @Serializer(forClass = Variable::class)

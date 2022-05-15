@@ -102,6 +102,10 @@ fun scrambledIpV4AddressSequence(
         .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth)) }
         .map { (i, a) -> i to a.toIpv4Adr() }
 
+@Suppress("unused")
+fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
+    (start.toIPv4Long()..end.toIPv4Long()).asSequence().map { it.toIpv4Adr() }
+
 
 private fun Long.reverseBit32(width: Int = 32): Long {
     var x = this

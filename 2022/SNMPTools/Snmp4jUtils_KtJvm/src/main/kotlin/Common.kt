@@ -1,10 +1,10 @@
+@file:Suppress("unused")
+
 package jp.wjg.shokkaa.snmp4jutils
 
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
-import org.snmp4j.CommandResponderEvent
-import org.snmp4j.PDU
-import org.snmp4j.Snmp
+import org.snmp4j.*
 import org.snmp4j.Target
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
@@ -15,7 +15,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @Suppress("unused")
-class SnmpSuspendable(val snmp: Snmp) {
+class SnmpSuspendable(val snmp: Snmp = Snmp()) {
     suspend fun send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
         suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
             @Suppress("BlockingMethodInNonBlockingContext")
@@ -39,6 +39,8 @@ class SnmpSuspendable(val snmp: Snmp) {
 }
 
 fun Snmp.suspendable() = SnmpSuspendable(this)
+
+typealias SnmpTarget = CommunityTarget<UdpAddress>
 
 @Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
 enum class SampleOID(val oid: OID, val oidName: String) {

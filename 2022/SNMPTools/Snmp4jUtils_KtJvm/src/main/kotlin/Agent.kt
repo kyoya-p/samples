@@ -76,7 +76,7 @@ suspend fun snmpAgent(
     }
     callbackFlow {
         snmp.addCommandResponder(commandResponder { trySend(it) })
-        awaitClose {snmp.close() }
+        awaitClose { snmp.close() }
     }.collect { responseHandler(it) }
 }
 
@@ -157,7 +157,7 @@ class SnmpAgent(
 
 @Suppress("unused")
 val mibMapTest = sortedMapOf<OID, Variable>(
-    OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("AAAA"),
+    OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("Dummy SNMP Agent"),
     OID(1, 3, 6, 1, 2, 1, 1, 2) to OID(1, 3, 6, 1, 2, 1, 1, 1, 1, 1),
     OID(1, 3, 6, 1, 2, 1, 1, 3) to TimeTicks(77777777),
     OID(1, 3, 6, 1, 2, 1, 1, 4) to Integer32(65535),
