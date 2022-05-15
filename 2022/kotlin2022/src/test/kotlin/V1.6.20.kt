@@ -48,10 +48,10 @@ class V1_6_20 {
         fun cwd(): File
     }
 
-    private context(CurrentDirectoryContext)
+    context(CurrentDirectoryContext)
     fun ls() = if (cwd().isDirectory()) cwd().listFiles()!!.mapNotNull { it }.asSequence() else sequenceOf()
 
-    private context(CurrentDirectoryContext)
+    context(CurrentDirectoryContext)
     fun <R> cd(dir: File, op: CurrentDirectoryContext.() -> R) = CurrentDirectoryContext { dir }.op()
 
     @Test
@@ -85,7 +85,7 @@ class V1_6_20 {
         fun b(): String = "B"
     }
 
-    private context(A, B)
+    context(A, B)
     fun f() {
         println(a())
         println(b())

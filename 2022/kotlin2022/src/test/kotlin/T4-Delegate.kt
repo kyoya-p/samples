@@ -112,7 +112,7 @@ class `T4-Delegate` {
 
     @Suppress("TestFunctionName")
     @Test
-    fun t05_PropertiesFile_変数名を参照() {
+    fun t05_PropertiesFile() {
         class MyFileProperty(val actualPropName: String? = null) {
             val propFile = File("build/my.properties")
             operator fun getValue(thisRef: String?, property: KProperty<*>): String? {
