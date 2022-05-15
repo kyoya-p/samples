@@ -16,7 +16,6 @@ import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
 import java.io.File
-import java.math.BigInteger
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
@@ -32,7 +31,7 @@ fun main(args: Array<String>) = runBlocking {
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    val baseIp = InetAddress.getByName(baseHost).toIPv4Long() and (-1L shl scanBits)
+    val baseIp = InetAddress.getByName(baseHost).toIPv4ULong() and ((-1L).toULong() shl scanBits)
     val sendInterval = (args.getOrNull(2)?.toInt() ?: 50).milliseconds
     val baseAdr = baseIp.toIpv4Adr()
 
@@ -58,7 +57,7 @@ fun main(args: Array<String>) = runBlocking {
             val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
                 .timeout(5000).retries(2)
                 .build()
-            print("\r${i + 1}/${1 shl scanBits} ${(i + 1) * 1000 / (now() + 1)}[req/s] : send() -> $udpAdr [${++c}] ")
+            print("\r${i + 1UL}/${1 shl scanBits} ${(i + 1UL) * 1000UL / (now() + 1).toULong()}[req/s] : send() -> $udpAdr [${++c}] ")
             snmp.send(PDU(PDU.GETNEXT, sampleVBs), target, udpAdr)
         }
     }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
@@ -83,14 +82,14 @@ fun main(args: Array<String>) = runBlocking {
 @Serializable
 data class SNMPLog(val ip: String, val vbs: List<@Contextual VariableBinding>)
 
-// IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
-private fun Long.toIpv4Adr() = InetAddress.getByAddress(BigInteger.valueOf(this).toByteArray())!!
-private fun InetAddress.toIPv4Long() = BigInteger(address).toLong()
+fun ULong.toIpv4Adr() = InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })
+fun InetAddress.toIPv4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
 
+// IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
 @Suppress("unused")
-fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: Long = 0) =
-    (startIndex until (1 shl bitWidth)).asSequence()
-        .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it) }
+fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: ULong = 0UL) =
+    (startIndex until (1UL shl bitWidth)).asSequence()
+        .map { it to ((netAdr.toIPv4ULong() and ((-1L).toULong() shl bitWidth)) or it) }
         .map { (i, a) -> i to a.toIpv4Adr() }
 
 fun scrambledIpV4AddressSequence(
@@ -98,23 +97,23 @@ fun scrambledIpV4AddressSequence(
     @Suppress("UNUSED_PARAMETER")
     startIndex: Long = 0,
 ) =
-    (0L until (1 shl bitWidth)).asSequence()
-        .map { it to ((netAdr.toIPv4Long() and (-1L shl bitWidth)) or it.reverseBit32(bitWidth)) }
+    (0UL until (1UL shl bitWidth)).asSequence()
+        .map { it to ((netAdr.toIPv4ULong() and ((-1L).toULong() shl bitWidth)) or it.reverseBit32(bitWidth)) }
         .map { (i, a) -> i to a.toIpv4Adr() }
 
 @Suppress("unused")
 fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
-    if (start.toIPv4Long() <= end.toIPv4Long()) (start.toIPv4Long()..end.toIPv4Long()).asSequence()
+    if (start.toIPv4ULong() <= end.toIPv4ULong()) (start.toIPv4ULong()..end.toIPv4ULong()).asSequence()
         .map { it.toIpv4Adr() }
     else sequenceOf()
 
-private fun Long.reverseBit32(width: Int = 32): Long {
+private fun ULong.reverseBit32(width: Int = 32): ULong {
     var x = this
-    x = ((x and 0x55555555) shl 1) or ((x and 0xAAAAAAAA) ushr 1)
-    x = ((x and 0x33333333) shl 2) or ((x and 0xCCCCCCCC) ushr 2)
-    x = ((x and 0x0F0F0F0F) shl 4) or ((x and 0xF0F0F0F0) ushr 4)
-    x = ((x and 0x00FF00FF) shl 8) or ((x and 0xFF00FF00) ushr 8)
-    return ((x shl 16) or (x ushr 16)) ushr (32 - width)
+    x = ((x and 0x55555555UL) shl 1) or ((x and 0xAAAAAAAAUL) shr 1)
+    x = ((x and 0x33333333UL) shl 2) or ((x and 0xCCCCCCCCUL) shr 2)
+    x = ((x and 0x0F0F0F0FUL) shl 4) or ((x and 0xF0F0F0F0UL) shr 4)
+    x = ((x and 0x00FF00FFUL) shl 8) or ((x and 0xFF00FF00UL) shr 8)
+    return ((x shl 16) or (x shr 16)) shr (32 - width)
 }
 
 @Suppress("unused")
