@@ -104,8 +104,9 @@ fun scrambledIpV4AddressSequence(
 
 @Suppress("unused")
 fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
-    (start.toIPv4Long()..end.toIPv4Long()).asSequence().map { it.toIpv4Adr() }
-
+    if (start.toIPv4Long() <= end.toIPv4Long()) (start.toIPv4Long()..end.toIPv4Long()).asSequence()
+        .map { it.toIpv4Adr() }
+    else sequenceOf()
 
 private fun Long.reverseBit32(width: Int = 32): Long {
     var x = this
