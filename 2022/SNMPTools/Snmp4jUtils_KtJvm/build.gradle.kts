@@ -1,7 +1,7 @@
 plugins {
     application
-    kotlin("jvm") version "1.6.21"
-    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("jvm") version "1.6.0"
+    kotlin("plugin.serialization") version "1.6.0"
 //    id("org.jetbrains.kotlinx.kover") version "0.4.1"
     `maven-publish`
     id("com.github.johnrengelman.shadow") version "7.0.0"
@@ -18,7 +18,7 @@ group = myGroupId
 
 repositories {
     mavenCentral()
-    mavenLocal()
+    //mavenLocal()
 }
 
 dependencies {

@@ -1,8 +1,7 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
@@ -26,7 +25,7 @@ fun main(args: Array<String>): Unit = runCatching {
         val tgIp = args[0]
         val resultFile = File("samples/${Clock.System.todayAt(currentSystemDefault())}-walk-$tgIp.yaml")
 
-        val vbl = Snmp().suspendable().walk(tgIp).flatMap { it }.onEach { println(it) }.toList()
+        val vbl = Snmp().suspendable().walk(tgIp).map { it[0] }.onEach { println(it) }.toList()
         val dev = Device(tgIp, vbl)
         resultFile.writeText(yamlSnmp4j.encodeToString(dev))
     }
@@ -41,7 +40,7 @@ fun mainSplit(args: Array<String>): Unit = runCatching {
 
         var rep = ""
         var repIndex = 0
-        Snmp().suspendable().walk(tgIp).forEach { vbl -> //ペイロードサイズが256B以上になればレポート送信
+        Snmp().suspendable().walk(tgIp).collect { vbl -> //ペイロードサイズが256B以上になればレポート送信
             rep = rep + vbl.joinToString("\n", "", "\n")
             if (rep.length >= 256) {
                 sendReport(repIndex, rep, false)
@@ -59,7 +58,7 @@ fun mainSplit(args: Array<String>): Unit = runCatching {
 suspend fun SnmpSuspendable.walk(
     targetHost: String,
     reqOidList: List<String> = listOf(".1.3.6"),
-): Sequence<List<VariableBinding>> = walk(
+): Flow<List<VariableBinding>> = walk(
     CommunityTarget(UdpAddress(InetAddress.getByName(targetHost), 161), OctetString("public"))
         .apply {
             timeout = 1000
@@ -68,14 +67,23 @@ suspend fun SnmpSuspendable.walk(
     reqOidList.map { VariableBinding(OID(it)) },
 )
 
+fun <T> generateFlow(init: T, op: suspend (T) -> T?) = flow {
+    var i = init
+    while (true) {
+        i = op(i) ?: break
+        emit(i)
+    }
+}
+
 suspend fun SnmpSuspendable.walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
 ): Flow<List<VariableBinding>> {
-    return channelFlow {
-        sendAsync(PDU(PDU.GETNEXT, vbl), target)?.response?.takeIf { it.errorStatus == PDU.noError }?.variableBindings
-    }.drop(1).takeWhile { vb -> // 全要素 EndOfViewか初期OIDを超えたら終了
-        vb.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
+    return generateFlow(initVbl) { vbl ->
+        sendAsync(PDU(PDU.GETNEXT, vbl), target).response.variableBindings.takeIf {
+            // 全要素 EndOfViewか初期OIDを超えたら終了
+            it.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
+        }
     }
 }
 

@@ -17,26 +17,25 @@ import kotlin.coroutines.suspendCoroutine
 
 
 @Suppress("unused")
-class SnmpSuspendable(val snmp: Snmp = Snmp())
-    suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
-        suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
-            snmp.send(pdu, target, userHandle, object : ResponseListener {
-                override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
-                    snmp.cancel(pdu, this)
-                    @Suppress("UNCHECKED_CAST")
-                    continuation.resume(r as ResponseEvent<UdpAddress>)
-                }
-            })
-           // return@suspendCoroutine
-        }
+class SnmpSuspendable(val snmp: Snmp)
 
-    suspend fun SnmpSuspendable.getAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GET }, target)
-    suspend fun SnmpSuspendable.getNextAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GETNEXT }, target)
+suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
+    suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+        println(pdu)
+        snmp.send(pdu, target, userHandle, object : ResponseListener {
+            override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
+                snmp.cancel(pdu, this)
+                @Suppress("UNCHECKED_CAST")
+                continuation.resume(r as ResponseEvent<UdpAddress>)
+            }
+        })
+        // return@suspendCoroutine
+    }
 
-    @Suppress("unused")
-    fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = snmp.cancel(pdu, listener)
-    fun SnmpSuspendable.listen() = snmp.listen()
-    fun SnmpSuspendable.close() = snmp.close()
+@Suppress("unused")
+fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = apply { snmp.cancel(pdu, listener) }
+fun SnmpSuspendable.listen() = apply { snmp.listen() }
+fun SnmpSuspendable.close() = apply { snmp.close() }
 
 
 fun Snmp.suspendable() = SnmpSuspendable(this)

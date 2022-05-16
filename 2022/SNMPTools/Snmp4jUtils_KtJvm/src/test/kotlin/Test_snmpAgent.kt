@@ -1,8 +1,6 @@
-import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
-import jp.wjg.shokkaa.snmp4jutils.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.walk
-import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import jp.wjg.shokkaa.snmp4jutils.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -38,7 +36,7 @@ class Test_snmpAgent {
         val snmp = Snmp(transport)
         transport.listen()
 
-        val r = walk("localhost", snmp = snmp).flatMap { it }.toList()
+        val r = Snmp().suspendable().walk("localhost").toList()
         assert(r.size == vbl.size)
         assert(r.zip(vbl).all { (a, b) -> a == b })
         job.cancelAndJoin()

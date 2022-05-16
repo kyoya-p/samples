@@ -26,7 +26,7 @@ import kotlin.time.ExperimentalTime
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalTime
-fun main(args: Array<String>) = runBlocking {
+fun main(args: Array<String>): Unit = runBlocking {
     val baseHost = args.getOrNull(0) ?: "192.168.3.0"
     val scanBits = args.getOrNull(1)?.toInt() ?: 8
 

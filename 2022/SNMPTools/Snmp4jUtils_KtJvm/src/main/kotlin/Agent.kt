@@ -52,6 +52,7 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
+        println("${event.peerAddress} => ${event.pdu}")
         snmp.send(hook(event, resPdu), resTarget)
     }
 }
@@ -63,13 +64,17 @@ suspend fun snmpAgent(
 ) {
     fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            println("Start agent : callback")
             @Suppress("UNCHECKED_CAST")
             responseHandler(event as CommandResponderEvent<UdpAddress>)
         }
     }
+    println("Start agent")
     callbackFlow {
         snmp.addCommandResponder(commandResponder { trySend(it) })
-        awaitClose { snmp.close() }
+        awaitClose { snmp.close()
+            println("Stop Agent")
+        }
     }.collect { responseHandler(it) }
 }
 
@@ -149,15 +154,14 @@ class SnmpAgent(
 }
 
 @Suppress("unused")
-val mibMapTest = sortedMapOf<OID, Variable>(
+val sampleMibList = mapOf<OID, Variable>(
     OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("Dummy SNMP Agent"),
     OID(1, 3, 6, 1, 2, 1, 1, 2) to OID(1, 3, 6, 1, 2, 1, 1, 1, 1, 1),
     OID(1, 3, 6, 1, 2, 1, 1, 3) to TimeTicks(77777777),
     OID(1, 3, 6, 1, 2, 1, 1, 4) to Integer32(65535),
     OID(1, 3, 6, 9, 0) to OctetString("1.3.6.9.0"),
     OID(1, 3, 6, 9, 1, 2, 3) to OctetString("1.3.6.9.1.2.3")
-).mapValues { (oid, v) -> VariableBinding(oid, v) }
-    .entries.fold(TreeMap<OID, VariableBinding>()) { tree, e -> tree.apply { put(e.key, e.value) } }
+).map { VariableBinding(it.key, it.value) }
 
 
 
