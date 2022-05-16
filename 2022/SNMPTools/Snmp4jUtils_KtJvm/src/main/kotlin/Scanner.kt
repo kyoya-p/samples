@@ -58,7 +58,7 @@ fun main(args: Array<String>) = runBlocking {
                 .timeout(5000).retries(2)
                 .build()
             print("\r${i + 1UL}/${1 shl scanBits} ${(i + 1UL) * 1000UL / (now() + 1).toULong()}[req/s] : send() -> $udpAdr [${++c}] ")
-            snmp.send(PDU(PDU.GETNEXT, sampleVBs), target, udpAdr)
+            snmp.sendAsync(PDU(PDU.GETNEXT, sampleVBs), target, udpAdr)
         }
     }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
         .map { it.await() }

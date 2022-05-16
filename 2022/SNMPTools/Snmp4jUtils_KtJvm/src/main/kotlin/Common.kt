@@ -17,8 +17,8 @@ import kotlin.coroutines.suspendCoroutine
 
 
 @Suppress("unused")
-class SnmpSuspendable(val snmp: Snmp = Snmp()) {
-    suspend fun sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
+class SnmpSuspendable(val snmp: Snmp = Snmp())
+    suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
         suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
             snmp.send(pdu, target, userHandle, object : ResponseListener {
                 override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
@@ -30,14 +30,14 @@ class SnmpSuspendable(val snmp: Snmp = Snmp()) {
            // return@suspendCoroutine
         }
 
-    suspend fun getAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GET }, target)
-    suspend fun getNextAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GETNEXT }, target)
+    suspend fun SnmpSuspendable.getAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GET }, target)
+    suspend fun SnmpSuspendable.getNextAsync(pdu: PDU, target: Target<UdpAddress>) = sendAsync(pdu.apply { type = PDU.GETNEXT }, target)
 
     @Suppress("unused")
-    fun cancel(pdu: PDU, listener: ResponseListener) = snmp.cancel(pdu, listener)
-    fun listen() = snmp.listen()
-    fun close() = snmp.close()
-}
+    fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = snmp.cancel(pdu, listener)
+    fun SnmpSuspendable.listen() = snmp.listen()
+    fun SnmpSuspendable.close() = snmp.close()
+
 
 fun Snmp.suspendable() = SnmpSuspendable(this)
 
