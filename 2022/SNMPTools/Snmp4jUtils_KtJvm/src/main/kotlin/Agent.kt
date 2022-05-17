@@ -15,7 +15,7 @@ import java.util.*
 @ExperimentalSerializationApi
 fun main(args: Array<String>) {
     val dev: Device = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
-    SnmpAgent(dev.vbl.associate { it.oid to it.variable })
+    SnmpAgentX(dev.vbl.associate { it.oid to it.variable })
 }
 
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
@@ -52,7 +52,7 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        println("${event.peerAddress} => ${event.pdu}")
+        //println("${event.peerAddress} => ${event.pdu}")
         snmp.send(hook(event, resPdu), resTarget)
     }
 }
@@ -64,7 +64,6 @@ suspend fun snmpAgent(
 ) {
     fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            println("Start agent : callback")
             @Suppress("UNCHECKED_CAST")
             responseHandler(event as CommandResponderEvent<UdpAddress>)
         }
@@ -72,13 +71,11 @@ suspend fun snmpAgent(
     println("Start agent")
     callbackFlow {
         snmp.addCommandResponder(commandResponder { trySend(it) })
-        awaitClose { snmp.close()
-            println("Stop Agent")
-        }
+        awaitClose { snmp.close() }
     }.collect { responseHandler(it) }
 }
 
-class SnmpAgent(
+class SnmpAgentX(
     val mibMap: Map<OID, Variable>,
     val snmp: Snmp = Snmp(
         DefaultUdpTransportMapping(
@@ -128,7 +125,7 @@ class SnmpAgent(
     fun stop(commandRdesponder: CommandResponder) = snmp.removeCommandResponder(commandRdesponder)
     fun close() = snmp.close()
 
-    fun <R> use(block: (SnmpAgent) -> R): R {
+    fun <R> use(block: (SnmpAgentX) -> R): R {
         val handler = start()
         val r = block(this)
         stop(handler)

@@ -1,5 +1,5 @@
 import jp.wjg.shokkaa.snmp4jutils.SampleOID
-import jp.wjg.shokkaa.snmp4jutils.SnmpAgent
+import jp.wjg.shokkaa.snmp4jutils.SnmpAgentX
 import jp.wjg.shokkaa.snmp4jutils.sendAsync
 import jp.wjg.shokkaa.snmp4jutils.suspendable
 import kotlinx.coroutines.runBlocking
@@ -16,20 +16,6 @@ import java.net.InetAddress
 
 @Suppress("ClassName")
 class Test_Snmp {
-    var testAg: SnmpAgent? = null
-
-    @BeforeEach
-    fun test_startDummyAgent() {
-        println("test_startDummyAgent()")
-        val testAgentMibs = mapOf(SampleOID.sysDescr.oid to OctetString("Sample"))
-        testAg = SnmpAgent(testAgentMibs).apply { start() }
-    }
-
-    @AfterEach
-    fun test_stopDummyAgent() {
-        println("test_stopDummyAgent()")
-        testAg?.close()
-    }
 
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test

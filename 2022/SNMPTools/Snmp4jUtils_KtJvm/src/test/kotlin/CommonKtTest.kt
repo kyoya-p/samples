@@ -12,11 +12,7 @@ import java.net.InetAddress
 
 internal class CommonKtTest {
 
-    suspend fun launchTestAgent() = coroutineScope {
-        launch {
-            snmpAgent(sampleMibList)
-        }
-    }
+    fun CoroutineScope.launchTestAgent() = launch { snmpAgent(sampleMibList) }
 
     @Test
     fun getAsync(): Unit = runBlocking(Dispatchers.Default) {
