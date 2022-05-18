@@ -12,19 +12,21 @@ import java.net.InetAddress
 
 internal class CommonKtTest {
 
-    fun CoroutineScope.launchTestAgent() = launch { snmpAgent(sampleMibList) }
-
     @Test
-    fun getAsync(): Unit = runBlocking(Dispatchers.Default) {
-        val jobAg = launchTestAgent()
+    fun getAsync(): Unit = runBlocking {
+        val jobAg = launch { snmpAgent(sampleMibList) }
+        delay(1000)
 
         val snmp = SnmpBuilder().udp().v1().v3().build().suspendable().listen()
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
         val target = CommunityTarget(UdpAddress(InetAddress.getByName("127.0.0.1"), 161), OctetString("public"))
+        println("{1}")
         val res = snmp.sendAsync(pdu, target)
-        println(res.response.variableBindings)
-        assert(res.response.variableBindings == sampleMibList[0])
-
+        println("{2}")
+        println("${res.response.variableBindings}:${sampleMibList[0]}")
+        //assert(res.response.variableBindings == sampleMibList[0])
+        println("{3}")
         jobAg.cancelAndJoin()
+        println("{4}")
     }
 }

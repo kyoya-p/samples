@@ -1,10 +1,7 @@
 import jp.wjg.shokkaa.snmp4jutils.SampleOID
-import jp.wjg.shokkaa.snmp4jutils.SnmpAgentX
 import jp.wjg.shokkaa.snmp4jutils.sendAsync
 import jp.wjg.shokkaa.snmp4jutils.suspendable
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU

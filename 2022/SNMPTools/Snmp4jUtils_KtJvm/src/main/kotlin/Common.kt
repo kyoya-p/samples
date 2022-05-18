@@ -21,7 +21,6 @@ class SnmpSuspendable(val snmp: Snmp)
 
 suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
     suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
-        println(pdu)
         snmp.send(pdu, target, userHandle, object : ResponseListener {
             override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
                 snmp.cancel(pdu, this)
@@ -29,7 +28,7 @@ suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, user
                 continuation.resume(r as ResponseEvent<UdpAddress>)
             }
         })
-        // return@suspendCoroutine
+        return@suspendCoroutine
     }
 
 @Suppress("unused")
