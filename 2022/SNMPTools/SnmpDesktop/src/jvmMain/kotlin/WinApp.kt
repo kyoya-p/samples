@@ -12,15 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.walk
-import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import jp.wjg.shokkaa.snmp4jutils.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.VariableBinding
 import java.awt.FileDialog.LOAD
 import java.awt.FileDialog.SAVE
@@ -40,7 +41,7 @@ fun saveMib(mib: List<VariableBinding>, path: String) = yamlSnmp4j.encodeToStrea
 @OptIn(ExperimentalSerializationApi::class)
 fun loadMib(path: String): List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(path).inputStream())
 
-@OptIn(ExperimentalSerializationApi::class)
+@OptIn(ExperimentalSerializationApi::class, FlowPreview::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
@@ -53,7 +54,9 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     }
 
     val snmpAccessInfoDialog = SnmpAccessInfoDialog { v1 ->
-        val r = walk(v1.ip).flatMap { it }.onEach { logs += "$now $it\n" }.toList()
+//        val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
+        val snmp = SnmpBuilder().udp().v1().build().suspendable()
+        val r = snmp.walk(v1.ip).flatMapConcat { it.asFlow() }.onEach { logs += "$now $it\n" }.toList()
         when {
             r.isNotEmpty() -> mib = r
             else -> logs += "$now Could not get MIB from [$v1.ip].\n"
@@ -64,6 +67,8 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
 
     LaunchedEffect(mib) {
         logs += "$now Start Agent $today.$now ----------\n"
+        mib.forEach { vb -> logs += "$now ${vb.oid}: ${vb.variable}\n" }
+        logs += "$now MIBS: ${mib.size}\n"
         snmpAgent(vbl = mib) { ev, pdu ->
             logs += "$now ${ev.peerAddress} > $pdu\n"
             pdu

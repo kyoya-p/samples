@@ -33,7 +33,7 @@ val SnmpTarget.comm get() = community.value!!.decodeToString()
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SnmpAccessInfoDialog(onSettingsClose: (v1: SnmpTarget) -> Unit) = DialogHandler { dialog ->
+fun SnmpAccessInfoDialog(onSettingsClose: suspend (v1: SnmpTarget) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         val styleBtn = Modifier.padding(8.dp)
         var ipSpec by remember { mutableStateOf(app.ip ?: "127.0.0.1") }
@@ -44,7 +44,6 @@ fun SnmpAccessInfoDialog(onSettingsClose: (v1: SnmpTarget) -> Unit) = DialogHand
             Row {
                 Button(modifier = styleBtn, onClick = {
                     dialog.close()
-                    onSettingsClose(snmpTarget(ipSpec, 161, comm))
                 }) { Text("OK") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
             }
@@ -52,9 +51,10 @@ fun SnmpAccessInfoDialog(onSettingsClose: (v1: SnmpTarget) -> Unit) = DialogHand
         LaunchedEffect(ipSpec) {
             runCatching {
                 println("IPSpec: $ipSpec")
-                ipSequence(ipSpec).forEach {
-                    print("${it.hostAddress}\r")
-                    delay(10.milliseconds)
+                ipSequence(ipSpec).forEach { inetAddr ->
+                    print("${inetAddr.hostAddress}\r")
+                    delay(1000.milliseconds)
+                    onSettingsClose(SnmpTarget(UdpAddress(inetAddr, 161), OctetString(comm)))
                 }
             }.onFailure { println("Illegal IP Spec.") }
         }

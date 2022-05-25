@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package jp.wjg.shokkaa.snmp4jutils
 
 import kotlinx.serialization.Contextual
@@ -11,10 +9,8 @@ import org.snmp4j.event.ResponseListener
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
-import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-
 
 @Suppress("unused")
 class SnmpSuspendable(val snmp: Snmp)
@@ -30,6 +26,10 @@ suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, user
         })
         return@suspendCoroutine
     }
+
+@Suppress("unused")
+suspend fun SnmpSuspendable.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
+    sendAsync(pdu, target, userHandle)
 
 @Suppress("unused")
 fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = apply { snmp.cancel(pdu, listener) }
