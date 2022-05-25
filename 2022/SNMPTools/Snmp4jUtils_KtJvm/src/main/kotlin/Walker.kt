@@ -1,6 +1,5 @@
 package jp.wjg.shokkaa.snmp4jutils
 
-
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -11,21 +10,24 @@ import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.SMIConstants.*
 import org.snmp4j.smi.UdpAddress
+import org.snmp4j.smi.Variable
 import org.snmp4j.smi.VariableBinding
-import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.io.File
 import java.net.InetAddress
 
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runCatching {
+    val snmp = SnmpBuilder().udp().v1().build().suspendable()
     runBlocking {
         val tgIp = args[0]
         val resultFile = File("samples/${Clock.System.todayAt(currentSystemDefault())}-walk-$tgIp.yaml")
 
-        val vbl = Snmp().suspendable().walk(tgIp).map { it[0] }.onEach { println(it) }.toList()
+        val vbl = snmp.walk(tgIp).map { it[0] }.onEach { println(it) }.toList()
         val dev = Device(tgIp, vbl)
         resultFile.writeText(yamlSnmp4j.encodeToString(dev))
     }
@@ -80,9 +82,13 @@ suspend fun SnmpSuspendable.walk(
     initVbl: List<VariableBinding>,
 ): Flow<List<VariableBinding>> {
     return generateFlow(initVbl) { vbl ->
-        sendAsync(PDU(PDU.GETNEXT, vbl), target).response.variableBindings.takeIf {
+        fun Variable.isNotNormal() = when (syntax) {
+            EXCEPTION_NO_SUCH_OBJECT, EXCEPTION_NO_SUCH_INSTANCE, EXCEPTION_END_OF_MIB_VIEW -> true
+            else -> false
+        }
+        sendAsync(PDU(PDU.GETNEXT, vbl), target).response?.variableBindings?.takeIf {
             // 全要素 EndOfViewか初期OIDを超えたら終了
-            it.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
+            it.zip(initVbl).any { (vb, ivb) -> vb.variable.isNotNormal() && vb.oid.startsWith(ivb.oid) }
         }
     }
 }

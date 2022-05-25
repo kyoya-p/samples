@@ -56,7 +56,7 @@ fun SnmpAccessInfoDialog(onSettingsClose: suspend (v1: SnmpTarget) -> Unit) = Di
                     delay(1000.milliseconds)
                     onSettingsClose(SnmpTarget(UdpAddress(inetAddr, 161), OctetString(comm)))
                 }
-            }.onFailure { println("Illegal IP Spec.") }
+            }.onFailure { println("Illegal IP Spec:"); it.printStackTrace() }
         }
     }
 }

@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package jp.wjg.shokkaa.snmp4jutils
 
 import kotlinx.serialization.Contextual
@@ -17,8 +19,10 @@ class SnmpSuspendable(val snmp: Snmp)
 
 suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
     suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+        print(pdu)
         snmp.send(pdu, target, userHandle, object : ResponseListener {
             override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
+                println(" => ${r?.response}")
                 snmp.cancel(pdu, this)
                 @Suppress("UNCHECKED_CAST")
                 continuation.resume(r as ResponseEvent<UdpAddress>)
