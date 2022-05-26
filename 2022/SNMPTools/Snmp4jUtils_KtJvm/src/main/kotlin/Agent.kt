@@ -14,8 +14,8 @@ import java.util.*
 
 @ExperimentalSerializationApi
 fun main(args: Array<String>) = runBlocking {
-    val dev: Device = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
-    snmpAgent(dev.vbl)
+    val vbl: List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
+    snmpAgent(vbl)
 }
 
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")

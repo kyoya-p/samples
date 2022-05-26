@@ -2,34 +2,54 @@
 
 package jp.wjg.shokkaa.snmp4jutils
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import org.snmp4j.*
 import org.snmp4j.Target
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OID
+import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
+import java.net.InetAddress
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+@ExperimentalSerializationApi
+fun main(args: Array<String>): Unit = runBlocking {
+    SnmpBuilder().udp().v1().build().suspendable().listen().use { snmp ->
+        val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
+        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
+        val vbl = snmp.send(pdu, tg)
+        println(vbl?.response)
+    }
+}
+
 @Suppress("unused")
-class SnmpSuspendable(val snmp: Snmp)
+class SnmpSuspendable(val snmp: Snmp) : AutoCloseable {
+    override fun close() = snmp.close()
+}
 
 suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
-    suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
-        print(pdu)
+    suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
         snmp.send(pdu, target, userHandle, object : ResponseListener {
             override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
-                println(" => ${r?.response}")
                 snmp.cancel(pdu, this)
                 @Suppress("UNCHECKED_CAST")
-                continuation.resume(r as ResponseEvent<UdpAddress>)
+                continuation.resume(r as ResponseEvent<UdpAddress>?)
             }
         })
         return@suspendCoroutine
     }
+
+suspend fun SnmpSuspendable.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
+    val adr = InetAddress.getByName(host)
+    continuation.resume(adr)
+}
 
 @Suppress("unused")
 suspend fun SnmpSuspendable.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
@@ -38,7 +58,6 @@ suspend fun SnmpSuspendable.send(pdu: PDU, target: Target<UdpAddress>, userHandl
 @Suppress("unused")
 fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = apply { snmp.cancel(pdu, listener) }
 fun SnmpSuspendable.listen() = apply { snmp.listen() }
-fun SnmpSuspendable.close() = apply { snmp.close() }
 
 
 fun Snmp.suspendable() = SnmpSuspendable(this)

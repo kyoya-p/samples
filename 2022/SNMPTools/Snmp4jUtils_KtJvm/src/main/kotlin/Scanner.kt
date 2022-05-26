@@ -63,6 +63,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
         .map { it.await() }
         .onEach { c-- }
+        .mapNotNull { it }
         .filter { it.peerAddress != null && it.response != null && (it.userObject as UdpAddress) == it.peerAddress }
         .map { ev ->
             SNMPLog(ev.peerAddress.inetAddress.hostAddress, ev.response.variableBindings)
