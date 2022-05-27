@@ -1,6 +1,7 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.*
@@ -16,6 +17,29 @@ import java.util.*
 fun main(args: Array<String>) = runBlocking {
     val vbl: List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
     snmpAgent(vbl)
+}
+
+@Suppress("BlockingMethodInNonBlockingContext")
+suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
+    fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
+        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
+            responseHandler(event as CommandResponderEvent<UdpAddress>)
+        }
+    }
+    println("Receiver[1]")
+    return callbackFlow {
+        snmp.addCommandResponder(commandResponder {
+            println("Receiver[x]:received")
+            trySend(it)
+        })
+        println("Receiver[2]")
+        awaitClose {
+            snmp.close()
+            println("Receiver[9]")
+        }
+        println("Receiver[3]")
+    }
 }
 
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
@@ -34,7 +58,7 @@ suspend fun snmpAgent(
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }
-    snmpAgent(snmp) { event ->
+    snmpReceiverFlow(snmp).collect { event ->
         val resPdu = PDU().apply {
             type = PDU.RESPONSE
             requestID = event.pdu.requestID
@@ -56,26 +80,6 @@ suspend fun snmpAgent(
         println("RES: $resPdu")
         snmp.suspendable().sendAsync(hook(event, resPdu), resTarget)
     }
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun snmpAgent(
-    snmp: Snmp,
-    responseHandler: suspend (ResponderEvent) -> Unit,
-) {
-    fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
-        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            @Suppress("UNCHECKED_CAST")
-            responseHandler(event as CommandResponderEvent<UdpAddress>)
-        }
-    }
-    println("Start agent")
-    callbackFlow {
-        snmp.addCommandResponder(commandResponder { trySend(it) })
-        println("[22]")
-        awaitClose { snmp.close() }
-        println("[23]")
-    }.collect { responseHandler(it) }
 }
 
 @Suppress("unused")

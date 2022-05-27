@@ -22,8 +22,9 @@ class Test_Snmp {
         val pdu = PDU(PDU.GET, listOf(VariableBinding(SampleOID.sysDescr.oid)))
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("1.2.3.4"), 161), OctetString("public"))
         val r1 = snmp.sendAsync(pdu, tg)
-        assert(r1.peerAddress == null)
-        assert(r1.response?.variableBindings == null)
+        assert(r1 != null)
+        assert(r1!!.peerAddress == null)
+        assert(r1.response == null)
     }
 
     @Suppress("RemoveExplicitTypeArguments", "BlockingMethodInNonBlockingContext")
@@ -36,10 +37,10 @@ class Test_Snmp {
         val r0 = snmp.snmp.send(pdu, tg)
         val r1 = snmp.sendAsync(pdu, tg)
 
-        assert(r1.peerAddress != null)
-        assert(r1.response?.variableBindings != null)
-        assert(r0.peerAddress == r1.peerAddress)
-        assert(r0.response.variableBindings == r1.response.variableBindings)
+        assert(r1?.peerAddress != null)
+        assert(r1?.response?.variableBindings != null)
+        assert(r0.peerAddress == r1?.peerAddress)
+        assert(r0.response.variableBindings == r1?.response?.variableBindings)
         println(r0.peerAddress)
         println(r0.response.variableBindings)
     }

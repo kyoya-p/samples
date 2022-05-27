@@ -10,7 +10,6 @@ import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.mp.SnmpConstants.SNMP_ERROR_SUCCESS
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.SMIConstants.EXCEPTION_END_OF_MIB_VIEW
@@ -58,7 +57,7 @@ suspend fun SnmpSuspendable.walk(
     initVbl: List<VariableBinding>,
 ): Flow<List<VariableBinding>> = generateFlow(initVbl) { vbl ->
     sendAsync(PDU(PDU.GETNEXT, vbl), target)
-        ?.response?.takeIf { it.errorStatus == SNMP_ERROR_SUCCESS }
+        ?.response?.takeIf { it.errorStatus == PDU.noError }
         ?.variableBindings?.takeIf {
             it.zip(initVbl)
                 .any { (vb, ivb) -> vb.variable.syntax != EXCEPTION_END_OF_MIB_VIEW && vb.oid.startsWith(ivb.oid) }
