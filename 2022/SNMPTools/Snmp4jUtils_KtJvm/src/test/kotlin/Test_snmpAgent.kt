@@ -1,4 +1,7 @@
 import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
+import jp.wjg.shokkaa.snmp4jutils.async.async
+import jp.wjg.shokkaa.snmp4jutils.async.walk
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -6,7 +9,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.junit.jupiter.api.Test
-import org.snmp4j.Snmp
 import org.snmp4j.smi.VariableBinding
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.io.File
@@ -33,10 +35,10 @@ class Test_snmpAgent {
         delay(1000)
 
         val transport = DefaultUdpTransportMapping()
-        val snmp = Snmp(transport)
+        val snmp = org.snmp4j.Snmp(transport)
         transport.listen()
 
-        val r = Snmp().suspendable().walk("localhost").toList()
+        val r = org.snmp4j.Snmp().async().walk("localhost").toList()
         assert(r.size == vbl.size)
         assert(r.zip(vbl).all { (a, b) -> a == b })
         job.cancelAndJoin()

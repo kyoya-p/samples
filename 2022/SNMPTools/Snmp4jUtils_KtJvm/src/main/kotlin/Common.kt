@@ -1,8 +1,9 @@
 @file:Suppress("unused")
 
-package jp.wjg.shokkaa.snmp4jutils
+package jp.wjg.shokkaa.snmp4jutils.async
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -15,13 +16,14 @@ import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
+import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runBlocking {
-    SnmpBuilder().udp().v1().build().suspendable().listen().use { snmp ->
+    SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
         val vbl = snmp.send(pdu, tg)
@@ -30,12 +32,26 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 @Suppress("unused")
-class SnmpSuspendable(val snmp: Snmp) : AutoCloseable {
+class SnmpAsync(val snmp: org.snmp4j.Snmp) : AutoCloseable {
     override fun close() = snmp.close()
+
+    companion object {
+        fun createDefaultAgentTransport() =
+            DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))
+
+        fun createDefaultAgentSession() = org.snmp4j.Snmp(createDefaultAgentTransport()).async()
+
+    }
 }
 
-suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
-    suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
+
+suspend fun SnmpAsync.sendAsync(
+    pdu: PDU,
+    target: Target<UdpAddress>,
+    userHandle: Any? = null
+): ResponseEvent<UdpAddress>? {
+    yield()
+    return suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
         snmp.send(pdu, target, userHandle, object : ResponseListener {
             override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
                 snmp.cancel(pdu, this)
@@ -45,22 +61,23 @@ suspend fun SnmpSuspendable.sendAsync(pdu: PDU, target: Target<UdpAddress>, user
         })
         return@suspendCoroutine
     }
+}
 
-suspend fun SnmpSuspendable.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
+suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
     val adr = InetAddress.getByName(host)
     continuation.resume(adr)
 }
 
 @Suppress("unused")
-suspend fun SnmpSuspendable.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
+suspend fun SnmpAsync.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
     sendAsync(pdu, target, userHandle)
 
 @Suppress("unused")
-fun SnmpSuspendable.cancel(pdu: PDU, listener: ResponseListener) = apply { snmp.cancel(pdu, listener) }
-fun SnmpSuspendable.listen() = apply { snmp.listen() }
+fun SnmpAsync.cancel(pdu: PDU, listener: ResponseListener) = apply { snmp.cancel(pdu, listener) }
+fun SnmpAsync.listen() = apply { snmp.listen() }
 
 
-fun Snmp.suspendable() = SnmpSuspendable(this)
+fun Snmp.async() = SnmpAsync(this)
 
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 

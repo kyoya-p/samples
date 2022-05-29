@@ -100,7 +100,7 @@ fun SnmpScanDialog(onClose: (SnmpTarget) -> Unit) = DialogHandler { dialog ->
         }
         LaunchedEffect(ipRange) {
             val (start, end) = ipRange.split("-").mapNotNull { InetAddress.getByName(it) }
-            val snmp = Snmp().suspendable()
+            val snmp = org.snmp4jSnmp().suspendable()
             ipV4AddressRangeSequence(start, end).forEach { adr ->
                 val res = snmp.send(
                     PDU(PDU.GETNEXT, listOf(VariableBinding(SampleOID.sysDescr.oid))),

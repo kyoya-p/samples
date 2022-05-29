@@ -1,5 +1,7 @@
-package jp.wjg.shokkaa.snmp4jutils
+package jp.wjg.shokkaa.snmp4jutils.async
 
+import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -38,21 +40,14 @@ suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
             snmp.close()
             println("Receiver[9]")
         }
-        println("Receiver[3]")
+        println("Receiver[3] illegal")
     }
 }
-
+// coroutineで実行されます
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
     vbl: List<VariableBinding>,
-    snmp: Snmp = Snmp(
-        DefaultUdpTransportMapping(
-            UdpAddress(
-                InetAddress.getByName("0.0.0.0"),
-                161
-            )
-        )
-    ).apply { listen() },
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
@@ -78,7 +73,7 @@ suspend fun snmpAgent(
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
         //println("${event.peerAddress} => ${event.pdu}")
         println("RES: $resPdu")
-        snmp.suspendable().sendAsync(hook(event, resPdu), resTarget)
+        snmp.async().sendAsync(hook(event, resPdu), resTarget)
     }
 }
 

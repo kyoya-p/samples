@@ -1,4 +1,4 @@
-import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -15,7 +15,7 @@ import org.snmp4j.smi.VariableBinding
 internal class CommonKtTest {
     @Test
     fun getAsync(): Unit = runBlocking {
-        val snmp = SnmpBuilder().udp().v1().v3().build().suspendable().listen()
+        val snmp = SnmpBuilder().udp().v1().v3().build().async().listen()
 //       println("canceled")
 
         val jobAg = launch { snmpAgent(sampleMibList) }

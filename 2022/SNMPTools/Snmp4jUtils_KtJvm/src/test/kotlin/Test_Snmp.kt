@@ -1,6 +1,6 @@
-import jp.wjg.shokkaa.snmp4jutils.SampleOID
-import jp.wjg.shokkaa.snmp4jutils.sendAsync
-import jp.wjg.shokkaa.snmp4jutils.suspendable
+import jp.wjg.shokkaa.snmp4jutils.async.SampleOID
+import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
+import jp.wjg.shokkaa.snmp4jutils.async.async
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
@@ -17,7 +17,7 @@ class Test_Snmp {
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test
     fun t1_getNext_Timeout() = runBlocking {
-        val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
+        val snmp = SnmpBuilder().udp().v1().threads(1).build().async()
 
         val pdu = PDU(PDU.GET, listOf(VariableBinding(SampleOID.sysDescr.oid)))
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("1.2.3.4"), 161), OctetString("public"))
@@ -30,7 +30,7 @@ class Test_Snmp {
     @Suppress("RemoveExplicitTypeArguments", "BlockingMethodInNonBlockingContext")
     @Test
     fun t2_getNext() = runBlocking {
-        val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
+        val snmp = SnmpBuilder().udp().v1().threads(1).build().async()
 
         val pdu = PDU(PDU.GET, listOf(VariableBinding(SampleOID.sysDescr.oid)))
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("localhost"), 161), OctetString("public"))

@@ -1,12 +1,14 @@
-import jp.wjg.shokkaa.snmp4jutils.*
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
+import jp.wjg.shokkaa.snmp4jutils.async.*
+import jp.wjg.shokkaa.snmp4jutils.async.listen
+import jp.wjg.shokkaa.snmp4jutils.async.snmpReceiverFlow
+import jp.wjg.shokkaa.snmp4jutils.async.async
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
+import org.snmp4j.smi.*
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
@@ -17,29 +19,56 @@ internal class AgentKtTest {
     fun snmpReceiverFlow_Termination() = runBlocking {
         val log = mutableListOf("start")
         val jobAgent = launch {
-            val snmpAgent = SnmpBuilder().udp().v1().build()
-            snmpAgent.listen()
+            val snmpAgent = SnmpAsync.createDefaultAgentSession().listen()
             runCatching {
                 log += "launch"
-                snmpReceiverFlow(snmpAgent).collectLatest { log += "received" }
+                snmpReceiverFlow(snmpAgent.snmp).collect { }
+                log += "illegalstate"
             }.onFailure {
                 log += "canceled"
             }
             snmpAgent.close()
+            log += "closed"
         }
-        val snmpClient = SnmpBuilder().udp().v1().v3().build().suspendable().listen()
-        val tg = CommunityTarget(UdpAddress(snmpClient.getInetAddressByName("127.0.0.1"), 161), OctetString("public"))
-        delay(2000)
-        val r1 = snmpClient.send(PDU(PDU.GETNEXT, listOf(VariableBinding(org.snmp4j.smi.OID("1.3.6")))), tg)
-        println(r1?.response)
         delay(1000)
-        val r2 = snmpClient.send(PDU(PDU.GETNEXT, listOf(VariableBinding(org.snmp4j.smi.OID("1.3.6")))), tg)
+        jobAgent.cancelAndJoin()
+
+        println(log)
+        assert(log == mutableListOf("start", "launch", "canceled", "closed"))
+    }
+
+    @Test
+    fun snmpReceiverFlow_receive() = runBlocking {
+        val log = mutableListOf<String>()
+        val jobAgent = launch {
+            SnmpAsync.createDefaultAgentSession().listen().use { snmpAgent ->
+                snmpReceiverFlow(snmpAgent.snmp).collect { ev ->
+                    log += "received"
+                    println(ev.peerAddress)
+                    println(ev.pdu)
+                }
+            }
+        }
+        val snmpClient = SnmpBuilder().udp().v1().build().async().listen()
+        val tg =
+            CommunityTarget(UdpAddress(snmpClient.getInetAddressByName("127.0.0.1"), 161), OctetString("public"))
+        tg.timeout = 1000
+        tg.retries = 0 // 最初bの一回は launch内のagentよりも送信が先に実行されるため、retry=0だと受信されず失われる
+        //yield() //一旦coroutineを手放す。でなとlaunch{}内のagentが起動されない
+        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
+        pdu.requestID = Integer32(1)
+        println("send1")
+        val r1 = snmpClient.send(pdu, tg)
+        println(r1?.response)
+        //delay(1000)
+        pdu.requestID = Integer32(2)
+        val r2 = snmpClient.send(pdu, tg)
         println(r2?.response)
 
         delay(5000)
         jobAgent.cancelAndJoin()
 
         println(log)
-        assert(log == mutableListOf("start", "launch", "received", "received", "canceled"))
+        assert(log == mutableListOf("received", "received"))
     }
 }

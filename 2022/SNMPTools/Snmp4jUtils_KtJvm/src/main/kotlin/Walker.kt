@@ -1,5 +1,6 @@
-package jp.wjg.shokkaa.snmp4jutils
+package jp.wjg.shokkaa.snmp4jutils.async
 
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -20,7 +21,7 @@ import java.io.File
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runBlocking {
     val st = Clock.System.now()
-    SnmpBuilder().udp().v1().build().suspendable().listen().use { snmp ->
+    SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
         val tgIp = args[0]
         val vbl = snmp.walk(tgIp).map { it[0] }.onEach {
             print("${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\r")
@@ -32,7 +33,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     }
 }
 
-suspend fun SnmpSuspendable.walk(
+suspend fun SnmpAsync.walk(
     targetHost: String,
     reqOidList: List<String> = listOf(".1.3.6"),
 ) = walk(
@@ -52,7 +53,7 @@ fun <T> generateFlow(init: T, op: suspend (T) -> T?) = flow {
     }
 }
 
-suspend fun SnmpSuspendable.walk(
+suspend fun SnmpAsync.walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
 ): Flow<List<VariableBinding>> = generateFlow(initVbl) { vbl ->
