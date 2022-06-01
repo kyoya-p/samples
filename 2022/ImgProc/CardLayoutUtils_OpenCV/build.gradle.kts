@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.6.20"
+    kotlin("jvm") version "1.6.21"
     id("de.undercouch.download") version "5.0.5"  // https://github.com/michel-kraemer/gradle-download-task
 }
 
@@ -17,27 +17,16 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
-    //implementation("org.bytedeco:javacv:1.5.7") // https://mvnrepository.com/artifact/org.bytedeco/javacv
-    //  implementation("org.bytedeco:opencv:4.5.5-1.5.7") // https://mvnrepository.com/artifact/org.bytedeco/opencv
-    //implementation("org.bytedeco:javacv-platform:1.5.7")// https://mvnrepository.com/artifact/org.bytedeco/javacv-platform
-    implementation("org.bytedeco:opencv-platform:4.5.5-1.5.7")// https://mvnrepository.com/artifact/org.bytedeco/opencv-platform
-    implementation("com.quickbirdstudios:opencv-contrib:3.4.5") // https://mavenlibs.com/maven/dependency/com.quickbirdstudios/opencv-contrib
-    //implementation(files("$buildDir/libs/OpenCV2-1.0-SNAPSHOT.jar"))
-    implementation("org.jetbrains.kotlin:kotlin-script-util:1.6.21") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-script-util
-}
-
-tasks.test {
-    useJUnitPlatform()
+    implementation("io.ktor:ktor-client-cio:2.0.2") // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio
+    implementation("org.bytedeco:javacv:1.5.7") // https://mvnrepository.com/artifact/org.bytedeco/javacv
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-
-val downloadFiles by tasks.registering {
+val downloadOpenCvLibs by tasks.registering {
     doLast {
         download.run {
             src("https://sourceforge.net/projects/opencvlibrary/files/4.5.5/opencv-4.5.5-vc14_vc15.exe/download")

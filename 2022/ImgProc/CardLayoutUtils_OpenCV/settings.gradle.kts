@@ -1,3 +1,3 @@
 
-rootProject.name = "OpenCV2"
+rootProject.name = "cardLayouUtils"
 
