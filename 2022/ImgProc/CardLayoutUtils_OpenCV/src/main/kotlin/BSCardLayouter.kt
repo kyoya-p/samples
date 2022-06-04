@@ -14,7 +14,6 @@ fun main(args: Array<String>) {
         .map { img3 -> img3.hconcat() }
         .vconcat()
     imwrite("out.jpg", resImg)
-
 }
 
 fun bsImage(cardId: String) = runBlocking {
