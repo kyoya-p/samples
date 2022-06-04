@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
         .chunked(3)
         .map { img3 -> img3.hconcat() }
         .vconcat()
-    imwrite("out.jpg", resImg)
+    imwrite("build/out.jpg", resImg)
 }
 
 fun bsImage(cardId: String) = runBlocking {
