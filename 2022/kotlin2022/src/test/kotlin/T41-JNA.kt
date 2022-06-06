@@ -5,6 +5,9 @@ import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.ptr.IntByReference
+import com.sun.jna.platform.win32.IPHlpAPI.*
+import com.sun.jna.platform.win32.WinDef
+import com.sun.jna.platform.win32.WinError.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -95,10 +98,31 @@ class `T41-JNA` {
     }
 
 
-    @Test
-    fun t5_可変長構造体() {
-        // https://docs.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_interface_info
+    interface IpHlpAPI : Library {
+        fun GetAdaptersInfo(out: ByteArray, out_size: IntByReference): WinDef.ULONG
+        fun GetAdaptersAddresses(): WinDef.ULONG
 
-        // TODO
+        companion object {
+            val instance: IpHlpAPI? by lazy { Native.load("IPHLPAPI", IpHlpAPI::class.java) }
+        }
+    }
+
+    @Test
+    fun t5_iphlpapi() {
+//        https://docs.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_interface_info
+//        https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses
+
+        val iphlp = IpHlpAPI.instance!!
+        val out = ByteArray(1024)
+        val r = iphlp.GetAdaptersInfo(out,IntByReference(1024))
+        when (r.toInt()) {
+            ERROR_BUFFER_OVERFLOW -> println("ERROR_BUFFER_OVERFLOW")
+            ERROR_INVALID_DATA -> println("ERROR_INVALID_DATA")
+            ERROR_INVALID_PARAMETER -> println("ERROR_INVALID_PARAMETER")
+            ERROR_NO_DATA -> println("ERROR_NO_DATA")
+            ERROR_NOT_SUPPORTED -> println("ERROR_NOT_SUPPORTED")
+            else -> println("Unknown Error")
+        }
+
     }
 }
