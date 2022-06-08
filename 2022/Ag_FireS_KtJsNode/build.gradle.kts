@@ -6,12 +6,13 @@ group = "me.kyoya"
 version = "1.0-SNAPSHOT"
 
 repositories {
-    //jcenter()
+    jcenter()
     mavenCentral()
 }
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
+    implementation(npm("@firebase/firestore", "3.4.9")) // https://www.npmjs.com/package/@firebase/firestore
 }
 
 kotlin {
