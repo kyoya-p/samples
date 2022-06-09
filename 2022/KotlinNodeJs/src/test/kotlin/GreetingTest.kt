@@ -7,7 +7,7 @@ class GreetingTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testGreeting() = runTest {
-        launch { greeting("World1") }
-        launch { greeting("World2") }
+        launch { greeting("A") }
+        launch { greeting("B") }
     }
 }

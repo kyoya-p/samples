@@ -4,10 +4,10 @@ import kotlinx.coroutines.flow.flow
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
     GlobalScope.launch {
-        val j = launch { greeting("World1") }
-        launch { greeting("World2") }
+        val jA = launch { greeting("A") }
+        launch { greeting("B") }
         delay(300)
-        j.cancelAndJoin()
+        jA.cancelAndJoin()
     }
 }
 
