@@ -6,7 +6,7 @@ package netSnmp
 
 //external fun require(module: String): dynamic
 
-@Serializable
+@Se
 data class SnmpTarget(
     val addr: String,
     val port: Int = 161,
