@@ -11,8 +11,8 @@ repositories {
 }
 
 dependencies {
-    //implementation("org.jetbrains.kotlin:kotlin-serialization:1.6.21")
-    implementation("org.jetbrains.kotlin:kotlin-serialization-js:1.6.21")
+    implementation("org.jetbrains.kotlin:kotlin-serialization:1.6.21")
+    //implementation("org.jetbrains.kotlin:kotlin-serialization-js:1.6.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.6.2")
     implementation(npm("net-snmp", "3.8.1", generateExternals = true)) // https://www.npmjs.com/package/net-snmp
     testImplementation(kotlin("test"))
