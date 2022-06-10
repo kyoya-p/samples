@@ -11,19 +11,20 @@ fun main() {
 }
 
 suspend fun scan(ipStart: String, ipEnd: String) {
-    val s = ipStart.ipV4ToLong()
-    val e = ipEnd.ipV4ToLong()
+    val s = ipStart.ipv4ToLong()
+    val e = ipEnd.ipv4ToLong()
     flow {
         for (i in s..e) {
             emit(i)
-            delay(200)
+            delay(30)
         }
     }.collect {
-        println(it)
+        println(it.longToIpv4())
     }
 }
 
-private fun String.ipV4ToLong() = split(".").map { it.toLong() }.fold(0L) { a, e -> a * 256 + e }
+private fun String.ipv4ToLong() = split(".").map { it.toLong() }.fold(0L) { a, e -> a * 256 + e }
+private fun Long.longToIpv4() = (3 downTo 0).map { (this shr (it * 8)).mod(256) }.joinToString(".")
 
 
 fun greeting(name: String) =
