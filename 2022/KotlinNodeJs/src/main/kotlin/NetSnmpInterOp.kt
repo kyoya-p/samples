@@ -6,7 +6,6 @@ package netSnmp
 
 //external fun require(module: String): dynamic
 
-@Se
 data class SnmpTarget(
     val addr: String,
     val port: Int = 161,
@@ -18,7 +17,6 @@ data class SnmpTarget(
     val addrRangeEnd: String? = null, // for IP ranged discovery
 )
 
-@Serializable
 data class Credential(
     val ver: String = "2c",
     val v1commStr: String = "public",
@@ -42,7 +40,6 @@ val hrPrinterDetectedErrorState get() = "1.3.6.1.2.1.25.3.5.1.2"
 val prtGeneralSerialNumber get() = "1.3.6.1.2.1.43.5.1.1.17"
 
 
-@Serializable
 data class PDU(
     val type: Int = GETNEXT,
     val vbl: List<VB> = listOf(VB("1.3")),
@@ -56,7 +53,6 @@ val NULL get() = ASN_UNIVERSAL or 0x05
 val OCTETSTRING get() = ASN_UNIVERSAL or 0x04
 val IPADDRESS get() = ASN_APPLICATION or 0x00
 
-@Serializable
 data class VB(
     val oid: String,
     val stx: Int = NULL,
