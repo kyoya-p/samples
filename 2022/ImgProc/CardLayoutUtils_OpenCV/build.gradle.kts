@@ -2,7 +2,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     application
-    kotlin("jvm") version "1.6.21"
+    kotlin("jvm") version "1.7.0"
+    kotlin("plugin.serialization") version "1.7.0"
     id("de.undercouch.download") version "5.0.5"  // https://github.com/michel-kraemer/gradle-download-task
 }
 
@@ -18,7 +19,9 @@ repositories {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
     implementation("io.ktor:ktor-client-cio:2.0.2") // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio
+    implementation("org.jsoup:jsoup:1.15.1") // https://mvnrepository.com/artifact/org.jsoup/jsoup
     implementation("org.bytedeco:javacv:1.5.7") // https://mvnrepository.com/artifact/org.bytedeco/javacv
 }
 
