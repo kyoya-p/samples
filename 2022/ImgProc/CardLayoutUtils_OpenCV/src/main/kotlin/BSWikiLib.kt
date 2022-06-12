@@ -40,6 +40,8 @@ suspend fun getBSCard(name: String): BSCard {
 
 suspend fun cardSearch(id: String = "", 属性: Set<Int> = setOf()) = channelFlow {
     fun <T> Set<T>.joincr() = joinToString("\r")
+    val zeroWidthSpace = '\u200b'
+
     val wpara =
         "$id,2,,2,,2,0,,,,2,,,2,0,,0,${属性.joincr()},,,0,,,,,2,0,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2,,2,,,,0,,1,,1,,1"
     val r = defaultHttpClient.get("https://batspi.com/index.php") {
@@ -57,7 +59,7 @@ suspend fun cardSearch(id: String = "", 属性: Set<Int> = setOf()) = channelFlo
         val card = BSCard(
             image = imgTd.selectFirst("a")?.attr("href"),
             id = infoTd.selectFirst("table > tbody > tr:eq(1) > td > table > tbody > tr > td:eq(1)")?.text()
-                ?.split(" ")?.first(),
+                ?.split(zeroWidthSpace)?.first(),
             name = infoTd.selectFirst("table > tbody > tr:eq(1) > td > table > tbody > tr > td:eq(3)")?.text()
         )
         trySend(card)
