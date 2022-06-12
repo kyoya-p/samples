@@ -1,6 +1,6 @@
 plugins {
     id("org.jetbrains.kotlin.js") version "1.6.10"
-    id("org.jetbrains.compose") version "1.2.0-alpha01-dev620"
+    id("org.jetbrains.compose") version "1.2.0-alpha01-dev709" // https://plugins.gradle.org/plugin/org.jetbrains.compose
 }
 
 group = "org.example"
