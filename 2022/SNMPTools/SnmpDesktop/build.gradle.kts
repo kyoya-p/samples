@@ -1,10 +1,12 @@
 import org.jetbrains.compose.compose
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+//import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization") version "1.5.31"
     id("org.jetbrains.compose")
+    //kotlin("jvm") version "1.7.0"
 }
 
 group = "jp.wjg.shokkaa"
@@ -53,3 +55,15 @@ compose.desktop {
         }
     }
 }
+
+//dependencies {
+//    implementation(kotlin("stdlib-jdk8"))
+//}
+//val compileKotlin: KotlinCompile by tasks
+//compileKotlin.kotlinOptions {
+//    jvmTarget = "1.8"
+//}
+//val compileTestKotlin: KotlinCompile by tasks
+//compileTestKotlin.kotlinOptions {
+//    jvmTarget = "1.8"
+//}
