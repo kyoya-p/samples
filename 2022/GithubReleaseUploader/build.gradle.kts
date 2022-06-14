@@ -18,7 +18,7 @@ githubRelease {
     targetCommitish.set("master")
     releaseName.set("Test Project")
     releaseAssets.from(File("$buildDir/libs").walk().filter { it.isFile }.map { it.path }.toList())
-    //releaseAssets.from("$buildDir/libs/")
+    body.set("Path: https://github.com/kyoya-p/samples/tree/master/2022/GithubReleaseUploader")
     tagName.set("Test-$version")
     overwrite.set(true)
     //allowUploadToExisting.set(true)
