@@ -84,6 +84,4 @@ class SerializerTest {
         }
         assert(mibs == m)
     }
-
-
 }

@@ -56,23 +56,21 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         mutableStateOf(mib)
     }
     var ipSpec by remember { mutableStateOf(app.ip ?: "") }
-    suspend fun mibCapturer() = runCatching {
-        val snmp = SnmpBuilder().udp().v1().build().async().listen()
-        val r = snmp.walk(ipSpec, listOf(SampleOID.hrDeviceDescr.oid)).flatMapConcat { it.asFlow() }
-            .onEach { logs += "$now $it\n" }.toList()
-        when {
-            r.isNotEmpty() -> mib = r
-            else -> logs += "$now Could not get MIB from $ipSpec.\n"
-        }
-    }.onFailure { ex -> logs += "$now Exception: ${ex.message}";ex.printStackTrace() }
-
     var walking by remember { mutableStateOf(false) }
     val snmpAccessInfoDialog = SnmpCaptureDialog(ipSpec) { ip ->
         ipSpec = ip
         walking = true
     }
-    val saveDlg = AwtFileDialog(mode = SAVE) { d, f -> saveMib(mib, "$d/$f"); app.mibFile = "$d/$f" }
-    val loadDlg = AwtFileDialog(mode = LOAD) { d, f -> mib = loadMib("$d/$f"); app.mibFile = "$d/$f" }
+    val saveDlg = AwtFileDialog(mode = SAVE) { d, f ->
+        saveMib(mib, "$d/$f")
+        app.mibFile = "$d/$f"
+        logs += "$now Saved MIBS:${mib.size} to $d/$f"
+    }
+    val loadDlg = AwtFileDialog(mode = LOAD) { d, f ->
+        mib = loadMib("$d/$f")
+        app.mibFile = "$d/$f"
+        logs += "$now Loaded MIBS:${mib.size} from $d/$f"
+    }
 
     // Backgroud Agent task
     LaunchedEffect(mib) {
@@ -87,10 +85,13 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     if (walking) LaunchedEffect(null) {
         logs += "$now Run Walk IP:$ipSpec ...\n"
         val snmp = SnmpBuilder().udp().v1().build().async()
-        //val oids = listOf(SampleOID.hrDeviceDescr.oid)
         val oids = listOf("1.3.6")
-        val r = snmp.walk(ipSpec, oids).flatMapConcat { it.asFlow() }.onEach { logs += "$now $it\n" }.toList()
-        logs += "$now Cmpl IP:$ipSpec, MIBS:${r.size}\n"
+        logs += "$now Walking"
+        val logs0 = logs
+        val r = snmp.walk(ipSpec, oids).flatMapConcat { it.asFlow() }
+            .withIndex().onEach { logs = logs0 + " ${it.index}" }.map { it.value }
+            .toList()
+        logs += "\n$now Cmpl IP:$ipSpec, MIBS:${r.size}\n"
         if (r.isNotEmpty()) mib = r
         walking = false
     }
