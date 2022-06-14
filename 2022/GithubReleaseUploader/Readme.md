@@ -1,4 +1,4 @@
-Mavenリポジトリにファイルをアップロードするサンプルプロジェクト
+Github ReleaseにMavenリポジトリをアップロードするサンプルプロジェクト
 ===
 
 # Usage
@@ -11,9 +11,12 @@ Mavenリポジトリにファイルをアップロードするサンプルプロ
 4. upload
 ```
 JAVA_HOME=...
-MAVEN_USER=...
-MAVEN_PASSWORD=...
+GITHUB_USER=...
+GITHUB_TOKEN=...
 gradlew publishMavenPublicationToScmavenRepository -Dhttp.proxyUser=... -Dhttp.proxyPassword=...
 ```
 
 
+# 参考
+- https://github.com/BreadMoirai/github-release-gradle-plugin
+  - https://github.com/BreadMoirai/github-release-gradle-plugin/wiki

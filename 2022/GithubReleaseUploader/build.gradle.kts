@@ -1,44 +1,26 @@
 plugins {
-    //java
-    `maven-publish`
+    application
+    id("com.github.breadmoirai.github-release") version "2.3.7" // https://plugins.gradle.org/plugin/com.github.breadmoirai.github-release
 }
 
-version = "1.1.15856.20220524-test5"
+version = "220615.4"
 
 repositories {
     mavenCentral()
 }
 
-group = "jp.wjp.co.sharp.dvm" // Test用
-//group = "jp.co.sharp.dvm" // 本番用
+group = "com.github.kyoya-p"
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            //from(components["java"]) // Javaの成果物をアップロードする場合
-            artifact("publication/agent.zip") { // 特定のファイルをアップロードする場合
-                //classifier = "uniagent" // リポジトリ上のファイル名に追加される
-                extension = "zip"  // リポジトリ上のファイルの拡張子
-                // リポジトリにアップロードされるファイル名: "$group/${rootProject.name}-$version-$classifire.$extention"
-            }
-        }
-        repositories {
-            maven {
-                // usage:
-                // set MAVEN_USER=...
-                // set MAVEN_PASSWORD=...
-                // gradlew publishMavenPublicationToScmavenRepository
-                name = "scmaven"
-                url = uri("https://nexus3.sharpb2bcloud.com/repository/maven-releases")
-                isAllowInsecureProtocol = true // 非セキュア(httpsでない)の場合
-
-                credentials {
-                    username = System.getenv("MAVEN_USER")  // example: MAVEN_USER=admin
-                    password = System.getenv("MAVEN_PASSWORD") // example: MAVEN_PASSWORD=secret-word
-                    println("User: $username / Password: $password")
-                    println("Version: $version")
-                }
-            }
-        }
-    }
+githubRelease {
+    repo.set("samples")
+    owner.set(System.getenv("GITHUB_USER"))
+    authorization("Token ${System.getenv("GITHUB_TOKEN")}")
+    targetCommitish.set("master")
+    releaseName.set("Test Project")
+    releaseAssets.from(File("$buildDir/libs").walk().filter { it.isFile }.map { it.path }.toList())
+    //releaseAssets.from("$buildDir/libs/")
+    tagName.set("Test-$version")
+    overwrite.set(true)
+    //allowUploadToExisting.set(true)
+    draft.set(true)
 }

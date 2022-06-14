@@ -1,2 +1,2 @@
-rootProject.name = "uniagent"
+rootProject.name = "samples"
 
