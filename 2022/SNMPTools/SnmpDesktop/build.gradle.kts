@@ -17,7 +17,7 @@ repositories {
     google()
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    mavenLocal()
+    mavenLocal() // for Snmp4jUtils
 }
 
 
@@ -33,7 +33,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-                implementation(compose.desktop.currentOs)
+                implementation(compose.desktop.windows_x64)
                 implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
                 implementation("org.snmp4j:snmp4j:3.6.3")
                 implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
