@@ -2,18 +2,14 @@ Github ReleaseにMavenリポジトリをアップロードするサンプルプ�
 ===
 
 # Usage
-1. set proxy information
-- gradle.properties
-
-3. update version information
-- build.gradle.kts
-
-4. upload
+1. Edit gradle.properties to set proxy information
+2. Edit build.gradle.kts to update tag information 
+3. upload
 ```
 JAVA_HOME=...
 GITHUB_USER=...
 GITHUB_TOKEN=...
-gradlew publishMavenPublicationToScmavenRepository -Dhttp.proxyUser=... -Dhttp.proxyPassword=...
+gradlew githubRelease -Dhttp.proxyUser=... -Dhttp.proxyPassword=...
 ```
 
 
