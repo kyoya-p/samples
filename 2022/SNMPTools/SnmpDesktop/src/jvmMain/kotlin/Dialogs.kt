@@ -10,17 +10,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Dialog
 import jp.wjg.shokkaa.snmp4jutils.*
-import kotlinx.coroutines.delay
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.Snmp
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
 import java.awt.FileDialog
 import java.awt.Frame
 import java.net.InetAddress
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 
@@ -33,30 +32,18 @@ val SnmpTarget.comm get() = community.value!!.decodeToString()
 
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SnmpAccessInfoDialog(onSettingsClose: suspend (v1: SnmpTarget) -> Unit) = DialogHandler { dialog ->
+fun SnmpCaptureDialog(ipSpec: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         val styleBtn = Modifier.padding(8.dp)
-        var ipSpec by remember { mutableStateOf(app.ip ?: "127.0.0.1") }
+        var ipSpec by remember { mutableStateOf(ipSpec) }
         var comm by remember { mutableStateOf(app.commStr ?: "public") }
         Column(modifier = Modifier.padding(8.dp)) {
             TextField(ipSpec, label = { Text("IP") }, onValueChange = { ipSpec = it;app.ip = it })
             TextField(comm, label = { Text("Community String") }, onValueChange = { comm = it;app.commStr = it })
             Row {
-                Button(modifier = styleBtn, onClick = {
-                    dialog.close()
-                }) { Text("OK") }
+                Button(modifier = styleBtn, onClick = { onOk(ipSpec); dialog.close() }) { Text("OK") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
             }
-        }
-        LaunchedEffect(ipSpec) {
-            runCatching {
-                println("IPSpec: $ipSpec")
-                ipSequence(ipSpec).forEach { inetAddr ->
-                    print("${inetAddr.hostAddress}\r")
-                    delay(1000.milliseconds)
-                    onSettingsClose(SnmpTarget(UdpAddress(inetAddr, 161), OctetString(comm)))
-                }
-            }.onFailure { println("Illegal IP Spec:"); it.printStackTrace() }
         }
     }
 }
@@ -100,13 +87,13 @@ fun SnmpScanDialog(onClose: (SnmpTarget) -> Unit) = DialogHandler { dialog ->
         }
         LaunchedEffect(ipRange) {
             val (start, end) = ipRange.split("-").mapNotNull { InetAddress.getByName(it) }
-            val snmp = org.snmp4jSnmp().suspendable()
+            val snmp = SnmpBuilder().udp().v1().v3().build().async().listen()
             ipV4AddressRangeSequence(start, end).forEach { adr ->
                 val res = snmp.send(
-                    PDU(PDU.GETNEXT, listOf(VariableBinding(SampleOID.sysDescr.oid))),
+                    PDU(PDU.GETNEXT, listOf(VariableBinding(org.snmp4j.smi.OID(SampleOID.sysDescr.oid)))),
                     CommunityTarget(UdpAddress(adr, 161), OctetString("public"))
                 )
-                res.peerAddress
+                //res?.peerAddress
             }
         }
     }

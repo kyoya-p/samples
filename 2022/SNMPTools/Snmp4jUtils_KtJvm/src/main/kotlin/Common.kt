@@ -82,15 +82,15 @@ fun Snmp.async() = SnmpAsync(this)
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 
 @Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
-enum class SampleOID(val oid: OID, val oidName: String) {
-    sysDescr(OID("1.3.6.1.2.1.1.1"), "sysDescr"),
-    sysName(OID("1.3.6.1.2.1.1.5"), "sysName"),
-    hrDeviceDescr(OID("1.3.6.1.2.1.25.3.2.1.3"), "hrDeviceDescr"),
-    hrDeviceID(OID("1.3.6.1.2.1.25.3.2.1.4"), "hrDeviceID"),
-    hrDeviceStatus(OID("1.3.6.1.2.1.25.3.2.1.5"), "hrDeviceStatus"),
-    prtGeneralPrinterName(OID("1.3.6.1.2.1.43.5.1.1.16"), "prtGeneralPrinterName"),
-    prtInputVendorName(OID("1.3.6.1.2.1.43.8.2.1.14"), "prtInputVendorName"),
-    prtOutputVendorName(OID("1.3.6.1.2.1.43.9.2.1.8"), "prtOutputVendorName"),
+enum class SampleOID(val oid: String, val oidName: String) {
+    sysDescr("1.3.6.1.2.1.1.1", "sysDescr"),
+    sysName("1.3.6.1.2.1.1.5", "sysName"),
+    hrDeviceDescr("1.3.6.1.2.1.25.3.2.1.3", "hrDeviceDescr"),
+    hrDeviceID("1.3.6.1.2.1.25.3.2.1.4", "hrDeviceID"),
+    hrDeviceStatus("1.3.6.1.2.1.25.3.2.1.5", "hrDeviceStatus"),
+    prtGeneralPrinterName("1.3.6.1.2.1.43.5.1.1.16", "prtGeneralPrinterName"),
+    prtInputVendorName("1.3.6.1.2.1.43.8.2.1.14", "prtInputVendorName"),
+    prtOutputVendorName("1.3.6.1.2.1.43.9.2.1.8", "prtOutputVendorName"),
 }
 
 fun OID(vararg ints: Int) = OID(ints)

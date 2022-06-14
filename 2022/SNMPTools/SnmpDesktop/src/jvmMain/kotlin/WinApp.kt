@@ -13,8 +13,10 @@ import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
 import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -48,31 +50,49 @@ fun loadMib(path: String): List<VariableBinding> = yamlSnmp4j.decodeFromStream(F
 fun WinApp(window: ComposeWindow) = MaterialTheme {
     var logs by remember { mutableStateOf("$now Application Start $today.$now --------------------\n") }
     var mib: List<VariableBinding> by remember {
-        val mib = app.mibFile?.let { loadMib(it) } ?: listOf()
-        logs += now + if (mib.isEmpty()) " Error: Empty MIB... Load or Capture Device first.\n" else " Loaded #${mib.size} Entries.\n"
+        val mib = app.mibFile?.let { runCatching { loadMib(it) }.getOrNull() } ?: listOf()
+        if (mib.isEmpty()) logs += "$now Error: Empty MIB... Load or Capture Device first.\n"
+        else "$now Loaded #${mib.size} Entries.\n"
         mutableStateOf(mib)
     }
-
-    val snmpAccessInfoDialog = SnmpAccessInfoDialog { v1 ->
-//        val snmp = SnmpBuilder().udp().v1().threads(1).build().suspendable()
-        val snmp = SnmpBuilder().udp().v1().build().suspendable()
-        val r = snmp.walk(v1.ip).flatMapConcat { it.asFlow() }.onEach { logs += "$now $it\n" }.toList()
+    var ipSpec by remember { mutableStateOf(app.ip ?: "") }
+    suspend fun mibCapturer() = runCatching {
+        val snmp = SnmpBuilder().udp().v1().build().async().listen()
+        val r = snmp.walk(ipSpec, listOf(SampleOID.hrDeviceDescr.oid)).flatMapConcat { it.asFlow() }
+            .onEach { logs += "$now $it\n" }.toList()
         when {
             r.isNotEmpty() -> mib = r
-            else -> logs += "$now Could not get MIB from [$v1.ip].\n"
+            else -> logs += "$now Could not get MIB from $ipSpec.\n"
         }
+    }.onFailure { ex -> logs += "$now Exception: ${ex.message}";ex.printStackTrace() }
+
+    var walking by remember { mutableStateOf(false) }
+    val snmpAccessInfoDialog = SnmpCaptureDialog(ipSpec) { ip ->
+        ipSpec = ip
+        walking = true
     }
     val saveDlg = AwtFileDialog(mode = SAVE) { d, f -> saveMib(mib, "$d/$f"); app.mibFile = "$d/$f" }
     val loadDlg = AwtFileDialog(mode = LOAD) { d, f -> mib = loadMib("$d/$f"); app.mibFile = "$d/$f" }
 
+    // Backgroud Agent task
     LaunchedEffect(mib) {
-        logs += "$now Start Agent $today.$now ----------\n"
-        mib.forEach { vb -> logs += "$now ${vb.oid}: ${vb.variable}\n" }
-        logs += "$now MIBS: ${mib.size}\n"
+        logs += "$now Start Agent $today.$now MIBS:${mib.size} ----------\n"
         snmpAgent(vbl = mib) { ev, pdu ->
             logs += "$now ${ev.peerAddress} > $pdu\n"
             pdu
         }
+    }
+
+    // Backgroud SNMP capture task
+    if (walking) LaunchedEffect(null) {
+        logs += "$now Run Walk IP:$ipSpec ...\n"
+        val snmp = SnmpBuilder().udp().v1().build().async()
+        //val oids = listOf(SampleOID.hrDeviceDescr.oid)
+        val oids = listOf("1.3.6")
+        val r = snmp.walk(ipSpec, oids).flatMapConcat { it.asFlow() }.onEach { logs += "$now $it\n" }.toList()
+        logs += "$now Cmpl IP:$ipSpec, MIBS:${r.size}\n"
+        if (r.isNotEmpty()) mib = r
+        walking = false
     }
 
     Scaffold(topBar = {
