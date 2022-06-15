@@ -6,10 +6,13 @@ import netSnmp.Snmp
 @OptIn(DelicateCoroutinesApi::class)
 fun main() {
     GlobalScope.launch {
-        val jA = launch { scan("192.168.11.1", "192.168.11.254") }
-        launch { scan("192.168.11.1", "192.168.11.254") }
-        delay(300)
-        jA.cancelAndJoin()
+        
+
+
+//        val jA = launch { scan("192.168.11.1", "192.168.11.254") }
+//        launch { scan("192.168.11.1", "192.168.11.254") }
+//        delay(300)
+//        jA.cancelAndJoin()
     }
 }
 
