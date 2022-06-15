@@ -36,7 +36,8 @@ kotlin {
                 implementation(compose.desktop.windows_x64)
                 implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
                 implementation("org.snmp4j:snmp4j:3.6.3")
-                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
+
+                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")  // local private library
             }
         }
     }
