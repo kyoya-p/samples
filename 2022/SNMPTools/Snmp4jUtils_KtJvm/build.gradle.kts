@@ -10,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.1"
+val myVersion = "1.2"
 
 version = myVersion
 group = myGroupId
@@ -60,7 +60,8 @@ publishing {
 
     repositories {
         maven {
-            url = uri(layout.buildDirectory.dir("repo"))
+            name = "localrepos"
+            url = uri(layout.buildDirectory.dir("repos"))
         }
     }
 }
