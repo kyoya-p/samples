@@ -1,18 +1,14 @@
 import jp.wjg.shokkaa.snmp4jutils.async.*
-import jp.wjg.shokkaa.snmp4jutils.async.listen
-import jp.wjg.shokkaa.snmp4jutils.async.snmpReceiverFlow
-import jp.wjg.shokkaa.snmp4jutils.async.async
+import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.toList
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.smi.*
 import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.smi.OctetString
-import org.snmp4j.smi.UdpAddress
-import org.snmp4j.smi.VariableBinding
+import org.snmp4j.smi.*
+import java.io.File
 
 internal class AgentKtTest {
     @Test
@@ -70,5 +66,20 @@ internal class AgentKtTest {
 
         println(log)
         assert(log == mutableListOf("received", "received"))
+    }
+
+    @Test
+    fun t_snmpAgent(): Unit = runBlocking(Dispatchers.Default) {
+        val file = File("samples/mibWalktest1.yaml")
+        val vbl = yamlSnmp4j.decodeFromStream<List<VariableBinding> >(file.inputStream())
+
+        val ag = launch { snmpAgent(vbl = vbl) }
+        println("start walker")
+        delay(1000)
+
+        val r = defaultSenderSnmp.walk("localhost").toList().flatMap{it}
+        assert(r.size == vbl.size)
+        assert(r.zip(vbl).all { (a, b) -> a == b })
+        ag.cancelAndJoin()
     }
 }
