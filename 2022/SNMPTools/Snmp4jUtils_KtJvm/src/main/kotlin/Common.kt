@@ -104,3 +104,5 @@ data class Device(
     val ip: String,
     val vbl: List<@Contextual VariableBinding>,
 )
+
+val defaultSenderSnmp get()= SnmpBuilder().udp().v1().v3().build().async()

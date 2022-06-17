@@ -48,7 +48,7 @@ fun loadMib(path: String): List<VariableBinding> = yamlSnmp4j.decodeFromStream(F
 @Composable
 @Preview
 fun WinApp(window: ComposeWindow) = MaterialTheme {
-    var logs by remember { mutableStateOf("$now Application Start $today.$now --------------------\n") }
+    var logs by remember { mutableStateOf("$now Start Application $today.$now --------------------\n") }
     var mib: List<VariableBinding> by remember {
         val mib = app.mibFile?.let { runCatching { loadMib(it) }.getOrNull() } ?: listOf()
         if (mib.isEmpty()) logs += "$now Error: Empty MIB... Load or Capture Device first.\n"
@@ -75,10 +75,12 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     // Backgroud Agent task
     LaunchedEffect(mib) {
         logs += "$now Start Agent $today.$now MIBS:${mib.size} ----------\n"
-        snmpAgent(vbl = mib) { ev, pdu ->
-            logs += "$now ${ev.peerAddress} > $pdu\n"
-            pdu
-        }
+        runCatching {
+            snmpAgent(vbl = mib) { ev, pdu ->
+                logs += "$now ${ev.peerAddress} > $pdu\n"
+                pdu
+            }
+        }.onFailure { logs += now + it.stackTraceToString() + "\n" }
     }
 
     // Backgroud SNMP capture task

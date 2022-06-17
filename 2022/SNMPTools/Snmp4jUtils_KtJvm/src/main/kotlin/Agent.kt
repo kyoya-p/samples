@@ -2,9 +2,11 @@ package jp.wjg.shokkaa.snmp4jutils.async
 
 import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
 import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.*
 import org.snmp4j.*
@@ -29,20 +31,12 @@ suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
             responseHandler(event as CommandResponderEvent<UdpAddress>)
         }
     }
-    println("Receiver[1]")
     return callbackFlow {
-        snmp.addCommandResponder(commandResponder {
-            println("Receiver[x]:received")
-            trySend(it)
-        })
-        println("Receiver[2]")
-        awaitClose {
-            snmp.close()
-            println("Receiver[9]")
-        }
-        println("Receiver[3] illegal")
+        snmp.addCommandResponder(commandResponder { trySend(it) })
+        awaitClose { snmp.close() }
     }
 }
+
 // coroutineで実行されます
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
@@ -50,6 +44,7 @@ suspend fun snmpAgent(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
+    val senderSnmp = defaultSenderSnmp
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }
@@ -71,9 +66,8 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        //println("${event.peerAddress} => ${event.pdu}")
-        println("RES: $resPdu")
-        snmp.async().sendAsync(hook(event, resPdu), resTarget)
+        GlobalScope.launch { senderSnmp.sendAsync(hook(event, resPdu), resTarget) }
+        //println("Rq:${event.peerAddress} => ${resPdu.variableBindings}")
     }
 }
 
