@@ -1,8 +1,7 @@
 plugins {
     application
-    kotlin("jvm") version "1.6.0"
-    kotlin("plugin.serialization") version "1.6.0"
-//    id("org.jetbrains.kotlinx.kover") version "0.4.1"
+    kotlin("jvm") version "1.6.21"
+    kotlin("plugin.serialization") version "1.6.21"
     `maven-publish`
     id("com.github.johnrengelman.shadow") version "7.0.0"
 
@@ -11,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.1"
+val myVersion = "1.2"
 
 version = myVersion
 group = myGroupId
@@ -23,15 +22,16 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.1")
-    implementation("org.snmp4j:snmp4j:3.6.3")
-    implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
+    implementation("org.snmp4j:snmp4j:3.7.0")
+    implementation("com.charleskorn.kaml:kaml:0.44.0") // https://github.com/charleskorn/kaml/releases/latest
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
     testImplementation("net.java.dev.jna:jna:5.9.0")
     testImplementation("net.java.dev.jna:jna-platform:5.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
 }
 
 application {
@@ -60,7 +60,8 @@ publishing {
 
     repositories {
         maven {
-            url = uri(layout.buildDirectory.dir("repo"))
+            name = "localrepos"
+            url = uri(layout.buildDirectory.dir("repos"))
         }
     }
 }

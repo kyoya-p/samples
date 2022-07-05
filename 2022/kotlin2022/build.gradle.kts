@@ -20,8 +20,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
 
     // JNA
-    implementation("net.java.dev.jna:jna:5.10.0")
-    implementation("net.java.dev.jna:jna-platform:5.10.0")
+    implementation("net.java.dev.jna:jna:5.11.0")
+    implementation("net.java.dev.jna:jna-platform:5.11.0")
+    implementation("net.java.dev.jna:jna-platform:5.11.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 }

@@ -1,6 +1,10 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import com.charleskorn.kaml.Yaml
+import jp.wjg.shokkaa.snmp4jutils.async.SampleOID
+import jp.wjg.shokkaa.snmp4jutils.async.listen
+import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
+import jp.wjg.shokkaa.snmp4jutils.async.async
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
@@ -40,7 +44,7 @@ fun main(args: Array<String>): Unit = runBlocking {
 
     val snmpBuilder = SnmpBuilder()
 
-    val snmp = snmpBuilder.udp().v1().build().suspendable()
+    val snmp = snmpBuilder.udp().v1().build().async()
     snmp.listen()
 
     val start by lazy { Clock.System.now() }
@@ -63,6 +67,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
         .map { it.await() }
         .onEach { c-- }
+        .mapNotNull { it }
         .filter { it.peerAddress != null && it.response != null && (it.userObject as UdpAddress) == it.peerAddress }
         .map { ev ->
             SNMPLog(ev.peerAddress.inetAddress.hostAddress, ev.response.variableBindings)

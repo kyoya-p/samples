@@ -66,7 +66,7 @@ object VariableAsStringSerializer : KSerializer<Variable> {
 
 // VariableBindingを1つの文字列にエンコード/デコード
 // OID ' ' Syntax ' ' Value
-// Valueに関して、0~0x1f,0x80~0xff,':', 以外は':xx'にエスケープ
+// Valueに関して、0~0x1f,0x80~0xff,':', は':xx'にエスケープ
 // Note: JsonObjectに変換すべきかもしれないが、コンパクトさを重視し１つのStringに
 
 @ExperimentalSerializationApi
@@ -117,8 +117,12 @@ object VariableBindingAsStringSerializer : KSerializer<VariableBinding> {
 
         // for SMIConstants
         val value = when (stx) {
-            SYNTAX_OCTET_STRING, SYNTAX_OPAQUE -> OctetString(sValue.unescaped())
-            SYNTAX_INTEGER, SYNTAX_COUNTER32, SYNTAX_GAUGE32, SYNTAX_TIMETICKS -> Integer32(sValue.toInt())
+            SYNTAX_OCTET_STRING -> OctetString(sValue.unescaped())
+            SYNTAX_OPAQUE -> Opaque(sValue.unescaped())
+            SYNTAX_INTEGER -> Integer32(sValue.toInt())
+            SYNTAX_COUNTER32 -> Counter32(sValue.toLong())
+            SYNTAX_TIMETICKS -> TimeTicks(sValue.toLong())
+            SYNTAX_GAUGE32 -> Gauge32(sValue.toLong())
             SYNTAX_COUNTER64 -> Counter64(sValue.toLong())
             SYNTAX_OBJECT_IDENTIFIER -> OID(sValue)
             SYNTAX_IPADDRESS -> IpAddress(InetAddress.getByName(sValue))

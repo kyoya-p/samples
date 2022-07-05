@@ -1,6 +1,6 @@
-package jp.wjg.shokkaa.snmp4jutils
+package jp.wjg.shokkaa.snmp4jutils.async
 
-
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -10,56 +10,34 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.Snmp
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.OID
 import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.SMIConstants.EXCEPTION_END_OF_MIB_VIEW
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
-import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.io.File
-import java.net.InetAddress
 
 @ExperimentalSerializationApi
-fun main(args: Array<String>): Unit = runCatching {
-    runBlocking {
+fun main(args: Array<String>): Unit = runBlocking {
+    val st = Clock.System.now()
+    SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
         val tgIp = args[0]
+        val vbl = snmp.walk(tgIp).map { it[0] }.onEach {
+            print("${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\r")
+        }.toList()
+        println("${(Clock.System.now() - st).inWholeMilliseconds}[ms] #MIB: ${vbl.size}")
+
         val resultFile = File("samples/${Clock.System.todayAt(currentSystemDefault())}-walk-$tgIp.yaml")
-
-        val vbl = Snmp().suspendable().walk(tgIp).map { it[0] }.onEach { println(it) }.toList()
-        val dev = Device(tgIp, vbl)
-        resultFile.writeText(yamlSnmp4j.encodeToString(dev))
+        resultFile.writeText(yamlSnmp4j.encodeToString(vbl))
     }
-}.onFailure {
-    println("usage java -jar ip-address")
-}.getOrThrow()
+}
 
-@Suppress("unused")
-fun mainSplit(args: Array<String>): Unit = runCatching {
-    runBlocking {
-        val tgIp = args[0]
-
-        var rep = ""
-        var repIndex = 0
-        Snmp().suspendable().walk(tgIp).collect { vbl -> //ペイロードサイズが256B以上になればレポート送信
-            rep = rep + vbl.joinToString("\n", "", "\n")
-            if (rep.length >= 256) {
-                sendReport(repIndex, rep, false)
-                rep = ""
-                repIndex++
-            }
-        }
-        sendReport(repIndex, rep, true) //空でもcomplete通知のためにレポートを送信する場合がある
-    }
-}.onFailure {
-    println("usage java WalkerKt")
-
-}.getOrThrow()
-
-suspend fun SnmpSuspendable.walk(
+suspend fun SnmpAsync.walk(
     targetHost: String,
     reqOidList: List<String> = listOf(".1.3.6"),
-): Flow<List<VariableBinding>> = walk(
-    CommunityTarget(UdpAddress(InetAddress.getByName(targetHost), 161), OctetString("public"))
+) = walk(
+    CommunityTarget(UdpAddress(getInetAddressByName(targetHost), 161), OctetString("public"))
         .apply {
             timeout = 1000
             retries = 3
@@ -75,22 +53,17 @@ fun <T> generateFlow(init: T, op: suspend (T) -> T?) = flow {
     }
 }
 
-suspend fun SnmpSuspendable.walk(
+suspend fun SnmpAsync.walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
-): Flow<List<VariableBinding>> {
-    return generateFlow(initVbl) { vbl ->
-        sendAsync(PDU(PDU.GETNEXT, vbl), target).response.variableBindings.takeIf {
-            // 全要素 EndOfViewか初期OIDを超えたら終了
-            it.zip(initVbl).any { (vb, ivb) -> vb.variable.syntax != 130 && vb.oid.startsWith(ivb.oid) }
+): Flow<List<VariableBinding>> = generateFlow(initVbl) { vbl ->
+    sendAsync(PDU(PDU.GETNEXT, vbl), target)
+        ?.response?.takeIf { it.errorStatus == PDU.noError }
+        ?.variableBindings?.takeIf {
+            it.zip(initVbl)
+                .any { (vb, ivb) -> vb.variable.syntax != EXCEPTION_END_OF_MIB_VIEW && vb.oid.startsWith(ivb.oid) }
         }
-    }
 }
 
-private fun sendReport(index: Int, rep: String, complete: Boolean) {
-    println("Report: {")
-    println("  index: $index,")
-    println("  complete: $complete,")
-    print(rep)
-    println("}")
-}
+
+

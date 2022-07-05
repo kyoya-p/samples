@@ -19,7 +19,7 @@ suspend fun main() {
 
 
 fun broadcastFlow(
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
+    snmp: Snmp = org.snmp4j.Snmp(DefaultUdpTransportMapping()).apply { listen() },
     adr: String = "255.255.255.255",
     oidList: List<OID> = listOf(OID(".1.3.6")),
 ) = broadcastFlow(
@@ -29,7 +29,7 @@ fun broadcastFlow(
 )
 
 fun broadcastFlow(
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping()).apply { listen() },
+    snmp: Snmp = org.snmp4j.Snmp(DefaultUdpTransportMapping()).apply { listen() },
     target: CommunityTarget<UdpAddress>,
     pdu: PDU,
 ) = callbackFlow {

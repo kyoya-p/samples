@@ -8,22 +8,18 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0"
-
+version = "1.0.1"
 
 repositories {
     google()
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    mavenLocal()
+    mavenLocal() // for jp.wjg.shokkaa:snmp4jutils
 }
-
 
 kotlin {
     jvm {
-        compilations.all {
-            kotlinOptions.jvmTarget = "11"
-        }
+        compilations.all { kotlinOptions.jvmTarget = "11" }
         withJava()
     }
     sourceSets {
@@ -31,10 +27,11 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-                implementation(compose.desktop.currentOs)
+                implementation(compose.desktop.windows_x64)
                 implementation("com.charleskorn.kaml:kaml:0.40.0") // https://github.com/charleskorn/kaml/releases/latest
                 implementation("org.snmp4j:snmp4j:3.6.3")
-                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
+
+                implementation("jp.wjg.shokkaa:snmp4jutils:1.1")  // local private library
             }
         }
     }
@@ -44,12 +41,10 @@ compose.desktop {
     application {
         mainClass = "MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Msi) //(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMPAgentDesktop"
-            packageVersion = "1.0.0"
-            windows {
-                menuGroup = "SNMP Agent Desktop"
-            }
+            packageVersion = version.toString()
+            windows { menuGroup = "SNMP Agent Desktop" }
         }
     }
 }

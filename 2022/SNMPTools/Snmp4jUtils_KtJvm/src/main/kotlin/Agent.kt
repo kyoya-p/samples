@@ -1,7 +1,12 @@
-package jp.wjg.shokkaa.snmp4jutils
+package jp.wjg.shokkaa.snmp4jutils.async
 
+import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.*
 import org.snmp4j.*
@@ -14,27 +19,36 @@ import java.util.*
 
 @ExperimentalSerializationApi
 fun main(args: Array<String>) = runBlocking {
-    val dev: Device = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
-    snmpAgent(dev.vbl)
+    val vbl: List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(args[0]).inputStream())
+    snmpAgent(vbl)
 }
 
+@Suppress("BlockingMethodInNonBlockingContext")
+suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
+    fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
+        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
+            responseHandler(event as CommandResponderEvent<UdpAddress>)
+        }
+    }
+    return callbackFlow {
+        snmp.addCommandResponder(commandResponder { trySend(it) })
+        awaitClose { snmp.close() }
+    }
+}
+
+// coroutineで実行されます
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
     vbl: List<VariableBinding>,
-    snmp: Snmp = Snmp(
-        DefaultUdpTransportMapping(
-            UdpAddress(
-                InetAddress.getByName("0.0.0.0"),
-                161
-            )
-        )
-    ).apply { listen() },
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
+    val senderSnmp = defaultSenderSnmp
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }
-    snmpAgent(snmp) { event ->
+    snmpReceiverFlow(snmp).collect { event ->
         val resPdu = PDU().apply {
             type = PDU.RESPONSE
             requestID = event.pdu.requestID
@@ -52,30 +66,9 @@ suspend fun snmpAgent(
         }
 
         val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        //println("${event.peerAddress} => ${event.pdu}")
-        println("RES: $resPdu")
-        snmp.suspendable().sendAsync(hook(event, resPdu), resTarget)
+        GlobalScope.launch { senderSnmp.sendAsync(hook(event, resPdu), resTarget) }
+        //println("Rq:${event.peerAddress} => ${resPdu.variableBindings}")
     }
-}
-
-@Suppress("BlockingMethodInNonBlockingContext")
-suspend fun snmpAgent(
-    snmp: Snmp,
-    responseHandler: suspend (ResponderEvent) -> Unit,
-) {
-    fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
-        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            @Suppress("UNCHECKED_CAST")
-            responseHandler(event as CommandResponderEvent<UdpAddress>)
-        }
-    }
-    println("Start agent")
-    callbackFlow {
-        snmp.addCommandResponder(commandResponder { trySend(it) })
-        println("[22]")
-        awaitClose { snmp.close() }
-        println("[23]")
-    }.collect { responseHandler(it) }
 }
 
 @Suppress("unused")

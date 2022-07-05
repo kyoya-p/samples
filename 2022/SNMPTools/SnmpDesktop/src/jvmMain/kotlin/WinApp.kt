@@ -12,15 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.walk
-import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.serializer
+import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.VariableBinding
 import java.awt.FileDialog.LOAD
 import java.awt.FileDialog.SAVE
@@ -40,34 +43,59 @@ fun saveMib(mib: List<VariableBinding>, path: String) = yamlSnmp4j.encodeToStrea
 @OptIn(ExperimentalSerializationApi::class)
 fun loadMib(path: String): List<VariableBinding> = yamlSnmp4j.decodeFromStream(File(path).inputStream())
 
-@OptIn(ExperimentalSerializationApi::class)
+@OptIn(ExperimentalSerializationApi::class, FlowPreview::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun WinApp(window: ComposeWindow) = MaterialTheme {
-    var logs by remember { mutableStateOf("$now Application Start $today.$now --------------------\n") }
+    var logs by remember { mutableStateOf("$now Start Application $today.$now --------------------\n") }
     var mib: List<VariableBinding> by remember {
-        val mib = app.mibFile?.let { loadMib(it) } ?: listOf()
-        logs += now + if (mib.isEmpty()) " Error: Empty MIB... Load or Capture Device first.\n" else " Loaded #${mib.size} Entries.\n"
+        val mib = app.mibFile?.let { runCatching { loadMib(it) }.getOrNull() } ?: listOf()
+        if (mib.isEmpty()) logs += "$now Error: Empty MIB... Load or Capture Device first.\n"
+        else "$now Loaded #${mib.size} Entries.\n"
         mutableStateOf(mib)
     }
-
-    val snmpAccessInfoDialog = SnmpAccessInfoDialog { v1 ->
-        val r = walk(v1.ip).flatMap { it }.onEach { logs += "$now $it\n" }.toList()
-        when {
-            r.isNotEmpty() -> mib = r
-            else -> logs += "$now Could not get MIB from [$v1.ip].\n"
-        }
+    var ipSpec by remember { mutableStateOf(app.ip ?: "") }
+    var walking by remember { mutableStateOf(false) }
+    val snmpAccessInfoDialog = SnmpCaptureDialog(ipSpec) { ip ->
+        ipSpec = ip
+        walking = true
     }
-    val saveDlg = AwtFileDialog(mode = SAVE) { d, f -> saveMib(mib, "$d/$f"); app.mibFile = "$d/$f" }
-    val loadDlg = AwtFileDialog(mode = LOAD) { d, f -> mib = loadMib("$d/$f"); app.mibFile = "$d/$f" }
+    val saveDlg = AwtFileDialog(mode = SAVE) { d, f ->
+        saveMib(mib, "$d/$f")
+        app.mibFile = "$d/$f"
+        logs += "$now Saved MIBS:${mib.size} to $d/$f"
+    }
+    val loadDlg = AwtFileDialog(mode = LOAD) { d, f ->
+        mib = loadMib("$d/$f")
+        app.mibFile = "$d/$f"
+        logs += "$now Loaded MIBS:${mib.size} from $d/$f"
+    }
 
+    // Backgroud Agent task
     LaunchedEffect(mib) {
-        logs += "$now Start Agent $today.$now ----------\n"
-        snmpAgent(vbl = mib) { ev, pdu ->
-            logs += "$now ${ev.peerAddress} > $pdu\n"
-            pdu
-        }
+        logs += "$now Start Agent $today.$now MIBS:${mib.size} ----------\n"
+        runCatching {
+            snmpAgent(vbl = mib) { ev, pdu ->
+                logs += "$now ${ev.peerAddress} > $pdu\n"
+                pdu
+            }
+        }.onFailure { logs += now + it.stackTraceToString() + "\n" }
+    }
+
+    // Backgroud SNMP capture task
+    if (walking) LaunchedEffect(null) {
+        logs += "$now Run Walk IP:$ipSpec ...\n"
+        val snmp = SnmpBuilder().udp().v1().build().async()
+        val oids = listOf("1.3.6")
+        logs += "$now Walking"
+        val logs0 = logs
+        val r = snmp.walk(ipSpec, oids).flatMapConcat { it.asFlow() }
+            .withIndex().onEach { logs = logs0 + " ${it.index}" }.map { it.value }
+            .toList()
+        logs += "\n$now Cmpl IP:$ipSpec, MIBS:${r.size}\n"
+        if (r.isNotEmpty()) mib = r
+        walking = false
     }
 
     Scaffold(topBar = {
