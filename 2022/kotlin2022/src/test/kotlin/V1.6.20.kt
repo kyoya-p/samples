@@ -18,7 +18,6 @@ class V1_6_20 {
         // val nn2 :Nothing? = nonnullable(null) // Compile Error
     }
 
-
     interface OldEdge<N> {
         fun nodes(): Pair<N, N>
     }
@@ -42,7 +41,8 @@ class V1_6_20 {
 
 
     // コンテキストレシーバ
-    // 1.6.20ではコンパイルオプション -Xcontext-receivers が必要(build.gradle.kts参照)
+    // 1.6.20ではコンパイルオプション -Xcontext-receivers が必要
+    // と、 languageVersion = "1.7" が必要 (build.gradle.kts参照)
 
     fun interface CurrentDirectoryContext {
         fun cwd(): File
