@@ -1,6 +1,6 @@
 plugins {
     //kotlin("jvm") version "1.5.10"
-    kotlin("jvm") version "1.6.21" // https://kotlinlang.org/docs/releases.html
+    kotlin("jvm") version "1.7.10" // https://kotlinlang.org/docs/releases.html
     idea
 }
 
@@ -12,8 +12,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
-    implementation("org.jetbrains.kotlin:kotlin-reflect:1.6.20")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.7.10")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.7.10")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
@@ -30,8 +30,6 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
-
-
 
 val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
 compileTestKotlin.kotlinOptions {
