@@ -13,7 +13,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.hazendaz.7zip:7zip:22.01") // https://mvnrepository.com/artifact/com.github.hazendaz.7zip/7zip
+    //implementation("com.github.hazendaz.7zip:7zip:22.01") // https://mvnrepository.com/artifact/com.github.hazendaz.7zip/7zip
+    implementation("org.apache.commons:commons-compress:1.21") // https://mvnrepository.com/artifact/org.apache.commons/commons-compress
     testImplementation(kotlin("test"))
 }
 
