@@ -1,3 +1,0 @@
-fun commonMain() {
-    println("aaa")
-}
