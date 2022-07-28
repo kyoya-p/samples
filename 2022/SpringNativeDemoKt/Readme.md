@@ -4,8 +4,16 @@ Spring App
  - Windows 11
  - IntelliJ 2022.1.4
 
+ビルド/実行
+---
+### 普通にJDKで実行
+```
+gradlew bootRun
+curl http://localhost:8080/
+```
 
-
+### Native実行
+[TODO]
 
 Project履歴
 ---
