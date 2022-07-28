@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.apache.logging.log4j:log4j-core:2.17.0")
+    implementation("org.apache.logging.log4j:log4j-core:2.14.0")
     implementation("org.apache.activemq:activemq-all:5.15.10") // https://mvnrepository.com/artifact/org.apache.activemq/activemq-all
 }
 
