@@ -26,4 +26,5 @@ fun ip() {
     if (iResult != 0) {
         println("WSAStartup failed: $iResult")
     }
+    //TODO
 }
