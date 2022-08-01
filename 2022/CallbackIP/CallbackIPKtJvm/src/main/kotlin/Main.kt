@@ -11,15 +11,15 @@ fun main(args: Array<String>) {
     println(localAdr?.hostAddress)
 }
 
-// すべてのlocalIPで接続できるかテスト
+// Sample1. すべてのlocalIPで接続できるかテスト
 fun getLocalAdr1(dstAdr: InetAddress, dstPort: Int) = runCatching {
-    val socket = Socket(dstAdr, dstPort, null, 0)
+    val socket = Socket(dstAdr, dstPort, null/*指定しない*/, 0)
     val localAdr = socket.localAddress
     socket.close()
     localAdr
 }.getOrNull()
 
-// すべてのlocalIPで接続できるかテスト
+// Sample2. /すべてのlocalIPで接続できるかテスト
 fun getLocalAdr2(dstAdr: InetAddress, dstPort: Int): InetAddress? {
     for (ni in getNetworkInterfaces()) {
         for (srcAdr in ni.inetAddresses) {
