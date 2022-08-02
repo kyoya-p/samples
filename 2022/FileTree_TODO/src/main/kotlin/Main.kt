@@ -21,6 +21,7 @@ fun tree(file: File) {
             fs.getRootDirectories().forEach { path ->
                 val r = path.iterator().forEach {
                     println(it.fileName)
+                    //TODO
                 }
             }
 //            file.unjar().forEach { ent -> }
