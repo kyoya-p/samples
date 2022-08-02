@@ -1,9 +1,12 @@
+//import java.io.File
 import org.apache.commons.compress.archivers.jar.JarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import java.io.File
-import java.nio.file.*
+import java.net.URI
+import java.nio.file.FileSystem
+import java.nio.file.FileSystems
+import java.nio.file.Paths
 import java.util.*
-import kotlin.io.path.isDirectory
 
 
 fun main(args: Array<String>) {
@@ -15,16 +18,7 @@ fun tree(file: File) {
     when {
         ext == "jar" -> {
             println("jar: ${file.path}")
-            val path = Paths.get(file.path)
-            val fs1: FileSystem = FileSystems.newFileSystem(path, ClassLoader.getSystemClassLoader())
-            val fs: FileSystem = FileSystems.newFileSystem(path, null as ClassLoader?)
-            fs.getRootDirectories().forEach { path ->
-                val r = path.iterator().forEach {
-                    println(it.fileName)
-                    //TODO
-                }
-            }
-//            file.unjar().forEach { ent -> }
+            jarWalk(file)
         }
 
         ext == "zip" || ext == "tar" || ext == "ar" -> {
@@ -41,6 +35,16 @@ fun tree(file: File) {
 fun unzip(file: File) = ZipArchiveInputStream(file.inputStream(), null).let { generateSequence { it.nextZipEntry } }
 fun File.unjar() = JarArchiveInputStream(inputStream(), null).let { generateSequence { it.nextJarEntry } }
 
+fun jarWalk(file: File) {
+    val uri = URI.create("jar:${Paths.get(file.path).toUri()}")
+    val env: Map<String, Any> = HashMap()
+    val fs: FileSystem = FileSystems.newFileSystem(uri, env)
+    fs.rootDirectories.forEach { d ->
+        println(d.nameCount)
+        println(d.getName(1))
+    }
+
+}
 /*
 fun zipLines(zipFilePath: Path?, pathPredicate: Predicate<Path?>?): Stream<String?>? {
     val fs: FileSystem = FileSystems.newFileSystem(zipFilePath, ClassLoader.getSystemClassLoader())
