@@ -3,6 +3,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import java.io.File
 import java.nio.file.*
 import java.util.*
+import kotlin.io.path.isDirectory
 
 
 fun main(args: Array<String>) {
@@ -17,7 +18,11 @@ fun tree(file: File) {
             val path = Paths.get(file.path)
             val fs1: FileSystem = FileSystems.newFileSystem(path, ClassLoader.getSystemClassLoader())
             val fs: FileSystem = FileSystems.newFileSystem(path, null as ClassLoader?)
-            fs.getRootDirectories().forEachIndexed { i, e -> println("$i, $e") }
+            fs.getRootDirectories().forEach { path ->
+                val r = path.iterator().forEach {
+                    println(it.fileName)
+                }
+            }
 //            file.unjar().forEach { ent -> }
         }
 
