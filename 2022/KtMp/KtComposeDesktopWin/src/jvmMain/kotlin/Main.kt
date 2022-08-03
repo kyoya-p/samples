@@ -15,17 +15,14 @@ import java.net.ServerSocket
 @Preview
 fun App() = MaterialTheme {
     var socket by remember { mutableStateOf<ServerSocket?>(null) }
-    var port by remember { mutableStateOf("0") }
+    var port by remember { mutableStateOf(0) }
 
     Scaffold(topBar = { TopAppBar(title = { Text("TCP Port Opener") }) }) {
         Column {
-
-            TextField(port, onValueChange = { u ->
-                runCatching { port.toInt() }.onSuccess { port = u }
-            })
+            TextField("$port", onValueChange = { runCatching { port = it.toInt() } })
             Button(onClick = {
                 if (socket == null) {
-                    socket = ServerSocket(port.toInt())
+                    socket = ServerSocket(port)
                 } else {
                     socket?.close()
                     socket = null
