@@ -14,19 +14,18 @@ import androidx.compose.ui.window.application
 @Composable
 @Preview
 fun App() {
-    var text by remember { mutableStateOf("Hello, World!") }
+    var isOpened by remember { mutableStateOf(false) }
 
     MaterialTheme {
         Button(onClick = {
-            text = "Hello, Desktop!"
+
         }) {
-            Text(text)
+            if (isOpened) Text("Listen")
+            else Text("Close")
         }
     }
 }
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) {
-        App()
-    }
+    Window(onCloseRequest = ::exitApplication) { App() }
 }
