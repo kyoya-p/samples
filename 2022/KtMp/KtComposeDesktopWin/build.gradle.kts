@@ -36,9 +36,17 @@ compose.desktop {
     application {
         mainClass = "MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+//            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "KtComposeDesktopWin"
             packageVersion = "1.0.0"
+
+            // TODO
+            windows {
+                // this.exePackageVersion = "1.9.9"
+//                this.msiPackageVersion="1.99.0"
+                this.perUserInstall = true
+            }
         }
     }
 }

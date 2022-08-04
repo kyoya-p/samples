@@ -13,7 +13,7 @@ File ➔ 新規 ➔ プロジェクト ➔ Compose Multiplatform
 gradlew createDistributable
 ```
 #### ターゲットファイル
-`.\build\compose\binaries\main\app\KtComposeDesktopWin`
+`.\build\compose\binaries\main\app\KtComposeDesktopWin\`
 
 #### 実行
 `.\build\compose\binaries\main\app\KtComposeDesktopWin\KtComposeDesktopWin.exe`
@@ -22,3 +22,12 @@ gradlew createDistributable
 ```
 gradlew packageMsi
 ```
+#### ターゲットファイル
+`.\build\compose\binaries\main\msi\KtComposeDesktopWin-1.0.0.msi`
+
+## Windows インストーラ.exe
+```
+gradlew packageExe
+```
+#### ターゲットファイル
+`.\build\compose\binaries\main\exe\KtComposeDesktopWin-1.0.0.exe`
