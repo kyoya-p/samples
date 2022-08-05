@@ -31,3 +31,8 @@ gradlew packageExe
 ```
 #### ターゲットファイル
 `.\build\compose\binaries\main\exe\KtComposeDesktopWin-1.0.0.exe`
+
+
+## 参照
+- https://docs.microsoft.com/ja-jp/windows/win32/services/installing-a-service
+
