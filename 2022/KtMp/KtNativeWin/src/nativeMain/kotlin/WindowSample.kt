@@ -37,6 +37,7 @@ fun WndProc(hwnd: HWND?, msg: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT {
 }
 
 
+@Suppress("unused")
 fun window() {
 
     memScoped {
