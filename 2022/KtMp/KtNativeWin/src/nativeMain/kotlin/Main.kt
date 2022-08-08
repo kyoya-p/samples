@@ -8,16 +8,34 @@ fun main(args: Array<String>) {
 }
 
 fun enumServiceStatus() = memScoped {
-    val hSCManager = (OpenSCManager!!)(
-        null,                    //   [in, optional] LPCSTR lpMachineName
-        null,                    //   [in, optional] LPCSTR lpDatabaseName
-        SC_MANAGER_ALL_ACCESS.toUInt() /*full access rights*/ //   [in]           DWORD  dwDesiredAccess
+    /* See: https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-openscmanagerw
+    SC_HANDLE OpenSCManagerW(
+      [in, optional] LPCWSTR lpMachineName,
+      [in, optional] LPCWSTR lpDatabaseName,
+      [in]           DWORD   dwDesiredAccess
+    );
+    */
+    val hSCManager =  OpenSCManagerW(
+        null,
+        null,
+        SC_MANAGER_ALL_ACCESS.toUInt()
     )
 
-    // https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-enumservicesstatusw
+    /* See: https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-enumservicesstatusw
+    BOOL EnumServicesStatusW(
+      [in]                SC_HANDLE              hSCManager,
+      [in]                DWORD                  dwServiceType,
+      [in]                DWORD                  dwServiceState,
+      [out, optional]     LPENUM_SERVICE_STATUSW lpServices,
+      [in]                DWORD                  cbBufSize,
+      [out]               LPDWORD                pcbBytesNeeded,
+      [out]               LPDWORD                lpServicesReturned,
+      [in, out, optional] LPDWORD                lpResumeHandle
+    );
+     */
     val bytesNeeded = alloc<DWORDVar>()
     val servicesReturned = alloc<DWORDVar>()
-    val rc = (EnumServicesStatus!!)(
+    val rc = EnumServicesStatusW(
         hSCManager,
         SERVICE_WIN32_OWN_PROCESS.toUInt(), //  [in]                DWORD                  dwServiceType,
         (SERVICE_ACTIVE or SERVICE_INACTIVE).toUInt(), //  [in]                DWORD                  dwServiceState,
@@ -37,32 +55,43 @@ fun enumServiceStatus() = memScoped {
         platform.windows.LPDWORD? /* = kotlinx.cinterop.CPointer<platform.windows.DWORDVar /* = kotlinx.cinterop.UIntVarOf<kotlin.UInt> */>? */,
         platform.windows.LPDWORD? /* = kotlinx.cinterop.CPointer<platform.windows.DWORDVar /* = kotlinx.cinterop.UIntVarOf<kotlin.UInt> */>? */,
         platform.windows.LPDWORD? /* = kotlinx.cinterop.CPointer<platform.windows.DWORDVar /* = kotlinx.cinterop.UIntVarOf<kotlin.UInt> */>? */
-        ) -> platform.windows.WINBOOL /* = kotlin.Int */>>?
+    ) -> platform.windows.WINBOOL /* = kotlin.Int */>>?
     */
     println("rc: $rc")
     println("bytesNeeded: ${bytesNeeded.value}")
     println("servicesReturned: ${servicesReturned.value}")
 
     val bufSize = bytesNeeded.value
-    println("${sizeOf<_ENUM_SERVICE_STATUSW>()}")
-    println("${bufSize.toInt() / sizeOf<_ENUM_SERVICE_STATUSW>()}")
-    val services = alloc<_ENUM_SERVICE_STATUSW>()
-    //val services = allocArray<ByteVar>(bufSize)
-    println("L1")
+
+    val nItem = (bufSize.toInt() + sizeOf<_ENUM_SERVICE_STATUSW>() - 1) / sizeOf<_ENUM_SERVICE_STATUSW>()
+    println("nItem=$nItem")
+    val services = allocArray<_ENUM_SERVICE_STATUSW>(nItem)
     val rc2 = (EnumServicesStatus!!)(
         hSCManager,
         SERVICE_WIN32_OWN_PROCESS.toUInt(), //  [in]                DWORD                  dwServiceType,
         (SERVICE_ACTIVE or SERVICE_INACTIVE).toUInt(), //  [in]                DWORD                  dwServiceState,
-        services.ptr, //  [out, optional]     LPENUM_SERVICE_STATUSA lpServices,
+        services.get(0).ptr, //  [out, optional]     LPENUM_SERVICE_STATUSA lpServices,
         bufSize, //  [in]                DWORD                  cbBufSize,
         bytesNeeded.ptr, //[out]               LPDWORD                pcbBytesNeeded,
         servicesReturned.ptr,  //[out]               LPDWORD                lpServicesReturned,
         null, //[in, out, optional] LPDWORD                lpResumeHandle
     )
-    println("rc: $rc2")
+
     println("bytesNeeded: ${bytesNeeded.value}")
     println("servicesReturned: ${servicesReturned.value}")
-//    val r = services.
+    if (rc2 != 0) {
+        val r = when (val r0 = GetLastError().toInt()) {
+            ERROR_ACCESS_DENIED -> "ERROR_ACCESS_DENIED"
+            ERROR_INVALID_HANDLE -> "ERROR_INVALID_HANDLE"
+            ERROR_INVALID_PARAMETER -> "ERROR_INVALID_PARAMETER"
+            ERROR_MORE_DATA -> "ERROR_MORE_DATA"
+            else -> "else($r0)"
+        }
+        println("rc: $r")
+    }
+    for (i in (0 until servicesReturned.value.toInt())) {
+        println("$i: ${services[i].lpServiceName?.toKString()}")
+    }
     CloseServiceHandle(hSCManager)
 }
 
@@ -71,7 +100,6 @@ fun installWindowsService() = memScoped {
         println("Error: OpenSCManager() API not found")
         return@memScoped
     }
-
     // https://docs.microsoft.com/en-us/windows/win32/api/winsvc/nf-winsvc-openscmanagera
     val hSCManager = (OpenSCManager!!)(
         null,                    //   [in, optional] LPCSTR lpMachineName
@@ -98,7 +126,7 @@ fun installWindowsService() = memScoped {
         serviceName.wcstr.ptr, // lpServiceName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
         null, // lpDisplayName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
         GENERIC_EXECUTE.toUInt(), // dwDesiredAccess:DWORD /* = UInt */,
-        SERVICE_WIN32_OWN_PROCESS.toUInt() as DWORD,// dwServiceType:DWORD /* = UInt */,
+        SERVICE_WIN32_OWN_PROCESS.toUInt() ,// dwServiceType:DWORD /* = UInt */,
         SERVICE_AUTO_START.toUInt(), // dwStartType:DWORD /* = UInt */,
         SERVICE_ERROR_NORMAL.toUInt(), // dwErrorControl:DWORD /* = UInt */,
         binaryPathName.wcstr.ptr, // lpBinaryPathName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
