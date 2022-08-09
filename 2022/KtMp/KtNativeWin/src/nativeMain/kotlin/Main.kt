@@ -1,9 +1,9 @@
 import kotlinx.cinterop.*
 import platform.windows.*
 
-fun main(args: Array<String>) {
+fun main() {
     println("Windows Service Management Tool")
-    enumServiceStatus()
+    enumService()
 //    installWindowsService()
 }
 
@@ -15,7 +15,7 @@ fun enumServiceStatus() = memScoped {
       [in]           DWORD   dwDesiredAccess
     );
     */
-    val hSCManager =  OpenSCManagerW(
+    val hSCManager = OpenSCManagerW(
         null,
         null,
         SC_MANAGER_ALL_ACCESS.toUInt()
@@ -35,10 +35,11 @@ fun enumServiceStatus() = memScoped {
     */
     val bytesNeeded = alloc<DWORDVar>()
     val servicesReturned = alloc<DWORDVar>()
+    val serviceState = SERVICE_ACTIVE or SERVICE_INACTIVE
     val rc = EnumServicesStatusW(
         hSCManager,
         SERVICE_WIN32_OWN_PROCESS.toUInt(), //  [in]                DWORD                  dwServiceType,
-        (SERVICE_ACTIVE or SERVICE_INACTIVE).toUInt(), //  [in]                DWORD                  dwServiceState,
+        serviceState.toUInt(), //  [in]                DWORD                  dwServiceState,
         null, //  [out, optional]     LPENUM_SERVICE_STATUSA lpServices,
         0.toUInt(), //  [in]                DWORD                  cbBufSize,
         bytesNeeded.ptr, //[out]               LPDWORD                pcbBytesNeeded,
@@ -126,7 +127,7 @@ fun installWindowsService() = memScoped {
         serviceName.wcstr.ptr, // lpServiceName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
         null, // lpDisplayName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
         GENERIC_EXECUTE.toUInt(), // dwDesiredAccess:DWORD /* = UInt */,
-        SERVICE_WIN32_OWN_PROCESS.toUInt() ,// dwServiceType:DWORD /* = UInt */,
+        SERVICE_WIN32_OWN_PROCESS.toUInt(),// dwServiceType:DWORD /* = UInt */,
         SERVICE_AUTO_START.toUInt(), // dwStartType:DWORD /* = UInt */,
         SERVICE_ERROR_NORMAL.toUInt(), // dwErrorControl:DWORD /* = UInt */,
         binaryPathName.wcstr.ptr, // lpBinaryPathName:LPCWSTR? /* = CPointer<WCHARVar /* = UShortVarOf<UShort> */>? */,
