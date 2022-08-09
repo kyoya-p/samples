@@ -1,5 +1,6 @@
 import kotlinx.cinterop.*
 import platform.windows.*
+import sample.enumService
 
 fun main() {
     println("Windows Service Management Tool")
