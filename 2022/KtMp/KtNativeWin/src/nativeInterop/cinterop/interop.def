@@ -1,21 +1,19 @@
 ---
 
-void func1(char c, short s, int i, long l) { }
-void func2(unsigned char uc, unsigned short us, unsigned int ui, unsigned long ul) { }
-void func3(char* pc, int* pi) { }
-void func3_(char pc[], int pi[]) { }
+void func1(int i,short s,long l,char c,unsigned int ui,  unsigned short us,  unsigned long ul,unsigned char uc) { }
+void func2(char pc[], int pi[]) { }
 
 typedef struct {
-  int i;
-  unsigned char b[4];
+  unsigned char uc0;
+  unsigned char uc1;
+  unsigned char uc2;
+  unsigned char uc3;
 } Struct1;
 
 typedef union {
   int i;
-  unsigned char b[4];
+  Struct1 m;
+  unsigned char uc[4];
 } Union1;
 
-void func5(Struct1 struct1) { }
-void func6(Struct1* pStruct1) { }
-void func7(Union1 union1) { }
-void func8(Union1* pUnion1) { }
+void func3(Struct1 struct1,Union1 union1,Struct1* pStruct1,Union1* pUnion1) {}
