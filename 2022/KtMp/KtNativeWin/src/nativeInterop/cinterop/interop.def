@@ -1,5 +1,16 @@
 ---
 
+typedef char CHAR;
+typedef unsigned short WCHAR;
+
+typedef CHAR* LPSTR;
+typedef WCHAR* LPWSTR;
+typedef const CHAR* LPCSTR;
+typedef const WCHAR* LPCWSTR;
+
+typedef unsigned int DWORD;
+typedef DWORD* LPDWORD;
+
 void func1(int i,short s,long l,char c,unsigned int ui,  unsigned short us,  unsigned long ul,unsigned char uc) { }
 void func2(char pc[], int pi[]) { }
 
@@ -17,3 +28,6 @@ typedef union {
 } Union1;
 
 void func3(Struct1 struct1,Union1 union1,Struct1* pStruct1,Union1* pUnion1) {}
+
+void func_in_params(DWORD dw,CHAR c,WCHAR wc,LPCSTR lpCStr, LPCWSTR lpCWStr) {}
+void func_out_params(LPDWORD lpDW_Out,LPSTR lpStr_Out,LPWSTR lpWStr_Out ) {}
