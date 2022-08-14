@@ -71,16 +71,24 @@ class test {
     }
 
     @Test
-    fun reinterpretCastTest() = memScoped {
-        val bufferSize = sizeOf<DWORDVar>() * 10
-        val buffer = allocArray<ByteVar>(bufferSize)
-        fun printBuffer() = println((0 until bufferSize).map { buffer[it] }.joinToString { it.toString(0x10) })
+        fun reinterpretCastTest() = memScoped {
+            val bufferSize = sizeOf<DWORDVar>() * 10 // DWORD 10個分のメモリサイズ取得(単位:バイト)
+            val buffer = allocArray<ByteVar>(bufferSize) // Byteの配列として確保
+            fun printBuffer() = println((0 until bufferSize).map { buffer[it] }.joinToString { it.toString(0x10) }) // デバック用
 
-        val pDw = buffer.reinterpret<DWORDVar>()
-        pDw.pointed.value = 0x01020304u
-        pDw[2] = 0x02020202u
-        val r2 = pDw[1]// = 0x01010101u
-        println(r2.toString(0x10))
-        printBuffer()
-    }
+            val pDw = buffer.reinterpret<DWORDVar>() // Byteの配列の先頭ポインタをDWORDのポインタにキャスト
+            pDw.pointed.value = 0x01020304u // ポインタが指すDWORD型変数に書き込み
+            pDw[2] = 0x02020202u //ポインタを配列として扱い3番目のDWORD要素に書き込み
+
+            val v: DWORD = pDw.pointed.value // ポインタが指すDWORD変数の値を参照
+            val v2: DWORD = pDw[2] // // ポインタを配列として扱い、3番目の要素を参照
+
+            assert(v == 0x01020304u)
+            assert(v2 == 0x02020202u)
+            println("v:DWORD=0x${v.toString(0x10)}")
+            println("v2:DWORD=0x${v2.toString(0x10)}")
+            printBuffer()
+        }
+
+
 }
