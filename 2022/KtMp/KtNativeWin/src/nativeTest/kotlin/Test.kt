@@ -69,4 +69,15 @@ class test {
         val resStr: String = lpStr_Out.toKString()
         val resWStr: String = lpWStr_Out.toKString()
     }
+
+    @Test
+    fun reinterpretCastTest() = memScoped {
+        val bufferSize = sizeOf<DWORDVar>() * 10
+        val buffer = allocArray<ByteVar>(bufferSize)
+        fun printBuffer() = println((0 until bufferSize).map { buffer[it] }.joinToString { it.toString(0x10) })
+
+        val pDw = buffer.reinterpret<DWORDVar>()
+        pDw.pointed.value = 0x01020304u
+        printBuffer()
+    }
 }
