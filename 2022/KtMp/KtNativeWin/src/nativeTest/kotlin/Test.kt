@@ -78,6 +78,9 @@ class test {
 
         val pDw = buffer.reinterpret<DWORDVar>()
         pDw.pointed.value = 0x01020304u
+        pDw[2] = 0x02020202u
+        val r2 = pDw[1]// = 0x01010101u
+        println(r2.toString(0x10))
         printBuffer()
     }
 }
