@@ -20,5 +20,6 @@ dependencies {
 }
 
 dependencyCheck {
+    scanSet = listOf(File("samples/activemq-all-5.15.10.jar"))
 //    scanSet = listOf(File("c:/srdm"))
 }
