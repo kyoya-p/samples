@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.7.10"
-    id("org.owasp.dependencycheck") version "7.1.1"
+    id("org.owasp.dependencycheck") version "7.1.1"  // https://plugins.gradle.org/plugin/org.owasp.dependencycheck
 }
 
 group = "jp.wjg.sokkaa"
@@ -9,7 +9,6 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
-
 
 dependencies {
     // チェックサンプルモジュール
@@ -20,6 +19,7 @@ dependencies {
 }
 
 dependencyCheck {
-    scanSet = listOf(File("samples/activemq-all-5.15.10.jar"))
-//    scanSet = listOf(File("c:/srdm"))
+//    scanSet = listOf(File("samples/activemq-all-5.15.10.jar"))
+    scanSet = listOf(File("C:/Users/s117781/Desktop/works"))
+
 }
