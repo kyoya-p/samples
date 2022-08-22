@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "1.7.10"
-    id("org.owasp.dependencycheck") version "7.1.1"  // https://plugins.gradle.org/plugin/org.owasp.dependencycheck
+    id("org.owasp.dependencycheck") version "7.1.2"  // https://plugins.gradle.org/plugin/org.owasp.dependencycheck
 }
 
 group = "jp.wjg.sokkaa"
