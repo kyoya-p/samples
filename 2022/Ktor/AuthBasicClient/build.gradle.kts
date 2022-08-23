@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.7.10" // https://kotlinlang.org/docs/releases.html
 }
 
 group = "org.example"
@@ -10,9 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
-    implementation("io.ktor:ktor-client-cio:1.6.7") // CIO-Clientの場合
-    implementation("io.ktor:ktor-client-auth-jvm:1.6.7")
+    implementation("io.ktor:ktor-client-cio:2.0.3") // CIO-Clientの場合
+    implementation("io.ktor:ktor-client-auth:2.0.3")
 
     //implementation("ch.qos.logback:logback-classic:1.2.9") //ログを取る場合
 }
