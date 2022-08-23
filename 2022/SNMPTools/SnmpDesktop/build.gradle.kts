@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0.1"
+version = "1.0.2"
 
 repositories {
     google()
@@ -37,6 +37,8 @@ kotlin {
     }
 }
 
+// https://github.com/JetBrains/compose-jb/blob/master/tutorials/Native_distributions_and_local_execution/README.md
+
 compose.desktop {
     application {
         mainClass = "MainKt"
@@ -44,7 +46,13 @@ compose.desktop {
             targetFormats(TargetFormat.Msi) //(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMPAgentDesktop"
             packageVersion = version.toString()
-            windows { menuGroup = "SNMP Agent Desktop" }
+            windows {
+                menuGroup = "SNMP Agent Desktop"
+                upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
+                msiPackageVersion = version
+                exePackageVersion = version
+            }
         }
+
     }
 }
