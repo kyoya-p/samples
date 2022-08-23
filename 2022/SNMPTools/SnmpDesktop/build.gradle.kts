@@ -23,7 +23,7 @@ kotlin {
         withJava()
     }
     sourceSets {
-        @Suppress("UNUSED_VARIABLE") val jvmMain by getting {
+        val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
@@ -49,8 +49,8 @@ compose.desktop {
             windows {
                 menuGroup = "SNMP Agent Desktop"
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
-                msiPackageVersion = version
-                exePackageVersion = version
+//                msiPackageVersion = "1.0.0"
+//                exePackageVersion = "1.0.0"
             }
         }
 
