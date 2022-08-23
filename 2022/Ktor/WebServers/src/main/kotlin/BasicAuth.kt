@@ -6,8 +6,8 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
-val loginId=System.getEnv("LOGIN") ?: "*****"
-val secret=System.getEnv("PASSWORD") ?: "*****"
+val loginId=System.getenv("LOGIN") ?: "*****"
+val secret=System.getenv("PASSWORD") ?: "*****"
 
 fun main() {
     embeddedServer(Netty, port = 8080) {
