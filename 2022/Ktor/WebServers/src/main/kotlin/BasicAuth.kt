@@ -6,13 +6,16 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 
+val loginId=System.getenv("LOGIN") ?: "*****"
+val secret=System.getenv("PASSWORD") ?: "*****"
+
 fun main() {
     embeddedServer(Netty, port = 8080) {
         install(Authentication) {
             basic(name = "basicAuth1") {
                 realm = "Ktor Server"
                 validate { credentials ->
-                    if (credentials.name == credentials.password) { // user=nameのとき認証パス
+                    if (credentials.name == loginId && credentials.password==secret) {
                         UserIdPrincipal(credentials.name)
                     } else {
                         null

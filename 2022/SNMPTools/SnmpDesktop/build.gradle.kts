@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0.1"
+version = "1.0.2"
 
 repositories {
     google()
@@ -23,7 +23,7 @@ kotlin {
         withJava()
     }
     sourceSets {
-        @Suppress("UNUSED_VARIABLE") val jvmMain by getting {
+        val jvmMain by getting {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2")
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
@@ -37,6 +37,8 @@ kotlin {
     }
 }
 
+// https://github.com/JetBrains/compose-jb/blob/master/tutorials/Native_distributions_and_local_execution/README.md
+
 compose.desktop {
     application {
         mainClass = "MainKt"
@@ -44,7 +46,13 @@ compose.desktop {
             targetFormats(TargetFormat.Msi) //(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMPAgentDesktop"
             packageVersion = version.toString()
-            windows { menuGroup = "SNMP Agent Desktop" }
+            windows {
+                menuGroup = "SNMP Agent Desktop"
+                upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
+//                msiPackageVersion = "1.0.0"
+//                exePackageVersion = "1.0.0"
+            }
         }
+
     }
 }
