@@ -25,3 +25,24 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.10") // ログを取得する場合
     //implementation("org.apache.logging.log4j:log4j:2.17.1")  //脆弱性チェック
 }
+
+//task launch(type: JavaExec) {
+//    // runtime用の依存クラスPATHを設定 (ここに記載しておくのが大事)
+//    classpath = sourceSets.main.runtimeClasspath
+//
+//    doFirst {
+//        // -Pmain指定がない場合はエラー
+//        if (!project.hasProperty("main")) {
+//            throw new IllegalArgumentException("""
+//                | usage:
+//                |         ./gradlew $name -Pmain=<ClassName>
+//                """.stripMargin())
+//        }
+//
+//        // システムプロパティを継承する
+//        systemProperties = System.properties as Map
+//
+//        // メインクラスを指定
+//        main = project.main
+//    }
+//}
