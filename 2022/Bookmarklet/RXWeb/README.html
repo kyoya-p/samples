@@ -1,0 +1,93 @@
+<html>
+<head>
+  <meta charset="utf-8"/>
+</head>
+
+<body>
+<script src="http://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script> document.getElementById('readme').innerHTML=marked(document.getElementById('readme').innerText);</script>
+
+<div id="readme"><!--
+  田中Gr Subversion管理
+  ====
+
+  資料
+  ----
+
+  - Subversion管理者マニュアル
+  http://nar-svc94.wi n.sharp.co.jp/RM3/projects/pa1000/wiki
+
+
+  準備
+  ----
+  - SSHクライアント
+
+  ログイン
+  ----
+  ```
+  ssh s117781@bssvn01.nara.sharp.co.jp
+  s*.kk
+  ```
+
+  ユーザアカウント管理
+  ----
+  ```
+  cd /etc/httpd/conf.d/
+  sudo nano authz_dvm
+  ```
+
+  変更は即時反映される
+
+  リポジトリ設定ファイルとリポジトリ
+  ----
+
+  - /etc/httpd/conf.d/authz_dvm
+  - http://bssvn01.nara.sharp.co.jp/dvm/c-pau
+  - http://bssvn01.nara.sharp.co.jp/dvm/ipau-res-sc
+  - http://bssvn01.nara.sharp.co.jp/dvm/ipau-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/ipau-sqa
+  - http://bssvn01.nara.sharp.co.jp/dvm/ipau-res-notified
+  - http://bssvn01.nara.sharp.co.jp/dvm/misc
+  - http://bssvn01.nara.sharp.co.jp/dvm/mx-akx3
+  - http://bssvn01.nara.sharp.co.jp/dvm/mx-akx3-installer
+  - http://bssvn01.nara.sharp.co.jp/dvm/mx-akx3-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/mx-akx3-util
+  - http://bssvn01.nara.sharp.co.jp/dvm/mfpif-joblog
+  - http://bssvn01.nara.sharp.co.jp/dvm/mx-akx3-factory
+  - http://bssvn01.nara.sharp.co.jp/dvm/jmon5
+  - http://bssvn01.nara.sharp.co.jp/dvm/jsmon-installer-bin
+  - http://bssvn01.nara.sharp.co.jp/dvm/jmon5-localized-help
+  - http://bssvn01.nara.sharp.co.jp/dvm/jmon5-localize-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/jmon5-resources
+  - http://bssvn01.nara.sharp.co.jp/dvm/smon-package
+  - http://bssvn01.nara.sharp.co.jp/dvm/smon-releasenote
+  - http://bssvn01.nara.sharp.co.jp/dvm/smon
+  - http://bssvn01.nara.sharp.co.jp/dvm/mxecx2
+  - http://bssvn01.nara.sharp.co.jp/dvm/mxecx2-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/haumea
+  - http://bssvn01.nara.sharp.co.jp/dvm/sedna-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/sedna
+  - http://bssvn01.nara.sharp.co.jp/dvm/libiccard
+  - http://bssvn01.nara.sharp.co.jp/dvm/libiccard-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/documentservice
+  - http://bssvn01.nara.sharp.co.jp/dvm/joblogapp
+  - http://bssvn01.nara.sharp.co.jp/dvm/joblogapp-res
+  - http://bssvn01.nara.sharp.co.jp/dvm/tomoki-gr
+
+  - /etc/httpd/conf.d/authz_gdvm
+  - http://bssvn01.nara.sharp.co.jp/gdvm/gdvm-res
+  - http://bssvn01.nara.sharp.co.jp/gdvm/gdvm-src
+
+  - /etc/httpd/conf.d/authz_tomoki-gr
+  - http://bssvn01.nara.sharp.co.jp/tomoki-gr/mgt/
+
+  subversionリポジトリ管理ファイル
+  ----
+  - \\fs.win.sharp.co.jp\956-0021-BSIT-SDC1共有\SVN_ACL\bssvn01
+
+--> </div>
+
+
+</body>
+
+</html>
