@@ -16,7 +16,6 @@ import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone

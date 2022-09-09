@@ -44,6 +44,7 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Msi) //(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+//            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMPAgentDesktop"
             packageVersion = version.toString()
             windows {
@@ -53,6 +54,5 @@ compose.desktop {
 //                exePackageVersion = "1.0.0"
             }
         }
-
     }
 }
