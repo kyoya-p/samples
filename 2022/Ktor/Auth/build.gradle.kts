@@ -17,11 +17,15 @@ dependencies {
     val ktor_version = "2.1.1"
     implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
-    implementation("ch.qos.logback:logback-classic:1.4.0") // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    implementation("io.ktor:ktor-server-auth:$ktor_version")
 
     implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-client-cio-jvm:$ktor_version") // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio-jvm
     implementation("io.ktor:ktor-client-logging:$ktor_version")
+    implementation("io.ktor:ktor-client-auth:$ktor_version")
+
+
+    implementation("ch.qos.logback:logback-classic:1.4.0") // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
 
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
