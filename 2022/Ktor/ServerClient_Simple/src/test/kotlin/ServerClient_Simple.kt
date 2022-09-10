@@ -10,17 +10,18 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
+val testPort = 18080
+suspend fun server() = embeddedServer(Netty, port = testPort) {
+    routing {
+        get("/") { call.respondText("Hello") }
+    }
+}
+
 class SimpleHTTPServer {
-    val testPort = 18080
-    suspend fun server() = embeddedServer(Netty, port = testPort) {
-        routing {
-            get("/") { call.respondText("Hello") }
-        }
-    }.start(wait = false)
 
     @Test
     fun access1() = runBlocking {
-        val svr = server()
+        val svr = server().start(wait = false)
         val res: String = HttpClient(CIO).get { url("http://localhost:$testPort/") }.body()
         assert(res == "Hello")
         svr.stop()

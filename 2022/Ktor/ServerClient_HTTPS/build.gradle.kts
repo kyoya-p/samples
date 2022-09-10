@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.7.10"
     application
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.7.10" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
 }
 group = "org.example"
 version = "1.0-SNAPSHOT"
@@ -19,15 +18,12 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktor_version")
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     implementation("ch.qos.logback:logback-classic:1.4.0") // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.7.10")
+//    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.7.10")
 
     implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-client-cio-jvm:$ktor_version") // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio-jvm
-    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     implementation("io.ktor:ktor-client-logging:$ktor_version")
 
     testImplementation(kotlin("test"))

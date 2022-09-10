@@ -1,3 +1,6 @@
 rootProject.name = "KtorSamples"
 
-include("ClientSamples")
+include(
+    "ServerClient_Simple",
+    "ServerClient_HTTPS",
+)
