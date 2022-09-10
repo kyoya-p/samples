@@ -50,8 +50,6 @@ compose.desktop {
             windows {
                 menuGroup = "SNMP Agent Desktop"
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
-//                msiPackageVersion = "1.0.0"
-//                exePackageVersion = "1.0.0"
             }
         }
     }
