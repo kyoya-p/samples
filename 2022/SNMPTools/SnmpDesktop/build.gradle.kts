@@ -44,15 +44,13 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Msi) //(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+//            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMPAgentDesktop"
             packageVersion = version.toString()
             windows {
                 menuGroup = "SNMP Agent Desktop"
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
-//                msiPackageVersion = "1.0.0"
-//                exePackageVersion = "1.0.0"
             }
         }
-
     }
 }

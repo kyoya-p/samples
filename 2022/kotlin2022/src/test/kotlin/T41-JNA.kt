@@ -4,12 +4,10 @@ import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
+import com.sun.jna.platform.win32.IPHlpAPI
 import com.sun.jna.ptr.IntByReference
-import com.sun.jna.platform.win32.IPHlpAPI.*
 import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinError.*
-import com.sun.jna.platform.win32.Winsock2.*
-import com.sun.jna.ptr.ByteByReference
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -100,12 +98,12 @@ class `T41-JNA` {
     }
 
 
-    interface IpHlpAPI : Library {
+    interface IPHlpAPI_ext : Library {
         fun GetAdaptersInfo(out: ByteArray, out_size: IntByReference): WinDef.ULONG
         fun GetAdaptersAddresses(): WinDef.ULONG
 
         companion object {
-            val instance: IpHlpAPI? by lazy { Native.load("IPHLPAPI", IpHlpAPI::class.java) }
+            val INSTANCE: IPHlpAPI_ext? by lazy { Native.load("IPHLPAPI", IPHlpAPI_ext::class.java) }
         }
     }
 
@@ -114,7 +112,8 @@ class `T41-JNA` {
 //        https://docs.microsoft.com/en-us/windows/win32/api/ipexport/ns-ipexport-ip_interface_info
 //        https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersaddresses
 
-        val iphlp = IpHlpAPI.instance!!
+        val iphlp = IPHlpAPI_ext.INSTANCE!!
+//        val iphlp = IPHlpAPI.INSTANCE!!
         val out = ByteArray(1024)
         val r = iphlp.GetAdaptersInfo(out, IntByReference(1024))
         when (r.toInt()) {
