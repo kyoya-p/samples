@@ -4,34 +4,32 @@ import java.net.Socket
 
 fun main(args: Array<String>) {
     val dstAdr = InetAddress.getByName(args.getOrNull(0) ?: throw Exception("Error: Params"))
-    val dstPort = (args.getOrNull(1) ?: throw Exception("Error: Params")).toInt()
+    val dstPort = args.getOrNull(1)?.toInt() ?: throw Exception("Error: Params")
 
-    val localAdr = getLocalAdr1(dstAdr, dstPort)
-    //val localAdr = getLocalAdr2(dstAdr, dstPort)
+//    val localAdr = getLocalAdr_Sample1(dstAdr, dstPort)
+    val localAdr = getLocalAdr_Sample2(dstAdr, dstPort)
     println(localAdr?.hostAddress)
 }
 
-// Sample1. すべてのlocalIPで接続できるかテスト
-fun getLocalAdr1(dstAdr: InetAddress, dstPort: Int) = runCatching {
+// Sample1. 接続済SocketのlocalAddressを取得 //これが簡単
+fun getLocalAdr_Sample1(dstAdr: InetAddress, dstPort: Int) = runCatching {
     val socket = Socket(dstAdr, dstPort, null/*指定しない*/, 0)
     val localAdr = socket.localAddress
     socket.close()
     localAdr
 }.getOrNull()
 
-// Sample2. /すべてのlocalIPで接続できるかテスト
-fun getLocalAdr2(dstAdr: InetAddress, dstPort: Int): InetAddress? {
+// Sample2. すべてのlocalIPで接続できるかテスト
+fun getLocalAdr_Sample2(dstAdr: InetAddress, dstPort: Int): InetAddress? {
     for (ni in getNetworkInterfaces()) {
         for (srcAdr in ni.inetAddresses) {
-            val result = runCatching {
-                print("ni[${ni.name}] src:${srcAdr.hostAddress} ➔ ")
+           runCatching { //例外でたら次トライ
+                print("ni.name=${ni.name} src:${srcAdr.hostAddress} ➔ ")
                 val socket = Socket(dstAdr, dstPort, srcAdr, 0)
-                print("dst:${socket.inetAddress.hostAddress} : ")
+                println("dst:${socket.inetAddress.hostAddress}")
                 socket.close()
-                srcAdr
-            }.getOrNull()
-            println("${result?.hostAddress}")
-            return result
+                if(srcAdr!=null)return srcAdr
+            }.onFailure { println("Exception") }
         }
     }
     return null
