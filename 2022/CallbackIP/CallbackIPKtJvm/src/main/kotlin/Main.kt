@@ -6,8 +6,8 @@ fun main(args: Array<String>) {
     val dstAdr = InetAddress.getByName(args.getOrNull(0) ?: throw Exception("Error: Params"))
     val dstPort = args.getOrNull(1)?.toInt() ?: throw Exception("Error: Params")
 
-//    val localAdr = getLocalAdr_Sample1(dstAdr, dstPort)
-    val localAdr = getLocalAdr_Sample2(dstAdr, dstPort)
+    val localAdr = getLocalAdr_Sample1(dstAdr, dstPort)
+//    val localAdr = getLocalAdr_Sample2(dstAdr, dstPort)
     println(localAdr?.hostAddress)
 }
 
