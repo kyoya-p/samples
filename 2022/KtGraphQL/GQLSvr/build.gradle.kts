@@ -13,6 +13,8 @@ repositories {
 }
 
 dependencies {
+    implementation("com.expediagroup:graphql-kotlin-spring-server:6.2.5") // https://mvnrepository.com/artifact/com.expediagroup/graphql-kotlin-spring-server
+
     testImplementation(kotlin("test"))
 }
 
