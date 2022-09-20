@@ -1,5 +1,6 @@
 @file:Suppress("UNUSED_VARIABLE", "UseExpressionBody")
 
+import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Test
 import java.io.File
 
@@ -65,9 +66,9 @@ class V1_6_20 {
     }
 
     @Test
-    fun 複数のコンテキストレシーバ() {
+    fun 複数のコンテキストレシーバ1() {
         with(A()) { // context A
-            //f()  // compile error: No required context receiver found
+            //f()  // compile error: Contextが見つからない
             with(B()) { // context A+B
                 f()
             }
@@ -76,16 +77,20 @@ class V1_6_20 {
 
     class A {
         fun a(): String = "A"
+        fun x(): String = "x in A"
     }
 
     class B {
         fun b(): String = "B"
+        fun x(): String = "x in B"
     }
 
     context(A, B)
     fun f() {
         println(a())
         println(b())
+//        println(x()) // compile error: あいまいなオーバーロード
+
     }
 }
 
