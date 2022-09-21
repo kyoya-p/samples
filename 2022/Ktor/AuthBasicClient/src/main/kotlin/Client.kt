@@ -12,11 +12,11 @@ fun main(args: Array<String>) = runBlocking {
     val password = args.getOrNull(2) ?: "secret"
 
     val client = HttpClient{
-//        install(Auth) {
-//            basic {
-//                credentials { BasicAuthCredentials(userId, password) }
-//            }
-//        }
+        install(Auth) {
+            basic {
+                credentials { BasicAuthCredentials(userId, password) }
+            }
+        }
     }.use{client->
         val res = client.get(url).bodyAsText()
         println(res)

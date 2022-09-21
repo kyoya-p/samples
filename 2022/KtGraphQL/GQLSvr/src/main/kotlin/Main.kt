@@ -17,12 +17,13 @@ fun Application.module(testing: Boolean = false) {
 
     routing {
         suspend fun PipelineContext<Unit, ApplicationCall>.gqlFunc() {
-            val stringRequest = call.receive<kotlin.String>()
+            val stringRequest = call.receive<String>()
             val mapper = com.fasterxml.jackson.databind.ObjectMapper()
             val request = mapper.readValue(stringRequest, GraphQLRequest::class.java)
             //TODO
         }
-        get("/graphql") { gqlFunc() }
+        get("/graphql") { gqlFunc()
+        }
         post("/graphql") { gqlFunc() }
     }
 }
