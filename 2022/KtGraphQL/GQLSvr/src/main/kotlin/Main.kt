@@ -1,11 +1,12 @@
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.cio.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 
-fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
+fun main(args: Array<String>): Unit = EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @JvmOverloads
@@ -13,7 +14,6 @@ fun Application.module(testing: Boolean = false) {
     install(ContentNegotiation) {
         json()
     }
-
 
     routing {
         suspend fun PipelineContext<Unit, ApplicationCall>.gqlFunc() {
