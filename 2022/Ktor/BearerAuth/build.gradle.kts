@@ -16,7 +16,7 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.0") //https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
 
-    val ktor_version = "2.1.1"
+    val ktor_version = "2.1.1" // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 
     implementation("io.ktor:ktor-server-core:$ktor_version")
@@ -26,11 +26,11 @@ dependencies {
     implementation("io.ktor:ktor-server-auth-jwt:$ktor_version")
     implementation("io.ktor:ktor-server-content-negotiation:$ktor_version")
 
-    implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-client-cio-jvm:$ktor_version") // https://mvnrepository.com/artifact/io.ktor/ktor-client-cio-jvm
-    implementation("io.ktor:ktor-client-logging:$ktor_version")
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-auth:$ktor_version")
-
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-client-logging:$ktor_version")
 
     implementation("ch.qos.logback:logback-classic:1.4.0") // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
 
