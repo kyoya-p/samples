@@ -97,6 +97,10 @@ fun main() = runBlocking {
             append("code", authorizationCode)
             append("client_id", System.getenv("GOOGLE_CLIENT_ID"))
             append("redirect_uri", "urn:ietf:wg:oauth:2.0:oob")
+            // 帯域外(OOB)フロー(tokenコピペ)が廃止された(Google 2022/10/3)
+            // https://developers.google.com/identity/protocols/oauth2/resources/oob-migration
+            // https://developers.google.com/identity/protocols/oauth2/native-app#redirect-uri_loopback
+
         }
     ).body()
     bearerTokenStorage.add(BearerTokens(tokenInfo.accessToken, tokenInfo.refreshToken!!))
