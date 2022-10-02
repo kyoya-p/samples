@@ -16,5 +16,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/f221002FGQL/index.js"
+  "scriptFile": "../dist/HttpTrigger1/index.js"
 }
