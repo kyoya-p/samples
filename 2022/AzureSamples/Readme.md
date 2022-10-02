@@ -11,6 +11,19 @@
 
 ➔ブラウザが開くので認証
 
+
+```:Azure Functions Core Tools 導入
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
+sudo apt-get install azure-functions-core-tools-4
+```
+
+```:バージョンアップ
+npm install -g azure-functions-core-tools@3 --unsafe-perm true
+```
+
 ###[Azureリソース準備](https://docs.microsoft.com/ja-jp/azure/azure-functions/scripts/functions-cli-create-serverless)
 
 ### リソースグループ`rg1`準備
