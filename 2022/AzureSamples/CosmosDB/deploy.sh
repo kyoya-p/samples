@@ -11,7 +11,4 @@ az functionapp create -n $FUNCAPP -c $LOCATION -g $RG --storage-account s$FUNCAP
 az cosmosdb create -n $DBACC -g $RG
 az cosmosdb sql database create -a $DBACC -g $RG -n $DB
 
-# func init . --worker-runtime node --language typescript 
-# func new -n ${FUNCAPP}f1 --template "HTTP trigger"
 
-# func azure functionapp publish $FUNCAPP --publish-local-settings -y
