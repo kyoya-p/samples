@@ -18,6 +18,6 @@
   },
   "dependencies": {
     "apollo-server-azure-functions": "^2.16.1",
-    "axios": "^0.19.2"
+    "axios": "^0.21.2"
   }
 }
