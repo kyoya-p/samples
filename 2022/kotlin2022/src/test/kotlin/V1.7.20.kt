@@ -1,4 +1,4 @@
-@file:Suppress( "UseExpressionBody")
+@file:Suppress("UseExpressionBody")
 
 import kotlinx.datetime.*
 import org.junit.jupiter.api.Test
@@ -9,6 +9,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class V1_7_20 {
     @OptIn(ExperimentalStdlibApi::class)
     @Test
+    // -language-version 1.8
     fun 半開区間演算子Int() {
         val 閉区間 = 1..4
         val 半開区間 = 1 ..< 4
@@ -20,6 +21,7 @@ class V1_7_20 {
 
     @OptIn(ExperimentalStdlibApi::class)
     @Test
+    // -language-version 1.8
     fun 半開区間演算子Double() {
         val 閉区間 = 1.0..4.0
         val 半開区間 = 1.0 ..< 4.0
@@ -30,6 +32,7 @@ class V1_7_20 {
 
     @OptIn(ExperimentalStdlibApi::class)
     @Test
+    // -language-version 1.8
     fun 半開区間演算子Date() {
         val apr = LocalDateTime.parse("2022-04-01T00:00:00") ..< LocalDateTime.parse("2022-05-01T00:00:00")
         for (i in 998..1002) {
@@ -39,12 +42,7 @@ class V1_7_20 {
         }
     }
 
-    sealed class ReadResult {
-        data class Number(val value: Int) : ReadResult()
-        data class Text(val value: String) : ReadResult()
-        data object EndOfFile : ReadResult()
-    }
-
+    // ---------------------
     @Test
     fun sealedClass() {
         fun aFunction(): ReadResult {
@@ -56,6 +54,35 @@ class V1_7_20 {
             is ReadResult.Text -> println(r) // data class 読みやすい, sealed class 選択肢は網羅される
         }
     }
+
+    sealed class ReadResult {
+        data class Number(val value: Int) : ReadResult()
+        data class Text(val value: String) : ReadResult()
+        data object EndOfFile : ReadResult()
+    }
+
+    // ---------------------
+    @Test
+    fun inlineClass() {
+        val i = num<Int>(1)
+        println(i)
+        println(i.javaClass)
+        println(i.hashCode())
+        println(1)
+        println(1.javaClass)
+        println(1.hashCode())
+        fun a(v: Any) {
+            when (v) {
+                is num<*> -> println("num<*>/${v.javaClass}") // inlineなの?
+                is Int -> println("Int/${v.javaClass}")
+                else -> println("else/${v.javaClass}")
+            }
+        }
+        a(num(1))
+    }
+
+    @JvmInline
+    value class num<T>(val value: T)
 }
 
 
