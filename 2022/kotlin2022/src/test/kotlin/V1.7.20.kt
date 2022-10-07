@@ -2,7 +2,7 @@
 
 import kotlinx.datetime.*
 import org.junit.jupiter.api.Test
-import java.io.InputStream
+import java.io.BufferedReader
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -47,24 +47,25 @@ class V1_7_20 {
     @Test
     // -language-version 1.9
     fun sealedClass() {
-        fun InputStream.readTest(): ReadResult {
+        fun BufferedReader.readTest(): ReadResult {
             val r = readLine() ?: return ReadResult.EndOfFile
             runCatching { return ReadResult.Number(r.toInt()) }
             return ReadResult.Text(r)
         }
 
-        val s = "123\nabc".byteInputStream()
-        when (
-            val r = s.readTest()) {
-            ReadResult.EndOfFile -> println(r) // data object 読みやすい, sealed class 選択肢は網羅される
-            is ReadResult.Number -> println(r) // data class 読みやすい, sealed class 選択肢は網羅される
-            is ReadResult.Text -> println(r) // data class 読みやすい, sealed class 選択肢は網羅される
+        val s = "123\nabc".reader().buffered()
+        while (true) {
+            when (val r = s.readTest()) { // 選択肢はもれなく
+                ReadResult.EndOfFile -> break
+                is ReadResult.Number -> println(r) // 見やすい表示 Number(value=123)
+                is ReadResult.Text -> println(r) // 普通の表示 V1_7_20$ReadResult$Text@4f49....
+            }
         }
     }
 
     sealed class ReadResult {
         data class Number(val value: Int) : ReadResult()
-        data class Text(val value: String) : ReadResult()
+        class Text(val value: String) : ReadResult()
         data object EndOfFile : ReadResult()
     }
 
