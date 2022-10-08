@@ -1,3 +1,3 @@
 
-rootProject.name = "ABC"
+rootProject.name = "AtCoder"
 
