@@ -4,9 +4,9 @@ import org.junit.jupiter.api.Test
 
 class Tester {
     @Test
-    fun test_A() = stdioEmulatiors(testEnvs_A) { A() }
+    fun test_A() = stdioEmulators(testEnvs_A) { A() }
     @Test
-    fun test_B() = stdioEmulatiors(testEnvs_B) { B() }
+    fun test_B() = stdioEmulators(testEnvs_B) { B() }
 //    @Test
 //    fun test_B2() = stdioEmulatiors(testEnv_AtCoder) { B() }
 //    fun test_C() = stdioEmulatiors(testEnvs_C) { C() }

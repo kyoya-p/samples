@@ -30,8 +30,8 @@ class TestEnv(val debug: Boolean = false) {
         val outlet = PipedInputStream(intake)
     }
 
-    val rawSi = System.`in`
-    val rawSo = System.out
+    val rawSi = System.`in`!!
+    val rawSo = System.out!!
     val si = Pipe("SI>>")
     val so = Pipe("SO<<")
 
@@ -45,7 +45,7 @@ class TestEnv(val debug: Boolean = false) {
     fun <T> print(v: T) = if (debug) rawSo.print(v) else Unit
 }
 
-fun <TR> stdioEmulatior(debug: Boolean = false, envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolean {
+fun <TR> stdioEmulator(debug: Boolean = false, envSvr: TestEnv.() -> Boolean, target: () -> TR): Boolean {
     val env = TestEnv(debug)
     System.setIn(env.si.outlet)
     System.setOut(PrintStream(env.so.intake))
@@ -68,9 +68,9 @@ fun <TR> stdioEmulatior(debug: Boolean = false, envSvr: TestEnv.() -> Boolean, t
     return thRes!!
 }
 
-fun <TR> stdioEmulatiors(envSvrs: List<TestEnv.() -> Boolean>, target: () -> TR) {
-    envSvrs.asSequence().withIndex().all { (i, it) ->
-        stdioEmulatior(true, it, target)
+fun <TR> stdioEmulators(envSvs: List<TestEnv.() -> Boolean>, target: () -> TR) {
+    envSvs.asSequence().withIndex().all { (i, it) ->
+        stdioEmulator(true, it, target)
             .also { rc -> System.err.println("Test[$i] $rc -----------") }
     }.also { rc -> System.err.println("All Test: $rc -----------") }
 }
