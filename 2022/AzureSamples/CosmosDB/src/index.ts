@@ -1,8 +1,8 @@
 require('dotenv').config();
 
 // クライアント認証
-// const random = Math.floor(Math.random() * 100);
-const random = 1;
+const random = Math.floor(Math.random() * 100);
+// const random = 1;
 const { MongoClient, ObjectId } = require('mongodb');
 const url = process.env.COSMOS_CONNECTION_STRING; // 環境変数にプライマリ接続文字列を格納しておく
 const client = new MongoClient(url);
