@@ -3,10 +3,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
-import java.io.File
-import java.io.PipedInputStream
-import java.io.PipedOutputStream
-import java.io.PrintStream
+import java.io.*
 import kotlin.concurrent.thread
 
 class TestEnv(val debug: Boolean = false) {
@@ -37,6 +34,13 @@ class TestEnv(val debug: Boolean = false) {
 
     val intake = PrintStream(si.intake)
     val outlet = so.outlet.bufferedReader()
+
+    fun PrintStream.put(s: String) = println(s)
+    fun BufferedReader.observe(s: String) =
+        s.trim().split("\n").all { t ->
+            val r = readLine()
+            (r == t).also { System.err.println("observed:'$t'='$r':$it") }
+        }
 
     @Suppress("unused")
     fun <T> println(v: T) = if (debug) rawSo.println(v) else Unit
@@ -81,7 +85,11 @@ fun testEnvBuilder(e: TestEnv.() -> Boolean): TestEnv.() -> Boolean = e
 
 
 @Suppress("unused")
-fun testEnv_AtCoder(testDir: String, testName: String, @Suppress("UNUSED_PARAMETER") debug: Boolean = false): List<TestEnv.() -> Boolean> =
+fun testEnv_AtCoder(
+    testDir: String,
+    testName: String,
+    @Suppress("UNUSED_PARAMETER") debug: Boolean = false
+): List<TestEnv.() -> Boolean> =
     File("$testDir/$testName/in").listFiles()!!.map { inFile ->
         val outFile = File("$testDir/$testName/out/${inFile.name}")
         testEnvBuilder {

@@ -1,36 +1,37 @@
 val testEnvs_C = listOf(
     testEnvBuilder {
-        intake.println(
+        intake.put(
             """6
 2 7 1 8 2 8
 """
         )
-        val testRes = """2
+
+        outlet.observe(
+            """2
 1
 2
 1
 0
 0
 """
-        val r = outlet.readText()
-        println("[$r]:[$testRes]")
-        r == testRes
+        )
     },
     testEnvBuilder {
-        intake.println(
+        intake.put(
             """1
-                1
-"""
+1"""
         )
-        outlet.readText() == """1"""
+        outlet.observe(
+            """1"""
+        )
     },
     testEnvBuilder {
-        intake.println(
+        intake.put(
             """10
-979861204 57882493 979861204 447672230 644706927 710511029 763027379 710511029 447672230 136397527
-"""
+979861204 57882493 979861204 447672230 644706927 710511029 763027379 710511029 447672230 136397527"""
         )
-        outlet.readText() == """2
+        outlet.observe(
+            """2
 1
 2
 1
@@ -39,7 +40,7 @@ val testEnvs_C = listOf(
 1
 0
 0
-0
-"""
+0"""
+        )
     }
 )

@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package C
 
 val <T> T.err get() = also { System.err.print("[$it]") }
@@ -28,13 +30,12 @@ fun round(v: Long, base: Long = 10) = floor(v + base / 2, base)
 fun C() {
     val N = rli
     val A = rlvl
-    val mapA = A.toSet().toList().sorted().reversed().errln
-    val counts = A.groupingBy { it }.eachCount().errln
+    val mapA = A.toSet().toList().sortedBy { -it }
+    val counts = A.groupingBy { it }.eachCount()
     (0..N - 1).forEach { i ->
         println(mapA.getOrNull(i)?.let { counts[it]?.toLong() } ?: 0L)
     }
-    System.out.close()
+    //System.out.close()
 }
-
 
 fun main() = C()
