@@ -1,3 +1,4 @@
+import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -30,7 +31,8 @@ val SnmpTarget.ip get() = address.inetAddress.hostName!!
 val SnmpTarget.port get() = address.port
 val SnmpTarget.comm get() = community.value!!.decodeToString()
 
-@OptIn(ExperimentalTime::class)
+//@OptIn(ExperimentalTime::class)
+@Preview
 @Composable
 fun SnmpCaptureDialog(ipSpec: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {

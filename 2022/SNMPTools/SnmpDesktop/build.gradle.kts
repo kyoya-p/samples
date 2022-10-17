@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0.2"
+version = "1.0.3"
 
 repositories {
     google()
@@ -48,6 +48,7 @@ compose.desktop {
             packageName = "SNMPAgentDesktop"
             packageVersion = version.toString()
             windows {
+                perUserInstall = true
                 menuGroup = "SNMP Agent Desktop"
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
             }

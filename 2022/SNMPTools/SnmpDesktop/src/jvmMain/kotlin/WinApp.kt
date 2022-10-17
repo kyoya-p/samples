@@ -111,6 +111,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     }
 }
 
+@Preview
 @Composable
 fun AutoScrollBox(contents: @Composable() BoxScope.() -> Unit) {
     val stateVertical = rememberScrollState()
