@@ -10,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import androidx.compose.ui.window.Dialog
-import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.*
+import jp.wjg.shokkaa.snmp4jutils.ipV4AddressRangeSequence
+import jp.wjg.shokkaa.snmp4jutils.toIPv4ULong
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
@@ -21,8 +22,6 @@ import org.snmp4j.smi.VariableBinding
 import java.awt.FileDialog
 import java.awt.Frame
 import java.net.InetAddress
-import kotlin.time.ExperimentalTime
-
 
 fun snmpTarget(ip: String, port: Int, comm: String) =
     SnmpTarget(UdpAddress(InetAddress.getByName(ip), port), OctetString(comm))
@@ -34,10 +33,10 @@ val SnmpTarget.comm get() = community.value!!.decodeToString()
 //@OptIn(ExperimentalTime::class)
 @Preview
 @Composable
-fun SnmpCaptureDialog(ipSpec: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
+fun SnmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         val styleBtn = Modifier.padding(8.dp)
-        var ipSpec by remember { mutableStateOf(ipSpec) }
+        var ipSpec by remember { mutableStateOf(ipSpec0) }
         var comm by remember { mutableStateOf(app.commStr ?: "public") }
         Column(modifier = Modifier.padding(8.dp)) {
             TextField(ipSpec, label = { Text("IP") }, onValueChange = { ipSpec = it;app.ip = it })
@@ -91,7 +90,7 @@ fun SnmpScanDialog(onClose: (SnmpTarget) -> Unit) = DialogHandler { dialog ->
             val (start, end) = ipRange.split("-").mapNotNull { InetAddress.getByName(it) }
             val snmp = SnmpBuilder().udp().v1().v3().build().async().listen()
             ipV4AddressRangeSequence(start, end).forEach { adr ->
-                val res = snmp.send(
+                snmp.send(
                     PDU(PDU.GETNEXT, listOf(VariableBinding(org.snmp4j.smi.OID(SampleOID.sysDescr.oid)))),
                     CommunityTarget(UdpAddress(adr, 161), OctetString("public"))
                 )
