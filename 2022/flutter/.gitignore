@@ -1,0 +1,10 @@
+/.idea/
+/.gradle/
+/build/
+/.dart_tool/
+/.flutter-plugins
+/.flutter-plugins-dependencies
+/.metadata
+/.packages
+/pubspec.lock
+/debug.log
