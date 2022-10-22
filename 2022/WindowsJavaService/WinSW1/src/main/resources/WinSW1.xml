@@ -1,0 +1,8 @@
+<service>
+    <id>WinSW1</id>
+    <name>WinSW1</name>
+    <description>Java Windows Service</description>
+    <executable>java</executable>
+    <arguments>-jar "%BASE%\WinSW1-1.0-SNAPSHOT-all.jar"</arguments>
+    <log mode="roll"></log>
+</service>

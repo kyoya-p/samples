@@ -13,5 +13,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "WinSW"
+rootProject.name = "KtJvm"
 
