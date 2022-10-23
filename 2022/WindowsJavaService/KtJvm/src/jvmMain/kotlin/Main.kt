@@ -7,11 +7,13 @@ import kotlinx.coroutines.runBlocking
 
 val testPort = 18080
 suspend fun server() = embeddedServer(CIO, port = testPort) {
-    routing {
-        get("/") { call.respondText("Hello") }
-        get("/off") { ShutDownUrl("") { 1 }.doShutdown(call) }
+    install(ShutDownUrl.ApplicationCallPlugin) {
+        shutDownUrl = "/off"
+        exitCodeSupplier = { 0 }
     }
+    routing { get("/") { call.respondText("Hello ${call.parameters["name"]}.") } }
 }
+
 fun main(): Unit = runBlocking {
     server().start(wait = true)
 }
