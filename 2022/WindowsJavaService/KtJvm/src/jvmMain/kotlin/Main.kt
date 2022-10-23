@@ -11,9 +11,18 @@ suspend fun server() = embeddedServer(CIO, port = testPort) {
         shutDownUrl = "/off"
         exitCodeSupplier = { 0 }
     }
-    routing { get("/") { call.respondText("Hello ${call.parameters["name"]}.") } }
+    routing {
+        get("/") {
+            call.respondText("Hello ${call.parameters["name"]}.")
+            println("Hello ${call.parameters["name"]}.")
+        }
+    }
 }
 
 fun main(): Unit = runBlocking {
-    server().start(wait = true)
+    println("startup server")
+    runCatching {
+        server().start(wait = true)
+    }
+    println ("shutdown server")
 }
