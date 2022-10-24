@@ -21,8 +21,7 @@ val downloadWinSW by tasks.registering {
     doLast {
         download.run {
             src("https://github.com/winsw/winsw/releases/download/v2.11.0/WinSW.NET4.exe")
-            dest(buildDir)
-        }
+server        }
         copy {
             into("$buildDir/libs")
             from("$buildDir/WinSW.NET4.exe")

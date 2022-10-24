@@ -6,23 +6,34 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
 
 val testPort = 18080
-suspend fun server() = embeddedServer(CIO, port = testPort) {
+fun server() = embeddedServer(CIO, port = testPort) {
     install(ShutDownUrl.ApplicationCallPlugin) {
         shutDownUrl = "/off"
-        exitCodeSupplier = { 0 }
+        exitCodeSupplier = {
+            println("shutdown.")
+            0
+        }
     }
     routing {
         get("/") {
             call.respondText("Hello ${call.parameters["name"]}.")
             println("Hello ${call.parameters["name"]}.")
         }
+        get("/upd") {
+            val msiFileName = "${call.parameters["msi"]}"
+            call.respondText("running $msiFileName.")
+            println("running $msiFileName .")
+            runMsi(msiFileName)
+        }
     }
 }
 
-fun main(): Unit = runBlocking {
-    println("startup server")
-    runCatching {
-        server().start(wait = true)
-    }
-    println ("shutdown server")
+fun runMsi(msiFileName: String) {
+    ProcessBuilder("msiexec.exe", "/i", "c:/temp/$msiFileName").start()
+}
+
+fun main(): Unit  {
+    println("startup service.")
+    server().start(wait = true)
+    println("shutdown server") // Shutdownはserver内でプロセス終了? ここは通過しない
 }

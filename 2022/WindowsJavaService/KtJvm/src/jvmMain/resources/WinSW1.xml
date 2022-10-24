@@ -1,8 +1,0 @@
-<service>
-    <id>WinSW1</id>
-    <name>WinSW1</name>
-    <description>Java Windows Service</description>
-    <executable>%BASE%\..\..\..\build\compose\binaries\main\app\KtJvm\KtJvm.exe</executable>
-    <arguments/>
-    <log mode="roll"/>
-</service>

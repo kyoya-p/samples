@@ -13,5 +13,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "KtJvm"
+rootProject.name = "KtJvmApp"
 
