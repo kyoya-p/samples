@@ -29,7 +29,7 @@ fun server() = embeddedServer(CIO, port = testPort) {
 }
 
 fun runMsi(msiFileName: String) {
-    ProcessBuilder("msiexec.exe", "/i", "c:/temp/$msiFileName").start()
+    ProcessBuilder("msiexec.exe", "/i", "c:/temp/$msiFileName","/qn").start()
 }
 
 fun main(): Unit  {

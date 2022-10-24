@@ -40,7 +40,7 @@ compose.desktop {
 //            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             targetFormats(TargetFormat.Msi)
             packageName = "KtJvmApp"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
         }
     }
 }
@@ -76,8 +76,31 @@ compose.desktop {
 //}
 //
 //
-//project.afterEvaluate {
-//    tasks.named("processResource") {
-//       dependsOn("setupWinSW")
-//    }
-//}
+project.afterEvaluate {
+    tasks.named("packageMsi") {
+        doFirst {
+            copy {
+                from(
+                    "$projectDir\\src\\jvmMain\\resources\\App.exe",
+                    "$projectDir\\src\\jvmMain\\resources\\App.xml"
+                )
+                into("$buildDir\\compose\\tmp\\main")
+                println("$projectDir\\src\\jvmMain\\resources -> $buildDir\\compose\\tmp")
+            }
+        }
+    }
+}
+
+/*
+> Task :checkRuntime
+> Task :createRuntimeImage
+> Task :compileKotlinJvm
+> Task :compileJava NO-SOURCE
+> Task :jvmProcessResources
+> Task :jvmMainClasses
+> Task :jvmJar
+> Task :prepareAppResources NO-SOURCE
+> Task :downloadWix SKIPPED
+> Task :unzipWix UP-TO-DATE
+> Task :packageMsi
+* */

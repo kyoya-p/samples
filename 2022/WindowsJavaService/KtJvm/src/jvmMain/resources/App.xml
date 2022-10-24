@@ -2,7 +2,7 @@
     <id>KtJvmApp</id>
     <name>KtJvmApp</name>
     <description>Jvm Windows Service Test</description>
-    <executable>%BASE%\KtJvmApp.exe</executable>
+    <executable>%BASE%\..\KtJvmApp.exe</executable>
     <arguments/>
     <log mode="roll"/>
 </service>

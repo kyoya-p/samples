@@ -50,7 +50,6 @@ tasks["build"].doLast{
     }
 }
 
-
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
