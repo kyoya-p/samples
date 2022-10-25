@@ -28,6 +28,8 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 val ktorVersion = "2.1.1" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
                 implementation("io.ktor:ktor-server-cio:$ktorVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+
             }
         }
     }
