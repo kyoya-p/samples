@@ -40,7 +40,7 @@ compose.desktop {
 //            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             targetFormats(TargetFormat.Msi)
             packageName = "KtJvmApp"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.4"
         }
     }
 }
@@ -84,8 +84,7 @@ project.afterEvaluate {
                     "$projectDir\\src\\jvmMain\\resources\\App.exe",
                     "$projectDir\\src\\jvmMain\\resources\\App.xml"
                 )
-                into("$buildDir\\compose\\tmp\\main")
-                println("$projectDir\\src\\jvmMain\\resources -> $buildDir\\compose\\tmp")
+                into("$buildDir\\compose\\tmp\\main\\runtime")
             }
         }
     }

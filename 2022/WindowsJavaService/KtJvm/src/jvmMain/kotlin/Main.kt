@@ -4,6 +4,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
 
 val testPort = 18080
 fun server() = embeddedServer(CIO, port = testPort) {
@@ -24,16 +25,20 @@ fun server() = embeddedServer(CIO, port = testPort) {
             call.respondText("running $msiFileName.")
             println("running $msiFileName .")
             runMsi(msiFileName)
+            sem.release()
         }
     }
 }
 
 fun runMsi(msiFileName: String) {
-    ProcessBuilder("msiexec.exe", "/i", "c:/temp/$msiFileName","/qn").start()
+    val pb = ProcessBuilder("msiexec.exe", "/i", "c:/temp/$msiFileName", "/qn")
+    pb.start()
 }
 
-fun main(): Unit  {
+val sem = Semaphore(permits = 1, acquiredPermits = 1)
+fun main(): Unit = runBlocking {
     println("startup service.")
-    server().start(wait = true)
-    println("shutdown server") // Shutdownはserver内でプロセス終了? ここは通過しない
+    server().start()
+    sem.acquire()
+    println("term.")
 }
