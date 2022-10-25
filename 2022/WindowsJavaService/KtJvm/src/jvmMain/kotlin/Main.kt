@@ -3,7 +3,6 @@ import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
 import io.ktor.server.html.*
-import io.ktor.server.http.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.delay
@@ -12,13 +11,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.html.*
 import java.io.File
 
-val form = """
-<html><form action="run" method="GET">
-    <label for="to">Who do you want to say it to?</label>
-    <input name="to" id="to" value="Mom">
-    <button>Send my greetings</button>
-</form></html>
-"""
+
 val testPort = 18080
 fun server() = embeddedServer(CIO, port = testPort) {
     install(ShutDownUrl.ApplicationCallPlugin) {
@@ -26,24 +19,7 @@ fun server() = embeddedServer(CIO, port = testPort) {
         exitCodeSupplier = { 0 }
     }
     routing {
-        get("/") {
-            call.respondHtml(HttpStatusCode.OK) {
-                body {
-                    form(method = FormMethod.get) {
-                        input(type = InputType.text, name = "cmd") {
-                            value = "c:\\Windows\\System32\\msiexec.exe"
-                            style = "width:100%;"
-                        }
-                        br
-                        textArea(rows = "5") {
-                            style = "width:100%;"
-                        }
-                        br
-                        input(type = InputType.submit) { value = "実行" }
-                    }
-                }
-            }
-        }
+        get("/") { call.respondHtml(HttpStatusCode.OK) { myForm() } }
         get("/run") { call.respondText("Hello ${call.parameters["name"]}.") }
         get("/upd") {
             val msiFileName = "${call.parameters["msi"]}"
@@ -52,6 +28,15 @@ fun server() = embeddedServer(CIO, port = testPort) {
             delay(15_000)
         }
     }
+}
+
+fun HTML.myForm() = body {
+    form(method = FormMethod.get) {
+        textArea { rows = "5"; name = "cmds";style = "width:100%;"; text("c:\\Windows\\System32\\msiexec.exe\n/i\nc:\\temp\\\n/qn") }
+        br
+        input(type = InputType.submit) { value = "実行" }
+    }
+    label { text("c:\\Windows\\System32\\msiexec.exe") }
 }
 
 fun runMsi(msiFileName: String): String {
