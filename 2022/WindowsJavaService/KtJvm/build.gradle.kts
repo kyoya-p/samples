@@ -26,10 +26,9 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
-                val ktorVersion = "2.1.1" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
-                implementation("io.ktor:ktor-server-cio:$ktorVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
-
+                val ktor_version = "2.1.1" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
+                implementation("io.ktor:ktor-server-cio:$ktor_version")
+                implementation("io.ktor:ktor-server-html-builder:$ktor_version")
             }
         }
     }
@@ -42,7 +41,7 @@ compose.desktop {
 //            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             targetFormats(TargetFormat.Msi)
             packageName = "KtJvmApp"
-            packageVersion = "1.0.4"
+            packageVersion = "1.0.6"
         }
     }
 }
