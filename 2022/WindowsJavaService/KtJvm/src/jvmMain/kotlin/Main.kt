@@ -20,7 +20,7 @@ fun server() = embeddedServer(CIO, port = testPort) {
     }
     routing {
         get("/") { call.respondHtml(HttpStatusCode.OK) { myForm() } }
-        get("/run") { call.respondText(runCommand(call.parameters["run"]!!.split(Regex("\u000d\u000a")))) }
+        get("/run") { call.respondText(runCommand(call.parameters["run"]!!.splitNL())) }
         get("/upd") {
             val msiFileName = "${call.parameters["msi"]}"
             val log = runMsi(msiFileName)
@@ -29,6 +29,8 @@ fun server() = embeddedServer(CIO, port = testPort) {
         }
     }
 }
+
+fun String.splitNL() = split("\r\n", "\n", "\r")
 
 fun HTML.myForm() = body {
     form(method = FormMethod.get, action = "run") {
