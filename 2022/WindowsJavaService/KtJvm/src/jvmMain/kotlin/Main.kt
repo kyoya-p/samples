@@ -20,7 +20,7 @@ fun server() = embeddedServer(CIO, port = testPort) {
     }
     routing {
         get("/") { call.respondHtml(HttpStatusCode.OK) { myForm() } }
-        get("/run") { call.respondText(runCommand(call.parameters["run"]!!.splitNL())) }
+        get("/run") { call.respondText(runCommand(call.parameters["run"]!!.split("\r\n", "\n", "\r"))) }
         get("/upd") {
             val msiFileName = "${call.parameters["msi"]}"
             val log = runMsi(msiFileName)
@@ -30,13 +30,12 @@ fun server() = embeddedServer(CIO, port = testPort) {
     }
 }
 
-fun String.splitNL() = split("\r\n", "\n", "\r")
 
 fun HTML.myForm() = body {
     form(method = FormMethod.get, action = "run") {
         textArea {
-            rows = "5"; name = "run";style =
-            "width:100%;"; text("c:\\Windows\\System32\\msiexec.exe\n/i\nc:\\temp\\\n/qn")
+            rows = "5"; name = "run"; style = "width:100%;"
+            text("c:\\Windows\\System32\\msiexec.exe\n/i\nc:\\temp\\\n/qn")
         }
         br
         input(type = InputType.submit) { value = "実行" }
@@ -54,8 +53,7 @@ fun runCommand(params: List<String>): String {
     p.waitFor()
     println("term. '${pb.command()}'.")
     val r = log.readText()
-    println("log '$r'.")
-    return r
+    return "Log: [$r]"
 }
 
 fun runMsi(msiFileName: String): String {

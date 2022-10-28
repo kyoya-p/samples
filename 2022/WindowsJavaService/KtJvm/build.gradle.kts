@@ -41,7 +41,7 @@ compose.desktop {
 //            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             targetFormats(TargetFormat.Msi)
             packageName = "KtJvmApp"
-            packageVersion = "1.0.6"
+            packageVersion = "1.0.7"
         }
     }
 }
