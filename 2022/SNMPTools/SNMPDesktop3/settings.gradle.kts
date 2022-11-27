@@ -13,5 +13,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = "SNMPDesktop3"
+rootProject.name = "SNMPDesktop"
 
