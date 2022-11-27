@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0-SNAPSHOT"
+version = "1.2.0"
 
 repositories {
     google()
