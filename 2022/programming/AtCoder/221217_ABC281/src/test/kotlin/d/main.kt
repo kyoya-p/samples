@@ -41,14 +41,29 @@ class test {
 
 fun main() = m()
 fun m() {
-    val (N, K, D) = rlvl
-    val A = rlvl.sortedDescending()
-    val AD = A.groupBy { it % D }
+    val (N, K, D) = rlvi
+    val A = rlvi
 
-//TODO
+    val m = List(N + 1) { List(K + 1) { MutableList(D) { -1L } } }
 
-    println()
+    m[0][0][0] = 0
+    for (n in 0 until N) {
+        for (k in 0 until K + 1) {
+            for (d in 0 until D) {
+                if(m[n][k][d]==-1L)continue
+                m[n + 1][k][d] = max(m[n + 1][k][d], m[n][k][d])  // A[i]を加算しないケース
+                if (k != K) m[n + 1][k + 1][(d + A[n]) % D] = max(m[n + 1][k + 1][(d + A[n]) % D], m[n][k][d] + A[n])  // A[i]を加算するケース
+            }
+        }
+    }
+
+    println(m[N][K][0])
 }
+
+// Int(2^31) := 2.1 * 10^9
+// UInt(2^32) := 4.2 * 10^9
+// Long(2^63) := 9.2 * 10^18
+// ULong(2^64) := 1.8 * 10^19
 
 val <T> T.err get() = also { System.err.print("[$it]") }
 val <T> T.errln get() = also { System.err.println("[$it]") }
@@ -78,3 +93,4 @@ fun fact(n: Long) = (2..n).fold(1L) { a, e -> a * e }
 fun perm(n: Long, r: Long) = (n - r + 1..n).fold(1L) { a, e -> a * e }
 fun comb(n: Long, r: Long): Long = if (n / 2 < r) comb(n, n - r) else perm(n, r) / fact(r) //n個からr個選ぶ組合せ
 fun hProd(n: Long, r: Long): Long = comb(n + r - 1, r)//homogeneous product n種からr個選ぶ組合せ
+
