@@ -1,0 +1,140 @@
+@file:Suppress("unused")
+
+package e
+
+import org.junit.jupiter.api.Test
+import stdioEmulators
+import testEnvBuilder
+import java.util.*
+
+val testEnvs = listOf(
+    testEnvBuilder {
+        intake.put(
+            """6 4 3
+3 1 4 1 5 9
+"""
+        )
+
+        outlet.observe(
+            """5 6 10"""
+        )
+    }, testEnvBuilder {
+        intake.put(
+            """10 6 3
+12 2 17 11 19 8 4 3 6 20
+"""
+        )
+
+        outlet.observe(
+            """21 14 15 13 13"""
+        )
+    }
+)
+
+class test {
+    @Test
+    fun test() = stdioEmulators(testEnvs) { m() }
+}
+
+// -----------------------------------------------------------------------
+//  main()
+// -----------------------------------------------------------------------
+
+// https://atcoder.jp/contests/abc281
+
+fun main() = m()
+fun m() {
+    val v = listOf(1, 2, 2, 4, 4, 5).sorted().errln
+    bSrch(v, 0.err).errln
+    bSrch(v, 1.err).errln
+    bSrch(v, 2.err).errln
+    bSrch(v, 3.err).errln
+    bSrch(v, 4.err).errln
+    bSrch(v, 5.err).errln
+    bSrch(v, 6.err).errln
+
+
+    val (N, M, K) = rlvi
+    val A = rlvi
+    val AM = A.take(M).sorted()
+    val L = AM.take(K).sorted().toMutableList()
+    val H = AM.drop(K).sorted().toMutableList()
+    for (n in 0 until N - M) {
+        val Ao = A[n].err
+        val Ai = A[n + M]
+        if (Ao in L.first()..L.last()) {
+            L.err
+//            bSrch(0, K - 1) { L[it] - Ao }.err
+        } else {
+            H.err
+//            bSrch(0, K - 1) { H[it] - Ao }.err
+        }
+    }
+    println()
+}
+
+// Int(2^31) := 2.1 * 10^9
+// UInt(2^32) := 4.2 * 10^9
+// Long(2^63) := 9.2 * 10^18
+// ULong(2^64) := 1.8 * 10^19
+
+val <T> T.err get() = also { System.err.print("[$it]") }
+val <T> T.errln get() = also { System.err.println("[$it]") }
+val <T> T.pr get() = also { print(it) }
+val <T> T.prln get() = also { println(it) }
+fun <T : Comparable<T>> max(a: T, b: T) = if (a >= b) a else b
+fun <T : Comparable<T>> min(a: T, b: T) = if (a < b) a else b
+fun <T : Comparable<T>> max(vararg a: T) = a.max()!!
+fun <T : Comparable<T>> min(vararg a: T) = a.min()!!
+
+val rl get() = readLine()!!
+val rli get() = rl.toInt()
+val rll get() = rl.toLong()
+val String.sp get() = split(" ")
+val Iterable<String>.mapi get() = map { it.toInt() }
+val Iterable<String>.mapl get() = map { it.toLong() }
+val rlvi get() = rl.sp.mapi
+val rlvl get() = rl.sp.mapl
+
+fun Long.pow(l: Long) = (0L until l).fold(1L) { acc, _ -> acc * this }
+fun Int.pow(i: Int) = (0 until i).fold(1) { acc, _ -> acc * this }
+fun Long.digit(d: Long, base: Long = 10) = this / (base.pow(d)) % base
+fun Int.digit(d: Int, base: Int = 10) = this / (base.pow(d)) % base
+fun floor(v: Long, base: Long = 10) = v / base * base
+fun round(v: Long, base: Long = 10) = floor(v + base / 2, base)
+fun fact(n: Long) = (2..n).fold(1L) { a, e -> a * e }
+fun perm(n: Long, r: Long) = (n - r + 1..n).fold(1L) { a, e -> a * e }
+fun comb(n: Long, r: Long): Long = if (n / 2 < r) comb(n, n - r) else perm(n, r) / fact(r) //n個からr個選ぶ組合せ
+fun hProd(n: Long, r: Long): Long = comb(n + r - 1, r)//homogeneous product n種からr個選ぶ組合せ
+
+typealias BST = (Int) -> Boolean
+
+fun bSrch1(s: Int, e: Int, m: Int = (s + e) ushr 1, t: BST) = if (t(m)) s to m else m to e
+fun bSrch2(s: Int, e: Int, t: BST) = generateSequence(s to e) { (s, e) -> bSrch1(s, e, t = t) }
+fun Pair<Int, Int>.bsEdgeTest(t: BST) = let { (s, e) -> if (t(s)) s to s else if (!t(e)) e to e else s to e }
+fun bEdge(s: Int, e: Int, t: BST) = bSrch2(s, e, t).dropWhile { (s, e) -> (e - s) / 2 > 0 }.first().bsEdgeTest(t)
+
+fun <T> Pair<Int, Int>.bSrchT(v: List<T>, g: T) = let { (s, e) -> if (v[s] == g) s else if (v[e] == g) e else -s-1 }
+fun <T : Comparable<T>> bSrch(v: List<T>, g: T) = bEdge(0, v.lastIndex) { v[it] >= g }.bSrchT(v, g)
+
+
+/*
+int indexedBinarySearch(List<? extends Comparable<? super T>> list, T key) {
+    int low = 0;
+    int high = list.size()-1;
+
+    while (low <= high) {
+        int mid = (low + high) >>> 1;
+        Comparable<? super T> midVal = list.get(mid);
+        int cmp = midVal.compareTo(key);
+
+        if (cmp < 0)
+            low = mid + 1;
+        else if (cmp > 0)
+            high = mid - 1;
+        else
+            return mid; // key found
+    }
+    return -(low + 1);  // key not found
+}
+*/
