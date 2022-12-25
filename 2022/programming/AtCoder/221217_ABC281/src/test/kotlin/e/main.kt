@@ -32,8 +32,24 @@ val testEnvs = listOf(
 )
 
 class test {
+    val <T> T.err get() = also { System.err.print("[$it]") }
+    val <T> T.errln get() = also { System.err.println("[$it]") }
+
     @Test
     fun test() = stdioEmulators(testEnvs) { m() }
+
+    @Test
+    fun bs() {
+        val v0 = listOf<Int>()
+        assert(v0.bEdge(0) == 0)
+
+        val v1 = listOf(5).errln
+        assert(v1.bEdge(0.err).errln == 0)
+        assert(v1.bEdge(4.err).errln == 0)
+        assert(v1.bEdge(5.err).errln == 0)
+        assert(v1.bEdge(6.err).errln == 1)
+
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -44,14 +60,20 @@ class test {
 
 fun main() = m()
 fun m() {
+    val m = mutableListOf<Int>()
+    m.bEdge(1).errln
+
+
     val v = listOf(1, 2, 2, 4, 4, 5).sorted().errln
-    bSrch(v, 0.err).errln
-    bSrch(v, 1.err).errln
-    bSrch(v, 2.err).errln
-    bSrch(v, 3.err).errln
-    bSrch(v, 4.err).errln
-    bSrch(v, 5.err).errln
-    bSrch(v, 6.err).errln
+    v.bEdge(0.err).errln
+    v.bEdge(1.err).errln
+    v.bEdge(2.err).errln
+    v.bEdge(3.err).errln
+    v.bEdge(4.err).errln
+    v.bEdge(5.err).errln
+    v.bEdge(6.err).errln
+
+
 
 
     val (N, M, K) = rlvi
@@ -78,8 +100,18 @@ fun m() {
 // Long(2^63) := 9.2 * 10^18
 // ULong(2^64) := 1.8 * 10^19
 
+typealias FB = () -> Boolean
+typealias FT<T> = () -> T
+
+fun <T> ife(t1: FB, r1: FT<T>, e1: FT<T>) = if (t1()) r1() else e1()
+fun <T> ife(t1: FB, r1: FT<T>, t2: FB, r2: FT<T>, e2: FT<T>) = ife(t1, r1, { ife(t2, r2, e2) })
+fun <T> ife(t1: FB, r1: FT<T>, t2: FB, r2: FT<T>, t3: FB, r3: FT<T>, e3: FT<T>) =
+    ife(t1, r1, t2, r2, { ife(t3, r3, e3) })
+
 val <T> T.err get() = also { System.err.print("[$it]") }
+fun <T> T.err(s: String) = also { System.err.print("[$s=$it]") }
 val <T> T.errln get() = also { System.err.println("[$it]") }
+fun <T> T.errln(s: String) = also { System.err.println("[$s=$it]") }
 val <T> T.pr get() = also { print(it) }
 val <T> T.prln get() = also { println(it) }
 fun <T : Comparable<T>> max(a: T, b: T) = if (a >= b) a else b
@@ -108,14 +140,28 @@ fun comb(n: Long, r: Long): Long = if (n / 2 < r) comb(n, n - r) else perm(n, r)
 fun hProd(n: Long, r: Long): Long = comb(n + r - 1, r)//homogeneous product n種からr個選ぶ組合せ
 
 typealias BST = (Int) -> Boolean
+typealias PI = Pair<Int, Int>
 
-fun bSrch1(s: Int, e: Int, m: Int = (s + e) ushr 1, t: BST) = if (t(m)) s to m else m to e
-fun bSrch2(s: Int, e: Int, t: BST) = generateSequence(s to e) { (s, e) -> bSrch1(s, e, t = t) }
-fun Pair<Int, Int>.bsEdgeTest(t: BST) = let { (s, e) -> if (t(s)) s to s else if (!t(e)) e to e else s to e }
-fun bEdge(s: Int, e: Int, t: BST) = bSrch2(s, e, t).dropWhile { (s, e) -> (e - s) / 2 > 0 }.first().bsEdgeTest(t)
+fun bSrch1(s: Int, l: Int, m: Int = s.err("s=") + l.err("l=") / 2, t: BST) =
+    if (t(m.err).err) (s to (l / 2)).err else (m to (s + l / 2 - m)).err
 
-fun <T> Pair<Int, Int>.bSrchT(v: List<T>, g: T) = let { (s, e) -> if (v[s] == g) s else if (v[e] == g) e else -s-1 }
-fun <T : Comparable<T>> bSrch(v: List<T>, g: T) = bEdge(0, v.lastIndex) { v[it] >= g }.bSrchT(v, g)
+fun bE2(s: Int, l: Int, t: BST) = generateSequence(s to l) { (s, l) -> bSrch1(s, l, t = t).err }
+fun bE3(s: Int, l: Int, t: BST) = bE2(s, l, t).dropWhile { (s, l) -> l > 0 }.first()
+
+fun bEdge(s: Int, l: Int, t: BST) = when{
+    l==0 -> s to 0
+    t(s) -> s to 1
+    !t(s+l-1) -> s+l to 0
+    else -> bE3(s,l,t)
+}
+
+fun <T : Comparable<T>> List<T>.bEdge(g: T) = bEdge(0, size) { get(it) >= g }
+fun <T : Comparable<T>> MutableList<T>.insert(e: T) = add(bEdge(e).first, e)
+
+// l==0 -> s,0 // NoTested
+// l>0 && t(s)==true -> s,l // All passed (no edge)
+// l>0 && t(s+l-1)==false -> s+l,l // All missed (no edge)
+// l==2 && t(s)==false && t(s+l-1)==true -> s+l-1,2 // edge found
 
 
 /*
