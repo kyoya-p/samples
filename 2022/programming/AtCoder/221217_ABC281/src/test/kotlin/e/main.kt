@@ -41,13 +41,13 @@ class test {
     @Test
     fun bs() {
         val v0 = listOf<Int>()
-        assert(v0.bEdge(0) == 0)
+        assert(v0.bEdge(0).first == 0)
 
         val v1 = listOf(5).errln
-        assert(v1.bEdge(0.err).errln == 0)
-        assert(v1.bEdge(4.err).errln == 0)
-        assert(v1.bEdge(5.err).errln == 0)
-        assert(v1.bEdge(6.err).errln == 1)
+        assert(v1.bEdge(0.err).first.errln == 0)
+        assert(v1.bEdge(4.err).first.errln == 0)
+        assert(v1.bEdge(5.err).first.errln == 0)
+        assert(v1.bEdge(6.err).first.errln == 1)
 
     }
 }
