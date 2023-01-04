@@ -48,7 +48,16 @@ class test {
         assert(v1.bEdge(4.err).first.errln == 0)
         assert(v1.bEdge(5.err).first.errln == 0)
         assert(v1.bEdge(6.err).first.errln == 1)
+        assert(v1.bEdge(7.err).first.errln == 1)
 
+        val v2 = mutableListOf(6).errln
+        assert(v2.bEdge(0.err).first.errln == 0)
+        assert(v2.bEdge(4.err).first.errln == 0)
+        assert(v2.bEdge(5.err).first.errln == 0)
+        assert(v2.bEdge(6.err).first.errln == 0)
+        assert(v2.bEdge(7.err).first.errln == 1)
+        v2.add(v2.bEdge(7.err).first, 7)
+        v2.errln
     }
 }
 
@@ -140,47 +149,16 @@ fun comb(n: Long, r: Long): Long = if (n / 2 < r) comb(n, n - r) else perm(n, r)
 fun hProd(n: Long, r: Long): Long = comb(n + r - 1, r)//homogeneous product n種からr個選ぶ組合せ
 
 typealias BST = (Int) -> Boolean
-typealias PI = Pair<Int, Int>
 
-fun bSrch1(s: Int, l: Int, m: Int = s.err("s=") + l.err("l=") / 2, t: BST) =
-    if (t(m.err).err) (s to (l / 2)).err else (m to (s + l / 2 - m)).err
-
-fun bE2(s: Int, l: Int, t: BST) = generateSequence(s to l) { (s, l) -> bSrch1(s, l, t = t).err }
+fun bE1(s: Int, l: Int, m: Int = s + l / 2, t: BST) = if (t(m)) (s to (l / 2)) else (m to (s + l / 2 - m))
+fun bE2(s: Int, l: Int, t: BST) = generateSequence(s to l) { (s, l) -> bE1(s, l, t = t).err }
 fun bE3(s: Int, l: Int, t: BST) = bE2(s, l, t).dropWhile { (s, l) -> l > 0 }.first()
-
-fun bEdge(s: Int, l: Int, t: BST) = when{
-    l==0 -> s to 0
+fun bEdge(s: Int, l: Int, t: BST) = when {
+    l == 0 -> s to 0
     t(s) -> s to 1
-    !t(s+l-1) -> s+l to 0
-    else -> bE3(s,l,t)
+    !t(s + l - 1) -> s + l to 0
+    else -> bE3(s, l, t)
 }
 
 fun <T : Comparable<T>> List<T>.bEdge(g: T) = bEdge(0, size) { get(it) >= g }
 fun <T : Comparable<T>> MutableList<T>.insert(e: T) = add(bEdge(e).first, e)
-
-// l==0 -> s,0 // NoTested
-// l>0 && t(s)==true -> s,l // All passed (no edge)
-// l>0 && t(s+l-1)==false -> s+l,l // All missed (no edge)
-// l==2 && t(s)==false && t(s+l-1)==true -> s+l-1,2 // edge found
-
-
-/*
-int indexedBinarySearch(List<? extends Comparable<? super T>> list, T key) {
-    int low = 0;
-    int high = list.size()-1;
-
-    while (low <= high) {
-        int mid = (low + high) >>> 1;
-        Comparable<? super T> midVal = list.get(mid);
-        int cmp = midVal.compareTo(key);
-
-        if (cmp < 0)
-            low = mid + 1;
-        else if (cmp > 0)
-            high = mid - 1;
-        else
-            return mid; // key found
-    }
-    return -(low + 1);  // key not found
-}
-*/
