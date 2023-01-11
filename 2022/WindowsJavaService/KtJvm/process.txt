@@ -1,0 +1,22 @@
+ ドライブ C のボリューム ラベルがありません。
+ ボリューム シリアル番号は E827-8B4E です
+
+ C:\works\git.github.kyoyap.samples\2022\WindowsJavaService\KtJvm のディレクトリ
+
+2022/10/25  20:43    <DIR>          .
+2022/10/23  00:37    <DIR>          ..
+2022/10/23  02:01               550 .gitignore
+2022/10/23  00:23    <DIR>          .gradle
+2022/10/25  20:44    <DIR>          .idea
+2022/10/25  08:16    <DIR>          build
+2022/10/25  20:20             3,010 build.gradle.kts
+2022/10/22  17:45    <DIR>          gradle
+2022/10/22  17:46                88 gradle.properties
+2022/10/22  17:45             8,070 gradlew
+2022/10/22  17:45             2,763 gradlew.bat
+2022/10/25  20:45                 0 process.txt
+2022/10/24  18:47                61 Readme.md
+2022/10/24  18:47               533 settings.gradle.kts
+2022/10/22  17:45    <DIR>          src
+               8 個のファイル              15,075 バイト
+               7 個のディレクトリ   5,008,756,736 バイトの空き領域

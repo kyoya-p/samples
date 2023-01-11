@@ -1,11 +1,9 @@
 plugins {
     application
-    kotlin("jvm") version "1.6.21"
-    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("jvm") version "1.7.20"
+    kotlin("plugin.serialization") version "1.7.20"
     `maven-publish`
-    id("com.github.johnrengelman.shadow") version "7.0.0"
-
-    idea
+    id("com.github.johnrengelman.shadow") version "7.1.2" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
 }
 
 val myGroupId = "jp.wjg.shokkaa"
@@ -21,17 +19,16 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.6.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
     implementation("org.snmp4j:snmp4j:3.7.0")
     implementation("com.charleskorn.kaml:kaml:0.44.0") // https://github.com/charleskorn/kaml/releases/latest
 
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1") // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
     testImplementation("net.java.dev.jna:jna:5.9.0")
     testImplementation("net.java.dev.jna:jna-platform:5.9.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
+    //testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
 }
 
 application {
