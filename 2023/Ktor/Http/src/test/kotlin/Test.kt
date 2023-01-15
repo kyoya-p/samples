@@ -10,6 +10,6 @@ class KtorTest {
         application { serverApp() }
         val res = client.get("http://localhost/?user=tester").body<String>()
         println(res)
-        assertEquals(res, "Hello, Tester.")
+	assertEquals(res, "Hello, Tester.")
     }
 }
