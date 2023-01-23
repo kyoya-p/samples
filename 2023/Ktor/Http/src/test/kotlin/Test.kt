@@ -8,8 +8,8 @@ class KtorTest {
     @Test
     fun test() = testApplication {
         application { serverApp() }
-        val res = client.get("http://localhost/?user=tester").body<String>()
+        val res = client.get("http://localhost").body<String>()
         println(res)
-	assertEquals(res, "Hello, Tester.")
+        assertEquals(res, "Hello, Tester.")
     }
 }
