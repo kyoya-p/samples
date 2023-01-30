@@ -1,6 +1,11 @@
 see https://learn.microsoft.com/ja-jp/azure/azure-web-pubsub/tutorial-pub-sub-messages?tabs=javascript
 
 
+```:Build/Run
+npx tsc && node build/sub.js &
+npx tsc && node build/pub.js 
+```
+
 ```:Project作成
 npm init -y
 npm install typescript  @types/node --save-dev
