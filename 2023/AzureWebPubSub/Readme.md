@@ -1,6 +1,6 @@
-# 参考
+# 参照
+
 - https://learn.microsoft.com/ja-jp/azure/azure-web-pubsub/tutorial-pub-sub-messages?tabs=javascript
-- https://learn.microsoft.com/ja-jp/azure/azure-web-pubsub/howto-websocket-connect?tabs=browser
 
 # Build/Run
 ```
@@ -13,9 +13,6 @@ npx tsc && node build/pub.js
 npm init -y
 npm install typescript  @types/node --save-dev
 npx tsc --init --rootDir src --outDir build 
-```
-
-```:ライブラリ
 npm i @azure/web-pubsub ws
 ```
 
