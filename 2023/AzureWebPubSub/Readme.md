@@ -4,8 +4,14 @@
 
 # Build/Run
 ```
-npx tsc && node build/sub.js &
-npx tsc && node build/pub.js 
+npm install
+npx tsc
+export WebPubSubUrl="Endpoint=..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
+node build/sub.js &
+node build/pub.js 
+
+export WebPubSubConnectionString="wss://..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
+node build/pub-sdk.js 
 ```
 
 # Project作成
