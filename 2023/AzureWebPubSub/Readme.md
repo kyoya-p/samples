@@ -6,11 +6,11 @@
 ```
 npm install
 npx tsc
-export WebPubSubUrl="Endpoint=..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
+export WebPubSubUrl="wss://..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
 node build/sub.js &
 node build/pub.js 
 
-export WebPubSubConnectionString="wss://..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
+export WebPubSubConnectionString="Endpoint=..."  # Azure Portal ➔ Web PubSub ➔ Key から取得
 node build/pub-sdk.js 
 ```
 
