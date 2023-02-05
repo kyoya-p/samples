@@ -1,12 +1,17 @@
 import io.ktor.client.*
 import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.serialization.kotlinx.xml.*
 import kotlinx.coroutines.runBlocking
 import java.io.*
 import kotlin.concurrent.thread
+import nl.adaptivity.xmlutil.*
+import nl.adaptivity.xmlutil.serialization.*
+
 
 class TestEnv(val debug: Boolean = false) {
     inner class Pipe(val pipeName: String) {
@@ -102,6 +107,13 @@ fun testEnv_AtCoder(
 }
 
 fun main() = runBlocking {
-    val r = HttpClient().get("https://www.dropbox.com/sh/nx3tnilzqz7df8a/AAAYlTq2tiEHl5hsESw6-yfLa?dl=0").bodyAsText()
+
+//    val client = HttpClient(CIO) { install(ContentNegotiation) { xml(format = XML { xmlDeclMode = XmlDeclMode.Charset }) } }
+    val client = HttpClient(CIO) { install(ContentNegotiation) { xml() } }
+
+    val r: String =
+        client.get("https://www.dropbox.com/sh/nx3tnilzqz7df8a/AAAYlTq2tiEHl5hsESw6-yfLa?dl=0")
+            .body()
     println(r)
+
 }

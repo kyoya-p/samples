@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.7.20"
+    kotlin("jvm") version "1.8.10" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.jvm
+    kotlin("plugin.serialization") version "1.8.10" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
     application
 }
 
@@ -20,9 +21,11 @@ dependencies {
     testImplementation("io.ktor:ktor-client-cio:$ktor_version")
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    testImplementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+    testImplementation("org.slf4j:slf4j-simple:2.0.6") // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
 
-    testImplementation("org.simpleframework:simple-xml:2.7.1") //https://mvnrepository.com/artifact/org.simpleframework/simple-xml
-
+    testImplementation("io.github.pdvrieze.xmlutil:core:0.84.3") // https://mvnrepository.com/artifact/io.github.pdvrieze.xmlutil/core
+    testImplementation("io.github.pdvrieze.xmlutil:serialization:0.84.3")
 }
 
 tasks.test {
