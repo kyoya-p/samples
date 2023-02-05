@@ -72,7 +72,22 @@ class `T4-Delegate` {
         }
     }
 
-    @Suppress("TestFunctionName")
+    @Test
+    fun `t03b-移譲_1オリジンの配列`() {
+        class ListWithOrigin<E>(
+            val inner: List<E>,
+            val origin: Int = 1
+        ) : List<E> by inner {
+            override fun get(index: Int) = inner.get(index - origin)
+            override fun listIterator(index: Int) = inner.listIterator(index - origin)
+            override fun subList(fromIndex: Int, toIndex: Int) = inner.subList(fromIndex - origin, toIndex - origin)
+        }
+
+        val v = ListWithOrigin(listOf(1, 2, 3))
+        assert(v[1] == 1)
+
+    }
+
     @Test
     fun `t04-by Map`() {
         val m = mutableMapOf("a" to "b")
@@ -80,7 +95,6 @@ class `T4-Delegate` {
         println(a)
         assert(a == "b")
 
-        @Suppress("UNUSED_VALUE")
         a = "z"
         println(m)
         assert(m["a"] == "z")
@@ -96,15 +110,12 @@ class `T4-Delegate` {
         // JavaのDictionaryもOK
         val props = Properties()
 
-        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
         var ja: String by props
-        @Suppress("UNUSED_VALUE")
         ja = "value of ja"
         println(props)
         assert(props["ja"] == "value of ja")
     }
 
-    @Suppress("TestFunctionName")
     @Test
     fun t05_PropertiesFile() {
         class MyFileProperty(val actualPropName: String? = null) {
@@ -124,15 +135,9 @@ class `T4-Delegate` {
         }
 
         run {
-            @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE", "UNUSED_VARIABLE")
             var userName by MyFileProperty()
-
-            @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE", "UNUSED_VARIABLE")
             var count by MyFileProperty()
-
-            @Suppress("UNUSED_VALUE")
             userName = "root"
-            @Suppress("UNUSED_VALUE")
             count = 100.toString()
         }
 

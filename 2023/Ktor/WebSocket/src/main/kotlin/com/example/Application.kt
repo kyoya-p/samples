@@ -6,11 +6,11 @@ import io.ktor.server.cio.*
 import com.example.plugins.*
 
 fun main() {
-    embeddedServer(CIO, port = 8080, host = "0.0.0.0", module = Application::module)
+    embeddedServer(CIO, port = 80, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
 
 fun Application.module() {
     configureSockets()
-    configureRouting()
+//    configureRouting()
 }
