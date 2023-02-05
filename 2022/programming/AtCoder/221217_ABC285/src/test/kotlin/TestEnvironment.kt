@@ -2,7 +2,9 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.runBlocking
 import java.io.*
 import kotlin.concurrent.thread
 
@@ -89,13 +91,17 @@ fun testEnv_AtCoder(
     testDir: String,
     testName: String,
     @Suppress("UNUSED_PARAMETER") debug: Boolean = false
-): List<TestEnv.() -> Boolean> =
-    File("$testDir/$testName/in").listFiles()!!.map { inFile ->
-        val outFile = File("$testDir/$testName/out/${inFile.name}")
-        testEnvBuilder {
-            intake.println(inFile.readText())
-            val tg = outFile.bufferedReader().readLine()!!
-            rawSo.println("exp:$tg")
-            outlet.readLine() == tg
-        }
+): List<TestEnv.() -> Boolean> = File("$testDir/$testName/in").listFiles()!!.map { inFile ->
+    val outFile = File("$testDir/$testName/out/${inFile.name}")
+    testEnvBuilder {
+        intake.println(inFile.readText())
+        val tg = outFile.bufferedReader().readLine()!!
+        rawSo.println("exp:$tg")
+        outlet.readLine() == tg
     }
+}
+
+fun main() = runBlocking {
+    val r = HttpClient().get("https://www.dropbox.com/sh/nx3tnilzqz7df8a/AAAYlTq2tiEHl5hsESw6-yfLa?dl=0").bodyAsText()
+    println(r)
+}

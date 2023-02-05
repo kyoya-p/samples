@@ -13,13 +13,16 @@ repositories {
 }
 
 dependencies {
-    val ktor_version="2.1.2" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
-    implementation("io.ktor:ktor-client-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
-    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-
     testImplementation(kotlin("test"))
+
+    val ktor_version="2.2.3" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
+    testImplementation("io.ktor:ktor-client-core:$ktor_version")
+    testImplementation("io.ktor:ktor-client-cio:$ktor_version")
+    testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+
+    testImplementation("org.simpleframework:simple-xml:2.7.1") //https://mvnrepository.com/artifact/org.simpleframework/simple-xml
+
 }
 
 tasks.test {
