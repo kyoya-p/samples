@@ -1,10 +1,11 @@
 @file:Suppress("unused")
 
-package d
+package d2
 
 import org.junit.jupiter.api.Test
 import stdioEmulators
 import testEnvBuilder
+import testEnv_AtCoder
 import java.util.*
 
 val testEnvs = listOf(
@@ -49,7 +50,8 @@ bbb ccc
 """
         )
     }
-)
+) + testEnv_AtCoder("build/test", "D")
+
 
 class test {
     @Test
@@ -62,12 +64,22 @@ class test {
 
 // https://atcoder.jp/contests/abc285/tasks
 
-fun main() = m()
-fun m() {
-    val N = rli
-    val M = (1..N).map { rl.sp }.associate { it[0] to it[1] }
-    if (M.keys != M.values.toSet()) println("Yes") else println("No")
+fun main() {
+    m()
 }
+
+fun m() = run L1@{
+    val N = rli
+    val G = (1..N).map { rl.sp }.associate { it[0] to it[1] }  // 有向グラフ作成
+    val vs = G.keys.toMutableSet()// 閉路検出開始点
+    generateSequence { vs.firstOrNull() }.forEach { s ->
+        //s.err("I")
+        generateSequence(s) { if (G.containsKey(it)) G[it] else null }.onEach { vs.remove(it) }.drop(1).forEach {
+            if (s == it) return@L1 "No".err
+        }
+    }
+    "Yes".err
+}.prln
 
 // Int(2^31) := 2.1 * 10^9
 // UInt(2^32) := 4.2 * 10^9
@@ -114,7 +126,7 @@ typealias BST = (Int) -> Boolean
 
 fun bE1(s: Int, l: Int, m: Int = s + l / 2, t: BST) = if (t(m)) (s to (l / 2)) else (m to (s + l / 2 - m))
 fun bE2(s: Int, l: Int, t: BST) = generateSequence(s to l) { (s, l) -> bE1(s, l, t = t).err }
-fun bE3(s: Int, l: Int, t: BST) = bE2(s, l, t).dropWhile { (s, l) -> l > 0 }.first()
+fun bE3(s: Int, l: Int, t: BST) = bE2(s, l, t).dropWhile { (_, l) -> l > 0 }.first()
 fun bEdge(s: Int, l: Int, t: BST) = when {
     l == 0 -> s to 0
     t(s) -> s to 1

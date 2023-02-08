@@ -16,16 +16,16 @@ repositories {
 dependencies {
     testImplementation(kotlin("test"))
 
-    val ktor_version="2.2.3" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
-    testImplementation("io.ktor:ktor-client-core:$ktor_version")
-    testImplementation("io.ktor:ktor-client-cio:$ktor_version")
-    testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    testImplementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+//    val ktor_version="2.2.3" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
+//    testImplementation("io.ktor:ktor-client-core:$ktor_version")
+//    testImplementation("io.ktor:ktor-client-cio:$ktor_version")
+//    testImplementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+//    testImplementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+//    testImplementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
     testImplementation("org.slf4j:slf4j-simple:2.0.6") // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
 
-    testImplementation("io.github.pdvrieze.xmlutil:core:0.84.3") // https://mvnrepository.com/artifact/io.github.pdvrieze.xmlutil/core
-    testImplementation("io.github.pdvrieze.xmlutil:serialization:0.84.3")
+//    testImplementation("io.github.pdvrieze.xmlutil:core:0.84.3") // https://mvnrepository.com/artifact/io.github.pdvrieze.xmlutil/core
+//    testImplementation("io.github.pdvrieze.xmlutil:serialization:0.84.3")
 }
 
 tasks.test {
