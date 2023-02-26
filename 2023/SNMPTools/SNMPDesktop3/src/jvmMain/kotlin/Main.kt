@@ -30,5 +30,15 @@ class AppProperties {
     var commStr by AppProperty()
     var mibFile by AppProperty()
 
-    var ipRange  by AppProperty()
+    var ipRange by AppProperty()
+}
+
+class Logger(val file: File = File("snmpdesktop_log.txt")) {
+    init {
+        file.delete()
+    }
+
+    operator fun plusAssign(s: String) {
+        file.appendText(s)
+    }
 }

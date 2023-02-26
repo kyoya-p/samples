@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.2.0"
+version = "1.3.0"
 
 repositories {
     google()
@@ -20,16 +20,16 @@ repositories {
 kotlin {
     jvm {
         compilations.all {
-            kotlinOptions.jvmTarget = "11"
+            kotlinOptions.jvmTarget = "18"
         }
-        withJava()
+//        withJava()
     }
     sourceSets {
         val jvmMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-                implementation("com.charleskorn.kaml:kaml:0.49.0") // https://github.com/charleskorn/kaml/releases/latest
+                implementation("com.charleskorn.kaml:kaml:0.52.0")  // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
                 implementation("org.snmp4j:snmp4j:3.7.4") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
                 implementation("jp.wjg.shokkaa:snmp4jutils:1.2")  // local private library
             }
