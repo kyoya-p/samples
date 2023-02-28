@@ -1,4 +1,3 @@
-import org.jetbrains.compose.compose
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -41,7 +40,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SnmpDesktop"
-            packageVersion = "1.3.0"
+            packageVersion = "1.3.1"
             windows {
                 menu = true
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
