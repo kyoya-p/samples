@@ -45,12 +45,13 @@ class AppProperties {
     var ipRange by AppProperty()
 }
 
-class Logger(private val file: File = File("snmpdesktop_log.txt")) {
+class Logger(private val file: File = File(System.getenv("APPDATA"), "snmpdesktop_log.txt")) {
+    val lastLines = ArrayDeque<String>()
     init {
         file.delete()
+        lastLines.addLast("Logging ${file.path}\n")
     }
 
-    val lastLines = ArrayDeque<String>()
     operator fun plusAssign(s: String) {
         file.appendText(s)
         lastLines.addLast(s)
