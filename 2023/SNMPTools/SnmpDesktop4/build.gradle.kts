@@ -40,7 +40,7 @@ compose.desktop {
         mainClass = "MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "SnmpDesktop4"
+            packageName = "SnmpDesktop"
             packageVersion = "1.3.0"
             windows {
                 menu = true
