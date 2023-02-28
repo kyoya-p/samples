@@ -16,7 +16,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -25,6 +24,7 @@ import kotlinx.serialization.serializer
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.VariableBinding
+import java.awt.FileDialog
 import java.awt.FileDialog.LOAD
 import java.awt.FileDialog.SAVE
 import java.io.File
@@ -43,36 +43,55 @@ fun saveMib(mib: List<VariableBinding>, file: File) = yamlSnmp4j.encodeToStream(
 @OptIn(ExperimentalSerializationApi::class)
 fun loadMib(file: File): List<VariableBinding> = yamlSnmp4j.decodeFromStream(file.inputStream())
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalSerializationApi::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
 fun WinApp(window: ComposeWindow) = MaterialTheme {
+    fun setAppTitle(fileName: String?) = window.setTitle("${fileName ?: "No File"} - SNMP Desktop")
+
     val logs = Logger()
 
     var mib: List<VariableBinding> by remember {
         val mib = app.mibFile?.let { runCatching { loadMib(File(it)) }.getOrNull() } ?: listOf()
         if (mib.isEmpty()) logs += "$now Error: Empty MIB... Load or Capture Device first.\n"
         else logs += "$now Loaded #${mib.size} Entries from ${app.mibFile}\n"
+        setAppTitle(app.mibFile)
         mutableStateOf(mib)
     }
     var ipSpec by remember { mutableStateOf(app.ip ?: "") }
     var walking by remember { mutableStateOf(false) }
-    val snmpAccessInfoDialog = SnmpCaptureDialog(ipSpec) { ip ->
+    val snmpCaptureDialog = SnmpCaptureDialog(ipSpec) { ip ->
         ipSpec = ip
         walking = true
     }
-    val saveDlg = AwtFileDialog(mode = SAVE) { d, f ->
-        val file = File("$d/$f")
-        saveMib(mib, file)
-        app.mibFile = file.canonicalPath
-        logs += "$now Saved MIBS:${mib.size} to $d/$f"
-    }
-    val loadDlg = AwtFileDialog(mode = LOAD) { d, f ->
-        val file = File("$d/$f")
+//    val saveDlg = AwtFileDialog(mode = SAVE) { d, f ->
+//        val file = File("$d/$f")
+//        yamlSnmp4j.encodeToStream(mib, file.outputStream())
+//        app.mibFile = file.canonicalPath
+//        setAppTitle(file.canonicalPath)
+//        logs += "$now Saved MIBS:${mib.size} to ${file.canonicalPath}\n"
+//    }
+//    val loadDlg = AwtFileDialog(mode = LOAD) { d, f ->
+//        val file = File("$d/$f")
+//        mib = yamlSnmp4j.decodeFromStream(file.inputStream())
+//        app.mibFile = file.canonicalPath
+//        setAppTitle(file.canonicalPath)
+//        logs += "$now Loaded MIBS:${mib.size} from ${file.canonicalPath}\n"
+//    }
+
+    fun selectFile(opMode: Int) = FileDialog(window).apply { mode = opMode; isVisible = true }
+        .takeIf { it.directory != null && it.file != null }
+        ?.run { File(directory, file).canonicalFile }?.apply { app.mibFile = path; setAppTitle(path) }
+
+    fun loadMib() = selectFile(LOAD)?.let { file ->
         mib = loadMib(file)
-        app.mibFile = file.canonicalPath
-        logs += "$now Loaded MIBS:${mib.size} from $d/$f"
+        logs += "$now Loaded MIBS:${mib.size} from ${file.path}\n"
+    }
+
+    fun saveMib() = selectFile(SAVE)?.let { file ->
+        saveMib(mib, file)
+        logs += "$now Saved MIBS:${mib.size} to ${file.path}\n"
     }
 
     // Backgroud Agent task
@@ -101,24 +120,22 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
 
     Scaffold(topBar = {
         TopAppBar {
-            Button(onClick = { snmpAccessInfoDialog.open() }) { Text("Capture") }
-            Button(onClick = { saveDlg.open() }) { Text("Save") }
-            Button(onClick = { loadDlg.open() }) { Text("Load") }
+            Button(onClick = { snmpCaptureDialog.open() }) { Text("Capture") }
+            Button(onClick = ::saveMib) { Text("Save") }
+            Button(onClick = ::loadMib) { Text("Load") }
         }
     }) {
-        snmpAccessInfoDialog.placing()
-        saveDlg.placing()
-        loadDlg.placing()
+        snmpCaptureDialog.placing()
+//        saveDlg.placing()
+//        loadDlg.placing()
+
 
         AutoScrollBox {
             var log by remember { mutableStateOf("") }
-            val scope = rememberCoroutineScope()
             LaunchedEffect(Unit) {
-                scope.launch {
-                    while (true) {
-                        delay(200)
-                        log = logs.lastLines.joinToString("")
-                    }
+                while (true) {
+                    delay(200)
+                    log = logs.lastLines.joinToString("")
                 }
             }
 
