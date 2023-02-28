@@ -9,8 +9,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.File
 import java.util.*
+import kotlin.collections.ArrayDeque
 import kotlin.reflect.KProperty
 
 val app = AppProperties()
@@ -29,10 +31,11 @@ fun AppX() {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "SNMP Desktop",
+        title = "SNMP Desktop - ${app.mibFile ?: "No Data"}",
     ) { WinApp(window) }
 }
 
@@ -62,7 +65,10 @@ class Logger(val file: File = File("snmpdesktop_log.txt")) {
         file.delete()
     }
 
+    val lastLines = ArrayDeque<String>()
     operator fun plusAssign(s: String) {
         file.appendText(s)
+        lastLines.addLast(s)
+        if (lastLines.size > 50) lastLines.removeFirst()
     }
 }
