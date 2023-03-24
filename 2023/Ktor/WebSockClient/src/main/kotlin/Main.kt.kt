@@ -11,7 +11,7 @@ suspend fun main() {
         install(WebSockets)
     }
 
-    client.webSocket(method = HttpMethod.Get, host = "127.0.0.1", port = 8080, path = "/ws") {
+    client.webSocket(method = HttpMethod.Get, host = "shokkaa.wjg.jp", port = 8080, path = "/ws") {
         val inc = launch {
             runCatching {
                 for (message in incoming) {
