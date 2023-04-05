@@ -1,16 +1,18 @@
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 fun main() = File("samples").walk().filter { it.isFile }.forEach { f ->
-    var tStart: Instant = Instant.parse("1970-01-01T00:00:00Z")
-    sequence { f.useLines { it.forEach { yield(it) } } }.filter { it.contains("ARMM") }.forEach {
-        when {
-            it.contains("set interval timer") || it.contains("task start") -> {
-                val t = Regex("""\((\d+)\)""").find(it)?.groupValues?.get(1)?.toLong()
-                if (t != null) tStart = Instant.fromEpochSeconds(t)
-                println("${tStart}   --- $it")
-            }
+    var tOrg: Instant = Instant.fromEpochSeconds(0)
+    sequence { f.useLines { it.forEach { yield(it) } } }.forEach {
+        Regex("""ARMM,.*,(\d+)# .*\((\d+)\).*(task start|set interval timer)""").find(it)?.let {
+            tOrg = Instant.fromEpochMilliseconds(it.groupValues[2].toLong() * 1000 - it.groupValues[1].toLong())
         }
-        println("${tStart} ${f.name} $it")
+        Regex("""ARMM,.*,(\d+)# .*""").find(it)?.let { m ->
+            println("${(tOrg + m.groupValues[1].toLong().milliseconds).toLocalDateTime(TimeZone.currentSystemDefault())} ${f.name} $it")
+        }
+        Regex(""".*\[HTTPCL]\.*(Requestline|ResponseLine).*""").find(it)?.let { _ -> println(it) }
     }
 }
