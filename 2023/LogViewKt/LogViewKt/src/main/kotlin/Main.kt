@@ -13,6 +13,6 @@ fun main() = File("samples").walk().filter { it.isFile }.forEach { f ->
         Regex("""ARMM,.*,(\d+)# .*""").find(it)?.let { m ->
             println("${(tOrg + m.groupValues[1].toLong().milliseconds).toLocalDateTime(TimeZone.currentSystemDefault())} ${f.name} $it")
         }
-        Regex(""".*\[HTTPCL]\.*(Requestline|ResponseLine).*""").find(it)?.let { _ -> println(it) }
+        Regex(""".*\[HTTPCL].*(Requestline|ResponseLine).*""").find(it)?.let { _ -> println(it) }
     }
 }
