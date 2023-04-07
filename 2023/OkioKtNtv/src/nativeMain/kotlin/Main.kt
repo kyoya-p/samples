@@ -5,22 +5,20 @@ import kotlinx.datetime.toLocalDateTime
 import okio.*
 import okio.Path.Companion.toPath
 
-fun Path.walk(): Sequence<Path> = when {
-    FileSystem.SYSTEM.metadata(this).isDirectory -> FileSystem.SYSTEM.list(this).asSequence().flatMap { it.walk() }
-    else -> sequenceOf(this)
-}
-
-fun main(args: Array<String>) = args[0].toPath().walk().forEach { f ->
-    var tOrg: Instant = Instant.fromEpochSeconds(0)
-    FileSystem.SYSTEM.source(f).buffer().use {
-        generateSequence { it.readUtf8Line() }.forEach {
-            Regex("""ARMM,.*,(\d+)# .*\((\d+)\).*(task start|set interval timer)""").find(it)?.let {
-                tOrg = Instant.fromEpochMilliseconds(it.groupValues[2].toLong() * 1000 - it.groupValues[1].toLong())
-            }
-            Regex("""ARMM,.*,(\d+)# .*""").find(it)?.let { m ->
-                println("${(tOrg + m.groupValues[1].toLong().milliseconds).toLocalDateTime(TimeZone.currentSystemDefault())} ${f.name} $it")
-            }
-            Regex(""".*\[HTTPCL].*(Requestline|ResponseLine).*""").find(it)?.let { _ -> println(it) }
+fun main(args: Array<String>) = FileSystem.SYSTEM.run {
+    listRecursively(args[0].toPath()).filter { metadata(it).isDirectory }.forEach { f ->
+        var tOrg: Instant = Instant.fromEpochSeconds(0)
+        fun String.time() = (tOrg + toLong().milliseconds).toLocalDateTime(TimeZone.currentSystemDefault())
+        source(f).buffer().use { src ->
+            generateSequence { src.readUtf8Line() }.filter { it.contains("ARMM") || it.contains("HTTPCL") }
+                .forEach { ln ->
+                    Regex("""ARMM,.*,(\d+)# .*\((\d+)\).*(task start|set interval timer)""").find(ln)?.groupValues?.let { m ->
+                        tOrg = Instant.fromEpochMilliseconds(m[2].toLong() * 1000 - m[1].toLong())
+                    }
+                    Regex("""ARMM,.*,(\d+)# .*""").find(ln)?.groupValues?.let { m -> println("${m[1].time()} ${f.name} $ln") }
+                    Regex(""".*\[HTTPCL].*""").find(ln)?.let { println("${"0".time()} ${f.name} $ln") }
+                }
         }
     }
 }
+
