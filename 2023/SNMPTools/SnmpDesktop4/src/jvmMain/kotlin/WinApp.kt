@@ -58,7 +58,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         mutableStateOf(mib)
     }
     var ipSpec by remember { mutableStateOf(app.ip ?: "") }
-    var walking by remember { mutableStateOf(false) }
+//    var walking by remember { mutableStateOf(false) }
     val snmpCaptureDialog = SnmpCaptureDialog(ipSpec) { ip ->
         ipSpec = ip
         GlobalScope.launch {
@@ -99,16 +99,16 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     }
 
     // Backgroud SNMP capture task
-    if (walking) LaunchedEffect(null) {
-        logs += "$now Run Walk IP:$ipSpec ...\n"
-        val snmp = SnmpBuilder().udp().v1().build().async()
-        val oids = listOf("1.3.6")
-        val r = snmp.walk(ipSpec, oids).map { it[0] }.toList()
-        logs += "$now Completed. IP:$ipSpec, MIBS:${r.size}\n"
-        logs.lastLines.forEach { println(it) }
-        if (r.isNotEmpty()) mib = r
-        walking = false
-    }
+//    if (walking) LaunchedEffect(null) {
+//        logs += "$now Run Walk IP:$ipSpec ...\n"
+//        val snmp = SnmpBuilder().udp().v1().build().async()
+//        val oids = listOf("1.3.6")
+//        val r = snmp.walk(ipSpec, oids).map { it[0] }.toList()
+//        logs += "$now Completed. IP:$ipSpec, MIBS:${r.size}\n"
+//        logs.lastLines.forEach { println(it) }
+//        if (r.isNotEmpty()) mib = r
+//        walking = false
+//    }
 
     Scaffold(topBar = {
         TopAppBar {
