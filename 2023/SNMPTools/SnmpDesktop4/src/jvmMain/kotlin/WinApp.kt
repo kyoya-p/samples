@@ -12,9 +12,7 @@ import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
 import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -43,7 +41,7 @@ fun saveMib(mib: List<VariableBinding>, file: File) = yamlSnmp4j.encodeToStream(
 @OptIn(ExperimentalSerializationApi::class)
 fun loadMib(file: File): List<VariableBinding> = yamlSnmp4j.decodeFromStream(file.inputStream())
 
-@OptIn(FlowPreview::class, ExperimentalSerializationApi::class)
+@OptIn(DelicateCoroutinesApi::class)
 @ExperimentalCoroutinesApi
 @Composable
 @Preview
@@ -54,8 +52,8 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
 
     var mib: List<VariableBinding> by remember {
         val mib = app.mibFile?.let { runCatching { loadMib(File(it)) }.getOrNull() } ?: listOf()
-        if (mib.isEmpty()) logs += "$now Error: Empty MIB... Load or Capture Device first.\n"
-        else logs += "$now Loaded #${mib.size} Entries from ${app.mibFile}\n"
+        logs += if (mib.isEmpty()) "$now Error: Empty MIB... Load or Capture Device first.\n"
+        else "$now Loaded #${mib.size} Entries from ${app.mibFile}\n"
         setAppTitle(app.mibFile)
         mutableStateOf(mib)
     }
@@ -63,22 +61,16 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     var walking by remember { mutableStateOf(false) }
     val snmpCaptureDialog = SnmpCaptureDialog(ipSpec) { ip ->
         ipSpec = ip
-        walking = true
+        GlobalScope.launch {
+            logs += "$now Walking IP:$ipSpec ...\n"
+            val snmp = SnmpBuilder().udp().v1().build().async()
+            val oids = listOf("1.3.6")
+            val r = snmp.walk(ipSpec, oids).map { it[0] }.toList()
+            logs += "$now Completed. IP:$ipSpec, MIBS:${r.size}\n"
+            logs.lastLines.forEach { println(it) }
+            if (r.isNotEmpty()) mib = r
+        }
     }
-//    val saveDlg = AwtFileDialog(mode = SAVE) { d, f ->
-//        val file = File("$d/$f")
-//        yamlSnmp4j.encodeToStream(mib, file.outputStream())
-//        app.mibFile = file.canonicalPath
-//        setAppTitle(file.canonicalPath)
-//        logs += "$now Saved MIBS:${mib.size} to ${file.canonicalPath}\n"
-//    }
-//    val loadDlg = AwtFileDialog(mode = LOAD) { d, f ->
-//        val file = File("$d/$f")
-//        mib = yamlSnmp4j.decodeFromStream(file.inputStream())
-//        app.mibFile = file.canonicalPath
-//        setAppTitle(file.canonicalPath)
-//        logs += "$now Loaded MIBS:${mib.size} from ${file.canonicalPath}\n"
-//    }
 
     fun selectFile(opMode: Int) = FileDialog(window).apply { mode = opMode; isVisible = true }
         .takeIf { it.directory != null && it.file != null }
@@ -103,7 +95,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
                 logs += "$now ${ev.peerAddress}:${PduTypes[ev.pdu.type] ?: ev.pdu.type} > ES:${pdu.errorStatus} EI:${pdu.errorIndex} VBs:${pdu.variableBindings}\n"
                 pdu
             }
-        }.onFailure { logs += now + it.stackTraceToString() + "\n" }
+        }.onFailure { logs += "$now ${it.message}\n" }
     }
 
     // Backgroud SNMP capture task
@@ -111,9 +103,9 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         logs += "$now Run Walk IP:$ipSpec ...\n"
         val snmp = SnmpBuilder().udp().v1().build().async()
         val oids = listOf("1.3.6")
-        logs += "$now Walking"
-        val r = snmp.walk(ipSpec, oids).flatMapConcat { it.asFlow() }.toList()
-        logs += "\n$now Cmpl IP:$ipSpec, MIBS:${r.size}\n"
+        val r = snmp.walk(ipSpec, oids).map { it[0] }.toList()
+        logs += "$now Completed. IP:$ipSpec, MIBS:${r.size}\n"
+        logs.lastLines.forEach { println(it) }
         if (r.isNotEmpty()) mib = r
         walking = false
     }
@@ -126,10 +118,6 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         }
     }) {
         snmpCaptureDialog.placing()
-//        saveDlg.placing()
-//        loadDlg.placing()
-
-
         AutoScrollBox {
             var log by remember { mutableStateOf("") }
             LaunchedEffect(Unit) {

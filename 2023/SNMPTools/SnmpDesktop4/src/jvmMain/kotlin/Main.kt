@@ -13,10 +13,7 @@ val app = AppProperties()
 fun main() = application {
     var mibFileName by remember { mutableStateOf(app.mibFile ?: "No Data") }
     LaunchedEffect(app.mibFile) {
-//        while (true) {
-//            delay(200)
         mibFileName = app.mibFile ?: "No Data"
-//        }
     }
     Window(
         onCloseRequest = ::exitApplication,
