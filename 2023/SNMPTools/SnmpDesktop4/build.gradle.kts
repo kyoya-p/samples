@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.example"
-version = "1.3.0"
+version = "1.3.2"
 
 repositories {
     mavenLocal()
@@ -30,7 +30,6 @@ kotlin {
                 implementation("jp.wjg.shokkaa:snmp4jutils:1.2")  // local private library
             }
         }
-        val jvmTest by getting
     }
 }
 
@@ -40,7 +39,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SnmpDesktop"
-            packageVersion = "1.3.1"
+            packageVersion = "$version"
             windows {
                 menu = true
                 upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
