@@ -71,7 +71,6 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
             if (r.isNotEmpty()) mib = r
         }
     }
-
     fun selectFile(opMode: Int) = FileDialog(window).apply { mode = opMode; isVisible = true }
         .takeIf { it.directory != null && it.file != null }
         ?.run { File(directory, file).canonicalFile }?.apply { app.mibFile = path; setAppTitle(path) }
