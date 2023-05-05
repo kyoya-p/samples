@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.8.0"
-    kotlin("plugin.serialization") version "1.8.0"
+    kotlin("jvm") version "1.8.21"
+    kotlin("plugin.serialization") version "1.8.21"
 }
 
 repositories {
@@ -10,10 +10,9 @@ repositories {
 
 dependencies {
     val ktor_version = "2.3.0"
-//    val ktor_version = "2.3.1-eap-668"
 
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-//    implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+//    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
     implementation("ch.qos.logback:logback-classic:1.4.7")
 
     implementation("io.ktor:ktor-client-core:$ktor_version")

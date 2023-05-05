@@ -1,5 +1,5 @@
 import io.ktor.http.HttpStatusCode.Companion.Created
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.serialization.kotlinx.xml.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -17,7 +17,7 @@ var testData = mutableListOf(
 )
 
 fun Application.sampleModule() {
-    install(ContentNegotiation) { json() }
+    install(ContentNegotiation) { xml() }
     routing {
         get("/") {
             val sId = call.request.queryParameters["id"] ?: return@get call.respond(testData)
