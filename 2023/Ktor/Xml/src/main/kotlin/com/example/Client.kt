@@ -8,7 +8,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.xml.*
 
 
-suspend fun clientSample1(client: HttpClient): List<Customer> = client.get("/").body<List<Customer>>()
+suspend fun clientSample1(client: HttpClient) = client.get("/").body<List<Customer>>()
 suspend fun clientSample2(client: HttpClient, id: Int) = client.get("/${id}").body<List<Customer>>()
 suspend fun clientSample3(client: HttpClient, id: Int) = client.get("/?id=${id}").body<List<Customer>>()
 suspend fun clientSample4(client: HttpClient, customer: Customer) = client.post("/") {

@@ -27,3 +27,16 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
     testImplementation("io.ktor:ktor-client-mock:$ktor_version")
 }
+
+
+//kotlin {
+//    js(IR) {
+//        nodejs {
+//            version = "16.14.0"
+//        }
+//
+//        test {
+//            useJUnitPlatform()
+//        }
+//    }
+//}
