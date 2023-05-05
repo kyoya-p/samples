@@ -27,9 +27,4 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("io.ktor:ktor-server-test-host:$ktor_version")
     testImplementation("io.ktor:ktor-client-mock:$ktor_version")
-
-//    implementation(project(":json-kotlinx"))
-//    implementation(project(":e2e"))
-//    testImplementation("junit:junit:0.0.0")
-//    testImplementation("org.hamcrest:hamcrest:$hamcrest_version")
 }
