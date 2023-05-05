@@ -9,8 +9,8 @@ repositories {
 }
 
 dependencies {
-//    val ktor_version = "2.3.0"
-    val ktor_version = "2.3.1-eap-668"
+    val ktor_version = "2.3.0"
+//    val ktor_version = "2.3.1-eap-668"
 
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
 //    implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
