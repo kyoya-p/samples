@@ -1,32 +1,39 @@
-val ktor_version: String by project
-val kotlin_version: String by project
-val logback_version: String by project
-
 plugins {
-    kotlin("jvm") version "1.8.21"
-    id("io.ktor.plugin") version "2.3.0"
-                id("org.jetbrains.kotlin.plugin.serialization") version "1.8.21"
+    kotlin("js") version "1.8.20"
 }
 
-group = "com.example"
-version = "0.0.1"
-application {
-    mainClass.set("com.example.ApplicationKt")
-
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
-}
+group = "org.example"
+version = "1.0-SNAPSHOT"
 
 repositories {
+    jcenter()
     mavenCentral()
 }
 
+val ktor_version = "2.3.0"
+val kotlin_version = "1.8.20"
+
 dependencies {
-    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
-    implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
-    implementation("ch.qos.logback:logback-classic:$logback_version")
-    testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    implementation("io.ktor:ktor-server-js:$ktor_version")
+    implementation("io.ktor:ktor-server-core-js:$ktor_version")
+//    implementation("io.ktor:ktor-server-content-negotiation-js:$ktor_version")
+//    implementation("io.ktor:ktor-server-cio:$ktor_version")
+
+//    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
+//    implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
+//    implementation("ch.qos.logback:logback-classic:$logback_version")
+
+//    testImplementation("io.ktor:ktor-server-tests-jvm:$ktor_version")
+//    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    testImplementation(kotlin("test"))
+    implementation("org.jetbrains.kotlinx:kotlinx-nodejs:0.0.7")
+}
+
+kotlin {
+    js {
+        binaries.executable()
+        nodejs {
+
+        }
+    }
 }
