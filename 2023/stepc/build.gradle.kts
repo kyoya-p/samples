@@ -12,7 +12,13 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+
+    val ktor_version = "2.3.0"
+    implementation("io.ktor:ktor-server-core:$ktor_version")
+    implementation("io.ktor:ktor-client-apache:$ktor_version")
+    implementation("io.ktor:ktor-client-json:$ktor_version")
+    implementation("io.ktor:ktor-client-serialization:$ktor_version")
+
     testImplementation(kotlin("test"))
 }
 
