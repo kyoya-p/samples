@@ -14,7 +14,6 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@types/puppeteer": "^7.0.4",
     "puppeteer": "^20.2.1"
   }
 }
