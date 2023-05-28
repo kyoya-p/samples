@@ -1,8 +1,8 @@
 {
-  "name": "puppeteer",
+  "name": "puppeteer-test",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,6 +14,5 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "puppeteer": "^20.2.1"
   }
 }
