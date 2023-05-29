@@ -14,8 +14,9 @@ async function main() {
         // slowMo: 500,
     });
     const page = await browser.newPage();
+    console.log("start.")
 
-     page.goto("https://google.com");
+    page.goto("https://google.com");
     capture(page)
     clickerTest(page)
     // await browser.close();
