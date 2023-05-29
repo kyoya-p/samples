@@ -6,7 +6,7 @@ async function main() {
     console.log(process.argv[2])
     const browser = await puppeteer.launch({
         headless: 'new',
-        slowMo: 500,
+        // slowMo: 500,
     });
     const page = await browser.newPage();
 
