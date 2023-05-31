@@ -18,8 +18,8 @@ async function main() {
     console.log("start.")
     runServer(page)
 
-    // page.goto("https://en.wikipedia.org/wiki/Main_Page");
-    page.goto("https://google.com");
+    page.goto("https://www.coolmathgames.com/ja/0-reversi");
+    // page.goto("https://google.com");
     await capture(page)
     await browser.close();
 }
