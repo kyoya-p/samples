@@ -12,8 +12,11 @@ async function main() {
     const browser = await puppeteer.launch({
         headless: 'new',
         // slowMo: 500,
-    });
-    const page = await browser.newPage();
+    ignoreHTTPSErrors: true,
+        args: ['--ignore-certificate-errors','--proxy-server=http://proxy-jp.nara.sharp:3080'],
+	});
+
+const page = await browser.newPage();
     console.log("start.")
     runServer(page)
 
