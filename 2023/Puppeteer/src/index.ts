@@ -13,7 +13,7 @@ async function main() {
         headless: 'new',
         // slowMo: 500,
     ignoreHTTPSErrors: true,
-        args: ['--ignore-certificate-errors','--proxy-server=http://proxy-jp.nara.sharp:3080'],
+        args: ['--ignore-certificate-errors','--proxy-server=http://proxy-nara.jp.sharp:3080'],
 	});
 
 const page = await browser.newPage();
