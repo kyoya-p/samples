@@ -1,10 +1,14 @@
 /*
+export USER="username"
+export PASSWORD="password"
 headless Webブラウザを使用し、画像を連続的に保存するTSコードサンプル
 */
 
 import express from "express";
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
+//import proxyAuthPlugin from 'puppeteer-extra-plugin-proxy-auth';
+//import puppeteerEnvironment from 'jest-environment-puppeteer';
 
 main()
 
@@ -20,6 +24,7 @@ const page = await browser.newPage();
     console.log("start.")
     runServer(page)
 
+    await page.authenticate({ username: process.env.USER, password: process.env.PASSWORD });
     page.goto("https://www.coolmathgames.com/ja/0-reversi");
     // capture(page)
     setInterval(() => capture(page), 1000);
