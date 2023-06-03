@@ -1,3 +1,5 @@
+// ヘッドフルでなければ動作しない模様
+
 const { launch, getStream } = require("puppeteer-stream");
 const fs = require("fs");
 
