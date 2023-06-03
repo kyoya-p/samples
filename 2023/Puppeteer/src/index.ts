@@ -5,7 +5,6 @@ headless Webブラウザを使用し、画像を連続的に保存するTSコー
 import express from "express";
 import puppeteer, { Page } from "puppeteer";
 import fs from "fs";
-import express from 'express';
 
 main()
 
