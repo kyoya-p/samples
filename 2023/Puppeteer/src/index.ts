@@ -24,7 +24,7 @@ const page = await browser.newPage();
     console.log("start.")
     runServer(page)
 
-    await page.authenticate({ username: process.env.USER, password: process.env.PASSWORD });
+    await page.authenticate({ username: process.env.USER??"", password: process.env.PASSWORD??"" });
     page.goto("https://www.coolmathgames.com/ja/0-reversi");
     // capture(page)
     setInterval(() => capture(page), 1000);
