@@ -1,4 +1,4 @@
 /node_modules/
 /package-lock.json
 /build/
-/image.png*
+/image*.png
