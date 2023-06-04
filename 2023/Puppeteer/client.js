@@ -5,18 +5,15 @@ function handleClick(event) {
   console.log(`CALL: ${url}`);
   fetch(url)
     .then(response => response.json())
-    .then(reloadImage)
+    // .then(reloadImage)
     .catch(error => console.error(error));
 };
 
-function reloadImage() {
-  var img = document.getElementById("img");
-  img.src = img.src + "?t=" + new Date().getTime();
-  console.log(`Reloaded.`);
-}
-
-// setInterval(reloadImage, 1000);
-
+// function reloadImage() {
+//   var img = document.getElementById("img");
+//   img.src = img.src + "?t=" + new Date().getTime();
+//   console.log(`Reloaded.`);
+// }
 
 var socket = io();
 
@@ -27,5 +24,5 @@ socket.on('connect', function () {
 socket.on('server_message', function (message) {
   console.log(message);
   var img = document.getElementById("img");
-  img.src = `${message}?t=${new Date().getTime()}`
+  img.src = `${message}`
 });
