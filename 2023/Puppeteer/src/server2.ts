@@ -4,6 +4,8 @@ import { Server } from "socket.io";
 import { Page } from 'puppeteer';
 import { capture2 } from ".";
 
+
+
 export async function runServer2(page: Page, port: number = 3000) {
 
   const app = express();
@@ -18,16 +20,21 @@ export async function runServer2(page: Page, port: number = 3000) {
       if (hash) {
         socket.emit("server_message", `image.png?h=${hash}`);
       }
-    }, 5000);
 
+    }, 2000);
   });
   app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
     const x = parseInt(req.query.x)
     const y = parseInt(req.query.y)
     console.log(`Clicked(${x},${y})`)
     page.mouse.click(x, y)
-    capture2(page)
-    res.send(`{}`)
+    const hash = await capture2(page)
+    if (hash) {
+      console.log(`{"img":"image.png?h=${hash}"}`)
+      res.send(`{"img":"image.png?h=${hash}"}`)
+    } else {
+      res.send(`{}`)
+    }
   });
 
   httpServer.listen(port, () => {

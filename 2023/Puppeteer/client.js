@@ -6,14 +6,16 @@ function handleClick(event) {
   fetch(url)
     .then(response => response.json())
     // .then(reloadImage)
+    .then((data) => { reloadImage(data.img) })
     .catch(error => console.error(error));
 };
 
-// function reloadImage() {
-//   var img = document.getElementById("img");
-//   img.src = img.src + "?t=" + new Date().getTime();
-//   console.log(`Reloaded.`);
-// }
+function reloadImage(imagePath) {
+  var img = document.getElementById("img");
+  // img.src = img.src + "?t=" + new Date().getTime();
+  img.src = imagePath
+  console.log(`Reloaded ${imagePath}`);
+}
 
 var socket = io();
 

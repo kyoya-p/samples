@@ -22,12 +22,10 @@ async function main() {
     const page = await browser.newPage();
     console.log("start.")
     console.log(`${process.argv}`)
-    runServer2(page, Number(process.argv[3] ?? "1000"))
+    runServer2(page, Number(process.argv[3] ?? "3000"))
 
     await page.authenticate({ username: process.env.USER ?? "", password: process.env.PASSWORD ?? "" });
     page.goto(process.argv[2] ?? "https://www.coolmathgames.com/ja/0-reversi");
-    //setInterval(() => capture(page), 1000);
-
     // await browser.close();
 }
 
