@@ -1,10 +1,22 @@
 
 
+Build
+---
+```
+npm i
+```
 
 Run
 ---
 ```
-npx ts-node src/index.ts
+npx ts-node src/index.ts $targetUrl $servicePort
+```
+
+```:proxyの場合
+export PROXY="http://proxy-server:port"
+export USER="username"
+export PASSWORD="password"
+npx ts-node src/index.ts $targetUrl $servicePort
 ```
 
 Project生成

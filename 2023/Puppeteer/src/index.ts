@@ -1,14 +1,10 @@
 /*
-export USER="username"
-export PASSWORD="password"
 headless Webブラウザを使用し、画像を連続的に保存するTSコードサンプル
 */
 
+import fs from "fs";
 import express from "express";
 import puppeteer, { Page } from "puppeteer";
-import fs from "fs";
-//import proxyAuthPlugin from 'puppeteer-extra-plugin-proxy-auth';
-//import puppeteerEnvironment from 'jest-environment-puppeteer';
 
 main()
 
@@ -16,17 +12,18 @@ async function main() {
     const browser = await puppeteer.launch({
         headless: 'new',
         // slowMo: 500,
-    ignoreHTTPSErrors: true,
-        args: ['--ignore-certificate-errors','--proxy-server=http://proxy-nara.jp.sharp:3080'],
-	});
+        ignoreHTTPSErrors: true,
+        // args: ['--ignore-certificate-errors','--proxy-server=http://proxy-nara.jp.sharp:3080'],
+        args: [process.env.PROXY].filter(e => e) as string[],
+    });
 
-const page = await browser.newPage();
+    const page = await browser.newPage();
     console.log("start.")
-    runServer(page)
+    console.log(`${process.argv}`)
+    runServer(page, Number(process.argv[3] ?? "3000"))
 
-    await page.authenticate({ username: process.env.USER??"", password: process.env.PASSWORD??"" });
-    page.goto("https://www.coolmathgames.com/ja/0-reversi");
-    // capture(page)
+    await page.authenticate({ username: process.env.USER ?? "", password: process.env.PASSWORD ?? "" });
+    page.goto(process.argv[2] ?? "https://www.coolmathgames.com/ja/0-reversi");
     setInterval(() => capture(page), 1000);
 
     // await browser.close();
@@ -40,13 +37,9 @@ async function sleep(delay: number) {
     await new Promise(resolve => setTimeout(resolve, delay))
 }
 
-async function runServer(page: Page) {
-
+async function runServer(page: Page, port: number = 3000) {
     const app = express();
-    const port = 3000;
-
     app.use(express.static("."));
-
     app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
         const x = parseInt(req.query.x)
         const y = parseInt(req.query.y)
@@ -57,9 +50,5 @@ async function runServer(page: Page) {
         console.log(`image updated.`)
         res.send(`{}`)
     });
-
-    app.listen(port, () => {
-        console.log(`Server listening at http://localhost:${port} `);
-    });
-
+    app.listen(port, () => console.log(`Server listening at http://localhost:${port} `));
 }
