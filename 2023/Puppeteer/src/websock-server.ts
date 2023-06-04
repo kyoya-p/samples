@@ -5,6 +5,7 @@ headless Webブラウザを使用し、画像を連続的に保存するTSコー
 import fs from "fs";
 import express from "express";
 import puppeteer, { Page } from "puppeteer";
+import WebSocket from "ws";
 
 main()
 
@@ -31,7 +32,6 @@ async function main() {
 
 async function capture(page: Page) {
     fs.writeFileSync(`image.png`, Uint8Array.from(await page.screenshot()))
-    console.log(`update image.`)
 }
 
 async function sleep(delay: number) {
@@ -40,16 +40,27 @@ async function sleep(delay: number) {
 
 async function runServer(page: Page, port: number = 3000) {
     const app = express();
+
     app.use(express.static("."));
-    app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
-        const x = parseInt(req.query.x)
-        const y = parseInt(req.query.y)
+    app.get('/op/click', async (req, res) => {
+        console.log(`query=${req.query.x}`)
+        const x = parseInt(req.query.x as string)
+        const y = parseInt(req.query.y as string)
         console.log(`Clicked(${x},${y})`)
         await page.mouse.click(x, y)
         await capture(page)
         // await fs.writeFileSync(`image.png`, Uint8Array.from(await page.screenshot()))
-        console.log(`image updated.`)
         res.send(`{}`)
     });
-    app.listen(port, () => console.log(`Server listening at http://localhost:${port} `));
+    const server = app.listen(port, () => console.log(`Server listening at http://localhost:${port} `));
+
+    const wss = new WebSocket.Server({ server: server });
+    wss.on('connection', function connection(ws) {
+        ws.on('message', function incoming(message) {
+            console.log('received: %s', message);
+            ws.send('something');
+        });
+        ws.send('something');
+    });
+
 }
