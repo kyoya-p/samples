@@ -9,10 +9,23 @@ function handleClick(event) {
     .catch(error => console.error(error));
 };
 
-function reloadImage(){
+function reloadImage() {
   var img = document.getElementById("img");
   img.src = img.src + "?t=" + new Date().getTime();
   console.log(`Reloaded.`);
 }
 
-setInterval(reloadImage, 1000);
+// setInterval(reloadImage, 1000);
+
+
+var socket = io();
+
+socket.on('connect', function () {
+  console.log('Connected to server');
+});
+
+socket.on('server_message', function (message) {
+  console.log(message);
+  var img = document.getElementById("img");
+  img.src = `${message}?t=${new Date().getTime()}`
+});

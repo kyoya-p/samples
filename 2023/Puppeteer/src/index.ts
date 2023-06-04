@@ -5,6 +5,7 @@ headless Webブラウザを使用し、画像を連続的に保存するTSコー
 import fs from "fs";
 import express from "express";
 import puppeteer, { Page } from "puppeteer";
+import { runServer2 } from "./server2";
 
 main()
 
@@ -20,18 +21,29 @@ async function main() {
     const page = await browser.newPage();
     console.log("start.")
     console.log(`${process.argv}`)
-    runServer(page, Number(process.argv[3] ?? "3000"))
+    runServer2(page, Number(process.argv[3] ?? "3000"))
 
     await page.authenticate({ username: process.env.USER ?? "", password: process.env.PASSWORD ?? "" });
     page.goto(process.argv[2] ?? "https://www.coolmathgames.com/ja/0-reversi");
-    setInterval(() => capture(page), 1000);
+    //setInterval(() => capture(page), 1000);
 
     // await browser.close();
 }
 
-async function capture(page: Page) {
+export async function capture(page: Page) {
     fs.writeFileSync(`image.png`, Uint8Array.from(await page.screenshot()))
     console.log(`update image.`)
+}
+let img: Buffer
+export async function capture2(page: Page) {
+    const newImg = Buffer.from(await page.screenshot())
+    if (newImg !== img) {
+        fs.writeFileSync(`image.png`, Buffer.from(await page.screenshot()))
+        img = newImg
+        console.log(`update image.`)
+        return true
+    }
+    return false
 }
 
 async function sleep(delay: number) {
@@ -47,7 +59,6 @@ async function runServer(page: Page, port: number = 3000) {
         console.log(`Clicked(${x},${y})`)
         await page.mouse.click(x, y)
         await capture(page)
-        // await fs.writeFileSync(`image.png`, Uint8Array.from(await page.screenshot()))
         console.log(`image updated.`)
         res.send(`{}`)
     });
