@@ -4,8 +4,6 @@ import { Server } from "socket.io";
 import { Page } from 'puppeteer';
 import { capture2 } from ".";
 
-
-
 export async function runServer2(page: Page, port: number = 3000) {
 
   const app = express();
