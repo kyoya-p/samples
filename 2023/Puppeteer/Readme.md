@@ -39,7 +39,9 @@ sudo apt -y install locales fonts-ipafont fonts-ipaexfont
 ---
 ``bash
 sudo apt-get install -y libgbm-dev
-sudo apt-get install -y libatk-bridge2.0-0 libgtk-3-0 libnss3 libx11-xcb1 libasound2
+sudo apt-get install -y libatk-bridge2.0-0 
+sudo apt-get install -y libgtk-3-0
+sudo apt-get install -y libnss3 libx11-xcb1 libasound2
 ```
 ```terminal:実行時下記エラーが表示される場合
 Error: Failed to launch the browser process!
