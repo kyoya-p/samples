@@ -15,7 +15,8 @@ async function main() {
 
     console.log(`start. args=${puArgs}`)
     const browser = await puppeteer.launch({
-        headless: 'new',
+        // headless: 'new',
+        headless: false,
         // slowMo: 500,
         ignoreHTTPSErrors: true,
         args: puArgs,
