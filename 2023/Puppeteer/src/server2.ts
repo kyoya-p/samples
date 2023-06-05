@@ -10,10 +10,11 @@ export async function runServer2(page: Page, port: number = 3000) {
   const httpServer = http.createServer(app);
   const io = new Server(httpServer);
 
-  app.use(express.static("."));
+let timer
+app.use(express.static("."));
   io.on("connection", (socket) => {
     console.log("Connected.");
-    setInterval(async () => {
+    timer=setInterval(async () => {
       const hash = await capture2(page)
       if (hash) {
         socket.emit("server_message", `image.png?h=${hash}`);
@@ -21,7 +22,9 @@ export async function runServer2(page: Page, port: number = 3000) {
 
     }, 2000);
   });
-  // TODO terminate timer on disconnect 
+  io.on("disconnect", () => {
+      clearInterval(timer);
+        });
 
 app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
     const x = parseInt(req.query.x)
