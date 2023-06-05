@@ -3,24 +3,26 @@ headless Webブラウザを使用し、画像を連続的に保存するTSコー
 */
 
 import fs from "fs";
-import express from "express";
 import puppeteer, { Page } from "puppeteer";
-import { runServer2 } from "./server2";
+import { runServer2 } from "./server";
 import * as crypto from "crypto";
 
 main()
 
 async function main() {
+    let puArgs = ['--ignore-certificate-errors']
+    if (process.env.PROXY) puArgs.push(`--proxy-server=${process.env.PROXY}`)
+
+    console.log(`start. args=${puArgs}`)
     const browser = await puppeteer.launch({
         headless: 'new',
         // slowMo: 500,
         ignoreHTTPSErrors: true,
-        // args: ['--ignore-certificate-errors','--proxy-server=http://proxy-nara.jp.sharp:3080'],
-        args: [process.env.PROXY].filter(e => e) as string[],
+        args: puArgs,
     });
 
+
     const page = await browser.newPage();
-    console.log("start.")
     console.log(`${process.argv}`)
     runServer2(page, Number(process.argv[3] ?? "3000"))
 

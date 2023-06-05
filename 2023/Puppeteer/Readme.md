@@ -1,39 +1,34 @@
 
 
-Build
----
+# Build
 ```
 npm i
 ```
 
-Run
----
+# Run
 ```
 npx ts-node src/index.ts $targetUrl $servicePort
 ```
 
-```:proxyの場合
+proxyの場合
+```
 export PROXY="http://proxy-server:port"
 export USER="username"
 export PASSWORD="password"
 npx ts-node src/index.ts $targetUrl $servicePort
 ```
 
-Project生成
----
-
+# Project生成
 ```:Typescript Project生成
 npm init -y
 npm i typescript @types/node --save-dev
 npx tsc --init --rootDir src --outDir build
 
-npm i puppeteer @types/puppeteer
+npm i puppeteer @types/puppeteer ......
 ```
 
 
-Trouble Shooting
----
-
+# Trouble Shooting
 ### 日本語フォントが化ける
 ```
 sudo apt -y install locales fonts-ipafont fonts-ipaexfont

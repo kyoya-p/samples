@@ -5,8 +5,9 @@ function handleClick(event) {
   console.log(`CALL: ${url}`);
   fetch(url)
     .then(response => response.json())
-    // .then(reloadImage)
-    .then((data) => { reloadImage(data.img) })
+    .then((data) => {
+      // reloadImage(data.img)
+    })
     .catch(error => console.error(error));
 };
 
