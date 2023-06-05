@@ -21,7 +21,9 @@ export async function runServer2(page: Page, port: number = 3000) {
 
     }, 2000);
   });
-  app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
+  // TODO terminate timer on disconnect 
+
+app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
     const x = parseInt(req.query.x)
     const y = parseInt(req.query.y)
     console.log(`Clicked(${x},${y})`)
