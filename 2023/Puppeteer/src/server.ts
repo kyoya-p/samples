@@ -23,7 +23,7 @@ export async function runServer2(page: Page, port: number = 3000) {
       if (hash) {
         socket.emit("server_message", `image.png?h=${hash}`);
       }
-    }, 2000);
+    }, 5000);
   });
   server.on("disconnect", () => {
     console.log("disconnect.");
@@ -34,17 +34,43 @@ export async function runServer2(page: Page, port: number = 3000) {
     const x = parseInt(req.query.x)
     const y = parseInt(req.query.y)
     console.log(`Clicked(${x},${y})`)
-    //    page.mouse.click(x, y)
-    page.mouse.move(x, y)
-    page.mouse.down({ button: "left" })
-    page.mouse.up({ button: "left" })
-    const hash = await capture2(page)
-    if (hash) {
-      console.log(`{"img":"image.png?h=${hash}"}`)
-      res.send(`{"img":"image.png?h=${hash}"}`)
-    } else {
-      res.send(`{}`)
-    }
+    await page.mouse.click(x, y)
+    // page.mouse.down({ button: "left" })
+    // page.mouse.up({ button: "left" })
+
+    let response = `{}`
+    // const hash = await capture2(page)
+    // if (hash) {
+    //   console.log(`{"img":"image.png?h=${hash}"}`)
+    //   response = `{"img":"image.png?h=${hash}"}`
+    // } 
+    res.send(response)
+  });
+  app.get('/op/mousedown', async (req: any, res: { send: (arg0: string) => void; }) => {
+    const x = parseInt(req.query.x)
+    const y = parseInt(req.query.y)
+    console.log(`mousedown(${x},${y})`)
+    let response = `{}`
+    // await page.mouse.move(x, y)
+    await page.mouse.down({ button: "left", })
+    res.send(response)
+  });
+  app.get('/op/mouseup', async (req: any, res: { send: (arg0: string) => void; }) => {
+    const x = parseInt(req.query.x)
+    const y = parseInt(req.query.y)
+    console.log(`mouseup(${x},${y})`)
+    let response = `{}`
+    // await page.mouse.move(x, y)
+    await page.mouse.up({ button: "left", })
+    res.send(response)
+  });
+  app.get('/op/mousemove', async (req: any, res: { send: (arg0: string) => void; }) => {
+    const x = parseInt(req.query.x)
+    const y = parseInt(req.query.y)
+    console.log(`mousemove(${x},${y})`)
+    let response = `{}`
+    await page.mouse.move(x, y)
+    res.send(response)
   });
 
   httpServer.listen(port, () => {
