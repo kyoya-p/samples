@@ -24,7 +24,7 @@ fun Application.module() {
     val wikipediaLang = "en"
 
     intercept(ApplicationCallPipeline.Call) {
-        val response = client.request("https://$wikipediaLang.wikipedia.org${call.request.uri}")
+        val response = client.request("http://10.36.102.245")
 
         val proxiedHeaders = response.headers
         val location = proxiedHeaders[HttpHeaders.Location]
