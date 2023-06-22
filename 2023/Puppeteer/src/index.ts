@@ -1,33 +1,65 @@
-import puppeteer from 'puppeteer';
-// import * as http from 'http';
+/*
+headless Webブラウザを使用し、画像を連続的に保存するTSコードサンプル
+*/
 
-async function main() {
-
-    console.log(process.argv[2])
-    const browser = await puppeteer.launch({
-        headless: 'new',
-        slowMo: 500,
-    });
-    const page = await browser.newPage();
-
-    await page.goto('https://google.com');
-
-    await page.screenshot({ fromSurface: false, path: 'screenshot.~fromSurface.png', });
-    await page.screenshot({ fullPage: true, path: 'screenshot.fullPage.png', });
-    await page.screenshot({ quality: 1, path: 'screenshot.q1.jpg', });
-    await page.screenshot({ quality: 2, path: 'screenshot.q2.jpg', });
-    await page.screenshot({ quality: 3, path: 'screenshot.q3.jpg', });
-    await page.screenshot({ quality: 5, path: 'screenshot.q5.jpg', });
-    await page.screenshot({ quality: 10, path: 'screenshot.q10.jpg', });
-    await page.screenshot({ quality: 25, path: 'screenshot.q25.jpg', });
-    await page.screenshot({ quality: 50, path: 'screenshot.q50.jpg', });
-    await page.screenshot({ quality: 75, path: 'screenshot.q75.jpg', });
-    await page.screenshot({ quality: 100, path: 'screenshot.q100.jpg', });
-    await page.screenshot({ quality: 0, path: 'screenshot.q0.jpg', });
-    await page.screenshot({ fullPage: true, path: 'screenshot.fullPage.png', });
-    await page.screenshot({ path: 'screenshot.png', });
-
-    await browser.close();
-}
+import fs from "fs";
+import puppeteer, { Page } from "puppeteer";
+import { runServer2 } from "./server";
+import * as crypto from "crypto";
 
 main()
+
+async function main() {
+    let puArgs = ['--ignore-certificate-errors']
+    if (process.env.PROXY) puArgs.push(`--proxy-server=${process.env.PROXY}`)
+
+    console.log(`start. args=${puArgs}`)
+    const browser = await puppeteer.launch({
+        // headless: 'new',
+        headless: false,
+        // slowMo: 500,
+        ignoreHTTPSErrors: true,
+        args: puArgs,
+    });
+
+
+    const page = await browser.newPage();
+    console.log(`${process.argv}`)
+    runServer2(page, Number(process.argv[3] ?? "3000"))
+
+    await page.authenticate({ username: process.env.USER ?? "", password: process.env.PASSWORD ?? "" });
+    page.goto(process.argv[2] ?? "https://www.coolmathgames.com/ja/0-reversi");
+    // await browser.close();
+}
+
+let lastImgHash = crypto.createHash("sha256").update("").digest().toString("hex")
+export async function capture2(page: Page) {
+    const newImg = Buffer.from(await page.screenshot())
+    const hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
+    console.log(`image hash:${hash}`)
+    if (lastImgHash !== hash) {
+        fs.writeFileSync(`image.png`, newImg)
+        lastImgHash = hash
+        return hash
+    }
+    return null
+}
+
+// async function sleep(delay: number) {
+//     await new Promise(resolve => setTimeout(resolve, delay))
+// }
+
+// async function runServer(page: Page, port: number = 3000) {
+//     const app = express();
+//     app.use(express.static("."));
+//     app.get('/op/click', async (req: any, res: { send: (arg0: string) => void; }) => {
+//         const x = parseInt(req.query.x)
+//         const y = parseInt(req.query.y)
+//         console.log(`Clicked(${x},${y})`)
+//         await page.mouse.click(x, y)
+//         await capture2(page)
+//         console.log(`image updated.`)
+//         res.send(`{}`)
+//     });
+//     app.listen(port, () => console.log(`Server listening at http://localhost:${port} `));
+// }
