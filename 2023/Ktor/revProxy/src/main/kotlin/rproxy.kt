@@ -14,8 +14,9 @@ import io.ktor.server.response.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 
-fun main() {
-    val server = embeddedServer(CIO, port = 8080, module = Application::module)
+fun main(args: Array<String>) {
+    val port = args.toList().getOrNull(0)?.toInt() ?: 8080
+    val server = embeddedServer(CIO, port = port, module = Application::module)
     server.start(wait = true)
 }
 
@@ -24,6 +25,10 @@ fun Application.module() {
     val wikipediaLang = "en"
 
     intercept(ApplicationCallPipeline.Call) {
+        val uri=call.request.uri
+        println(call.request.uri)
+//        println(uri.)
+        //val response = client.request("https://$wikipediaLang.wikipedia.org${call.request.uri}")
         val response = client.request("http://10.36.102.245")
 
         val proxiedHeaders = response.headers
