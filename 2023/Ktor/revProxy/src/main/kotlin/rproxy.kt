@@ -22,14 +22,15 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val client = HttpClient()
-    val wikipediaLang = "en"
 
     intercept(ApplicationCallPipeline.Call) {
-        val uri=call.request.uri
-        println(call.request.uri)
-//        println(uri.)
-        //val response = client.request("https://$wikipediaLang.wikipedia.org${call.request.uri}")
-        val response = client.request("http://10.36.102.245")
+        val rqUrl = Url(call.request.uri)
+        val tgUrl = rqUrl.parameters["url"] ?: "https://google.com"
+        println("tgUrl=$tgUrl")
+
+        // val response = client.request("https://$wikipediaLang.wikipedia.org${call.request.uri}")
+        // val response = client.request("http://10.36.102.245")
+        val response = client.request(tgUrl)
 
         val proxiedHeaders = response.headers
         val location = proxiedHeaders[HttpHeaders.Location]
