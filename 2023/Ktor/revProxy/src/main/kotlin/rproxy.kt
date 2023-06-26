@@ -28,7 +28,7 @@ fun Application.module() {
 
         val tgUrlHost = Url(rqUrl.pathSegments.getOrNull(1) ?: "localhost")
         val tgUrl = URLBuilder(tgUrlHost).apply {
-            pathSegments = rqUrl.pathSegments.drop(1)
+            pathSegments = rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
             parameters { rqUrl.parameters }
         }.build()
 
