@@ -9,34 +9,51 @@ import io.ktor.server.engine.*
 import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.runBlocking
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
-fun main(args: Array<String>) {
+fun main(args: Array<String>): Unit = runBlocking {
+    embeddedServer(CIO, 8086) { testTargetModule() }.start()
+
     val port = args.toList().getOrNull(0)?.toInt() ?: 8080
     val server = embeddedServer(CIO, port = port, module = Application::module)
     println("Start proxy server port:$port")
     server.start(wait = true)
 }
 
+fun Application.testTargetModule() {
+    routing {
+        get("/") { call.respondText("""<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/sun.jpg'/>""", ContentType.Text.Html) }
+        get("/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
+    }
+}
+
 fun Application.module() {
     val client = HttpClient()
-
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
-        println("rqUrl=$rqUrl")
+        println("rqUrl.pathSegments=${rqUrl.pathSegments}")
+        println("rqUrl=${rqUrl}")
 
-        val tgUrlHost = Url(rqUrl.pathSegments.getOrNull(1) ?: "localhost")
+        val tgUrlHost = rqUrl.pathSegments.getOrNull(1) ?: "http://urlencode.net/"
+        val tgPath = rqUrl.pathSegments.drop(2)
+        println("tgUrlHost=${tgUrlHost}")
+        println("tgPath=${tgPath}")
+
         val tgUrl = URLBuilder(tgUrlHost).apply {
             pathSegments = rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
             parameters { rqUrl.parameters }
         }.build()
-
+        println("tgUrl.pathSegments=${tgUrl.pathSegments}")
         println("tgUrl=$tgUrl")
 
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
-            headers{call.request.headers}
+            headers { call.request.headers }
         }
         val proxiedHeaders = response.headers
         val location = proxiedHeaders[HttpHeaders.Location]
