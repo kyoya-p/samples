@@ -24,29 +24,32 @@ fun Application.module() {
 
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
-	println("rqUrl=$rqUrl")
-        val tgUrl = rqUrl.parameters["url"] ?: "https://google.com"
+        println("rqUrl=$rqUrl")
+        println("rqUrl.fragment=${rqUrl.fragment}")
+        println("rqUrl.pathSegments=${rqUrl.pathSegments}")
+        val tgUrl = rqUrl.parameters["url"] ?: rqUrl.pathSegments.getOrNull(1) ?: "https://google.com"
+        val u = URLBuilder(rqUrl).apply { pathSegments.drop(1) }.build()
+        println(u)
+
         println("tgUrl=$tgUrl")
 
-        // val response = client.request("https://$wikipediaLang.wikipedia.org${call.request.uri}")
-        // val response = client.request("http://10.36.102.245")
         val response = client.request(tgUrl)
-
         val proxiedHeaders = response.headers
         val location = proxiedHeaders[HttpHeaders.Location]
         val contentType = proxiedHeaders[HttpHeaders.ContentType]
         val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
 
-        fun String.stripWikipediaDomain() = this.replace(Regex("(https?:)?//\\w+\\.wikipedia\\.org"), "")
-
-        if (location != null) {
-            call.response.header(HttpHeaders.Location, location.stripWikipediaDomain())
-        }
+//        fun String.stripWikipediaDomain() = this.replace(Regex("(https?:)?//\\w+\\.wikipedia\\.org"), "")
+//
+//        if (location != null) {
+//            call.response.header(HttpHeaders.Location, location.stripWikipediaDomain())
+//        }
 
         when {
             contentType?.startsWith("text/html") == true -> {
                 val text = response.bodyAsText()
-                val filteredText = text.stripWikipediaDomain()
+//                val filteredText = text.stripWikipediaDomain()
+                val filteredText = text
                 call.respond(
                     TextContent(
                         filteredText,
