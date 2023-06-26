@@ -17,11 +17,15 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 
 fun main(args: Array<String>): Unit = runBlocking {
-    embeddedServer(CIO, 8086) { testTargetModule() }.start()
+    val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
+    val SampleTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
 
-    val port = args.toList().getOrNull(0)?.toInt() ?: 8080
-    val server = embeddedServer(CIO, port = port, module = Application::module)
-    println("Start proxy server port:$port")
+
+    embeddedServer(CIO, port = SampleTargetPort) { testTargetModule() }.start()
+    println("Start sample target server port:$SampleTargetPort")
+
+    val server = embeddedServer(CIO, port = proxyPort, module = Application::module)
+    println("Start proxy server port:$proxyPort")
     server.start(wait = true)
 }
 
