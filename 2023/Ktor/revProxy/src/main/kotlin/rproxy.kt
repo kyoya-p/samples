@@ -1,5 +1,3 @@
-package io.ktor.samples.reverseproxy
-
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -17,6 +15,7 @@ import io.ktor.utils.io.*
 fun main(args: Array<String>) {
     val port = args.toList().getOrNull(0)?.toInt() ?: 8080
     val server = embeddedServer(CIO, port = port, module = Application::module)
+    println("Start proxy server port:$port")
     server.start(wait = true)
 }
 
@@ -25,6 +24,7 @@ fun Application.module() {
 
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
+	println("rqUrl=$rqUrl")
         val tgUrl = rqUrl.parameters["url"] ?: "https://google.com"
         println("tgUrl=$tgUrl")
 
