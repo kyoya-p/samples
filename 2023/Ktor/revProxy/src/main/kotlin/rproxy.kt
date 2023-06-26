@@ -25,15 +25,19 @@ fun Application.module() {
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
         println("rqUrl=$rqUrl")
-        println("rqUrl.fragment=${rqUrl.fragment}")
-        println("rqUrl.pathSegments=${rqUrl.pathSegments}")
-        val tgUrl = rqUrl.parameters["url"] ?: rqUrl.pathSegments.getOrNull(1) ?: "https://google.com"
-        val u = URLBuilder(rqUrl).apply { pathSegments.drop(1) }.build()
-        println(u)
+
+        val tgUrlHost = Url(rqUrl.pathSegments.getOrNull(1) ?: "localhost")
+        val tgUrl = URLBuilder(tgUrlHost).apply {
+            pathSegments = rqUrl.pathSegments.drop(1)
+            parameters { rqUrl.parameters }
+        }.build()
 
         println("tgUrl=$tgUrl")
 
-        val response = client.request(tgUrl)
+        val response = client.request(tgUrl) {
+            method = call.request.httpMethod
+            headers{call.request.headers}
+        }
         val proxiedHeaders = response.headers
         val location = proxiedHeaders[HttpHeaders.Location]
         val contentType = proxiedHeaders[HttpHeaders.ContentType]
