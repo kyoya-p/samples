@@ -26,9 +26,10 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 fun Application.testTargetModule() {
+    val htmlSample = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
     routing {
-        get("/") { call.respondText("""<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/sun.jpg'/>""", ContentType.Text.Html) }
-        get("/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
+        get("/m/index.html") { call.respondText(htmlSample, ContentType.Text.Html) }
+        get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
     }
 }
 
@@ -36,27 +37,20 @@ fun Application.module() {
     val client = HttpClient()
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
-        println("rqUrl.pathSegments=${rqUrl.pathSegments}")
-        println("rqUrl=${rqUrl}")
-
         val tgUrlHost = rqUrl.pathSegments.getOrNull(1) ?: "http://urlencode.net/"
-        val tgPath = rqUrl.pathSegments.drop(2)
-        println("tgUrlHost=${tgUrlHost}")
-        println("tgPath=${tgPath}")
-
         val tgUrl = URLBuilder(tgUrlHost).apply {
-            pathSegments = rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
+            pathSegments = pathSegments + rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
             parameters { rqUrl.parameters }
         }.build()
-        println("tgUrl.pathSegments=${tgUrl.pathSegments}")
-        println("tgUrl=$tgUrl")
+
+        println("$rqUrl => $tgUrl")
 
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers }
         }
         val proxiedHeaders = response.headers
-        val location = proxiedHeaders[HttpHeaders.Location]
+//        val location = proxiedHeaders[HttpHeaders.Location]
         val contentType = proxiedHeaders[HttpHeaders.ContentType]
         val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
 
