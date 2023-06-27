@@ -40,6 +40,7 @@ fun Application.testTargetModule() {
 fun Application.module() {
     val client = HttpClient()
     intercept(ApplicationCallPipeline.Call) {
+        println("req={${call.request.uri},${call.request.httpMethod},${call.request.headers.toMap()}}")
         val rqUrl = Url(call.request.uri)
         val tgUrlHost = rqUrl.pathSegments.getOrNull(1) ?: "http://urlencode.net/"
         val tgUrl = URLBuilder(tgUrlHost).apply {
@@ -49,7 +50,7 @@ fun Application.module() {
 
         println("$rqUrl => $tgUrl")
 
-        val response = client.request(tgUrl) {
+        val response = client. request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers }
         }
