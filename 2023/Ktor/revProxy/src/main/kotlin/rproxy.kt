@@ -18,24 +18,21 @@ import okio.Path.Companion.toPath
 
 fun main(args: Array<String>): Unit = runBlocking {
     val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
-    val SampleTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
-
-
-    embeddedServer(CIO, port = SampleTargetPort) { testTargetModule() }.start()
-    println("Start sample target server port:$SampleTargetPort")
+    val testTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
+    embeddedServer(CIO, port = testTargetPort) { testTargetModule() }.start()
+    println("Start sample target server port:$testTargetPort")
 
     val server = embeddedServer(CIO, port = proxyPort, module = Application::module)
     println("Start proxy server port:$proxyPort")
     server.start(wait = true)
 }
 
-fun Application.testTargetModule() {
+fun Application.testTargetModule() = routing {
     val htmlSample = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
-    routing {
-        get("/m/index.html") { call.respondText(htmlSample, ContentType.Text.Html) }
-        get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
-    }
+    get("/m/index.html") { call.respondText(htmlSample, ContentType.Text.Html) }
+    get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
 }
+
 
 fun Application.module() {
     val client = HttpClient()
@@ -50,7 +47,7 @@ fun Application.module() {
 
         println("$rqUrl => $tgUrl")
 
-        val response = client. request(tgUrl) {
+        val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers }
         }
