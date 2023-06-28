@@ -28,9 +28,11 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 fun Application.testTargetModule() = routing {
-    val htmlSample = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
-    get("/m/index.html") { call.respondText(htmlSample, ContentType.Text.Html) }
+    val htmlSample1 = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
+    val htmlSample2 = """<input />"""
+    get("/m/index.html") { call.respondText(htmlSample1, ContentType.Text.Html) }
     get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
+    post("/m/r") { }
 }
 
 
