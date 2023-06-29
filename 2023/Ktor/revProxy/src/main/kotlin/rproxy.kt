@@ -10,6 +10,7 @@ import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
@@ -19,6 +20,7 @@ import okio.Path.Companion.toPath
 fun main(args: Array<String>): Unit = runBlocking {
     val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
     val testTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
+
     embeddedServer(CIO, port = testTargetPort) { testTargetModule() }.start()
     println("Start sample target server port:$testTargetPort")
 
@@ -28,30 +30,37 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 fun Application.testTargetModule() = routing {
-    val htmlSample1 = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
-    val htmlSample2 = """<input />"""
-    get("/m/index.html") { call.respondText(htmlSample1, ContentType.Text.Html) }
+    val htmlSample1 = """
+        |<img src='sun.jpg'/>sun.jpg</br>
+        |<img src='./sun.jpg'/>./sun.jpg<br/>
+        |<img src='../sun.jpg'/>../sun.jpg<br/>
+        |<img src='../m/sun.jpg'/>../m/sun.jpg<br/>
+        |<img src='/m/sun.jpg'/>/m/sun.jpg""".trimMargin()
+    get("/m/sample1") { call.respondText(htmlSample1, ContentType.Text.Html) }
+    get("/m/sample1/") { call.respondText(htmlSample1, ContentType.Text.Html) }
     get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
-    post("/m/r") { }
+    post { call.respondText { "Your request url is: ${call.request.uri}" } }
 }
 
 
 fun Application.module() {
     val client = HttpClient()
     intercept(ApplicationCallPipeline.Call) {
-        println("req={${call.request.uri},${call.request.httpMethod},${call.request.headers.toMap()}}")
         val rqUrl = Url(call.request.uri)
         val tgUrlHost = rqUrl.pathSegments.getOrNull(1) ?: "http://urlencode.net/"
         val tgUrl = URLBuilder(tgUrlHost).apply {
-            pathSegments = pathSegments + rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
+            if (pathSegments.isEmpty()) pathSegments = rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
+            else pathSegments += rqUrl.pathSegments.drop(2)
             parameters { rqUrl.parameters }
         }.build()
 
-        println("$rqUrl => $tgUrl")
+        val recvText = call.receiveText()
+        println("${rqUrl.pathSegments}{${recvText}} => $tgUrl")
 
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers }
+            setBody(recvText)
         }
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]

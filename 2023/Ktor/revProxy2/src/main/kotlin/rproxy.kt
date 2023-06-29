@@ -29,15 +29,12 @@ fun main(args: Array<String>): Unit = runBlocking {
 
 fun Application.testTargetModule() = routing {
     val htmlSample1 = """<img src='./sun.jpg'/> <img src='sun.jpg'/> <img src='/m/sun.jpg'/>"""
-    val htmlSample2 = """<input />"""
     get("/m/index.html") { call.respondText(htmlSample1, ContentType.Text.Html) }
     get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
-    post("/m/r") { }
 }
 
 
-fun Application.module() {
-    val client = HttpClient()
+fun Application.module() = routing {
     intercept(ApplicationCallPipeline.Call) {
         println("req={${call.request.uri},${call.request.httpMethod},${call.request.headers.toMap()}}")
         val rqUrl = Url(call.request.uri)
@@ -47,16 +44,6 @@ fun Application.module() {
             parameters { rqUrl.parameters }
         }.build()
 
-        println("$rqUrl => $tgUrl")
-
-        val response = client.request(tgUrl) {
-            method = call.request.httpMethod
-            headers { call.request.headers }
-        }
-        val proxiedHeaders = response.headers
-//        val location = proxiedHeaders[HttpHeaders.Location]
-        val contentType = proxiedHeaders[HttpHeaders.ContentType]
-        val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
 
 //        fun String.stripWikipediaDomain() = this.replace(Regex("(https?:)?//\\w+\\.wikipedia\\.org"), "")
 //
