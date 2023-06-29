@@ -1,6 +1,7 @@
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.content.TextContent
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -9,6 +10,8 @@ import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
+import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
@@ -59,6 +62,8 @@ fun Application.module() {
             headers { call.request.headers }
             setBody(recvText)
         }
+        println("${call.request.httpMethod}${rqUrl.pathSegments}{${recvText.take(20)}} => $tgUrl")
+
 //        val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
 //        val contentType = proxiedHeaders[HttpHeaders.ContentType]
