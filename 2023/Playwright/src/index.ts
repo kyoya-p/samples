@@ -1,39 +1,35 @@
-import { Page, chromium, devices } from 'playwright'
 import express from "express"
+import { Page, chromium, devices } from 'playwright'
 
 main()
 
 async function main() {
+  const tgUrl = process.argv[2] ?? "https://google.com"
+  const port = parseInt(process.argv[3] ?? "3000")
 
   const browser = await chromium.launch()
   const page = await browser.newPage()
-  await page.goto('https://google.com/')
+  await page.goto(tgUrl)
 
-  webServer(page)
+  webServer(page, port)
   setInterval(async () => { page.screenshot({ path: 'result/screenshot.png' }) }, 2000)
 
   // await browser.close()
 }
 
-async function capture(page: Page) {
-  await page.screenshot({ path: 'result/screenshot.png' })
-}
+let hash = "" //TODO
 
-let hash = ""
-
-async function webServer(page: Page) {
+async function webServer(page: Page, port: number) {
   const app = express()
   app.use(express.static("."));
   app.get("/click", (req: any, res) => {
-    const x = parseInt(req.query.x)
-    const y = parseInt(req.query.y)
-    page.mouse.click(x, y, { button: "left" })
+    page.mouse.click(parseInt(req.query.x), parseInt(req.query.y), { button: "left" })
     res.send(`{}`)
   })
   app.get("", (req, res) => {
     res.send(`
     <script src="client.js"></script>
-    <img src="result/screenshot.png?${hash}"  onclick="handleClick(event)"></img>`)
+    <img src="result/screenshot.png?${hash}" onclick="handleClick(event)"></img>`)
   })
-  app.listen(3000, () => { console.log("Server is running on port 3000") })
+  app.listen(port, () => { console.log(`Server is running on port ${port}`) })
 }
