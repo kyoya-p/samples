@@ -42,7 +42,6 @@ fun Application.testTargetModule() = routing {
     post { call.respondText { "Your request url is: ${call.request.uri}" } }
 }
 
-
 fun Application.module() {
     val client = HttpClient()
     intercept(ApplicationCallPipeline.Call) {
@@ -55,13 +54,13 @@ fun Application.module() {
         }.build()
 
         val recvText = call.receiveText()
-        println("${rqUrl.pathSegments}{${recvText}} => $tgUrl")
-
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers }
             setBody(recvText)
         }
+        println("${call.request.httpMethod}${rqUrl.pathSegments}{${recvText.take(20)}} => $tgUrl")
+
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
         val contentType = proxiedHeaders[HttpHeaders.ContentType]
