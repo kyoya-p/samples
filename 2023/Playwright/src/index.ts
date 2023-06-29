@@ -1,3 +1,5 @@
+import fs from "fs"
+import * as crypto from "crypto";
 import express from "express"
 import { Page, chromium, devices } from 'playwright'
 
@@ -12,24 +14,27 @@ async function main() {
   await page.goto(tgUrl)
 
   webServer(page, port)
-  setInterval(async () => { page.screenshot({ path: 'result/screenshot.png' }) }, 2000)
+  setInterval(async () => { capture(page) }, 2000)
 
   // await browser.close()
 }
 
-let hash = "" //TODO
+async function capture(page: Page) {
+  const newImg = Buffer.from(await page.screenshot())
+  hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
+  fs.writeFileSync(`result/screenshot.png`, newImg)
+}
+let hash = ""
 
 async function webServer(page: Page, port: number) {
   const app = express()
   app.use(express.static("."));
+  app.get("", (req, res) => { res.send(`<script src="client.js"></script><img width="100%" height="100%" id="img" onclick="handleClick(event)"></img>`) })
   app.get("/click", (req: any, res) => {
     page.mouse.click(parseInt(req.query.x), parseInt(req.query.y), { button: "left" })
     res.send(`{}`)
+    console.log(`/click(${req.query.x},${req.query.y})`)
   })
-  app.get("", (req, res) => {
-    res.send(`
-    <script src="client.js"></script>
-    <img src="result/screenshot.png?${hash}" onclick="handleClick(event)"></img>`)
-  })
+  app.get("/hash", (req, res) => { res.send(`{"hash":"${hash}"}`) })
   app.listen(port, () => { console.log(`Server is running on port ${port}`) })
 }
