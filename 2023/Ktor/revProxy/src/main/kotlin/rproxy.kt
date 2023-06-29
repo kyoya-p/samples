@@ -1,7 +1,6 @@
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.content.TextContent
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -10,8 +9,6 @@ import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.util.*
-import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
@@ -62,10 +59,10 @@ fun Application.module() {
             headers { call.request.headers }
             setBody(recvText)
         }
-        val proxiedHeaders = response.headers
+//        val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
-        val contentType = proxiedHeaders[HttpHeaders.ContentType]
-        val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
+//        val contentType = proxiedHeaders[HttpHeaders.ContentType]
+//        val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
 
 //        fun String.stripWikipediaDomain() = this.replace(Regex("(https?:)?//\\w+\\.wikipedia\\.org"), "")
 //
@@ -73,38 +70,39 @@ fun Application.module() {
 //            call.response.header(HttpHeaders.Location, location.stripWikipediaDomain())
 //        }
 
-        when {
-            contentType?.startsWith("text/html") == true -> {
-                val text = response.bodyAsText()
-//                val filteredText = text.stripWikipediaDomain()
-                val filteredText = text
-                call.respond(
-                    TextContent(
-                        filteredText,
-                        ContentType.Text.Html.withCharset(Charsets.UTF_8),
-                        response.status
-                    )
-                )
+//        when {
+//            contentType?.startsWith("text/html") == true -> {
+//                val text = response.bodyAsText()
+////                val filteredText = text.stripWikipediaDomain()
+//                val filteredText = text
+//                call.respond(
+//                    TextContent(
+//                        filteredText,
+//                        ContentType.Text.Html.withCharset(Charsets.UTF_8),
+//                        response.status
+//                    )
+//                )
+//            }
+//
+//            else -> {
+        call.respond(object : OutgoingContent.WriteChannelContent() {
+            //            override val contentLength: Long? = contentLength?.toLong()
+//            override val contentType: ContentType? = contentType?.let { ContentType.parse(it) }
+//            override val headers: Headers = Headers.build {
+//                appendAll(proxiedHeaders.filter { key, _ ->
+//                    !key.equals(
+//                        HttpHeaders.ContentType,
+//                        ignoreCase = true
+//                    ) && !key.equals(HttpHeaders.ContentLength, ignoreCase = true)
+//                })
+//            }
+            override val headers = response.headers
+            override val status: HttpStatusCode = response.status
+            override suspend fun writeTo(channel: ByteWriteChannel) {
+                response.bodyAsChannel().copyAndClose(channel)
             }
-
-            else -> {
-                call.respond(object : OutgoingContent.WriteChannelContent() {
-                    override val contentLength: Long? = contentLength?.toLong()
-                    override val contentType: ContentType? = contentType?.let { ContentType.parse(it) }
-                    override val headers: Headers = Headers.build {
-                        appendAll(proxiedHeaders.filter { key, _ ->
-                            !key.equals(
-                                HttpHeaders.ContentType,
-                                ignoreCase = true
-                            ) && !key.equals(HttpHeaders.ContentLength, ignoreCase = true)
-                        })
-                    }
-                    override val status: HttpStatusCode = response.status
-                    override suspend fun writeTo(channel: ByteWriteChannel) {
-                        response.bodyAsChannel().copyAndClose(channel)
-                    }
-                })
-            }
-        }
+        })
+//            }
+//        }
     }
 }
