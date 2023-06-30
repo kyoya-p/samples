@@ -15,16 +15,15 @@ async function main() {
 
   webServer(page, port)
   setInterval(async () => { capture(page) }, 2000)
-
-  // await browser.close()
 }
+
+let hash = ""
 
 async function capture(page: Page) {
   const newImg = Buffer.from(await page.screenshot())
   hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
   fs.writeFileSync(`result/screenshot.png`, newImg)
 }
-let hash = ""
 
 async function webServer(page: Page, port: number) {
   const app = express()
