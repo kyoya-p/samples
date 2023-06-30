@@ -12,7 +12,7 @@ async function main() {
 
   const browser = await chromium.launch({
     //headless: false,
-    //devtools: true,
+    devtools: true,
     args: ["--remote-debugging-port=9222","--remote-debugging-address=0.0.0.0"]
   })
   // const ctx = await browser.newContext({ recordVideo: { dir: "./result" , } })
