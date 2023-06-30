@@ -1,7 +1,6 @@
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.content.TextContent
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
@@ -10,7 +9,6 @@ import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.util.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
@@ -54,20 +52,26 @@ fun Application.module() {
             parameters { rqUrl.parameters }
         }.build()
 
-        val recvText = call.receiveText()
-        println("${rqUrl.pathSegments}{${recvText}} => $tgUrl")
+        fun Headers.myBuilder() = Headers.build {
+            appendAll(filter { key, _ ->
+                !key.equals(HttpHeaders.ContentType, true)
+                        && !key.equals(HttpHeaders.ContentLength, true)
+                        && !key.equals(HttpHeaders.TransferEncoding, true)
+            })
+        }
 
+        val recvText = call.receiveText()
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
-            headers { call.request.headers }
+            headers { call.request.headers.myBuilder() }
             setBody(recvText)
         }
         println("${call.request.httpMethod}${rqUrl.pathSegments}{${recvText.take(20)}} => $tgUrl")
 
-//        val proxiedHeaders = response.headers
+        val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
-//        val contentType = proxiedHeaders[HttpHeaders.ContentType]
-//        val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
+        val contentType = proxiedHeaders[HttpHeaders.ContentType]
+        val contentLength = proxiedHeaders[HttpHeaders.ContentLength]
 
 //        fun String.stripWikipediaDomain() = this.replace(Regex("(https?:)?//\\w+\\.wikipedia\\.org"), "")
 //
@@ -90,18 +94,14 @@ fun Application.module() {
 //            }
 //
 //            else -> {
+
+
         call.respond(object : OutgoingContent.WriteChannelContent() {
-            //            override val contentLength: Long? = contentLength?.toLong()
-//            override val contentType: ContentType? = contentType?.let { ContentType.parse(it) }
-//            override val headers: Headers = Headers.build {
-//                appendAll(proxiedHeaders.filter { key, _ ->
-//                    !key.equals(
-//                        HttpHeaders.ContentType,
-//                        ignoreCase = true
-//                    ) && !key.equals(HttpHeaders.ContentLength, ignoreCase = true)
-//                })
-//            }
-            override val headers = response.headers
+            override val contentLength: Long? = contentLength?.toLong()
+            override val contentType: ContentType? = contentType?.let { ContentType.parse(it) }
+            override val headers: Headers = proxiedHeaders.myBuilder()
+
+            //            override val headers = response.headers
             override val status: HttpStatusCode = response.status
             override suspend fun writeTo(channel: ByteWriteChannel) {
                 response.bodyAsChannel().copyAndClose(channel)
