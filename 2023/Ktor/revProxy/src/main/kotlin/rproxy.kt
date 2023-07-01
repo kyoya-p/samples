@@ -14,6 +14,8 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import java.security.cert.X509Certificate
+import javax.net.ssl.X509TrustManager
 
 fun main(args: Array<String>): Unit = runBlocking {
     val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
@@ -40,15 +42,49 @@ fun Application.testTargetModule() = routing {
     post { call.respondText { "Your request url is: ${call.request.uri}" } }
 }
 
-
 fun Application.module() {
-    val client = HttpClient()
+    val client = HttpClient(io.ktor.client.engine.cio.CIO) {
+        engine {
+            https {
+                trustManager = object : X509TrustManager {
+                    override fun getAcceptedIssuers() = null
+                    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = Unit
+                    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) = Unit
+                }
+            }
+        }
+    }
     intercept(ApplicationCallPipeline.Call) {
+        suspend fun fallback() {
+            println("Fallbacked")
+            val fallbackPage = """
+                <form><input type="text" name="url"/></form>
+            """.trimIndent()
+            call.respond(
+                TextContent(
+                    fallbackPage,
+                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
+                )
+            )
+        }
+
+        suspend fun redirectTo(url: String) {
+            println("redirectTo($url)")
+            call.response.cookies.append("X-230701-Target-Url", url)
+            call.respondRedirect(".")
+        }
+
+        call.request.queryParameters["url"]?.let { url -> return@intercept redirectTo(url) }
+
         val rqUrl = Url(call.request.uri)
-        val tgUrlHost = rqUrl.pathSegments.getOrNull(1) ?: "http://urlencode.net/"
+        val tgUrlHost = call.request.cookies["X-230701-Target-Url"] ?: rqUrl.pathSegments.getOrNull(1)
+        ?: return@intercept fallback()
         val tgUrl = URLBuilder(tgUrlHost).apply {
-            if (pathSegments.isEmpty()) pathSegments = rqUrl.pathSegments.take(1) + rqUrl.pathSegments.drop(2)
-            else pathSegments += rqUrl.pathSegments.drop(2)
+            val rqPath = rqUrl.pathSegments
+            pathSegments += when {
+                rqPath.getOrNull(1)?.startsWith("http") == true -> rqPath.drop(2)
+                else ->  rqPath.drop(1)
+            }
             parameters { rqUrl.parameters }
         }.build()
 
@@ -66,7 +102,7 @@ fun Application.module() {
             headers { call.request.headers.myBuilder() }
             setBody(recvText)
         }
-        println("${call.request.httpMethod}${rqUrl.pathSegments}{${recvText.take(20)}} => $tgUrl")
+        println("${call.request.httpMethod.value}${rqUrl.pathSegments}/?${call.request.queryParameters.toMap()}:${call.request.cookies.rawCookies}{${recvText.take(20)}} => $tgUrl")
 
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
