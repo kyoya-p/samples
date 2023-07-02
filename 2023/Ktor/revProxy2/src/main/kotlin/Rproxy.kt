@@ -39,18 +39,18 @@ fun Application.module() {
         }
     }
     intercept(ApplicationCallPipeline.Call) {
-        suspend fun fallback() {
-            println("Fallbacked")
-            val fallbackPage = """
-                <form><input type="text" name="url"/></form>
-            """.trimIndent()
-            call.respond(
-                TextContent(
-                    fallbackPage,
-                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
-                )
-            )
-        }
+//        suspend fun fallback() {
+//            println("Fallbacked")
+//            val fallbackPage = """
+//                <form><input type="text" name="url"/></form>
+//            """.trimIndent()
+//            call.respond(
+//                TextContent(
+//                    fallbackPage,
+//                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
+//                )
+//            )
+//        }
 
         suspend fun redirectTo(url: Url) {
             println("redirectTo($url)")
@@ -62,14 +62,13 @@ fun Application.module() {
 
         println("URL=${call.request.uri}")
         val rqUrl = Url(call.request.uri)
-        val tgHostUrl = call.request.cookies["X-230701-Target-Url"] ?: return@intercept fallback()
+        val tgHostUrl = call.request.cookies["X-230701-Target-Url"] ?: return@intercept call.respond(HttpStatusCode.BadRequest)
 
         println("tgHostUrl = ${tgHostUrl}")
 
         val tgUrl = URLBuilder(tgHostUrl).apply {
             pathSegments = rqUrl.pathSegments
             parameters { rqUrl.parameters }
-
         }.build()
 
         fun Headers.myBuilder() = Headers.build {
