@@ -8,12 +8,9 @@ import io.ktor.server.engine.*
 import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
-import okio.FileSystem
-import okio.Path.Companion.toPath
 import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
 
@@ -29,19 +26,6 @@ fun main(args: Array<String>): Unit = runBlocking {
     server.start(wait = true)
 }
 
-fun Application.testTargetModule() = routing {
-    val htmlSample1 = """
-        |<img src='sun.jpg'/>sun.jpg</br>
-        |<img src='./sun.jpg'/>./sun.jpg<br/>
-        |<img src='../sun.jpg'/>../sun.jpg<br/>
-        |<img src='../m/sun.jpg'/>../m/sun.jpg<br/>
-        |<img src='/m/sun.jpg'/>/m/sun.jpg""".trimMargin()
-    get("/m/sample1") { call.respondText(htmlSample1, ContentType.Text.Html) }
-    get("/m/sample1/") { call.respondText(htmlSample1, ContentType.Text.Html) }
-    get("/m/sun.jpg") { call.respondBytes(FileSystem.SYSTEM.read("sun.jpg".toPath()) { this.readByteArray() }) }
-    post { call.respondText { "Your request url is: ${call.request.uri}" } }
-}
-
 fun Application.module() {
     val client = HttpClient(io.ktor.client.engine.cio.CIO) {
         engine {
@@ -55,38 +39,20 @@ fun Application.module() {
         }
     }
     intercept(ApplicationCallPipeline.Call) {
-        suspend fun fallback() {
-            println("Fallbacked")
-            val fallbackPage = """
-                <form><input type="text" name="url"/></form>
-            """.trimIndent()
-            call.respond(
-                TextContent(
-                    fallbackPage,
-                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
-                )
-            )
-        }
-
-        suspend fun redirectTo(url: String) {
-            println("redirectTo($url)")
-            call.response.cookies.append("X-230701-Target-Url", url)
-            call.respondRedirect(".")
-        }
-
-        call.request.queryParameters["url"]?.let { url -> return@intercept redirectTo(url) }
-
         val rqUrl = Url(call.request.uri)
-        val tgUrlHost = call.request.cookies["X-230701-Target-Url"] ?: rqUrl.pathSegments.getOrNull(1)
-        ?: return@intercept fallback()
+        call.request.queryParameters["url"]?.let { url -> return@intercept call.respondRedirect("/url/${url.encodeURLPathPart()}/") }
+        if (!(rqUrl.pathSegments.size >= 3 && rqUrl.pathSegments[1] == "url")) {
+            return@intercept call.respondText("<h1>Error!</h1>", ContentType.Text.Html, HttpStatusCode.NotAcceptable)
+        }
+
+        val tgUrlHost = rqUrl.pathSegments[2]
         val tgUrl = URLBuilder(tgUrlHost).apply {
             val rqPath = rqUrl.pathSegments
-            pathSegments += when {
-                rqPath.getOrNull(1)?.startsWith("http") == true -> rqPath.drop(2)
-                else ->  rqPath.drop(1)
-            }
+            pathSegments += rqPath.drop(3)
             parameters { rqUrl.parameters }
         }.build()
+
+        println("${call.request.httpMethod.value}${rqUrl.pathSegments} => $tgUrl")
 
         fun Headers.myBuilder() = Headers.build {
             appendAll(filter { key, _ ->
@@ -102,7 +68,13 @@ fun Application.module() {
             headers { call.request.headers.myBuilder() }
             setBody(recvText)
         }
-        println("${call.request.httpMethod.value}${rqUrl.pathSegments}/?${call.request.queryParameters.toMap()}:${call.request.cookies.rawCookies}{${recvText.take(20)}} => $tgUrl")
+        println(
+            "${call.request.httpMethod.value}${rqUrl.pathSegments}/?${call.request.queryParameters.toMap()}:${call.request.cookies.rawCookies}{${
+                recvText.take(
+                    20
+                )
+            }} => $tgUrl"
+        )
 
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
