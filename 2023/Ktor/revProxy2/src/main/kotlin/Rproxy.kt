@@ -69,6 +69,7 @@ fun Application.module() {
         }
 
         val recvText = call.receiveText()
+//        val reqChannel = call.receiveChannel()
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers.myBuilder() }
