@@ -13,7 +13,7 @@ fun Application.module() = routing {
     post("/") {
         val channel = call.receiveChannel()
         while (!channel.isClosedForRead) {
-            val rs = channel.readUTF8Line(1) ?: break
+            val rs = channel.readByte() ?: break
             call.respondText("[$rs]")
         }
     }
