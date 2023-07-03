@@ -39,19 +39,6 @@ fun Application.module() {
         }
     }
     intercept(ApplicationCallPipeline.Call) {
-//        suspend fun fallback() {
-//            println("Fallbacked")
-//            val fallbackPage = """
-//                <form><input type="text" name="url"/></form>
-//            """.trimIndent()
-//            call.respond(
-//                TextContent(
-//                    fallbackPage,
-//                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
-//                )
-//            )
-//        }
-
         suspend fun redirectTo(url: Url) {
             println("redirectTo($url)")
             call.response.cookies.append("X-230701-Target-Url", "${url.protocol.name}://${url.hostWithPort}")
