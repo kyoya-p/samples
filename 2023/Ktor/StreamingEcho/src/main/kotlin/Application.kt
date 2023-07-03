@@ -1,6 +1,7 @@
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.cio.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
@@ -9,8 +10,12 @@ fun main() {
 }
 
 fun Application.module() = routing {
-    get("/") {
-        call.respondText("Hello World!")
+    post("/") {
+        val channel = call.receiveChannel()
+        while (!channel.isClosedForRead) {
+            val rs = channel.readUTF8Line(1) ?: break
+            call.respondText("[$rs]")
+        }
     }
 }
 
