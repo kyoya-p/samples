@@ -15,8 +15,8 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.X509TrustManager
 
 fun main(args: Array<String>): Unit = runBlocking {
-    val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
-    val testTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
+    val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8380
+    val testTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8381
 
     embeddedServer(CIO, port = testTargetPort) { testTargetModule() }.start()
     println("Start sample target server port:$testTargetPort")
@@ -39,36 +39,25 @@ fun Application.module() {
         }
     }
     intercept(ApplicationCallPipeline.Call) {
-//        suspend fun fallback() {
-//            println("Fallbacked")
-//            val fallbackPage = """
-//                <form><input type="text" name="url"/></form>
-//            """.trimIndent()
-//            call.respond(
-//                TextContent(
-//                    fallbackPage,
-//                    ContentType.Text.Html.withCharset(Charsets.UTF_8),
-//                )
-//            )
-//        }
-
         suspend fun redirectTo(url: Url) {
-            println("redirectTo($url)")
+            println("Redirect to: $url")
             call.response.cookies.append("X-230701-Target-Url", "${url.protocol.name}://${url.hostWithPort}")
-            call.respondRedirect(url.fullPath)
+            call.respondRedirect((if (url.isRelativePath) "/" else "") + url.fullPath)
         }
-        println("q[url]=${call.request.queryParameters["url"]}")
         call.request.queryParameters["url"]?.let { url -> return@intercept redirectTo(Url(url)) }
 
-        println("URL=${call.request.uri}")
         val rqUrl = Url(call.request.uri)
-        val tgHostUrl = call.request.cookies["X-230701-Target-Url"] ?: return@intercept call.respond(HttpStatusCode.BadRequest)
-
-        println("tgHostUrl = ${tgHostUrl}")
-
-        val tgUrl = URLBuilder(tgHostUrl).apply {
-            pathSegments = rqUrl.pathSegments
-            parameters { rqUrl.parameters }
+        val tgOriginUrl =
+            Url(call.request.cookies["X-230701-Target-Url"] ?: return@intercept call.respond(HttpStatusCode.BadRequest))
+//        val tgUrl = URLBuilder(tgHostUrl).apply {
+//            pathSegments = rqUrl.pathSegments
+//            parameters { rqUrl.parameters }
+//            println("prams=${rqUrl.parameters.toMap()} => ")
+//        }.build()
+        val tgUrl = URLBuilder(rqUrl).apply {
+            host = tgOriginUrl.host
+            port = tgOriginUrl.port
+            protocol = tgOriginUrl.protocol
         }.build()
 
         fun Headers.myBuilder() = Headers.build {
@@ -80,16 +69,14 @@ fun Application.module() {
         }
 
         val recvText = call.receiveText()
+//        val reqChannel = call.receiveChannel()
         val response = client.request(tgUrl) {
             method = call.request.httpMethod
             headers { call.request.headers.myBuilder() }
             setBody(recvText)
         }
-        println(
-            "${call.request.httpMethod.value}${rqUrl.pathSegments}/?" +
-                    "${call.request.queryParameters["X-230701-Target-Url"]}:" +
-                    "${call.request.cookies.rawCookies["X-230701-Target-Url"]}{${recvText.take(20)}} => $tgUrl"
-        )
+        println("${call.request.httpMethod.value} - ${rqUrl}{tgUrl=$tgOriginUrl} => ${tgUrl}")
+        if (recvText.isNotEmpty()) println("Body: $recvText")
 
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
