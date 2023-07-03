@@ -42,7 +42,7 @@ fun Application.module() {
         suspend fun redirectTo(url: Url) {
             println("Redirect to: $url")
             call.response.cookies.append("X-230701-Target-Url", "${url.protocol.name}://${url.hostWithPort}")
-            call.respondRedirect(url.fullPath)
+            call.respondRedirect((if (url.isRelativePath) "/" else "") + url.fullPath)
         }
         call.request.queryParameters["url"]?.let { url -> return@intercept redirectTo(Url(url)) }
 
@@ -74,7 +74,8 @@ fun Application.module() {
             headers { call.request.headers.myBuilder() }
             setBody(recvText)
         }
-        println("${rqUrl}{tgUrl=$tgOriginUrl} => ${tgUrl}")
+        println("${call.request.httpMethod.value} - ${rqUrl}{tgUrl=$tgOriginUrl} => ${tgUrl}")
+        if (recvText.isNotEmpty()) println("Body: $recvText")
 
         val proxiedHeaders = response.headers
 //        val location = proxiedHeaders[HttpHeaders.Location]
