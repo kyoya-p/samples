@@ -1,6 +1,3 @@
-val ktor_version: String by project
-val kotlin_version: String by project
-val logback_version: String by project
 
 plugins {
     kotlin("jvm") version "1.8.20"
@@ -21,6 +18,12 @@ repositories {
 }
 
 dependencies {
+    val ktor_version = "2.3.1"
+    val kotlin_version = "1.8.22"
+    val logback_version = "1.2.11"
+
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
+
     implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
     implementation("io.ktor:ktor-server-cio-jvm:$ktor_version")
     implementation("ch.qos.logback:logback-classic:$logback_version")
