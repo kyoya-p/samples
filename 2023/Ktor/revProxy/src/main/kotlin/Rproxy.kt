@@ -18,10 +18,10 @@ fun main(args: Array<String>): Unit = runBlocking {
     val proxyPort = args.toList().getOrNull(0)?.toInt() ?: 8180
     val testTargetPort = args.toList().getOrNull(1)?.toInt() ?: 8181
 
-    embeddedServer(CIO, port = testTargetPort) { testTargetModule() }.start()
+    embeddedServer(CIO, host = "0.0.0.0", port = testTargetPort) { testTargetModule() }.start()
     println("Start sample target server port:$testTargetPort")
 
-    val server = embeddedServer(CIO, port = proxyPort, module = Application::module)
+    val server = embeddedServer(CIO, host = "0.0.0.0", port = proxyPort, module = Application::module)
     println("Start proxy server port:$proxyPort")
     server.start(wait = true)
 }
