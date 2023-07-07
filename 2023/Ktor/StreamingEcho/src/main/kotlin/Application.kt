@@ -31,9 +31,10 @@ fun Application.module() = routing {
         val inputStream = call.receiveStream()
         inputStream.bufferedReader().useLines { lines ->
             lines.forEach {
-                call.respondText("[$it]")
+                // Handle each line of the input stream here
             }
         }
+        call.respondText("Stream received successfully")
     }
     post("/streaming2") {
         val receiveChannel = call.receiveChannel()
