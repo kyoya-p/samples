@@ -34,7 +34,6 @@ fun Application.module() = routing {
                 call.respondText("[$it]")
             }
         }
-        call.respondText("Stream received successfully")
     }
     post("/streaming2") {
         val receiveChannel = call.receiveChannel()
