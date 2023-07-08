@@ -14,7 +14,7 @@ class ApplicationTest {
     @Test
     fun test1() = testApplication {
         application { module() }
-        val r = client.get("/s1") {
+        val r = client.get("/") {
         }.bodyAsChannel()
 
         val r1 = r.readByte()
@@ -27,10 +27,10 @@ class ApplicationTest {
 
     @Test
     fun test2() = testApplication {
-        application { module() }
-        val r = client.post("/s2") {
-
+        application { module2() }
+        val r = client.post("/s1") {
+            setBody("aaa")
         }
-
+        println(r.bodyAsText())
     }
 }

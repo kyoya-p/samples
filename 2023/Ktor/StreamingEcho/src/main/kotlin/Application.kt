@@ -6,11 +6,18 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.core.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
-    embeddedServer(CIO, port = 8080) { module() }.start(wait = true)
+    embeddedServer(CIO, port = 8080) { module2() }.start(wait = true)
 }
 
 fun Application.module() = routing {
@@ -27,26 +34,54 @@ fun Application.module() = routing {
             write(readChannel.readByte().toString())
         }
     }
-    post("/streaming1") {
-        val inputStream = call.receiveStream()
-        inputStream.bufferedReader().useLines { lines ->
-            lines.forEach {
-                // Handle each line of the input stream here
-            }
+    post("/s1") {
+        val channel = call.receiveChannel()
+        while (!channel.isClosedForRead) {
+            val bytes = channel.readUTF8Line()
+            call.respondText("[$bytes]")
         }
-        call.respondText("Stream received successfully")
-    }
-    post("/streaming2") {
-        val receiveChannel = call.receiveChannel()
-        try {
-            while (!receiveChannel.isClosedForRead) {
-                val packet = receiveChannel.readRemaining(1024)
-                // Do something with the packet
-            }
-        } finally {
-            receiveChannel.cancel()
-        }
-        call.respond("Stream received")
     }
 }
 
+fun Application.module2() {
+    routing {
+        post("/") {
+            call.respondTextWriter(contentType = ContentType.Text.Plain) {
+                val channel = Channel<String>()
+                launch(Dispatchers.IO) {
+                    flow {
+                        val recv = call.receiveChannel()
+                        while (!recv.isClosedForRead) {
+                            val r = recv.readUTF8Line() ?: break
+                            println("Recv:$r")
+                            emit(r)
+                        }
+                    }.collect {
+                        channel.send("$it\n")
+                    }
+                    channel.close()
+                }
+
+                for (line in channel) {
+                    write(line)
+                    flush()
+                }
+            }
+        }
+        post("/s1") {
+            call.respondTextWriter(contentType = ContentType.Text.Plain) {
+                flow {
+                    val recv = call.receiveChannel()
+                    while (!recv.isClosedForRead) {
+                        val r = recv.readUTF8Line() ?: break
+                        println("Recv:$r")
+                        emit(r)
+                    }
+                }.collect {
+                    write("[$it]\n")
+                    flush()
+                }
+            }
+        }
+    }
+}
