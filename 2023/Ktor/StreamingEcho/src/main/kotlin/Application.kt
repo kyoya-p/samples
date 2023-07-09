@@ -14,6 +14,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock.System.now
+import java.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -52,13 +54,9 @@ fun Application.module2() {
                     flow {
                         val recv = call.receiveChannel()
                         while (!recv.isClosedForRead) {
-                            val r = recv.readUTF8Line() ?: break
-                            println("Recv:$r")
-                            emit(r)
+                            emit(recv.readUTF8Line() ?: break)
                         }
-                    }.collect {
-                        channel.send("$it\n")
-                    }
+                    }.collect { channel.send("$it\n") }
                     channel.close()
                 }
 
@@ -69,16 +67,32 @@ fun Application.module2() {
             }
         }
         post("/s1") {
+            var seed = 0L
             call.respondTextWriter(contentType = ContentType.Text.Plain) {
                 flow {
                     val recv = call.receiveChannel()
                     while (!recv.isClosedForRead) {
                         val r = recv.readUTF8Line() ?: break
-                        println("Recv:$r")
-                        emit(r)
+                        emit(r.toLong())
+                        delay(0.5.seconds)
                     }
                 }.collect {
-                    write("[$it]\n")
+                    write("${now()}[$it]\n")
+                    flush()
+                }
+            }
+        }
+        post("/s2") {
+            var seed = 0L
+            println("/s2")
+            call.respondTextWriter(contentType = ContentType.Text.Plain) {
+                val recv = call.receiveChannel()
+                while (!recv.isClosedForRead) {
+                    println("Recv: ---")
+                    val r = recv.readUTF8Line() ?: break
+                    println("Recv: ${r}")
+                    seed += r.toLong()
+                    write("$seed\n")
                     flush()
                 }
             }
