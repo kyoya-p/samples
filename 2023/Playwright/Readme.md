@@ -24,7 +24,16 @@ npm init -y
 npm i typescript @types/node --save-dev
 npx tsc --init --rootDir src --outDir build
 
-npm i puppeteer @types/puppeteer ......
+npm init playwright@latest
+
+Getting started with writing end-to-end tests with Playwright:
+Initializing project in '.'
+✔ Where to put your end-to-end tests? · tests
+✔ Add a GitHub Actions workflow? (y/N) · false
+✔ Install Playwright browsers (can be done manually via 'npx playwright install')? (Y/n) · true
+✔ Install Playwright operating system dependencies (requires sudo / root - can be done manually via 'sudo npx playwright install-deps')? (y/N) · false
+
+npm i playwright
 ```
 
 
@@ -50,6 +59,4 @@ Error: Failed to launch the browser process!
 
 参照
 ---
-
-https://pptr.dev/
-https://github.com/puppeteer/puppeteer
+https://playwright.dev/
