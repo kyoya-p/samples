@@ -24,7 +24,6 @@ async function capture(page: Page) {
     hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
     fs.writeFileSync(`result/screenshot_tmp.png`, newImg)
     fs.renameSync(`result/screenshot_tmp.png`, `result/screenshot.png`)
-    console.log(`captured`)
 }
 
 async function webServer(page: Page, port: number) {
