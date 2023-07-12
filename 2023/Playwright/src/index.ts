@@ -28,17 +28,10 @@ async function main() {
 let hash = ""
 
 async function capture(page: Page) {
-<<<<<<< HEAD
-    const newImg = Buffer.from(await page.screenshot({type:"jpeg",quality:10}))
-    hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
-    fs.writeFileSync(`result/screenshot_tmp.jpg`, newImg)
-    fs.renameSync(`result/screenshot_tmp.jpg`, `result/screenshot.jpg`)
-=======
   const newImg = Buffer.from(await page.screenshot())
   hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
   fs.writeFileSync(`result/screenshot_tmp.png`, newImg)
   fs.renameSync(`result/screenshot_tmp.png`, `result/screenshot.png`)
->>>>>>> 534de5c7a60b6d31dccb0b827dc9bff8378b2078
 }
 
 async function webServer(page: Page, port: number) {
