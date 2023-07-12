@@ -5,7 +5,7 @@ function reloadImage() {
 }
 
 function flushImage(hash) {
-  document.getElementById("img").style.backgroundImage = `url(/result/screenshot.png?${hash})`;
+  document.getElementById("img").style.backgroundImage = `url(/result/screenshot.jpg?${hash})`;
 }
 
 function handleClick(ev) {

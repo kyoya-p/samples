@@ -20,10 +20,10 @@ async function main() {
 let hash = ""
 
 async function capture(page: Page) {
-    const newImg = Buffer.from(await page.screenshot())
+    const newImg = Buffer.from(await page.screenshot({type:"jpeg",quality:10}))
     hash = crypto.createHash("sha256").update(newImg).digest().toString("hex")
-    fs.writeFileSync(`result/screenshot_tmp.png`, newImg)
-    fs.renameSync(`result/screenshot_tmp.png`, `result/screenshot.png`)
+    fs.writeFileSync(`result/screenshot_tmp.jpg`, newImg)
+    fs.renameSync(`result/screenshot_tmp.jpg`, `result/screenshot.jpg`)
 }
 
 async function webServer(page: Page, port: number) {
