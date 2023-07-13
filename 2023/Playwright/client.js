@@ -9,7 +9,7 @@ function flushImage(hash) {
 }
 
 function handleClick(ev) {
-  fetch(`/click?x=${ev.clientX}&y=${ev.clientY}`).then(res => res.json()).then((data) => {
+  fetch(`/click?x=${ev.offsetX}&y=${ev.offsetY}`).then(res => res.json()).then((data) => {
     flushImage(data.hash);
   });
 };

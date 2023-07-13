@@ -19,7 +19,7 @@ async function main() {
   await page.goto(tgUrl)
 
   webServer(page, port)
-  rtmpServer()
+  // rtmpServer()
   setInterval(async () => { capture(page) }, 2000)
 }
 
@@ -46,22 +46,22 @@ async function webServer(page: Page, port: number) {
   app.listen(port, () => { console.log(`Server is running on port ${port}`) })
 }
 
-async function rtmpServer() {
-  const config = {
-    rtmp: {
-      port: 1935,
-      chunk_size: 60000,
-      gop_cache: true,
-      ping: 30,
-      ping_timeout: 60
-    },
-    http: {
-      port: 8000,
-      allow_origin: '*',
-      mediaroot: './media',
-    }
-  }
+// async function rtmpServer() {
+//   const config = {
+//     rtmp: {
+//       port: 1935,
+//       chunk_size: 60000,
+//       gop_cache: true,
+//       ping: 30,
+//       ping_timeout: 60
+//     },
+//     http: {
+//       port: 8000,
+//       allow_origin: '*',
+//       mediaroot: './media',
+//     }
+//   }
 
-  var nms = new NodeMediaServer(config)
-  nms.run()
-}
+//   var nms = new NodeMediaServer(config)
+//   nms.run()
+// }
