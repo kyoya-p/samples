@@ -19,7 +19,7 @@ firebase use --add
 ---
 ```
 npx firebase serve --only hosting
-# http://localhost:5000 をブラウザで不落
+# http://localhost:5000 をブラウザで開く
 ```
 
 参考
