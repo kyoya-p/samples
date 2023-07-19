@@ -1,8 +1,5 @@
 {
   "projects": {
-    "default": "fir-rtc-89b99",
-    "staging": "road-to-iot"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "fir-rtc-89b99"
+  }
 }
