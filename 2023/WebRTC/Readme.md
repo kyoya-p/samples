@@ -9,9 +9,9 @@ npx firebase --version
 npx firebase login:ci
 [Remoteの場合] TODO
 
-firebase use --add
 # 使用するプロジェクトを選択
-
+npx firebase use <project名> 
+[or] npx firebase use --add 
 
 ```
 
