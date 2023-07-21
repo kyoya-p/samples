@@ -7,7 +7,7 @@ cd FirebaseRTC/
 npm i firebase-tools
 npx firebase --version
 npx firebase login:ci
-[Remoteの場合] TODO
+[Remoteの場合] firebase login --no-localhost
 
 # 使用するプロジェクトを選択
 npx firebase use <project名> 
@@ -18,7 +18,7 @@ npx firebase use <project名>
 実行
 ---
 ```
-npx firebase serve --only hosting
+npx firebase serve --only hosting -o 0.0.0.0 -p 8080
 # http://localhost:5000 をブラウザで開く
 ```
 
