@@ -2,8 +2,7 @@
 Project手順
 ---
 ```
-git clone https://github.com/webrtc/FirebaseRTC
-cd FirebaseRTC/
+git clone https://github.com/webrtc/samples
 npm i firebase-tools
 npx firebase --version
 npx firebase login:ci
