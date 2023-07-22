@@ -1,17 +1,14 @@
 
-Project手順
----
+## サンプルの確認
 ```
 git clone https://github.com/webrtc/samples
 cd samples
 npm i 
-```
-
-実行
----
-```
 npm start
 ```
+
+## RTCPeerConnection
+
 
 参考
 ---
