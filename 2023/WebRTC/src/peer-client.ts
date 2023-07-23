@@ -3,8 +3,7 @@ clientMain()
 async function clientMain() {
     const recvConnection = new RTCPeerConnection({ "iceServers": [] })
     ifNotNull(document.getElementById('submit-sdp'), (t) => { t.onclick = () => { onSdpSubmit(recvConnection) } })
-    recvConnection.onicecandidate = async ev => { await recvConnection.addIceCandidate(ev.candidate!) }
-    const recvChannel = recvConnection.createDataChannel('sendDataChannel')
+    recvConnection.onicecandidate =  ev => {  recvConnection.addIceCandidate(ev.candidate!) }
     console.log('Created send data channel')
 }
 
@@ -17,7 +16,6 @@ async function onSdpSubmit(recvConnection: RTCPeerConnection) {
         const sdp = elm.value
         console.log(`SDP=${sdp}`)
         let answer = new RTCSessionDescription({ type: 'answer', sdp: sdp, })
-        // setAnswer(answer);
         await recvConnection.setRemoteDescription(answer)
     })
 }

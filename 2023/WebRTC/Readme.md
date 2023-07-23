@@ -12,7 +12,8 @@ npm start
 npm i
 npx tsc
 npx httpserver
-# http://localhost:8080/public/peer-server.html をブラウザで開く
+# http://localhost:8080/public/peer-server.html
+# http://localhost:8080/public/peer-client.html
 ```
 
 参考
