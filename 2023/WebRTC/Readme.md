@@ -8,7 +8,12 @@ npm start
 ```
 
 ## RTCPeerConnection
-
+```:Build and Run
+npm i
+npx tsc
+npx httpserver
+# http://localhost:8080/public/peer-server.html をブラウザで開く
+```
 
 参考
 ---
