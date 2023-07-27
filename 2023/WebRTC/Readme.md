@@ -11,7 +11,7 @@ npm start
 ```:Build and Run
 npm i
 npx tsc
-npx httpserver
+npx http-server public -d -tls 
 # http://localhost:8080/public/peer-server.html
 # http://localhost:8080/public/peer-client.html
 ```
