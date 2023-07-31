@@ -11,12 +11,18 @@ npm start
 ```:Build and Run
 npm i
 npx tsc
-mkcert 
 npx http-server public -d 
 # http://localhost:8080/public/peer-server.html
 # http://localhost:8080/public/peer-client.html
 ```
 
+
+## mkcert
+```
+wget -O mkcert https://github.com/FiloSottile/mkcert/releases/download/v1.4.3/mkcert-v1.4.3-linux-amd64
+chmod +x mkcert
+mkcert --install
+```
 参考
 ---
 https://webrtc.org/getting-started/firebase-rtc-codelab?hl=ja
