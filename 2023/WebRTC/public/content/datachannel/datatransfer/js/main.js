@@ -32,13 +32,15 @@ const sendProgress = document.querySelector('progress#sendProgress');
 const receiveProgress = document.querySelector('progress#receiveProgress');
 const errorMessage = document.querySelector('div#errorMsg');
 const transferStatus = document.querySelector('span#transferStatus');
+const btnCreateConnection = document.querySelector('button#createConnection');
+const btnCreateChannel = document.querySelector('button#createChannel');
 let bytesToSend = 0;
 let totalTimeUsedInSend = 0;
 let numberOfSendCalls = 0;
 let maxTimeUsedInSend = 0;
 let sendStartTime = 0;
 let currentThroughput = 0;
-sendButton.addEventListener('click', createConnection);
+sendButton.addEventListener('click', createConnection2);
 // Prevent data sent to be set to 0.
 megsToSend.addEventListener('change', function () {
     const number = parseInt(this.value);
@@ -58,6 +60,41 @@ megsToSend.addEventListener('change', function () {
         sendButton.disabled = false;
     }
 });
+// TODO
+function createConnection2() {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Create Connection`);
+        const peerConfig = { "iceServers": [] };
+        localConnection = new RTCPeerConnection(peerConfig);
+        // sendChannel.addEventListener('open', onSendChannelOpen)
+        // sendChannel.addEventListener('close', onSendChannelClosed)
+        // localConnection.addEventListener('icecandidate', e => onIceCandidate(localConnection!, e));
+        localConnection.onicecandidate = function (ev) {
+            return __awaiter(this, void 0, void 0, function* () {
+                if (ev.candidate) {
+                    console.log(ev.candidate);
+                }
+                else {
+                    console.log('empty ice event (no more candidate)');
+                }
+            });
+        };
+    });
+}
+function createChannel() {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log(`Create Channel`);
+        sendChannel = localConnection.createDataChannel('sendDataChannel');
+    });
+}
+function createOffer() {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield localConnection.createOffer();
+        const offer = yield localConnection.createOffer();
+        console.log(`Offer:\n${offer.sdp}`);
+        yield localConnection.setLocalDescription(offer);
+    });
+}
 function createConnection() {
     return __awaiter(this, void 0, void 0, function* () {
         sendButton.disabled = true;
@@ -168,6 +205,7 @@ function onIceCandidate(pc, event) {
     return __awaiter(this, void 0, void 0, function* () {
         const candidate = event.candidate;
         if (candidate === null) {
+            console.log(`onIceCandidate(): candidate === null`);
             return;
         } // Ignore null candidates
         try {

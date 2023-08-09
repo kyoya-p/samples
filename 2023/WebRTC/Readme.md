@@ -11,7 +11,8 @@ npm start
 ```:Build and Run
 npm i
 npx tsc
-npx http-server -d -S -C <cert-file> -K <key-file>
+npx http-server -c-1 -d 
+npx http-server -c-1 -d -S -C <cert-file> -K <key-file> #https
 # http://localhost:8080/public/peer-server.html
 # http://localhost:8080/public/peer-client.html
 ```

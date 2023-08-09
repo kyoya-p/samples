@@ -9,15 +9,15 @@
 'use strict';
 const MAX_CHUNK_SIZE = 262144;
 
-let localConnection : RTCPeerConnection|null
-let remoteConnection: RTCPeerConnection|null
-let sendChannel : RTCDataChannel|null
-let receiveChannel: RTCDataChannel|null
-let chunkSize=0
-let lowWaterMark=0
-let highWaterMark=0
-let dataString=""
-let timeoutHandle:any|null = null;
+let localConnection: RTCPeerConnection | null
+let remoteConnection: RTCPeerConnection | null
+let sendChannel: RTCDataChannel | null
+let receiveChannel: RTCDataChannel | null
+let chunkSize = 0
+let lowWaterMark = 0
+let highWaterMark = 0
+let dataString = ""
+let timeoutHandle: any | null = null;
 const megsToSend = document.querySelector('input#megsToSend') as HTMLInputElement
 const sendButton = document.querySelector('button#sendTheData') as HTMLButtonElement
 const orderedCheckbox = document.querySelector('input#ordered') as HTMLInputElement
@@ -26,6 +26,9 @@ const receiveProgress = document.querySelector('progress#receiveProgress') as HT
 const errorMessage = document.querySelector('div#errorMsg') as HTMLDivElement
 const transferStatus = document.querySelector('span#transferStatus') as HTMLSpanElement
 
+const btnCreateConnection = document.querySelector('button#createConnection') as HTMLButtonElement
+const btnCreateChannel = document.querySelector('button#createChannel') as HTMLButtonElement
+
 let bytesToSend = 0;
 let totalTimeUsedInSend = 0;
 let numberOfSendCalls = 0;
@@ -33,10 +36,10 @@ let maxTimeUsedInSend = 0;
 let sendStartTime = 0;
 let currentThroughput = 0;
 
-sendButton.addEventListener('click', createConnection);
+sendButton.addEventListener('click', createConnection2);
 
 // Prevent data sent to be set to 0.
-megsToSend.addEventListener('change', function() {
+megsToSend.addEventListener('change', function () {
   const number = parseInt(this.value)
   if (Number.isNaN(number)) {
     errorMessage!.innerHTML = `Invalid value for MB to send: ${number}`;
@@ -52,11 +55,43 @@ megsToSend.addEventListener('change', function() {
   }
 });
 
+// TODO
+async function createConnection2() {
+  console.log(`Create Connection`)
+
+
+  const peerConfig = { "iceServers": [] }
+  localConnection = new RTCPeerConnection(peerConfig)
+  // sendChannel.addEventListener('open', onSendChannelOpen)
+  // sendChannel.addEventListener('close', onSendChannelClosed)
+
+  // localConnection.addEventListener('icecandidate', e => onIceCandidate(localConnection!, e));
+  localConnection.onicecandidate = async function (ev) {
+    if (ev.candidate) {
+      console.log(ev.candidate)
+    } else {
+      console.log('empty ice event (no more candidate)')
+    }
+  }
+}
+
+async function createChannel() {
+  console.log(`Create Channel`)
+  sendChannel=  localConnection!.createDataChannel('sendDataChannel')
+}
+
+async function createOffer() {
+  await localConnection!.createOffer()
+  const offer = await localConnection!.createOffer()
+  console.log(`Offer:\n${offer.sdp}`)
+  await localConnection!.setLocalDescription(offer)
+}
+
 async function createConnection() {
   sendButton.disabled = true;
   megsToSend.disabled = true;
 
-  let servers:RTCConfiguration|undefined;
+  let servers: RTCConfiguration | undefined;
 
   const number = Number.parseInt(megsToSend.value);
   bytesToSend = number * 1024 * 1024;
@@ -64,7 +99,7 @@ async function createConnection() {
   localConnection = new RTCPeerConnection(servers);
 
   // Let's make a data channel!
-  const dataChannelParams = {ordered: false};
+  const dataChannelParams = { ordered: false };
   if (orderedCheckbox!.checked) {
     dataChannelParams.ordered = true;
   }
@@ -149,7 +184,7 @@ function maybeReset() {
   }
 }
 
-async function handleLocalDescription(desc: RTCSessionDescriptionInit ) {
+async function handleLocalDescription(desc: RTCSessionDescriptionInit) {
   localConnection!.setLocalDescription(desc);
   console.log('Offer from localConnection:\n', desc.sdp);
   remoteConnection!.setRemoteDescription(desc);
@@ -161,7 +196,7 @@ async function handleLocalDescription(desc: RTCSessionDescriptionInit ) {
   }
 }
 
-function handleRemoteAnswer(desc: RTCSessionDescriptionInit ) {
+function handleRemoteAnswer(desc: RTCSessionDescriptionInit) {
   remoteConnection!.setLocalDescription(desc);
   console.log('Answer from remoteConnection:\n', desc.sdp);
   localConnection!.setRemoteDescription(desc);
@@ -171,9 +206,10 @@ function getOtherPc(pc: RTCPeerConnection) {
   return (pc === localConnection) ? remoteConnection! : localConnection!;
 }
 
-async function onIceCandidate(pc:RTCPeerConnection, event: RTCPeerConnectionIceEvent) {
+async function onIceCandidate(pc: RTCPeerConnection, event: RTCPeerConnectionIceEvent) {
   const candidate = event.candidate;
   if (candidate === null) {
+    console.log(`onIceCandidate(): candidate === null`);
     return;
   } // Ignore null candidates
   try {
@@ -192,7 +228,7 @@ function receiveChannelCallback(event: RTCDataChannelEvent) {
   receiveChannel.addEventListener('message', onReceiveMessageCallback);
 }
 
-function onReceiveMessageCallback(event:MessageEvent) {
+function onReceiveMessageCallback(event: MessageEvent) {
   receiveProgress.value += event!.data.length;
   currentThroughput = receiveProgress.value / (performance.now() - sendStartTime);
   console.log('Current Throughput is:', currentThroughput, 'bytes/sec');
@@ -232,7 +268,7 @@ function onSendChannelClosed() {
   console.log('Closed local peer connection');
   maybeReset();
   console.log('Average time spent in send() (ms): ' +
-              totalTimeUsedInSend / numberOfSendCalls);
+    totalTimeUsedInSend / numberOfSendCalls);
   console.log('Max time spent in send() (ms): ' + maxTimeUsedInSend);
   const spentTime = performance.now() - sendStartTime;
   console.log('Total time spent: ' + spentTime);
