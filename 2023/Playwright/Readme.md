@@ -1,12 +1,8 @@
 
 
-# Build
+# Build/Run
 ```
 npm i
-```
-
-# Run
-```
 npx ts-node src/index.ts $targetUrl $servicePort
 ```
 

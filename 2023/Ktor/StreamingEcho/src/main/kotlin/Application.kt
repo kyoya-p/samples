@@ -6,16 +6,11 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
-import io.ktor.utils.io.core.*
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock.System.now
-import java.time.Clock
+
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -96,6 +91,34 @@ fun Application.module2() {
                     flush()
                 }
             }
+        }
+    }
+}
+
+suspend fun sensorChannel(): Channel<Int> = coroutineScope {
+    val sensorDataChannel = Channel<Int>(Channel.UNLIMITED)
+    launch {
+        while (true) {
+            sensorDataChannel.send(1)
+            delay(1.seconds)
+        }
+    }
+    sensorDataChannel
+}
+
+
+fun Application.module3() = routing {
+    post("/") {
+        val sensorCh = sensorChannel()
+        println("/")
+        call.respondTextWriter(contentType = ContentType.Text.Plain) {
+            repeat(15) {
+                val s = sensorCh.receive()
+                write("Sensor:$s\n")
+                flush()
+                println("Sensor:$s\n")
+            }
+            close()
         }
     }
 }
