@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version "1.9.0"
     application
-    id("com.github.johnrengelman.shadow") version "7.1.2" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
+    id("com.github.johnrengelman.shadow") version "8.1.1" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
 }
 
 group = "org.example"
