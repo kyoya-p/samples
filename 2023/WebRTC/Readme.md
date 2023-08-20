@@ -11,8 +11,13 @@ npm start
 ```:Build and Run
 npm i
 npx tsc
+<<<<<<< HEAD
+mkcert localhost 192.168.x.x 127.0.0.1
+npx http-server -d -S -C localhost+1.pem -K localhost+1-key.pem
+=======
 npx http-server -c-1 -d 
 npx http-server -c-1 -d -S -C <cert-file> -K <key-file> #https
+>>>>>>> 767473694b17263abf57b7d2e0c683fa70424e6c
 # http://localhost:8080/public/peer-server.html
 # http://localhost:8080/public/peer-client.html
 ```
