@@ -1,17 +1,38 @@
-import { AzureFunction, Context, HttpRequest } from "@azure/functions"
+import {  AzureFunction, Context,  Cookie,  HttpRequest,  HttpResponseSimple,} from "@azure/functions";
 
-const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    context.log('HTTP trigger function processed a request.');
-    const name = (req.query.name || (req.body && req.body.name));
-    const responseMessage = name
-        ? "Hello, " + name + ". This HTTP triggered function executed successfully."
-        : "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.";
+const httpTrigger: AzureFunction = async (  context: Context) => {
+  await context.log(`**** Start function`);
+  const req:HttpRequest=context.req
+  await context.log(`header.cookie=${req.headers.cookie}`);
+  const cookies = req.headers.cookie;
+  const cookieMap = cookies.split(";").map((e) => e.trim()).reduce((map, cookie) => {
+    const [key, value] = cookie.split("=");
+    map[key] = value;
+    return map;
+  }, {});
 
-    context.res = {
-        // status: 200, /* Defaults to 200 */
-        body: responseMessage
+  if (req.query.tgOrigin) {
+    await context.log(`** Redirect to ${req.query.tgOrigin}`)
+    const url = new URL(req.url)
+    const res: HttpResponseSimple = {
+      status: 302,
+      headers: { Location: `${url.origin}${url.pathname}` },
+      cookies: [{ name: "tgOrigin", value: `${req.query.tgOrigin}` }],
+    }
+    context.res = res
+  } else if (cookieMap["tgOrigin"]) {
+    await context.log(`** Reverse Proxy to ${cookieMap["tgOrigin"]}`);
+    const tgPath = context.req.query.tgPath as string | undefined;
+    context.res = <HttpResponseSimple>{
+      status: 200,
+      body: `Reverse Proxy to ${cookieMap["tgOrigin"]}`,
     };
-
+  } else {
+    await context.log(`** Set the tgOrigin parameter to specify the target host.`);
+    context.res = <HttpResponseSimple>{
+      status: 200,
+      body: `${req.url}?tgOrigin=<origin-url>`,
+    };
+  }
 };
-
 export default httpTrigger;
