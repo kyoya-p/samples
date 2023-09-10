@@ -2,7 +2,7 @@ import kotlinx.browser.document
 import react.create
 import react.dom.client.createRoot
 
-fun main() {
+fun mainX() {
     val container = document.createElement("div")
     document.body!!.appendChild(container)
 

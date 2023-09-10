@@ -47,6 +47,10 @@ kotlin {
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-react:18.2.0-pre.346")
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:18.2.0-pre.346")
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-emotion:11.9.3-pre.346")
+                implementation(npm("@azure/functions", "^3.5.1"))
+                implementation(npm("azure-functions-core-tools", "^4.x"))
+//                "@azure/functions": "^3.5.1",
+//                "azure-functions-core-tools": "^4.x",
             }
         }
         val jsTest by getting
