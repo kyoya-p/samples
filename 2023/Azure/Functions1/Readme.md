@@ -1,3 +1,9 @@
+## Build
+```
+npm i
+npx tsc
+```
+
 ## URL
 
 ### リダイレクト要求(URLクエリにtgOriginをセット)

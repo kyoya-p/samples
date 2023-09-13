@@ -1,4 +1,4 @@
-import {  AzureFunction, Context,  Cookie,  HttpRequest,  HttpResponseSimple,} from "@azure/functions";
+import {  AzureFunction, Context,    HttpRequest,  HttpResponseSimple,} from "@azure/functions";
 
 const httpTrigger: AzureFunction = async (  context: Context) => {
   await context.log(`**** Start function`);
