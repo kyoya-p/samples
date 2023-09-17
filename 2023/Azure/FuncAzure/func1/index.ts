@@ -1,13 +1,15 @@
 import {  AzureFunction, Context,    HttpRequest,  HttpResponseSimple,} from "@azure/functions";
 
 const httpTrigger: AzureFunction = async (  context: Context) => {
+  await context.log(`start: ${context.req?.url}`)
+
   const req:HttpRequest=context.req
   const cookies = req.headers.cookie;
-  const cookieMap = cookies.split(";").map((e) => e.trim()).reduce((map, cookie) => {
+  const cookieMap = cookies?.split(";").map((e) => e.trim()).reduce((map, cookie) => {
     const [key, value] = cookie.split("=");
     map[key] = value
     return map
-  }, {});
+  }, {}) ?? {}
 
   if (req.query.tgOrigin) {
     const url = new URL(req.url)
