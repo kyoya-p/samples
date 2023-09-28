@@ -1,21 +1,16 @@
-import http from 'http';
-import httpProxy from 'http-proxy';
+import http from 'http'
+import httpProxy from 'http-proxy'
 
-//
-// Create a proxy server with custom application logic
-//
-var proxy = httpProxy.createProxyServer({});
+var proxy = httpProxy.createProxyServer({})
 
-//
-// Create your custom server and just call `proxy.web()` to proxy
-// a web request to the target passed in the options
-// also you can use `proxy.ws()` to proxy a websockets request
-//
 var server = http.createServer(function (req, res) {
-  // You can define here your custom logic to handle the request
-  // and then proxy the request.
-  proxy.web(req, res, { target: 'http://127.0.0.1:5050' });
-});
+  try{
+  console.log(`Req: ${req.url}`)
+  proxy.web(req, res, { target: 'http://jp.sharp' })
+  }catch(ex){
+  }
+})
 
-console.log("listening on port 5050")
-server.listen(5050);
+console.log("listening on port 8080")
+server.listen(8080)
+
