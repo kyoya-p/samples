@@ -6,4 +6,5 @@ RUN git clone --depth 1  https://github.com/kyoya-p/samples
 WORKDIR /app/samples/2023/CloudRun
 RUN npm i
 RUN npx tsc
-RUN node build/index.js
+
+CMD node build/index.js
