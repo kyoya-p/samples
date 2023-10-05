@@ -26,16 +26,33 @@ sudo docker rm -f wsdemo
 ```
 
 # Google リポジトリ準備
-Artifact Registry > Repository > gcr.io リポジトリの作成
 [参考](https://cloud.google.com/artifact-registry/docs/repositories/create-repos?authuser=1&hl=ja)
 [参考](https://cloud.google.com/artifact-registry/docs/docker/store-docker-container-images?hl=ja)
+[参考](https://cloud.google.com/artifact-registry/docs/access-control?hl=ja#gcloud)
 
-# CloudRun
+```sh:ログイン・初期化・パブリッシュ権限付与
+gcloud auth login
+gcloud init
 
-サービスを作成 > 
-
-```sh:
 PROJ=$(gcloud config get-value project)
-SVNAME='wsdemo'
-
+USER=shokkaa@gmail.com
+#gcloud projects add-iam-policy-binding $PROJ --role=roles/artifactregistry.repoAdmin --member=user:$USER
 ```
+```sh:リポジトリ作成・Dockerリポジトリ認証設定
+REPOS=r1
+REGION=us-central1
+#gcloud artifacts repositories create $REPOS --location=asia-northeast1 --repository-format=docker
+#gcloud artifacts repositories create $REPOS --repository-format docker --location asia-northeast1
+gcloud artifacts repositories create $REPOS --repository-format docker --location $REGION
+gcloud artifacts repositories list
+
+gcloud auth configure-docker $REGION-docker.pkg.dev
+export PROJECT_ID="${PROJ}"
+gcloud builds submit --region $REGION --config cloudbuild.yaml
+```
+```sh:イメージビルド・パブリッシュ
+TAG=asia-northeast1-docker.pkg.dev/$PROJ/$REPOS/hello
+sudo docker build DockerBuild -t $TAG
+sudo docker push $TAG
+```
+
