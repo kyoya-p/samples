@@ -10,8 +10,11 @@ npm install typescript @types/node --save-dev
 npx tsc --init --rootDir src --outDir build
 ```
 
-# Docker Image作成
+# Docker
 
+```sh:Image作成
+sudo docker build -t wsdemo DockerBuild
 ```
-sudo docker build DockerBuild
+```sh:実行
+sudo docker run --name wsdemo -p 8080:80 wsdemo
 ```
