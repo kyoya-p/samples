@@ -17,10 +17,10 @@ npx ts-node src/index.ts
 curl http://localhost:8080
 ```
 
-# Docker ビルド・実行・確認・終了
+# Docker ビルド・実行・確認・削除
 ```sh
 sudo docker build -t wsdemo DockerBuild --no-cache
 sudo docker run --name wsdemo -p 8080:8080 wsdemo
 curl http://localhost:8080
-sudo docker kill wsdemo
+sudo docker rm -f wsdemo
 ```
