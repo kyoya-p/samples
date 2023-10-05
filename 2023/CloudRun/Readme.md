@@ -24,3 +24,18 @@ sudo docker run --name wsdemo -p 8080:8080 wsdemo
 curl http://localhost:8080
 sudo docker rm -f wsdemo
 ```
+
+# Google リポジトリ準備
+Artifact Registry > Repository > gcr.io リポジトリの作成
+[参考](https://cloud.google.com/artifact-registry/docs/repositories/create-repos?authuser=1&hl=ja)
+[参考](https://cloud.google.com/artifact-registry/docs/docker/store-docker-container-images?hl=ja)
+
+# CloudRun
+
+サービスを作成 > 
+
+```sh:
+PROJ=$(gcloud config get-value project)
+SVNAME='wsdemo'
+
+```
