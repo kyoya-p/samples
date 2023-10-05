@@ -10,11 +10,17 @@ npm install typescript @types/node --save-dev
 npx tsc --init --rootDir src --outDir build
 ```
 
-# Docker
+# ビルド・実行・確認
+```sh
+npm i
+npx ts-node src/index.ts
+curl http://localhost:8081 
+```
 
+# Docker
 ```sh:Image作成
 sudo docker build -t wsdemo DockerBuild
 ```
-```sh:実行
-sudo docker run --name wsdemo -p 8080:80 wsdemo
+```sh:実行:ホストのポート8080でlisten
+sudo docker run --name wsdemo -p 8080:8081 wsdemo
 ```
