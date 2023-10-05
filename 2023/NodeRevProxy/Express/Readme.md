@@ -6,7 +6,6 @@ npx tsc --init --rootDir src --outDir build --esModuleInterop --resolveJsonModul
 
 ```sh:ライブラリ
 npm i http-proxy
-npm i @novnc/novnc
 ```
 
 ```sh:Run

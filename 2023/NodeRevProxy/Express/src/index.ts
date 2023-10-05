@@ -1,16 +1,13 @@
-import http from 'http'
-import httpProxy from 'http-proxy'
+import express from "express";
+import httpProxy from "http-proxy";
 
-var proxy = httpProxy.createProxyServer({})
+const app = express();
 
-var server = http.createServer(function (req, res) {
-  try{
-  console.log(`Req: ${req.url}`)
-  proxy.web(req, res, { target: 'http://jp.sharp' })
-  }catch(ex){
-  }
-})
+// リバースプロキシの設定
+const proxy = httpProxy.createProxyServer({
+  target: "https://google.com",
+  // changeOrigin: true,
+});
 
-console.log("listening on port 8080")
-server.listen(8080)
-
+proxy.listen(8080)
+console.log(`start server port:8080.`)
