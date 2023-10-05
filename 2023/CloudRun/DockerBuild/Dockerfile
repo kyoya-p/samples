@@ -3,7 +3,7 @@ FROM node:alpine3.18
 WORKDIR /app
 RUN apk add git
 RUN git clone --depth 1  https://github.com/kyoya-p/samples
-RUN cd samples/2023/CloudRun
+WORKDIR /app/samples/2023/CloudRun
 RUN npm i
 RUN npx tsc
-RUN node build/inde.js
+RUN node build/index.js

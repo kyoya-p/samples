@@ -1,8 +1,8 @@
 import { WebSocket, WebSocketServer } from "ws";
 
-const wss = new WebSocketServer({ port: 7777 });
+const wss = new WebSocketServer({ port: 8080 });
 
-wss.on("connection", (ws: WebSocket) => {
+wss.on("connection", (ws) => {
   console.log("connected!");
 
   ws.on("message", (data, isBinary) => {
@@ -15,3 +15,5 @@ wss.on("connection", (ws: WebSocket) => {
 
   ws.on("close", () => console.log("closed!"));
 });
+
+console.log("start ws server port 8080.");
