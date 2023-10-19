@@ -1,7 +1,6 @@
 import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.io.File
 import java.util.*
 import kotlin.collections.ArrayDeque
@@ -9,15 +8,14 @@ import kotlin.reflect.KProperty
 
 val app = AppProperties()
 
-@OptIn(ExperimentalCoroutinesApi::class)
 fun main() = application {
     var mibFileName by remember { mutableStateOf(app.mibFile ?: "No Data") }
     LaunchedEffect(app.mibFile) {
         mibFileName = app.mibFile ?: "No Data"
     }
-    Window(
-        onCloseRequest = ::exitApplication,
-    ) { WinApp(window) }
+    Window(onCloseRequest = ::exitApplication) {
+        winApp(window)
+    }
 }
 
 class AppProperty(
@@ -44,6 +42,7 @@ class AppProperties {
 
 class Logger(private val file: File = File(System.getenv("APPDATA"), "snmpdesktop_log.txt")) {
     val lastLines = ArrayDeque<String>()
+
     init {
         file.delete()
         lastLines.addLast("Logging ${file.path}\n")

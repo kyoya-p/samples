@@ -1,4 +1,3 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -42,14 +41,10 @@ fun saveMib(mib: List<VariableBinding>, file: File) = yamlSnmp4j.encodeToStream(
 fun loadMib(file: File): List<VariableBinding> = yamlSnmp4j.decodeFromStream(file.inputStream())
 
 @OptIn(DelicateCoroutinesApi::class)
-@ExperimentalCoroutinesApi
 @Composable
-@Preview
-fun WinApp(window: ComposeWindow) = MaterialTheme {
-    fun setAppTitle(fileName: String?) = window.setTitle("${fileName ?: "No File"} - SNMP Desktop")
-
+fun winApp(window: ComposeWindow) = MaterialTheme {
+    val setAppTitle = { fileName: String? -> window.title = "${fileName ?: "No File"} - SNMP Desktop" }
     val logs = Logger()
-
     var mib: List<VariableBinding> by remember {
         val mib = app.mibFile?.let { runCatching { loadMib(File(it)) }.getOrNull() } ?: listOf()
         logs += if (mib.isEmpty()) "$now Error: Empty MIB... Load or Capture Device first.\n"
@@ -58,8 +53,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         mutableStateOf(mib)
     }
     var ipSpec by remember { mutableStateOf(app.ip ?: "") }
-//    var walking by remember { mutableStateOf(false) }
-    val snmpCaptureDialog = SnmpCaptureDialog(ipSpec) { ip ->
+    val snmpCaptureDialog = snmpCaptureDialog(ipSpec) { ip ->
         ipSpec = ip
         GlobalScope.launch {
             logs += "$now Walking IP:$ipSpec ...\n"
@@ -71,6 +65,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
             if (r.isNotEmpty()) mib = r
         }
     }
+
     fun selectFile(opMode: Int) = FileDialog(window).apply { mode = opMode; isVisible = true }
         .takeIf { it.directory != null && it.file != null }
         ?.run { File(directory, file).canonicalFile }?.apply { app.mibFile = path; setAppTitle(path) }
@@ -90,24 +85,12 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         logs += "$now Start Agent $today.$now MIBS:${mib.size} ----------\n"
         runCatching {
             snmpAgent(vbl = mib) { ev, pdu ->
-                val PduTypes = mapOf(PDU.GET to "GT", PDU.GETNEXT to "GN", PDU.GETBULK to "BK")
-                logs += "$now ${ev.peerAddress}:${PduTypes[ev.pdu.type] ?: ev.pdu.type} > ES:${pdu.errorStatus} EI:${pdu.errorIndex} VBs:${pdu.variableBindings}\n"
+                val pduTypes = mapOf(PDU.GET to "GT", PDU.GETNEXT to "GN", PDU.GETBULK to "BK")
+                logs += "$now ${ev.peerAddress}:${pduTypes[ev.pdu.type] ?: ev.pdu.type} > ES:${pdu.errorStatus} EI:${pdu.errorIndex} VBs:${pdu.variableBindings}\n"
                 pdu
             }
         }.onFailure { logs += "$now ${it.message}\n" }
     }
-
-    // Backgroud SNMP capture task
-//    if (walking) LaunchedEffect(null) {
-//        logs += "$now Run Walk IP:$ipSpec ...\n"
-//        val snmp = SnmpBuilder().udp().v1().build().async()
-//        val oids = listOf("1.3.6")
-//        val r = snmp.walk(ipSpec, oids).map { it[0] }.toList()
-//        logs += "$now Completed. IP:$ipSpec, MIBS:${r.size}\n"
-//        logs.lastLines.forEach { println(it) }
-//        if (r.isNotEmpty()) mib = r
-//        walking = false
-//    }
 
     Scaffold(topBar = {
         TopAppBar {
@@ -117,7 +100,7 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
         }
     }) {
         snmpCaptureDialog.placing()
-        AutoScrollBox {
+        autoScrollBox {
             var log by remember { mutableStateOf("") }
             LaunchedEffect(Unit) {
                 while (true) {
@@ -133,9 +116,8 @@ fun WinApp(window: ComposeWindow) = MaterialTheme {
     }
 }
 
-@Preview
 @Composable
-fun AutoScrollBox(contents: @Composable BoxScope.() -> Unit) {
+fun autoScrollBox(contents: @Composable BoxScope.() -> Unit) {
     val stateVertical = rememberScrollState()
     LaunchedEffect(stateVertical.maxValue) { stateVertical.animateScrollTo(stateVertical.maxValue) }
     Box(modifier = Modifier.fillMaxSize().verticalScroll(stateVertical)) {
