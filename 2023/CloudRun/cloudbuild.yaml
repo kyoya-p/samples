@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'asia-northeast1-docker.pkg.dev/${PROJECT_ID}/r1/hello:1.0.0', 'DockerBuild' ]
+images:
+- '${}-docker.pkg.dev/${PROJECT_ID}/r1/hello:1.0.0'
