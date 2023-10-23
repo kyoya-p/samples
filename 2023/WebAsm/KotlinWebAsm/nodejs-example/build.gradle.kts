@@ -3,7 +3,9 @@ import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask
 
 plugins {
-    kotlin("multiplatform") version "1.9.20-RC"
+    kotlin("multiplatform") version "1.9.10"
+//    kotlin("multiplatform") version "1.9.20-RC"
+    application
 }
 
 repositories {
@@ -11,17 +13,21 @@ repositories {
 }
 
 kotlin {
-    wasmJs {
+//    wasmJs {
+//        binaries.executable()
+//        nodejs()
+//    }
+    js{
         binaries.executable()
-        nodejs()
+        nodejs{}
     }
 }
 
-rootProject.the<NodeJsRootExtension>().apply {
-    nodeVersion = "21.0.0-v8-canary202309143a48826a08"
-    nodeDownloadBaseUrl = "https://nodejs.org/download/v8-canary"
-}
+//rootProject.the<NodeJsRootExtension>().apply {
+//    nodeVersion = "21.0.0-v8-canary202309143a48826a08"
+//    nodeDownloadBaseUrl = "https://nodejs.org/download/v8-canary"
+//}
 
-tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask>().configureEach {
-    args.add("--ignore-engines")
-}
+//tasks.withType<org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask>().configureEach {
+//    args.add("--ignore-engines")
+//}
