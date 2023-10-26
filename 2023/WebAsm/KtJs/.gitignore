@@ -1,6 +1,7 @@
 /.gradle/
 /build/
 /.idea/
+/kotlin-js-store/
 
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -42,3 +43,4 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
