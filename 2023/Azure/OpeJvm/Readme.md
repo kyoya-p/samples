@@ -4,8 +4,11 @@ Azureリソース操作
 
 環境変数
 ---
+
 - AZURE_SUBSCRIPTION_ID
+
 Azureサービス  > サブスクリプション > サブスクリプション ID を取得
+ 
 - AZURE_TENANT_ID
 
 ```sh:クレデンシャル取得
