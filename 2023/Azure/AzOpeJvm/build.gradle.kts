@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-    implementation("com.azure:azure-identity:1.2.5")
+    implementation("com.azure:azure-identity:1.11.0")
     implementation("com.azure.resourcemanager:azure-resourcemanager:2.31.0")
 }
 

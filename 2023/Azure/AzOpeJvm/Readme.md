@@ -2,18 +2,18 @@ Azureリソース操作
 ===
 
 
-環境変数
+実行
 ---
-
-- AZURE_SUBSCRIPTION_ID
-
-Azureサービス  > サブスクリプション > サブスクリプション ID を取得
+### 環境変数設定
  
-- AZURE_TENANT_ID
+- AZURE_SUBSCRIPTION_ID
+ 
+Azureサービス  > サブスクリプション > サブスクリプション ID を取得し設定
 
+### クレデンシャル取得
 ```sh:クレデンシャル取得
-az ad sp create-for-rbac
- ```
+export AZURE_AD=`az ad sp create-for-rbac`
+```
 
 ## 参照
 https://learn.microsoft.com/ja-jp/java/api/overview/azure/resources?view=azure-java-stable

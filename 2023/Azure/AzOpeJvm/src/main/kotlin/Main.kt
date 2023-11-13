@@ -5,19 +5,21 @@ import com.azure.core.management.profile.AzureProfile
 import com.azure.identity.ClientSecretCredentialBuilder
 import com.azure.resourcemanager.AzureResourceManager
 import com.azure.resourcemanager.storage.models.StorageAccountSkuType
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 
 fun main(args: Array<String>) {
-    // az ad sp create-for-rbac コマンドの結果を回収
-    val clientId = System.getenv("AZURE_APP_ID") // "appId":
-    val clientSecret = System.getenv("AZURE_PASSWORD")  // "password":
-    val tenantId = System.getenv("AZURE_TENANT") // "tenant":
-    val subscriptionId = System.getenv("AZURE_SUBSCRIPTION") // subscription
+    val subscriptionId = System.getenv("AZURE_SUBSCRIPTION_ID") // subscription
 
+    class AzureAd(val appId: String, val displayName: String, val password: String,val tenant: String)
+
+    // export AZURE_AD=`az ad sp create-for-rbac` #の結果を回収
+    val ad = Json.decodeFromString<AzureAd>(System.getenv("AZURE_AD"))
     val creds = ClientSecretCredentialBuilder()
-        .tenantId(tenantId)
-        .clientId(clientId)
-        .clientSecret(clientSecret)
+        .tenantId(ad.tenant)
+        .clientId(ad.appId)
+        .clientSecret(ad.password)
         .build()
 
     val profile = AzureProfile(AzureEnvironment.AZURE)
@@ -35,4 +37,5 @@ fun main(args: Array<String>) {
         .withNewResourceGroup(rgName)
         .withSku(StorageAccountSkuType.STANDARD_LRS)
         .create()
+
 }
