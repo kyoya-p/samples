@@ -5,10 +5,11 @@ Azureリソース操作
 実行
 ---
 ### 環境変数設定
- 
-- AZURE_SUBSCRIPTION_ID
- 
+
 Azureサービス  > サブスクリプション > サブスクリプション ID を取得し設定
+```
+export AZURE_SUBSCRIPTION_ID=...
+``` 
 
 ### クレデンシャル取得
 ```sh:クレデンシャル取得

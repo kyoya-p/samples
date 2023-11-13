@@ -30,7 +30,7 @@ fun main(args: Array<String>) {
         .authenticate(creds, profile)
         .withSubscription(subscriptionId)
 
-    val storageAccountName = "app231027"
+    val storageAccountName = "app231101"
     val rgName = "rgx"
     val account = azureResourceManager.storageAccounts().define(storageAccountName)
         .withRegion(Region.US_WEST)
