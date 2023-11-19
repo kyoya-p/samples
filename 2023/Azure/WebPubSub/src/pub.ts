@@ -1,22 +1,17 @@
-import { WebSocket } from "ws"
-
-function main() {
-  const url=  process.env.WebPubSubUrl ?? ""
-  const ws = new WebSocket(url)
-
-  ws.on('open', () => {
-    let t = setInterval(() => {
-      let m = `Hello: ${Date()}`
-      ws.send(m)
-      console.log(m)
-    }
-      , 1000
-    )
-  })
-
-  ws.on('message', (data) => {
-    console.log('received: %s', data)
-  })
-}
+import { WebPubSubServiceClient } from '@azure/web-pubsub';
 
 main()
+
+async function main() {
+  const connStr = process.argv[2]
+  const hub = process.argv[3]
+
+  let serviceClient = new WebPubSubServiceClient(connStr, hub);
+
+  for (let i = 0; i < 1000; ++i) {
+    serviceClient.sendToAll(`${i}`, { contentType: "text/plain" });
+    await sleep1s()
+  }
+}
+
+async function sleep1s() { await new Promise(resolve => setTimeout(resolve, 1000)) }
