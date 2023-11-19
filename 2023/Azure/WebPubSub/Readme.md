@@ -22,11 +22,16 @@ npx tsc --init --rootDir src --outDir build
 npm i @azure/web-pubsub ws
 ```
 
-# Azureの設定
+# リソース設定
 ```
-RG=g230201
+=g230201
 LOC=eastus
 az group create --name $RG --location $LOC
-PUBSUB=$RG-pubsub
-az webpubsub create --name $PUBSUB --resource-group $RG --sku Free_F1 --location $LOC
+pubsub=$RG-pubsub
+az webpubsub create --name $pubsub --resource-group $RG --sku Free_F1 --location $LOC
+```
+
+#
+```
+az webpubsub key show --name $pubsub --resource-group "test-rg" --query primaryConnectionString
 ```

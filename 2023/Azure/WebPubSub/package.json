@@ -1,7 +1,7 @@
 {
   "name": "azurewebpubsub",
   "version": "1.0.0",
-  "description": "",
+  "description": "- https://learn.microsoft.com/ja-jp/azure/azure-web-pubsub/tutorial-pub-sub-messages?tabs=javascript",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.18.10",
     "@types/ws": "^8.5.4",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@azure/web-pubsub": "^1.1.1",
