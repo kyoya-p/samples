@@ -10,6 +10,7 @@ async function main() {
 
   for (let i = 0; i < 1000; ++i) {
     serviceClient.sendToAll(`${i}`, { contentType: "text/plain" });
+    console.log(i)
     await sleep1s()
   }
 }
