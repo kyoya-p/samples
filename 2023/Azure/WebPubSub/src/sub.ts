@@ -9,6 +9,7 @@ async function main() {
 
   const serviceClient = new WebPubSubServiceClient(connStr, hub)
   const token = await serviceClient.getClientAccessToken()
+  console.log(`url:${token.url}`)
   const ws = new WebSocket(token.url)
   ws.on('open', () => console.log('connected'))
   ws.on('message', data => console.log(data.toString()))
