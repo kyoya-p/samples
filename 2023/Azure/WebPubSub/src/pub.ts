@@ -4,7 +4,7 @@ main()
 
 async function main() {
   const connStr = process.argv[2]
-  const hub = process.argv[3]
+  const hub = process.argv[3] ?? "default"
 
   let serviceClient = new WebPubSubServiceClient(connStr, hub);
 

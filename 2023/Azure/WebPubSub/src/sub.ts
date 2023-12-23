@@ -5,7 +5,7 @@ main()
 
 async function main() {
   const connStr = process.argv[2]
-  const hub = process.argv[3]
+  const hub = process.argv[3] ?? "default"
 
   const serviceClient = new WebPubSubServiceClient(connStr, hub)
   const token = await serviceClient.getClientAccessToken()
