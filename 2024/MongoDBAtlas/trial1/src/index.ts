@@ -1,4 +1,4 @@
-import * as Realm from "realm-web";
+import * as Realm from "realm";
 
 async function main() {
 	const app = new Realm.App({ id: "application-0-yvxdl" });
