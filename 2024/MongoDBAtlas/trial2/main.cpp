@@ -1,48 +1,40 @@
 #include <iostream>
 #include <cpprealm/sdk.hpp>
 
-int main(int argc, char *argv[])
-{
-  auto appConfig = realm::App::configuration();
-  appConfig.app_id = argv[1];
-  std::cout << "APPID=" << appConfig.app_id << std::endl;
-
-  // Initialize the App, authenticate a user, and open the database
-  auto app = realm::App(appConfig);
-  auto user = app.login(realm::App::credentials::anonymous()).get();
-  auto syncConfig = user.flexible_sync_configuration();
-  auto syncedRealm = realm::db(syncConfig);
-}
-
 namespace realm
 {
+  struct Todo1
+  {
+    realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
+    std::string summary;
+    std::string isComplete;
+    std::string owner_id;
+  };
+  // REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
   struct Todo
   {
     realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
-    std::string name;
-    std::string status;
-    std::string ownerId;
+    std::string summary;
+    bool isComplete;
+    std::string owner_id;
   };
-  REALM_SCHEMA(Todo, _id, name, status, ownerId);
+  REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
 }
 
-int main2()
+int main(int argc,char* argv[])
 {
-  std::cout << "Atlas CPP Client" << std::endl;
+  auto appConfig = realm::App::configuration();
+  appConfig.app_id = argv[1];
+  auto app = realm::App(appConfig);
 
+  std::cout << "Atlas C++ SDK Sample APPID:" << appConfig.app_id << std::endl;
   auto config = realm::db_config();
   auto realm = realm::db(std::move(config));
-
-  auto todo = realm::Todo{.name = "Create my first todo item",
-                          .status = "In Progress"};
+  // auto todos = realm.objects<realm::Todo>();
+  auto todo = realm::Todo{.summary = "Create my first todo item",
+                         };
   realm.write([&]
               { realm.add(std::move(todo)); });
-
-  auto todos = realm.objects<realm::Todo>();
-
-  auto todosInProgress = todos.where(
-      [](auto const &todo)
-      { return todo.status == "In Progress"; });
-
+  realm.close();
   return 0;
 }
