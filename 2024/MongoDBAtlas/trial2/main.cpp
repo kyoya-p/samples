@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <cpprealm/sdk.hpp>
 
 namespace realm
@@ -21,20 +22,56 @@ namespace realm
   REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
 }
 
-int main(int argc,char* argv[])
+template <typename T>
+void printItem(T item)
 {
-  auto appConfig = realm::App::configuration();
-  appConfig.app_id = argv[1];
-  auto app = realm::App(appConfig);
+  std::cout << "summary:" << (std::string)item.summary << ", isComplete:" << (bool)item.isComplete << std::endl;
+}
 
-  std::cout << "Atlas C++ SDK Sample APPID:" << appConfig.app_id << std::endl;
+int main(int argc, char *argv[])
+{
+  std::cout << "Atlas C++ SDK Sample" << std::endl;
   auto config = realm::db_config();
   auto realm = realm::db(std::move(config));
-  // auto todos = realm.objects<realm::Todo>();
-  auto todo = realm::Todo{.summary = "Create my first todo item",
-                         };
+
+  auto todo = realm::Todo{
+      .summary = "Create my first todo item",
+      .isComplete = false,
+  };
+
+  // DB上にドキュメント作成
+  realm.write(
+      [&]
+      {
+        realm.add(std::move(realm::Todo{
+            .summary = "Initial Document.",
+            .isComplete = false,
+        }));
+      });
+
+  // DBからドキュメントを探す
+  auto collection = realm.objects<realm::Todo>();
+  auto imcompletedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == false; });
+
+  auto item = imcompletedItems[0];
+  printItem(item);
+
+  // アップデート
   realm.write([&]
-              { realm.add(std::move(todo)); });
+              { 
+                item.isComplete = true; 
+                item.summary = "Updated Document.";
+                });
+
+  // 改めてDBからドキュメントを探す
+  auto completedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == true; });
+
+  printItem(completedItems[0]);
+
   realm.close();
   return 0;
 }
