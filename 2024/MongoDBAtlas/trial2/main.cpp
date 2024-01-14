@@ -1,13 +1,12 @@
 #include <cpprealm/sdk.hpp>
 
-struct Todo
+struct Todo // スキーマ定義
 {
   realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
   std::string summary;
   bool isComplete;
   std::string owner_id;
 };
-
 namespace realm
 {
   REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
