@@ -16,7 +16,7 @@ namespace realm
 template <typename T>
 void printItem(T item)
 {
-  std::cout << "summary:" << (std::string)item.summary << ", isComplete:" << (bool)item.isComplete << std::endl;
+  std::cout << "Todo:{summary:" << (std::string)item.summary << ", isComplete:" << (bool)item.isComplete << "}" << std::endl;
 }
 
 int main(int argc, char *argv[])
