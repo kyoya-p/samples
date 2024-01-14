@@ -20,12 +20,12 @@ void printItem(T item)
 
 int main(int argc, char *argv[])
 {
-  std::cout << "Atlas C++ SDK Sample" << std::endl;
+  std::cout << "DB初期化" << std::endl;
   auto config = realm::db_config();
   auto realm = realm::db(std::move(config));
 
-  // DB上にドキュメント作成
-  realm.write(
+  std::cout<<"DB上にドキュメント作成"<<std::endl;
+    realm.write(
       [&]
       {
         realm.add(std::move(Todo{
