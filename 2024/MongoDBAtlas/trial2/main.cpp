@@ -1,40 +1,59 @@
-#include <iostream>
 #include <cpprealm/sdk.hpp>
 
+struct Todo // スキーマ定義
+{
+  realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
+  std::string summary;
+  bool isComplete;
+  std::string owner_id;
+};
 namespace realm
 {
-  struct Todo1
-  {
-    realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
-    std::string summary;
-    std::string isComplete;
-    std::string owner_id;
-  };
-  // REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
-  struct Todo
-  {
-    realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
-    std::string summary;
-    bool isComplete;
-    std::string owner_id;
-  };
   REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
 }
 
-int main(int argc,char* argv[])
+template <typename T>
+void printItem(T item)
 {
-  auto appConfig = realm::App::configuration();
-  appConfig.app_id = argv[1];
-  auto app = realm::App(appConfig);
+  std::cout << "Todo:{summary:" << (std::string)item.summary << ", isComplete:" << (bool)item.isComplete << "}" << std::endl;
+}
 
-  std::cout << "Atlas C++ SDK Sample APPID:" << appConfig.app_id << std::endl;
+int main(int argc, char *argv[])
+{
+  std::cout << "DB初期化" << std::endl;
   auto config = realm::db_config();
   auto realm = realm::db(std::move(config));
-  // auto todos = realm.objects<realm::Todo>();
-  auto todo = realm::Todo{.summary = "Create my first todo item",
-                         };
+
+  std::cout<<"DB上にドキュメント作成"<<std::endl;
+    realm.write(
+      [&]
+      {
+        realm.add(std::move(Todo{
+            .summary = "Initial Document.",
+            .isComplete = false,
+        }));
+      });
+
+  // DBからドキュメントを探す
+  auto collection = realm.objects<Todo>();
+  auto imcompletedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == false; });
+  auto item = imcompletedItems[0];
+  printItem(item);
+
+  // ドキュメントをアップデートしDBを更新
   realm.write([&]
-              { realm.add(std::move(todo)); });
+              { 
+                item.isComplete = true; 
+                item.summary = "Updated Document."; });
+
+  // 改めてDBからドキュメントを探す
+  auto completedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == true; });
+  printItem(completedItems[0]);
+
   realm.close();
   return 0;
 }
