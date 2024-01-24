@@ -21,12 +21,11 @@ void printItem(T item)
 int main(int argc, char *argv[])
 {
   auto appConfig = realm::App::configuration();
-  appConfig.app_id = APP_ID;
+  appConfig.app_id = argv[1];
   auto app = realm::App(appConfig);
   auto user = app.login(realm::App::credentials::anonymous()).get();
   auto syncConfig = user.flexible_sync_configuration();
   auto syncedRealm = realm::db(syncConfig);
-
 
   std::cout << "DB初期化" << std::endl;
   //auto config = realm::db_config();
