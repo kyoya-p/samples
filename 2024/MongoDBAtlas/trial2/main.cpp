@@ -1,35 +1,59 @@
-#include <bsoncxx/json.hpp>
-#include <mongocxx/client.hpp>
-#include <mongocxx/instance.hpp>
+#include <cpprealm/sdk.hpp>
 
-int main()
+struct Todo // スキーマ定義
 {
-    try
-      {
-	// Create an instance.
-	mongocxx::instance inst{};
+  realm::primary_key<realm::object_id> _id{realm::object_id::generate()};
+  std::string summary;
+  bool isComplete;
+  std::string owner_id;
+};
+namespace realm
+{
+  REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
+}
 
-	const auto uri = mongocxx::uri{"mongodb+srv://user1:<password>@atlas1.ts12zfa.mongodb.net/?retryWrites=true&w=majority"};
+template <typename T>
+void printItem(T item)
+{
+  std::cout << "Todo:{summary:" << (std::string)item.summary << ", isComplete:" << (bool)item.isComplete << "}" << std::endl;
+}
 
-	// Set the version of the Stable API on the client.
-	mongocxx::options::client client_options;
-	const auto api = mongocxx::options::server_api{mongocxx::options::server_api::version::k_version_1};
-	client_options.server_api_opts(api);
+int main(int argc, char *argv[])
+{
+  std::cout << "DB初期化" << std::endl;
+  auto config = realm::db_config();
+  auto realm = realm::db(std::move(config));
 
-	// Setup the connection and get a handle on the "admin" database.
-	mongocxx::client conn{ uri, client_options };
-	mongocxx::database db = conn["admin"];
+  auto initialItem = Todo{
+      .summary = "Initial Document.",
+      .isComplete = false,
+  };
 
-	// Ping the database.
-	const auto ping_cmd = bsoncxx::builder::basic::make_document(bsoncxx::builder::basic::kvp("ping", 1));
-	db.run_command(ping_cmd.view());
-	std::cout << "Pinged your deployment. You successfully connected to MongoDB!" << std::endl;
-      }
-    catch (const std::exception& e)
-      {
-	// Handle errors
-	std::cout<< "Exception: " << e.what() << std::endl;
-      }
+  std::cout << "DB上に初期ドキュメント作成: ";
+  printItem(initialItem);
 
-    return 0;
+  realm.write([&]
+              { realm.add(std::move(initialItem)); });
+
+  auto collection = realm.objects<Todo>();
+  auto imcompletedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == false; });
+  auto item = imcompletedItems[0];
+  std::cout << "DBからドキュメントを探した結果: ";
+  printItem(item);
+
+  std::cout << "ドキュメントをアップデートしDBを更新(item.isComplete=true;item.summary=\"Updated Document.\";)" << std::endl;
+  realm.write([&]
+              { item.isComplete = true;
+              item.summary = "Updated Document."; });
+
+  auto completedItems = collection.where(
+      [](auto &item)
+      { return item.isComplete == true; });
+  std::cout << "改めてDBからドキュメントを探した結果: ";
+  printItem(completedItems[0]);
+
+  realm.close();
+  return 0;
 }
