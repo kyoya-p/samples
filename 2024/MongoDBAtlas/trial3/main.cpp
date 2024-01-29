@@ -1,4 +1,4 @@
-#include <cpprealm/sdk.hpp>
+#include "cpprealm/sdk.hpp"
 
 struct Todo // スキーマ定義
 {
@@ -7,10 +7,12 @@ struct Todo // スキーマ定義
   bool isComplete;
   std::string owner_id;
 };
-namespace realm
-{
-  REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
-}
+  realm.REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
+
+// namespace realm
+// {
+//   REALM_SCHEMA(Todo, _id, summary, isComplete, owner_id);
+// }
 
 template <typename T>
 void printItem(T item)
