@@ -1,9 +1,3 @@
-Build
----
-```
-gradlew packageMsi
-```
-
 Setup Dependencies
 ---
 
@@ -14,4 +8,9 @@ cd samples/2023/SNMPTools/Snmp4jUtils_KtJvm
 gradlew publishToMavenLocal
 ```
 
+Build
+---
+```
+gradlew packageMsi
+```
 
