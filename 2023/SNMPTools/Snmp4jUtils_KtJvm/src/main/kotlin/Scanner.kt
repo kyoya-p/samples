@@ -87,10 +87,10 @@ fun main(args: Array<String>): Unit = runBlocking {
 @Serializable
 data class SNMPLog(val ip: String, val vbs: List<@Contextual VariableBinding>)
 
-fun ULong.toIpv4Adr() = InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })
+fun ULong.toIpv4Adr() = InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })!!
 fun InetAddress.toIPv4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
 
-// IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスをの上位下位ビットを入れ替えたものを生成する
+// IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
 @Suppress("unused")
 fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: ULong = 0UL) =
     (startIndex until (1UL shl bitWidth)).asSequence()
@@ -111,6 +111,11 @@ fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
     if (start.toIPv4ULong() <= end.toIPv4ULong()) (start.toIPv4ULong()..end.toIPv4ULong()).asSequence()
         .map { it.toIpv4Adr() }
     else sequenceOf()
+
+fun ipV4AddressRangeFlow(start: InetAddress, end: InetAddress) = channelFlow {
+    ipV4AddressRangeSequence(start, end).forEach { send(it) }
+}
+
 
 private fun ULong.reverseBit32(width: Int = 32): ULong {
     var x = this

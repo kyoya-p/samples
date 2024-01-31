@@ -1,7 +1,6 @@
-@file:Suppress("unused")
-
 package jp.wjg.shokkaa.snmp4jutils.async
 
+import jp.wjg.shokkaa.snmp4jutils.toIpv4Adr
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlinx.serialization.Contextual
@@ -27,7 +26,7 @@ fun main(args: Array<String>): Unit = runBlocking {
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
         val vbl = snmp.send(pdu, tg)
-        println(vbl?.response)
+        println(vbl.response)
     }
 }
 
@@ -49,17 +48,17 @@ suspend fun SnmpAsync.sendAsync(
     pdu: PDU,
     target: Target<UdpAddress>,
     userHandle: Any? = null
-): ResponseEvent<UdpAddress>? {
-    yield()
-    return suspendCoroutine<ResponseEvent<UdpAddress>?> { continuation ->
+): ResponseEvent<UdpAddress> {
+//    yield()
+    return suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
         snmp.send(pdu, target, userHandle, object : ResponseListener {
-            override fun <A : org.snmp4j.smi.Address?> onResponse(r: ResponseEvent<A>?) {
+            override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
+                println("calledback ${(r?.request?.requestID?.toInt()?.toULong()?.toIpv4Adr())} ${r?.peerAddress}")
                 snmp.cancel(pdu, this)
                 @Suppress("UNCHECKED_CAST")
-                continuation.resume(r as ResponseEvent<UdpAddress>?)
+                continuation.resume(r as ResponseEvent<UdpAddress>)
             }
         })
-        return@suspendCoroutine
     }
 }
 
@@ -67,6 +66,12 @@ suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<Inet
     val adr = InetAddress.getByName(host)
     continuation.resume(adr)
 }
+
+suspend fun SnmpAsync.getUdpAddress(host: InetAddress, port: Int = 161) = suspendCoroutine<UdpAddress> { continuation ->
+    continuation.resume(UdpAddress(host, port))
+}
+
+suspend fun SnmpAsync.getUdpAddress(host: String, port: Int = 161) = getUdpAddress(InetAddress.getByName(host), port)
 
 @Suppress("unused")
 suspend fun SnmpAsync.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
@@ -105,4 +110,4 @@ data class Device(
     val vbl: List<@Contextual VariableBinding>,
 )
 
-val defaultSenderSnmp get()= SnmpBuilder().udp().v1().v3().build().async()
+val defaultSenderSnmp get() = SnmpBuilder().udp().v1().v3().build().async()

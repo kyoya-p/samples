@@ -24,7 +24,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
         val tgIp = args[0]
         val vbl = snmp.walk(tgIp).map { it[0] }.onEach {
-            print("${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\r")
+            print("${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\n")
         }.toList()
         println("${(Clock.System.now() - st).inWholeMilliseconds}[ms] #MIB: ${vbl.size}")
 
@@ -36,12 +36,10 @@ fun main(args: Array<String>): Unit = runBlocking {
 suspend fun SnmpAsync.walk(
     targetHost: String,
     reqOidList: List<String> = listOf(".1.3.6"),
+    port: Int = 161,
+    setTarget: CommunityTarget<UdpAddress>.() -> Unit = { timeout = 1000; retries = 3 }
 ) = walk(
-    CommunityTarget(UdpAddress(getInetAddressByName(targetHost), 161), OctetString("public"))
-        .apply {
-            timeout = 1000
-            retries = 3
-        },
+    CommunityTarget(UdpAddress(getInetAddressByName(targetHost), port), OctetString("public")).apply { setTarget() },
     reqOidList.map { VariableBinding(OID(it)) },
 )
 
@@ -57,12 +55,11 @@ suspend fun SnmpAsync.walk(
     target: CommunityTarget<UdpAddress>,
     initVbl: List<VariableBinding>,
 ): Flow<List<VariableBinding>> = generateFlow(initVbl) { vbl ->
-    sendAsync(PDU(PDU.GETNEXT, vbl), target)
-        ?.response?.takeIf { it.errorStatus == PDU.noError }
-        ?.variableBindings?.takeIf {
-            it.zip(initVbl)
-                .any { (vb, ivb) -> vb.variable.syntax != EXCEPTION_END_OF_MIB_VIEW && vb.oid.startsWith(ivb.oid) }
-        }
+    sendAsync(PDU(PDU.GETNEXT, vbl), target).response
+        ?.takeIf { it.errorStatus == PDU.noError }
+        ?.variableBindings
+        ?.takeIf { it.any { it.variable.syntax != EXCEPTION_END_OF_MIB_VIEW } }
+        ?.takeIf { it.zip(initVbl).any { (vb, ivb) -> vb.oid.startsWith(ivb.oid) } }
 }
 
 

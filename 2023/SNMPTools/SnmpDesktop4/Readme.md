@@ -1,4 +1,10 @@
-Setup Dependencies
+Environment
+---
+
+- OpenJDK 21 (Adoptiun/Eclipse Temurin)
+- Winodws 11
+
+Setup Dependencies 
 ---
 
 Snmp4JUtils
@@ -13,4 +19,4 @@ Build
 ```
 gradlew packageMsi
 ```
-
+`./build/`
