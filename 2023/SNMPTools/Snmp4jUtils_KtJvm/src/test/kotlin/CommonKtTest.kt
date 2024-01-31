@@ -10,7 +10,7 @@ import java.net.InetAddress
 internal class CommonKtTest {
     @Test
     fun getAsync(): Unit = runBlocking {
-        val snmp = defaultSenderSnmp
+        val snmp = defaultSenderSnmpAsync
 
         val jobAg = launch { snmpAgent(sampleMibList) }
 //        delay(1000)
@@ -40,7 +40,7 @@ internal class CommonKtTest {
     fun getNext() = runBlocking(Dispatchers.Default) {
         val jobAg = launch { snmpAgent(sampleMibList) }
 //        delay(1000)
-        val snmp = defaultSenderSnmp
+        val snmp = defaultSenderSnmpAsync
         val pdu = PDU(PDU.GET, listOf(VariableBinding(OID(SampleOID.sysDescr.oid))))
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("localhost"), 161), OctetString("public"))
         val r1 = snmp.sendAsync(pdu, tg)

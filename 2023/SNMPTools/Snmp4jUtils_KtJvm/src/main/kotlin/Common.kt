@@ -1,6 +1,5 @@
 package jp.wjg.shokkaa.snmp4jutils.async
 
-import jp.wjg.shokkaa.snmp4jutils.toIpv4Adr
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import kotlinx.serialization.Contextual
@@ -49,11 +48,11 @@ suspend fun SnmpAsync.sendAsync(
     target: Target<UdpAddress>,
     userHandle: Any? = null
 ): ResponseEvent<UdpAddress> {
-//    yield()
+    yield()
     return suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
         snmp.send(pdu, target, userHandle, object : ResponseListener {
             override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
-                println("calledback ${(r?.request?.requestID?.toInt()?.toULong()?.toIpv4Adr())} ${r?.peerAddress}")
+//                println("calledback ${(r?.request?.requestID?.toInt()?.toULong()?.toIpv4Adr())} ${r?.peerAddress}")
                 snmp.cancel(pdu, this)
                 @Suppress("UNCHECKED_CAST")
                 continuation.resume(r as ResponseEvent<UdpAddress>)
@@ -110,4 +109,4 @@ data class Device(
     val vbl: List<@Contextual VariableBinding>,
 )
 
-val defaultSenderSnmp get() = SnmpBuilder().udp().v1().v3().build().async()
+val defaultSenderSnmpAsync get() = SnmpBuilder().udp().v1().v3().build().async()

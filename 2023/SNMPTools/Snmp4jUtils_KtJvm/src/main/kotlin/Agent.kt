@@ -44,7 +44,7 @@ suspend fun snmpAgent(
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
-    val senderSnmp = defaultSenderSnmp
+    val senderSnmp = defaultSenderSnmpAsync
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }

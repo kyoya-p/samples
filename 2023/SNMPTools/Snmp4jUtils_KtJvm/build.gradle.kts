@@ -3,7 +3,7 @@ plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
     `maven-publish`
-    id("com.github.johnrengelman.shadow") version "7.1.2" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
+    id("com.github.johnrengelman.shadow") version "8.1.1" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
 }
 
 val myGroupId = "jp.wjg.shokkaa"
@@ -18,15 +18,15 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.2")
-    implementation("org.snmp4j:snmp4j:3.7.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json/1.6.2
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
+    implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
     implementation("com.charleskorn.kaml:kaml:0.57.0") // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.1") // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
-    testImplementation("net.java.dev.jna:jna:5.9.0")
-    testImplementation("net.java.dev.jna:jna-platform:5.9.0")
+    testImplementation("net.java.dev.jna:jna:5.14.0") // https://mvnrepository.com/artifact/net.java.dev.jna/jna
+//    test    Implementation("net.java.dev.jna:jna-platform:5.14.0") // https://mvnrepository.com/artifact/net.java.dev.jna/jna-platform
 
     //testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-test

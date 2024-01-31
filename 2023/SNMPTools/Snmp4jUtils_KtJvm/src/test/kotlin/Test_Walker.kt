@@ -1,15 +1,13 @@
 import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.async.defaultSenderSnmp
+import jp.wjg.shokkaa.snmp4jutils.async.defaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.walk
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.encodeToStream
 import org.junit.jupiter.api.Test
 import org.snmp4j.smi.VariableBinding
 import java.io.File
@@ -22,7 +20,7 @@ class Test_Walker {
         val testMib: List<VariableBinding> = yamlSnmp4j.decodeFromStream(File("samples/testMib1.yaml").inputStream())
         val jobAg = launch { snmpAgent(testMib) }
 
-        val res = defaultSenderSnmp.walk("127.0.0.1").map { it.first() }.toList()
+        val res = defaultSenderSnmpAsync.walk("127.0.0.1").map { it.first() }.toList()
 //        jsonSnmp4j.encodeToStream(res, File("build/testres.json").outputStream())
         assert(res.zip(testMib).any { (r, t) -> r == t })
         jobAg.cancelAndJoin()

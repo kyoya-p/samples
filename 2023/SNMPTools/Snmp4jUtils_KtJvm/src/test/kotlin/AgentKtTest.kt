@@ -77,7 +77,7 @@ internal class AgentKtTest {
         println("start walker")
         delay(1000)
 
-        val r = defaultSenderSnmp.walk("localhost").toList().flatMap{it}
+        val r = defaultSenderSnmpAsync.walk("localhost").toList().flatMap{it}
         assert(r.size == vbl.size)
         assert(r.zip(vbl).all { (a, b) -> a == b })
         ag.cancelAndJoin()
