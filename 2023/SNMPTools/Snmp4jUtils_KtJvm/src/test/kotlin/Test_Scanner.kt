@@ -1,6 +1,6 @@
 @file:Suppress("ClassName")
 
-import jp.wjg.shokkaa.snmp4jutils.async.defaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.getInetAddressByName
 import jp.wjg.shokkaa.snmp4jutils.async.getUdpAddress
 import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
@@ -10,7 +10,9 @@ import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
 import jp.wjg.shokkaa.snmp4jutils.toIPv4ULong
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -56,7 +58,7 @@ class Test_Scanner {
 
     @Test
     fun test_ipV4AddressRange(): Unit = runBlocking {
-        val snmp = defaultSenderSnmpAsync
+        val snmp = createDefaultSenderSnmpAsync()
 //        val startAdr = snmp.getInetAddressByName("1.0.0.1")
         val startAdr = snmp.getInetAddressByName("10.36.102.1")
 //        val endAdr = snmp.getInetAddressByName("1.3.255.254")
@@ -80,14 +82,15 @@ class Test_Scanner {
             }
         }.toList().awaitAll()
         println(c)
+        snmp.close()
     }
 
     @Test
     fun scanFlow_Test(): Unit = runTest {
-        with(defaultSenderSnmpAsync) {
-            val startAdr = getInetAddressByName("10.36.102.1")
-            val endAdr = getInetAddressByName("10.36.102.255")
-            scanFlow(startAdr, endAdr).collect { res ->
+        createDefaultSenderSnmpAsync().use { snmpAsync ->
+            val startAdr = snmpAsync.getInetAddressByName("10.0.0.1")
+            val endAdr = snmpAsync.getInetAddressByName("10.0.0.254")
+            snmpAsync.scanFlow(startAdr, endAdr).collect { res ->
                 println("Res: ${res.peerAddress}: ${res.response.variableBindings}")
             }
         }

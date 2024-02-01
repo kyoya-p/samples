@@ -1,89 +1,53 @@
 package jp.wjg.shokkaa.snmp4jutils
 
-import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.async.*
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
-import kotlinx.coroutines.flow.*
+import jp.wjg.shokkaa.snmp4jutils.async.SnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.getUdpAddress
+import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
-import kotlinx.datetime.todayIn
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.smi.*
-import java.io.File
+import org.snmp4j.smi.Integer32
+import org.snmp4j.smi.OID
+import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
+
 @ExperimentalSerializationApi
 @ExperimentalCoroutinesApi
-@FlowPreview
 @ExperimentalTime
 fun main(args: Array<String>): Unit = runBlocking {
-    val baseHost = args.getOrNull(0) ?: "192.168.3.0"
-    val scanBits = args.getOrNull(1)?.toInt() ?: 8
+    data class IpRange(val start: String, val end: String)
 
-    @Suppress("BlockingMethodInNonBlockingContext")
-    val baseIp = InetAddress.getByName(baseHost).toIPv4ULong() and ((-1L).toULong() shl scanBits)
-    val sendInterval = (args.getOrNull(2)?.toInt() ?: 50).milliseconds
-    val baseAdr = baseIp.toIpv4Adr()
-
-    val today = Clock.System.todayIn(currentSystemDefault())
-    val resultFile = File("samples/$today-${baseAdr.hostAddress}-$scanBits.yaml")
-
-    val snmpBuilder = SnmpBuilder()
-
-    val snmp = snmpBuilder.udp().v1().build().async()
-    snmp.listen()
-
-    val start by lazy { Clock.System.now() }
-    fun now() = (Clock.System.now() - start).inWholeMilliseconds
-    val sampleVBs = SampleOID.entries.map { VariableBinding(OID(it.oid)) }
-    //val sampleVBs = listOf<VariableBinding>()
-    //val sampleVBs = listOf(SampleOID.sysDescr).map { VariableBinding(it.oid) }
-
-    val detectedIps = mutableSetOf<String>()
-    var c = 0
-    scrambledIpV4AddressSequence(baseAdr, scanBits).asFlow().map { (i, ip) ->
-        async {
-            val udpAdr = UdpAddress(ip, 161)
-            val target = snmpBuilder.target(udpAdr).community(OctetString("public"))
-                .timeout(5000).retries(2)
-                .build()
-            print("\r${i + 1UL}/${1 shl scanBits} ${(i + 1UL) * 1000UL / (now() + 1).toULong()}[req/s] : send() -> $udpAdr [${++c}] ")
-            snmp.sendAsync(PDU(PDU.GETNEXT, sampleVBs), target, udpAdr)
+    val ips = args.map {
+        it.split("-").map { InetAddress.getByName(it).toIPv4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
+    }
+    println(ips)
+    createDefaultSenderSnmpAsync().use { snmpAsync ->
+        ips.asFlow().flatMapConcat { ips -> snmpAsync.scanFlow(ips) }.collect {
+            println("${it.peerAddress}: ${it.response[0]}")
         }
-    }.onEach { delayUntilNextPeriod(sendInterval) }.buffer(UNLIMITED)
-        .map { it.await() }
-        .onEach { c-- }
-        .mapNotNull { it }
-        .filter { it.peerAddress != null && it.response != null && (it.userObject as UdpAddress) == it.peerAddress }
-        .map { ev ->
-            SNMPLog(ev.peerAddress.inetAddress.hostAddress, ev.response.variableBindings)
-        }.collect { snmpLog ->
-            if (!detectedIps.contains(snmpLog.ip)) {
-                detectedIps.add(snmpLog.ip)
-                println(snmpLog.ip)
-                resultFile.appendText(Yaml(serializersModule = snmp4jSerializersModule).encodeToString(listOf(snmpLog)))
-                resultFile.appendText("\n")
-            }
-        }
-    snmp.close()
+    }
 }
 
-@Serializable
-data class SNMPLog(val ip: String, val vbs: List<@Contextual VariableBinding>)
 
-fun ULong.toIpv4Adr() = InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })!!
+fun ULong.toIpv4Adr() =
+    InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })!!
+
 fun InetAddress.toIPv4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
@@ -153,3 +117,5 @@ suspend fun SnmpAsync.scanFlow(startAdr: InetAddress, endAdr: InetAddress) = cha
         }
     }
 }
+
+suspend fun SnmpAsync.scanFlow(r: ClosedRange<ULong>) = scanFlow(r.start.toIpv4Adr(), r.endInclusive.toIpv4Adr())

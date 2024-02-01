@@ -1,7 +1,8 @@
-import jp.wjg.shokkaa.snmp4jutils.*
+import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.async.defaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.walk
+import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
+import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -20,7 +21,7 @@ class Test_Walker {
         val testMib: List<VariableBinding> = yamlSnmp4j.decodeFromStream(File("samples/testMib1.yaml").inputStream())
         val jobAg = launch { snmpAgent(testMib) }
 
-        val res = defaultSenderSnmpAsync.walk("127.0.0.1").map { it.first() }.toList()
+        val res = createDefaultSenderSnmpAsync().walk("127.0.0.1").map { it.first() }.toList()
 //        jsonSnmp4j.encodeToStream(res, File("build/testres.json").outputStream())
         assert(res.zip(testMib).any { (r, t) -> r == t })
         jobAg.cancelAndJoin()

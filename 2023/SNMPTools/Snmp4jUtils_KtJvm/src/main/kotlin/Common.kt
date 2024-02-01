@@ -1,7 +1,6 @@
 package jp.wjg.shokkaa.snmp4jutils.async
 
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -30,14 +29,14 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 @Suppress("unused")
-class SnmpAsync(val snmp: org.snmp4j.Snmp) : AutoCloseable {
+class SnmpAsync(val snmp: Snmp) : AutoCloseable {
     override fun close() = snmp.close()
 
     companion object {
         fun createDefaultAgentTransport() =
             DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))
 
-        fun createDefaultAgentSession() = org.snmp4j.Snmp(createDefaultAgentTransport()).async()
+        fun createDefaultAgentSession() = Snmp(createDefaultAgentTransport()).async()
 
     }
 }
@@ -47,18 +46,14 @@ suspend fun SnmpAsync.sendAsync(
     pdu: PDU,
     target: Target<UdpAddress>,
     userHandle: Any? = null
-): ResponseEvent<UdpAddress> {
-    yield()
-    return suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
-        snmp.send(pdu, target, userHandle, object : ResponseListener {
-            override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
-//                println("calledback ${(r?.request?.requestID?.toInt()?.toULong()?.toIpv4Adr())} ${r?.peerAddress}")
-                snmp.cancel(pdu, this)
-                @Suppress("UNCHECKED_CAST")
-                continuation.resume(r as ResponseEvent<UdpAddress>)
-            }
-        })
-    }
+): ResponseEvent<UdpAddress> = suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+    snmp.send(pdu, target, userHandle, object : ResponseListener {
+        override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
+            snmp.cancel(pdu, this)
+            @Suppress("UNCHECKED_CAST")
+            continuation.resume(r as ResponseEvent<UdpAddress>)
+        }
+    })
 }
 
 suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
@@ -70,7 +65,7 @@ suspend fun SnmpAsync.getUdpAddress(host: InetAddress, port: Int = 161) = suspen
     continuation.resume(UdpAddress(host, port))
 }
 
-suspend fun SnmpAsync.getUdpAddress(host: String, port: Int = 161) = getUdpAddress(InetAddress.getByName(host), port)
+suspend fun SnmpAsync.getUdpAddress(host: String, port: Int = 161) = getUdpAddress(getInetAddressByName(host), port)
 
 @Suppress("unused")
 suspend fun SnmpAsync.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
@@ -109,4 +104,4 @@ data class Device(
     val vbl: List<@Contextual VariableBinding>,
 )
 
-val defaultSenderSnmpAsync get() = SnmpBuilder().udp().v1().v3().build().async()
+fun createDefaultSenderSnmpAsync() = SnmpBuilder().udp().v1().v3().build().async()

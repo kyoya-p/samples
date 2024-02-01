@@ -2,13 +2,14 @@ package jp.wjg.shokkaa.snmp4jutils.async
 
 import jp.wjg.shokkaa.snmp4jutils.decodeFromStream
 import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import org.snmp4j.*
 import org.snmp4j.smi.*
 import org.snmp4j.smi.Null.noSuchObject
@@ -23,7 +24,6 @@ fun main(args: Array<String>) = runBlocking {
     snmpAgent(vbl)
 }
 
-@Suppress("BlockingMethodInNonBlockingContext")
 suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
     fun commandResponder(responseHandler: (ResponderEvent) -> Unit) = object : CommandResponder {
         override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
@@ -38,13 +38,14 @@ suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
 }
 
 // coroutineで実行されます
+@OptIn(DelicateCoroutinesApi::class)
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
 suspend fun snmpAgent(
     vbl: List<VariableBinding>,
     snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))).apply { listen() },
     hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
 ) {
-    val senderSnmp = defaultSenderSnmpAsync
+    val senderSnmp = createDefaultSenderSnmpAsync()
     val oidVBMap = TreeMap<OID, VariableBinding>().apply {
         vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
     }
