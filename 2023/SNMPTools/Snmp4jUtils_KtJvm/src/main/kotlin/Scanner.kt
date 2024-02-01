@@ -1,21 +1,19 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import com.charleskorn.kaml.Yaml
-import jp.wjg.shokkaa.snmp4jutils.async.SampleOID
-import jp.wjg.shokkaa.snmp4jutils.async.listen
-import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
-import jp.wjg.shokkaa.snmp4jutils.async.async
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
-import kotlinx.datetime.todayAt
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
+import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
@@ -39,7 +37,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     val sendInterval = (args.getOrNull(2)?.toInt() ?: 50).milliseconds
     val baseAdr = baseIp.toIpv4Adr()
 
-    val today = Clock.System.todayAt(currentSystemDefault())
+    val today = Clock.System.todayIn(currentSystemDefault())
     val resultFile = File("samples/$today-${baseAdr.hostAddress}-$scanBits.yaml")
 
     val snmpBuilder = SnmpBuilder()
@@ -49,7 +47,7 @@ fun main(args: Array<String>): Unit = runBlocking {
 
     val start by lazy { Clock.System.now() }
     fun now() = (Clock.System.now() - start).inWholeMilliseconds
-    val sampleVBs = SampleOID.values().map { VariableBinding(OID(it.oid)) }
+    val sampleVBs = SampleOID.entries.map { VariableBinding(OID(it.oid)) }
     //val sampleVBs = listOf<VariableBinding>()
     //val sampleVBs = listOf(SampleOID.sysDescr).map { VariableBinding(it.oid) }
 
@@ -75,9 +73,7 @@ fun main(args: Array<String>): Unit = runBlocking {
             if (!detectedIps.contains(snmpLog.ip)) {
                 detectedIps.add(snmpLog.ip)
                 println(snmpLog.ip)
-                @Suppress("BlockingMethodInNonBlockingContext")
                 resultFile.appendText(Yaml(serializersModule = snmp4jSerializersModule).encodeToString(listOf(snmpLog)))
-                @Suppress("BlockingMethodInNonBlockingContext")
                 resultFile.appendText("\n")
             }
         }
@@ -139,4 +135,21 @@ suspend fun delayUntilNextPeriod(
     }
     delay(runTime - now)
     return runTime
+}
+
+suspend fun SnmpAsync.scanFlow(startAdr: InetAddress, endAdr: InetAddress) = channelFlow {
+    ipV4AddressRangeFlow(startAdr, endAdr).collect { ip ->
+        launch {
+            runCatching {
+                val target = CommunityTarget(getUdpAddress(ip, 161), OctetString("public")).apply {
+                    timeout = 3000
+                    retries = 1
+                }
+                val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+                pdu.requestID = Integer32(ip.toIPv4ULong().toInt())
+                val res = sendAsync(pdu, target)
+                if (res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) send(res)
+            }.onFailure { it.printStackTrace() }.getOrNull()
+        }
+    }
 }

@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json/1.6.2
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
@@ -26,9 +27,6 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.1") // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
     testImplementation("net.java.dev.jna:jna:5.14.0") // https://mvnrepository.com/artifact/net.java.dev.jna/jna
-//    test    Implementation("net.java.dev.jna:jna-platform:5.14.0") // https://mvnrepository.com/artifact/net.java.dev.jna/jna-platform
-
-    //testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-test
 }
 

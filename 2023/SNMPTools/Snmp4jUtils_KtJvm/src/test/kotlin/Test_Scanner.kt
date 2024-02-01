@@ -5,6 +5,7 @@ import jp.wjg.shokkaa.snmp4jutils.async.getInetAddressByName
 import jp.wjg.shokkaa.snmp4jutils.async.getUdpAddress
 import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
 import jp.wjg.shokkaa.snmp4jutils.ipV4AddressRangeFlow
+import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
 import jp.wjg.shokkaa.snmp4jutils.toIPv4ULong
 import kotlinx.coroutines.async
@@ -56,14 +57,19 @@ class Test_Scanner {
     @Test
     fun test_ipV4AddressRange(): Unit = runBlocking {
         val snmp = defaultSenderSnmpAsync
-        val startAdr = snmp.getInetAddressByName("192.168.0.1")
-        val endAdr = snmp.getInetAddressByName("192.255.255.254")
+//        val startAdr = snmp.getInetAddressByName("1.0.0.1")
+        val startAdr = snmp.getInetAddressByName("10.36.102.1")
+//        val endAdr = snmp.getInetAddressByName("1.3.255.254")
+        val endAdr = snmp.getInetAddressByName("10.36.102.255")
         var c = 0
-        ipV4AddressRangeFlow(startAdr, endAdr).buffer(100).withIndex().map { (i, ip) ->
+        ipV4AddressRangeFlow(startAdr, endAdr).withIndex().map { (i, ip) ->
             print("Req $i [${++c}]:\r")
             async {
                 runCatching {
-                    val target = CommunityTarget(snmp.getUdpAddress(ip, 161), OctetString("public"))
+                    val target = CommunityTarget(snmp.getUdpAddress(ip, 161), OctetString("public")).apply {
+                        timeout = 2500
+                        retries = 1
+                    }
                     val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
                     pdu.requestID = Integer32(ip.toIPv4ULong().toInt())
                     snmp.sendAsync(pdu, target).takeIf { it.response != null }?.let { res ->
@@ -77,32 +83,13 @@ class Test_Scanner {
     }
 
     @Test
-    fun test() = runTest {
-        // 100個のイベントを生成するflowを作成
-        val events = flow {
-            for (i in 1..100) {
-                emit(i)
+    fun scanFlow_Test(): Unit = runTest {
+        with(defaultSenderSnmpAsync) {
+            val startAdr = getInetAddressByName("10.36.102.1")
+            val endAdr = getInetAddressByName("10.36.102.255")
+            scanFlow(startAdr, endAdr).collect { res ->
+                println("Res: ${res.peerAddress}: ${res.response.variableBindings}")
             }
         }
-
-        // collectionを最大5個まで同時並列実行
-//        coroutineScope {
-        // collectionを作成
-        val tasks = events.onEach {
-            println("イベントを受信: $it")
-        }.flatMapMerge(5) {
-            async {
-                // タスクを実行
-                Thread.sleep(1000)
-                println("タスク完了: $it")
-            }
-        }
-
-        // すべてのタスクを実行
-        tasks.forEach { it.start() }
-
-        // すべてのタスクが完了するまで待つ
-        tasks.awaitAll()
-//        }
     }
 }
