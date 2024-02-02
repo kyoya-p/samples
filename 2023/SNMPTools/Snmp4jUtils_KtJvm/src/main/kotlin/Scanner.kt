@@ -1,46 +1,33 @@
 package jp.wjg.shokkaa.snmp4jutils
 
-import jp.wjg.shokkaa.snmp4jutils.async.SnmpAsync
-import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
-import jp.wjg.shokkaa.snmp4jutils.async.getUdpAddress
-import jp.wjg.shokkaa.snmp4jutils.async.sendAsync
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import jp.wjg.shokkaa.snmp4jutils.async.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.serialization.ExperimentalSerializationApi
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.smi.Integer32
-import org.snmp4j.smi.OID
-import org.snmp4j.smi.OctetString
-import org.snmp4j.smi.VariableBinding
+import org.snmp4j.smi.*
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-
-@ExperimentalSerializationApi
-@ExperimentalCoroutinesApi
-@ExperimentalTime
 fun main(args: Array<String>): Unit = runBlocking {
-    data class IpRange(val start: String, val end: String)
-
-    val ips = args.map {
-        it.split("-").map { InetAddress.getByName(it).toIPv4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
+    val ips = args.map { arg ->
+        arg.split("-").map { InetAddress.getByName(it).toIPv4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
     }
     println(ips)
+    val r = ULongRangeSet(ips)
+    println(r.toList())
     createDefaultSenderSnmpAsync().use { snmpAsync ->
-        ips.asFlow().flatMapConcat { ips -> snmpAsync.scanFlow(ips) }.collect {
-            println("${it.peerAddress}: ${it.response[0]}")
-        }
+        snmpAsync.scanFlow(r).collect { println("${it.peerAddress}: ${it.response[0]}") }
     }
 }
 
@@ -101,13 +88,14 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
-suspend fun SnmpAsync.scanFlow(startAdr: InetAddress, endAdr: InetAddress) = channelFlow {
-    ipV4AddressRangeFlow(startAdr, endAdr).collect { ip ->
-        launch {
+suspend fun SnmpAsync.scanFlow(ipRange: RangeSet<ULong>, tgSetup: SnmpTarget.() -> Unit = {}) = channelFlow {
+    ipRange.asSequence().flatMap { it.start..it.endInclusive }.asFlow().map { it.toIpv4Adr() }.map { ip ->
+        async {
             runCatching {
                 val target = CommunityTarget(getUdpAddress(ip, 161), OctetString("public")).apply {
-                    timeout = 3000
+                    timeout = 5000
                     retries = 1
+                    tgSetup()
                 }
                 val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
                 pdu.requestID = Integer32(ip.toIPv4ULong().toInt())
@@ -115,7 +103,10 @@ suspend fun SnmpAsync.scanFlow(startAdr: InetAddress, endAdr: InetAddress) = cha
                 if (res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) send(res)
             }.onFailure { it.printStackTrace() }.getOrNull()
         }
-    }
+    }.toList().awaitAll()
 }
 
-suspend fun SnmpAsync.scanFlow(r: ClosedRange<ULong>) = scanFlow(r.start.toIpv4Adr(), r.endInclusive.toIpv4Adr())
+
+suspend fun SnmpAsync.scanFlow(r: ULongRange) = scanFlow(ULongRangeSet(r))
+suspend fun SnmpAsync.scanFlow(s: InetAddress, e: InetAddress) = scanFlow(s.toIPv4ULong()..e.toIPv4ULong())
+suspend fun SnmpAsync.scanFlow(s: String, e: String) = scanFlow(getInetAddressByName(s), getInetAddressByName(e))
