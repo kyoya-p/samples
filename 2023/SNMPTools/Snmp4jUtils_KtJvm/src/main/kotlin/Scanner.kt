@@ -1,10 +1,9 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import jp.wjg.shokkaa.snmp4jutils.async.*
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
@@ -12,7 +11,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.smi.*
+import org.snmp4j.smi.Integer32
+import org.snmp4j.smi.OID
+import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
@@ -89,24 +91,28 @@ suspend fun delayUntilNextPeriod(
 }
 
 suspend fun SnmpAsync.scanFlow(ipRange: RangeSet<ULong>, tgSetup: SnmpTarget.() -> Unit = {}) = channelFlow {
-    ipRange.asSequence().flatMap { it.start..it.endInclusive }.asFlow().map { it.toIpv4Adr() }.map { ip ->
-        async {
-            runCatching {
-                val target = CommunityTarget(getUdpAddress(ip, 161), OctetString("public")).apply {
-                    timeout = 5000
-                    retries = 1
-                    tgSetup()
-                }
-                val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
-                pdu.requestID = Integer32(ip.toIPv4ULong().toInt())
-                val res = sendAsync(pdu, target)
-                if (res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) send(res)
-            }.onFailure { it.printStackTrace() }.getOrNull()
-        }
-    }.toList().awaitAll()
+    ipRange.asSequence().flatMap { it.start..it.endInclusive }.asFlow().buffer(10).map { it.toIpv4Adr() }.map { ip ->
+//        async {
+        runCatching {
+            val target = CommunityTarget(getUdpAddress(ip, 161), OctetString("public")).apply {
+                timeout = 5000
+                retries = 0
+                tgSetup()
+            }
+            val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+            pdu.requestID = Integer32(ip.toIPv4ULong().toInt())
+            val res = sendAsync(pdu, target)
+            if (res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) send(res)
+        }.onFailure { it.printStackTrace() }.getOrNull()
+//        }
+//    }.toList().awaitAll()
+    }
 }
 
 
-suspend fun SnmpAsync.scanFlow(r: ULongRange) = scanFlow(ULongRangeSet(r))
-suspend fun SnmpAsync.scanFlow(s: InetAddress, e: InetAddress) = scanFlow(s.toIPv4ULong()..e.toIPv4ULong())
-suspend fun SnmpAsync.scanFlow(s: String, e: String) = scanFlow(getInetAddressByName(s), getInetAddressByName(e))
+suspend fun SnmpAsync.scanFlow(r: ULongRange, tgSetup: SnmpTarget.() -> Unit = {}) = scanFlow(ULongRangeSet(r), tgSetup)
+suspend fun SnmpAsync.scanFlow(s: InetAddress, e: InetAddress, tgSetup: SnmpTarget.() -> Unit = {}) =
+    scanFlow(s.toIPv4ULong()..e.toIPv4ULong(), tgSetup)
+
+suspend fun SnmpAsync.scanFlow(s: String, e: String, tgSetup: SnmpTarget.() -> Unit = {}) =
+    scanFlow(getInetAddressByName(s), getInetAddressByName(e), tgSetup)

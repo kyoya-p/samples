@@ -43,7 +43,7 @@ class ScannerTest {
     @Test
     fun scanFlow_Test(): Unit = runTest {
         createDefaultSenderSnmpAsync().use { snmpAsync ->
-            snmpAsync.scanFlow( "10.0.0.1","10.31.255.255").collect { res ->
+            snmpAsync.scanFlow( "192.168.0.1","192.168.255.254").collect { res ->
                 println("Res: ${res.peerAddress}: ${res.response.variableBindings}")
             }
         }
