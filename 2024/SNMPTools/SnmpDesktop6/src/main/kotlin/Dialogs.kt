@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
-import jp.wjg.shokkaa.snmp4jutils.async.toIpV4Adr
+import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
+import jp.wjg.shokkaa.snmp4jutils.scanFlow
+import kotlinx.coroutines.flow.withIndex
 
 // Common Component Styles
 val styleBtn = Modifier.padding(8.dp)
@@ -42,7 +44,21 @@ fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogH
     }
 }
 
-val fScan = {}
+fun ULongRangeSet.totalLength() = map { it.endInclusive - it.start + 1UL }.sum()
+suspend fun scanning(ipSpec: String) {
+    fun String.range() = split("-").map { it.toIpV4ULong() }.let { a -> a[0]..a.getOrElse(1) { a[0] } }
+    val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.range() })
+    val n = rangeSet.totalLength()
+    createDefaultSenderSnmpAsync().use { snmp ->
+        snmp.scanFlow(rangeSet) { timeoutEvent = true }.withIndex().collect { (i, r) ->
+            print("$i/$n\r")
+//            if (r.response != null) println("${r.peerAddress}: ${r.response}")
+            println("${r.peerAddress}: ${r.response}")
+        }
+    }
+    println("complete.")
+
+}
 
 @Composable
 fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
@@ -55,13 +71,7 @@ fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
                 onValueChange = { ipSpecField = it })
 
             Row {
-                LaunchedEffect(ipSpec) {
-                    val range = ipSpec.split(",").map { it.split("-").map { it.toIpV4Adr().toIpV4ULong() } }
-                        .map { it[0]..if (it.size < 2) it[0] else it[1] }.fold(ULongRangeSet()) { a, e -> a.add(e) }
-
-
-                    println(ipSpec)
-                }
+                LaunchedEffect(ipSpec) { scanning(ipSpec) }
                 Button(modifier = styleBtn, onClick = { ipSpec = ipSpecField }) { Text("Scan") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Close") }
             }

@@ -75,6 +75,7 @@ suspend fun SnmpAsync.getUdpAddress(host: String, port: Int = 161) = getUdpAddre
 fun ByteArray.toIpV4Adr() = InetAddress.getByAddress(this)
 fun ULong.toIpV4Adr() = ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() }.toIpV4Adr()
 fun String.toIpV4Adr() = InetAddress.getByName(this)
+fun String.toIpV4ULong() = trim().toIpV4Adr().toIpV4ULong()
 
 fun InetAddress.toIpV4ByteArray() = address
 fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }

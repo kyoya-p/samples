@@ -197,7 +197,6 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
     infix operator fun minusAssign(o: Collection<ClosedRange<T>>) {
         removeAll(o)
     }
-
 }
 
 
