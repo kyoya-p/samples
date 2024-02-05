@@ -44,9 +44,9 @@ class ScannerTest {
     }
 
     @Test
-    fun scanFlow_Test(): Unit = runTest(timeout = 60.seconds) {
+    fun scanFlow_Test(): Unit = runTest(timeout = 10.seconds) {
         val range =
-            InetAddress.getByName("192.168.0.1").toIPv4ULong()..InetAddress.getByName("192.168.255.254").toIPv4ULong()
+            InetAddress.getByName("192.168.0.1").toIpV4ULong()..InetAddress.getByName("192.168.255.254").toIpV4ULong()
         val totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
         var nEv = 0UL
 

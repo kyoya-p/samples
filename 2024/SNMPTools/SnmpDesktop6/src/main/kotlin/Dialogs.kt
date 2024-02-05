@@ -13,10 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
-import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
-import jp.wjg.shokkaa.snmp4jutils.async.toIpV4Adr
-import jp.wjg.shokkaa.snmp4jutils.async.toIpV4String
-import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
+import jp.wjg.shokkaa.snmp4jutils.async.*
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import kotlinx.coroutines.flow.withIndex
 
@@ -47,7 +44,7 @@ fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogH
 }
 
 fun ULongRangeSet.totalLength() = map { it.endInclusive - it.start + 1UL }.sum()
-suspend fun scanning(ipSpec: String) {
+suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected: (res: SnmpEvent) -> Unit) {
     fun String.range() = split("-").map { it.toIpV4ULong() }.let { a -> a[0]..a.getOrElse(1) { a[0] } }
     val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.range() })
     println(rangeSet.map { "${it.start.toIpV4Adr().toIpV4String()}..${it.endInclusive.toIpV4Adr().toIpV4String()}" }
@@ -56,8 +53,8 @@ suspend fun scanning(ipSpec: String) {
     createDefaultSenderSnmpAsync().use { snmp ->
         snmp.scanFlow(rangeSet) { timeoutEvent = true }.withIndex().collect { (i, r) ->
             print("$i/$n\r")
-//            if (r.response != null) println("${r.peerAddress}: ${r.response}")
-            println("${r.peerAddress}: ${r.response}")
+            progress(i.toInt() * 100 / n.toInt())
+            if (r.response != null) detected(r)
         }
     }
     println("complete.")
@@ -75,7 +72,9 @@ fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
                 onValueChange = { ipSpecField = it })
 
             Row {
-                LaunchedEffect(ipSpec) { scanning(ipSpec) }
+                LaunchedEffect(ipSpec) {
+                    scanning(ipSpec, { print("$it % \r") }) {  }
+                }
                 Button(modifier = styleBtn, onClick = { ipSpec = ipSpecField }) { Text("Scan") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Close") }
             }
