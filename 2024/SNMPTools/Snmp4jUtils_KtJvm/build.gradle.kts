@@ -8,7 +8,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.5.0"
+val myVersion = "1.6.0"
 
 version = myVersion
 group = myGroupId
@@ -29,7 +29,6 @@ dependencies {
     testImplementation("net.java.dev.jna:jna:5.14.0") // https://mvnrepository.com/artifact/net.java.dev.jna/jna
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-test
 }
-
 
 application {
     mainClass.set("mypackage.MainKt") // package mypackageかつファイル名main.ktのmain()を実行する場合

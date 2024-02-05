@@ -23,7 +23,7 @@ import kotlin.time.ExperimentalTime
 
 fun main(args: Array<String>): Unit = runBlocking {
     val ips = args.map { arg ->
-        arg.split("-").map { InetAddress.getByName(it).toIPv4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
+        arg.split("-").map { InetAddress.getByName(it).toIpV4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
     }
     println(ips)
     val r = ULongRangeSet(ips)
@@ -34,17 +34,13 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 
-fun ULong.toIpv4Adr() =
-    InetAddress.getByAddress(ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() })!!
-
-fun InetAddress.toIPv4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
 @Suppress("unused")
 fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: ULong = 0UL) =
     (startIndex until (1UL shl bitWidth)).asSequence()
-        .map { it to ((netAdr.toIPv4ULong() and ((-1L).toULong() shl bitWidth)) or it) }
-        .map { (i, a) -> i to a.toIpv4Adr() }
+        .map { it to ((netAdr.toIpV4ULong() and ((-1L).toULong() shl bitWidth)) or it) }
+        .map { (i, a) -> i to a.toIpV4Adr() }
 
 fun scrambledIpV4AddressSequence(
     netAdr: InetAddress, bitWidth: Int,
@@ -52,13 +48,13 @@ fun scrambledIpV4AddressSequence(
     startIndex: Long = 0,
 ) =
     (0UL until (1UL shl bitWidth)).asSequence()
-        .map { it to ((netAdr.toIPv4ULong() and ((-1L).toULong() shl bitWidth)) or it.reverseBit32(bitWidth)) }
-        .map { (i, a) -> i to a.toIpv4Adr() }
+        .map { it to ((netAdr.toIpV4ULong() and ((-1L).toULong() shl bitWidth)) or it.reverseBit32(bitWidth)) }
+        .map { (i, a) -> i to a.toIpV4Adr() }
 
 @Suppress("unused")
 fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
-    if (start.toIPv4ULong() <= end.toIPv4ULong()) (start.toIPv4ULong()..end.toIPv4ULong()).asSequence()
-        .map { it.toIpv4Adr() }
+    if (start.toIpV4ULong() <= end.toIpV4ULong()) (start.toIpV4ULong()..end.toIpV4ULong()).asSequence()
+        .map { it.toIpV4Adr() }
     else sequenceOf()
 
 fun ipV4AddressRangeFlow(start: InetAddress, end: InetAddress) = channelFlow {
@@ -97,7 +93,7 @@ suspend fun SnmpAsync.scanFlow(
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ) = callbackFlow {
     var n = ipRange.map { it.endInclusive - it.start + 1UL }.sum()
-    ipRange.asSequence().flatMap { it.start..it.endInclusive }.map { it.toIpv4Adr() }.forEach { ip ->
+    ipRange.asSequence().flatMap { it.start..it.endInclusive }.map { it.toIpV4Adr() }.forEach { ip ->
         val builder = Builder().apply { tgSetup(ip) }
         val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
         val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
@@ -118,7 +114,7 @@ suspend fun SnmpAsync.scanFlow(r: ULongRange, tgSetup: Builder.(InetAddress) -> 
     scanFlow(ULongRangeSet(r), tgSetup)
 
 suspend fun SnmpAsync.scanFlow(s: InetAddress, e: InetAddress, tgSetup: Builder.(InetAddress) -> Unit = {}) =
-    scanFlow(s.toIPv4ULong()..e.toIPv4ULong(), tgSetup)
+    scanFlow(s.toIpV4ULong()..e.toIpV4ULong(), tgSetup)
 
 suspend fun SnmpAsync.scanFlow(s: String, e: String, tgSetup: Builder.(InetAddress) -> Unit = {}) =
     scanFlow(getInetAddressByName(s), getInetAddressByName(e), tgSetup)

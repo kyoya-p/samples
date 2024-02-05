@@ -182,6 +182,22 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
 
     override abstract fun clone(): RangeSet<T>
 
+    infix operator fun plusAssign(o: ClosedRange<T>) {
+        add(o)
+    }
+
+    infix operator fun plusAssign(o: Collection<ClosedRange<T>>) {
+        addAll(o)
+    }
+
+    infix operator fun minusAssign(o: ClosedRange<T>) {
+        remove(o)
+    }
+
+    infix operator fun minusAssign(o: Collection<ClosedRange<T>>) {
+        removeAll(o)
+    }
+
 }
 
 
@@ -198,59 +214,37 @@ class IntRangeSet : RangeSet<Int> {
 }
 
 class LongRangeSet : RangeSet<Long> {
-
     constructor() : super()
-
     constructor(ranges: List<LongRange>) : super(ranges)
-
     constructor(vararg ranges: LongRange) : this(ranges.asList())
-
     private constructor(rangeSet: LongRangeSet) : super(rangeSet)
 
     override fun createRange(start: Long, endInclusive: Long): LongRange = LongRange(start, endInclusive)
-
     override fun incrementValue(value: Long): Long = value + 1
-
     override fun decrementValue(value: Long): Long = value - 1
-
     override fun clone(): RangeSet<Long> = LongRangeSet(this)
 }
 
 class ULongRangeSet : RangeSet<ULong> {
-
     constructor() : super()
-
     constructor(ranges: List<ULongRange>) : super(ranges)
-
     constructor(vararg ranges: ULongRange) : this(ranges.asList())
-
     private constructor(rangeSet: ULongRangeSet) : super(rangeSet)
 
     override fun createRange(start: ULong, endInclusive: ULong): ULongRange = ULongRange(start, endInclusive)
-
     override fun incrementValue(value: ULong): ULong = value + 1UL
-
     override fun decrementValue(value: ULong): ULong = value - 1UL
-
     override fun clone(): RangeSet<ULong> = ULongRangeSet(this)
 }
 
-
 class CharRangeSet : RangeSet<Char> {
-
     constructor() : super()
-
     constructor(ranges: List<CharRange>) : super(ranges)
-
     constructor(vararg ranges: CharRange) : this(ranges.asList())
-
     private constructor(rangeSet: CharRangeSet) : super(rangeSet)
 
     override fun createRange(start: Char, endInclusive: Char): CharRange = CharRange(start, endInclusive)
-
     override fun incrementValue(value: Char): Char = value + 1
-
     override fun decrementValue(value: Char): Char = value - 1
-
     override fun clone(): RangeSet<Char> = CharRangeSet(this)
 }
