@@ -42,9 +42,9 @@ suspend fun SnmpAsync.sendAsync(
     pdu: PDU,
     target: Target<UdpAddress>,
     userHandle: Any? = null
-): ResponseEvent<UdpAddress> = suspendCoroutine<ResponseEvent<UdpAddress>> { continuation ->
+): ResponseEvent<UdpAddress> = suspendCoroutine { continuation ->
     snmp.send(pdu, target, userHandle, object : ResponseListener {
-        override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
+        override fun <A : Address> onResponse(r: ResponseEvent<A>?) {
             snmp.cancel(pdu, this)
             @Suppress("UNCHECKED_CAST")
             continuation.resume(r as ResponseEvent<UdpAddress>)
@@ -54,7 +54,7 @@ suspend fun SnmpAsync.sendAsync(
 
 fun SnmpAsync.uniCast(tg: SnmpTarget, pdu: PDU, usr: Any? = null, rv: (SnmpEvent) -> Unit) =
     snmp.send(pdu, tg, usr, object : ResponseListener {
-        override fun <A : org.snmp4j.smi.Address> onResponse(r: ResponseEvent<A>?) {
+        override fun <A : Address> onResponse(r: ResponseEvent<A>?) {
             snmp.cancel(pdu, this)
             @Suppress("UNCHECKED_CAST")
             rv(r as SnmpEvent)
@@ -66,20 +66,25 @@ suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<Inet
     continuation.resume(adr)
 }
 
-suspend fun SnmpAsync.getUdpAddress(host: InetAddress, port: Int = 161) = suspendCoroutine<UdpAddress> { continuation ->
+suspend fun SnmpAsync.getUdpAddress(host: InetAddress, port: Int = 161) = suspendCoroutine { continuation ->
     continuation.resume(UdpAddress(host, port))
 }
 
 suspend fun SnmpAsync.getUdpAddress(host: String, port: Int = 161) = getUdpAddress(getInetAddressByName(host), port)
 
-fun ByteArray.toIpV4Adr() = InetAddress.getByAddress(this)
+fun ByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(this)
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun UByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(toByteArray())
 fun ULong.toIpV4Adr() = ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() }.toIpV4Adr()
-fun String.toIpV4Adr() = InetAddress.getByName(this)
+fun String.toIpV4Adr(): InetAddress = InetAddress.getByName(this)
 fun String.toIpV4ULong() = trim().toIpV4Adr().toIpV4ULong()
 
-fun InetAddress.toIpV4ByteArray() = address
+@OptIn(ExperimentalUnsignedTypes::class)
+fun InetAddress.toIpV4UByteArray() = address.toUByteArray()
 fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
-fun InetAddress.toIpV4String() = toIpV4ByteArray().joinToString(".")
+@OptIn(ExperimentalUnsignedTypes::class)
+fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 
 @Suppress("unused")
 suspend fun SnmpAsync.send(pdu: PDU, target: Target<UdpAddress>, userHandle: Any? = null) =
@@ -107,7 +112,7 @@ enum class SampleOID(val oid: String, val oidName: String) {
     prtOutputVendorName("1.3.6.1.2.1.43.9.2.1.8", "prtOutputVendorName"),
 }
 
-fun OID(vararg ints: Int) = OID(ints)
+fun OID(vararg intList: Int) = OID(intList)
 
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
 typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?

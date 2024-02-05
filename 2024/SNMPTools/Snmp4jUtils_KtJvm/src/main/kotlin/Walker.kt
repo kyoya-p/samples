@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
-import kotlinx.datetime.todayAt
+import kotlinx.datetime.todayIn
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import org.snmp4j.CommunityTarget
@@ -28,7 +28,7 @@ fun main(args: Array<String>): Unit = runBlocking {
         }.toList()
         println("${(Clock.System.now() - st).inWholeMilliseconds}[ms] #MIB: ${vbl.size}")
 
-        val resultFile = File("samples/${Clock.System.todayAt(currentSystemDefault())}-walk-$tgIp.yaml")
+        val resultFile = File("samples/${Clock.System.todayIn(currentSystemDefault())}-walk-$tgIp.yaml")
         resultFile.writeText(yamlSnmp4j.encodeToString(vbl))
     }
 }

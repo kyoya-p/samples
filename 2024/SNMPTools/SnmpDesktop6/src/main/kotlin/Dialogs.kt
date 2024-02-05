@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.toIpV4Adr
+import jp.wjg.shokkaa.snmp4jutils.async.toIpV4String
 import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import kotlinx.coroutines.flow.withIndex
@@ -47,7 +49,9 @@ fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogH
 fun ULongRangeSet.totalLength() = map { it.endInclusive - it.start + 1UL }.sum()
 suspend fun scanning(ipSpec: String) {
     fun String.range() = split("-").map { it.toIpV4ULong() }.let { a -> a[0]..a.getOrElse(1) { a[0] } }
-    val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.range() })
+    val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.range() })
+    println(rangeSet.map { "${it.start.toIpV4Adr().toIpV4String()}..${it.endInclusive.toIpV4Adr().toIpV4String()}" }
+        .joinToString(","))
     val n = rangeSet.totalLength()
     createDefaultSenderSnmpAsync().use { snmp ->
         snmp.scanFlow(rangeSet) { timeoutEvent = true }.withIndex().collect { (i, r) ->
