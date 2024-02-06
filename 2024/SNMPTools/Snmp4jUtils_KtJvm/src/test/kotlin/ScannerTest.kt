@@ -2,9 +2,9 @@
 
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
-import jp.wjg.shokkaa.snmp4jutils.toIPv4ULong
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test

@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
@@ -98,6 +99,7 @@ suspend fun SnmpAsync.scanFlow(
         val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
         val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
         val withTimeout = builder.timeoutEvent ?: false
+        yield()
         uniCast(target,pdu) { res ->
             if (withTimeout || res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) {
                 trySendBlocking(res)
@@ -107,7 +109,6 @@ suspend fun SnmpAsync.scanFlow(
         }
     }
     awaitClose()
-
 }
 
 suspend fun SnmpAsync.scanFlow(r: ULongRange, tgSetup: Builder.(InetAddress) -> Unit = {}) =

@@ -1,7 +1,4 @@
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
@@ -9,6 +6,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -43,17 +41,17 @@ fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogH
     }
 }
 
-fun ULongRangeSet.totalLength() = map { it.endInclusive - it.start + 1UL }.sum()
+fun ULongRangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1UL }
 suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected: (res: SnmpEvent) -> Unit) {
     fun String.range() = split("-").map { it.toIpV4ULong() }.let { a -> a[0]..a.getOrElse(1) { a[0] } }
     val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.range() })
-    println(rangeSet.map { "${it.start.toIpV4Adr().toIpV4String()}..${it.endInclusive.toIpV4Adr().toIpV4String()}" }
-        .joinToString(","))
+    println(rangeSet.joinToString(",") {
+        "${it.start.toIpV4Adr().toIpV4String()}..${it.endInclusive.toIpV4Adr().toIpV4String()}"
+    })
     val n = rangeSet.totalLength()
     createDefaultSenderSnmpAsync().use { snmp ->
         snmp.scanFlow(rangeSet) { timeoutEvent = true }.withIndex().collect { (i, r) ->
-            print("$i/$n\r")
-            progress(i.toInt() * 100 / n.toInt())
+            progress((i + 1) * 100 / n.toInt())
             if (r.response != null) detected(r)
         }
     }
@@ -64,24 +62,28 @@ suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected:
 @Composable
 fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
-        var ipSpecField by remember { mutableStateOf("192.168.0.1-192.168.0.254, 192.168.127.1-192.168.127.254") }
+        var ipSpecField by remember { mutableStateOf("192.168.0.1-192.168.0.254") }
         var ipSpec by remember { mutableStateOf("") }
-        val devs by remember { mutableStateOf(listOf<String>("empty")) }
-        Column(modifier = Modifier.padding(8.dp)) {
+        var devs = mutableStateListOf<String>("no-item","xxxx")
+        var progress by remember { mutableStateOf("") }
+        Column(modifier = Modifier.padding(8.dp).fillMaxSize().size(1024.dp, 768.dp)) {
             TextField(ipSpecField, label = { Text("IP scanning range") }, modifier = Modifier.width(500.dp),
-                onValueChange = { ipSpecField = it })
-
-            Row {
+                onValueChange = { ipSpecField = it;progress = "" })
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 LaunchedEffect(ipSpec) {
-                    scanning(ipSpec, { print("$it % \r") }) {  }
+                    scanning(ipSpec, { progress = "$it %" }) { res ->
+                        val strRes = "${devs.size}: ${res.peerAddress} ${res.response[0].variable}"
+                        devs.addLast(strRes)
+                        println(strRes)
+                    }
+                    progress = "Completed"
                 }
                 Button(modifier = styleBtn, onClick = { ipSpec = ipSpecField }) { Text("Scan") }
                 Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Close") }
+                Text(progress)
             }
             LazyColumn {
-                items(devs) { dev ->
-                    Card { Text(dev) }
-                }
+                items(devs) { dev -> Card { Text(dev) } }
             }
         }
     }
@@ -89,7 +91,7 @@ fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
 
 
 class DialogHandler(val dialogBuilder: @Composable (DialogHandler) -> Unit) {
-    var show by mutableStateOf(false)
+    private var show by mutableStateOf(false)
 
     @Composable
     fun placing() {
