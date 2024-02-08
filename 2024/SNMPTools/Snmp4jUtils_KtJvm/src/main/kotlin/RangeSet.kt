@@ -15,6 +15,8 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
         ranges.addAll(rangeSet)
     }
 
+    constructor(p0: Any)
+
     override val size: Int
         get() = ranges.size
 
@@ -185,6 +187,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
     infix operator fun plusAssign(o: ClosedRange<T>) {
         add(o)
     }
+
 
     infix operator fun plusAssign(o: Collection<ClosedRange<T>>) {
         addAll(o)

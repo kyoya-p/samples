@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     application
     kotlin("jvm") version "1.9.22"
@@ -8,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.6.2"
+val myVersion = "1.8.0"
 
 version = myVersion
 group = myGroupId
@@ -34,12 +36,15 @@ application {
     mainClass.set("mypackage.MainKt") // package mypackageかつファイル名main.ktのmain()を実行する場合
 }
 
-val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
-compileTestKotlin.kotlinOptions {
-    languageVersion = "1.7"
-    freeCompilerArgs = listOf("-Xcontext-receivers")
-}
+//val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
+//compileTestKotlin.kotlinOptions {
+////    languageVersion = "1.7"
+//    freeCompilerArgs = listOf("-Xcontext-receivers")
+//}
 
+tasks.withType(KotlinCompile::class.java) {
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+}
 tasks.test {
     useJUnitPlatform()
 }

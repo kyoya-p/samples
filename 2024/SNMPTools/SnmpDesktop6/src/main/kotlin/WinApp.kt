@@ -152,7 +152,7 @@ class AppProperties {
     var commStr by AppProperty()
     var mibFile by AppProperty()
 
-    var ipRange by AppProperty()
+    var ipRangeSpec by AppProperty()
 }
 
 class Logger(private val file: File = File(System.getenv("APPDATA"), "snmpdesktop_log.txt")) {

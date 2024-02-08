@@ -1,6 +1,6 @@
+
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
@@ -11,44 +11,26 @@ import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
-import kotlin.concurrent.thread
 
 class CommonKtTest {
 
     @Test
-    fun uniCast_callback_Test() = runTest {
-        val log = mutableListOf<Int>()
-        log.add(1)
-        val sem = Semaphore(1).apply { acquire() }
-        log.add(2)
+    fun uniCast_Test() = runTest {
         val ag = launch { snmpAgent(sampleMibList) }
-        log.add(3)
-        thread {
-            log.add(4)
-            createDefaultSenderSnmpAsync().use { snmp ->
-                val nSem = java.util.concurrent.Semaphore(1).apply { acquire() }
-                val adr = UdpAddress(InetAddress.getByName("127.0.0.1"), 161)
-                val tg = CommunityTarget(adr, OctetString("public")).apply { retries = 1 }
-                val pdu = PDU(PDU.GET, listOf(VariableBinding(OID(SampleOID.sysDescr.oid))))
-                snmp.uniCast(tg, pdu) { res ->
-                    log.add(6)
-                    println("res:${res.response}")
-                    assert(res.response[0].variable == sampleMibMap[OID(SampleOID.sysDescr.oid)])
-                    nSem.release()
-                    log.add(7)
+        createDefaultSenderSnmpAsync().use { snmp ->
+            val adr = UdpAddress(InetAddress.getByName("127.0.0.1"), 161)
+            val tg = CommunityTarget(adr, OctetString("public")).apply { retries = 1 }
+            val pdu = PDU(PDU.GET, listOf(VariableBinding(OID(SampleOID.sysDescr.oid))))
+            val res = snmp.uniCast(Request(tg, pdu))
+            when (res) {
+                is Timeout -> assert(false)
+                is Received -> {
+                    println("res:${res.received.response}")
+                    assert(res.received.response[0].variable == sampleMibMap[OID(SampleOID.sysDescr.oid)])
                 }
-                log.add(5)
-                nSem.acquire()
             }
-            log.add(8)
-            sem.release()
         }
-        log.add(4)
-        sem.acquire()
-        log.add(8)
         ag.cancelAndJoin()
-        log.add(9)
-        assert(log == log.sorted())
     }
 
     @Test

@@ -1,13 +1,12 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import jp.wjg.shokkaa.snmp4jutils.async.*
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.yield
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
@@ -30,10 +29,11 @@ fun main(args: Array<String>): Unit = runBlocking {
     val r = ULongRangeSet(ips)
     println(r.toList())
     createDefaultSenderSnmpAsync().use { snmpAsync ->
-        snmpAsync.scanFlow(r).collect { println("${it.peerAddress}: ${it.response[0]}") }
+        snmpAsync.scanFlow(r).filterResponse().collect { res ->
+            println("${res.request.target} => ${res.received.response[0].variable}")
+        }
     }
 }
-
 
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
@@ -87,29 +87,43 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
-class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, var timeoutEvent: Boolean? = false)
+class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 suspend fun SnmpAsync.scanFlow(
     ipRange: RangeSet<ULong>,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
-) = callbackFlow {
-    var n = ipRange.map { it.endInclusive - it.start + 1UL }.sum()
-    ipRange.asSequence().flatMap { it.start..it.endInclusive }.map { it.toIpV4Adr() }.forEach { ip ->
-        val builder = Builder().apply { tgSetup(ip) }
-        val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
-        val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
-        val withTimeout = builder.timeoutEvent ?: false
-        yield()
-        uniCast(target,pdu) { res ->
-            if (withTimeout || res.response != null && res.peerAddress != null && res.peerAddress.inetAddress == ip) {
-                trySendBlocking(res)
-            }
-            print("$n\r")
-            if (--n <= 0UL) close()
+) = channelFlow {
+    val sem = Semaphore(64)
+    ipRange.flatMap { (it.start..it.endInclusive).asSequence() }.forEach {
+        launch {
+            sem.acquire()
+            val ip = it.toIpV4Adr()
+            val builder = Builder().apply { tgSetup(ip) }
+            val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
+            val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+            trySend(uniCast(Request(target, pdu)))
+            println("$ip")
+            sem.release()
         }
     }
-    awaitClose()
+//    repeat(8) { sem.acquire() }
 }
+
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun SnmpAsync.scanFlow3(
+    ipRange: RangeSet<ULong>,
+    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
+) = ipRange.asFlow().flatMapConcat { (it.start..it.endInclusive).asFlow() }.map { it.toIpV4Adr() }.map { ip ->
+    val builder = Builder().apply { tgSetup(ip) }
+    val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
+    val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+    uniCast(Request(target, pdu))
+}
+
+
+fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
+    .filter { it.request.target.address == it.received.peerAddress }
 
 suspend fun SnmpAsync.scanFlow(r: ULongRange, tgSetup: Builder.(InetAddress) -> Unit = {}) =
     scanFlow(ULongRangeSet(r), tgSetup)

@@ -62,13 +62,13 @@ suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected:
 @Composable
 fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
-        var ipSpecField by remember { mutableStateOf("192.168.0.1-192.168.0.254") }
+        var ipSpecField by remember { mutableStateOf(app.ipRangeSpec ?: "") }
         var ipSpec by remember { mutableStateOf("") }
-        var devs = mutableStateListOf<String>("no-item","xxxx")
+        var devs by remember {  mutableStateOf(mutableStateListOf<String>("no-item")) }
         var progress by remember { mutableStateOf("") }
         Column(modifier = Modifier.padding(8.dp).fillMaxSize().size(1024.dp, 768.dp)) {
             TextField(ipSpecField, label = { Text("IP scanning range") }, modifier = Modifier.width(500.dp),
-                onValueChange = { ipSpecField = it;progress = "" })
+                onValueChange = { ipSpecField = it;app.ipRangeSpec = it;progress = "" })
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LaunchedEffect(ipSpec) {
                     scanning(ipSpec, { progress = "$it %" }) { res ->

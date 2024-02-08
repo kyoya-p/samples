@@ -1,8 +1,8 @@
 package jp.wjg.shokkaa.snmp4jutils.async
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Contextual
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import org.snmp4j.*
 import org.snmp4j.Target
@@ -15,9 +15,8 @@ import java.net.InetAddress
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-@ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runBlocking {
-    SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
+    SnmpBuilder().udp().v1().build().async().use { snmp ->
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
         val vbl = snmp.send(pdu, tg)
@@ -25,7 +24,6 @@ fun main(args: Array<String>): Unit = runBlocking {
     }
 }
 
-@Suppress("unused")
 class SnmpAsync(val snmp: Snmp) : AutoCloseable {
     override fun close() = snmp.close()
 
@@ -52,7 +50,24 @@ suspend fun SnmpAsync.sendAsync(
     })
 }
 
-fun SnmpAsync.uniCast(tg: SnmpTarget, pdu: PDU, usr: Any? = null, rv: (SnmpEvent) -> Unit) =
+
+suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { continuation ->
+    val listener = object : ResponseListener {
+        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+            @Suppress("UNCHECKED_CAST")
+            val res = when {
+                r.response == null -> Timeout(req)
+                else -> Received(req, r as SnmpEvent)
+            }
+            continuation.resume(res)
+        }
+    }
+
+    snmp.send(req.pdu, req.target, req.userData, listener)
+    continuation.invokeOnCancellation { snmp.cancel(req.pdu, listener) }
+}
+
+fun SnmpAsync.uniCast2(tg: SnmpTarget, pdu: PDU, usr: Any? = null, rv: (SnmpEvent) -> Unit) =
     snmp.send(pdu, tg, usr, object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>?) {
             snmp.cancel(pdu, this)
@@ -83,6 +98,7 @@ fun String.toIpV4ULong() = trim().toIpV4Adr().toIpV4ULong()
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4UByteArray() = address.toUByteArray()
 fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
+
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 
@@ -100,6 +116,11 @@ fun Snmp.async() = SnmpAsync(this)
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 typealias SnmpEvent = ResponseEvent<UdpAddress>
 
+data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
+sealed class Result
+data class Received(val request: Request, val received: SnmpEvent) : Result()
+data class Timeout(val request: Request) : Result()
+
 @Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
 enum class SampleOID(val oid: String, val oidName: String) {
     sysDescr("1.3.6.1.2.1.1.1", "sysDescr"),
@@ -112,7 +133,7 @@ enum class SampleOID(val oid: String, val oidName: String) {
     prtOutputVendorName("1.3.6.1.2.1.43.9.2.1.8", "prtOutputVendorName"),
 }
 
-fun OID(vararg intList: Int) = OID(intList)
+fun OID(vararg ints: Int) = OID(ints)
 
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
 typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
