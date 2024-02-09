@@ -6,10 +6,13 @@ import jp.wjg.shokkaa.snmp4jutils.async.Timeout
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class ScannerTest {
@@ -47,20 +50,32 @@ class ScannerTest {
     @Test
     fun scanFlow_Test(): Unit = runTest(timeout = 60.seconds) {
         fun String.toIp4ULong() = InetAddress.getByName(this).address.fold(0UL) { a, e -> (a shl 8) + e.toUByte() }
-        val range = "192.168.0.0".toIp4ULong().."192.168.255.255".toIp4ULong()
-        var totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
-        createDefaultSenderSnmpAsync().use { snmpAsync ->
-            snmpAsync.scanFlow(ULongRangeSet(range)).collect { res ->
+        val range = "192.168.0.0".toIp4ULong().."192.168.0.15".toIp4ULong()
+        with(createDefaultSenderSnmpAsync()) {
+            var totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
+            scanFlow(ULongRangeSet(range)).collect { res ->
                 val msg = when (res) {
                     is Timeout -> "${res.request.target.address} Timeout"
                     is Received -> "${res.request.target.address} => ${res.received.peerAddress} ${res.received.response[0].variable}"
                 }
-                println("Res[${totalLength--}]: $msg")
+                totalLength--
+                println("Res[$totalLength]: $msg")
             }
+            assert(totalLength == 0UL)
+        }
+    }
 
+    @Test
+    fun f() = runTest {
+        val f = flow {
+            repeat(3) {
+                emit(it)
+                delay(1000.milliseconds)
+            }
         }
 
-        println("Res[$totalLength]")
-        assert(totalLength == 0UL)
+        f.collect { println(it) }
+        f.collect { println(it) }
+        f.collect { println(it) }
     }
 }

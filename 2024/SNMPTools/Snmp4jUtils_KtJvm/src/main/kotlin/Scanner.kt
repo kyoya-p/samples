@@ -2,19 +2,17 @@ package jp.wjg.shokkaa.snmp4jutils
 
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
-import org.snmp4j.smi.OID
-import org.snmp4j.smi.OctetString
-import org.snmp4j.smi.UdpAddress
-import org.snmp4j.smi.VariableBinding
+import org.snmp4j.event.ResponseEvent
+import org.snmp4j.event.ResponseListener
+import org.snmp4j.smi.*
 import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
@@ -29,8 +27,10 @@ fun main(args: Array<String>): Unit = runBlocking {
     val r = ULongRangeSet(ips)
     println(r.toList())
     createDefaultSenderSnmpAsync().use { snmpAsync ->
-        snmpAsync.scanFlow(r).filterResponse().collect { res ->
-            println("${res.request.target} => ${res.received.response[0].variable}")
+        with(snmpAsync) {
+            scanFlow(r).filterResponse().collect { res ->
+                println("${res.request.target} => ${res.received.response[0].variable}")
+            }
         }
     }
 }
@@ -87,27 +87,36 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
-class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null)
+class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null)
 
-@OptIn(ExperimentalCoroutinesApi::class)
-suspend fun SnmpAsync.scanFlow(
+context(SnmpAsync)
+suspend fun scanFlow(
     ipRange: RangeSet<ULong>,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
-) = channelFlow {
-    val sem = Semaphore(64)
-    ipRange.flatMap { (it.start..it.endInclusive).asSequence() }.forEach {
-        launch {
-            sem.acquire()
+): Flow<Result> = callbackFlow {
+    var n = ipRange.map { it.endInclusive - it.start + 1UL }.sum()
+    ipRange.forEach {
+        (it.start..it.endInclusive).forEach {
             val ip = it.toIpV4Adr()
             val builder = Builder().apply { tgSetup(ip) }
-            val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
             val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
-            trySend(uniCast(Request(target, pdu)))
-            println("$ip")
-            sem.release()
+            val target = builder.target ?: CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
+            snmp.send(pdu, target, builder.userData, object : ResponseListener {
+                override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+                    cancel(pdu, this)
+                    @Suppress("UNCHECKED_CAST")
+                    val res = when {
+                        r.response == null -> Timeout(Request(target, pdu))
+                        else -> Received(Request(target, pdu), r as SnmpEvent)
+                    }
+                    trySend(res)
+                    --n
+                    if (n == 0UL) close()
+                }
+            })
         }
     }
-//    repeat(8) { sem.acquire() }
+    awaitClose {}
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
