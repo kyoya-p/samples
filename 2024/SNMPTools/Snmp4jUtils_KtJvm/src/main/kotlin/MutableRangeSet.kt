@@ -3,7 +3,7 @@ package jp.wjg.shokkaa.snmp4jutils
 import java.util.*
 
 
-abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneable {
+abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneable {
     private val ranges = LinkedList<ClosedRange<T>>()
 
     constructor()
@@ -11,7 +11,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
         addAll(ranges)
     }
 
-    protected constructor(rangeSet: RangeSet<T>) {
+    protected constructor(rangeSet: MutableRangeSet<T>) {
         ranges.addAll(rangeSet)
     }
 
@@ -38,6 +38,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
 
     override fun add(element: ClosedRange<T>): Boolean {
         var new = element
+        if (new.start > new.endInclusive) return false
         var addIndex = -1
 
         val iterator = ranges.iterator()
@@ -154,7 +155,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
     }
 
     fun difference(element: ClosedRange<T>) = differenceAll(listOf(element))
-    fun differenceAll(elements: Collection<ClosedRange<T>>): RangeSet<T> {
+    fun differenceAll(elements: Collection<ClosedRange<T>>): MutableRangeSet<T> {
         val difference = clone()
         difference.clear()
         difference.ranges.addAll(elements)
@@ -162,7 +163,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
         return difference
     }
 
-    fun gaps(): RangeSet<T> {
+    fun gaps(): MutableRangeSet<T> {
         return if (ranges.isEmpty()) clone().apply { clear() } else difference(ranges.first.endInclusive..ranges.last.start)
     }
 
@@ -173,7 +174,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
     }
 
     override fun equals(other: Any?): Boolean {
-        return this === other || (other is RangeSet<*> && ranges == other.ranges)
+        return this === other || (other is MutableRangeSet<*> && ranges == other.ranges)
     }
 
     protected abstract fun createRange(start: T, endInclusive: T): ClosedRange<T>
@@ -182,7 +183,7 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
 
     protected abstract fun decrementValue(value: T): T
 
-    override abstract fun clone(): RangeSet<T>
+    override abstract fun clone(): MutableRangeSet<T>
 
     infix operator fun plusAssign(o: ClosedRange<T>) {
         add(o)
@@ -203,31 +204,20 @@ abstract class RangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneab
 }
 
 
-class IntRangeSet : RangeSet<Int> {
+class IntRangeSet : MutableRangeSet<Int> {
     constructor() : super()
     constructor(ranges: List<IntRange>) : super(ranges)
-    constructor(vararg ranges: IntRange) : this(ranges.asList())
+    constructor(vararg ranges: IntRange) : this(ranges.toList())
     private constructor(rangeSet: IntRangeSet) : super(rangeSet)
 
     override fun createRange(start: Int, endInclusive: Int): IntRange = IntRange(start, endInclusive)
     override fun incrementValue(value: Int): Int = value + 1
     override fun decrementValue(value: Int): Int = value - 1
-    override fun clone(): RangeSet<Int> = IntRangeSet(this)
+    override fun clone(): MutableRangeSet<Int> = IntRangeSet(this)
 }
 
-class LongRangeSet : RangeSet<Long> {
-    constructor() : super()
-    constructor(ranges: List<LongRange>) : super(ranges)
-    constructor(vararg ranges: LongRange) : this(ranges.asList())
-    private constructor(rangeSet: LongRangeSet) : super(rangeSet)
 
-    override fun createRange(start: Long, endInclusive: Long): LongRange = LongRange(start, endInclusive)
-    override fun incrementValue(value: Long): Long = value + 1
-    override fun decrementValue(value: Long): Long = value - 1
-    override fun clone(): RangeSet<Long> = LongRangeSet(this)
-}
-
-class ULongRangeSet : RangeSet<ULong> {
+class ULongRangeSet : MutableRangeSet<ULong> {
     constructor() : super()
     constructor(ranges: List<ULongRange>) : super(ranges)
     constructor(vararg ranges: ULongRange) : this(ranges.asList())
@@ -236,17 +226,5 @@ class ULongRangeSet : RangeSet<ULong> {
     override fun createRange(start: ULong, endInclusive: ULong): ULongRange = ULongRange(start, endInclusive)
     override fun incrementValue(value: ULong): ULong = value + 1UL
     override fun decrementValue(value: ULong): ULong = value - 1UL
-    override fun clone(): RangeSet<ULong> = ULongRangeSet(this)
-}
-
-class CharRangeSet : RangeSet<Char> {
-    constructor() : super()
-    constructor(ranges: List<CharRange>) : super(ranges)
-    constructor(vararg ranges: CharRange) : this(ranges.asList())
-    private constructor(rangeSet: CharRangeSet) : super(rangeSet)
-
-    override fun createRange(start: Char, endInclusive: Char): CharRange = CharRange(start, endInclusive)
-    override fun incrementValue(value: Char): Char = value + 1
-    override fun decrementValue(value: Char): Char = value - 1
-    override fun clone(): RangeSet<Char> = CharRangeSet(this)
+    override fun clone(): MutableRangeSet<ULong> = ULongRangeSet(this)
 }
