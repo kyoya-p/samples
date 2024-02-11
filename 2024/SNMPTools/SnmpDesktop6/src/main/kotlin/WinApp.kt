@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.unit.sp
 import com.charleskorn.kaml.Yaml
+import jp.wjg.shokkaa.snmp4jutils.async.SnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.async
 import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
 import jp.wjg.shokkaa.snmp4jutils.async.walk
@@ -47,6 +48,7 @@ fun saveMib(mib: List<VariableBinding>, file: File) = yamlSnmp4j.encodeToStream(
 @OptIn(ExperimentalSerializationApi::class)
 fun loadMib(file: File): List<VariableBinding> = yamlSnmp4j.decodeFromStream(file.inputStream())
 
+context(SnmpAsync)
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun winApp(window: ComposeWindow) = MaterialTheme {
@@ -87,7 +89,6 @@ fun winApp(window: ComposeWindow) = MaterialTheme {
         logs += "$now Saved MIBS:${mib.size} to ${file.path}\n"
     }
 
-    // Backgroud Agent task
     LaunchedEffect(mib) {
         logs += "$now Start Agent $today.$now MIBS:${mib.size} ----------\n"
         runCatching {
@@ -151,7 +152,6 @@ class AppProperties {
     var port by AppProperty()
     var commStr by AppProperty()
     var mibFile by AppProperty()
-
     var ipRangeSpec by AppProperty()
 }
 

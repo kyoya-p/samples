@@ -100,10 +100,10 @@ class ScannerTest {
             val range = "10.0.0.0".toIp4ULong().."10.255.255.255".toIp4ULong()
             with(createDefaultSenderSnmpAsync()) {
                 var totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
-                scanFlow(ULongRangeSet(range), 65536) {
+                scanFlow(ULongRangeSet(range), 65536-1000) {
                     target = defaultSnmpFlowTarget(it).apply {
-                        timeout = 3000
-                        retries = 0
+                        timeout = 2500
+                        retries = 1
                     }
                 }.collect { res ->
                     val msg = when (res) {

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.withIndex
 // Common Component Styles
 val styleBtn = Modifier.padding(8.dp)
 
+context(SnmpAsync)
 @Composable
 fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
@@ -42,6 +43,8 @@ fun snmpCaptureDialog(ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogH
 }
 
 fun ULongRangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1UL }
+
+context(SnmpAsync)
 suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected: (res: SnmpEvent) -> Unit) {
     fun String.range() = split("-").map { it.toIpV4ULong() }.let { a -> a[0]..a.getOrElse(1) { a[0] } }
     val rangeSet = ULongRangeSet(ipSpec.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.range() })
@@ -49,22 +52,27 @@ suspend fun scanning(ipSpec: String, progress: (percent: Int) -> Unit, detected:
         "${it.start.toIpV4Adr().toIpV4String()}..${it.endInclusive.toIpV4Adr().toIpV4String()}"
     })
     val n = rangeSet.totalLength()
-    createDefaultSenderSnmpAsync().use { snmp ->
-        snmp.scanFlow(rangeSet) { timeoutEvent = true }.withIndex().collect { (i, r) ->
-            progress((i + 1) * 100 / n.toInt())
-            if (r.response != null) detected(r)
+    scanFlow(rangeSet, 65535 - 1000) {
+        target = defaultSnmpFlowTarget(it).apply {
+            timeout = 5000
+            retries = 1
         }
+    }.withIndex().collect { (i, r) ->
+        progress((i + 1) * 100 / n.toInt())
+        if (r is Received) detected(r.received)
     }
+
     println("complete.")
 
 }
 
+context(SnmpAsync)
 @Composable
 fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         var ipSpecField by remember { mutableStateOf(app.ipRangeSpec ?: "") }
         var ipSpec by remember { mutableStateOf("") }
-        var devs by remember {  mutableStateOf(mutableStateListOf<String>("no-item")) }
+        var devs by remember { mutableStateOf(mutableStateListOf<String>("no-item")) }
         var progress by remember { mutableStateOf("") }
         Column(modifier = Modifier.padding(8.dp).fillMaxSize().size(1024.dp, 768.dp)) {
             TextField(ipSpecField, label = { Text("IP scanning range") }, modifier = Modifier.width(500.dp),
@@ -73,7 +81,7 @@ fun snmpScanDialog(onOk: DialogHandler.() -> Unit) = DialogHandler { dialog ->
                 LaunchedEffect(ipSpec) {
                     scanning(ipSpec, { progress = "$it %" }) { res ->
                         val strRes = "${devs.size}: ${res.peerAddress} ${res.response[0].variable}"
-                        devs.addLast(strRes)
+                        devs.add(strRes)
                         println(strRes)
                     }
                     progress = "Completed"

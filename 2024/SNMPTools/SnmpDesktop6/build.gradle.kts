@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm")
@@ -24,8 +25,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
     implementation("com.charleskorn.kaml:kaml:0.57.0")  // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
     implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
-    implementation("jp.wjg.shokkaa:snmp4jutils:1.6.1")  // local private library
+    implementation("jp.wjg.shokkaa:snmp4jutils:1.8.0")  // local private library
+
 }
+
 
 compose.desktop {
     application {
@@ -43,3 +46,8 @@ compose.desktop {
         }
     }
 }
+
+tasks.withType(KotlinCompile::class.java) {
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+}
+
