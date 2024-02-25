@@ -2,9 +2,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,7 +17,7 @@ import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalResourceApi::class)
 @Composable
-fun App() {
+fun AppX() {
     MaterialTheme {
         var showContent by remember { mutableStateOf(false) }
         val greeting = remember { Greeting().greet() }
@@ -31,6 +31,28 @@ fun App() {
                     Text("Compose: $greeting")
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun App() = MaterialTheme {
+    ScanRange()
+}
+
+@Composable
+fun ScanRange() {
+    fun scan() {}
+    Scaffold(
+        topBar = { TopAppBar { Text("Scan IP Range") } },
+        floatingActionButton = {
+            FloatingActionButton(onClick = ::scan) { Icon(Icons.Default.Search, "IP Range Scan") }
+        }
+    ) {
+        Column {
+            OutlinedTextField("", onValueChange = { }, singleLine = false)
+
         }
     }
 }
