@@ -36,6 +36,10 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "org.example.project"
             packageVersion = "1.0.0"
+            windows{
+
+            }
         }
     }
 }
+

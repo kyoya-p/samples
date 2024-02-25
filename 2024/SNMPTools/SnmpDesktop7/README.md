@@ -17,3 +17,8 @@ Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-mu
 - Desktopを選択
 - Download 
 - zipファイル展開
+
+# Build/Compose
+```
+./gradlew packageMsi
+```
