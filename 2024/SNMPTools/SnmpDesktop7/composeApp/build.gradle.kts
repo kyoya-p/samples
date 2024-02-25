@@ -34,11 +34,12 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "SNMPDesktop"
-            packageVersion = "1.0.0"
+            packageName = "SnmpDesktop"
+            packageVersion = "1.7.0"
             windows {
                 menu = true
                 shortcut = true
+                upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
             }
         }
     }
