@@ -3,8 +3,9 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-
     alias(libs.plugins.jetbrainsCompose)
+
+//    id("io.realm.kotlin") version "1.11.0"
 }
 
 kotlin {
@@ -20,6 +21,12 @@ kotlin {
             implementation(compose.ui)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
+//            implementation("org.mongodb:mongodb-driver-kotlin-coroutine:4.11.0")
+//            implementation("org.mongodb:bson-kotlin:4.11.0")
+//            implementation("io.realm.kotlin:library-base:1.11.0")
+//            implementation("io.realm.kotlin:library-sync:1.11.0") // If using Device Sync
+//            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0") // If using coroutines with the SDK
+
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
