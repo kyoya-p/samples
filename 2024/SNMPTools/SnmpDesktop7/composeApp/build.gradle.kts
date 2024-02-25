@@ -3,16 +3,16 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    
+
     alias(libs.plugins.jetbrainsCompose)
 }
 
 kotlin {
     jvm("desktop")
-    
+
     sourceSets {
         val desktopMain by getting
-        
+
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -34,10 +34,11 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.example.project"
+            packageName = "SNMPDesktop"
             packageVersion = "1.0.0"
-            windows{
-
+            windows {
+                menu = true
+                shortcut = true
             }
         }
     }
