@@ -2,6 +2,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
@@ -43,16 +45,31 @@ fun App() = MaterialTheme {
 
 @Composable
 fun ScanRange() {
+    var scanSpec by remember { mutableStateOf("192.168.0.1-192.168.255.254") }
+    val scanResult by remember { mutableStateOf("No Item") }
     fun scan() {}
+
     Scaffold(
-        topBar = { TopAppBar { Text("Scan IP Range") } },
+        modifier = Modifier.padding(8.dp),
+//        topBar = { TopAppBar { Text("Scan IP Range") } },
         floatingActionButton = {
             FloatingActionButton(onClick = ::scan) { Icon(Icons.Default.Search, "IP Range Scan") }
         }
     ) {
         Column {
-            OutlinedTextField("", onValueChange = { }, singleLine = false)
-
+            OutlinedTextField(
+                scanSpec,
+                onValueChange = { scanSpec = it },
+                label = { Text("IP Range") },
+                singleLine = false
+            )
+            OutlinedTextField(
+                scanResult,
+                readOnly = true,
+                onValueChange = { },
+                label = { Text("Result") },
+                singleLine = false
+            )
         }
     }
 }
