@@ -93,7 +93,6 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
         CommunityTarget(UdpAddress(ip, port), OctetString(commStr))
 }
 
-//context(SnmpAsync)
 suspend fun SnmpAsync.scanFlow(
     ipRange: MutableRangeSet<ULong>,
     limit: Int = 256,

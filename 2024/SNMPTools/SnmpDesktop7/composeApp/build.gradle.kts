@@ -28,17 +28,21 @@ kotlin {
             implementation(compose.ui)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
+
+            implementation("cafe.adriel.voyager:voyager-navigator:1.0.0") // https://mvnrepository.com/artifact/cafe.adriel.voyager/voyager-navigator
+
 //            implementation("org.mongodb:mongodb-driver-kotlin-coroutine:4.11.0")
 //            implementation("org.mongodb:bson-kotlin:4.11.0")
 //            implementation("io.realm.kotlin:library-base:1.11.0")
 //            implementation("io.realm.kotlin:library-sync:1.11.0") // If using Device Sync
 //            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0") // If using coroutines with the SDK
-
+//            implementation("androidx.navigation:navigation-compose:2.7.5") // https://mvnrepository.com/artifact/androidx.navigation/navigation-compose
             implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
             implementation("jp.wjg.shokkaa:snmp4jutils:1.8.2")  // local private library
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation("androidx.navigation:navigation-compose:2.7.5") // https://mvnrepository.com/artifact/androidx.navigation/navigation-compose
         }
     }
 }

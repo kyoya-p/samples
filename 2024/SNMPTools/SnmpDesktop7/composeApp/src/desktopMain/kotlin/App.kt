@@ -1,8 +1,10 @@
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -10,7 +12,6 @@ import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.filterResponse
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.toRangeSet
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 //@OptIn(ExperimentalResourceApi::class)
 //@Composable
@@ -32,26 +33,16 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 //    }
 //}
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun App() = MaterialTheme {
     ScanRange()
 }
 
-//data class App(val uid: String, val range: String)
-
-//class Item() : RealmObject {
-//    @PrimaryKey
-//    var _id: ObjectId = ObjectId()
-//    var summary: String = ""
-//    var owner_id: String = ""
-//    constructor(ownerId: String = "") : this() {
-//        owner_id = ownerId
-//    }
-//}
-
 @Composable
 fun ScanRange() {
+
+    val navController = rememberNavController()
+
     var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
     var scanResult by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
@@ -60,9 +51,11 @@ fun ScanRange() {
             val rangeSet = scanSpec.toRangeSet()
             scanResult = ""
             createDefaultSenderSnmpAsync().run {
-                scanFlow(rangeSet) {
-                    target?.timeout = 3000
-                    target?.retries = 2
+                scanFlow(rangeSet, limit = 500) { ip ->
+                    target = defaultSnmpFlowTarget(ip).apply {
+                        timeout = 2500
+                        retries = 1
+                    }
                 }.filterResponse().collect {
                     scanResult += "${it.received.peerAddress},\n"
                 }
@@ -70,6 +63,22 @@ fun ScanRange() {
             scanning = false
         }
     }
+    @Composable
+    fun snmpSettingField() = OutlinedTextField(
+        value = scanSpec,
+        onValueChange = { scanSpec = it },
+        label = { Text("IP Range") },
+        singleLine = false
+    )
+
+    @Composable
+    fun resultFiled() = OutlinedTextField(
+        value = scanResult.ifEmpty { "No Item" },
+        readOnly = true,
+        onValueChange = { },
+        label = { Text("Result") },
+        singleLine = false
+    )
 
     Scaffold(
         modifier = Modifier.padding(8.dp),
@@ -84,19 +93,11 @@ fun ScanRange() {
         }
     ) {
         Column {
-            OutlinedTextField(
-                scanSpec,
-                onValueChange = { scanSpec = it },
-                label = { Text("IP Range") },
-                singleLine = false
-            )
-            OutlinedTextField(
-                scanResult.ifEmpty { "No Item" },
-                readOnly = true,
-                onValueChange = { },
-                label = { Text("Result") },
-                singleLine = false
-            )
+            Row {
+                snmpSettingField()
+                IconButton(onClick = {}) { Icon(Icons.Default.Settings, "SNMP Settings") }
+            }
+            resultFiled()
         }
     }
 }

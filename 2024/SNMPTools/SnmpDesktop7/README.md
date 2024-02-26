@@ -25,3 +25,5 @@ Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-mu
 
 
 # Refer
+[NavController](https://developer.android.com/guide/navigation?hl=ja)
+[voyager-navigator](https://github.com/adrielcafe/voyager)
