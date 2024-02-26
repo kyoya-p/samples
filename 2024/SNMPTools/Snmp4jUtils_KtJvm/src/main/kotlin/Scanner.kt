@@ -93,8 +93,8 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
         CommunityTarget(UdpAddress(ip, port), OctetString(commStr))
 }
 
-context(SnmpAsync)
-suspend fun scanFlow(
+//context(SnmpAsync)
+suspend fun SnmpAsync.scanFlow(
     ipRange: MutableRangeSet<ULong>,
     limit: Int = 256,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
@@ -127,6 +127,10 @@ suspend fun scanFlow(
     awaitClose {}
 }
 
-
 fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
     .filter { it.request.target.address == it.received.peerAddress }
+
+
+fun String.toRange() = trim().split("-").map { it.trim().toIpV4ULong() }.let { it[0]..it[it.lastIndex] }
+fun String.toRangeSet() =
+    split(Regex("[,\\s]")).mapNotNull { runCatching { it.toRange() }.getOrNull() }.let { ULongRangeSet(it) }

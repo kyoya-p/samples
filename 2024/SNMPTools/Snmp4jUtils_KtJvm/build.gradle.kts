@@ -10,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.8.0"
+val myVersion = "1.8.1"
 
 version = myVersion
 group = myGroupId
@@ -43,7 +43,7 @@ application {
 //}
 
 tasks.withType(KotlinCompile::class.java) {
-    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+//    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 tasks.test {
     useJUnitPlatform()

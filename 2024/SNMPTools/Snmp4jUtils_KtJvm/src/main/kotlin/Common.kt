@@ -91,9 +91,17 @@ fun ByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(this)
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun UByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(toByteArray())
-fun ULong.toIpV4Adr() = ByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toByte() }.toIpV4Adr()
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toUByteArray() = UByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toUByte() }
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toIpV4Adr() = toUByteArray().toIpV4Adr()
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toIpV4String() = toUByteArray().joinToString(".")
 fun String.toIpV4Adr(): InetAddress = InetAddress.getByName(this)
-fun String.toIpV4ULong() = trim().toIpV4Adr().toIpV4ULong()
+fun String.toIpV4ULong() = trim().ifEmpty { throw Exception("Exception: Empty '$this' ") }.toIpV4Adr().toIpV4ULong()
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4UByteArray() = address.toUByteArray()

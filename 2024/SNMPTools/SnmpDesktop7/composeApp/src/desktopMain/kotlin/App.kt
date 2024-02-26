@@ -6,6 +6,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.filterResponse
+import jp.wjg.shokkaa.snmp4jutils.scanFlow
+import jp.wjg.shokkaa.snmp4jutils.toRangeSet
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 //@OptIn(ExperimentalResourceApi::class)
@@ -48,22 +52,35 @@ fun App() = MaterialTheme {
 
 @Composable
 fun ScanRange() {
-    var scanSpec by remember { mutableStateOf("192.168.0.1-192.168.255.254") }
-    val scanResult by remember { mutableStateOf("No Item") }
-    fun scan() {}
-
-//    val config = RealmConfiguration.create(schema = setOf(Item::class))
-//    val realm: Realm = Realm.open(config)
-//    LaunchedEffect(Unit) {
-//        val app = realm.query<Item>().find()[0]
-//        println(app)
-//    }
+    var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
+    var scanResult by remember { mutableStateOf("") }
+    var scanning by remember { mutableStateOf(false) }
+    LaunchedEffect(scanning) {
+        if (scanning) {
+            val rangeSet = scanSpec.toRangeSet()
+            scanResult = ""
+            createDefaultSenderSnmpAsync().run {
+                scanFlow(rangeSet) {
+                    target?.timeout = 3000
+                    target?.retries = 2
+                }.filterResponse().collect {
+                    scanResult += "${it.received.peerAddress},\n"
+                }
+            }
+            scanning = false
+        }
+    }
 
     Scaffold(
         modifier = Modifier.padding(8.dp),
 //        topBar = { TopAppBar { Text("Scan IP Range") } },
         floatingActionButton = {
-            FloatingActionButton(onClick = ::scan) { Icon(Icons.Default.Search, "IP Range Scan") }
+            FloatingActionButton(onClick = { scanning = true }) {
+                when (scanning) {
+                    true -> CircularProgressIndicator()
+                    false -> Icon(Icons.Default.Search, "IP Range Scan")
+                }
+            }
         }
     ) {
         Column {
@@ -74,7 +91,7 @@ fun ScanRange() {
                 singleLine = false
             )
             OutlinedTextField(
-                scanResult,
+                scanResult.ifEmpty { "No Item" },
                 readOnly = true,
                 onValueChange = { },
                 label = { Text("Result") },
@@ -83,3 +100,4 @@ fun ScanRange() {
         }
     }
 }
+

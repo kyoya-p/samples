@@ -1,5 +1,6 @@
 package jp.wjg.shokkaa.snmp4jutils
 
+import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
 import java.util.*
 
 
