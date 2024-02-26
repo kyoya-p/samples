@@ -35,7 +35,7 @@ kotlin {
 //            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0") // If using coroutines with the SDK
 
             implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
-            implementation("jp.wjg.shokkaa:snmp4jutils:1.8.1")  // local private library
+            implementation("jp.wjg.shokkaa:snmp4jutils:1.8.2")  // local private library
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

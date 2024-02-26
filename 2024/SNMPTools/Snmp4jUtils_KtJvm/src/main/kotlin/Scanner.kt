@@ -110,7 +110,7 @@ suspend fun SnmpAsync.scanFlow(
             sem.acquire()
             snmp.send(pdu, target, builder.userData, object : ResponseListener {
                 override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-                    cancel(pdu, this)
+//                    cancel(pdu, this)
                     @Suppress("UNCHECKED_CAST")
                     val res = when {
                         r.response == null -> Timeout(Request(target, pdu))
