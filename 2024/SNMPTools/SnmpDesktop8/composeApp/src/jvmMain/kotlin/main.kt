@@ -2,8 +2,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import okio.Path.Companion.toPath
 import java.awt.Dimension
-import org.company.app.App
 
 fun main() = application {
     Window(
@@ -12,6 +12,10 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
     ) {
         window.minimumSize = Dimension(360, 600)
-        ScanRange()
+        AppNavigator()
     }
+}
+
+actual val userDir = System.getenv().let {
+    "${it["HOMEDRIVE"]}${it["HOMEPATH"]}".takeIf { it.toPath().toFile().isDirectory } ?: it["HOME"] ?: "."
 }
