@@ -8,10 +8,10 @@ import org.company.app.App
 fun main() = application {
     Window(
         title = "Multiplatform App",
-        state = rememberWindowState(width = 800.dp, height = 600.dp),
+        state = rememberWindowState(width = 360.dp, height = 400.dp),
         onCloseRequest = ::exitApplication,
     ) {
-        window.minimumSize = Dimension(350, 600)
-        App()
+        window.minimumSize = Dimension(360, 600)
+        ScanRange()
     }
 }

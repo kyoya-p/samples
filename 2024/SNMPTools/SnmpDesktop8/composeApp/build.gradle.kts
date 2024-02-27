@@ -7,6 +7,14 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 }
 
+//repositories {
+//    mavenLocal()
+//    mavenCentral()
+//    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+//    google()
+//}
+
+
 kotlin {
     jvm()
 
@@ -30,6 +38,10 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kstore)
+
+            implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+            implementation("jp.wjg.shokkaa:snmp4jutils:1.8.2")  // local private library
+
         }
 
         commonTest.dependencies {

@@ -1,8 +1,9 @@
-rootProject.name = "Multiplatform-App"
+rootProject.name = "SNMP Desktop"
 include(":composeApp")
 
 pluginManagement {
     repositories {
+        mavenLocal()
         google()
         gradlePluginPortal()
         mavenCentral()
@@ -11,6 +12,7 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
     }
