@@ -41,7 +41,7 @@ fun App() = MaterialTheme {
 @Composable
 fun ScanRange() {
 
-    val navController = rememberNavController()
+//    val navController = rememberNavController()
 
     var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
     var scanResult by remember { mutableStateOf("") }
