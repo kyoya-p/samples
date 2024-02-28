@@ -1,3 +1,4 @@
+import androidx.compose.foundation.layout.BoxScopeInstance.align
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -27,16 +28,15 @@ expect val userDir: String
 
 @Serializable
 data class SnmpDesktop(
-    val range: String,
-    val snmpSettings: SnmpSettings
+    val range: String = "",
+    val snmpSettings: SnmpSettings = SnmpSettings(),
 )
 
 @Serializable
 data class SnmpSettings(
-    val timeout: Int,
-    val retries: Int,
+    val timeout: Int = 5000,
+    val retries: Int = 5,
 )
-
 
 @Composable
 fun AppNavigator() = PreComposeApp {
@@ -58,14 +58,15 @@ fun AppNavigator() = PreComposeApp {
 
 @Composable
 fun ScanRange(navigator: Navigator) {
-    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
 
-    var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
+//    var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
+    var app by remember { mutableStateOf(SnmpDesktop()) }
+    var loading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
     LaunchedEffect(scanning) {
         if (scanning) {
-            val rangeSet = scanSpec.toRangeSet()
+            val rangeSet = app.range.toRangeSet()
             scanResult = ""
             createDefaultSenderSnmpAsync().run {
                 scanFlow(rangeSet, limit = 500) { ip ->
@@ -82,8 +83,8 @@ fun ScanRange(navigator: Navigator) {
     }
     @Composable
     fun snmpSettingField() = OutlinedTextField(
-        value = scanSpec,
-        onValueChange = { scanSpec = it },
+        value = app.range,
+        onValueChange = { app = app.copy(range = it) },
         label = { Text("IP Range") },
         singleLine = false
     )
@@ -106,21 +107,37 @@ fun ScanRange(navigator: Navigator) {
             }
         }
     }
+
+    println("$userDir/.snmp-desktop.json")
+    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
+    LaunchedEffect(Unit) {
+        store.updates.collect {
+            if (it != null) app = it
+            loading = false
+        }
+    }
+    LaunchedEffect(app) { if (!loading) store.set(app) }
+
+
     Scaffold(
 //        topBar = { TopAppBar { Text("Scan IP Range") } },
         floatingActionButton = { runButton() }
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Row {
-                snmpSettingField()
-                IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
-                    Icon(
-                        Icons.Default.Settings,
-                        "SNMP Settings"
-                    )
+        if (loading) {
+            CircularProgressIndicator()
+        } else {
+            Column(modifier = Modifier.padding(8.dp)) {
+                Row {
+                    snmpSettingField()
+                    IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
+                        Icon(
+                            Icons.Default.Settings,
+                            "SNMP Settings"
+                        )
+                    }
                 }
+                resultFiled()
             }
-            resultFiled()
         }
     }
 }
