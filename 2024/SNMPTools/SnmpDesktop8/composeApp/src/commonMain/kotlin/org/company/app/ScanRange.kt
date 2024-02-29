@@ -1,3 +1,4 @@
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -27,7 +28,8 @@ expect val userDir: String
 
 @Serializable
 data class SnmpDesktop(
-    val range: String = "",
+    val scanRange: String = "",
+    val ignoreRange: String = "",
     val snmpSettings: SnmpSettings = SnmpSettings(),
     val sessionLimit: Int = 500,
 )
@@ -73,15 +75,16 @@ fun ScanRange(navigator: Navigator) {
     }
     LaunchedEffect(app) { if (!loading) store.set(app) }
 
+    val totalRange = app.scanRange.toRangeSet().apply { removeAll(app.ignoreRange.toRangeSet()) }
     LaunchedEffect(scanning) {
         if (scanning) {
             runCatching {
                 scanResult = ""
-                val rangeSet = app.range.toRangeSet()
+//                val rangeSet? = app.scanRange.toRangeSet()
                 var progress = 0UL
-                val total = app.range.toRangeSet().totalLength()
+                val total = totalRange.totalLength()
                 createDefaultSenderSnmpAsync().run {
-                    scanFlow(rangeSet, limit = app.sessionLimit) { ip ->
+                    scanFlow(totalRange, limit = app.sessionLimit) { ip ->
                         target = defaultSnmpFlowTarget(ip).apply {
                             timeout = app.snmpSettings.timeout.toLong()
                             retries = app.snmpSettings.retries
@@ -95,12 +98,20 @@ fun ScanRange(navigator: Navigator) {
         }
     }
 
-    //    fun UInt.toSiString()=toString().let{it.take(3)+" kMGT"[it.length/3]}
+
     @Composable
     fun scanRangeField() = OutlinedTextField(
-        value = app.range,
-        onValueChange = { app = app.copy(range = it) },
-        label = { Text("IP Range [${app.range.toRangeSet().totalLength()} addrs]") },
+        value = app.scanRange,
+        onValueChange = { app = app.copy(scanRange = it) },
+        label = { Text("IP Range [${totalRange.totalLength()} addrs / ${app.scanRange.toRangeSet().totalLength()} ]") },
+        singleLine = false
+    )
+
+    @Composable
+    fun ignoreRangeField() = OutlinedTextField(
+        value = app.ignoreRange,
+        onValueChange = { app = app.copy(ignoreRange = it) },
+        label = { Text("Ignore IP Range [${app.ignoreRange.toRangeSet().totalLength()} addrs]") },
         singleLine = false
     )
 
@@ -122,16 +133,17 @@ fun ScanRange(navigator: Navigator) {
     )
 
     @Composable
-    fun runButton() {
-        FloatingActionButton(onClick = {
-            scanning = !scanning
-        }) {
-            when (scanning) {
-                true -> Icon(Icons.Default.Stop, "Stop Scan")
-                false -> Icon(Icons.Default.Search, "Start Scan")
+    fun runButton() = if (totalRange.totalLength() > 0UL || scanning) {
+        FloatingActionButton(
+            onClick = { scanning = !scanning },
+        ) {
+            when {
+                scanning -> Icon(Icons.Default.Stop, "Stop Scan")
+                else -> Icon(Icons.Default.Search, "Start Scan")
             }
         }
-    }
+    } else Unit
+
 
     @Composable
     fun snmpSettingsButton() = IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
@@ -140,8 +152,6 @@ fun ScanRange(navigator: Navigator) {
 
     @Composable
     fun runningIcon() = if (scanning) CircularProgressIndicator(modifier = Modifier.padding(8.dp)) else Unit
-
-
 
     Scaffold(
 //        topBar = { TopAppBar { Text("Scan IP Range") } },
@@ -155,6 +165,7 @@ fun ScanRange(navigator: Navigator) {
                     scanRangeField()
                     snmpSettingsButton()
                 }
+                ignoreRangeField()
                 sessionLimitFiled()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     resultFiled()
@@ -215,23 +226,5 @@ fun SnmpSettings(navigator: Navigator) {
                 retriesField()
             }
         }
-    }
-}
-
-@Composable
-inline fun <reified T : @Serializable Any> AppFlow(key: T, loadingSign: () -> Unit, content: () -> Unit) {
-    var doc by remember { mutableStateOf(key) }
-    var loading = true
-    val store: KStore<T> = storeOf("$userDir/.snmp-desktop.json".toPath())
-    LaunchedEffect(Unit) {
-        store.updates.collect {
-            if (it != null) doc = it
-            loading = it == null
-        }
-    }
-    if (loading) {
-        loadingSign()
-    } else {
-        content()
     }
 }
