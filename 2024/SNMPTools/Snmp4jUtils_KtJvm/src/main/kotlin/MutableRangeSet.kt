@@ -1,6 +1,5 @@
 package jp.wjg.shokkaa.snmp4jutils
 
-import jp.wjg.shokkaa.snmp4jutils.async.toIpV4ULong
 import java.util.*
 
 
@@ -208,7 +207,7 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
 class IntRangeSet : MutableRangeSet<Int> {
     constructor() : super()
     constructor(ranges: List<IntRange>) : super(ranges)
-    constructor(vararg ranges: IntRange) : this(ranges.toList())
+    constructor(vararg ranges: IntRange) : this(ranges.asList())
     private constructor(rangeSet: IntRangeSet) : super(rangeSet)
 
     override fun createRange(start: Int, endInclusive: Int): IntRange = IntRange(start, endInclusive)
@@ -229,3 +228,9 @@ class ULongRangeSet : MutableRangeSet<ULong> {
     override fun decrementValue(value: ULong): ULong = value - 1UL
     override fun clone(): MutableRangeSet<ULong> = ULongRangeSet(this)
 }
+
+fun ClosedRange<Int>.length() = if (isEmpty()) 0 else endInclusive - start + 1
+fun IntRangeSet.totalLength() = sumOf { it.length() }
+
+fun ClosedRange<ULong>.length() = if (isEmpty()) 0UL else (endInclusive - start + 1UL)
+fun ULongRangeSet.totalLength() = sumOf { it.length() }

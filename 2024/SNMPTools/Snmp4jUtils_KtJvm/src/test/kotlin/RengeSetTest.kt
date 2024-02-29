@@ -1,4 +1,5 @@
 import jp.wjg.shokkaa.snmp4jutils.IntRangeSet
+import jp.wjg.shokkaa.snmp4jutils.totalLength
 import org.junit.jupiter.api.Test
 
 
@@ -69,5 +70,15 @@ class RengeSetTest {
         assert(rs.size == 1)
         assert(rs.toList()[0].start == 1)
         assert(rs.toList()[0].endInclusive == 3)
+    }
+
+    @Test
+    fun totalLength1() {
+        val rs = IntRangeSet()
+        val r1 = 1..10
+        rs.add(r1)
+        assert(rs.totalLength() == 10)
+        rs.add(21..30)
+        assert(rs.totalLength() == 20)
     }
 }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
@@ -94,19 +95,21 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
 }
 
 suspend fun SnmpAsync.scanFlow(
-    ipRange: MutableRangeSet<ULong>,
-    limit: Int = 256,
+    ipRangeSet: MutableRangeSet<ULong>,
+    limit: Int = 30 * 100,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ): Flow<Result> = callbackFlow {
     val sem = Semaphore(limit)
-    var n = ipRange.map { it.endInclusive - it.start + 1UL }.sum()
-    ipRange.forEach {
+    var n = ipRangeSet.map { it.endInclusive - it.start + 1UL }.sum()
+
+    ipRangeSet.forEach {
         (it.start..it.endInclusive).forEach {
+            sem.acquire()
+            yield()
             val ip = it.toIpV4Adr()
             val builder = Builder().apply { tgSetup(ip) }
             val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
             val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-            sem.acquire()
             snmp.send(pdu, target, builder.userData, object : ResponseListener {
                 override fun <A : Address> onResponse(r: ResponseEvent<A>) {
 //                    cancel(pdu, this)

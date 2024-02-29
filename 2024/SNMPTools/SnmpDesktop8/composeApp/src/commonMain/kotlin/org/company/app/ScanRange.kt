@@ -3,20 +3,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.xxfast.kstore.KStore
 import io.github.xxfast.kstore.file.storeOf
-import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
+import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.toIpV4String
-import jp.wjg.shokkaa.snmp4jutils.filterResponse
-import jp.wjg.shokkaa.snmp4jutils.scanFlow
-import jp.wjg.shokkaa.snmp4jutils.toRangeSet
 import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.Serializable
 import moe.tlaster.precompose.PreComposeApp
@@ -66,34 +62,40 @@ fun ScanRange(navigator: Navigator) {
     var loading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
-    var progressPercent by remember { mutableStateOf(0) }
+    var progressPercent by remember { mutableStateOf(0UL) }
+    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
 
-    fun ULongRangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1UL }.toInt()
+    LaunchedEffect(Unit) {
+        store.updates.collect {
+            if (it != null) app = it
+            loading = false
+        }
+    }
+    LaunchedEffect(app) { if (!loading) store.set(app) }
 
     LaunchedEffect(scanning) {
         if (scanning) {
             runCatching {
-                val rangeSet = app.range.toRangeSet()
                 scanResult = ""
-                var progress=0
-                val total=app.range.toRangeSet().totalLength()
+                val rangeSet = app.range.toRangeSet()
+                var progress = 0UL
+                val total = app.range.toRangeSet().totalLength()
                 createDefaultSenderSnmpAsync().run {
                     scanFlow(rangeSet, limit = app.sessionLimit) { ip ->
                         target = defaultSnmpFlowTarget(ip).apply {
                             timeout = app.snmpSettings.timeout.toLong()
                             retries = app.snmpSettings.retries
                         }
-                    }.onEach { progressPercent=(++progress*100/total) }.filterResponse().collect {
+                    }.onEach { progressPercent = (++progress * 100UL / total) }.filterResponse().collect {
                         scanResult += "${it.received.peerAddress.inetAddress.toIpV4String()},\n"
                     }
                 }
             }
             scanning = false
         }
-
     }
 
-//    fun UInt.toSiString()=toString().let{it.take(3)+" kMGT"[it.length/3]}
+    //    fun UInt.toSiString()=toString().let{it.take(3)+" kMGT"[it.length/3]}
     @Composable
     fun scanRangeField() = OutlinedTextField(
         value = app.range,
@@ -106,7 +108,7 @@ fun ScanRange(navigator: Navigator) {
     fun sessionLimitFiled() = OutlinedTextField(
         value = app.sessionLimit.toString(),
         onValueChange = { runCatching { app = app.copy(sessionLimit = it.toInt()) } },
-        label = { Text("Max Snmp Session [/${app.snmpSettings.run { timeout.milliseconds * (retries + 1) }.inWholeSeconds}sec]") },
+        label = { Text("Max Snmp Session [${app.sessionLimit / app.snmpSettings.run { timeout.milliseconds * (retries + 1) }.inWholeSeconds}/sec]") },
         singleLine = false
     )
 
@@ -115,28 +117,30 @@ fun ScanRange(navigator: Navigator) {
         value = scanResult.ifEmpty { "No Item" },
         readOnly = true,
         onValueChange = { },
-        label = { Text("Result [${scanResult.filter{it=='\n'}.count()} found / ${progressPercent}%]") },
+        label = { Text("Result [${scanResult.filter { it == '\n' }.count()} found / ${progressPercent}%]") },
         singleLine = false
     )
 
     @Composable
     fun runButton() {
-        FloatingActionButton(onClick = { scanning = true }) {
+        FloatingActionButton(onClick = {
+            scanning = !scanning
+        }) {
             when (scanning) {
-                true -> CircularProgressIndicator()
-                false -> Icon(Icons.Default.Search, "IP Range Scan")
+                true -> Icon(Icons.Default.Stop, "Stop Scan")
+                false -> Icon(Icons.Default.Search, "Start Scan")
             }
         }
     }
 
-    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
-    LaunchedEffect(Unit) {
-        store.updates.collect {
-            if (it != null) app = it
-            loading = false
-        }
+    @Composable
+    fun snmpSettingsButton() = IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
+        Icon(Icons.Default.Settings, "SNMP Settings")
     }
-    LaunchedEffect(app) { if (!loading) store.set(app) }
+
+    @Composable
+    fun runningIcon() = if (scanning) CircularProgressIndicator(modifier = Modifier.padding(8.dp)) else Unit
+
 
 
     Scaffold(
@@ -147,17 +151,15 @@ fun ScanRange(navigator: Navigator) {
             CircularProgressIndicator()
         } else {
             Column(modifier = Modifier.padding(8.dp)) {
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     scanRangeField()
-                    IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
-                        Icon(
-                            Icons.Default.Settings,
-                            "SNMP Settings"
-                        )
-                    }
+                    snmpSettingsButton()
                 }
                 sessionLimitFiled()
-                resultFiled()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    resultFiled()
+                    runningIcon()
+                }
             }
         }
     }
