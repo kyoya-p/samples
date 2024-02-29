@@ -146,7 +146,7 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
             clone.ranges
         }
 
-        val shallowRangesCopy = java.util.LinkedList(ranges)
+        val shallowRangesCopy = LinkedList(ranges)
 
         clear()
         unnormalizedRanges.forEach { addAll(it) }

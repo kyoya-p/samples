@@ -1,4 +1,5 @@
 import jp.wjg.shokkaa.snmp4jutils.IntRangeSet
+import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.totalLength
 import org.junit.jupiter.api.Test
 
@@ -41,6 +42,8 @@ class RengeSetTest {
     @Test
     fun add1() {
         val rs = IntRangeSet()
+
+        @Suppress("EmptyRange")
         val rx = 7..4
         val r = 4..7
         assert(rs.add(rx) == false)
@@ -75,10 +78,45 @@ class RengeSetTest {
     @Test
     fun totalLength1() {
         val rs = IntRangeSet()
-        val r1 = 1..10
-        rs.add(r1)
+        rs.add(1..10)
         assert(rs.totalLength() == 10)
         rs.add(21..30)
         assert(rs.totalLength() == 20)
+    }
+
+    @Test
+    fun totalLength_ULong() {
+        val rs = ULongRangeSet()
+        rs.add(1UL..10UL)
+        assert(rs.totalLength() == 10UL)
+        rs.add(21UL..30UL)
+        assert(rs.totalLength() == 20UL)
+    }
+
+    @Test
+    fun remove_ULong() {
+        val rs = ULongRangeSet()
+        rs.add(1UL..10UL)
+        assert(rs.toList()[0] == 1UL..10UL)
+        rs.remove(3UL..5UL)
+        assert(rs.size == 2)
+        assert(rs.toList()[0] == 1UL..2UL)
+        assert(rs.toList()[1] == 6UL..10UL)
+    }
+
+    @Test
+    fun removeAll_ULong() {
+        val rs0 = ULongRangeSet(1UL..1000UL)
+        val rs1 = rs0
+        val rs2 = ULongRangeSet(41UL..42UL, 51UL..52UL, 998UL..1000UL)
+        rs1.removeAll(rs2)
+        assert(rs1.size == 3)
+        assert(rs1.toList()[0] == 1UL..40UL)
+        assert(rs1.toList()[1] == 43UL..50UL)
+        assert(rs1.toList()[2] == 53UL..997UL)
+
+        rs1.addAll(rs2)
+        assert(rs1.size == 1)
+        assert(rs1==rs0)
     }
 }
