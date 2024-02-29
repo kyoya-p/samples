@@ -79,7 +79,7 @@ fun ScanRange(navigator: Navigator) {
             }
             scanning = false
         }
-        close
+        
     }
     @Composable
     fun snmpSettingField() = OutlinedTextField(
