@@ -3,7 +3,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
@@ -11,11 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.xxfast.kstore.KStore
 import io.github.xxfast.kstore.file.storeOf
+import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
 import jp.wjg.shokkaa.snmp4jutils.async.toIpV4String
 import jp.wjg.shokkaa.snmp4jutils.filterResponse
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.toRangeSet
+import kotlinx.coroutines.flow.onEach
 import kotlinx.serialization.Serializable
 import moe.tlaster.precompose.PreComposeApp
 import moe.tlaster.precompose.navigation.NavHost
@@ -23,6 +25,7 @@ import moe.tlaster.precompose.navigation.Navigator
 import moe.tlaster.precompose.navigation.rememberNavigator
 import moe.tlaster.precompose.navigation.transition.NavTransition
 import okio.Path.Companion.toPath
+import kotlin.time.Duration.Companion.milliseconds
 
 expect val userDir: String
 
@@ -63,29 +66,39 @@ fun ScanRange(navigator: Navigator) {
     var loading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
+    var progressPercent by remember { mutableStateOf(0) }
+
+    fun ULongRangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1UL }.toInt()
+
     LaunchedEffect(scanning) {
         if (scanning) {
-            val rangeSet = app.range.toRangeSet()
-            scanResult = ""
-            createDefaultSenderSnmpAsync().run {
-                scanFlow(rangeSet, limit = app.sessionLimit) { ip ->
-                    target = defaultSnmpFlowTarget(ip).apply {
-                        timeout = app.snmpSettings.timeout.toLong()
-                        retries = app.snmpSettings.retries
+            runCatching {
+                val rangeSet = app.range.toRangeSet()
+                scanResult = ""
+                var progress=0
+                val total=app.range.toRangeSet().totalLength()
+                createDefaultSenderSnmpAsync().run {
+                    scanFlow(rangeSet, limit = app.sessionLimit) { ip ->
+                        target = defaultSnmpFlowTarget(ip).apply {
+                            timeout = app.snmpSettings.timeout.toLong()
+                            retries = app.snmpSettings.retries
+                        }
+                    }.onEach { progressPercent=(++progress*100/total) }.filterResponse().collect {
+                        scanResult += "${it.received.peerAddress.inetAddress.toIpV4String()},\n"
                     }
-                }.filterResponse().collect {
-                    scanResult += "${it.received.peerAddress.inetAddress.toIpV4String()},\n"
                 }
             }
             scanning = false
         }
-        
+
     }
+
+//    fun UInt.toSiString()=toString().let{it.take(3)+" kMGT"[it.length/3]}
     @Composable
-    fun snmpSettingField() = OutlinedTextField(
+    fun scanRangeField() = OutlinedTextField(
         value = app.range,
         onValueChange = { app = app.copy(range = it) },
-        label = { Text("IP Range") },
+        label = { Text("IP Range [${app.range.toRangeSet().totalLength()} addrs]") },
         singleLine = false
     )
 
@@ -93,7 +106,7 @@ fun ScanRange(navigator: Navigator) {
     fun sessionLimitFiled() = OutlinedTextField(
         value = app.sessionLimit.toString(),
         onValueChange = { runCatching { app = app.copy(sessionLimit = it.toInt()) } },
-        label = { Text("Max Snmp Session") },
+        label = { Text("Max Snmp Session [/${app.snmpSettings.run { timeout.milliseconds * (retries + 1) }.inWholeSeconds}sec]") },
         singleLine = false
     )
 
@@ -102,7 +115,7 @@ fun ScanRange(navigator: Navigator) {
         value = scanResult.ifEmpty { "No Item" },
         readOnly = true,
         onValueChange = { },
-        label = { Text("Result") },
+        label = { Text("Result [${scanResult.filter{it=='\n'}.count()} found / ${progressPercent}%]") },
         singleLine = false
     )
 
@@ -135,7 +148,7 @@ fun ScanRange(navigator: Navigator) {
         } else {
             Column(modifier = Modifier.padding(8.dp)) {
                 Row {
-                    snmpSettingField()
+                    scanRangeField()
                     IconButton(onClick = { navigator.navigate("/snmpSettings") }) {
                         Icon(
                             Icons.Default.Settings,
@@ -152,8 +165,8 @@ fun ScanRange(navigator: Navigator) {
 
 @Composable
 fun SnmpSettings(navigator: Navigator) {
-    var app by remember { mutableStateOf(SnmpDesktop()) }
     var loading by remember { mutableStateOf(true) }
+    var app by remember { mutableStateOf(SnmpDesktop()) }
     val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
     LaunchedEffect(Unit) {
         store.updates.collect {
@@ -163,40 +176,60 @@ fun SnmpSettings(navigator: Navigator) {
     }
     LaunchedEffect(app) { if (!loading) store.set(app) }
 
-    var timeout by remember { mutableStateOf("5000") }
-    var retries by remember { mutableStateOf("5") }
-
     @Composable
     fun timeoutField() = OutlinedTextField(
-        value = timeout,
-        onValueChange = { t -> runCatching { t.toInt() }.onSuccess { timeout = t } },
+        value = app.snmpSettings.timeout.toString(),
+        onValueChange = {
+            runCatching { it.toInt() }.onSuccess { app = app.copy(snmpSettings = app.snmpSettings.copy(timeout = it)) }
+        },
         label = { Text("Timeout") },
         singleLine = true
     )
 
     @Composable
     fun retriesField() = OutlinedTextField(
-        value = retries,
-        onValueChange = { retries = it },
+        value = app.snmpSettings.retries.toString(),
+        onValueChange = {
+            runCatching { it.toInt() }.onSuccess { app = app.copy(snmpSettings = app.snmpSettings.copy(retries = it)) }
+        },
         label = { Text("Retries") },
         singleLine = true
     )
 
-
     @Composable
-    fun runButton() {
-        FloatingActionButton(onClick = { navigator.goBack() }) {
-            Icon(Icons.Default.ArrowBack, "Submit")
-        }
+    fun runButton() = FloatingActionButton(onClick = { navigator.goBack() }) {
+        Icon(Icons.Default.Close, "Submit")
     }
-    Scaffold(
+
+    if (loading) {
+        CircularProgressIndicator()
+    } else {
+        Scaffold(
 //        topBar = { TopAppBar { Text("Scan IP Range") } },
-        floatingActionButton = { runButton() }
-    ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            timeoutField()
-            retriesField()
+            floatingActionButton = { runButton() }
+        ) {
+            Column(modifier = Modifier.padding(8.dp)) {
+                timeoutField()
+                retriesField()
+            }
         }
     }
 }
 
+@Composable
+inline fun <reified T : @Serializable Any> AppFlow(key: T, loadingSign: () -> Unit, content: () -> Unit) {
+    var doc by remember { mutableStateOf(key) }
+    var loading = true
+    val store: KStore<T> = storeOf("$userDir/.snmp-desktop.json".toPath())
+    LaunchedEffect(Unit) {
+        store.updates.collect {
+            if (it != null) doc = it
+            loading = it == null
+        }
+    }
+    if (loading) {
+        loadingSign()
+    } else {
+        content()
+    }
+}
