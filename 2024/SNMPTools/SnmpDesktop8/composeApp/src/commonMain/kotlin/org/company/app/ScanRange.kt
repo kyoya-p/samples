@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import io.github.xxfast.kstore.KStore
 import io.github.xxfast.kstore.file.storeOf
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.toIpV4String
 import jp.wjg.shokkaa.snmp4jutils.filterResponse
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.toRangeSet
@@ -29,6 +30,7 @@ expect val userDir: String
 data class SnmpDesktop(
     val range: String = "",
     val snmpSettings: SnmpSettings = SnmpSettings(),
+    val sessionLimit: Int = 500,
 )
 
 @Serializable
@@ -57,8 +59,6 @@ fun AppNavigator() = PreComposeApp {
 
 @Composable
 fun ScanRange(navigator: Navigator) {
-
-//    var scanSpec by remember { mutableStateOf("10.36.102.1-10.36.102.254") }
     var app by remember { mutableStateOf(SnmpDesktop()) }
     var loading by remember { mutableStateOf(true) }
     var scanResult by remember { mutableStateOf("") }
@@ -68,23 +68,32 @@ fun ScanRange(navigator: Navigator) {
             val rangeSet = app.range.toRangeSet()
             scanResult = ""
             createDefaultSenderSnmpAsync().run {
-                scanFlow(rangeSet, limit = 500) { ip ->
+                scanFlow(rangeSet, limit = app.sessionLimit) { ip ->
                     target = defaultSnmpFlowTarget(ip).apply {
-                        timeout = 2500
-                        retries = 1
+                        timeout = app.snmpSettings.timeout.toLong()
+                        retries = app.snmpSettings.retries
                     }
                 }.filterResponse().collect {
-                    scanResult += "${it.received.peerAddress},\n"
+                    scanResult += "${it.received.peerAddress.inetAddress.toIpV4String()},\n"
                 }
             }
             scanning = false
         }
+        close
     }
     @Composable
     fun snmpSettingField() = OutlinedTextField(
         value = app.range,
         onValueChange = { app = app.copy(range = it) },
         label = { Text("IP Range") },
+        singleLine = false
+    )
+
+    @Composable
+    fun sessionLimitFiled() = OutlinedTextField(
+        value = app.sessionLimit.toString(),
+        onValueChange = { runCatching { app = app.copy(sessionLimit = it.toInt()) } },
+        label = { Text("Max Snmp Session") },
         singleLine = false
     )
 
@@ -107,7 +116,6 @@ fun ScanRange(navigator: Navigator) {
         }
     }
 
-    println("$userDir/.snmp-desktop.json")
     val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
     LaunchedEffect(Unit) {
         store.updates.collect {
@@ -135,6 +143,7 @@ fun ScanRange(navigator: Navigator) {
                         )
                     }
                 }
+                sessionLimitFiled()
                 resultFiled()
             }
         }
@@ -143,6 +152,17 @@ fun ScanRange(navigator: Navigator) {
 
 @Composable
 fun SnmpSettings(navigator: Navigator) {
+    var app by remember { mutableStateOf(SnmpDesktop()) }
+    var loading by remember { mutableStateOf(true) }
+    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop.json".toPath())
+    LaunchedEffect(Unit) {
+        store.updates.collect {
+            if (it != null) app = it
+            loading = false
+        }
+    }
+    LaunchedEffect(app) { if (!loading) store.set(app) }
+
     var timeout by remember { mutableStateOf("5000") }
     var retries by remember { mutableStateOf("5") }
 
