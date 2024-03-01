@@ -1,4 +1,3 @@
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -90,7 +89,9 @@ fun ScanRange(navigator: Navigator) {
                             retries = app.snmpSettings.retries
                         }
                     }.onEach { progressPercent = (++progress * 100UL / total) }.filterResponse().collect {
-                        scanResult += "${it.received.peerAddress.inetAddress.toIpV4String()},\n"
+                        val adr = it.received.peerAddress.inetAddress.toIpV4String()
+                        val v = it.received.response[0].variable.toString()
+                        scanResult += "{$adr: $v},\n"
                     }
                 }
             }
