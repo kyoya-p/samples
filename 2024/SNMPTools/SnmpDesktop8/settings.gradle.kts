@@ -1,4 +1,4 @@
-rootProject.name = "SNMP Desktop"
+rootProject.name = "SNMPDesktop"
 include(":composeApp")
 
 pluginManagement {

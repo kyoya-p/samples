@@ -61,8 +61,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.company.app.desktopApp"
-            packageVersion = "1.0.0"
+            packageName = "SNMP Desktop"
+            packageVersion = "1.8.3"
+
         }
     }
 }

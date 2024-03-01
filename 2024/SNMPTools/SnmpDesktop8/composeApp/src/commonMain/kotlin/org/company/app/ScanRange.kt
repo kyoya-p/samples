@@ -79,7 +79,6 @@ fun ScanRange(navigator: Navigator) {
         if (scanning) {
             runCatching {
                 scanResult = ""
-//                val rangeSet? = app.scanRange.toRangeSet()
                 var progress = 0UL
                 val total = totalRange.totalLength()
                 createDefaultSenderSnmpAsync().run {
