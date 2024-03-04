@@ -1,4 +1,3 @@
-
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
@@ -11,15 +10,16 @@ import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.seconds
 
 class CommonKtTest {
 
     @Test
-    fun uniCast_Test() = runTest {
+    fun uniCast_Test() = runTest(timeout = 20.seconds) {
         val ag = launch { snmpAgent(sampleMibList) }
         createDefaultSenderSnmpAsync().use { snmp ->
             val adr = UdpAddress(InetAddress.getByName("127.0.0.1"), 161)
-            val tg = CommunityTarget(adr, OctetString("public")).apply { retries = 1 }
+            val tg = CommunityTarget(adr, OctetString("public")).apply { timeout = 1000; retries = 1 }
             val pdu = PDU(PDU.GET, listOf(VariableBinding(OID(SampleOID.sysDescr.oid))))
             val res = snmp.uniCast(Request(tg, pdu))
             when (res) {
@@ -51,7 +51,7 @@ class CommonKtTest {
 
     @Suppress("BlockingMethodInNonBlockingContext")
     @Test
-    fun getNext_Timeout() = runBlocking {
+    fun getNext_Timeout() = runTest(timeout = 60.seconds) {
         val snmp = SnmpBuilder().udp().v1().threads(1).build().async()
 
         val pdu = PDU(PDU.GET, listOf(VariableBinding(OID(SampleOID.sysDescr.oid))))

@@ -9,6 +9,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Clock.System.now
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -22,21 +23,23 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
 fun main(args: Array<String>): Unit = runBlocking {
-    val ips = args.map { arg ->
-        arg.split("-").map { InetAddress.getByName(it).toIpV4ULong() }.let { r -> r[0]..r.getOrElse(1) { r[0] } }
-    }
-    println(ips)
-    val r = ULongRangeSet(ips)
-    println(r.toList())
-    createDefaultSenderSnmpAsync().use { snmpAsync ->
-        with(snmpAsync) {
-            scanFlow(r).filterResponse().collect { res ->
-                println("${res.request.target} => ${res.received.response[0].variable}")
-            }
+    val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
+    println(ipRangeSet.toList())
+    val nIp = ipRangeSet.totalLength()
+    var n = 0UL
+    var rap = now()
+    fun progress(n: ULong, t: Instant) = if (n % 5000UL == 0UL) {
+        print("\r${n * 100UL / nIp}% (${5000UL * 1000UL / (t - rap).inWholeMilliseconds.toULong()}/sec) $n / $nIp ")
+        rap = t
+    } else Unit
+    createDefaultSenderSnmpAsync().scanFlow(ipRangeSet, 30000).onEach { progress(n++, now()) }.filterResponse()
+        .collect { res ->
+//            println("${res.request.target} => ${res.received.response[0].variable}")
+            println("${res.received.peerAddress} => ${res.received.response[0].variable}")
         }
-    }
-}
 
+
+}
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
 @Suppress("unused")
@@ -96,11 +99,26 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
 
 suspend fun SnmpAsync.scanFlow(
     ipRangeSet: MutableRangeSet<ULong>,
-    limit: Int = 30 * 100,
+    maxSessions: Int = 30 * 100,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ): Flow<Result> = callbackFlow {
-    val sem = Semaphore(limit)
+    val sem = Semaphore(maxSessions)
     var n = ipRangeSet.map { it.endInclusive - it.start + 1UL }.sum()
+
+    val responseHandler = object : ResponseListener {
+        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+//                    cancel(pdu, this)
+            @Suppress("UNCHECKED_CAST")
+            val res = when {
+                r.response == null -> Timeout(r.userObject as Request)
+                else -> Received(r.userObject as Request, r as SnmpEvent)
+            }
+            trySendBlocking(res)
+            --n
+            sem.release()
+            if (n == 0UL) close()
+        }
+    }
 
     ipRangeSet.forEach {
         (it.start..it.endInclusive).forEach {
@@ -110,24 +128,14 @@ suspend fun SnmpAsync.scanFlow(
             val builder = Builder().apply { tgSetup(ip) }
             val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
             val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-            snmp.send(pdu, target, builder.userData, object : ResponseListener {
-                override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-//                    cancel(pdu, this)
-                    @Suppress("UNCHECKED_CAST")
-                    val res = when {
-                        r.response == null -> Timeout(Request(target, pdu))
-                        else -> Received(Request(target, pdu), r as SnmpEvent)
-                    }
-                    trySendBlocking(res)
-                    --n
-                    sem.release()
-                    if (n == 0UL) close()
-                }
-            })
+
+            snmp.send(pdu, target, builder.userData, responseHandler)
         }
     }
     awaitClose {}
 }
+
+suspend fun Flow<Request>.uniCast(snmp: SnmpAsync) = map { snmp.uniCast(it) }
 
 fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
     .filter { it.request.target.address == it.received.peerAddress }

@@ -66,6 +66,7 @@ compose.desktop {
 
         }
     }
+
 }
 
 buildConfig {

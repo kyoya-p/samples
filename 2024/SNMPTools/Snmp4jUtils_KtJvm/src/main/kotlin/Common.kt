@@ -54,27 +54,22 @@ suspend fun SnmpAsync.sendAsync(
 suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { continuation ->
     val listener = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-            @Suppress("UNCHECKED_CAST")
-            val res = when {
-                r.response == null -> Timeout(req)
-                else -> Received(req, r as SnmpEvent)
-            }
-            continuation.resume(res)
+            runCatching {
+                snmp.cancel(req.pdu, this)
+                @Suppress("UNCHECKED_CAST")
+                val res = when {
+                    r.response == null -> Timeout(r.userObject as Request)
+                    else -> Received(r.userObject as Request, r as SnmpEvent)
+                }
+                continuation.resume(res)
+            }.onFailure { it.printStackTrace() }
+            continuation.cancel()
         }
     }
 
-    snmp.send(req.pdu, req.target, req.userData, listener)
+    snmp.send(req.pdu, req.target, req, listener)
     continuation.invokeOnCancellation { snmp.cancel(req.pdu, listener) }
 }
-
-fun SnmpAsync.uniCast2(tg: SnmpTarget, pdu: PDU, usr: Any? = null, rv: (SnmpEvent) -> Unit) =
-    snmp.send(pdu, tg, usr, object : ResponseListener {
-        override fun <A : Address> onResponse(r: ResponseEvent<A>?) {
-            snmp.cancel(pdu, this)
-            @Suppress("UNCHECKED_CAST")
-            rv(r as SnmpEvent)
-        }
-    })
 
 suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
     val adr = InetAddress.getByName(host)
@@ -125,7 +120,11 @@ typealias SnmpTarget = CommunityTarget<UdpAddress>
 typealias SnmpEvent = ResponseEvent<UdpAddress>
 
 data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
+
 sealed class Result
+
+//data class Received(val received: SnmpEvent) : Result()
+//data class Timeout(val received: SnmpEvent) : Result()
 data class Received(val request: Request, val received: SnmpEvent) : Result()
 data class Timeout(val request: Request) : Result()
 

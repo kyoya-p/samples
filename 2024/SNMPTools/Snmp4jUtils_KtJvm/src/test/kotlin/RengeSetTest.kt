@@ -1,7 +1,11 @@
 import jp.wjg.shokkaa.snmp4jutils.IntRangeSet
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.totalLength
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 
 class RengeSetTest {
@@ -117,6 +121,45 @@ class RengeSetTest {
 
         rs1.addAll(rs2)
         assert(rs1.size == 1)
-        assert(rs1==rs0)
+        assert(rs1 == rs0)
+    }
+
+    @Test
+    fun sequence1() {
+        val rs = IntRangeSet(1..1, 3..5, 7..7)
+        assert(rs.toList() == listOf(1..1, 3..5, 7..7))
+    }
+
+    @Test
+    fun sequence2() {
+        val Ki = 1024
+        val Gi = Ki * Ki * Ki
+        var i = 0
+        runCatching {
+            val rs = mutableListOf<Int>()
+
+            (0..20767724).forEach {
+                rs.add(-i)
+                i++
+            }
+            println("size: ${rs.size}")
+            rs.sort()
+            rs.take(100).also(::println)
+            rs.takeLast(100).also(::println)
+            mutableListOf(1, 2, 3).sort()
+        }.onFailure {
+            println("Error: Last index: $i, ${i / Ki / Ki}M")
+            it.printStackTrace()
+        }
+
+        class X4<T>(val i0: T, val i1: T = i0, val i2: T = i0, val i3: T = i0)
+    }
+
+    @Test
+    fun flowTest() = runBlocking {
+        repeat(5) {
+            println(now())
+            delay(1000.milliseconds)
+        }
     }
 }

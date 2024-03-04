@@ -232,5 +232,8 @@ class ULongRangeSet : MutableRangeSet<ULong> {
 fun ClosedRange<Int>.length() = if (isEmpty()) 0 else endInclusive - start + 1
 fun IntRangeSet.totalLength() = sumOf { it.length() }
 
+//fun <T> MutableRangeSet<T>.to() = toSequence()
 fun ClosedRange<ULong>.length() = if (isEmpty()) 0UL else (endInclusive - start + 1UL)
 fun ULongRangeSet.totalLength() = sumOf { it.length() }
+
+fun MutableRangeSet<ULong>.asFlatSequence() = asSequence().flatMap { (it.start..it.endInclusive).asSequence() }
