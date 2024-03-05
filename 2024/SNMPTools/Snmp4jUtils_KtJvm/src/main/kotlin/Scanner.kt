@@ -4,12 +4,14 @@ import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Clock.System.now
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -25,14 +27,8 @@ import kotlin.time.ExperimentalTime
 fun main(args: Array<String>): Unit = runBlocking {
     val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
     println(ipRangeSet.toList())
-    val nIp = ipRangeSet.totalLength()
-    var n = 0UL
-    var rap = now()
-    fun progress(n: ULong, t: Instant) = if (n % 5000UL == 0UL) {
-        print("\r${n * 100UL / nIp}% (${5000UL * 1000UL / (t - rap).inWholeMilliseconds.toULong()}/sec) $n / $nIp ")
-        rap = t
-    } else Unit
-    createDefaultSenderSnmpAsync().scanFlow(ipRangeSet, 30000).onEach { progress(n++, now()) }.filterResponse()
+    val snmp = createDefaultSenderSnmpAsync()
+    snmp.scanFlow(ipRangeSet).filterResponse()
         .collect { res ->
 //            println("${res.request.target} => ${res.received.response[0].variable}")
             println("${res.received.peerAddress} => ${res.received.response[0].variable}")
@@ -62,11 +58,6 @@ fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
     if (start.toIpV4ULong() <= end.toIpV4ULong()) (start.toIpV4ULong()..end.toIpV4ULong()).asSequence()
         .map { it.toIpV4Adr() }
     else sequenceOf()
-
-fun ipV4AddressRangeFlow(start: InetAddress, end: InetAddress) = channelFlow {
-    ipV4AddressRangeSequence(start, end).forEach { send(it) }
-}
-
 
 private fun ULong.reverseBit32(width: Int = 32): ULong {
     var x = this
@@ -98,25 +89,28 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
 }
 
 suspend fun SnmpAsync.scanFlow(
-    ipRangeSet: MutableRangeSet<ULong>,
+    ipRangeSet: ULongRangeSet,
     maxSessions: Int = 30 * 100,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ): Flow<Result> = callbackFlow {
     val sem = Semaphore(maxSessions)
-    var n = ipRangeSet.map { it.endInclusive - it.start + 1UL }.sum()
-
+    val n = ipRangeSet.totalLength()
+    if (n == 0UL) return@callbackFlow
+    var i = 0UL
+    var o = 0UL
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-//                    cancel(pdu, this)
+            cancel(r.request, this)
             @Suppress("UNCHECKED_CAST")
             val res = when {
                 r.response == null -> Timeout(r.userObject as Request)
                 else -> Received(r.userObject as Request, r as SnmpEvent)
             }
             trySendBlocking(res)
-            --n
+            ++o
+            print("\r${i-o} ")
             sem.release()
-            if (n == 0UL) close()
+            if (o >= n) close()
         }
     }
 
@@ -128,14 +122,13 @@ suspend fun SnmpAsync.scanFlow(
             val builder = Builder().apply { tgSetup(ip) }
             val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
             val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-
-            snmp.send(pdu, target, builder.userData, responseHandler)
+            ++i
+            print("\r${i-o} ")
+            snmp.send(pdu, target, Request(target, pdu, builder.userData), responseHandler)
         }
     }
-    awaitClose {}
+    awaitClose { }
 }
-
-suspend fun Flow<Request>.uniCast(snmp: SnmpAsync) = map { snmp.uniCast(it) }
 
 fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
     .filter { it.request.target.address == it.received.peerAddress }
