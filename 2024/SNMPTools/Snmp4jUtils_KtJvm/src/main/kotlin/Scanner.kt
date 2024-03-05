@@ -1,17 +1,13 @@
 package jp.wjg.shokkaa.snmp4jutils
 
 import jp.wjg.shokkaa.snmp4jutils.async.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Clock.System.now
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
@@ -22,19 +18,41 @@ import java.net.InetAddress
 import kotlin.math.roundToLong
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
+@ExperimentalCoroutinesApi
 fun main(args: Array<String>): Unit = runBlocking {
     val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
     println(ipRangeSet.toList())
     val snmp = createDefaultSenderSnmpAsync()
-    snmp.scanFlow(ipRangeSet).filterResponse()
-        .collect { res ->
-//            println("${res.request.target} => ${res.received.response[0].variable}")
-            println("${res.received.peerAddress} => ${res.received.response[0].variable}")
+//    snmp.scanFlow(ipRangeSet).filterResponse()
+//        .collect { res ->
+//            println("${res.received.peerAddress} => ${res.received.response[0].variable}")
+//        }
+
+    ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
+        map { DefaultSnmpScanRequest(it.toIpV4Adr()) }.scanFlow(snmp, 50000)
+    }.collect {}
+}
+
+suspend fun <T1, T2> Flow<T1>.measureThroughput(last: ULong, op: suspend Flow<T1>.() -> Flow<T2>): Flow<T2> {
+    var t0 = now()
+    var tl = t0
+    var i = 0UL
+    var o = 0UL
+    var ol = o
+    CoroutineScope(Dispatchers.Default).launch {
+        while (isActive) {
+            val n = now()
+            val td = n - tl
+            print("\r[ $o/$last(${o * 100UL / last}%) cmpl,  ${i - o} run, ${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}/s] ")
+            tl = n
+            ol = o
+            delay(5.seconds)
         }
-
-
+    }
+    return onEach { ++i }.op().onEach { ++o }
 }
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
@@ -83,10 +101,27 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
+fun DefaultSnmpScanTarget(ip: InetAddress, port: Int = 161, commStr: String = "public") =
+    CommunityTarget(UdpAddress(ip, port), OctetString(commStr)).apply {
+        timeout = 5000
+        retries = 1
+    }
+
+fun DefaultSnmpScanPdu(oidList: List<String> = listOf("1.3.6")) =
+    PDU(PDU.GETNEXT, oidList.map { VariableBinding(OID(it)) })
+
+fun DefaultSnmpScanRequest(
+    ip: InetAddress,
+    target: SnmpTarget = DefaultSnmpScanTarget(ip),
+    pdu: PDU = DefaultSnmpScanPdu(),
+    userData: Any? = null
+) = Request(target, pdu, userData)
+
 class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null) {
     fun defaultSnmpFlowTarget(ip: InetAddress, port: Int = 161, commStr: String = "public") =
         CommunityTarget(UdpAddress(ip, port), OctetString(commStr))
 }
+
 
 suspend fun SnmpAsync.scanFlow(
     ipRangeSet: ULongRangeSet,
@@ -96,7 +131,7 @@ suspend fun SnmpAsync.scanFlow(
     val sem = Semaphore(maxSessions)
     val n = ipRangeSet.totalLength()
     if (n == 0UL) return@callbackFlow
-    var i = 0UL
+//    var i = 0UL
     var o = 0UL
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
@@ -108,7 +143,7 @@ suspend fun SnmpAsync.scanFlow(
             }
             trySendBlocking(res)
             ++o
-            print("\r${i-o} ")
+//            print("\r${i - o} ")
             sem.release()
             if (o >= n) close()
         }
@@ -122,14 +157,51 @@ suspend fun SnmpAsync.scanFlow(
             val builder = Builder().apply { tgSetup(ip) }
             val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
             val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-            ++i
-            print("\r${i-o} ")
+//            ++i
+//            print("\r${i - o} ")
             snmp.send(pdu, target, Request(target, pdu, builder.userData), responseHandler)
         }
     }
     awaitClose { }
 }
 
+suspend fun Flow<Request>.scanFlow(
+    snmpAsync: SnmpAsync,
+//    ipRangeSet: ULongRangeSet,
+    maxSessions: Int = (5 * 2) * 100,
+    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
+): Flow<Result> = callbackFlow {
+    val sem = Semaphore(maxSessions)
+//    var i = 0UL
+//    var o = 0UL
+    val responseHandler = object : ResponseListener {
+        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+            snmpAsync.cancel(r.request, this)
+            @Suppress("UNCHECKED_CAST")
+            val res = when {
+                r.response == null -> Timeout(r.userObject as Request)
+                else -> Received(r.userObject as Request, r as SnmpEvent)
+            }
+            trySendBlocking(res)
+//            ++o
+//            print("\r${i - o} ")
+            sem.release()
+        }
+    }
+
+    collect { req ->
+        sem.acquire()
+        yield()
+//        ++i
+//        print("\r${i - o} ")
+        snmpAsync.snmp.send(req.pdu, req.target, req, responseHandler)
+    }
+}
+
+fun ClosedRange<ULong>.asFlow() = flow { for (i in start..endInclusive) emit(i) }
+
+@ExperimentalCoroutinesApi
+fun MutableRangeSet<ULong>.toFlatFlow() = asFlow().flatMapConcat { it.asFlow() }
 fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
     .filter { it.request.target.address == it.received.peerAddress }
 
