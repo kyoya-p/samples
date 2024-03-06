@@ -59,7 +59,7 @@ suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { cont
                 @Suppress("UNCHECKED_CAST")
                 val res = when {
                     r.response == null -> Timeout(r.userObject as Request)
-                    else -> Received(r.userObject as Request, r as SnmpEvent)
+                    else -> Response(r.userObject as Request, r as SnmpEvent)
                 }
                 continuation.resume(res)
             }.onFailure { it.printStackTrace() }
@@ -125,7 +125,7 @@ sealed class Result
 
 //data class Received(val received: SnmpEvent) : Result()
 //data class Timeout(val received: SnmpEvent) : Result()
-data class Received(val request: Request, val received: SnmpEvent) : Result()
+data class Response(val request: Request, val received: SnmpEvent) : Result()
 data class Timeout(val request: Request) : Result()
 
 @Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
@@ -141,6 +141,7 @@ enum class SampleOID(val oid: String, val oidName: String) {
 }
 
 fun OID(vararg ints: Int) = OID(ints)
+fun String.toOid()=OID(this)
 
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
 typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?

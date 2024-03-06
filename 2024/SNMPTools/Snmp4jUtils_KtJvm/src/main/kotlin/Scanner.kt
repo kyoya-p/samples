@@ -26,11 +26,6 @@ fun main(args: Array<String>): Unit = runBlocking {
     val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
     println(ipRangeSet.toList())
     val snmp = createDefaultSenderSnmpAsync()
-//    snmp.scanFlow(ipRangeSet).filterResponse()
-//        .collect { res ->
-//            println("${res.received.peerAddress} => ${res.received.response[0].variable}")
-//        }
-
     ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
         map { DefaultSnmpScanRequest(it.toIpV4Adr()) }.scanFlow(snmp, 50000)
     }.collect {}
@@ -123,86 +118,95 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
 }
 
 
-suspend fun SnmpAsync.scanFlow(
-    ipRangeSet: ULongRangeSet,
-    maxSessions: Int = 30 * 100,
-    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
-): Flow<Result> = callbackFlow {
-    val sem = Semaphore(maxSessions)
-    val n = ipRangeSet.totalLength()
-    if (n == 0UL) return@callbackFlow
-//    var i = 0UL
-    var o = 0UL
-    val responseHandler = object : ResponseListener {
-        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-            cancel(r.request, this)
-            @Suppress("UNCHECKED_CAST")
-            val res = when {
-                r.response == null -> Timeout(r.userObject as Request)
-                else -> Received(r.userObject as Request, r as SnmpEvent)
-            }
-            trySendBlocking(res)
-            ++o
-//            print("\r${i - o} ")
-            sem.release()
-            if (o >= n) close()
-        }
-    }
-
-    ipRangeSet.forEach {
-        (it.start..it.endInclusive).forEach {
-            sem.acquire()
-            yield()
-            val ip = it.toIpV4Adr()
-            val builder = Builder().apply { tgSetup(ip) }
-            val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
-            val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-//            ++i
-//            print("\r${i - o} ")
-            snmp.send(pdu, target, Request(target, pdu, builder.userData), responseHandler)
-        }
-    }
-    awaitClose { }
-}
+//suspend fun SnmpAsync.scanFlow(
+//    ipRangeSet: ULongRangeSet,
+//    maxSessions: Int = 30 * 100,
+//    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
+//): Flow<Result> = callbackFlow {
+//    val sem = Semaphore(maxSessions)
+//    val n = ipRangeSet.totalLength()
+//    if (n == 0UL) return@callbackFlow
+////    var i = 0UL
+//    var o = 0UL
+//    val responseHandler = object : ResponseListener {
+//        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+//            cancel(r.request, this)
+//            @Suppress("UNCHECKED_CAST")
+//            val res = when {
+//                r.response == null -> Timeout(r.userObject as Request)
+//                else -> Received(r.userObject as Request, r as SnmpEvent)
+//            }
+//            trySendBlocking(res)
+//            ++o
+////            print("\r${i - o} ")
+//            sem.release()
+//            if (o >= n) close()
+//        }
+//    }
+//
+//    ipRangeSet.forEach {
+//        (it.start..it.endInclusive).forEach {
+//            sem.acquire()
+//            yield()
+//            val ip = it.toIpV4Adr()
+//            val builder = Builder().apply { tgSetup(ip) }
+//            val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
+//            val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
+////            ++i
+////            print("\r${i - o} ")
+//            snmp.send(pdu, target, Request(target, pdu, builder.userData), responseHandler)
+//        }
+//    }
+//    awaitClose { }
+//}
 
 suspend fun Flow<Request>.scanFlow(
     snmpAsync: SnmpAsync,
 //    ipRangeSet: ULongRangeSet,
-    maxSessions: Int = (5 * 2) * 100,
+    maxSessions: Int = 1000,
     tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ): Flow<Result> = callbackFlow {
+    var cmpl = false
+    var nReq = 0UL
+    var nRes = 0UL
     val sem = Semaphore(maxSessions)
-//    var i = 0UL
-//    var o = 0UL
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
+            ++nRes
+            println("L6")
             snmpAsync.cancel(r.request, this)
             @Suppress("UNCHECKED_CAST")
             val res = when {
                 r.response == null -> Timeout(r.userObject as Request)
-                else -> Received(r.userObject as Request, r as SnmpEvent)
+                else -> Response(r.userObject as Request, r as SnmpEvent)
             }
             trySendBlocking(res)
-//            ++o
-//            print("\r${i - o} ")
+            println("L7")
             sem.release()
+            if (nRes >= nReq && cmpl) close()
         }
     }
-
-    collect { req ->
+    println("L1")
+    onEach { req ->
+        ++nReq
+        println("L2")
         sem.acquire()
+        println("L3")
         yield()
-//        ++i
-//        print("\r${i - o} ")
+
         snmpAsync.snmp.send(req.pdu, req.target, req, responseHandler)
-    }
+        println("L4")
+    }.onCompletion { cmpl = true; println("CMPL") }.collect {}
+    println("L11")
+    awaitClose {}
+    println("L12")
 }
 
 fun ClosedRange<ULong>.asFlow() = flow { for (i in start..endInclusive) emit(i) }
 
 @ExperimentalCoroutinesApi
 fun MutableRangeSet<ULong>.toFlatFlow() = asFlow().flatMapConcat { it.asFlow() }
-fun Flow<Result>.filterResponse() = filter { it is Received }.map { it as Received }
+fun Flow<Result>.filterResponse() = filter { it is Response }.map { it as Response }
     .filter { it.request.target.address == it.received.peerAddress }
 
 

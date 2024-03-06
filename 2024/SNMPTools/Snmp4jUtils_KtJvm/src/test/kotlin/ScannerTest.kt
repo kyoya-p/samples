@@ -1,22 +1,22 @@
 @file:Suppress("ClassName")
 
-import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
-import jp.wjg.shokkaa.snmp4jutils.async.Received
-import jp.wjg.shokkaa.snmp4jutils.async.SnmpTarget
-import jp.wjg.shokkaa.snmp4jutils.async.Timeout
+import jp.wjg.shokkaa.snmp4jutils.DefaultSnmpScanRequest
+import jp.wjg.shokkaa.snmp4jutils.async.Response
 import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
+import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
+import jp.wjg.shokkaa.snmp4jutils.async.toOid
 import jp.wjg.shokkaa.snmp4jutils.scanFlow
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import org.snmp4j.smi.OctetString
-import org.snmp4j.smi.UdpAddress
+import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 class ScannerTest {
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -52,69 +52,29 @@ class ScannerTest {
 
 
     @Test
-    fun scanFlow_timeout_Test(): Unit = runTest {
-        val s = now()
-        fun td() = now() - s
-        fun String.toIp4ULong() = InetAddress.getByName(this).address.fold(0UL) { a, e -> (a shl 8) + e.toUByte() }
-        val range = "192.168.0.0".toIp4ULong().."192.168.0.0".toIp4ULong()
-        with(createDefaultSenderSnmpAsync()) {
-            scanFlow(ULongRangeSet(range)) {
-                target = SnmpTarget().apply {
-                    address = UdpAddress(it, 161)
-                    community = OctetString("public")
-                    timeout = 1000
-                    retries = 2
-                }
-            }.collect {
-                println(td())
-                assert(td() in 3.seconds..4.seconds)
-            }
+    fun scanFlow_response(): Unit = runTest {
+        val sampleVB = listOf(VariableBinding("1.3.6.100".toOid(), OctetString("sample data")))
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val ag = launch { snmpAgent(sampleVB) }
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 1000
+            target.retries = 1
         }
-        assert(td() in 3.seconds..4.seconds)
-    }
-
-    @Test
-    fun scanFlow_8bit(): Unit = runTest(timeout = 60.seconds) {
-        val s = now()
-        fun String.toIp4ULong() = InetAddress.getByName(this).address.fold(0UL) { a, e -> (a shl 8) + e.toUByte() }
-        val range = "192.168.0.0".toIp4ULong().."192.168.0.255".toIp4ULong()
-        with(createDefaultSenderSnmpAsync()) {
-            var totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
-            scanFlow(ULongRangeSet(range)).collect { res ->
-                val msg = when (res) {
-                    is Timeout -> "${res.request.target.address} Timeout"
-                    is Received -> "${res.request.target.address} => ${res.received.peerAddress} ${res.received.response[0].variable}"
-                }
-                totalLength--
-                println("${now() - s} - Res[$totalLength]: $msg")
-            }
-            assert(totalLength == 0UL)
+        val snmp = createDefaultSenderSnmpAsync()
+        val ress = flowOf(req).scanFlow(snmp).toList()
+        println(ress)
+        assert(ress.size == 1)
+        val res = ress[0]
+        assert(res is Response)
+        with(res as Response) {
+            println(received.peerAddress.inetAddress)
+            println(received.response.variableBindings)
+            println(received.response.errorIndex)
+            println(received.response.errorStatusText)
+            println(received.request.variableBindings)
+            assert(received.peerAddress.inetAddress == localHost)
+            assert(received.response.variableBindings == sampleVB)
         }
-    }
-
-    @Test
-    fun scanFlow_24bit(): Unit = runTest(timeout = 15.minutes) {
-        runBlocking(Dispatchers.Default) {
-            val s = now()
-            fun String.toIp4ULong() = InetAddress.getByName(this).address.fold(0UL) { a, e -> (a shl 8) + e.toUByte() }
-            val range = "10.0.0.0".toIp4ULong().."10.255.255.255".toIp4ULong()
-            with(createDefaultSenderSnmpAsync()) {
-                var totalLength = ULongRangeSet(range).map { it.endInclusive - it.start + 1UL }.sum()
-                scanFlow(ULongRangeSet(range), 65536-1000) {
-                    target = defaultSnmpFlowTarget(it).apply {
-                        timeout = 2500
-                        retries = 1
-                    }
-                }.collect { res ->
-                    val msg = when (res) {
-                        is Timeout -> "${res.request.target.address} Timeout"
-                        is Received -> "${res.request.target.address} =>  ${res.received.response[0].variable}".also(::println)
-                    }
-                    totalLength--
-                    if (totalLength % 65536UL == 0UL) println("${now() - s} - Res[$totalLength]: $msg")
-                }
-                assert(totalLength == 0UL)
-            }
-        }
+        ag.cancelAndJoin()
     }
 }

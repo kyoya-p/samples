@@ -24,7 +24,7 @@ class CommonKtTest {
             val res = snmp.uniCast(Request(tg, pdu))
             when (res) {
                 is Timeout -> assert(false)
-                is Received -> {
+                is Response -> {
                     println("res:${res.received.response}")
                     assert(res.received.response[0].variable == sampleMibMap[OID(SampleOID.sysDescr.oid)])
                 }
