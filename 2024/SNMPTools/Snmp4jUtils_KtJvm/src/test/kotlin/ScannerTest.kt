@@ -1,22 +1,25 @@
 @file:Suppress("ClassName")
 
 import jp.wjg.shokkaa.snmp4jutils.DefaultSnmpScanRequest
-import jp.wjg.shokkaa.snmp4jutils.async.Response
-import jp.wjg.shokkaa.snmp4jutils.async.createDefaultSenderSnmpAsync
-import jp.wjg.shokkaa.snmp4jutils.async.snmpAgent
-import jp.wjg.shokkaa.snmp4jutils.async.toOid
-import jp.wjg.shokkaa.snmp4jutils.scanFlow
+import jp.wjg.shokkaa.snmp4jutils.async.*
+import jp.wjg.shokkaa.snmp4jutils.measureThroughput
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
+import jp.wjg.shokkaa.snmp4jutils.uniCast
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.snmp4j.smi.Integer32
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
 class ScannerTest {
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -61,8 +64,7 @@ class ScannerTest {
             target.retries = 1
         }
         val snmp = createDefaultSenderSnmpAsync()
-        val ress = flowOf(req).scanFlow(snmp).toList()
-        println(ress)
+        val ress = flowOf(req).uniCast(snmp).toList()
         assert(ress.size == 1)
         val res = ress[0]
         assert(res is Response)
@@ -76,5 +78,92 @@ class ScannerTest {
             assert(received.response.variableBindings == sampleVB)
         }
         ag.cancelAndJoin()
+    }
+
+    @Test
+    fun scanFlow_timeout(): Unit = runTest {
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 1000
+            target.retries = 1
+        }
+        val snmp = createDefaultSenderSnmpAsync()
+        val td = measureTime {
+            val ress = flowOf(req).uniCast(snmp).toList()
+            assert(ress.size == 1)
+            val res = ress[0]
+            assert(res is Timeout)
+            with(res as Timeout) {
+                assert(request.target == req.target)
+            }
+        }
+        assert(td in 2.seconds..2.5.seconds)
+    }
+
+    @Test
+    fun scanFlow_timeout2(): Unit = runTest {
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 1000
+            target.retries = 1
+        }
+        val snmp = createDefaultSenderSnmpAsync()
+        val td = measureTime {
+            val ress1 = flowOf(req, req, req).uniCast(snmp, maxSessions = 3).toList()
+            assert(ress1.size == 3)
+        }
+        assert(td in 2.seconds..2.5.seconds)
+    }
+
+    @Test
+    fun scanFlow_timeout3(): Unit = runTest {
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 1000
+            target.retries = 1
+        }
+        val snmp = createDefaultSenderSnmpAsync()
+        val td = measureTime {
+            val ress1 = flowOf(req, req, req).uniCast(snmp, maxSessions = 1).toList()
+            assert(ress1.size == 3)
+        }
+        assert(td in 6.seconds..6.5.seconds)
+    }
+
+    @Test
+    fun scanFlow_wideRange1(): Unit = runTest {
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 1000
+            target.retries = 0
+        }
+        val snmp = createDefaultSenderSnmpAsync()
+        measureTime {
+            val t1 = flowOf(req).transform { r -> repeat(1000) { emit(r) } }.uniCast(snmp, maxSessions = 1000).count()
+            assert(t1 == 1000)
+        }.also(::println)
+        measureTime {
+            val t1 = flowOf(req).transform { r -> repeat(3000) { emit(r) } }.uniCast(snmp, maxSessions = 3000).count()
+            assert(t1 == 3000)
+        }.also(::println)
+    }
+
+    @Test
+    fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 120.seconds) {
+        val snmp = createDefaultSenderSnmpAsync()
+        val localHost = InetAddress.getByName("127.0.0.1")
+        val req = DefaultSnmpScanRequest(localHost).apply {
+            target.timeout = 5000
+            target.retries = 5
+        }
+
+        measureTime {
+            val t = 1_000_000
+            val t1 = flowOf(req).transform { r -> repeat(t) { emit(r.apply { pdu.requestID = Integer32(it) }) } }
+                .measureThroughput(last = t.toULong()) {
+                    uniCast(snmp, maxSessions = 500_000)
+                }.count()
+            assert(t1 == t)
+        }.also(::println)
     }
 }

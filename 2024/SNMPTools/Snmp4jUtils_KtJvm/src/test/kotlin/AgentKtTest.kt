@@ -6,10 +6,13 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.ExperimentalSerializationApi
 import org.junit.jupiter.api.Test
+import org.snmp4j.CommandResponder
+import org.snmp4j.CommandResponderEvent
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.smi.*
 import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 internal class AgentKtTest {
     @Test
@@ -87,4 +90,17 @@ internal class AgentKtTest {
         assert(r.zip(vbl).all { (a, b) -> a == b })
         ag.cancelAndJoin()
     }
+
+    @Test
+    fun snmpAgent_load() = runTest(timeout = 60.seconds) {
+        val snmp = createDefaultSenderSnmpAsync()
+        var c = 0
+        val commandResponder = object : CommandResponder {
+            override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+                ++c
+            }
+        }
+        snmp.snmp.addCommandResponder(commandResponder)
+
+    }//TODO
 }

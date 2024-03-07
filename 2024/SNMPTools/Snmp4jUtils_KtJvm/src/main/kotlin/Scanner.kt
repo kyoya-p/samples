@@ -6,7 +6,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Semaphore
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Clock.System.now
 import kotlinx.datetime.Instant
 import org.snmp4j.CommunityTarget
@@ -27,25 +26,30 @@ fun main(args: Array<String>): Unit = runBlocking {
     println(ipRangeSet.toList())
     val snmp = createDefaultSenderSnmpAsync()
     ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
-        map { DefaultSnmpScanRequest(it.toIpV4Adr()) }.scanFlow(snmp, 50000)
+        map { DefaultSnmpScanRequest(it.toIpV4Adr()) }.uniCast(snmp, 50000)
     }.collect {}
 }
 
-suspend fun <T1, T2> Flow<T1>.measureThroughput(last: ULong, op: suspend Flow<T1>.() -> Flow<T2>): Flow<T2> {
-    var t0 = now()
-    var tl = t0
+suspend fun <T1, T2> Flow<T1>.measureThroughput(
+    last: ULong,
+    ext: () -> String = { "" },
+    op: suspend Flow<T1>.() -> Flow<T2>
+): Flow<T2> {
+    var tl = now()
     var i = 0UL
     var o = 0UL
     var ol = o
     CoroutineScope(Dispatchers.Default).launch {
-        while (isActive) {
-            val n = now()
-            val td = n - tl
-            print("\r[ $o/$last(${o * 100UL / last}%) cmpl,  ${i - o} run, ${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}/s] ")
-            tl = n
-            ol = o
-            delay(5.seconds)
-        }
+            while (isActive) {
+                val n = now()
+                val td = n - tl
+                val pc = if (last == 0UL) "-" else "${o * 100UL / last}"
+                val tp = if (td == 0.milliseconds) "-" else "${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}"
+                println("[${now()}, $o/$last($pc%) cmpl, $i-$o:${i - o} run, $tp/s] ${ext()}")
+                tl = n
+                ol = o
+                delay(5.seconds)
+            }
     }
     return onEach { ++i }.op().onEach { ++o }
 }
@@ -85,7 +89,7 @@ private fun ULong.reverseBit32(width: Int = 32): ULong {
 @ExperimentalTime
 suspend fun delayUntilNextPeriod(
     interval: Duration,
-    now: Instant = Clock.System.now(),
+    now: Instant = now(),
     start: Instant = Instant.fromEpochMilliseconds(0),
 ): Instant {
     val runTime = when {
@@ -160,11 +164,9 @@ class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData
 //    awaitClose { }
 //}
 
-suspend fun Flow<Request>.scanFlow(
-    snmpAsync: SnmpAsync,
-//    ipRangeSet: ULongRangeSet,
+suspend fun Flow<Request>.uniCast(
+    snmpAsync: SnmpAsync = createDefaultSenderSnmpAsync(),
     maxSessions: Int = 1000,
-    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
 ): Flow<Result> = callbackFlow {
     var cmpl = false
     var nReq = 0UL
@@ -172,34 +174,23 @@ suspend fun Flow<Request>.scanFlow(
     val sem = Semaphore(maxSessions)
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-            ++nRes
-            println("L6")
-            snmpAsync.cancel(r.request, this)
-            @Suppress("UNCHECKED_CAST")
-            val res = when {
-                r.response == null -> Timeout(r.userObject as Request)
-                else -> Response(r.userObject as Request, r as SnmpEvent)
-            }
-            trySendBlocking(res)
-            println("L7")
-            sem.release()
-            if (nRes >= nReq && cmpl) close()
+                ++nRes
+                @Suppress("UNCHECKED_CAST")
+                val res = when {
+                    r.response == null -> Timeout(r.userObject as Request)
+                    else -> Response(r.userObject as Request, r as SnmpEvent)
+                }
+                trySendBlocking(res)
+                sem.release()
+                if ((nRes >= nReq) && cmpl) close()
         }
     }
-    println("L1")
     onEach { req ->
-        ++nReq
-        println("L2")
         sem.acquire()
-        println("L3")
-        yield()
-
         snmpAsync.snmp.send(req.pdu, req.target, req, responseHandler)
-        println("L4")
-    }.onCompletion { cmpl = true; println("CMPL") }.collect {}
-    println("L11")
+        ++nReq
+    }.onCompletion { cmpl = true }.collect {}
     awaitClose {}
-    println("L12")
 }
 
 fun ClosedRange<ULong>.asFlow() = flow { for (i in start..endInclusive) emit(i) }
