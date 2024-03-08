@@ -6,10 +6,7 @@ import jp.wjg.shokkaa.snmp4jutils.measureThroughput
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
 import jp.wjg.shokkaa.snmp4jutils.uniCast
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -18,6 +15,7 @@ import org.snmp4j.smi.Integer32
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -149,19 +147,20 @@ class ScannerTest {
     }
 
     @Test
-    fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 120.seconds) {
+    fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 2.hours) {
         val snmp = createDefaultSenderSnmpAsync()
-        val localHost = InetAddress.getByName("127.0.0.1")
+        val localHost = InetAddress.getByName("192.168.20.99")
         val req = DefaultSnmpScanRequest(localHost).apply {
             target.timeout = 5000
             target.retries = 5
         }
 
         measureTime {
-            val t = 1_000_000
-            val t1 = flowOf(req).transform { r -> repeat(t) { emit(r.apply { pdu.requestID = Integer32(it) }) } }
+//            val t = 1_000_000
+            val t = 16_777_217
+            val t1 = flow { repeat(t) { emit(req.apply { pdu.requestID = Integer32(it) }) } }
                 .measureThroughput(last = t.toULong()) {
-                    uniCast(snmp, maxSessions = 500_000)
+                    uniCast(snmp, maxSessions = 100_000)
                 }.count()
             assert(t1 == t)
         }.also(::println)

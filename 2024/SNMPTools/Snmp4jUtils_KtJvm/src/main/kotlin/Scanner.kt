@@ -19,15 +19,25 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 @ExperimentalCoroutinesApi
 fun main(args: Array<String>): Unit = runBlocking {
     val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
-    println(ipRangeSet.toList())
+    println(ipRangeSet.joinToString(",") { "${it.start.toIpV4Adr()}..${it.endInclusive.toIpV4Adr()}" })
+    println(ipRangeSet.totalLength())
     val snmp = createDefaultSenderSnmpAsync()
-    ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
-        map { DefaultSnmpScanRequest(it.toIpV4Adr()) }.uniCast(snmp, 50000)
-    }.collect {}
+    measureTime {
+        ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
+            map {
+                DefaultSnmpScanRequest(it.toIpV4Adr()).apply {
+                    target.timeout = 5000
+                    target.retries = 1
+                }
+            }
+                .uniCast(snmp, 100_000)
+        }.count()
+    }.also(::println)
 }
 
 suspend fun <T1, T2> Flow<T1>.measureThroughput(
@@ -40,16 +50,16 @@ suspend fun <T1, T2> Flow<T1>.measureThroughput(
     var o = 0UL
     var ol = o
     CoroutineScope(Dispatchers.Default).launch {
-            while (isActive) {
-                val n = now()
-                val td = n - tl
-                val pc = if (last == 0UL) "-" else "${o * 100UL / last}"
-                val tp = if (td == 0.milliseconds) "-" else "${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}"
-                println("[${now()}, $o/$last($pc%) cmpl, $i-$o:${i - o} run, $tp/s] ${ext()}")
-                tl = n
-                ol = o
-                delay(5.seconds)
-            }
+        while (isActive) {
+            val n = now()
+            val td = n - tl
+            val pc = if (last == 0UL) "-" else "${o * 100UL / last}"
+            val tp = if (td == 0.milliseconds) "-" else "${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}"
+            println("[${now()}, $o/$last($pc%) cmpl, $i-$o:${i - o} run, $tp/s] ${ext()}")
+            tl = n
+            ol = o
+            delay(5.seconds)
+        }
     }
     return onEach { ++i }.op().onEach { ++o }
 }
@@ -174,15 +184,15 @@ suspend fun Flow<Request>.uniCast(
     val sem = Semaphore(maxSessions)
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-                ++nRes
-                @Suppress("UNCHECKED_CAST")
-                val res = when {
-                    r.response == null -> Timeout(r.userObject as Request)
-                    else -> Response(r.userObject as Request, r as SnmpEvent)
-                }
-                trySendBlocking(res)
-                sem.release()
-                if ((nRes >= nReq) && cmpl) close()
+            ++nRes
+            @Suppress("UNCHECKED_CAST")
+            val res = when {
+                r.response == null -> Timeout(r.userObject as Request)
+                else -> Response(r.userObject as Request, r as SnmpEvent)
+            }
+            trySendBlocking(res)
+            sem.release()
+            if ((nRes >= nReq) && cmpl) close()
         }
     }
     onEach { req ->
