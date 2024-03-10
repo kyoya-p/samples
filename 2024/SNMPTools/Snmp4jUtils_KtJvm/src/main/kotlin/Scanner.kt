@@ -35,7 +35,7 @@ fun main(args: Array<String>): Unit = runBlocking {
                     target.retries = 1
                 }
             }
-                .uniCast(snmp, 100_000)
+                .uniCast(snmp, 50_000)
         }.count()
     }.also(::println)
 }
@@ -192,10 +192,12 @@ suspend fun Flow<Request>.uniCast(
             }
             trySendBlocking(res)
             sem.release()
+//            snmpAsync.snmp.cancel(r.request,this)
             if ((nRes >= nReq) && cmpl) close()
         }
     }
     onEach { req ->
+        yield()
         sem.acquire()
         snmpAsync.snmp.send(req.pdu, req.target, req, responseHandler)
         ++nReq

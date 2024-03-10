@@ -152,7 +152,7 @@ class ScannerTest {
         val localHost = InetAddress.getByName("192.168.20.99")
         val req = DefaultSnmpScanRequest(localHost).apply {
             target.timeout = 5000
-            target.retries = 5
+            target.retries = 0
         }
 
         measureTime {
@@ -160,7 +160,7 @@ class ScannerTest {
             val t = 16_777_217
             val t1 = flow { repeat(t) { emit(req.apply { pdu.requestID = Integer32(it) }) } }
                 .measureThroughput(last = t.toULong()) {
-                    uniCast(snmp, maxSessions = 100_000)
+                    uniCast(snmp, maxSessions = 500_000)
                 }.count()
             assert(t1 == t)
         }.also(::println)
