@@ -25,7 +25,7 @@ class Snmp4jTest {
             timeout = 5000
             retries = 5
         }
-        val nSess=10_000*30
+        val nSess=12_000*30
         val sem = Semaphore(nSess)
         val nTotal = 0x01_00_00_00
         var nReq = 0
