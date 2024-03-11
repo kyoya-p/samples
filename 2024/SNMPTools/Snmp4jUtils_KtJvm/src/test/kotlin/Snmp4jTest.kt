@@ -14,24 +14,26 @@ import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 import kotlin.time.measureTime
 
+fun main()=Snmp4jTest().snmp4j()
+
 class Snmp4jTest {
 
     @Test
     fun snmp4j() {
         val snmp = SnmpBuilder().udp().v1().v3().build()!!
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("127.0.0.1")!!, 161), OctetString("public")).apply {
-            timeout = 50
+            timeout = 5000
             retries = 5
         }
-        val sem = Semaphore(12_000*30 + 1)
-        val nTotal = 10_000_000
+        val nSess=10_000*30
+        val sem = Semaphore(nSess)
+        val nTotal = 0x01_00_00_00
         var nReq = 0
         var nRes = 0
         val listener = object : ResponseListener {
             override fun <A : Address?> onResponse(event: ResponseEvent<A>?) {
                 ++nRes
                 sem.release()
-                if (nRes == nTotal) sem.release()
             }
         }
         val monitor = thread {
@@ -48,7 +50,6 @@ class Snmp4jTest {
             }
         }
         snmp.listen()
-        sem.acquire()
         val td = measureTime {
             repeat(nTotal) {
 //                delay(1000.milliseconds)
@@ -56,7 +57,7 @@ class Snmp4jTest {
                 snmp.send(PDU(PDU.GETNEXT, listOf()), tg, null, listener)
                 ++nReq
             }
-            sem.acquire()
+            repeat(nSess) { sem.acquire() }
         }
         monitor.join()
         println("$td ${nTotal / td.inWholeSeconds}/s")
