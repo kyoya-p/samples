@@ -16,9 +16,13 @@ import kotlin.time.measureTime
 
 fun main() = Snmp4jTest().snmp4j()
 class Snmp4jTest {
+    val nClassC = 0x100
+    val nClassB = nClassC * 0x100
+    val nClassA = nClassB * 0x100
+
     @Test
     fun snmp4j() {
-        val nTotal = 0x01_00_00_00
+        val nTotal = nClassA * 1
 
         val snmp = SnmpBuilder().udp().v1().v3().build()!!
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName("127.0.0.1")!!, 161), OctetString("public")).apply {
