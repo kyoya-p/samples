@@ -46,14 +46,24 @@ external interface Playwright {
     val chromium: Driver
 }
 
-suspend fun main() {
-    val pw: Playwright = require("playwright")
-    val browser = pw.chromium.launch().await()
-    val page = browser.newPage().await()
-    page.goto("https://digital.onl.jp/").await()
-    val img =page.screenshot().await()
-    println(img)
-    browser.close().await()
+fun main() {
+    val playwright = require("@playwright/test")
+    playwright.test("test1") { page ->
+        page.goto("https://playwright.dev/")
+    }
+    playwright.test("test2") { page ->
+        page.goto("https://digital.onl.jp/")
+    }
+
+}
+
+fun mainXXX(args: Array<String>) {
+    val playwright = require("playwright")
+    val browser = playwright.chromium.launch()
+    val page = browser.newPage()
+    page.goto("https://www.google.com")
+    page.screenshot(path = "screenshot.png")
+    browser.close()
 }
 
 //fun mainX(args: Array<String>) {
