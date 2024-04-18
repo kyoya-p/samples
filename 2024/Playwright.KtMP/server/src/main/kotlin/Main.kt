@@ -44,7 +44,7 @@ fun testServer() = embeddedServer(CIO, port = 8000) {
         get("/xxx") { call.respondText(open("https://www.google.co.jp/")) }
         webSocket("/ws") {
             println("opened.")
-            val query = receiveDeserialized<LoginReq>()
+            val query = receiveDeserialized<Request>()
             println("Query: $query ")
             println("closed.")
         }
@@ -52,7 +52,11 @@ fun testServer() = embeddedServer(CIO, port = 8000) {
 }.start(wait = true)
 
 @Serializable
-data class LoginReq(val user: String? = null, val password: String? = null)
+sealed class Request {
+    @Serializable
+    data class LoginReq(val user: String? = null, val password: String? = null)
+}
+
 
 fun open(url: String) = Playwright.create().use { playwright ->
     val browser = playwright.chromium().launch(BrowserType.LaunchOptions().apply { headless = false })
