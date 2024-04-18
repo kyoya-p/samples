@@ -1,28 +1,36 @@
 import com.microsoft.playwright.*
-import com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat
 import com.microsoft.playwright.options.AriaRole
-import java.util.regex.Pattern
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import kotlin.concurrent.thread
 
 
-fun main(args: Array<String>) {
+fun main() {
+    thread { testServer() }
     Playwright.create().use { playwright ->
         val browser = playwright.chromium().launch(BrowserType.LaunchOptions().apply { headless = false })
         val page = browser.newPage()
-        page.navigate("http://playwright.dev")
-
-        assertThat(page).hasTitle(Pattern.compile("Playwright"))
-
-        val getStarted = page.getByRole(AriaRole.LINK, Page.GetByRoleOptions().setName("Get Started"))
-
-        assertThat(getStarted).hasAttribute("href", "/docs/intro")
-
-        getStarted.click()
-
-        assertThat(
-            page.getByRole(
-                AriaRole.HEADING,
-                Page.GetByRoleOptions().setName("Installation")
-            )
-        ).isVisible()
+        page.navigate("http://localhost:8000/")
+        val text = page.getByRole(AriaRole.HEADING).textContent()
+        println(text)
+        browser.close()
     }
 }
+
+
+val testPage = """
+<!DOCTYPE html><html>
+<head><title>Hello World</title></head><body>
+<h1>Hello World!</h1>
+</body></html>
+"""
+
+fun testServer() = embeddedServer(CIO, port = 8000) {
+    routing {
+        get("/") { call.respondText(testPage, ContentType.Text.Html) }
+    }
+}.start(wait = false)
