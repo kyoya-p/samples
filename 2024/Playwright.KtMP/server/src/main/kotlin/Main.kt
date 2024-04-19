@@ -10,6 +10,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlin.concurrent.thread
 
 
@@ -34,7 +35,7 @@ val testPage = """
 """
 
 fun testServer() = embeddedServer(CIO, port = 8000) {
-    println(System.getProperty("user.dir"))
+//    println(System.getProperty("user.dir"))
     install(WebSockets) {
         contentConverter = KotlinxWebsocketSerializationConverter(Json)
     }
@@ -50,12 +51,6 @@ fun testServer() = embeddedServer(CIO, port = 8000) {
         }
     }
 }.start(wait = true)
-
-@Serializable
-sealed class Request {
-    @Serializable
-    data class LoginReq(val user: String? = null, val password: String? = null)
-}
 
 
 fun open(url: String) = Playwright.create().use { playwright ->
