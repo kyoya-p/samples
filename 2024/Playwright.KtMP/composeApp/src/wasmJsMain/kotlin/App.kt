@@ -1,39 +1,54 @@
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.unit.dp
 
-import kotlinproject.composeapp.generated.resources.Res
-import kotlinproject.composeapp.generated.resources.compose_multiplatform
-
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun App() {
     MaterialTheme {
+        var user by remember { mutableStateOf("") }
+        var password by remember { mutableStateOf("") }
+
+        @Composable
+        fun uidField() = OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = user,
+            onValueChange = { user = it },
+            label = { Text("Login ID") },
+            singleLine = true
+        )
+
+        @Composable
+        fun passwordField() = OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = user,
+            onValueChange = { user = it },
+            label = { Text("Password") },
+            singleLine = true
+        )
         Scaffold(
-            floatingActionButton = { FloatingActionButton(onClick = {}) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "") } },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { loginReq() }) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "") }
+            },
         ) {
-            var showContent by remember { mutableStateOf(false) }
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(onClick = { showContent = !showContent }) {
-                    Text("Click me!")
-                }
-                AnimatedVisibility(showContent) {
-                    val greeting = remember { Greeting().greet() }
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Image(painterResource(Res.drawable.compose_multiplatform), null)
-                        Text("Compose: $greeting")
-                    }
-                }
+            val stateVertical = rememberScrollState(0)
+            VerticalScrollbar(adapter = rememberScrollbarAdapter(stateVertical))
+            Column(modifier = Modifier.padding(8.dp).verticalScroll(stateVertical)) {
+                uidField()
+                passwordField()
             }
         }
     }
+}
+
+fun loginReq() {
+
 }

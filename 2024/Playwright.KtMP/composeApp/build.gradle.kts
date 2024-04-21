@@ -4,9 +4,10 @@ import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.jetbrainsCompose)
-    alias(libs.plugins.ktor)
+//    alias(libs.plugins.ktor)
 }
 
+repositories { mavenCentral() }
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
@@ -24,7 +25,7 @@ kotlin {
         }
         binaries.executable()
     }
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -34,7 +35,13 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(projects.shared)
+
+//            val ktor_version="2.3.10" // https://mvnrepository.com/artifact/io.ktor/ktor-server-core
+//            implementation("io.ktor:ktor-client-core-js:$ktor_version")
+//            implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+//            implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
         }
+
     }
 }
 
