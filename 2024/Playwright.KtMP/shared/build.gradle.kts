@@ -40,7 +40,9 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
-
+        }
+        commonTest.dependencies{
+            implementation(kotlin("test"))
         }
         jvmMain.dependencies {
             implementation("com.microsoft.playwright:playwright:1.43.0")  // https://mvnrepository.com/artifact/com.microsoft.playwright/playwright
@@ -48,6 +50,7 @@ kotlin {
         }
     }
 }
+tasks.test {useJUnitPlatform()}
 
 compose.experimental {
     web.application {}
