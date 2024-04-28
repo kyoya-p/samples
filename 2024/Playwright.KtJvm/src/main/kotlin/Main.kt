@@ -8,28 +8,25 @@ import io.ktor.util.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 
-fun main() {
-    println("Start server.")
-    embeddedServer(CIO, port = 8000) {
-        install(WebSockets)
-        routing {
-            staticResources("/", ".")
-            webSocket("/ws") {
-                val uniqueId = generateNonce()
-                println("Connection to $uniqueId established")
+fun main(): Unit = embeddedServer(CIO, port = 8000) {
+    install(WebSockets)
+    routing {
+        staticResources("/", ".")
+        webSocket("/ws") {
+            val uniqueId = generateNonce()
+            println("Connection to $uniqueId established")
 
-                incoming.consumeEach { frame ->
-                    if (frame is Frame.Text) {
-                        outgoing.send(Frame.Text("Response for message: ${frame.readText()}"))
-                        println("Message \"${frame.readText()}\" received from $uniqueId")
-                        if (frame.readText() == "close") {
-                            close(CloseReason(CloseReason.Codes.NORMAL, "Closed by server"))
-                        }
+            incoming.consumeEach { frame ->
+                if (frame is Frame.Text) {
+                    val msg = frame.readText()
+                    outgoing.send(Frame.Text("[$msg]"))
+                    if (frame.readText() == "close") {
+                        close(CloseReason(CloseReason.Codes.NORMAL, "Closed by server"))
                     }
                 }
-                println("Connection to $uniqueId closed")
-
             }
+            println("Connection to $uniqueId closed")
         }
-    }.start(wait = true)
-}
+    }
+    println("Start server.")
+}.start(wait = true).let {}
