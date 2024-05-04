@@ -1,0 +1,20 @@
+{
+  "name": "discord",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.12.8",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "node-web-gpio": "^1.0.33",
+    "node-web-i2c": "^1.1.36"
+  }
+}
