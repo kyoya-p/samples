@@ -1,36 +1,32 @@
-import com.microsoft.playwright.*
-import com.microsoft.playwright.options.AriaRole
-import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.response.*
+import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
-import kotlin.concurrent.thread
+import io.ktor.server.websocket.*
+import io.ktor.util.*
+import io.ktor.websocket.*
+import kotlinx.coroutines.channels.consumeEach
 
-
-fun main() {
-    thread { testServer() }
-    Playwright.create().use { playwright ->
-        val browser = playwright.chromium().launch(BrowserType.LaunchOptions().apply { headless = false })
-        val page = browser.newPage()
-        page.navigate("http://localhost:8000/")
-        val text = page.getByRole(AriaRole.HEADING).textContent()
-        println(text)
-        browser.close()
-    }
-}
-
-
-val testPage = """
-<!DOCTYPE html><html>
-<head><title>Hello World</title></head><body>
-<h1>Hello World!</h1>
-</body></html>
-"""
-
-fun testServer() = embeddedServer(CIO, port = 8000) {
+fun main(): Unit = embeddedServer(CIO, port = 8000) {
+    install(WebSockets)
     routing {
-        get("/") { call.respondText(testPage, ContentType.Text.Html) }
+        staticResources("/", ".")
+        webSocket("/ws") {
+            val uniqueId = generateNonce()
+            println("Connection to $uniqueId established")
+
+            incoming.consumeEach { frame ->
+                if (frame is Frame.Text) {
+                    val msg = frame.readText()
+                    outgoing.send(Frame.Text("[$msg]"))
+                    if (frame.readText() == "close") {
+                        close(CloseReason(CloseReason.Codes.NORMAL, "Closed by server"))
+                    }
+                }
+            }
+            println("Connection to $uniqueId closed")
+        }
     }
-}.start(wait = false)
+    println("Start server.")
+}.start(wait = true).let {}

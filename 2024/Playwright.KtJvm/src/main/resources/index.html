@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+<!--    <script src="client.js"></script>-->
+</head>
+<body onload="f1()">
+<h1 onclick="f1()">[Click]</h1>
+<div hx-ext="ws" ws-connect="/ws">
+    <div id="notifications"></div>
+    <div id="chat_room">
+    </div>
+    <form id="form" ws-send>
+        <input name="chat_message">
+    </form>
+</div>
+</body>
+</html>
