@@ -1,0 +1,19 @@
+{
+  "name": "rp4.discord",
+  "version": "1.0.0",
+  "description": "note: https://qiita.com/shokkaa/private/bf130dd66ee819c2ef52",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.12.8",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@discord/embedded-app-sdk": "^1.2.0"
+  }
+}
