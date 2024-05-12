@@ -1,6 +1,5 @@
 @file:Suppress("ClassName")
 
-import jp.wjg.shokkaa.snmp4jutils.DefaultSnmpScanRequest
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import jp.wjg.shokkaa.snmp4jutils.measureThroughput
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
@@ -13,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.snmp4j.smi.Integer32
 import org.snmp4j.smi.OctetString
+import org.snmp4j.smi.UdpAddress
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
 import kotlin.time.Duration.Companion.hours
@@ -55,12 +55,10 @@ class ScannerTest {
     @Test
     fun scanFlow_response(): Unit = runTest {
         val sampleVB = listOf(VariableBinding("1.3.6.100".toOid(), OctetString("sample data")))
-        val localHost = InetAddress.getByName("127.0.0.1")
+        val localHost = InetAddress.getByName("127.0.0.1")!!
         val ag = launch { snmpAgent(sampleVB) }
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 1000
-            target.retries = 1
-        }
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
+
         val snmp = createDefaultSenderSnmpAsync()
         val ress = flowOf(req).uniCast(snmp).toList()
         assert(ress.size == 1)
@@ -81,10 +79,7 @@ class ScannerTest {
     @Test
     fun scanFlow_timeout(): Unit = runTest {
         val localHost = InetAddress.getByName("127.0.0.1")
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 1000
-            target.retries = 1
-        }
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
         val snmp = createDefaultSenderSnmpAsync()
         val td = measureTime {
             val ress = flowOf(req).uniCast(snmp).toList()
@@ -101,10 +96,7 @@ class ScannerTest {
     @Test
     fun scanFlow_timeout2(): Unit = runTest {
         val localHost = InetAddress.getByName("127.0.0.1")
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 1000
-            target.retries = 1
-        }
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
         val snmp = createDefaultSenderSnmpAsync()
         val td = measureTime {
             val ress1 = flowOf(req, req, req).uniCast(snmp, maxSessions = 3).toList()
@@ -116,10 +108,7 @@ class ScannerTest {
     @Test
     fun scanFlow_timeout3(): Unit = runTest {
         val localHost = InetAddress.getByName("127.0.0.1")
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 1000
-            target.retries = 1
-        }
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
         val snmp = createDefaultSenderSnmpAsync()
         val td = measureTime {
             val ress1 = flowOf(req, req, req).uniCast(snmp, maxSessions = 1).toList()
@@ -131,10 +120,7 @@ class ScannerTest {
     @Test
     fun scanFlow_wideRange1(): Unit = runTest {
         val localHost = InetAddress.getByName("127.0.0.1")
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 1000
-            target.retries = 0
-        }
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
         val snmp = createDefaultSenderSnmpAsync()
         measureTime {
             val t1 = flowOf(req).transform { r -> repeat(1000) { emit(r) } }.uniCast(snmp, maxSessions = 1000).count()
@@ -150,13 +136,8 @@ class ScannerTest {
     fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 2.hours) {
         val snmp = createDefaultSenderSnmpAsync()
         val localHost = InetAddress.getByName("192.168.20.99")
-        val req = DefaultSnmpScanRequest(localHost).apply {
-            target.timeout = 5000
-            target.retries = 0
-        }
-
+        val req = Request(defaultScanTarget(localHost), defaultPDU())
         measureTime {
-//            val t = 1_000_000
             val t = 16_777_217
             val t1 = flow { repeat(t) { emit(req.apply { pdu.requestID = Integer32(it) }) } }
                 .measureThroughput(last = t.toULong()) {

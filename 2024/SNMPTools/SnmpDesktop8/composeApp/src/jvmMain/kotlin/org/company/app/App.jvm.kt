@@ -1,4 +1,4 @@
-package org.company.app
+//package org.company.app
 
 import java.awt.Desktop
 import java.net.URI

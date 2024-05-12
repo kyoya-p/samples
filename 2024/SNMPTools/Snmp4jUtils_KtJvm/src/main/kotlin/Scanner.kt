@@ -25,19 +25,12 @@ import kotlin.time.measureTime
 fun main(args: Array<String>): Unit = runBlocking {
     val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
     println(ipRangeSet.joinToString(",") { "${it.start.toIpV4Adr()}..${it.endInclusive.toIpV4Adr()}" })
-    println(ipRangeSet.totalLength())
     val snmp = createDefaultSenderSnmpAsync()
     measureTime {
-        ipRangeSet.toFlatFlow().measureThroughput(ipRangeSet.totalLength()) {
-            map {
-                DefaultSnmpScanRequest(it.toIpV4Adr()).apply {
-                    target.timeout = 5000
-                    target.retries = 1
-                }
-            }
-                .uniCast(snmp, 50_000)
-        }.count()
-    }.also(::println)
+        scanFlow(ipRangeSet, snmp, maxSessions = 5000).filterResponse().collect {
+            println("${it.received.peerAddress} - ${it.received.response.variableBindings[0]}")
+        }
+    }.also { dt -> println("${ipRangeSet.totalLength()}/[$dt] (${ipRangeSet.totalLength() / dt.inWholeSeconds.toULong()}/s)") }
 }
 
 suspend fun <T1, T2> Flow<T1>.measureThroughput(
@@ -110,69 +103,24 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
-fun DefaultSnmpScanTarget(ip: InetAddress, port: Int = 161, commStr: String = "public") =
-    CommunityTarget(UdpAddress(ip, port), OctetString(commStr)).apply {
-        timeout = 5000
-        retries = 1
-    }
-
-fun DefaultSnmpScanPdu(oidList: List<String> = listOf("1.3.6")) =
-    PDU(PDU.GETNEXT, oidList.map { VariableBinding(OID(it)) })
-
-fun DefaultSnmpScanRequest(
-    ip: InetAddress,
-    target: SnmpTarget = DefaultSnmpScanTarget(ip),
-    pdu: PDU = DefaultSnmpScanPdu(),
-    userData: Any? = null
-) = Request(target, pdu, userData)
-
-class Builder(var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null) {
-    fun defaultSnmpFlowTarget(ip: InetAddress, port: Int = 161, commStr: String = "public") =
-        CommunityTarget(UdpAddress(ip, port), OctetString(commStr))
+class RequestBuilder(val ip: InetAddress,var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null) {
+    fun defaultSnmpFlowTarget(ip: InetAddress) = CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
+    fun defaultSnmpScanPdu() = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
+    fun build() = Request(target!!, pdu ?: defaultSnmpScanPdu(), userData)
 }
 
-
-//suspend fun SnmpAsync.scanFlow(
-//    ipRangeSet: ULongRangeSet,
-//    maxSessions: Int = 30 * 100,
-//    tgSetup: Builder.(ip: InetAddress) -> Unit = {}
-//): Flow<Result> = callbackFlow {
-//    val sem = Semaphore(maxSessions)
-//    val n = ipRangeSet.totalLength()
-//    if (n == 0UL) return@callbackFlow
-////    var i = 0UL
-//    var o = 0UL
-//    val responseHandler = object : ResponseListener {
-//        override fun <A : Address> onResponse(r: ResponseEvent<A>) {
-//            cancel(r.request, this)
-//            @Suppress("UNCHECKED_CAST")
-//            val res = when {
-//                r.response == null -> Timeout(r.userObject as Request)
-//                else -> Received(r.userObject as Request, r as SnmpEvent)
-//            }
-//            trySendBlocking(res)
-//            ++o
-////            print("\r${i - o} ")
-//            sem.release()
-//            if (o >= n) close()
-//        }
-//    }
-//
-//    ipRangeSet.forEach {
-//        (it.start..it.endInclusive).forEach {
-//            sem.acquire()
-//            yield()
-//            val ip = it.toIpV4Adr()
-//            val builder = Builder().apply { tgSetup(ip) }
-//            val pdu = builder.pdu ?: PDU(PDU.GETNEXT, listOf(VariableBinding(OID(".1"))))
-//            val target = builder.target ?: builder.defaultSnmpFlowTarget(ip)
-////            ++i
-////            print("\r${i - o} ")
-//            snmp.send(pdu, target, Request(target, pdu, builder.userData), responseHandler)
-//        }
-//    }
-//    awaitClose { }
-//}
+@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun scanFlow(
+    ipRangeSet: ULongRangeSet,
+    snmpAsync: SnmpAsync = createDefaultSenderSnmpAsync(),
+    maxSessions: Int = 1000,
+    requestBuilder: RequestBuilder.() -> Unit = {
+        target = defaultSnmpFlowTarget(ip)
+        pdu = defaultSnmpScanPdu()
+    }
+): Flow<Result> = ipRangeSet.toFlatFlow().map { nip ->
+    RequestBuilder(nip.toIpV4Adr()).apply { requestBuilder() }.build()
+}.uniCast(snmpAsync, maxSessions)
 
 suspend fun Flow<Request>.uniCast(
     snmpAsync: SnmpAsync = createDefaultSenderSnmpAsync(),
@@ -216,3 +164,4 @@ fun Flow<Result>.filterResponse() = filter { it is Response }.map { it as Respon
 fun String.toRange() = trim().split("-").map { it.trim().toIpV4ULong() }.let { it[0]..it[it.lastIndex] }
 fun String.toRangeSet() =
     split(Regex("[,\\s]")).mapNotNull { runCatching { it.toRange() }.getOrNull() }.let { ULongRangeSet(it) }
+

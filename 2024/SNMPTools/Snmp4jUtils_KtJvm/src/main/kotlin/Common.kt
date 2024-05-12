@@ -20,7 +20,6 @@ fun main(args: Array<String>): Unit = runBlocking {
         val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
         val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
         val vbl = snmp.send(pdu, tg)
-        println(vbl.response)
     }
 }
 
@@ -121,10 +120,13 @@ typealias SnmpEvent = ResponseEvent<UdpAddress>
 
 data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
 
+fun defaultTarget(ip: InetAddress) = SnmpTarget(UdpAddress(ip, 161), OctetString("public"))
+fun defaultScanTarget(ip: InetAddress) = defaultTarget(ip).apply { timeout = 5000;retries = 1 }
+fun defaultPDU() = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6))))
+fun defaultRequest(ip: InetAddress) = Request(defaultTarget(ip), defaultPDU())
+
 sealed class Result
 
-//data class Received(val received: SnmpEvent) : Result()
-//data class Timeout(val received: SnmpEvent) : Result()
 data class Response(val request: Request, val received: SnmpEvent) : Result()
 data class Timeout(val request: Request) : Result()
 
@@ -141,7 +143,7 @@ enum class SampleOID(val oid: String, val oidName: String) {
 }
 
 fun OID(vararg ints: Int) = OID(ints)
-fun String.toOid()=OID(this)
+fun String.toOid() = OID(this)
 
 typealias ResponderEvent = CommandResponderEvent<UdpAddress>
 typealias ResponseHandler = (ResponderEvent, PDU?) -> PDU?
