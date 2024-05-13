@@ -46,11 +46,6 @@ val now get() = currentTime.run { "%02d%02d%02d.%03d".format(hour, minute, secon
 inline fun <reified R> Yaml.decodeFromStream(s: InputStream): R = decodeFromStream(serializersModule.serializer(), s)
 inline fun <reified R> Yaml.encodeToStream(v: R, s: OutputStream) = encodeToStream(serializersModule.serializer(), v, s)
 
-@OptIn(ExperimentalSerializationApi::class)
-fun saveMib(mib: List<VariableBinding>, file: File) = yamlSnmp4j.encodeToStream(mib, file.outputStream())
-
-@OptIn(ExperimentalSerializationApi::class)
-fun loadMib(file: File): List<VariableBinding> = yamlSnmp4j.decodeFromStream(file.inputStream())
 
 @Serializable
 data class WalkerData(var mibFile: String?, var ip: String?, var commStr: String?)
