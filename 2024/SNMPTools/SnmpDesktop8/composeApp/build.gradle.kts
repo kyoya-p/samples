@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.kotlinx.serialization)
 }
 
-
 kotlin {
     jvm()
 
