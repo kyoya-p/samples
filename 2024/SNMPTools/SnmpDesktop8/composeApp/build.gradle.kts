@@ -55,28 +55,22 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.ktor.client.okhttp)
         }
-
     }
 }
 
 compose.desktop {
     application {
         mainClass = "MainKt"
-
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMP Desktop"
-            packageVersion = "1.8.3"
-            windows{
-                shortcut=true
-                menu=true
-                upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"            }
+            packageVersion = "1.8.4"
+            windows {
+                shortcut = true
+                menu = true
+                upgradeUuid = "836f0fc9-1179-4d4b-9eda-4e0b7513cd72"
+            }
         }
     }
-
 }
 
-buildConfig {
-    // BuildConfig configuration here.
-    // https://github.com/gmazzo/gradle-buildconfig-plugin#usage-in-kts
-}

@@ -72,7 +72,7 @@ fun scannerPage() {
     var scanResult by remember { mutableStateOf("") }
     var scanning by remember { mutableStateOf(false) }
     var progressPercent by remember { mutableStateOf(0UL) }
-    val store: KStore<SnmpDesktop> = storeOf("$userDir/.snmp-desktop/scanner.json".toPath())
+    val store: KStore<SnmpDesktop> = dataStore("scanner")
 
     LaunchedEffect(Unit) {
         store.updates.collect {

@@ -7,11 +7,11 @@ import java.awt.Dimension
 
 fun main() = application {
     Window(
-        title = "Multiplatform App",
-        state = rememberWindowState(width =480.dp, height = 600.dp),
+        title = "SNMP Desktop",
+        state = rememberWindowState(width =400.dp, height = 150.dp),
         onCloseRequest = ::exitApplication,
     ) {
-        window.minimumSize = Dimension(200, 400)
+        window.minimumSize = Dimension(400, 150)
 //        AppNavigator()
         App(window)
     }
