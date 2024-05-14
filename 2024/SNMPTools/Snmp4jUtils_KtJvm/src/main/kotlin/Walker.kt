@@ -62,6 +62,3 @@ suspend fun SnmpAsync.walk(
         ?.takeIf { it.any { it.variable.syntax != EXCEPTION_END_OF_MIB_VIEW } }
         ?.takeIf { it.zip(initVbl).any { (vb, ivb) -> vb.oid.startsWith(ivb.oid) } }
 }
-
-
-
