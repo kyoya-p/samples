@@ -1,34 +1,28 @@
-//package org.company.app
-
-import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-//import androidx.compose.material.Button
-//import androidx.compose.material.Text
-//import androidx.compose.material.TextField
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
-
-@Preview
+//@Preview
 @Composable
-fun snmpCaptureDialog(app:WalkerData, ipSpec0: String, onOk: (ipSpec: String) -> Unit) = DialogHandler { dialog ->
+fun snmpCaptureDialog(app: WalkerData, onOk: (app: WalkerData) -> Unit) = DialogHandler { dialog ->
     Dialog(title = "SNMP Access Information", onCloseRequest = { dialog.close() }) {
         val styleBtn = Modifier.padding(8.dp)
-        var ipSpec by remember { mutableStateOf(ipSpec0) }
-        var comm by remember { mutableStateOf(app.commStr ?: "public") }
-        Column(modifier = Modifier.padding(8.dp)) {
-            TextField(ipSpec, label = { Text("IP") }, onValueChange = { ipSpec = it;app.ip = it })
-            TextField(comm, label = { Text("Community String") }, onValueChange = { comm = it;app.commStr = it })
-            Row {
-                Button(modifier = styleBtn, onClick = { onOk(ipSpec); dialog.close() }) { Text("Capture") }
-                Button(modifier = styleBtn, onClick = { dialog.close() }) { Text("Cancel") }
+        var ip by remember { mutableStateOf(app.ip) }
+        var comm by remember { mutableStateOf(app.commStr) }
+        Column(modifier = Modifier.padding(8.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                OutlinedTextField(ip, label = { Text("IP") }, onValueChange = { ip = it })
+                OutlinedTextField(comm, label = { Text("Community String") }, onValueChange = { comm = it })
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                Button(onClick = { onOk(app.copy(ip = ip, commStr = comm)); dialog.close() }) { Text("Capture") }
+                Button(onClick = { dialog.close() }) { Text("Cancel") }
             }
         }
     }

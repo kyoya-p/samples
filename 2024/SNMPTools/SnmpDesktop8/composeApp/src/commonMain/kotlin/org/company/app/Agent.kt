@@ -23,57 +23,51 @@ import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
+import okio.Path.Companion.toPath
+import org.snmp4j.smi.OID
 import java.io.InputStream
 import java.io.OutputStream
 
 @Serializable
-data class WalkerData(var mibFile: String? = null, var ip: String = "192.168.0.1", var commStr: String = "public")
+data class WalkerData(
+    val ready: Boolean = true, val mibFile: String = "", val ip: String = "192.168.0.1", val commStr: String = "public"
+)
 
 @Composable
 fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     val appStore: KStore<WalkerData> = dataStore("agent")
-    var app0 by remember { mutableStateOf<WalkerData?>(null) }
-    LaunchedEffect(Unit) { appStore.updates.collect { app0 = it ?: WalkerData() } }
-    if (app0 == null) return@with
+    var app by remember { mutableStateOf(WalkerData(ready = false)) }
+    LaunchedEffect(Unit) { appStore.updates.collect { app = it ?: WalkerData() } }
+    if (!app.ready) return@with
 
-    var app by remember { mutableStateOf(app0!!) }
     var snackBarMessage by remember { mutableStateOf("") }
     var mib: List<VariableBinding> by remember { mutableStateOf(listOf()) }
-    var filePath by remember { mutableStateOf("") }
-    var ipSpec by remember { mutableStateOf(app.ip ?: "") }
+    var filePath by remember { mutableStateOf(app.mibFile) }
 
-    LaunchedEffect(Unit) { appStore.updates.filterNotNull().collect { app = it } }
     LaunchedEffect(app) { appStore.set(app) }
     LaunchedEffect(mib) { snmpAgent(vbl = mib) }
+    LaunchedEffect(filePath) { app = app.copy(mibFile = filePath) }
 
-
+    runCatching { mib = loadMib(filePath.toPath().toFile()) }
     val scope = rememberCoroutineScope()
-    val snmpCaptureDialog = snmpCaptureDialog(app, ipSpec) { ip ->
-        ipSpec = ip
+    val snmpCaptureDialog = snmpCaptureDialog(app) { app1 ->
         scope.launch {
-            val msg = { n: Int -> snackBarMessage = "Capturing MIB [$n]" }
-            msg(0)
-            val snmpWalker = SnmpBuilder().udp().v1().build().async().walk(ipSpec, listOf("1.3.6"))
-            mib = snmpWalker.withIndex().map { (i, e) -> msg(i); e[0] }.toList()
+            val msg = { n: Int, v: VariableBinding -> snackBarMessage = "Capturing $n: $v" }
+            msg(0, VariableBinding(OID(1, 3, 6)))
+            val snmpWalker = SnmpBuilder().udp().v1().build().async().walk(app1.ip, listOf("1.3.6"))
+            val walkRes = snmpWalker.withIndex().map { (i, e) -> msg(i, e[0]); e[0] }.toList()
+            if (walkRes.isNotEmpty()) mib = walkRes
             snackBarMessage = ""
-            filePath = ""
+            app = app1.copy(mibFile = "")
         }
     }
 
-    fun selectFile(opMode: Int) = FileDialog(window).apply { mode = opMode; isVisible = true }
-        .takeIf { it.directory != null && it.file != null }?.run { File(directory, file).canonicalFile }
-        ?.apply { app.mibFile = path }
+    fun selectFile(opMode: Int) =
+        FileDialog(window).apply { mode = opMode; isVisible = true }.takeIf { it.directory != null && it.file != null }
+            ?.run { File(directory, file).canonicalFile }?.apply { filePath = path }
 
-    fun loadMib() = selectFile(LOAD)?.let { file ->
-        mib = loadMib(file)
-        filePath = file.absolutePath
-    }
-
-    fun saveMib() = selectFile(SAVE)?.let { file ->
-        saveMib(mib, file)
-        filePath = file.absolutePath
-    }
-
+    fun loadMib() = selectFile(LOAD)?.let { file -> mib = loadMib(file) }
+    fun saveMib() = selectFile(SAVE)?.let { file -> saveMib(mib, file) }
 
     @Composable
     fun mibFilePathField() = Text(
@@ -82,14 +76,12 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     )
     Scaffold(
         modifier = Modifier.padding(8.dp),
-        snackbarHost = { if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage) } },
+        snackbarHost = { if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage, maxLines = 1) } },
     ) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             snmpCaptureDialog.placing()
             mibFilePathField()
-            Row(
-                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                 Button(onClick = { snmpCaptureDialog.open() }) { Text("Capture") }
                 Button(onClick = ::saveMib) { Text("Save") }
                 Button(onClick = ::loadMib) { Text("Load") }

@@ -8,7 +8,7 @@ import java.awt.Dimension
 fun main() = application {
     Window(
         title = "SNMP Desktop",
-        state = rememberWindowState(width =400.dp, height = 150.dp),
+        state = rememberWindowState(width =600.dp, height = 200.dp),
         onCloseRequest = ::exitApplication,
     ) {
         window.minimumSize = Dimension(400, 150)
