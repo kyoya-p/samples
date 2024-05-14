@@ -20,11 +20,12 @@ import java.io.File
 
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runBlocking {
+    val tgIp = args[0]
     val st = Clock.System.now()
     SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
-        val tgIp = args[0]
-        val vbl = snmp.walk(tgIp).map { it[0] }.onEach {
-            print("${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\n")
+        val vbl = snmp.walk(tgIp).map { it[0] }.withIndex().map { (i, it) ->
+            print("$i : ${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\n")
+            it
         }.toList()
         println("${(Clock.System.now() - st).inWholeMilliseconds}[ms] #MIB: ${vbl.size}")
 
