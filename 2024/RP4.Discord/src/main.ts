@@ -12,7 +12,7 @@ const discordSdk = new DiscordSDK(DISCORD_CLIENT_ID);
 async function main() {
   try {
     console.log(`L1`);
-    //    await discordSdk.ready();
+        await discordSdk.ready();
     console.log(`L2`);
   } catch (e) {
     console.log(`Error:${e}`);
