@@ -10,16 +10,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.snmp4j.PDU
-import org.snmp4j.event.ResponseEvent
-import org.snmp4j.event.ResponseListener
-import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.smi.Address
 import org.snmp4j.smi.Integer32
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
-import java.util.concurrent.Semaphore
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
@@ -145,7 +139,7 @@ class ScannerTest {
     fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 2.hours) {
         val snmp = createDefaultSenderSnmpAsync()
         val noTaget = InetAddress.getByName("127.0.0.1")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
+//        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
         val req = Request(defaultScanTarget(noTaget), defaultPDU())
         measureTime {
             val t = 16_777_216  // class-A
@@ -157,33 +151,4 @@ class ScannerTest {
         }.also(::println)
     }
 
-    @Test
-    fun simpleSNMP4j_loadtest(): Unit {
-        val snmp = SnmpBuilder().udp().v1().v3().build()
-        val noTaget = InetAddress.getByName("127.0.0.1")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
-
-        var ci = 0
-        var co = 0
-        val t = 16_777_216/100  // class-A
-        val s = 100_000
-        val sem = Semaphore(s)
-        for (i in 0 until t) {
-            sem.acquire()
-            snmp.send(
-                PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6)))),
-                tg,
-                null,
-                object : ResponseListener {
-                    override fun <A : Address?> onResponse(p0: ResponseEvent<A>?) {
-                        ++co
-                        print("$ci->$co [${co - ci}]   \r")
-                        sem.release()
-                    }
-                })
-            ++ci
-        }
-        sem.acquire(s)
-        print("$ci->$co [${co - ci}]  \r")
-    }
 }
