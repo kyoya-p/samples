@@ -137,7 +137,7 @@ class Snmp4jTest {
     }
 
     @Test
-    // SNMP投入スループットを適切に制限し、SNMPスタック内で要求完了(解放)処理時間を確保することでOM回避できる
+    // SNMP投入スループットを適切に制限し、SNMPスタック内で要求完了(解放)処理時間を確保することでOoM回避できる
     fun loadtest_timeout3() {
         val snmp = SnmpBuilder().udp().v1().v3().build()
         val noTaget = InetAddress.getByName("192.168.11.99")
@@ -150,7 +150,7 @@ class Snmp4jTest {
         thread {
             while (true) {
                 sleep(1000)
-                println("${now() - t0}: $ci->$co [${ci - co}]  ${(co*1000/n)/10.0}%")
+                println("${now() - t0}: $ci->$co [${ci - co}]  ${(co * 1000L / n) / 10.0}%")
             }
         }
         val s = 700_000
@@ -158,7 +158,7 @@ class Snmp4jTest {
         val listener = object : ResponseListener {
             override fun <A : Address?> onResponse(res: ResponseEvent<A>?) {
                 ++co
-                snmp.cancel(res!!.request,this)
+                snmp.cancel(res!!.request, this)
                 sem.release()
             }
         }

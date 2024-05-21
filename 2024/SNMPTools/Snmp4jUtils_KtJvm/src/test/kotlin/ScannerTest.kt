@@ -3,6 +3,7 @@
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import jp.wjg.shokkaa.snmp4jutils.measureThroughput
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
+import jp.wjg.shokkaa.snmp4jutils.send
 import jp.wjg.shokkaa.snmp4jutils.uniCast
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.*
@@ -143,11 +144,29 @@ class ScannerTest {
         val req = Request(defaultScanTarget(noTaget), defaultPDU())
         measureTime {
             val t = 16_777_216  // class-A
-            val t1 = flow { repeat(t) { emit(req.apply { pdu.requestID = Integer32(it) }) } }
-                .measureThroughput(last = t.toULong()) {
-                    uniCast(snmp, maxSessions = 100_000)
-                }.count()
+            val t1 = flow {
+                repeat(t) {
+                    emit(req.apply {
+                        pdu.requestID = Integer32(it)
+                    })
+                }
+            }.measureThroughput(last = t.toULong()) {
+                uniCast(snmp, maxSessions = 100_000)
+            }.count()
             assert(t1 == t)
+        }.also(::println)
+    }
+
+    @Test
+    fun scanFlow_wideRange_timeout3(): Unit = runTest(timeout = 2.hours) {
+        val snmp = createDefaultSenderSnmpAsync()
+        val noTaget = InetAddress.getByName("192.168.11.99")
+        val req = Request(defaultScanTarget(noTaget), defaultPDU())
+        measureTime {
+            val n = 16_777_216  // class-A
+            val src = (0..n).asFlow().map { req }
+            val t = src.measureThroughput(last = n.toULong()) { send(snmp, maxSessions = 70_000) }.count()
+            assert(t == n)
         }.also(::println)
     }
 
