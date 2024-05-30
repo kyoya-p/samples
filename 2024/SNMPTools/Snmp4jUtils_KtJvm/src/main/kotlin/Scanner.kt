@@ -34,27 +34,26 @@ fun main(args: Array<String>): Unit = runBlocking {
 }
 
 suspend fun <T1, T2> Flow<T1>.measureThroughput(
-    last: ULong,
-    ext: () -> String = { "" },
-    op: suspend Flow<T1>.() -> Flow<T2>
+    last: ULong, ext: () -> String = { "" }, op: suspend Flow<T1>.() -> Flow<T2>
 ): Flow<T2> {
-    var tl = now()
-    var i = 0UL
-    var o = 0UL
-    var ol = o
+    val t0 = now()
+    var nIn = 0UL
+    var nOut = 0UL
+    var nOutLast = nOut
     CoroutineScope(Dispatchers.Default).launch {
         while (isActive) {
             val n = now()
-            val td = n - tl
-            val pc = if (last == 0UL) "-" else "${o * 100UL / last}"
-            val tp = if (td == 0.milliseconds) "-" else "${(o - ol) * 1000UL / td.inWholeMilliseconds.toULong()}"
-            println("[${now()}, $o/$last($pc%) cmpl, $i-$o:${i - o} run, $tp/s] ${ext()}")
-            tl = n
-            ol = o
+            val td = n - t0
+            val pc = if (last == 0UL) "-" else "${nOut * 100UL / last}"
+            val tp =
+                if (td == 0.milliseconds) "-" else "${(nOut - nOutLast) * 1000UL / td.inWholeMilliseconds.toULong()}"
+            println("$td, $nOut/$last($pc%), $nIn-$nOut:${nIn - nOut} run, $tp/s ${ext()}")
+//            t0 = n
+            nOutLast = nOut
             delay(5.seconds)
         }
     }
-    return onEach { ++i }.op().onEach { ++o }
+    return onEach { ++nIn }.op().onEach { ++nOut }
 }
 
 // IPv4アドレスについて 0~2^(bitWidth-1)までの連続したアドレスの上位下位ビットを入れ替えたものを生成する
@@ -66,12 +65,10 @@ fun ipV4AddressSequence(netAdr: InetAddress, bitWidth: Int, startIndex: ULong = 
 
 fun scrambledIpV4AddressSequence(
     netAdr: InetAddress, bitWidth: Int,
-    @Suppress("UNUSED_PARAMETER")
-    startIndex: Long = 0,
-) =
-    (0UL until (1UL shl bitWidth)).asSequence()
-        .map { it to ((netAdr.toIpV4ULong() and ((-1L).toULong() shl bitWidth)) or it.reverseBit32(bitWidth)) }
-        .map { (i, a) -> i to a.toIpV4Adr() }
+    @Suppress("UNUSED_PARAMETER") startIndex: Long = 0,
+) = (0UL until (1UL shl bitWidth)).asSequence()
+    .map { it to ((netAdr.toIpV4ULong() and ((-1L).toULong() shl bitWidth)) or it.reverseBit32(bitWidth)) }
+    .map { (i, a) -> i to a.toIpV4Adr() }
 
 @Suppress("unused")
 fun ipV4AddressRangeSequence(start: InetAddress, end: InetAddress) =
@@ -103,7 +100,9 @@ suspend fun delayUntilNextPeriod(
     return runTime
 }
 
-class RequestBuilder(val ip: InetAddress,var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null) {
+class RequestBuilder(
+    val ip: InetAddress, var target: SnmpTarget? = null, var pdu: PDU? = null, val userData: Any? = null
+) {
     fun defaultSnmpFlowTarget(ip: InetAddress) = CommunityTarget(UdpAddress(ip, 161), OctetString("public"))
     fun defaultSnmpScanPdu() = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
     fun build() = Request(target!!, pdu ?: defaultSnmpScanPdu(), userData)
@@ -133,8 +132,7 @@ suspend fun Flow<Request>.uniCast(
     val responseHandler = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
             ++nRes
-            @Suppress("UNCHECKED_CAST")
-            val res = when {
+            @Suppress("UNCHECKED_CAST") val res = when {
                 r.response == null -> Timeout(r.userObject as Request)
                 else -> Response(r.userObject as Request, r as SnmpEvent)
             }
@@ -153,12 +151,41 @@ suspend fun Flow<Request>.uniCast(
     awaitClose {}
 }
 
+ fun Flow<Request>.send(
+    snmpAsync: SnmpAsync = createDefaultSenderSnmpAsync(),
+    maxSessions: Int = 1_000,
+): Flow<Result> = callbackFlow {
+    val snmp = snmpAsync.snmp
+
+    val sem = Semaphore(maxSessions)
+    val listener = object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            runCatching {
+                @Suppress("UNCHECKED_CAST") val res = when {
+                    r.response == null -> Timeout(r.userObject as Request)
+                    else -> Response(r.userObject as Request, r as SnmpEvent)
+                }
+                trySendBlocking(res)
+                snmp.cancel(r.request, this)
+            }.onFailure { it.printStackTrace() }
+            sem.release()
+        }
+    }
+    collect { req ->
+        val req0=req.copy()
+        print("\r${sem.availablePermits}   ")
+        sem.acquire()
+        snmp.send(req0.pdu, req0.target, req0, listener)
+    }
+    awaitClose {}
+}
+
 fun ClosedRange<ULong>.asFlow() = flow { for (i in start..endInclusive) emit(i) }
 
 @ExperimentalCoroutinesApi
 fun MutableRangeSet<ULong>.toFlatFlow() = asFlow().flatMapConcat { it.asFlow() }
-fun Flow<Result>.filterResponse() = filter { it is Response }.map { it as Response }
-    .filter { it.request.target.address == it.received.peerAddress }
+fun Flow<Result>.filterResponse() =
+    filter { it is Response }.map { it as Response }.filter { it.request.target.address == it.received.peerAddress }
 
 
 fun String.toRange() = trim().split("-").map { it.trim().toIpV4ULong() }.let { it[0]..it[it.lastIndex] }
