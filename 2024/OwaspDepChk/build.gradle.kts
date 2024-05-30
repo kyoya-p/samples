@@ -16,7 +16,6 @@ repositories {
 
 dependencyCheck {
     format = org.owasp.dependencycheck.reporting.ReportGenerator.Format.ALL
-//    scanSet = listOf(File("\\\\wsl\$\\Ubuntu-24.04\\home\\sharp\\works\\x2"))
     scanSet = listOf(File("~/works/x2/16803.src_agent_linux/"))
 //    scanSet = listOf(File("./samples"))
 }
