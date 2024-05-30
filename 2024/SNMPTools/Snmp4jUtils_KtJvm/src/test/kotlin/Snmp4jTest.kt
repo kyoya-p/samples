@@ -1,5 +1,3 @@
-import jp.wjg.shokkaa.snmp4jutils.async.OID
-import jp.wjg.shokkaa.snmp4jutils.async.defaultScanTarget
 import kotlinx.datetime.Clock.System.now
 import org.junit.jupiter.api.Test
 import org.snmp4j.CommunityTarget
@@ -10,13 +8,13 @@ import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.Address
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.UdpAddress
-import org.snmp4j.smi.VariableBinding
 import java.lang.Thread.sleep
 import java.net.InetAddress
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 import kotlin.time.measureTime
 
+fun main() = Snmp4jTest().snmp4j()
 class Snmp4jTest {
     val nClassC = 0x100
     val nClassB = nClassC * 0x100
@@ -66,107 +64,5 @@ class Snmp4jTest {
         }
         monitor.join()
         println("$td ${nTotal / td.inWholeSeconds}/s")
-    }
-
-
-    @Test
-    fun loadtest_timeout_OOM() {
-        val snmp = SnmpBuilder().udp().v1().v3().build()
-        val noTaget = InetAddress.getByName("192.168.11.99")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
-
-        var ci = 0
-        var co = 0
-        val t0 = now()
-        thread {
-            while (true) {
-                sleep(1000)
-                println("${now() - t0}: $ci->$co [${ci - co}]")
-            }
-        }
-        val t = 16_777_216  // class-A
-        val s = 100_000
-        val sem = Semaphore(s)
-        for (i in 0 until t) {
-            sem.acquire()
-            snmp.send(
-                PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6)))),
-                tg,
-                null,
-                object : ResponseListener {
-                    override fun <A : Address?> onResponse(p0: ResponseEvent<A>?) {
-                        ++co
-                        sem.release()
-                    }
-                })
-            ++ci
-        }
-        sem.acquire(s)
-    }
-
-    @Test
-    fun loadtest_timeout2_OOM() {
-        val snmp = SnmpBuilder().udp().v1().v3().build()
-        val noTaget = InetAddress.getByName("192.168.11.99")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
-
-        var ci = 0
-        var co = 0
-        val t0 = now()
-        thread {
-            while (true) {
-                sleep(1000)
-                println("${now() - t0}: $ci->$co [${ci - co}]")
-            }
-        }
-        val t = 16_777_216  // class-A
-        val s = 100_000
-        val sem = Semaphore(s)
-        val listener = object : ResponseListener {
-            override fun <A : Address?> onResponse(p0: ResponseEvent<A>?) {
-                ++co
-                sem.release()
-            }
-        }
-        for (i in 0 until t) {
-            sem.acquire()
-            snmp.send(PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6)))), tg, null, listener)
-            ++ci
-        }
-        sem.acquire(s)
-    }
-
-    @Test
-    // SNMP投入スループットを適切に制限し、SNMPスタック内で要求完了(解放)処理時間を確保することでOM回避できる
-    fun loadtest_timeout3() {
-        val snmp = SnmpBuilder().udp().v1().v3().build()
-        val noTaget = InetAddress.getByName("192.168.11.99")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 500; retries = 1 }
-
-        var ci = 0
-        var co = 0
-        val t0 = now()
-        val n = 16_777_216  // class-A
-        thread {
-            while (true) {
-                sleep(1000)
-                println("${now() - t0}: $ci->$co [${ci - co}]  ${(co*1000/n)/10.0}%")
-            }
-        }
-        val s = 700_000
-        val sem = Semaphore(s)
-        val listener = object : ResponseListener {
-            override fun <A : Address?> onResponse(res: ResponseEvent<A>?) {
-                ++co
-                snmp.cancel(res!!.request,this)
-                sem.release()
-            }
-        }
-        for (i in 0 until n) {
-            sem.acquire()
-            snmp.send(PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6)))), tg, null, listener)
-            ++ci
-        }
-        sem.acquire(s)
     }
 }

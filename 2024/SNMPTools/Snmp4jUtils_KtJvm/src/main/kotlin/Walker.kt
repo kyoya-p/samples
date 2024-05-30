@@ -21,9 +21,10 @@ import java.io.File
 @ExperimentalSerializationApi
 fun main(args: Array<String>): Unit = runBlocking {
     val tgIp = args[0]
+    val oid = args.getOrElse(1) { "1.3.6" }
     val st = Clock.System.now()
     SnmpBuilder().udp().v1().build().async().listen().use { snmp ->
-        val vbl = snmp.walk(tgIp).map { it[0] }.withIndex().map { (i, it) ->
+        val vbl = snmp.walk(tgIp, listOf(oid)).map { it[0] }.withIndex().map { (i, it) ->
             print("$i : ${(Clock.System.now() - st).inWholeMilliseconds}[ms] $it\n")
             it
         }.toList()
