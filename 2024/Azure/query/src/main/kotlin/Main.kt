@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import io.github.xxfast.kstore.file.storeOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -18,7 +19,11 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 
 fun main() = application {
-    Window(onCloseRequest = ::exitApplication) { App() }
+    Window(
+        title = "AzQuery",
+        state = rememberWindowState(width = 600.dp, height =800.dp),
+        onCloseRequest = ::exitApplication
+    ) { App() }
 }
 
 @Composable
@@ -55,7 +60,7 @@ fun App() = AppSync<AppData>(appName = "query", initData = { AppData() }) { muta
             launch(Dispatchers.Default) {
                 kotlin.runCatching {
                     query(app).collect { doc ->
-                        println(doc.toJson())
+//                        println(doc.toJson())
                         app = app.copy(result = app.result.apply { add(doc.toJson()) })
                     }
                 }.onFailure { app = app.copy(result = app.result.apply { add(it.stackTraceToString()) }) }
