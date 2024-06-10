@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import io.github.xxfast.kstore.KStore
 import io.github.xxfast.kstore.file.storeOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,9 +22,20 @@ import okio.Path.Companion.toPath
 fun main() = application {
     Window(
         title = "AzQuery",
-        state = rememberWindowState(width = 600.dp, height =800.dp),
+        state = rememberWindowState(width = 600.dp, height = 800.dp),
         onCloseRequest = ::exitApplication
     ) { App() }
+}
+
+
+inline fun <reified T : @Serializable Any> store(
+    appName: String,
+    dataName: String = "app",
+): KStore<T> {
+    val homeDir = runCatching { System.getenv().let { "${it["HOMEDRIVE"]}${it["HOMEPATH"]}" } }.getOrElse { "." }
+    val appPath = homeDir.toPath().resolve(".$appName")
+    FileSystem.SYSTEM.createDirectory(appPath)
+    return storeOf<T>(appPath.resolve("$dataName.json"))
 }
 
 @Composable
@@ -33,10 +45,7 @@ inline fun <reified T : @Serializable Any> AppSync(
     dataName: String = "app",
     crossinline op: @Composable (MutableState<T>) -> Unit
 ) {
-    val homeDir = runCatching { System.getenv().let { "${it["HOMEDRIVE"]}${it["HOMEPATH"]}" } }.getOrElse { "." }
-    val appPath = homeDir.toPath().resolve(".$appName")
-    FileSystem.SYSTEM.createDirectory(appPath)
-    val store = storeOf<T>(appPath.resolve("$dataName.json"))
+    val store = store<T>(appName, dataName)
     val app = remember { mutableStateOf<T?>(null) }
     val f = @Composable {
         LaunchedEffect(Unit) { store.updates.collect { app.value = it ?: initData() } }
@@ -59,7 +68,8 @@ fun App() = AppSync<AppData>(appName = "query", initData = { AppData() }) { muta
         if (app.running) {
             launch(Dispatchers.Default) {
                 kotlin.runCatching {
-                    query(app).collect { doc ->
+                    val filters = store<FilterList>("query", "filter").get() ?: listOf()
+                    query(app, filters).collect { doc ->
 //                        println(doc.toJson())
                         app = app.copy(result = app.result.apply { add(doc.toJson()) })
                     }
