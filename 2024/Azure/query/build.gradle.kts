@@ -6,8 +6,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.24"
 }
 
-group = "org.example"
-version = "1.0-SNAPSHOT"
+group = "shokkaa.wjg.jp"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
@@ -22,6 +22,9 @@ dependencies {
     implementation("io.github.xxfast:kstore-file:0.8.0") // https://mvnrepository.com/artifact/io.github.xxfast/kstore
 
     implementation("org.mongodb:mongo-java-driver:3.12.14") // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+
+    implementation("ch.qos.logback:logback-classic:1.5.6")
+    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.23.1")
 }
 
 compose.desktop {
@@ -31,7 +34,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "AzQuery"
-            packageVersion = "1.0.0"
+            packageVersion = "$version"
             windows {
                 menu = true
                 shortcut = true
