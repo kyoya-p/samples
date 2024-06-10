@@ -11,10 +11,19 @@ import io.github.xxfast.kstore.file.storeOf
 import kotlinx.serialization.Serializable
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import java.util.logging.Level
+import java.util.logging.Logger
+
+val appName = "query"
 
 fun main() = application {
+    val logger: Logger = Logger.getLogger("org.mongodb.driver")
+    logger.setLevel(Level.OFF)
+//    AppSync(appName, { WinSize(680, 800) }, "winsize") { sizeState ->
+//        val size by sizeState
     Window(
-        title = "Mongo Query Sample",
+        title = "Mongo Query",
+//            state = rememberWindowState(width = size.width.dp, height = size.height.dp),
         state = rememberWindowState(width = 680.dp, height = 800.dp),
         onCloseRequest = ::exitApplication
     ) { App() }
@@ -25,7 +34,7 @@ inline fun <reified T : @Serializable Any> store(
     appName: String,
     dataName: String = "app",
 ): KStore<T> {
-    val homeDir = runCatching { System.getenv().let { "${it["HOMEDRIVE"]}${it["HOMEPATH"]}" } }.getOrElse { "." }
+    val homeDir = System.getenv("USERPROFILE") ?: "."
     val appPath = homeDir.toPath().resolve(".$appName")
     FileSystem.SYSTEM.createDirectory(appPath)
     return storeOf<T>(appPath.resolve("$dataName.json"))

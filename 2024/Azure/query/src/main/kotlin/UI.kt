@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 @Preview
-fun App() = AppSync<AppData>(appName = "query", initData = { AppData() }) { mutableApp ->
+fun App() = AppSync<AppData>(appName = appName, initData = { AppData() }) { mutableApp ->
     var app by mutableApp
 
     @Composable
@@ -68,7 +68,7 @@ fun App() = AppSync<AppData>(appName = "query", initData = { AppData() }) { muta
 }
 
 @Composable
-fun FilterSettings() = AppSync<FilterList>("query", { listOf() }, "filter") { filters0 ->
+fun FilterSettings() = AppSync<FilterList>(appName, { listOf() }, "filter") { filters0 ->
     var filters by filters0
 
     @Composable

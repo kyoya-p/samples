@@ -23,6 +23,9 @@ data class Filter(
 )
 typealias FilterList = List<Filter>
 
+@Serializable
+data class WinSize(val width:Int, val height:Int)
+
 fun query(app: AppData, filters: FilterList) = callbackFlow {
     MongoClient(MongoClientURI(app.connStr)).use { client ->
         fun FilterList.build() = Filters.and(map { Filters.eq(it.field, it.value) })

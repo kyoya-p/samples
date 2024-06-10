@@ -17,15 +17,19 @@ repositories {
 
 dependencies {
     implementation(compose.desktop.currentOs)
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-serialization
     implementation("io.github.xxfast:kstore:0.8.0") // https://mvnrepository.com/artifact/io.github.xxfast/kstore
     implementation("io.github.xxfast:kstore-file:0.8.0") // https://mvnrepository.com/artifact/io.github.xxfast/kstore
 
-//    implementation("org.mongodb:mongo-java-driver:3.12.14") // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
-    implementation("org.mongodb:mongo-java-driver:3.11.3") // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
+    implementation("org.mongodb:mongo-java-driver:3.12.14") // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
 
-//    implementation("ch.qos.logback:logback-classic:1.5.6")
-//    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.23.1")
+    implementation("ch.qos.logback:logback-classic:1.5.6")
+    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.23.1")
+
+    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 compose.desktop {
@@ -34,7 +38,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "MongoQuerySample"
+            packageName = "MongoQuery"
             packageVersion = "$version"
             windows {
                 menu = true
