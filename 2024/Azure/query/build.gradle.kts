@@ -23,8 +23,8 @@ dependencies {
 
     implementation("org.mongodb:mongo-java-driver:3.12.14") // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
 
-    implementation("ch.qos.logback:logback-classic:1.5.6")
-    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.23.1")
+//    implementation("ch.qos.logback:logback-classic:1.5.6")
+//    implementation("org.apache.logging.log4j:log4j-to-slf4j:2.23.1")
 }
 
 compose.desktop {
@@ -33,7 +33,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "AzQuery"
+            packageName = "MongoQuerySample"
             packageVersion = "$version"
             windows {
                 menu = true

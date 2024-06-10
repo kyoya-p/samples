@@ -12,4 +12,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "AzQuery"
+rootProject.name = "MongoQuerySample"
