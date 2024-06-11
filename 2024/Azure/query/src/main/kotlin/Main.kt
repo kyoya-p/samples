@@ -11,17 +11,20 @@ import io.github.xxfast.kstore.file.storeOf
 import kotlinx.serialization.Serializable
 import okio.FileSystem
 import okio.Path.Companion.toPath
-import java.util.logging.Level
-import java.util.logging.Logger
 
 val appName = "query"
 
 fun main() = application {
-    val logger: Logger = Logger.getLogger("org.mongodb.driver")
-    logger.setLevel(Level.OFF)
-    AppSync(appName, { WinSize(680, 800) }, "winsize") { sizeState ->
-        println(sizeState.value)
-    }
+//    val logger: Logger = Logger.getLogger("org.mongodb.driver")
+//    logger.setLevel(Level.OFF)
+//    AppSync(appName, { WinSize(680, 800) }, "winsize") { sizeState ->
+//        println(sizeState.value)
+//    }
+//    ProcessBuilder("cmd.exe", "/c", "cd")
+//        .redirectOutput(File("aaa.res"))
+//        .start()
+//        .waitFor()
+
     Window(
         title = "Mongo Query",
 //            state = rememberWindowState(width = size.width.dp, height = size.height.dp),
@@ -29,7 +32,6 @@ fun main() = application {
         onCloseRequest = ::exitApplication
     ) { App() }
 }
-
 
 inline fun <reified T : @Serializable Any> store(
     appName: String,

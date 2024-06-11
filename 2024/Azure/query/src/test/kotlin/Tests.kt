@@ -6,7 +6,7 @@ import kotlin.test.Test
 
 class Tests {
     @Test
-    fun storeTest() = runTest { t1() }
+    fun storeTest(): Unit = runTest { t1() }
     suspend fun t1() {
         @Serializable
         data class WinSize(val width: Int, val height: Int)
@@ -16,7 +16,12 @@ class Tests {
         val size = store.get()!!
         println(System.getenv("USERPROFILE").toPath().resolve(".data.json").toFile().readText())
     }
+
+    @Test
+    fun runProcess() {
+        ProcessBuilder("cmd.exe", "/c", "cd")
+            .inheritIO()
+            .start()
+            .waitFor()
+    }
 }
-
-class MyTests
-

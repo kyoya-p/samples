@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "shokkaa.wjg.jp"
-version = "1.0.0"
+version = "1.0.3"
 
 repositories {
     mavenCentral()

@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,6 +66,12 @@ fun App() = AppSync<AppData>(appName = appName, initData = { AppData() }) { muta
             }
         }
     }
+}
+
+@Composable
+fun App2() {
+    val app = MutableStateFlow(AppData())
+
 }
 
 @Composable
