@@ -19,8 +19,9 @@ val appName = "query"
 fun main() = application {
     val logger: Logger = Logger.getLogger("org.mongodb.driver")
     logger.setLevel(Level.OFF)
-//    AppSync(appName, { WinSize(680, 800) }, "winsize") { sizeState ->
-//        val size by sizeState
+    AppSync(appName, { WinSize(680, 800) }, "winsize") { sizeState ->
+        println(sizeState.value)
+    }
     Window(
         title = "Mongo Query",
 //            state = rememberWindowState(width = size.width.dp, height = size.height.dp),
