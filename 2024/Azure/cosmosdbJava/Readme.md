@@ -1,3 +1,6 @@
+# 環境
+- Java 17
+
 # Build/Run
 ```sh
 export CONNSTR="<接続文字列>"
