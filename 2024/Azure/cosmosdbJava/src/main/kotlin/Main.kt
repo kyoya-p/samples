@@ -4,6 +4,11 @@ import com.mongodb.client.model.Filters
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonObject
+import okio.Path.Companion.toPath
 
 
 suspend fun main(args: Array<String>) = callbackFlow {
@@ -18,5 +23,8 @@ suspend fun main(args: Array<String>) = callbackFlow {
         close()
     }
     awaitClose()
-}.withIndex().collect { (i, doc) -> println("$i: ${doc.toJson().take(128)}") }
+}.withIndex().map { (i, doc) -> doc.toJson()!!.also { println("$i: ${it.take(128)}") } }.toList().let { docs ->
+    val jsonList = docs.map { Json.decodeFromString<JsonObject>(it) }
+    "output.json".toPath().toFile().writeText(Json.encodeToString(jsonList))
+}
 
