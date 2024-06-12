@@ -57,12 +57,13 @@ fun App() = AppSync<AppData>(appName = appName, initData = { AppData() }) { muta
                     Card(modifier = Modifier.fillMaxWidth().padding(1.dp)) { Text(it, maxLines = 1) }
                 }
                 Column(
-                    modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
                 ) {
                     app.result.forEach {
                         Card(modifier = Modifier.fillMaxWidth().padding(1.dp)) { Text(it, maxLines = 1) }
                     }
                 }
+                shell()
             }
         }
     }

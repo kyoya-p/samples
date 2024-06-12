@@ -1,5 +1,10 @@
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.Button
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -11,6 +16,7 @@ import io.github.xxfast.kstore.file.storeOf
 import kotlinx.serialization.Serializable
 import okio.FileSystem
 import okio.Path.Companion.toPath
+import kotlin.streams.asSequence
 
 val appName = "query"
 
@@ -22,6 +28,7 @@ fun main() = application {
 //    }
 //    ProcessBuilder("cmd.exe", "/c", "cd")
 //        .redirectOutput(File("aaa.res"))
+////        .inheritIO()
 //        .start()
 //        .waitFor()
 
@@ -59,4 +66,24 @@ inline fun <reified T : @Serializable Any> AppSync(
         else CircularProgressIndicator(modifier = Modifier.fillMaxSize())
     }
     f()
+}
+
+@Composable
+fun shell() {
+    var cmd by remember { mutableStateOf("") }
+    var out by remember { mutableStateOf("") }
+    fun exec(cmd: String) {
+        val p = ProcessBuilder(cmd.split(" "))
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
+        p.inputStream.bufferedReader().lines().asSequence().filterNotNull().forEach { out = out + it + "\n" }
+    }
+    Column {
+        Row {
+            OutlinedTextField(cmd, onValueChange = { cmd = it })
+            Button(onClick = { exec(cmd) }) { Text("Run") }
+        }
+        OutlinedTextField(out, readOnly = true, onValueChange = {})
+    }
 }
