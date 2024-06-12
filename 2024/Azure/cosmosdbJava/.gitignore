@@ -1,4 +1,4 @@
 /.idea/
 /.gradle/
 /build/
-/output.json
+/output*.json
