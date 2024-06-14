@@ -6,7 +6,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.Path.Companion.toPath
 
-fun countCollection(connStr: String, db: String, collName: String, filters: List<String>) {
+fun findDocuments(connStr: String, db: String, collName: String, filters: List<String>) {
     val filter = and(filters.map { it.split("=") }.map { (f, v) -> println("Filter: $f=$v");eq(f, v) })
     val client = MongoClient(MongoClientURI(connStr))
     client.getDatabase(db).getCollection(collName).apply {
