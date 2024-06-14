@@ -11,12 +11,16 @@ fun countDevice(connStr: String) {
     val groups = collGroup.find(eq("groupType", "Cluster")).filterNotNull().map { it.getString("groupId")!! }
     val collDevice = client.getDatabase("rmmdb").getCollection("deviceLatest")
     fun devices(groupId: String, type: String) = collDevice.find(and(eq("type", type), eq("relatedGroupId", groupId)))
-    val s=groups.map { groupId ->
+    val sMfp = groups.map { groupId ->
         val nMfp = devices(groupId, "mfp").count()
-        val nDsp = devices(groupId, "display").count()
-        println("$groupId: mfp=$nMfp dpy=$nDsp total=${nMfp + nDsp}")
-        nMfp + nDsp
+        println("$groupId: mfp=$nMfp")
+        nMfp
     }.sum()
-    println(s)
+    val sDpy = groups.map { groupId ->
+        val nDsp = devices(groupId, "display").count()
+        println("$groupId:  dpy=$nDsp ")
+        nDsp
+    }.sum()
+    println("Total mfp=$sMfp  dpy=$sDpy")
     client.close()
 }
