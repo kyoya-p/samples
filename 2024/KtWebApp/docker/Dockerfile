@@ -10,6 +10,6 @@ WORKDIR /opt/samples/2024/KtWebApp
 RUN sh gradlew war
 
 FROM tomcat:jre17-temurin
-COPY --from=builder  /opt/samples/2024/KtWebApp/KtServlet/build/libs/KtServlet*.war /var/lib/tomcat9/webapps/
+COPY --from=builder  /opt/samples/2024/KtWebApp/KtServlet/build/libs/KtServlet*.war /usr/local/tomcat/webapps/KtServlet.war
 
-CMD "/usr/local/tomcat/bin/catalina.sh start"
+# CMD "/usr/local/tomcat/bin/catalina.sh start"
