@@ -3,7 +3,8 @@ import com.mongodb.MongoClientURI
 import com.mongodb.client.model.Filters.and
 import com.mongodb.client.model.Filters.eq
 
-fun countDocuments(connStr: String) {
+fun countDocuments() {
+    val connStr = System.getenv("CONNSTR")
     val client = MongoClient(MongoClientURI(connStr))
     val collGroup = client.getDatabase("rmmdb").getCollection("groupCollection")
     val groups = collGroup.find(eq("groupType", "Cluster")).filterNotNull().map { it.getString("groupId")!! }
