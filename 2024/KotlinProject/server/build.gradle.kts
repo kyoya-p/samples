@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
     application
-    war
+    id("org.gretty") version "4.0.3"
+    id("war")
 }
 
 group = "jp.wjg.shokkaa"
@@ -20,5 +21,11 @@ dependencies {
     testImplementation(libs.ktor.server.tests)
     testImplementation(libs.kotlin.test.junit)
 
-    providedCompile("javax.servlet:servlet-api:2.5")
+    implementation("io.ktor:ktor-server-servlet-jakarta:2.3.11")
+}
+
+gretty {
+    servletContainer = "tomcat10"
+    contextPath = "/"
+    logbackConfigFile = "src/main/resources/logback.xml"
 }

@@ -1,3 +1,11 @@
+# 参照
+
+- https://ktor.io/docs/server-war.html#configure-ktor
+
+
+
+----
+
 This is a Kotlin Multiplatform project targeting Web, Server.
 
 * `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
