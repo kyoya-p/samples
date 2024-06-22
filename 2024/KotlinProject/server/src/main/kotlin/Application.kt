@@ -16,6 +16,7 @@ fun Application.module() {
         get("/") {
             call.respondText("Ktor: ${Greeting().greet()}")
         }
-        staticRootFolder = ".".toPath().toFile()
+        staticFiles("/static", File("files"))
+//        staticRootFolder = ".".toPath().toFile()
     }
 }
