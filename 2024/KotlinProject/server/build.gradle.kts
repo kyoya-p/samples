@@ -7,7 +7,7 @@ plugins {
 group = "jp.wjg.shokkaa"
 version = "1.0.0"
 application {
-    mainClass.set("jp.wjg.shokkaa.ApplicationKt")
+    mainClass.set("ApplicationKt")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=${extra["io.ktor.development"] ?: "false"}")
 }
 
