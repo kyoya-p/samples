@@ -25,7 +25,7 @@ dependencies {
 }
 
 gretty {
+    httpPort = 8081
     servletContainer = "tomcat10"
-    contextPath = "/"
-    logbackConfigFile = "src/main/resources/logback.xml"
+//    logbackConfigFile = "src/main/resources/logback.xml"
 }
