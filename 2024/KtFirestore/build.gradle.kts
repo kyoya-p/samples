@@ -1,7 +1,14 @@
 plugins {
-    // this is necessary to avoid the plugins to be loaded multiple times
-    // in each subproject's classloader
-    alias(libs.plugins.jetbrainsCompose) apply false
-    alias(libs.plugins.compose.compiler) apply false
-    alias(libs.plugins.kotlinMultiplatform) apply false
+    kotlin("multiplatform") version "2.0.0"
+}
+
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    js {
+        browser {}
+        binaries.executable()
+    }
 }
