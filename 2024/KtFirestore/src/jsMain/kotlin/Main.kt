@@ -1,9 +1,16 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
+import kotlinx.browser.document
+import kotlinx.browser.window
+import kotlinx.html.a
+import kotlinx.html.div
+import kotlinx.html.dom.append
+import kotlinx.html.dom.create
+import kotlinx.html.p
 
 
 val options = FirebaseOptions(
-    apiKey = "AIzaSyCiiIwgR3-hqUrIeCCdmudOr2nKwmviSyU",
+    apiKey = "xxxxxxx-xxxxxxxx",
     projectId = "road-to-iot",
     databaseUrl = "https://road-to-iot.firebaseio.com",
     applicationId = "1:307495712434:web:e826b0016881e1b5f33bab",
@@ -13,8 +20,28 @@ lateinit var firestore: FirebaseFirestore
 
 suspend fun main() {
     initializeFirebase()
-    firestore.document("tmp/xxx").set(mapOf("aaa" to "bbb"))
+    firestore.document("tmp/12345").set(mapOf("addrbook" to listOf("aaa@bbb.jp")))
     println("Hello, World!")
+
+    val body = document.body ?: error("No body")
+    body.append {
+        div {
+            p {
+                +"Here is "
+                a("https://kotlinlang.org") { +"official Kotlin site" }
+            }
+        }
+    }
+    val timeP = document.create.p { +"Time: 0" }
+    body.append(timeP)
+    var time = 0
+    window.setInterval({
+        time++
+        timeP.textContent = "Time: $time"
+
+        return@setInterval null
+    }, 1000)
+
 }
 
 fun initializeFirebase(persistenceEnabled: Boolean = false) {
