@@ -2,15 +2,18 @@ import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
 import kotlinx.browser.window
-import kotlinx.html.a
-import kotlinx.html.div
+import kotlinx.coroutines.*
+import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
-import kotlinx.html.p
+import kotlinx.html.js.button
+import kotlinx.html.js.input
+import kotlinx.html.js.table
+import kotlinx.serialization.Serializable
 
 
 val options = FirebaseOptions(
-    apiKey = "xxxxxxx-xxxxxxxx",
+    apiKey = "AIzaSyCiiIwgR3-hqUrIeCCdmudOr2nKwmviSyU\n",
     projectId = "road-to-iot",
     databaseUrl = "https://road-to-iot.firebaseio.com",
     applicationId = "1:307495712434:web:e826b0016881e1b5f33bab",
@@ -18,17 +21,44 @@ val options = FirebaseOptions(
 
 lateinit var firestore: FirebaseFirestore
 
-suspend fun main() {
-    initializeFirebase()
-    firestore.document("tmp/12345").set(mapOf("addrbook" to listOf("aaa@bbb.jp")))
-    println("Hello, World!")
 
-    val body = document.body ?: error("No body")
+@OptIn(DelicateCoroutinesApi::class)
+suspend fun main() {
+    val app = Firebase.apps(Unit).firstOrNull() ?: Firebase.initialize(Unit, options)
+    val db = Firebase.firestore(app).apply {
+        settings = firestoreSettings(settings) {
+            cacheSettings = memoryCacheSettings {}
+//        cacheSettings = persistentCacheSettings {}
+        }
+    }
+    val name = document.create.input(name = "name")
+    val mail = document.create.input(name = "mail")
+    val book = document.create.table()
+
+    println("Start!!")
+    val body = document.body ?: error("body is null")
+
     body.append {
-        div {
-            p {
-                +"Here is "
-                a("https://kotlinlang.org") { +"official Kotlin site" }
+        div { +" Name:" }.append(name)
+        div { +" Mail:" }.append(mail)
+        button { +"Add" }.onclick = {
+            GlobalScope.launch {
+                db.collection("tmp").add(mapOf("name" to name.value, "mail" to mail.value))
+            }
+        }
+        div {}.append(book)
+    }
+
+
+    db.collection("tmp").snapshots.collect {
+        it.documents.forEachIndexed { i, ds ->
+            book.insertRow().apply {
+                insertCell().append {
+                    button { +"Del" }.onclick = { GlobalScope.launch { db.document(ds.id).delete() } }
+                }
+                insertCell().apply { textContent = ds.id }
+                insertCell().apply { textContent = ds.get<String>("name") }
+                insertCell().apply { textContent = ds.get<String>("mail") }
             }
         }
     }
@@ -38,25 +68,13 @@ suspend fun main() {
     window.setInterval({
         time++
         timeP.textContent = "Time: $time"
-
         return@setInterval null
     }, 1000)
-
 }
 
 fun initializeFirebase(persistenceEnabled: Boolean = false) {
 
-    val app = Firebase.apps(Unit).firstOrNull() ?: Firebase.initialize(
-        Unit, options
-//        FirebaseOptions(
-//            applicationId = "1:846484016111:ios:dd1f6688bad7af768c841a",
-//            apiKey = "AIzaSyCK87dcMFhzCz_kJVs2cT2AVlqOTLuyWV0",
-//            databaseUrl = "https://fir-kotlin-sdk.firebaseio.com",
-//            storageBucket = "fir-kotlin-sdk.appspot.com",
-//            projectId = "fir-kotlin-sdk",
-//            gcmSenderId = "846484016111"
-//        )
-    )
+    val app = Firebase.apps(Unit).firstOrNull() ?: Firebase.initialize(Unit, options)
 
     firestore = Firebase.firestore(app).apply {
 //        useEmulator(emulatorHost, 8080)
