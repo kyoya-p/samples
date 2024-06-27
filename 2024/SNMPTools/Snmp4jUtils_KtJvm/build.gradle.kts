@@ -10,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.9.0"
+val myVersion = "1.9.1"
 
 version = myVersion
 group = myGroupId
