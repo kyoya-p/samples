@@ -10,7 +10,7 @@ plugins {
 
 val myGroupId = "jp.wjg.shokkaa"
 val myArtifactId = "snmp4jutils"
-val myVersion = "1.9.0"
+val myVersion = "1.9.1"
 
 version = myVersion
 group = myGroupId
@@ -33,7 +33,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("mypackage.MainKt") // package mypackageかつファイル名main.ktのmain()を実行する場合
+    mainClass.set("jp.wjg.shokkaa.snmp4jutils.ScannerKt") // package mypackageかつファイル名main.ktのmain()を実行する場合
 }
 
 //val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
