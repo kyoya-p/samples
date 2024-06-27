@@ -23,7 +23,8 @@ import kotlin.time.measureTime
 
 @ExperimentalCoroutinesApi
 fun main(args: Array<String>): Unit = runBlocking {
-    val ipRangeSet = ULongRangeSet(args.map { arg -> arg.toRange() })
+    val ipRangeSet = ULongRangeSet(args.filter { it.take(1) != "x" }.map { arg -> arg.toRange() })
+    ipRangeSet.removeAll(args.filter { it.take(1) == "x" }.map { arg -> arg.drop(1).toRange() })
     println(ipRangeSet.joinToString(",") { "${it.start.toIpV4Adr()}..${it.endInclusive.toIpV4Adr()}" })
     val snmp = createDefaultSenderSnmpAsync()
     measureTime {
@@ -151,7 +152,7 @@ suspend fun Flow<Request>.uniCast(
     awaitClose {}
 }
 
- fun Flow<Request>.send(
+fun Flow<Request>.send(
     snmpAsync: SnmpAsync = createDefaultSenderSnmpAsync(),
     maxSessions: Int = 1_000,
 ): Flow<Result> = callbackFlow {
@@ -172,7 +173,7 @@ suspend fun Flow<Request>.uniCast(
         }
     }
     collect { req ->
-        val req0=req.copy()
+        val req0 = req.copy()
         print("\r${sem.availablePermits}   ")
         sem.acquire()
         snmp.send(req0.pdu, req0.target, req0, listener)
