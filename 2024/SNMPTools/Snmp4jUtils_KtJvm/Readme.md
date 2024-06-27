@@ -1,25 +1,17 @@
 Snmp4JUtils
 ===
 
-Publish
----
-#### ローカルリポジトリにpublish
-```
+# Publish
+
+```sh:ローカルリポジトリにpublish
 gradlew publishToMavenLocal
 ```
 
 
-Usage
----
-#### build.gradle.kts:
-```
-repositories{
-    mavenLocal()
-}
-dependencies {
-    implementation("jp.wjg.shokkaa:snmp4jutils:1.1")
-}
+# Run
 
+```sh:アドレス範囲検索
+gradlew run --args "1.2.3.1-1.2.3.100 1.2.3.51-1.2.3.151"
 ```
 
 
