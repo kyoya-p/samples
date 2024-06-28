@@ -13,10 +13,10 @@ import kotlinx.html.js.thead
 
 
 val options = FirebaseOptions(
-    apiKey = "xxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxx",
-    projectId = "xxxxxx",
+    apiKey = "xxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxx",
+    projectId = "road-to-iot",
     databaseUrl = "https://road-to-iot.firebaseio.com",
-    applicationId = "1:xxxxxxxxxxx:web:xxxxxxxxxxxxxxxxxxxx",
+    applicationId = "1:307495712434:web:638b142c284daabef33bab",
 )
 
 @OptIn(DelicateCoroutinesApi::class)
