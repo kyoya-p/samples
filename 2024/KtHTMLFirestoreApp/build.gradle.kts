@@ -1,4 +1,3 @@
-import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     kotlin("multiplatform") version "2.0.0"
