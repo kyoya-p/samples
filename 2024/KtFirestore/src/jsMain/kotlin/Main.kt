@@ -13,7 +13,7 @@ import kotlinx.html.js.thead
 
 
 val options = FirebaseOptions(
-    apiKey = "xxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxx",
+    apiKey = appKey,
     projectId = "road-to-iot",
     databaseUrl = "https://road-to-iot.firebaseio.com",
     applicationId = "1:307495712434:web:638b142c284daabef33bab",

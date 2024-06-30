@@ -24,7 +24,7 @@ kotlin {
     }
 }
 
-tasks["build"].doFirst {
+tasks["compileKotlinJs"].doFirst {
     copy {
         from("src/jsMain/kotlin/Properties.kt.tmpl")
         into("src/jsMain/kotlin/")
