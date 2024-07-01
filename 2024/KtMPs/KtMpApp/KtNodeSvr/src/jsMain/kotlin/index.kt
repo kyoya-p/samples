@@ -1,8 +1,7 @@
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
-import dev.gitlive.firebase.firestore.firestore
-import dev.gitlive.firebase.firestore.firestoreSettings
-import dev.gitlive.firebase.firestore.memoryCacheSettings
+import dev.gitlive.firebase.firestore.*
+import dev.gitlive.firebase.firestore.Timestamp.Companion.now
 import dev.gitlive.firebase.initialize
 
 external val process: dynamic
@@ -26,20 +25,23 @@ suspend fun main() {
     val db = Firebase.firestore(app)
     db.settings = firestoreSettings(db.settings) { cacheSettings = memoryCacheSettings { } }
 
-    println("X1")
-    db.collection("fireshell").add(mapOf("a" to "b"))
     val tgRef = db.collection("fireshell").document(tg)
-    val d = tgRef.get().data<Map<String, String>>()
-    tgRef.collection("requests").snapshots.collect {
-        it.documents.forEach {
-            println(it.id)
+    tgRef.collection("requests").add(mapOf("time" to now()))
+
+//    val d = tgRef.collection("requests").limit(1).snapshots.first().documents[0].data<Map<String, String>>()
+//    println(d)
+
+    tgRef.collection("requests")
+        .orderBy("time")
+        .where { "state" equalTo "1"  }
+        .limit(10)
+        .snapshots.collect {
+            it.documents.forEach { println(it.data<Map<String, String>>()) }
         }
-    }
 
 //    db.collection(tg).snapshots.collect { qs ->
 //        qs.documents.map { println("[${it.id}]") }
 //    }
-    println(d)
 
 }
 
