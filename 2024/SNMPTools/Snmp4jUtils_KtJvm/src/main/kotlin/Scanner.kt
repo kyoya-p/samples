@@ -28,7 +28,9 @@ fun main(args: Array<String>): Unit = runBlocking {
     println(ipRangeSet.joinToString(",") { "${it.start.toIpV4Adr()}..${it.endInclusive.toIpV4Adr()}" })
     val snmp = createDefaultSenderSnmpAsync()
     measureTime {
-        scanFlow(ipRangeSet, snmp, maxSessions = 5000).filterResponse().collect {
+        scanFlow(ipRangeSet, snmp, maxSessions = 1000) {
+            target = defaultSnmpFlowTarget(ip).apply { timeout = 5000; retries = 0 }
+        }.filterResponse().collect {
             println("${it.received.peerAddress} - ${it.received.response.variableBindings[0]}")
         }
     }.also { dt -> println("${ipRangeSet.totalLength()}/[$dt] (${ipRangeSet.totalLength() / dt.inWholeSeconds.toULong()}/s)") }
