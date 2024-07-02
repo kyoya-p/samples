@@ -10,7 +10,7 @@ suspend fun main() {
     val args = (process.argv as Array<String>).drop(2)
     val appKey = process.env.APPKEY as String
     val tg = args.getOrElse(0) { "default" }
-    val pw = args.getOrElse(1) { "xxxxxxxx" }
+    val pw = args.getOrElse(1) { secret }
 
     println("appKey=$appKey tg=$tg")
 
