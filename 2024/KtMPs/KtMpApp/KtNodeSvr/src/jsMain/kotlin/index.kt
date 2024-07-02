@@ -9,8 +9,7 @@ external val process: dynamic
 suspend fun main() {
     val args = (process.argv as Array<String>).drop(2)
     val appKey = process.env.APPKEY as String
-    val tg = args.getOrElse(0) { "default" }
-    val pw = args.getOrElse(1) { secret }
+    val (tg, pw) = args
 
     println("appKey=$appKey tg=$tg")
 
@@ -26,14 +25,16 @@ suspend fun main() {
     db.settings = firestoreSettings(db.settings) { cacheSettings = memoryCacheSettings { } }
 
     val tgRef = db.collection("fireshell").document(tg)
-    tgRef.collection("requests").add(mapOf("time" to now()))
+    val d = tgRef.get().data<Map<String, String>>()
+    println(d)
 
+//    tgRef.collection("requests").add(mapOf("time" to now()))
 //    val d = tgRef.collection("requests").limit(1).snapshots.first().documents[0].data<Map<String, String>>()
 //    println(d)
 
     tgRef.collection("requests")
-        .orderBy("time")
-        .where { "state" equalTo "1"  }
+        .orderBy("time",Direction.ASCENDING)
+        .where { "state" equalTo "1" }
         .limit(10)
         .snapshots.collect {
             it.documents.forEach { println(it.data<Map<String, String>>()) }
