@@ -23,9 +23,10 @@ kotlin {
 
 tasks["compileKotlinJs"].doFirst {
     copy {
-        from("src/jsMain/kotlin/Properties.kt.tmpl")
+        from("src/jsMain/kotlin/secret.kt.tmpl")
         into("src/jsMain/kotlin/")
-        rename { "Properties.kt" }
-        filter { it.replace("$[APPKEY]", System.getenv("APPKEY") ?: "'export APPKEY=...'") }
+        rename { "secret.kt" }
+        val secret = System.getenv("SECRET") ?: throw Exception("'export SECRET=xxx..' before.")
+        filter { it.replace("$[SECRET]", secret) }
     }
 }
