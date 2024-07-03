@@ -1,7 +1,6 @@
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.firestore.*
-import dev.gitlive.firebase.firestore.Timestamp.Companion.now
 import dev.gitlive.firebase.initialize
 
 external val process: dynamic
@@ -33,16 +32,27 @@ suspend fun main() {
 //    println(d)
 
     tgRef.collection("requests")
-        .orderBy("time",Direction.ASCENDING)
-        .where { "state" equalTo "1" }
+        .orderBy("time", Direction.ASCENDING)
+        .where { "state" equalTo "" }
         .limit(10)
         .snapshots.collect {
-            it.documents.forEach { println(it.data<Map<String, String>>()) }
+            it.documents.forEach { execCommand(it.data<Map<String, String>>()) }
         }
-
-//    db.collection(tg).snapshots.collect { qs ->
-//        qs.documents.map { println("[${it.id}]") }
-//    }
-
 }
 
+external fun require(module: String): dynamic
+
+val childProcess = require("child_process")
+val execa = require("execa")
+
+suspend fun execCommand(data: Map<String, String>) {
+    val cmd = data["command"] ?: ""
+    val args = (data["command"] ?: "").split(" ").toTypedArray()
+    println(cmd)
+//    val r = childProcess.spawn(cmd)
+    val r = execa.execa(cmd).stdout
+    println(r)
+    val mData = data.toMutableMap()
+    mData["state"] = "x"
+
+}
