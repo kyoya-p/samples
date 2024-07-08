@@ -1,8 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 
 plugins {
     kotlin("multiplatform") version "2.0.0"
-//    kotlin("plugin.serialization") version "1.9.20"
+//    kotlin("plugin.serialization") version "2.0.0"
 }
 
 repositories {

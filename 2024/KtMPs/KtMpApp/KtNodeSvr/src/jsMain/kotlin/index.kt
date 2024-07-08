@@ -35,18 +35,46 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
     ls.on("close") { code -> cont.resume(SpawnResult(code, stdout.joinToString(), stderr.joinToString())) }
 }
 
+data class Request(
+    val isComplete: Boolean,
+    val cmd: String,
+    val time: Timestamp,
+    val result: SpawnResult?,
+)
+
+suspend fun DocumentReference.getRequest() = get().data<Map<String, Any?>>().let {
+    Request(
+        isComplete = it["isComplete"] as Boolean,
+        cmd = it["cmd"] as String,
+        time = it["time"] as Timestamp,
+        result = it["result"] as SpawnResult?,
+    )
+}
+
+suspend fun DocumentReference.setRequest(r: Request) = update(
+    "isComplete" to r.isComplete,
+    "cmd" to r.cmd,
+    "time" to r.time,
+    "result" to r.result,
+)
+
+val sampleRequest = Request(isComplete = false, cmd = "ls -l", time = Timestamp.now(), result = null)
 
 suspend fun main() = runCatching {
     val args = (process.argv as Array<String>).drop(2)
     val (tg, pw) = args
     val tgRef = db.collection("fireshell").document(tg)
+
+    tgRef.collection("requests").document("a").setRequest(sampleRequest) // test data
+
     tgRef.collection("requests").orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }
         .limit(10).snapshots.collect {
+            println("X2")
             it.documents.forEach { ds ->
-                val cmd = ds.get<String>("cmd")
-                val res = spawn(cmd)
+                val req = ds.reference.getRequest()
+                val res = spawn(req.cmd)
                 println(res)
-                ds.reference.update("isComplete" to true, "result.stdout" to res.stdout, "result.stderr" to res.stderr)
+                ds.reference.setRequest(req.copy(result = res, isComplete = true))
             }
         }
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }
