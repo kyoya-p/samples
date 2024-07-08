@@ -18,6 +18,7 @@ import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
 import java.util.concurrent.Semaphore
+import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
@@ -158,17 +159,21 @@ class ScannerTest {
     @Test
     fun simpleSNMP4j_loadtest(): Unit {
         val snmp = SnmpBuilder().udp().v1().v3().build()
-        val noTaget = InetAddress.getByName("127.0.0.1")
-//        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 5 }
-
         var ci = 0
         var co = 0
-        val t = 16_777_216 / 100  // class-A
-        val range ="10.32.0.0-10.63.255.255".toRange()
+        val range = "10.64.0.0-10.127.255.255".toRange()
 //        val range ="10.32.0.0-10.63.255.255".toRange()
-        val s = 100_000
+        val s = 20_480
         val sem = Semaphore(s)
+        print("\r$ci->$co [${ci - co}] : ")
+        thread {
+            while (true) {
+                print("\r$ci->$co [${ci - co}] : ")
+                Thread.sleep(500)
+            }
+        }
         for (i in range) {
+//            print("\ri $ci->$co [${ci - co}] : ")
             val tg = defaultScanTarget(i.toIpV4Adr()).apply { timeout = 5000; retries = 5 }
 
             sem.acquire()
@@ -178,14 +183,16 @@ class ScannerTest {
                 null,
                 object : ResponseListener {
                     override fun <A : Address?> onResponse(p0: ResponseEvent<A>?) {
+//                        snmp.cancel(p0?.request,this)
                         ++co
-                        print("$ci->$co [${co - ci}]   \r")
+//                        print("\ro $ci->$co [${ci - co}] : ")
                         sem.release()
                     }
                 })
             ++ci
         }
         sem.acquire(s)
-        print("$ci->$co [${co - ci}]  \r")
     }
 }
+
+

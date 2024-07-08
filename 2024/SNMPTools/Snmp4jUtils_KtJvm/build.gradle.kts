@@ -24,7 +24,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json/1.6.2
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
-    implementation("org.snmp4j:snmp4j:3.7.8") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+    implementation("org.snmp4j:snmp4j:3.8.2") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
     implementation("com.charleskorn.kaml:kaml:0.57.0") // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.1") // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
