@@ -2,7 +2,9 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.firestore.*
 import dev.gitlive.firebase.initialize
+import kotlinx.serialization.Serializable
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
@@ -22,9 +24,11 @@ val db = Firebase.firestore(app).apply {
 
 external fun require(module: String): dynamic
 
+@Serializable
 data class SpawnResult(val exitCode: Int, val stdout: String, val stderr: String)
 
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
+    var r = 0
     val child_process = require("child_process")
     val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
     val ls = child_process.spawn(cmd, args)
@@ -32,49 +36,39 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
     val stderr = mutableListOf<String>()
     ls.stdout.on("data") { data -> stdout.add("$data") }
     ls.stderr.on("data", { data -> stderr.add("$data") })
-    ls.on("close") { code -> cont.resume(SpawnResult(code, stdout.joinToString(), stderr.joinToString())) }
+    ls.on("close") { c -> if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
+    ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
 }
 
+@Serializable
 data class Request(
     val isComplete: Boolean,
     val cmd: String,
     val time: Timestamp,
-    val result: SpawnResult?,
+    val result: SpawnResult? = null,
+    val exception: String? = null,
 )
 
-suspend fun DocumentReference.getRequest() = get().data<Map<String, Any?>>().let {
-    Request(
-        isComplete = it["isComplete"] as Boolean,
-        cmd = it["cmd"] as String,
-        time = it["time"] as Timestamp,
-        result = it["result"] as SpawnResult?,
-    )
-}
-
-suspend fun DocumentReference.setRequest(r: Request) = update(
-    "isComplete" to r.isComplete,
-    "cmd" to r.cmd,
-    "time" to r.time,
-    "result" to r.result,
-)
-
-val sampleRequest = Request(isComplete = false, cmd = "ls -l", time = Timestamp.now(), result = null)
+val sampleRequest = Request(isComplete = false, cmd = "aaa -l", time = Timestamp.now())
 
 suspend fun main() = runCatching {
     val args = (process.argv as Array<String>).drop(2)
     val (tg, pw) = args
-    val tgRef = db.collection("fireshell").document(tg)
+    val refTg = db.collection("fireshell").document(tg)
 
-    tgRef.collection("requests").document("a").setRequest(sampleRequest) // test data
+    val refReq = refTg.collection("requests").document("a")
+    refReq.set(sampleRequest) // test data
 
-    tgRef.collection("requests").orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }
+    refTg.collection("requests").orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }
         .limit(10).snapshots.collect {
-            println("X2")
             it.documents.forEach { ds ->
-                val req = ds.reference.getRequest()
-                val res = spawn(req.cmd)
-                println(res)
-                ds.reference.setRequest(req.copy(result = res, isComplete = true))
+                val req = ds.data<Request>()
+                runCatching {
+                    val res = spawn(req.cmd)
+                    ds.reference.set<Request>(req.copy(isComplete = true, result = res))
+                }.onFailure {
+                    ds.reference.set<Request>(req.copy(isComplete = true, exception = it.message))
+                }
             }
         }
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }
