@@ -32,18 +32,20 @@ suspend fun main() {
     val book = document.create.table().apply { addClass("table") }
     val body = document.body ?: error("body is null")
     body.append(book)
-    db.collection("tmp").snapshots.collect { qs ->
-        book.innerHTML = ""
-        book.tHead = document.create.thead { tr { td {};td { +"To do List" } } }
-        book.insertRow().apply {
-            insertCell().append { button { +"Add" }.onclick = { addItem(action.value) } }
-            insertCell().append(action)
-        }
-        qs.documents.forEach { ds ->
+    db.collection("fireshell").document("default")
+        .collection("requests").orderBy("time",Direction.ASCENDING)
+        .snapshots.collect { qs ->
+            book.innerHTML = ""
+            book.tHead = document.create.thead { tr { td {};td { +"To do List" } } }
             book.insertRow().apply {
-                insertCell().append { button { +"Del" }.onclick = { delItem(ds.id) } }
-                insertCell().apply { textContent = ds.get<String?>("action") ?: "[No Action]" }
+                insertCell().append { button { +"Add" }.onclick = { addItem(action.value) } }
+                insertCell().append(action)
+            }
+            qs.documents.forEach { ds ->
+                book.insertRow().apply {
+                    insertCell().append { button { +"Del" }.onclick = { delItem(ds.id) } }
+                    insertCell().apply { textContent = ds.get<String?>("cmd") }
+                }
             }
         }
-    }
 }

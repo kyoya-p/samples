@@ -56,8 +56,9 @@ suspend fun main() = runCatching {
     val (tg, pw) = args
     val refTg = db.collection("fireshell").document(tg)
 
+    // test data
     val refReq = refTg.collection("requests").document("a")
-    refReq.set(sampleRequest) // test data
+    refReq.set(sampleRequest)
 
     refTg.collection("requests").orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }
         .limit(10).snapshots.collect {

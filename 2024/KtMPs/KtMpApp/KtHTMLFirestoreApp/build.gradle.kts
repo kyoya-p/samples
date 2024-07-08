@@ -28,6 +28,6 @@ tasks["compileKotlinJs"].doFirst {
         from("src/jsMain/kotlin/Properties.kt.tmpl")
         into("src/jsMain/kotlin/")
         rename { "Properties.kt" }
-        filter { it.replace("$[APPKEY]", System.getenv("APPKEY") ?: "'export APPKEY=...'") }
+        filter { it.replace("$[APPKEY]", System.getenv("APPKEY") ?: throw Exception("Set the App-key of Firebase in the APPKEY environment variable.")) }
     }
 }
