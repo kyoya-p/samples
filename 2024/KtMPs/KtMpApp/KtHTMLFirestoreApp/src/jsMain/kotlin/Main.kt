@@ -21,31 +21,40 @@ val options = FirebaseOptions(
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
+    println("L1")
     val app = Firebase.initialize(Unit, options)
     val db = Firebase.firestore(app)
     db.settings = firestoreSettings(db.settings) { cacheSettings = persistentCacheSettings { } }
 
-    fun addItem(item: String) = GlobalScope.launch { db.collection("tmp").add(mapOf("action" to item)) }
-    fun delItem(id: String) = GlobalScope.launch { db.collection("tmp").document(id).delete() }
+    val refTgReqs = db.collection("fireshell").document("default").collection("requests")
 
-    val action = document.create.input(name = "name")
+    fun addItem(cmd: String) = GlobalScope.launch { refTgReqs.add(Request(cmd)) }
+    fun delItem(id: String) = GlobalScope.launch { refTgReqs.document(id).delete() }
+
+    val action = document.create.input(name = "name").apply { onkeyup = { if (it.key == "Enter") addItem(value) } }
     val book = document.create.table().apply { addClass("table") }
     val body = document.body ?: error("body is null")
     body.append(book)
-    db.collection("fireshell").document("default")
-        .collection("requests").orderBy("time",Direction.ASCENDING)
-        .snapshots.collect { qs ->
-            book.innerHTML = ""
-            book.tHead = document.create.thead { tr { td {};td { +"To do List" } } }
+    refTgReqs.orderBy("time", Direction.DESCENDING).snapshots.collect { qs ->
+        book.innerHTML = ""
+        book.tHead =
+            document.create.thead { tr { td {};td { +"COMMAND" };td { +"OUTPUT" };td { +"CODE" };td { +"EXCEPTION" } } }
+        book.insertRow().apply {
+            insertCell().append { button { +"ENTER" }.onclick = { addItem(action.value) } }
+            insertCell().append(action)
+            insertCell()
+            insertCell()
+            insertCell()
+        }
+        qs.documents.forEach { ds ->
+            val req = ds.data<Request>()
             book.insertRow().apply {
-                insertCell().append { button { +"Add" }.onclick = { addItem(action.value) } }
-                insertCell().append(action)
-            }
-            qs.documents.forEach { ds ->
-                book.insertRow().apply {
-                    insertCell().append { button { +"Del" }.onclick = { delItem(ds.id) } }
-                    insertCell().apply { textContent = ds.get<String?>("cmd") }
-                }
+                insertCell().append { button { +"DEL" }.onclick = { delItem(ds.id) } }
+                insertCell().apply { textContent = req.cmd }
+                insertCell().apply { textContent = req.result?.stdout }
+                insertCell().apply { textContent = "${req.result?.exitCode}" }
+                insertCell().apply { textContent = req.result?.stderr }
             }
         }
+    }
 }
