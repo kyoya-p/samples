@@ -21,10 +21,13 @@ val options = FirebaseOptions(
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
-    println("L1")
     val app = Firebase.initialize(Unit, options)
     val db = Firebase.firestore(app)
     db.settings = firestoreSettings(db.settings) { cacheSettings = persistentCacheSettings { } }
+
+//    val a=db.collection("fireshell").document("default")
+//    println("a.get()")
+//    println(a.get())
 
     val refTgReqs = db.collection("fireshell").document("default").collection("requests")
 
