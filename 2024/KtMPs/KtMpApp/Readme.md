@@ -21,5 +21,6 @@ sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
 # KtNodeSvr Run
 ```sh
 export APPKEY=<Firebase-App-Key>
+export TARGETID=<Document Id of target>
 node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js <deviceId> <secret>
 ```
