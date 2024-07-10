@@ -24,3 +24,10 @@ export APPKEY=<Firebase-App-Key>
 export TARGETID=<Document Id of target>
 node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js <deviceId> <secret>
 ```
+
+# KtNodeSvr Docker build
+```sh
+cd KtNodeSvr/docker
+sh build.sh
+
+```
