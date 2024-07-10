@@ -3,11 +3,13 @@ FROM ubuntu:24.04 as b1
 WORKDIR /opt
 RUN apt update && apt upgrade -y
 RUN apt install -y openjdk-17-jre-headless git
+RUN apt install -y npm wget && npm -g i n && n latest
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/KtMPs/KtMpApp
 RUN sh gradlew kotlinNpmInstall
-#RUN sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
-#RUN ls /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/kotlin
+RUN ls -R /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/
+RUN sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
+RUN ls -R /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/
 #
 #FROM gcr.io/distroless/nodejs22-debian12
 #WORKDIR /opt
