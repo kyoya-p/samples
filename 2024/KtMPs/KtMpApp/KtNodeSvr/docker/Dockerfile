@@ -10,11 +10,11 @@ RUN sh gradlew kotlinNpmInstall
 RUN ls -R /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/
 RUN sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
 RUN ls -R /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/
-#
-#FROM gcr.io/distroless/nodejs22-debian12
-#WORKDIR /opt
-#COPY --from=busybox /bin /bin
-#COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/ /opt/
-#ENV APPKEY=""
-#ENV TARGETID=""
-#ENTRYPOINT ["/nodejs/bin/node", "/opt/kotlin/KtMpApp-KtNodeSvr.js"]
+
+FROM gcr.io/distroless/nodejs22-debian12
+WORKDIR /opt
+COPY --from=busybox /bin /bin
+COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/ /opt/
+ENV APPKEY=""
+ENV TARGETID=""
+ENTRYPOINT ["/nodejs/bin/node", "/opt/kotlin/KtMpApp-KtNodeSvr.js"]
