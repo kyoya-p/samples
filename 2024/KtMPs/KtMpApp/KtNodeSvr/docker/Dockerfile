@@ -1,10 +1,10 @@
 FROM ubuntu:24.04 as b1
 
 WORKDIR /opt
-RUN apt update && apt upgrade -y
-RUN apt install -y openjdk-17-jre-headless git
-RUN apt install -y npm wget && npm -g i n && n latest
-RUN git clone --depth 1 https://github.com/kyoya-p/samples
+RUN apt update && apt upgrade -y \
+ && apt install -y openjdk-17-jre-headless git \
+ && apt install -y npm wget && npm -g i n && n latest \
+ && git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/KtMPs/KtMpApp
 RUN sh gradlew kotlinNpmInstall
 RUN ls -R /opt/samples/2024/KtMPs/KtMpApp/build/js/packages/KtMpApp-KtNodeSvr/
