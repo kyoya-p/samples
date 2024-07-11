@@ -24,9 +24,11 @@ val db = Firebase.firestore(app).apply {
 external fun require(module: String): dynamic
 
 suspend fun main() = runCatching {
-//    val args = (process.argv as Array<String>).drop(2)
-//    val (tg, pw) = args
+//  val args = (process.argv as Array<String>).drop(2)
+//  val (tg, pw) = args
     val tg=process.env.TARGETID as String
+    println("TARGETID=$tg")
+
     val refRqs = db.collection("fireshell").document(tg).collection("requests")
 
     refRqs.orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }.limit(10).snapshots.collect {
