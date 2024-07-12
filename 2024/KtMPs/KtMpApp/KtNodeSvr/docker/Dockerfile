@@ -14,7 +14,7 @@ RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
 
 FROM gcr.io/distroless/nodejs22-debian12
 WORKDIR /opt
-#COPY --from=busybox /bin /bin
+COPY --from=busybox /bin /bin
 #COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js /opt/
 COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js /opt/
 
