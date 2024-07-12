@@ -46,6 +46,7 @@ suspend fun main() = runCatching {
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }
 
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
+    println("L0")
     var r = 0
     val child_process = require("child_process")
     println("L1")
