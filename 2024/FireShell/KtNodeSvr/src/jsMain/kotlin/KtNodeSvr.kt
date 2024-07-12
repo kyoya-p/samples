@@ -26,7 +26,7 @@ external fun require(module: String): dynamic
 suspend fun main() = runCatching {
 //  val args = (process.argv as Array<String>).drop(2)
 //  val (tg, pw) = args
-    val tg=process.env.TARGETID as String
+    val tg = process.env.TARGETID as String
     println("TARGETID=$tg")
 
     val refRqs = db.collection("fireshell").document(tg).collection("requests")
@@ -45,12 +45,12 @@ suspend fun main() = runCatching {
     }
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }
 
+val child_process = require("child_process")
+
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
-        println("L0")
+    println("L0")
     runCatching {
         var r = 0
-
-        val child_process = require("child_process")
         println("L1")
         val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
         println("L2")
