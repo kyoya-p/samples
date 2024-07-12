@@ -15,7 +15,8 @@ sh gradlew jsBrwserDistribution
 # KtNodeSvr Build
 ```sh
 sh gradlew kotlinNpmInstall
-sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
+#sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
+sh gradlew :KtNodeSvr:jsBrowserWebpack
 ```
 
 # KtNodeSvr Run
