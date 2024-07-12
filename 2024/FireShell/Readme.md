@@ -24,12 +24,13 @@ sh gradlew :KtNodeSvr:jsBrowserWebpack
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Document Id of target>
 node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js
+node KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js
 ```
 
 # KtNodeSvr Docker
 ```sh:Build
 cd KtNodeSvr/docker
-sudo docker build --tag kyoyap/devenv:firesh .
+sudo docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
 ```
 ```sh:Run 
 export APPKEY=<Firebase-App-Key>
