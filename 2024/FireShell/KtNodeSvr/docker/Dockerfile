@@ -12,9 +12,11 @@ RUN sh gradlew kotlinNpmInstall
 #RUN sh ./gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
 RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
 
-FROM gcr.io/distroless/nodejs22-debian12
+#FROM gcr.io/distroless/nodejs22-debian12
+FROM alpine
+RUN apk add docker
 WORKDIR /opt
-COPY --from=busybox /bin /bin
+#COPY --from=busybox /bin /bin
 #COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js /opt/
 COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js /opt/
 
