@@ -48,12 +48,20 @@ suspend fun main() = runCatching {
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
     var r = 0
     val child_process = require("child_process")
+    println("L1")
     val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
+    println("L2")
     val ls = child_process.spawn(cmd, args)
+    println("L3")
     val stdout = mutableListOf<String>()
+    println("L4")
     val stderr = mutableListOf<String>()
+    println("L5")
     ls.stdout.on("data") { data -> stdout.add("$data") }
     ls.stderr.on("data", { data -> stderr.add("$data") })
-    ls.on("close") { c -> if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
-    ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
+    ls.on("close") { c ->     println("L6")
+        if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
+    ls.on("error") { err ->
+        println("L7")
+        if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
 }
