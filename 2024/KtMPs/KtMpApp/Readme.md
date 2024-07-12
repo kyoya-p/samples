@@ -16,7 +16,9 @@ sh gradlew jsBrwserDistribution
 ```sh
 sh gradlew kotlinNpmInstall
 sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
+sh gradlew :KtNodeSvr:jsBrowserWebpack
 ```
+成果物: `KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js`
 
 # KtNodeSvr Run
 ```sh
@@ -24,7 +26,9 @@ export APPKEY=<Firebase-App-Key>
 export TARGETID=<Document Id of target>
 node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js
 ```
-
+```
+node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js
+```
 # KtNodeSvr Docker
 ```sh:Build
 cd KtNodeSvr/docker
