@@ -13,8 +13,11 @@ RUN sh gradlew kotlinNpmInstall
 RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
 
 #FROM gcr.io/distroless/nodejs22-debian12
-FROM alpine
-RUN apk add docker
+FROM ubuntu:24.04
+RUN apt update && apt upgrade -y \
+ && apt install -y wget docker.io npm \
+ && npm i -g n \
+ && n latest
 WORKDIR /opt
 #COPY --from=busybox /bin /bin
 #COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js /opt/
@@ -23,4 +26,5 @@ COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/KtNodeSvr/build/kotlin-webpack/js
 ENV APPKEY=""
 ENV TARGETID=""
 #ENTRYPOINT ["/nodejs/bin/node", "/opt/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js"]
-ENTRYPOINT ["/nodejs/bin/node", "/opt/KtNodeSvr.js"]
+#ENTRYPOINT ["/nodejs/bin/node", "/opt/KtNodeSvr.js"]
+CMD ["node", "/opt/KtNodeSvr.js"]

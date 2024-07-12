@@ -30,8 +30,9 @@ node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js
 cd KtNodeSvr/docker
 sudo docker build --tag kyoyap/devenv:firesh .
 ```
-```sh:Run
+```sh:Run 
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Target-DocumentId>
 sudo docker run -e APPKEY -e TARGETID kyoyap/devenv:firesh 
 ```
+
