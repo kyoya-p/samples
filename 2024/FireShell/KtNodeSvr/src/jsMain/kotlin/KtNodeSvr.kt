@@ -46,6 +46,7 @@ suspend fun main() = runCatching {
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }
 
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
+<<<<<<< HEAD
     println("L0")
     var r = 0
     val child_process = require("child_process")
@@ -66,3 +67,30 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
         println("L7")
         if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
 }
+=======
+    runCatching {
+        var r = 0
+
+        val child_process = require("child_process")
+        println("L1")
+        val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
+        println("L2")
+        val ls = child_process.spawn(cmd, args)
+        println("L3")
+        val stdout = mutableListOf<String>()
+        println("L4")
+        val stderr = mutableListOf<String>()
+        println("L5")
+        ls.stdout.on("data") { data -> stdout.add("$data") }
+        ls.stderr.on("data", { data -> stderr.add("$data") })
+        ls.on("close") { c ->
+            println("L6")
+            if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString()))
+        }
+        ls.on("error") { err ->
+            println("L7")
+            if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}"))
+        }
+    }.onFailure { it.printStackTrace() }
+}
+>>>>>>> 98e49c3eb0bd9f9f471bb9b3e8244a3243b28184
