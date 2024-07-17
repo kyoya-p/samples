@@ -7,7 +7,7 @@ import kotlinx.dom.addClass
 import kotlinx.html.dom.create
 import kotlinx.html.js.input
 import kotlinx.html.js.table
-import kotlinx.html.js.button
+import org.w3c.dom.events.KeyboardEvent
 
 
 val options = FirebaseOptions(
@@ -28,9 +28,18 @@ suspend fun main() {
     val body = document.body ?: error("body is null")
     val book = document.create.table().apply { addClass("table") }
 
-    val action = document.create.input().apply { onkeyup = { if (it.key == "Enter") ctr.pullImage(value) {} } }
+    val pullImageId = document.create.input().apply { onkeyup = { if (it.key == "Enter") ctr.pullImage(value) {} } }
+    val targetId = document.create.input(name = "targetId")
+        .apply {
+            defaultValue = "default"; onkeyup = {
+            if (it.key == "Enter") {
+                document.cookie=value
+            }
+        }
+        }
 
-    body.append(action)
+    body.append(targetId)
+    body.append(pullImageId)
     body.append(book)
 
 //    document.create.input(name = "name").apply { onkeyup = { if (it.key == "Enter") addItem(value) }
@@ -40,7 +49,7 @@ suspend fun main() {
         qs.documents.forEach { ds ->
             book.insertRow().apply {
                 insertCell().textContent = ds.get<String>("name")
-                insertCell().append { button { +"DEL" }}
+//                insertCell().append { button { +"DEL" }}
             }
         }
     }

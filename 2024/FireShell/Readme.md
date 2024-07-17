@@ -30,11 +30,11 @@ node KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js
 # KtNodeSvr Docker
 ```sh:Build
 cd KtNodeSvr/docker
-sudo docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
 ```
 ```sh:Run 
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Target-DocumentId>
-sudo docker run -e APPKEY -e TARGETID kyoyap/devenv:firesh 
+sudo -E docker run -e APPKEY -e TARGETID kyoyap/devenv:firesh 
 ```
 
