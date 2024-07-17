@@ -1,13 +1,14 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.dom.addClass
+import kotlinx.html.*
+import kotlinx.html.dom.append
 import kotlinx.html.dom.create
-import kotlinx.html.js.input
-import kotlinx.html.js.table
-import org.w3c.dom.events.KeyboardEvent
+import kotlinx.html.js.*
 
 
 val options = FirebaseOptions(
@@ -21,30 +22,35 @@ val db = Firebase.firestore(app).apply {
     settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
-    val ctr = Ctr(db.collection("fireshell").document("default"))
+    val cookies = document.cookie.split(";").map { it.trim().split("=", limit = 2) }.associate { it[0] to it[1] }
+    fun ctr(targetId: String) = Ctr(db.collection("fireshell").document(targetId))
 
     val body = document.body ?: error("body is null")
     val book = document.create.table().apply { addClass("table") }
 
-    val pullImageId = document.create.input().apply { onkeyup = { if (it.key == "Enter") ctr.pullImage(value) {} } }
-    val targetId = document.create.input(name = "targetId")
-        .apply {
-            defaultValue = "default"; onkeyup = {
-            if (it.key == "Enter") {
-                document.cookie=value
-            }
-        }
-        }
+    fun field(name: String, default: String, op: (String) -> Unit) = document.create.input(name = name).apply {
+        defaultValue = cookies[name] ?: default
+        onchange = { document.cookie = "$name=$value"; op(value) }
+    }
 
-    body.append(targetId)
-    body.append(pullImageId)
-    body.append(book)
+    val targetId = field("targetId", "default") {}
+    val imageId = field("newImageId", "") {}
+
+    body.appendChild(targetId)
+    body.appendChild(imageId)
+    body.append {
+        form {
+            id = "form1"
+            onSubmitFunction = {}
+        }
+        button { +"PULL" }.onclick = { ctr(targetId.value).pullImage(imageId.value) }
+    }
+    body.appendChild(book)
 
 //    document.create.input(name = "name").apply { onkeyup = { if (it.key == "Enter") addItem(value) }
-    ctr.updateImageInfo()
-    ctr.imagesSnapshots.collect { qs ->
+    ctr(targetId.value).updateImageInfo()
+    ctr(targetId.value).imagesSnapshots.collect { qs ->
         book.innerHTML = ""
         qs.documents.forEach { ds ->
             book.insertRow().apply {
@@ -83,20 +89,22 @@ suspend fun CollectionReference.addItem(cmd: String) = add(Request(cmd))
 class Ctr(val refTarget: DocumentReference) {
     @OptIn(DelicateCoroutinesApi::class)
     fun ctr(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.async {
-        val r = refTarget.collection("requests").add(Request("ctr $cmd")).snapshots()
-            .map { it.data<Request>() }.filter { it.isComplete }.map { it.result }.filterNotNull().first()
+        val r = refTarget.collection("requests").add(Request("ctr $cmd")).snapshots().map { it.data<Request>() }
+            .filter { it.isComplete }.map { it.result }.filterNotNull().first()
         op(r)
     }
 
     fun pullImage(
-        image: String, tag: String, registory: String = "docker.io", namespace: String = "library",
-        cred: String? = null, op: (SpawnResult) -> Unit
+        image: String,
+        tag: String,
+        registory: String = "docker.io",
+        namespace: String = "library",
+        cred: String? = null,
+        op: (SpawnResult) -> Unit = {}
     ) = pullImage("$registory/$namespace/$image:$tag", cred, op)
 
-    fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit) =
-        ctr("i pull ${cred ?: "-u $cred"} $id") {
-
-        }
+    fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit = {}) =
+        ctr("i pull ${if (cred != null && cred != "") "-u $cred" else ""} $id", op)
 
     fun updateImageInfo() = ctr("i ls -q") {
         val refImgs = refTarget.collection("images")
