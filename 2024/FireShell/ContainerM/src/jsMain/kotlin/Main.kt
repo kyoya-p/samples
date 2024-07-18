@@ -1,6 +1,7 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.dom.addClass
@@ -8,6 +9,7 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
+import org.w3c.dom.HTMLInputElement
 
 val options = FirebaseOptions(
     apiKey = appKey,
@@ -21,70 +23,47 @@ val db = Firebase.firestore(app).apply {
 }
 
 suspend fun main() {
+    val queryParameters = window.location.search.replaceFirst("?", "").split("&")
+        .map { it.split("=") }.associate { it[0] to (it.getOrElse(1) { "" }) }
     val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }
         .map { it.trim().split("=", limit = 2) }.associate { it[0] to (it.getOrElse(1) { "" }) }
 
+    val targetId = queryParameters.getOrElse("tg") { "default" }
     fun ctr(targetId: String) = Ctr(db.collection("fireshell").document(targetId))
 
     val body = document.body ?: error("body is null")
     val book = document.create.table().apply { addClass("table") }
 
-    fun field(name: String, default: String, op: (String) -> Unit) = document.create.input(name = name).apply {
-        defaultValue = cookies[name] ?: default
-        onchange = { document.cookie = "$name=$value"; op(value) }
-    }
-
-    val targetId = field("targetId", "default") {}
-    val imageId = field("newImageId", "") {}
-
-    body.appendChild(targetId)
-    body.appendChild(imageId)
-    body.append {
-        form {
-            id = "form1"
-            onSubmitFunction = {}
+    fun field(name: String, default: String, op: HTMLInputElement.() -> Unit = {}) =
+        document.create.input(name = name).apply {
+            defaultValue = cookies[name] ?: default
+            onchange = { document.cookie = "$name=$value";Unit }
+            op()
         }
-        button { +"PULL" }.onclick = { ctr(targetId.value).pullImage(imageId.value) }
-    }
+
+    val imageId = field("newImageId", "")
+    val loginId = field("loginId", "")
+    val cred = field("cred", "") { type = "password" }
+
+    body.append { p { +"Target: $targetId" } }
+    body.appendChild(imageId)
+    body.appendChild(loginId)
+    body.appendChild(cred)
+    body.append { button { +"PULL" }.onclick = { ctr(targetId).pullImage(imageId.value) } }
     body.appendChild(book)
 
-//    document.create.input(name = "name").apply { onkeyup = { if (it.key == "Enter") addItem(value) }
-    if (targetId.value != null) {
-        ctr(targetId.value).updateImageInfo()
-        ctr(targetId.value).imagesSnapshots.collect { qs ->
-            book.innerHTML = ""
+    ctr(targetId).imagesSnapshots.collect { qs ->
+        with(book) {
+            innerHTML = ""
+            tHead = document.create.thead { tr { td { +"IMAGE ID" } } }
             qs.documents.forEach { ds ->
-                book.insertRow().apply {
+                insertRow().apply {
                     insertCell().textContent = ds.get<String>("name")
                 }
             }
         }
     }
-//    refTgReqs.orderBy("time", Direction.DESCENDING).snapshots.collect { qs ->
-//        book.innerHTML = ""
-//        book.tHead =
-//            document.create.thead { tr { td {};td { +"COMMAND" };td { +"OUTPUT" };td { +"CODE" };td { +"EXCEPTION" } } }
-//        book.insertRow().apply {
-//            insertCell().append { button { +"ENTER" }.onclick = { addItem(action.value) } }
-//            insertCell().append(action)
-//            insertCell()
-//            insertCell()
-//            insertCell()
-//        }
-//        qs.documents.forEach { ds ->
-//            val req = ds.data<Request>()
-//            book.insertRow().apply {
-//                insertCell().append { button { +"DEL" }.onclick = { delItem(ds.id) } }
-//                insertCell().apply { textContent = req.cmd }
-//                insertCell().apply { textContent = req.result?.stdout }
-//                insertCell().apply { textContent = "${req.result?.exitCode}" }
-//                insertCell().apply { textContent = req.result?.stderr }
-//            }
-//        }
-//    }
 }
-
-suspend fun CollectionReference.addItem(cmd: String) = add(Request(cmd))
 
 class Ctr(val refTarget: DocumentReference) {
     @OptIn(DelicateCoroutinesApi::class)
