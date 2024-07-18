@@ -21,7 +21,9 @@ val db = Firebase.firestore(app).apply {
 }
 
 suspend fun main() {
-    val cookies = document.cookie.split(";").map { it.trim().split("=", limit = 2) }.associate { it[0] to it[1] }
+    val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }
+        .map { it.trim().split("=", limit = 2) }.associate { it[0] to (it.getOrElse(1) { "" }) }
+
     fun ctr(targetId: String) = Ctr(db.collection("fireshell").document(targetId))
 
     val body = document.body ?: error("body is null")
@@ -54,7 +56,6 @@ suspend fun main() {
             qs.documents.forEach { ds ->
                 book.insertRow().apply {
                     insertCell().textContent = ds.get<String>("name")
-//                insertCell().append { button { +"DEL" }}
                 }
             }
         }

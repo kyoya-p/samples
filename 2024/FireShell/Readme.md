@@ -35,6 +35,6 @@ sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv
 ```sh:Run 
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Target-DocumentId>
-sudo -E docker run -e APPKEY -e TARGETID kyoyap/devenv:firesh 
+sudo -E docker run -e APPKEY -e TARGETID -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock kyoyap/devenv:firesh 
 ```
 
