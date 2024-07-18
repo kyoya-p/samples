@@ -23,35 +23,59 @@ val db = Firebase.firestore(app).apply {
 }
 
 suspend fun main() {
-    val queryParameters = window.location.search.replaceFirst("?", "").split("&")
-        .map { it.split("=") }.associate { it[0] to (it.getOrElse(1) { "" }) }
     val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }
         .map { it.trim().split("=", limit = 2) }.associate { it[0] to (it.getOrElse(1) { "" }) }
 
-    val targetId = queryParameters.getOrElse("tg") { "default" }
-    fun ctr(targetId: String) = Ctr(db.collection("fireshell").document(targetId))
+    val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
+    val refTg = db.collection("fireshell").document(targetId)
+    fun ctr(targetId: String) = Ctr(refTg)
 
     val body = document.body ?: error("body is null")
-    val book = document.create.table().apply { addClass("table") }
 
-    fun field(name: String, default: String, op: HTMLInputElement.() -> Unit = {}) =
+    fun field(name: String, default: String, opt: HTMLInputElement.() -> Unit = {}, act: (String) -> Unit = {}) =
         document.create.input(name = name).apply {
             defaultValue = cookies[name] ?: default
-            onchange = { document.cookie = "$name=$value";Unit }
-            op()
+            onchange = { document.cookie = "$name=$value";act(value) }
+            opt()
         }
 
     val imageId = field("newImageId", "")
     val loginId = field("loginId", "")
-    val cred = field("cred", "") { type = "password" }
-
-    body.append { p { +"Target: $targetId" } }
+    val cred = field("cred", "", opt = { type = "password" })
+    body.append { div { +"Target: $targetId" }.onclick = { } }
     body.appendChild(imageId)
     body.appendChild(loginId)
+
     body.appendChild(cred)
     body.append { button { +"PULL" }.onclick = { ctr(targetId).pullImage(imageId.value) } }
-    body.appendChild(book)
 
+    val tableReqs = document.create.table().apply { addClass("table") }
+    body.appendChild(tableReqs)
+    GlobalScope.launch {
+        refTg.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
+            with(tableReqs) {
+                innerHTML = ""
+                tHead =
+                    document.create.thead { tr { td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
+                qs.documents.forEachIndexed { i, it ->
+                    if (i < 3) {
+                        val req = it.data<Request>()
+                        insertRow().apply {
+                            insertCell().textContent = req.cmd
+                            insertCell().textContent = "${req.result?.exitCode}"
+                            insertCell().textContent = req.result?.stdout
+                            insertCell().textContent = req.result?.stderr
+                        }
+                    } else {
+                        it.reference.delete()
+                    }
+                }
+            }
+        }
+    }
+
+    val book = document.create.table().apply { addClass("table") }
+    body.appendChild(book)
     ctr(targetId).imagesSnapshots.collect { qs ->
         with(book) {
             innerHTML = ""
@@ -83,7 +107,7 @@ class Ctr(val refTarget: DocumentReference) {
     ) = pullImage("$registory/$namespace/$image:$tag", cred, op)
 
     fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit = {}) =
-        ctr("i pull ${if (cred != null && cred != "") "-u $cred" else ""} $id", op)
+        ctr("i pull ${if (cred.isNullOrEmpty()) "" else "-u $cred "}$id", op)
 
     fun updateImageInfo() = ctr("i ls -q") {
         val refImgs = refTarget.collection("images")

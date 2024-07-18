@@ -51,23 +51,16 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
     println("L0")
     runCatching {
         var r = 0
-        println("L1")
         val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
-        println("L2")
         val ls = child_process.spawn(cmd, args)
-        println("L3")
-        val stdout = mutableListOf<String>()
-        println("L4")
-        val stderr = mutableListOf<String>()
-        println("L5")
-        ls.stdout.on("data") { data -> stdout.add("$data") }
-        ls.stderr.on("data", { data -> stderr.add("$data") })
+        val stdout = ArrayDeque<String>()
+        val stderr = ArrayDeque<String>()
+        ls.stdout.on("data") { data -> stdout.add("$data");while (stdout.size > 20) stdout.removeFirst() }
+        ls.stderr.on("data", { data -> stderr.add("$data");while (stderr.size > 20) stderr.removeFirst() })
         ls.on("close") { c ->
-            println("L6")
             if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString()))
         }
         ls.on("error") { err ->
-            println("L7")
             if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}"))
         }
     }.onFailure { it.printStackTrace() }
