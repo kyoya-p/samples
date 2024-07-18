@@ -55,8 +55,8 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
         val ls = child_process.spawn(cmd, args)
         val stdout = ArrayDeque<String>()
         val stderr = ArrayDeque<String>()
-        ls.stdout.on("data") { data -> stdout.add("$data");while (stdout.size > 20) stdout.removeFirst() }
-        ls.stderr.on("data", { data -> stderr.add("$data");while (stderr.size > 20) stderr.removeFirst() })
+        ls.stdout.on("data") { data -> stdout.add("$data".take(80));while (stdout.size > 5) stdout.removeFirst() }
+        ls.stderr.on("data", { data -> stderr.add("$data".take(80));while (stderr.size > 5) stderr.removeFirst() })
         ls.on("close") { c ->
             if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString()))
         }
