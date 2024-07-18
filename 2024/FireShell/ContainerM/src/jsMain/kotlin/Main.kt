@@ -1,7 +1,6 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
-import kotlinx.browser.window
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.dom.addClass
@@ -9,7 +8,6 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
-
 
 val options = FirebaseOptions(
     apiKey = appKey,
@@ -49,17 +47,18 @@ suspend fun main() {
     body.appendChild(book)
 
 //    document.create.input(name = "name").apply { onkeyup = { if (it.key == "Enter") addItem(value) }
-    ctr(targetId.value).updateImageInfo()
-    ctr(targetId.value).imagesSnapshots.collect { qs ->
-        book.innerHTML = ""
-        qs.documents.forEach { ds ->
-            book.insertRow().apply {
-                insertCell().textContent = ds.get<String>("name")
+    if (targetId.value != null) {
+        ctr(targetId.value).updateImageInfo()
+        ctr(targetId.value).imagesSnapshots.collect { qs ->
+            book.innerHTML = ""
+            qs.documents.forEach { ds ->
+                book.insertRow().apply {
+                    insertCell().textContent = ds.get<String>("name")
 //                insertCell().append { button { +"DEL" }}
+                }
             }
         }
     }
-
 //    refTgReqs.orderBy("time", Direction.DESCENDING).snapshots.collect { qs ->
 //        book.innerHTML = ""
 //        book.tHead =
