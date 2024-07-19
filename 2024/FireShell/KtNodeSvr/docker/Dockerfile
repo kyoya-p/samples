@@ -8,10 +8,10 @@ RUN apt update && apt upgrade -y \
 
 ARG COMMIT="HEAD"
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
-WORKDIR /opt/samples/2024/KtMPs/KtMpApp
+WORKDIR /opt/samples/2024/FireShell
 RUN sh gradlew kotlinNpmInstall
-RUN sh ./gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
-#RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
+#RUN sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
+RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
 
 #FROM gcr.io/distroless/nodejs22-debian12
 FROM ubuntu:24.04
@@ -21,9 +21,9 @@ RUN apt update && apt upgrade -y \
  && n latest
 
 WORKDIR /opt
-#COPY --from=busybox /bin /bin
-COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js .
-#COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js .
+COPY --from=busybox /bin /bin
+#COPY --from=b1 /opt/samples/2024/App/build/js .
+COPY --from=b1 /opt/samples/2024/FireShell/KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js .
 
 ENV APPKEY=""
 ENV TARGETID=""
