@@ -48,7 +48,6 @@ suspend fun main() = runCatching {
 val child_process = require("child_process")
 
 suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
-    println("L0")
     runCatching {
         var r = 0
         val (cmd, args) = cmdLine.split(" ").let { it.first() to it.drop(1).toTypedArray() }
