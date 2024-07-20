@@ -56,11 +56,7 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
         val stderr = ArrayDeque<String>()
         ls.stdout.on("data") { data -> stdout.add("$data") }
         ls.stderr.on("data") { data -> stderr.add("$data") }
-        ls.on("close") { c ->
-            if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString()))
-        }
-        ls.on("error") { err ->
-            if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}"))
-        }
+        ls.on("close") { c -> if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
+        ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
     }.onFailure { it.printStackTrace() }
 }
