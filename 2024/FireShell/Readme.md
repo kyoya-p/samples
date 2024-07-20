@@ -1,5 +1,12 @@
 # Note
 
+# サブプロジェクト
+- KtHTMLFirestoreApp:　jsでFirestore-kotlin SDKを用いた、HTML Webアプリ 
+- LtNodeSvr: Kotlin/jsでFirestore-kotlin sdkを用いたNode.js アプリ
+- RCtr: (TODO) containerd向けのkotlin/multiplatform for jsアプリ
+- CtrWeb: (TODO) containerd向けのkotlin/multiplatform for wasmアプリ
+ 
+
 # KHTMLFirestoreApp Debug/Run
 ```sh
 export APPKEY=<Firebase-App-Key>
