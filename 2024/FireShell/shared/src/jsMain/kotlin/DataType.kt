@@ -1,5 +1,6 @@
 import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.Timestamp.Companion.now
+import kotlinx.browser.window
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -17,3 +18,6 @@ data class Request(
     val result: SpawnResult? = null,
     val exception: String? = null,
 )
+
+fun queryParameters(s:String) = s.replaceFirst("?", "").split("&")
+    .map { it.split("=") }.associate { it[0] to (it.getOrElse(1) { "" }) }
