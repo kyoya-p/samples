@@ -11,7 +11,6 @@ kotlin {
     js {
         nodejs { }
         binaries.executable()
-        browser {  }
     }
 
     sourceSets {
@@ -23,3 +22,4 @@ kotlin {
         }
     }
 }
+
