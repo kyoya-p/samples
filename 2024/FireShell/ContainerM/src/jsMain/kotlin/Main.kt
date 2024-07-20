@@ -1,5 +1,6 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
+import dev.gitlive.firebase.firestore.Timestamp.Companion.now
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -23,12 +24,12 @@ val db = Firebase.firestore(app).apply {
 }
 
 suspend fun main() {
-    val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }
-        .map { it.trim().split("=", limit = 2) }.associate { it[0] to (it.getOrElse(1) { "" }) }
+    val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
+        .associate { it[0] to (it.getOrElse(1) { "" }) }
 
     val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
     val refTg = db.collection("fireshell").document(targetId)
-    fun ctr(targetId: String) = Ctr(refTg)
+    val ctr = Ctr(refTg)
 
     val body = document.body ?: error("body is null")
 
@@ -47,7 +48,7 @@ suspend fun main() {
     body.appendChild(loginId)
 
     body.appendChild(cred)
-    body.append { button { +"PULL" }.onclick = { ctr(targetId).pullImage(imageId.value) } }
+    body.append { button { +"PULL" }.onclick = { ctr.pullImage(imageId.value) } }
 
     val tableReqs = document.create.table().apply { addClass("table") }
     body.appendChild(tableReqs)
@@ -63,7 +64,7 @@ suspend fun main() {
                         insertRow().apply {
                             insertCell().textContent = req.cmd
                             insertCell().textContent = "${req.result?.exitCode}"
-                            insertCell().textContent = req.result?.stdout
+                            insertCell().textContent = req.result?.run { stdout.split("\n").last() }
                             insertCell().textContent = req.result?.stderr
                         }
                     } else {
@@ -73,20 +74,36 @@ suspend fun main() {
             }
         }
     }
-
     val book = document.create.table().apply { addClass("table") }
     body.appendChild(book)
-    ctr(targetId).imagesSnapshots.collect { qs ->
-        with(book) {
-            innerHTML = ""
-            tHead = document.create.thead { tr { td { +"IMAGE ID" } } }
-            qs.documents.forEach { ds ->
-                insertRow().apply {
-                    insertCell().textContent = ds.get<String>("name")
+
+    with(book) {
+        innerHTML = ""
+        tHead = document.create.thead { tr { td { +"IMAGE ID" } } }
+        ctr.listImage {
+            println("[$it]")
+            document.create.tr {
+                document.create.td {
+                    div {
+                        +it
+                        button {}
+                    }
                 }
             }
         }
     }
+//    ctr.imagesSnapshots.collect { qs ->
+//        with(book) {
+//            innerHTML = ""
+//            tHead = document.create.thead {
+//                tr { td { +"IMAGE ID"; button { +"UPDATE"; onclick = { ctr.listImage() } } } }
+//            }
+//            qs.documents.forEach { ds ->
+//                println(ds.get<String>("name"))
+//                document.create.tr { document.create.td { div { +ds.get<String>("name"); button {} } } }
+//            }
+//        }
+//    }
 }
 
 class Ctr(val refTarget: DocumentReference) {
@@ -109,11 +126,13 @@ class Ctr(val refTarget: DocumentReference) {
     fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit = {}) =
         ctr("i pull ${if (cred.isNullOrEmpty()) "" else "-u $cred "}$id", op)
 
-    fun updateImageInfo() = ctr("i ls -q") {
+    fun listImage(op: (String) -> Unit) = ctr("i ls -q") {
         val refImgs = refTarget.collection("images")
-        val f = refImgs.snapshots.first().documents.forEach { it.reference.delete() }
+//        val f = refImgs.snapshots.first().documents.forEach { it.reference.delete() }
+        println(it.stdout)
         it.stdout.split("\n").filter { it.isNotEmpty() }.forEach {
-//            refImgs.add(mapOf("name" to it, "time" to now()))
+//            refImgs.document(it.replace("/", "-")).set(mapOf("name" to it, "time" to now()))
+            op(it)
         }
     }
 

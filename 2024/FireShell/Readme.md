@@ -15,7 +15,6 @@ sh gradlew jsBrwserDistribution
 # KtNodeSvr Build
 ```sh
 sh gradlew kotlinNpmInstall
-sh gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
 sh gradlew :KtNodeSvr:jsBrowserWebpack
 ```
 
@@ -28,8 +27,10 @@ node KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js
 ```
 
 # KtNodeSvr Docker
-```sh:Build
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh KtNodeSvr/docker
+```sh:Build/Publish
+cd KtNodeSvr/docker
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
+sudo -E docker push kyoyap/devenv:firesh
 ```
 ```sh:Run 
 export APPKEY=<Firebase-App-Key>
