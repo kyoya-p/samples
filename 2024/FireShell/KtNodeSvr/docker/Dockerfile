@@ -9,8 +9,8 @@ RUN apt update && apt upgrade -y \
 ARG COMMIT="HEAD"
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/FireShell
-RUN sh gradlew kotlinNpmInstall
-RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
+RUN sh gradlew KtNodeSvr:kotlinNpmInstall
+RUN sh gradlew KtNodeSvr:jsBrowserProductionWebpack
 
 #FROM gcr.io/distroless/nodejs22-debian12
 FROM ubuntu:24.04
