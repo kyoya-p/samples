@@ -12,6 +12,7 @@ import kotlinx.html.js.*
 import kotlinx.html.org.w3c.dom.events.Event
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLInputElement
+import kotlin.reflect.KProperty
 
 val options = FirebaseOptions(
     apiKey = appKey,
@@ -23,6 +24,43 @@ val app = Firebase.initialize(Unit, options)
 val db = Firebase.firestore(app).apply {
     settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
 }
+
+fun <T> TagConsumer<T>.field(
+    eid: String,
+    default: String,
+    opt: HTMLInputElement.() -> Unit = {},
+    onChange: (Element) -> Unit = {}
+) = input {
+    var fvalue by Cookie(eid, default)
+    id = eid;
+    value = fvalue
+    onChangeFunction = { ev ->
+        val i = document.querySelector("input[id='$eid']")!!
+        val v = i.asDynamic().value as String
+        fvalue = v
+        onChange(i)
+    }
+}
+
+class Cookie(val key: String, val default: String) {
+    fun cookies() = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
+        .associate { it[0] to (it.getOrElse(1) { "" }) }
+
+    operator fun getValue(nothing: Nothing?, property: KProperty<*>) = cookies()[key] ?: default
+    operator fun setValue(nothing: Nothing?, property: KProperty<*>, v: String) = run { document.cookie = "$key=$v" }
+
+    fun <T> TagConsumer<T>.field(opt: HTMLInputElement.() -> Unit = {}, onChange: (Element) -> Unit = {}) {
+        input {
+            var fvalue by Cookie(key, default)
+            id = key;
+            value = fvalue
+            onChangeFunction = { ev ->
+                val i = document.querySelector("input[id='$key']")!!
+                val v = i.asDynamic().value as String
+                fvalue = v
+                onChange(i)
+            }    }
+}}
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
@@ -43,24 +81,24 @@ suspend fun main() {
         }
 
     fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
-    class Field(val value: String, val name: String)
+    class Value()
 
-    fun <T> TagConsumer<T>.field(eid: String, default: String, onChange: (Element, Event) -> Unit) = input {
-        id = eid; name = eid; value = default
-        onChangeFunction = { ev ->
-            val i = document.querySelector("input[id='$eid']")!!
-            onChange(i, ev)
-        }
-    }
 
     val imageId = fieldX("newImageId", "")
     val loginId = fieldX("loginId", "")
     val cred = fieldX("cred", "", opt = { type = "password" })
-    body.append { div { +"Target: $targetId" }.onclick = { } }
-    body.append(imageId)
-    body.append(loginId)
-    body.append(cred)
-    body.append { act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } } }
+    body.append { p { +"Target: $targetId" } }
+//    body.append(imageId)
+//    body.append(loginId)
+//    body.append(cred)
+//    body.append { act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } } }
+    body.append {
+        p {
+            +"ctr pull "; field("imageId", ""); +" -u "; field("loginId", "");+":";
+            field("cred", "", opt = { type = "password" });
+            act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } }
+        }
+    }
 
     val tableReqs = document.create.table().apply { addClass("table") }
     body.appendChild(tableReqs)
@@ -95,17 +133,11 @@ suspend fun main() {
             images.append {
                 thead { th { td { +"IMAGE" } } }
                 fun raw(img: Image) = tr {
+                    fun opts() = field("${img.imageName}.opts", "")
+                    fun task() = field("${img.imageName}.task", "")
                     td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.listImage() } } }
                     td { +img.imageName }
-                    td {
-                        +"ctr run "
-                        field("opts", "") { e, ev ->
-                            window.alert("${e.asDynamic().value}")
-                        }
-                        +"${img.imageName} "
-                        field("task:", "") { e, ev -> }
-                        act("RUN") { }
-                    }
+                    td { +"ctr run "; opts(); +"${img.imageName} ";task(); act("RUN") { ctr.runContainer() {} } }
                 }
                 tbody { imgs.forEach { img -> raw(img) } }
             }
@@ -183,5 +215,5 @@ class Ctr(val refTarget: DocumentReference) {
     fun updateContainer() =
         refTarget.collection("containers").snapshots.map { it.documents.map { it.data<Container> { } } }
 
-    fun runContainer(image: String, taskId: String) = ctr("run $image $taskId") {}
+    fun runContainer(image: String, taskId: String, op: () -> Unit = {}) = ctr("run $image $taskId") { op() }
 }
