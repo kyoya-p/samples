@@ -29,8 +29,8 @@ sh gradlew :KtNodeSvr:jsBrowserWebpack
 ```sh
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Document Id of target>
-node build/js/packages/KtMpApp-KtNodeSvr/kotlin/KtMpApp-KtNodeSvr.js
-node KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js
+export NODE_PATH="$PWD/build/js/node_modules"
+sudo -E node KtNodeSvr/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
 ```
 
 # KtNodeSvr Docker

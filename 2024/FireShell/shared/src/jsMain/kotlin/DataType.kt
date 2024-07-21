@@ -19,5 +19,18 @@ data class Request(
     val exception: String? = null,
 )
 
-fun queryParameters(s:String) = s.replaceFirst("?", "").split("&")
+@Serializable
+data class Image(
+    val imageName: String,
+    val time: Timestamp = now(),
+)
+
+@Serializable
+data class Container(
+    val id: String,
+    val imageName: String,
+    val time: Timestamp = now(),
+)
+
+fun queryParameters(s: String) = s.replaceFirst("?", "").split("&")
     .map { it.split("=") }.associate { it[0] to (it.getOrElse(1) { "" }) }
