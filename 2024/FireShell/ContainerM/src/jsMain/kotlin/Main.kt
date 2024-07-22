@@ -10,9 +10,6 @@ import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
 import kotlinx.html.org.w3c.dom.events.Event
-import org.w3c.dom.Element
-import org.w3c.dom.HTMLInputElement
-import kotlin.reflect.KProperty
 
 val options = FirebaseOptions(
     apiKey = appKey,
@@ -25,77 +22,24 @@ val db = Firebase.firestore(app).apply {
     settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
 }
 
-fun <T> TagConsumer<T>.field(
-    eid: String,
-    default: String,
-    opt: HTMLInputElement.() -> Unit = {},
-    onChange: (Element) -> Unit = {}
-) = input {
-    var fvalue by Cookie(eid, default)
-    id = eid;
-    value = fvalue
-    onChangeFunction = { ev ->
-        val i = document.querySelector("input[id='$eid']")!!
-        val v = i.asDynamic().value as String
-        fvalue = v
-        onChange(i)
-    }
-}
-
-class Cookie(val key: String, val default: String) {
-    fun cookies() = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
-        .associate { it[0] to (it.getOrElse(1) { "" }) }
-
-    operator fun getValue(nothing: Nothing?, property: KProperty<*>) = cookies()[key] ?: default
-    operator fun setValue(nothing: Nothing?, property: KProperty<*>, v: String) = run { document.cookie = "$key=$v" }
-
-    fun <T> TagConsumer<T>.field(opt: HTMLInputElement.() -> Unit = {}, onChange: (Element) -> Unit = {}) {
-        input {
-            var fvalue by Cookie(key, default)
-            id = key;
-            value = fvalue
-            onChangeFunction = { ev ->
-                val i = document.querySelector("input[id='$key']")!!
-                val v = i.asDynamic().value as String
-                fvalue = v
-                onChange(i)
-            }    }
-}}
-
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
-    val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
-        .associate { it[0] to (it.getOrElse(1) { "" }) }
-
     val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
     val refTg = db.collection("fireshell").document(targetId)
     val ctr = Ctr(refTg)
+    ctr.getStatus()
 
     val body = document.body ?: error("body is null")
 
-    fun fieldX(name: String, default: String, opt: HTMLInputElement.() -> Unit = {}, act: (String) -> Unit = {}) =
-        document.create.input(name = name).apply {
-            defaultValue = cookies[name] ?: default
-            onchange = { document.cookie = "$name=$value";act(value) }
-            opt()
-        }
-
     fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
-    class Value()
-
-
-    val imageId = fieldX("newImageId", "")
-    val loginId = fieldX("loginId", "")
-    val cred = fieldX("cred", "", opt = { type = "password" })
+    val imageId = Cookie("newImageId", "")
+    val loginId = Cookie("loginId", "")
+    val cred = Cookie("cred", "")
     body.append { p { +"Target: $targetId" } }
-//    body.append(imageId)
-//    body.append(loginId)
-//    body.append(cred)
-//    body.append { act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } } }
     body.append {
         p {
-            +"ctr pull "; field("imageId", ""); +" -u "; field("loginId", "");+":";
-            field("cred", "", opt = { type = "password" });
+            +"ctr pull "; field(imageId); +" -u "; field(loginId);+":";
+            field(cred, opts = { type = InputType.password });
             act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } }
         }
     }
@@ -109,7 +53,7 @@ suspend fun main() {
                 tHead =
                     document.create.thead { tr { td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
                 qs.documents.forEachIndexed { i, it ->
-                    if (i < 3) {
+                    if (i < 7) {
                         val req = it.data<Request>()
                         insertRow().apply {
                             insertCell().textContent = req.cmd
@@ -133,11 +77,20 @@ suspend fun main() {
             images.append {
                 thead { th { td { +"IMAGE" } } }
                 fun raw(img: Image) = tr {
-                    fun opts() = field("${img.imageName}.opts", "")
-                    fun task() = field("${img.imageName}.task", "")
+                    val runOpts = Cookie("${img.imageName}.opts", "")
+                    val runTask = Cookie("${img.imageName}.task", "")
                     td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.listImage() } } }
                     td { +img.imageName }
-                    td { +"ctr run "; opts(); +"${img.imageName} ";task(); act("RUN") { ctr.runContainer() {} } }
+                    td {
+                        +"ctr run "; field(runOpts); +"${img.imageName} ";field(runTask);
+                        act("RUN") {
+                            ctr.runContainer(
+                                runOpts.value,
+                                img.imageName,
+                                runTask.value
+                            ) { ctr.listContainer { } }
+                        }
+                    }
                 }
                 tbody { imgs.forEach { img -> raw(img) } }
             }
@@ -169,8 +122,10 @@ suspend fun main() {
 class Ctr(val refTarget: DocumentReference) {
     @OptIn(DelicateCoroutinesApi::class)
     fun rpc(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.launch {
+        println("rpc():1")
         val r = refTarget.collection("requests").add(Request(cmd)).snapshots().map { it.data<Request>() }
             .filter { it.isComplete }.map { it.result }.filterNotNull().first()
+        println("rpc():2")
         op(r)
     }
 
@@ -215,5 +170,13 @@ class Ctr(val refTarget: DocumentReference) {
     fun updateContainer() =
         refTarget.collection("containers").snapshots.map { it.documents.map { it.data<Container> { } } }
 
-    fun runContainer(image: String, taskId: String, op: () -> Unit = {}) = ctr("run $image $taskId") { op() }
+    fun runContainer(opts: String, image: String, taskId: String, op: () -> Unit = {}) =
+        ctr("run $opts $image $taskId") { op() }
+
+    fun getStatus() = GlobalScope.launch {
+        suspend fun rpc(cmd: String) = refTarget.collection("requests").add(Request(cmd)).snapshots().map{it.data<Request>()}
+        rpc("ctr c ls").filter { it.isComplete }.collect{
+            println(it)
+        }
+    }
 }
