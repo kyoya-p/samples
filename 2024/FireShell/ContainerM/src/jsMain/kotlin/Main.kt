@@ -3,7 +3,6 @@ import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 import kotlinx.dom.addClass
 import kotlinx.html.*
 import kotlinx.html.dom.append
@@ -27,7 +26,6 @@ suspend fun main() {
     val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
     val refTg = db.collection("fireshell").document(targetId)
     val ctr = Ctr(refTg)
-    ctr.getStatus()
 
     val body = document.body ?: error("body is null")
 
@@ -40,7 +38,8 @@ suspend fun main() {
         p {
             +"ctr pull "; field(imageId); +" -u "; field(loginId);+":";
             field(cred, opts = { type = InputType.password });
-            act("PULL") { ctr.pullImage(imageId.value) { ctr.listImage() } }
+            val credential = if (loginId.value.isNotEmpty()) "${loginId.value}:${cred.value}" else ""
+            act("PULL") { ctr.pullImage(imageId.value, credential) { ctr.getStatus() } }
         }
     }
 
@@ -70,7 +69,6 @@ suspend fun main() {
     }
 
     val images = document.create.table().apply { addClass("table") }
-    ctr.listImage()
     GlobalScope.launch {
         ctr.updateImage().collect { imgs ->
             images.innerHTML = ""
@@ -79,16 +77,12 @@ suspend fun main() {
                 fun raw(img: Image) = tr {
                     val runOpts = Cookie("${img.imageName}.opts", "")
                     val runTask = Cookie("${img.imageName}.task", "")
-                    td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.listImage() } } }
+                    td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.getStatus() } } }
                     td { +img.imageName }
                     td {
                         +"ctr run "; field(runOpts); +"${img.imageName} ";field(runTask);
                         act("RUN") {
-                            ctr.runContainer(
-                                runOpts.value,
-                                img.imageName,
-                                runTask.value
-                            ) { ctr.listContainer { } }
+                            ctr.runContainer(runOpts.value, img.imageName, runTask.value) { ctr.getStatus() }
                         }
                     }
                 }
@@ -115,68 +109,7 @@ suspend fun main() {
             }
         }
     }
-    ctr.listContainer()
     body.append(procs)
-}
 
-class Ctr(val refTarget: DocumentReference) {
-    @OptIn(DelicateCoroutinesApi::class)
-    fun rpc(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.launch {
-        println("rpc():1")
-        val r = refTarget.collection("requests").add(Request(cmd)).snapshots().map { it.data<Request>() }
-            .filter { it.isComplete }.map { it.result }.filterNotNull().first()
-        println("rpc():2")
-        op(r)
-    }
-
-    fun ctr(cmd: String, op: suspend (SpawnResult) -> Unit) = rpc("ctr $cmd", op)
-
-    fun pullImage(
-        image: String,
-        tag: String,
-        registory: String = "docker.io",
-        namespace: String = "library",
-        cred: String? = null,
-        op: (SpawnResult) -> Unit = {}
-    ) = pullImage("$registory/$namespace/$image:$tag", cred, op)
-
-    fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit = {}) =
-        ctr("i pull ${if (cred.isNullOrEmpty()) "" else "-u $cred "}$id", op)
-
-    fun listImage(op: (List<String>) -> Unit = {}) = ctr("i ls -q") {
-        val r = it.stdout.split("\n").filter { it.isNotEmpty() }
-        val refImages = refTarget.collection("images")
-        refImages.get().documents.forEach { if (!r.contains(it.data<Image>().imageName)) it.reference.delete() }
-        r.forEach { refImages.document(it.replace("/", "-")).set(Image(it)) }
-        op(r)
-    }
-
-    fun updateImage() = refTarget.collection("images").snapshots.map { it.documents.map { it.data<Image> { } } }
-
-    fun deleteImage(id: String, op: () -> Unit = {}) = ctr("i rm $id") { op() }
-
-    fun listContainer(op: (List<Container>) -> Unit = {}) = ctr("c ls") { res ->
-        val r = res.stdout.split("\n").drop(1).filter { it.isNotEmpty() }
-            .map { it.split(" ", "\t").filter { it.isNotEmpty() }.let { println(it);Container(it[0], it[1]) } }
-        val refContainer = refTarget.collection("containers")
-        refContainer.get().documents.filter { r.map { it.id }.contains(it.id) }.forEach { ds ->
-            val c = ds.data<Container>()
-            if (!r.map { it.id }.contains(c.id)) ds.reference.delete()
-        }
-        r.forEach { refContainer.document(it.id.replace("/", "-")).set(Container(it.id, it.imageName)) }
-        op(r)
-    }
-
-    fun updateContainer() =
-        refTarget.collection("containers").snapshots.map { it.documents.map { it.data<Container> { } } }
-
-    fun runContainer(opts: String, image: String, taskId: String, op: () -> Unit = {}) =
-        ctr("run $opts $image $taskId") { op() }
-
-    fun getStatus() = GlobalScope.launch {
-        suspend fun rpc(cmd: String) = refTarget.collection("requests").add(Request(cmd)).snapshots().map{it.data<Request>()}
-        rpc("ctr c ls").filter { it.isComplete }.collect{
-            println(it)
-        }
-    }
+    ctr.getStatus()
 }

@@ -1,19 +1,11 @@
-import dev.gitlive.firebase.*
-import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
-import kotlinx.browser.window
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlinx.dom.addClass
-import kotlinx.html.*
-import kotlinx.html.dom.append
-import kotlinx.html.dom.create
-import kotlinx.html.js.*
-import kotlinx.html.org.w3c.dom.events.Event
+import kotlinx.html.INPUT
+import kotlinx.html.TagConsumer
+import kotlinx.html.id
+import kotlinx.html.input
+import kotlinx.html.js.onChangeFunction
 import org.w3c.dom.Element
-import org.w3c.dom.HTMLInputElement
 import kotlin.reflect.KProperty
-
 
 class Cookie(val key: String, val default: String) {
     fun cookies() = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
