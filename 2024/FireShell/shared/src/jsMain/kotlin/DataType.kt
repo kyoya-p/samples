@@ -32,5 +32,13 @@ data class Container(
     val time: Timestamp = now(),
 )
 
+@Serializable
+data class Task(
+    val id: String,
+    val pid: String,
+    val status: String,
+    val time: Timestamp = now(),
+)
+
 fun queryParameters(s: String) = s.replaceFirst("?", "").split("&")
     .map { it.split("=") }.associate { it[0] to (it.getOrElse(1) { "" }) }

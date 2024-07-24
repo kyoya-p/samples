@@ -23,6 +23,16 @@ val db = Firebase.firestore(app).apply {
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
+    val queries = queryParameters(window.location.search)
+    if (queries["mode"] == "rpc") {
+        rpcViewer()
+    } else {
+        ctrMain()
+    }
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+suspend fun ctrMain() {
 
     val ckTargetId = Cookie("targetId", "default")
 
@@ -44,31 +54,6 @@ suspend fun main() {
         }
     }
 
-    val tableReqs = document.create.table().apply { addClass("table") }
-    body.appendChild(tableReqs)
-    GlobalScope.launch {
-        refTg.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
-            with(tableReqs) {
-                innerHTML = ""
-                tHead =
-                    document.create.thead { tr { td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
-                qs.documents.forEachIndexed { i, it ->
-                    if (i < 4) {
-                        val req = it.data<Request>()
-                        insertRow().apply {
-                            insertCell().textContent = req.cmd
-                            insertCell().textContent = "${req.result?.exitCode}"
-                            insertCell().textContent = req.result?.stdout
-                            insertCell().textContent = req.result?.stderr
-                        }
-                    } else {
-                        it.reference.delete()
-                    }
-                }
-            }
-        }
-    }
-
     val images = document.create.table().apply { addClass("table") }
     GlobalScope.launch {
         ctr.updateImage().collect { imgs ->
@@ -76,7 +61,7 @@ suspend fun main() {
             images.append {
                 thead { th { td { +"IMAGE" } } }
                 fun raw(img: Image) = tr {
-                    val runOpts = Cookie("${img.imageName}.opts", "")
+                    val runOpts = Cookie("${img.imageName}.opts", "-d")
                     val runTask = Cookie("${img.imageName}.task", "")
                     td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.getStatus() } } }
                     td { +img.imageName }
@@ -95,17 +80,30 @@ suspend fun main() {
 
     val procs = document.create.table().apply { addClass("table") }
     GlobalScope.launch {
-        ctr.updateContainer().collect { imgs ->
+        val tasks = refTg.collection("tasks").get().documents.map { it.data<Task>() }.associate { it.id to it }
+        fun <T> TagConsumer<T>.containerRow(c: Container) = tr {
+            td {
+                act("DEL") { ctr.rmContainer(c.id) { ctr.getStatus() } }
+                +c.id
+            }
+            td { +c.imageName }
+            td {
+                when (val t = tasks[c.id]) {
+                    null -> +"-"
+                    else -> {
+                        +t.status
+                        if (t.status == "RUNNING") act("STOP") { ctr.killTask(c.id) { ctr.getStatus() } }
+                    }
+                }
+            }
+        }
+
+        ctr.updateContainer().collect { conts ->
             procs.innerHTML = ""
             procs.append {
                 thead { th { td { +"ID" };td { +"IMAGE NAME" } } }
                 tbody {
-                    imgs.forEach { c ->
-                        tr {
-                            td { act("STOP") { }; +c.id }
-                            td { +c.imageName }
-                        }
-                    }
+                    conts.forEach { c -> containerRow(c) }
                 }
             }
         }
