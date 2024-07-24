@@ -23,23 +23,24 @@ val db = Firebase.firestore(app).apply {
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
-    val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
-    val refTg = db.collection("fireshell").document(targetId)
+
+    val ckTargetId = Cookie("targetId", "default")
+
+    val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
+    val refTg = db.collection("fireshell").document(urlTargetId)
     val ctr = Ctr(refTg)
 
     val body = document.body ?: error("body is null")
-
     fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
+
     val imageId = Cookie("newImageId", "")
-    val loginId = Cookie("loginId", "")
-    val cred = Cookie("cred", "")
-    body.append { p { +"Target: $targetId" } }
+    val pullOpts = Cookie("pullOpts", "")
+
+    body.append { p { +"Target: $urlTargetId" } }
     body.append {
         p {
-            +"ctr pull "; field(imageId); +" -u "; field(loginId);+":";
-            field(cred, opts = { type = InputType.password });
-            val credential = if (loginId.value.isNotEmpty()) "${loginId.value}:${cred.value}" else ""
-            act("PULL") { ctr.pullImage(imageId.value, credential) { ctr.getStatus() } }
+            +"ctr i pull "; field(pullOpts); field(imageId);
+            act("PULL") { ctr.pullImage(imageId.value, pullOpts.value) { ctr.getStatus() } }
         }
     }
 
@@ -52,12 +53,12 @@ suspend fun main() {
                 tHead =
                     document.create.thead { tr { td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
                 qs.documents.forEachIndexed { i, it ->
-                    if (i < 7) {
+                    if (i < 4) {
                         val req = it.data<Request>()
                         insertRow().apply {
                             insertCell().textContent = req.cmd
                             insertCell().textContent = "${req.result?.exitCode}"
-                            insertCell().textContent = req.result?.run { stdout.split("\n").last() }
+                            insertCell().textContent = req.result?.stdout
                             insertCell().textContent = req.result?.stderr
                         }
                     } else {
