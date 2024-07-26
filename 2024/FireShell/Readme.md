@@ -1,41 +1,43 @@
 # Note
 
 # サブプロジェクト
-- KtHTMLFirestoreApp:　jsでFirestore-kotlin SDKを用いた、HTML Webアプリ 
-- LtNodeSvr: Kotlin/jsでFirestore-kotlin sdkを用いたNode.js アプリ
-- RCtr: (TODO) containerd向けのkotlin/multiplatform for jsアプリ
+- RpcAgent: Kotlin/jsでFirestore-kotlin sdkを用いたNode.js アプリ
+- ContainerM: containerd向けのkotlin/multiplatform for jsアプリ
 - CtrWeb: (TODO) containerd向けのkotlin/multiplatform for wasmアプリ
- 
 
-# KHTMLFirestoreApp Debug/Run
+
+# ContainerM Debug/Run
 ```sh
 export APPKEY=<Firebase-App-Key>
-sh gradlew  jsBrowserRun
+sh gradlew ContainerM:jsBrowserRun
 ```
-# KHTMLFirestoreApp Build/Packaging/Run
+# ContainerM Build/Packaging/Run
 ```sh
 export APPKEY=<Firebase-App-Key>
-sh gradlew jsBrwserDistribution
+sh gradlew ContainerM:jsBrwserDistribution
 ```
-`build/dist/js/productionExecutable` 以下をWebサーバに配置しブラウザから開く
-
-# KtNodeSvr Build
+`ContainerM/build/compileSync/js/main/developmentExecutable/kotlin` 以下をWebサーバで公開
 ```sh
-sh gradlew kotlinNpmInstall
-sh gradlew :KtNodeSvr:jsBrowserWebpack
+
 ```
 
-# KtNodeSvr Run
+# RpcAgent Build
+```sh
+#sh gradlew RpcAgent:kotlinNpmInstall
+sh gradlew RpcAgent:jsBrowserWebpack
+```
+
+# RpcAgent Run
 ```sh
 export APPKEY=<Firebase-App-Key>
 export TARGETID=<Document Id of target>
 export NODE_PATH="$PWD/build/js/node_modules"
-sudo -E node KtNodeSvr/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
+sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
 ```
 
-# KtNodeSvr Docker
+# RpcAgent Docker
 ```sh:Build/Publish
-cd KtNodeSvr/docker
+cd RpcAgent/docker
 sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
 sudo -E docker push kyoyap/devenv:firesh
 ```

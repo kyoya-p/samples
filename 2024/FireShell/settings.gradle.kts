@@ -1,6 +1,6 @@
 rootProject.name = "FireShell"
 
-include(":KtNodeSvr")
+include(":RpcAgent")
 //include(":KtHTMLFirestoreApp")
 include(":ContainerM")
 include(":shared")
