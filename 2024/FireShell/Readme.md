@@ -18,7 +18,7 @@ sh gradlew ContainerM:jsBrwserDistribution
 ```
 `ContainerM/build/compileSync/js/main/developmentExecutable/kotlin` 以下をWebサーバで公開
 ```sh
-
+npm 
 ```
 
 # RpcAgent Build
