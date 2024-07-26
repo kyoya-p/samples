@@ -9,10 +9,7 @@ class Ctr(val refTarget: DocumentReference) {
     fun rpc(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.launch { op(rpc(cmd)) }
     suspend fun rpc(cmd: String): SpawnResult {
         val refReqs = refTarget.collection("requests")
-        refReqs.where { "time" lessThan (now() - 20.minutes) }.get().documents.forEach {
-            println(it)
-            it.reference.delete()
-        }
+        refReqs.where { "time" lessThan (now() - 20.minutes) }.get().documents.forEach { it.reference.delete() }
         return refReqs.add(Request(cmd)).snapshots().map { it.data<Request>() }
             .filter { it.isComplete }.map { it.result }.filterNotNull().first()
     }
