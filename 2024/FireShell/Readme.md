@@ -6,20 +6,19 @@
 - CtrWeb: (TODO) containerd向けのkotlin/multiplatform for wasmアプリ
 
 
-# ContainerM Debug/Run
-```sh
+# ContainerM
+```sh:Build
 export APPKEY=<Firebase-App-Key>
-sh gradlew ContainerM:jsBrowserRun
+sh gradlew ContainerM:jsBrowserDistribution
 ```
-# ContainerM Build/Packaging/Run
-```sh
-export APPKEY=<Firebase-App-Key>
-sh gradlew ContainerM:jsBrwserDistribution
+生成物: `ContainerM/build/dist/js/productionExecutable`
+
+```sh:Run
+cd ContainerM/build/dist/js/productionExecutable
+npx -y http-server
 ```
-`ContainerM/build/compileSync/js/main/developmentExecutable/kotlin` 以下をWebサーバで公開
-```sh
-npm 
-```
+ブラウザで`http://localhost:8080`を開く
+
 
 # RpcAgent Build
 ```sh
