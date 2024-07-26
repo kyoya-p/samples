@@ -14,7 +14,7 @@ val options = FirebaseOptions(
     apiKey = appKey,
     projectId = "road-to-iot",
     databaseUrl = "https://road-to-iot.firebaseio.com",
-    applicationId = "1:307495712434:web:638b142c284daabef33bab",
+    applicationId = "1:307495712434:web:98565c9f7af0beb3f33bab",
 )
 val app = Firebase.initialize(Unit, options)
 val db = Firebase.firestore(app).apply {

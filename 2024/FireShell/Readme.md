@@ -20,8 +20,8 @@ npx -y http-server
 ブラウザで`http://localhost:8080`を開く
 
 
-# RpcAgent Build
-```sh
+# RpcAgent 
+```sh:Build
 #sh gradlew RpcAgent:kotlinNpmInstall
 sh gradlew RpcAgent:jsBrowserWebpack
 ```
