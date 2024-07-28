@@ -24,7 +24,10 @@ suspend fun rpcViewer() {
     val body = document.body ?: error("body is null")
     fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
 
-    body.append { p { +"Target: $urlTargetId" } }
+    body.append {
+        p { act("LOGOUT") {} }
+        p { +"Target: $urlTargetId" }
+    }
     val tableReqs = document.create.table().apply { addClass("table") }
     body.appendChild(tableReqs)
     GlobalScope.launch {
@@ -36,7 +39,8 @@ suspend fun rpcViewer() {
                 qs.documents.forEachIndexed { i, it ->
                     val req = it.data<Request>()
                     insertRow().apply {
-                        val t= Instant.fromEpochSeconds(req.time.seconds).toLocalDateTime(TimeZone.currentSystemDefault())
+                        val t =
+                            Instant.fromEpochSeconds(req.time.seconds).toLocalDateTime(TimeZone.currentSystemDefault())
                         insertCell().textContent = "$t"
                         insertCell().textContent = req.cmd
                         insertCell().textContent = "${req.result?.exitCode}"
@@ -47,5 +51,4 @@ suspend fun rpcViewer() {
             }
         }
     }
-
 }

@@ -1,11 +1,13 @@
 import kotlinx.browser.document
-import kotlinx.html.INPUT
-import kotlinx.html.TagConsumer
-import kotlinx.html.id
-import kotlinx.html.input
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.html.*
 import kotlinx.html.js.onChangeFunction
+import kotlinx.html.js.onClickFunction
 import org.w3c.dom.Element
 import kotlin.reflect.KProperty
+import kotlinx.html.org.w3c.dom.events.Event
 
 class Cookie(val key: String, val default: String) {
     fun cookies() = document.cookie.split(";").filter { it.trim().isNotEmpty() }.map { it.trim().split("=", limit = 2) }
@@ -31,3 +33,7 @@ fun <T> TagConsumer<T>.field(cookie: Cookie, opts: INPUT.() -> Unit = {}, onChan
         opts()
     }
 }
+
+@OptIn(DelicateCoroutinesApi::class)
+fun <T> TagConsumer<T>.btn(label: String, op: suspend (Event) -> Unit) =
+    button { +label; onClickFunction = { GlobalScope.launch { op(it) } } }

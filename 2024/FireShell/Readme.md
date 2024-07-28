@@ -23,8 +23,10 @@ npx -y http-server
 # RpcAgent 
 ```sh:Build
 #sh gradlew RpcAgent:kotlinNpmInstall
-sh gradlew RpcAgent:jsBrowserWebpack
+#sh gradlew RpcAgent:jsBrowserWebpack
+sh gradlew RpcAgent:jsProductionExecutableCompileSync
 ```
+生成物: `RpcAgent/build/compileSync/js/main/productionExecutable/kotlin`
 
 # RpcAgent Run
 ```sh

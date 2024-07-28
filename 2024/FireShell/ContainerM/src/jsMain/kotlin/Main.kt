@@ -1,14 +1,15 @@
 import dev.gitlive.firebase.*
+import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
 import kotlinx.dom.addClass
+import kotlinx.dom.clear
 import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
-import kotlinx.html.org.w3c.dom.events.Event
 
 val options = FirebaseOptions(
     apiKey = appKey,
@@ -20,20 +21,41 @@ val app = Firebase.initialize(Unit, options)
 val db = Firebase.firestore(app).apply {
     settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
 }
+val auth = Firebase.auth(app)
 
-@OptIn(DelicateCoroutinesApi::class)
 suspend fun main() {
-    val queries = queryParameters(window.location.search)
-    if (queries["mode"] == "rpc") {
-        rpcViewer()
-    } else {
-        ctrMain()
+    Firebase.auth(app).authStateChanged.collect { user ->
+        if (user == null) {
+            login()
+        } else {
+            val queries = queryParameters(window.location.search)
+            if (queries["mode"] == "rpc") {
+                rpcViewer()
+            } else {
+                ctrMain()
+            }
+        }
     }
 }
 
+suspend fun login() = document.body!!.apply { clear() }.append {
+    val userId = Cookie("uid", "")
+    val password = Cookie("pw", "")
+
+    p { +"USER ID"; field(userId) }
+    p { +"PASSWORD"; field(password, { type = InputType.password }) }
+    p {
+        btn("LOGIN") {
+//            window.alert("${userId.value}, ${password.value}")
+            val c = auth.signInWithEmailAndPassword(userId.value, password.value)
+//            window.alert("${c.user?.email}/")
+        }
+    }
+}
+
+
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun ctrMain() {
-
     val ckTargetId = Cookie("targetId", "default")
 
     val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
@@ -41,16 +63,18 @@ suspend fun ctrMain() {
     val ctr = Ctr(refTg)
 
     val body = document.body ?: error("body is null")
-    fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
 
     val imageId = Cookie("newImageId", "")
     val pullOpts = Cookie("pullOpts", "")
 
-    body.append { p { +"Target: $urlTargetId" } }
+    body.clear()
     body.append {
+        fun signout() = GlobalScope.launch { auth.signOut() }
+        p { btn("LOGOUT") { signout() } }
+        p { +"Target: $urlTargetId" }
         p {
             +"ctr i pull "; field(pullOpts); field(imageId);
-            act("PULL") { ctr.pullImage(imageId.value, pullOpts.value) { ctr.getStatus() } }
+            btn("PULL") { ctr.pullImage(imageId.value, pullOpts.value) { ctr.getStatus() } }
         }
     }
 
@@ -63,11 +87,11 @@ suspend fun ctrMain() {
                 fun raw(img: Image) = tr {
                     val runOpts = Cookie("${img.imageName}.opts", "-d")
                     val runTask = Cookie("${img.imageName}.task", "")
-                    td { act("DEL") { ctr.deleteImage(img.imageName) { ctr.getStatus() } } }
+                    td { btn("DEL") { ctr.deleteImage(img.imageName) { ctr.getStatus() } } }
                     td { +img.imageName }
                     td {
                         +"ctr run "; field(runOpts); +"${img.imageName} ";field(runTask);
-                        act("RUN") {
+                        btn("RUN") {
                             ctr.runContainer(runOpts.value, img.imageName, runTask.value) { ctr.getStatus() }
                         }
                     }
@@ -83,7 +107,7 @@ suspend fun ctrMain() {
         val tasks = refTg.collection("tasks").get().documents.map { it.data<Task>() }.associate { it.id to it }
         fun <T> TagConsumer<T>.containerRow(c: Container) = tr {
             td {
-                act("DEL") { ctr.rmContainer(c.id) { ctr.getStatus() } }
+                btn("DEL") { ctr.rmContainer(c.id) { ctr.getStatus() } }
                 +c.id
             }
             td { +c.imageName }
@@ -92,7 +116,7 @@ suspend fun ctrMain() {
                     null -> +"-"
                     else -> {
                         +t.status
-                        if (t.status == "RUNNING") act("STOP") { ctr.killTask(c.id) { ctr.getStatus() } }
+                        if (t.status == "RUNNING") btn("STOP") { ctr.killTask(c.id) { ctr.getStatus() } }
                     }
                 }
             }
