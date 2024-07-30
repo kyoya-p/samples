@@ -1,21 +1,25 @@
+@file:OptIn(DelicateCoroutinesApi::class)
+
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.auth
-import dev.gitlive.firebase.firestore.Timestamp
-import dev.gitlive.firebase.firestore.Timestamp.Companion.now
+import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.firestoreSettings
 import dev.gitlive.firebase.firestore.persistentCacheSettings
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.dom.clear
 import kotlinx.html.*
 import kotlinx.html.dom.append
-import kotlinx.html.dom.create
 import kotlinx.html.js.*
+import kotlinx.serialization.Serializable
 import org.w3c.dom.HTMLInputElement
-import kotlin.js.Json
 
 val options = FirebaseOptions(
     apiKey = "AIzaSyBg5ssUSPQlEKxZ6zoBrg-hwhoMzwWLQPQ",
@@ -31,7 +35,7 @@ val auth = Firebase.auth(app)
 suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
     when (user) {
         null -> loginPage()
-        else -> applicationPage(user)
+        else -> appPage(user)
     }
 }
 
@@ -39,36 +43,46 @@ suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
 suspend fun loginPage() = document.body!!.apply { clear() }.append {
     var userId = ""
     var password = ""
-    fun login() = GlobalScope.launch {
+    fun login() = MainScope().launch {
         runCatching { auth.signInWithEmailAndPassword(userId, password) }.onFailure { window.alert("Failed.") }
     }
-    p { +"USER ID:"; input { onChangeFunction = { userId = (it.target as HTMLInputElement).value } } }
-    p { +"PASSWORD:"; input { onChangeFunction = { password = (it.target as HTMLInputElement).value } } }
+    p { +"USER ID:"; input_x { userId = it } }
+    p { +"PASSWORD:"; input_x { password = it } }
     p { button { +"LOGIN"; onClickFunction = { login() } } }
 }
 
-data class MyStatus(val uid: String, val status: String, val time: Timestamp = now())
+@Serializable
+data class Status(val uid: String, val email: String, val status: String, val time: Instant = now())
 
-@OptIn(DelicateCoroutinesApi::class)
-suspend fun applicationPage(user: FirebaseUser) = db.collection("fireshell").orderBy("time").snapshots.collect { qs ->
-    document.body!!.apply { clear() }.append {
-        p { button { +"LOGOUT"; onClickFunction = { GlobalScope.launch { auth.signOut() } } } }
-        println(qs.documents.size)
+val refAppRoot = db.collection("fireshell")
 
-        qs.documents.filter { it.exists }.forEach { ds ->
-
-                    val docStatus = ds.get<String>("uid")
-        //            p {
-//                +"STATUS: "
-//                input {
-//                    value = docStatus.status
-//                    onChangeFunction = {
-//                        val newStatus = (it.target as HTMLInputElement).value
-//                        MainScope().launch { ds.reference.set(docStatus.copy(status = newStatus, time = now())) }
-//                    }
-//                }
-//            }
-        }
-    }
+fun <T> TagConsumer<T>.input_x(opt: suspend INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit) = input {
+    MainScope().launch { opt() }
+    onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
 }
 
+@OptIn(DelicateCoroutinesApi::class)
+suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
+    document.body!!.apply { clear() }.append {
+        p { button { +"LOGOUT "; onClickFunction = { MainScope().launch { auth.signOut() } } } }
+        p {
+            +"MY STATUS:"
+            val refDoc = refAppRoot.document(user.uid)
+            input_x({ value = refDoc.get().data<Status>().status }) { v ->
+                refDoc.set(Status(user.uid, user.email ?: "UNK", v))
+            }
+        }
+
+        refAppRoot.orderBy("time", Direction.DESCENDING).snapshots.collect {
+            table {
+                classes = setOf("table")
+                qs.documents.filter { it.exists }.map { it.data<Status>() }.forEach { s ->
+                    tr {
+                        td { +s.time.toLocalDateTime(TimeZone.currentSystemDefault()).toString() }
+                        td { +s.email }
+                        td { +s.status }
+                    }
+                }
+            }
+        }
+    }
