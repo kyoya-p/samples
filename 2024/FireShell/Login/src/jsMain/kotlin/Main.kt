@@ -1,7 +1,8 @@
+@file:OptIn(DelicateCoroutinesApi::class)
+
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.auth
-import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.firestoreSettings
 import dev.gitlive.firebase.firestore.persistentCacheSettings
@@ -53,15 +54,14 @@ suspend fun loginPage() = document.body!!.apply { clear() }.append {
 @Serializable
 data class Status(val uid: String, val email: String, val status: String, val time: Instant = now())
 
-
 fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit = {}) = input {
-    MainScope().launch { opt() }
+    opt()
     onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
 }
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
-    p { button { +"LOGOUT "; onClickFunction = { MainScope().launch { auth.signOut() } } } }
+    p { button { +"LOGOUT"; onClickFunction = { MainScope().launch { auth.signOut() } } }; +"${user.email}" }
     val table = document.create.table()
     document.body!!.append(table)
     val refAppRoot = db.collection("fireshell")
@@ -72,10 +72,12 @@ suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.appe
             table.clear()
             table.className = "table"
             table.append {
-                qs.documents.filter { it.exists }.map { it.data<Status>() }.forEach { s ->
+                qs.documents.filter { it.exists }.forEach { ds ->
+                    val s = ds.data<Status>()
+                    println("$s")
                     tr {
                         td { +s.email }
-                        td { +s.status }
+                        td { inputx({ value = s.status }) { ds.reference.set(s.copy(status = it)) } }
                         td { +s.time.toLocalDateTime(TimeZone.currentSystemDefault()).toString() }
                     }
                 }
