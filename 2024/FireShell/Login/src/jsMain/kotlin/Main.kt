@@ -1,5 +1,3 @@
-@file:OptIn(DelicateCoroutinesApi::class)
-
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.auth.FirebaseUser
 import dev.gitlive.firebase.auth.auth
@@ -27,10 +25,11 @@ val options = FirebaseOptions(
     applicationId = "1:749774078339:web:9d60dff9671ab8e9ad76b6",
 )
 val app = Firebase.initialize(Unit, options)
-
-val db = Firebase.firestore(app)
-    .apply { settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } } }
 val auth = Firebase.auth(app)
+
+val db = Firebase.firestore(app).apply {
+    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
+}
 
 suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
     when (user) {
@@ -59,26 +58,26 @@ fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: Strin
     onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
 suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
-    p { button { +"LOGOUT"; onClickFunction = { MainScope().launch { auth.signOut() } } }; +"${user.email}" }
-    val table = document.create.table()
-    document.body!!.append(table)
+    fun initStatus() = Status(user.uid, user.email ?: "", "")
+    suspend fun errCk(op: suspend () -> Unit) = runCatching { op() }.onFailure { window.alert("${it.message}") }
     val refAppRoot = db.collection("fireshell")
-    fun initStatus() = Status(user.uid, user.email ?: "UNK", "")
-    GlobalScope.launch {
+
+    val table = document.create.table()
+    p { button { +"LOGOUT"; onClickFunction = { MainScope().launch { auth.signOut() } } }; +"${user.email}" }
+    document.body!!.append(table)
+    MainScope().launch {
         refAppRoot.document(user.uid).apply { if (!get().exists) set(initStatus()) }
         refAppRoot.snapshots.collect { qs ->
             table.clear()
             table.className = "table"
             table.append {
                 qs.documents.filter { it.exists }.forEach { ds ->
-                    val s = ds.data<Status>()
-                    println("$s")
+                    val st = ds.data<Status>()
                     tr {
-                        td { +s.email }
-                        td { inputx({ value = s.status }) { ds.reference.set(s.copy(status = it)) } }
-                        td { +s.time.toLocalDateTime(TimeZone.currentSystemDefault()).toString() }
+                        td { +st.email }
+                        td { inputx({ value = st.status }) { errCk { ds.reference.set(st.copy(status = it)) } } }
+                        td { +st.time.toLocalDateTime(TimeZone.currentSystemDefault()).toString() }
                     }
                 }
             }
