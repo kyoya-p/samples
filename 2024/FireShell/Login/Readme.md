@@ -1,3 +1,3 @@
 ```sh: Build/Run
-sh gradle jsBrowserRun
+sh gradlew jsBrowserRun
 ```

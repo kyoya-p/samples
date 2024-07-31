@@ -38,7 +38,11 @@ suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
     }
 }
 
-@OptIn(DelicateCoroutinesApi::class)
+fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit = {}) = input {
+    opt()
+    onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
+}
+
 suspend fun loginPage() = document.body!!.apply { clear() }.append {
     var userId = ""
     var password = ""
@@ -46,19 +50,14 @@ suspend fun loginPage() = document.body!!.apply { clear() }.append {
         runCatching { auth.signInWithEmailAndPassword(userId, password) }.onFailure { window.alert("Failed.") }
     }
     p { +"USER ID:"; inputx { userId = it } }
-    p { +"PASSWORD:"; inputx { password = it } }
+    p { +"PASSWORD:"; inputx({ type = InputType.password }) { password = it } }
     p { button { +"LOGIN"; onClickFunction = { login() } } }
 }
 
-@Serializable
-data class Status(val uid: String, val email: String, val status: String, val time: Instant = now())
-
-fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit = {}) = input {
-    opt()
-    onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
-}
-
 suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
+    @Serializable
+    data class Status(val uid: String, val email: String, val status: String, val time: Instant = now())
+
     fun initStatus() = Status(user.uid, user.email ?: "", "")
     suspend fun errCk(op: suspend () -> Unit) = runCatching { op() }.onFailure { window.alert("${it.message}") }
     val refAppRoot = db.collection("fireshell")
