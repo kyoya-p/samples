@@ -22,18 +22,17 @@ npx -y http-server
 
 # RpcAgent 
 ```sh:Build
-#sh gradlew RpcAgent:kotlinNpmInstall
-#sh gradlew RpcAgent:jsBrowserWebpack
 sh gradlew RpcAgent:jsProductionExecutableCompileSync
 ```
 生成物: `RpcAgent/build/compileSync/js/main/productionExecutable/kotlin`
 
 # RpcAgent Run
 ```sh
-export APPKEY=<Firebase-App-Key>
-export TARGETID=<Document Id of target>
+export USERID=<firebase-user-id(email-address)>
+export PASSWORD=<firebase-user-password>
 export NODE_PATH="$PWD/build/js/node_modules"
-sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
+#sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
+sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-RpcAgent.js
 ```
 
 # RpcAgent Docker

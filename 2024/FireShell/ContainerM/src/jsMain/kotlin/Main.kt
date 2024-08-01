@@ -11,17 +11,17 @@ import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
 
-val options = FirebaseOptions(
-    apiKey = appKey,
-    projectId = "road-to-iot",
-    databaseUrl = "https://road-to-iot.firebaseio.com",
-    applicationId = "1:307495712434:web:98565c9f7af0beb3f33bab",
-)
-val app = Firebase.initialize(Unit, options)
-val db = Firebase.firestore(app).apply {
-    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
-}
-val auth = Firebase.auth(app)
+//val options = FirebaseOptions(
+//    apiKey = appKey,
+//    projectId = "road-to-iot",
+//    databaseUrl = "https://road-to-iot.firebaseio.com",
+//    applicationId = "1:307495712434:web:98565c9f7af0beb3f33bab",
+//)
+//val app = Firebase.initialize(Unit, options)
+//val db = Firebase.firestore(app).apply {
+//    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
+//}
+//val auth = Firebase.auth(app)
 
 suspend fun main() {
     Firebase.auth(app).authStateChanged.collect { user ->
@@ -29,10 +29,9 @@ suspend fun main() {
             login()
         } else {
             val queries = queryParameters(window.location.search)
-            if (queries["mode"] == "rpc") {
-                rpcViewer()
-            } else {
-                ctrMain()
+            when (queries["mode"]) {
+                "rpc" -> rpcViewer()
+                else -> ctrMain()
             }
         }
     }
@@ -56,10 +55,9 @@ suspend fun login() = document.body!!.apply { clear() }.append {
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun ctrMain() {
-    val ckTargetId = Cookie("targetId", "default")
-
-    val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
-    val refTg = db.collection("fireshell").document(urlTargetId)
+//    val ckTargetId = Cookie("targetId", "default")
+//    val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
+    val refTg = db.collection("fireshell").document(auth.currentUser!!.uid)
     val ctr = Ctr(refTg)
 
     val body = document.body ?: error("body is null")
@@ -71,7 +69,7 @@ suspend fun ctrMain() {
     body.append {
         fun signout() = GlobalScope.launch { auth.signOut() }
         p { btn("LOGOUT") { signout() } }
-        p { +"Target: $urlTargetId" }
+        p { +"Target: ${auth.currentUser?.email}" }
         p {
             +"ctr i pull "; field(pullOpts); field(imageId);
             btn("PULL") { ctr.pullImage(imageId.value, pullOpts.value) { ctr.getStatus() } }

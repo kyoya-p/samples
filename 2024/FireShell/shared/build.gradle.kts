@@ -14,6 +14,7 @@ kotlin {
     }
     sourceSets {
         jsMain.dependencies {
+            implementation("dev.gitlive:firebase-auth:1.13.0") // https://mvnrepository.com/artifact/dev.gitlive/firebase-firestore
             implementation("dev.gitlive:firebase-firestore:1.13.0") // https://mvnrepository.com/artifact/dev.gitlive/firebase-firestore
         }
     }

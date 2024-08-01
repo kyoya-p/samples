@@ -55,9 +55,9 @@ suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
 
 suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
     @Serializable
-    data class Status(val uid: String, val email: String, val status: String, val time: Instant = now())
+    data class User(val uid: String, val email: String, val status: String, val time: Instant = now())
 
-    fun initStatus() = Status(user.uid, user.email ?: "", "")
+    fun initStatus() = User(user.uid, user.email ?: "", "")
     suspend fun errCk(op: suspend () -> Unit) = runCatching { op() }.onFailure { window.alert("${it.message}") }
     val refAppRoot = db.collection("fireshell")
 
@@ -71,7 +71,7 @@ suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.appe
             table.className = "table"
             table.append {
                 qs.documents.filter { it.exists }.forEach { ds ->
-                    val st = ds.data<Status>()
+                    val st = ds.data<User>()
                     tr {
                         td { +st.email }
                         td { inputx({ value = st.status }) { errCk { ds.reference.set(st.copy(status = it)) } } }

@@ -1,7 +1,4 @@
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.FirebaseOptions
-import dev.gitlive.firebase.firestore.*
-import dev.gitlive.firebase.initialize
+import dev.gitlive.firebase.firestore.Direction
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -9,29 +6,31 @@ import kotlin.coroutines.suspendCoroutine
 
 external val process: dynamic
 
-val options = FirebaseOptions(
-    apiKey = process.env.APPKEY as String,
-    projectId = "road-to-iot",
-    databaseUrl = "https://road-to-iot.firebaseio.com",
-    applicationId = "1:307495712434:web:638b142c284daabef33bab",
-)
+//val options = FirebaseOptions(
+//    apiKey = "AIzaSyBg5ssUSPQlEKxZ6zoBrg-hwhoMzwWLQPQ",
+//    projectId = "riot-7a79a",
+//    applicationId = "1:749774078339:web:9d60dff9671ab8e9ad76b6",
+//)
+//
+//val app = Firebase.initialize(Unit, options)
+//val auth = Firebase.auth(app)
+//val db = Firebase.firestore(app)
+//    .apply { settings = firestoreSettings(settings) { cacheSettings = memoryCacheSettings { } } }
 
-val app = Firebase.initialize(Unit, options)
-val db = Firebase.firestore(app).apply {
-    settings = firestoreSettings(settings) { cacheSettings = memoryCacheSettings { } }
-}
 
 external fun require(module: String): dynamic
 
 suspend fun main() = runCatching {
-//  val args = (process.argv as Array<String>).drop(2)
-//  val (tg, pw) = args
-    val tg = process.env.TARGETID as String
-    println("TARGETID=$tg")
+    val uid = process.env.USERID as String
+    val pw = process.env.PASSWORD as String
+    println("UID=$uid")
 
-    val refRqs = db.collection("fireshell").document(tg).collection("requests")
+    val user = auth.signInWithEmailAndPassword(uid, pw).user ?: throw Exception("Failed: signInWithEmailAndPassword()")
 
-    refRqs.orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }.limit(10).snapshots.collect {
+    val refUser = refFireShellAppRoot.document(user.uid)
+        .apply { if (!get().exists) set(User(uid = user.uid, email = user.email ?: "", status = "")) }
+    val refReq = refUser.collection("requests")
+    refReq.orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }.limit(10).snapshots.collect {
         it.documents.forEach { ds ->
             val req = ds.data<Request>()
             runCatching {
