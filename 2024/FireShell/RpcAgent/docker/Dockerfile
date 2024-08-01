@@ -11,12 +11,12 @@ RUN git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/FireShell
 RUN sh gradlew RpcAgent:jsProductionExecutableCompileSync
 
-#FROM gcr.io/distroless/nodejs22-debian12
-FROM ubuntu:24.04
-RUN apt update && apt upgrade -y \
- && apt install -y wget docker.io npm \
- && npm i -g n \
- && n latest
+FROM alpine
+RUN apk update && apk upgrade
+RUN apk add wget
+RUN apk add docker
+RUN apk add npm
+RUN apk add nodejs
 
 WORKDIR /opt
 #COPY --from=busybox /bin /bin
