@@ -9,8 +9,7 @@ RUN apt update && apt upgrade -y \
 ARG COMMIT="HEAD"
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/FireShell
-RUN sh gradlew RpcAgent:kotlinNpmInstall
-RUN sh gradlew RpcAgent:jsBrowserProductionWebpack
+RUN sh gradlew RpcAgent:jsProductionExecutableCompileSync
 
 #FROM gcr.io/distroless/nodejs22-debian12
 FROM ubuntu:24.04

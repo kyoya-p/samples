@@ -38,8 +38,7 @@ sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/Fire
 
 # RpcAgent Docker
 ```sh:Build/Publish
-cd RpcAgent/docker
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh .
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh RpcAgent/docker
 sudo -E docker push kyoyap/devenv:firesh
 ```
 ```sh:Run 
