@@ -19,10 +19,12 @@ RUN apt update && apt upgrade -y \
  && n latest
 
 WORKDIR /opt
-COPY --from=busybox /bin /bin
+#COPY --from=busybox /bin /bin
 #COPY --from=b1 /opt/samples/2024/App/build/js .
-COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/kotlin-webpack/js/productionExecutable/RpcAgent.js .
+#COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/kotlin-webpack/js/productionExecutable/RpcAgent.js .
+COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/compileSync/js/main/productionExecutable/kotlin .
+WORKDIR /opt/kotlin
 
 ENV APPKEY=""
 ENV TARGETID=""
-CMD ["node", "RpcAgent.js"]
+CMD ["node", "Fireshell-RpcAgent.js"]
