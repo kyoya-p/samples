@@ -17,7 +17,6 @@ import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
 import kotlinx.serialization.Serializable
-import org.w3c.dom.HTMLInputElement
 
 val options = FirebaseOptions(
     apiKey = "AIzaSyBg5ssUSPQlEKxZ6zoBrg-hwhoMzwWLQPQ",
@@ -38,21 +37,21 @@ suspend fun main() = Firebase.auth(app).authStateChanged.collect { user ->
     }
 }
 
-fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit = {}) = input {
-    opt()
-    onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
-}
+//fun <T> TagConsumer<T>.inputx(opt: INPUT.() -> Unit = {}, chg: suspend (v: String) -> Unit = {}) = input {
+//    opt()
+//    onChangeFunction = { MainScope().launch { chg((it.target as HTMLInputElement).value) } }
+//}
 
-suspend fun loginPage() = document.body!!.apply { clear() }.append {
-    var userId = ""
-    var password = ""
-    fun login() = MainScope().launch {
-        runCatching { auth.signInWithEmailAndPassword(userId, password) }.onFailure { window.alert("Failed.") }
-    }
-    p { +"USER ID:"; inputx { userId = it } }
-    p { +"PASSWORD:"; inputx({ type = InputType.password }) { password = it } }
-    p { button { +"LOGIN"; onClickFunction = { login() } } }
-}
+//suspend fun loginPage() = document.body!!.apply { clear() }.append {
+//    var userId = ""
+//    var password = ""
+//    fun login() = MainScope().launch {
+//        runCatching { auth.signInWithEmailAndPassword(userId, password) }.onFailure { window.alert("Failed.") }
+//    }
+//    p { +"USER ID:"; inputx { userId = it } }
+//    p { +"PASSWORD:"; inputx({ type = InputType.password }) { password = it } }
+//    p { button { +"LOGIN"; onClickFunction = { login() } } }
+//}
 
 suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.append {
     @Serializable
@@ -63,7 +62,7 @@ suspend fun appPage(user: FirebaseUser) = document.body!!.apply { clear() }.appe
     val refAppRoot = db.collection("fireshell")
 
     val table = document.create.table()
-    p { button { +"LOGOUT"; onClickFunction = { MainScope().launch { auth.signOut() } } }; +"${user.email}" }
+    p { logoutButton(); +"${user.email}" }
     document.body!!.append(table)
     MainScope().launch {
         refAppRoot.document(user.uid).apply { if (!get().exists) set(initStatus()) }
