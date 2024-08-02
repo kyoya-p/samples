@@ -41,8 +41,8 @@ sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv
 sudo -E docker push kyoyap/devenv:firesh
 ```
 ```sh:Run 
-export APPKEY=<Firebase-App-Key>
-export TARGETID=<Target-DocumentId>
-sudo -E docker run -e APPKEY -e TARGETID -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock kyoyap/devenv:firesh 
+export USERID=<firebase-user-id(email-addres)>
+export PASSWORD=<firebase-user-password>
+sudo -E docker run -e USERID -e PASSWORD -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock kyoyap/devenv:firesh 
 ```
 
