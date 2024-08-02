@@ -4,12 +4,13 @@ WORKDIR /opt
 RUN apt update && apt upgrade -y \
  && apt install -y openjdk-17-jre-headless git
 
-# && apt install -y npm wget && npm -g i n && n latest
-
 ARG COMMIT="HEAD"
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
 WORKDIR /opt/samples/2024/FireShell
-RUN sh gradlew RpcAgent:jsProductionExecutableCompileSync
+
+RUN sh gradlew :kotlinNpmInstall
+RUN sh gradlew :RpcAgent:compileProductionExecutableKotlinJs
+#RpcAgent:jsProductionExecutableCompileSync
 
 FROM alpine
 RUN apk update && apk upgrade
