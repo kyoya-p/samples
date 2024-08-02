@@ -22,7 +22,9 @@ WORKDIR /opt
 #COPY --from=busybox /bin /bin
 #COPY --from=b1 /opt/samples/2024/App/build/js .
 #COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/kotlin-webpack/js/productionExecutable/RpcAgent.js .
+
 COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/compileSync/js/main/productionExecutable/kotlin .
+COPY --from=b1 /opt/samples/2024/FireShell/build/js/node_modules ./kotlun
 WORKDIR /opt/kotlin
 
 ENV APPKEY=""
