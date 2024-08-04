@@ -8,7 +8,6 @@
 
 # ContainerM
 ```sh:Build
-export APPKEY=<Firebase-App-Key>
 sh gradlew ContainerM:jsBrowserDistribution
 ```
 生成物: `ContainerM/build/dist/js/productionExecutable`
@@ -37,12 +36,14 @@ sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/Fire
 
 # RpcAgent Docker
 ```sh:Build/Publish
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh RpcAgent/docker
-sudo -E docker push kyoyap/devenv:firesh
+export TAG=<doker-image-name>:<docker-image-tag>
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag $TAG RpcAgent/docker
+sudo -E docker push $TAG
 ```
 ```sh:Run 
+export TAG=<doker-image-name>:<docker-image-tag>
 export USERID=<firebase-user-id(email-addres)>
 export PASSWORD=<firebase-user-password>
-sudo -E docker run -e USERID -e PASSWORD -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock kyoyap/devenv:firesh 
+sudo -E docker run -e USERID -e PASSWORD -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock $TAG
 ```
 
