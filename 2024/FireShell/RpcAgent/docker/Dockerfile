@@ -12,19 +12,19 @@ RUN sh gradlew :kotlinNpmInstall
 RUN sh gradlew :RpcAgent:compileProductionExecutableKotlinJs
 #RpcAgent:jsProductionExecutableCompileSync
 
-FROM alpine
-RUN apk update && apk upgrade
-RUN apk add wget
-RUN apk add docker
-RUN apk add npm
-RUN apk add nodejs
+FROM alpine:3.20.2
+RUN apk update && apk upgrade\
+ && apk add wget\
+ && apk add docker\
+ && apk add npm\
+ && apk add nodejs
 
 WORKDIR /opt
 #COPY --from=busybox /bin /bin
 COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/compileSync/js/main/productionExecutable/kotlin .
-COPY --from=b1 /opt/samples/2024/FireShell/build/js/node_modules ./kotlun
-WORKDIR /opt/kotlin
+COPY --from=b1 /opt/samples/2024/FireShell/build/js/node_modules ./node_modules
+WORKDIR /opt
 
-ENV APPKEY=""
-ENV TARGETID=""
-CMD ["node", "Fireshell-RpcAgent.js"]
+ENV USERID=""
+ENV PASSWORD=""
+CMD ["node", "FireShell-RpcAgent.js"]
