@@ -2,6 +2,7 @@ import dev.gitlive.firebase.firestore.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.minutes
 
 class Ctr(val refTarget: DocumentReference) {
@@ -9,8 +10,16 @@ class Ctr(val refTarget: DocumentReference) {
     fun rpc(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.launch { op(rpc(cmd)) }
     suspend fun rpc(cmd: String): SpawnResult {
         val refReqs = refTarget.collection("requests")
-        println("XXX")//TODO
-        refReqs.where { "time" lessThan Timestamp.fromMilliseconds((now()- 20.minutes).toEpochMilliseconds() .toDouble()) }.get().documents.forEach { it.reference.delete() }
+
+        val n = now()
+
+        println("$n")
+        println("${Instant.fromEpochSeconds(n.toTimestamp().seconds)}")
+        println("${n.toTimestamp().toInstant()}")
+
+        refReqs
+            .where { "time" lessThan (now() - 20.minutes).toTimestamp() }
+            .get().documents.forEach { it.reference.delete() }
         return refReqs.add(Request(cmd)).snapshots().map { it.data<Request>() }
             .filter { it.isComplete }.map { it.result }.filterNotNull().first()
     }

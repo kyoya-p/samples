@@ -1,11 +1,6 @@
-import dev.gitlive.firebase.*
 import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
-import kotlinx.browser.window
 import kotlinx.coroutines.*
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import kotlinx.dom.addClass
 import kotlinx.html.*
 import kotlinx.html.dom.append
@@ -16,22 +11,22 @@ import kotlinx.html.org.w3c.dom.events.Event
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun rpcViewer() {
-    val ckTargetId = Cookie("targetId", "default")
-
-    val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
-    val refTg = db.collection("fireshell").document(urlTargetId)
+    val refUser = refFireShellAppRoot.document(auth.currentUser!!.uid)
 
     val body = document.body ?: error("body is null")
     fun <T> TagConsumer<T>.act(label: String, op: (Event) -> Unit) = button { +label; onClickFunction = op }
-
+    val ctr = Ctr(refUser)
     body.append {
-        p { act("LOGOUT") {} }
-        p { +"Target: $urlTargetId" }
+        val cmd = Cookie("cmd", "")
+        p { act("LOGOUT") { MainScope().launch { auth.signOut() } } }
+        p { +"Target: ${auth.currentUser?.email}" }
+        p { +"RUN"; field(cmd) { MainScope().launch { ctr.rpc(it) } } }
+
     }
     val tableReqs = document.create.table().apply { addClass("table") }
     body.appendChild(tableReqs)
-    GlobalScope.launch {
-        refTg.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
+    MainScope().launch {
+        refUser.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
             with(tableReqs) {
                 innerHTML = ""
                 tHead =
@@ -39,9 +34,7 @@ suspend fun rpcViewer() {
                 qs.documents.forEachIndexed { i, it ->
                     val req = it.data<Request>()
                     insertRow().apply {
-                        val t =
-                            Instant.fromEpochSeconds(req.time.seconds).toLocalDateTime(TimeZone.currentSystemDefault())
-                        insertCell().textContent = "$t"
+                        insertCell().textContent = "${req.time.toInstant()}"
                         insertCell().textContent = req.cmd
                         insertCell().textContent = "${req.result?.exitCode}"
                         insertCell().textContent = req.result?.stdout

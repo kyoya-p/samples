@@ -1,6 +1,5 @@
 import dev.gitlive.firebase.*
 import dev.gitlive.firebase.auth.auth
-import dev.gitlive.firebase.firestore.*
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
@@ -10,18 +9,6 @@ import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
-
-//val options = FirebaseOptions(
-//    apiKey = appKey,
-//    projectId = "road-to-iot",
-//    databaseUrl = "https://road-to-iot.firebaseio.com",
-//    applicationId = "1:307495712434:web:98565c9f7af0beb3f33bab",
-//)
-//val app = Firebase.initialize(Unit, options)
-//val db = Firebase.firestore(app).apply {
-//    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
-//}
-//val auth = Firebase.auth(app)
 
 suspend fun main() {
     Firebase.auth(app).authStateChanged.collect { user ->
@@ -40,35 +27,20 @@ suspend fun main() {
 suspend fun login() = document.body!!.apply { clear() }.append {
     val userId = Cookie("uid", "")
     val password = Cookie("pw", "")
-
     p { +"USER ID"; field(userId) }
     p { +"PASSWORD"; field(password, { type = InputType.password }) }
-    p {
-        btn("LOGIN") {
-//            window.alert("${userId.value}, ${password.value}")
-            val c = auth.signInWithEmailAndPassword(userId.value, password.value)
-//            window.alert("${c.user?.email}/")
-        }
-    }
+    p { btn("LOGIN") { auth.signInWithEmailAndPassword(userId.value, password.value) } }
 }
 
-
 @OptIn(DelicateCoroutinesApi::class)
-suspend fun ctrMain() {
-//    val ckTargetId = Cookie("targetId", "default")
-//    val urlTargetId = queryParameters(window.location.search).getOrElse("tg") { ckTargetId.value }
+suspend fun ctrMain() =with(document.body!!) {
     val refTg = db.collection("fireshell").document(auth.currentUser!!.uid)
     val ctr = Ctr(refTg)
-
-    val body = document.body ?: error("body is null")
-
     val imageId = Cookie("newImageId", "")
     val pullOpts = Cookie("pullOpts", "")
-
-    body.clear()
-    body.append {
-        fun signout() = GlobalScope.launch { auth.signOut() }
-        p { btn("LOGOUT") { signout() } }
+    clear()
+    append {
+        p { btn("LOGOUT") { GlobalScope.launch { auth.signOut() } } }
         p { +"Target: ${auth.currentUser?.email}" }
         p {
             +"ctr i pull "; field(pullOpts); field(imageId);
@@ -98,7 +70,7 @@ suspend fun ctrMain() {
             }
         }
     }
-    body.append(images)
+    append(images)
 
     val procs = document.create.table().apply { addClass("table") }
     GlobalScope.launch {
@@ -130,7 +102,7 @@ suspend fun ctrMain() {
             }
         }
     }
-    body.append(procs)
+    append(procs)
 
     ctr.getStatus()
 }

@@ -5,7 +5,6 @@ import kotlinx.coroutines.launch
 import kotlinx.html.*
 import kotlinx.html.js.onChangeFunction
 import kotlinx.html.js.onClickFunction
-import org.w3c.dom.Element
 import kotlin.reflect.KProperty
 import kotlinx.html.org.w3c.dom.events.Event
 
@@ -20,7 +19,7 @@ class Cookie(val key: String, val default: String) {
         set(v) = run { document.cookie = "$key=$v" }
 }
 
-fun <T> TagConsumer<T>.field(cookie: Cookie, opts: INPUT.() -> Unit = {}, onChange: (Element) -> Unit = {}) {
+fun <T> TagConsumer<T>.field(cookie: Cookie, opts: INPUT.() -> Unit = {}, onChange: (v:String) -> Unit = {}) {
     var c by cookie
     input {
         id = cookie.key
@@ -28,7 +27,7 @@ fun <T> TagConsumer<T>.field(cookie: Cookie, opts: INPUT.() -> Unit = {}, onChan
         onChangeFunction = { ev ->
             val e = document.querySelector("input[id='${cookie.key}']")!!
             c = e.asDynamic().value as String
-            onChange(e)
+            onChange(c)
         }
         opts()
     }

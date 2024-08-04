@@ -1,10 +1,14 @@
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.firestore.Timestamp
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.firestoreSettings
 import dev.gitlive.firebase.firestore.memoryCacheSettings
 import dev.gitlive.firebase.initialize
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 val options = FirebaseOptions(
     apiKey = "AIzaSyBg5ssUSPQlEKxZ6zoBrg-hwhoMzwWLQPQ",
@@ -15,6 +19,10 @@ val app = Firebase.initialize(Unit, options)
 val auth = Firebase.auth(app)
 val db = Firebase.firestore(app).apply {
 //    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
-    settings = firestoreSettings(settings) { cacheSettings = memoryCacheSettings {  } }
+    settings = firestoreSettings(settings) { cacheSettings = memoryCacheSettings { } }
 }
-val refFireShellAppRoot=db.collection("fireshell")
+val refFireShellAppRoot = db.collection("fireshell")
+
+fun Instant.toTimestamp() = Timestamp(epochSeconds, toLocalDateTime(TimeZone.currentSystemDefault()).nanosecond)
+fun Timestamp.toInstant() = Instant.fromEpochMilliseconds(seconds * 1000L + nanoseconds / 1000000L)
+
