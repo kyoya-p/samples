@@ -12,3 +12,6 @@ fun main() {
         println("i = $i")
     }
 }
+
+
+fun f{}{}

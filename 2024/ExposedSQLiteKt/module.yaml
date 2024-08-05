@@ -1,4 +1,9 @@
 product: jvm/app
 
+
 dependencies:
-  - org.jetbrains.exposed:exposed:0.17.14: exported
+  - org.jetbrains.exposed:exposed:0.17.14
+  - org.xerial:sqlite-jdbc:3.34.0
+  - org.sql2o:sql2o:1.6.0
+  - commons-dbcp:commons-dbcp:1.4
+
