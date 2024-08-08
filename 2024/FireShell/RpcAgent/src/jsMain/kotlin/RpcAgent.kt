@@ -24,7 +24,7 @@ suspend fun main() = runCatching {
                 print("Run: ${req.cmd} ")
                 req.copy(isComplete = true, result = spawn(req.cmd))
             }.getOrElse { req.copy(isComplete = true, exception = it.message) }
-            println("-> ${res.result?.exitCode}")
+            println("-> ${res.result?.exitCode} Ex:${res.exception}")
             ds.reference.set<Request>(res)
         }
     }
