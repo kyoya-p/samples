@@ -1,121 +1,108 @@
 import dev.gitlive.firebase.*
-import dev.gitlive.firebase.firestore.*
+import dev.gitlive.firebase.auth.auth
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
 import kotlinx.dom.addClass
+import kotlinx.dom.clear
 import kotlinx.html.*
 import kotlinx.html.dom.append
 import kotlinx.html.dom.create
 import kotlinx.html.js.*
-import org.w3c.dom.HTMLInputElement
-
-val options = FirebaseOptions(
-    apiKey = appKey,
-    projectId = "road-to-iot",
-    databaseUrl = "https://road-to-iot.firebaseio.com",
-    applicationId = "1:307495712434:web:638b142c284daabef33bab",
-)
-val app = Firebase.initialize(Unit, options)
-val db = Firebase.firestore(app).apply {
-    settings = firestoreSettings(settings) { cacheSettings = persistentCacheSettings { } }
-}
 
 suspend fun main() {
-    val cookies = document.cookie.split(";").filter { it.trim().isNotEmpty() }
-        .map { it.trim().split("=", limit = 2) }.associate { it[0] to (it.getOrElse(1) { "" }) }
-
-    val targetId = queryParameters(window.location.search).getOrElse("tg") { "default" }
-    val refTg = db.collection("fireshell").document(targetId)
-    fun ctr(targetId: String) = Ctr(refTg)
-
-    val body = document.body ?: error("body is null")
-
-    fun field(name: String, default: String, opt: HTMLInputElement.() -> Unit = {}, act: (String) -> Unit = {}) =
-        document.create.input(name = name).apply {
-            defaultValue = cookies[name] ?: default
-            onchange = { document.cookie = "$name=$value";act(value) }
-            opt()
+    Firebase.auth(app).authStateChanged.collect { user ->
+        if (user == null) {
+            login()
+        } else {
+            val queries = queryParameters(window.location.search)
+            when (queries["mode"]) {
+                "rpc" -> rpcViewer()
+                else -> ctrMain()
+            }
         }
+    }
+}
 
-    val imageId = field("newImageId", "")
-    val loginId = field("loginId", "")
-    val cred = field("cred", "", opt = { type = "password" })
-    body.append { div { +"Target: $targetId" }.onclick = { } }
-    body.appendChild(imageId)
-    body.appendChild(loginId)
+suspend fun login() = document.body!!.apply { clear() }.append {
+    val userId = Cookie("uid", "")
+    val password = Cookie("pw", "")
+    p { +"USER ID"; field(userId) }
+    p { +"PASSWORD"; field(password, { type = InputType.password }) }
+    p { btn("LOGIN") { auth.signInWithEmailAndPassword(userId.value, password.value) } }
+}
 
-    body.appendChild(cred)
-    body.append { button { +"PULL" }.onclick = { ctr(targetId).pullImage(imageId.value) } }
+@OptIn(DelicateCoroutinesApi::class)
+suspend fun ctrMain() =with(document.body!!) {
+    val refTg = db.collection("fireshell").document(auth.currentUser!!.uid)
+    val ctr = Ctr(refTg)
+    val imageId = Cookie("newImageId", "")
+    val pullOpts = Cookie("pullOpts", "")
+    clear()
+    append {
+        p { btn("LOGOUT") { GlobalScope.launch { auth.signOut() } } }
+        p { +"Target: ${auth.currentUser?.email}" }
+        p {
+            +"ctr i pull "; field(pullOpts); field(imageId);
+            btn("PULL") { ctr.pullImage(imageId.value, pullOpts.value) { ctr.getStatus() } }
+        }
+    }
 
-    val tableReqs = document.create.table().apply { addClass("table") }
-    body.appendChild(tableReqs)
+    val images = document.create.table().apply { addClass("table") }
     GlobalScope.launch {
-        refTg.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
-            with(tableReqs) {
-                innerHTML = ""
-                tHead =
-                    document.create.thead { tr { td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
-                qs.documents.forEachIndexed { i, it ->
-                    if (i < 3) {
-                        val req = it.data<Request>()
-                        insertRow().apply {
-                            insertCell().textContent = req.cmd
-                            insertCell().textContent = "${req.result?.exitCode}"
-                            insertCell().textContent = req.result?.stdout
-                            insertCell().textContent = req.result?.stderr
+        ctr.updateImage().collect { imgs ->
+            images.innerHTML = ""
+            images.append {
+                thead { th { td { +"IMAGE" } } }
+                fun raw(img: Image) = tr {
+                    val runOpts = Cookie("${img.imageName}.opts", "-d")
+                    val runTask = Cookie("${img.imageName}.task", "")
+                    td { btn("DEL") { ctr.deleteImage(img.imageName) { ctr.getStatus() } } }
+                    td { +img.imageName }
+                    td {
+                        +"ctr run "; field(runOpts); +"${img.imageName} ";field(runTask);
+                        btn("RUN") {
+                            ctr.runContainer(runOpts.value, img.imageName, runTask.value) { ctr.getStatus() }
                         }
-                    } else {
-                        it.reference.delete()
+                    }
+                }
+                tbody { imgs.forEach { img -> raw(img) } }
+            }
+        }
+    }
+    append(images)
+
+    val procs = document.create.table().apply { addClass("table") }
+    GlobalScope.launch {
+        val tasks = refTg.collection("tasks").get().documents.map { it.data<Task>() }.associate { it.id to it }
+        fun <T> TagConsumer<T>.containerRow(c: Container) = tr {
+            td {
+                btn("DEL") { ctr.rmContainer(c.id) { ctr.getStatus() } }
+                +c.id
+            }
+            td { +c.imageName }
+            td {
+                when (val t = tasks[c.id]) {
+                    null -> +"-"
+                    else -> {
+                        +t.status
+                        if (t.status == "RUNNING") btn("STOP") { ctr.killTask(c.id) { ctr.getStatus() } }
                     }
                 }
             }
         }
-    }
 
-    val book = document.create.table().apply { addClass("table") }
-    body.appendChild(book)
-    ctr(targetId).imagesSnapshots.collect { qs ->
-        with(book) {
-            innerHTML = ""
-            tHead = document.create.thead { tr { td { +"IMAGE ID" } } }
-            qs.documents.forEach { ds ->
-                insertRow().apply {
-                    insertCell().textContent = ds.get<String>("name")
+        ctr.updateContainer().collect { conts ->
+            procs.innerHTML = ""
+            procs.append {
+                thead { th { td { +"ID" };td { +"IMAGE NAME" } } }
+                tbody {
+                    conts.forEach { c -> containerRow(c) }
                 }
             }
         }
     }
-}
+    append(procs)
 
-class Ctr(val refTarget: DocumentReference) {
-    @OptIn(DelicateCoroutinesApi::class)
-    fun ctr(cmd: String, op: suspend (SpawnResult) -> Unit) = GlobalScope.async {
-        val r = refTarget.collection("requests").add(Request("ctr $cmd")).snapshots().map { it.data<Request>() }
-            .filter { it.isComplete }.map { it.result }.filterNotNull().first()
-        op(r)
-    }
-
-    fun pullImage(
-        image: String,
-        tag: String,
-        registory: String = "docker.io",
-        namespace: String = "library",
-        cred: String? = null,
-        op: (SpawnResult) -> Unit = {}
-    ) = pullImage("$registory/$namespace/$image:$tag", cred, op)
-
-    fun pullImage(id: String, cred: String? = null, op: (SpawnResult) -> Unit = {}) =
-        ctr("i pull ${if (cred.isNullOrEmpty()) "" else "-u $cred "}$id", op)
-
-    fun updateImageInfo() = ctr("i ls -q") {
-        val refImgs = refTarget.collection("images")
-        val f = refImgs.snapshots.first().documents.forEach { it.reference.delete() }
-        it.stdout.split("\n").filter { it.isNotEmpty() }.forEach {
-//            refImgs.add(mapOf("name" to it, "time" to now()))
-        }
-    }
-
-    val imagesSnapshots = refTarget.collection("images").snapshots
+    ctr.getStatus()
 }

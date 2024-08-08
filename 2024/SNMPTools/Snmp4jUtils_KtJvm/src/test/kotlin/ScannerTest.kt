@@ -3,6 +3,7 @@
 import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.*
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -20,6 +21,7 @@ import java.net.InetAddress
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -163,7 +165,7 @@ class ScannerTest {
         var co = 0
         val range = "10.64.0.0-10.127.255.255".toRange()
 //        val range ="10.32.0.0-10.63.255.255".toRange()
-        val s = 20_480
+        val s = 10_000
         val sem = Semaphore(s)
         print("\r$ci->$co [${ci - co}] : ")
         thread {
