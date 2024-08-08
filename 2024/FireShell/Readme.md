@@ -8,10 +8,6 @@
 
 # ContainerM
 ```sh:Build
-<<<<<<< HEAD
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag kyoyap/devenv:firesh KtNodeSvr/docker
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --build-arg https_proxy --build-arg JAVA_OPTS --tag kyoyap/devenv:firesh KtNodeSvr/docker
-=======
 sh gradlew ContainerM:jsBrowserDistribution
 ```
 生成物: `ContainerM/build/dist/js/productionExecutable`
@@ -40,10 +36,10 @@ sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/Fire
 
 # RpcAgent Docker
 ```sh:Build/Publish
-export TAG=<doker-image-name>:<docker-image-tag>
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag $TAG RpcAgent/docker
+TAG=<doker-image-name>:<docker-image-tag>
+OPTS="--build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy "
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` $OPTS --tag $TAG RpcAgent/docker
 sudo -E docker push $TAG
->>>>>>> 654ba1d8d89802b86567333724c23612d0d7c243
 ```
 
 ```sh:Run 

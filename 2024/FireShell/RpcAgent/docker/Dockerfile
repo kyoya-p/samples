@@ -25,6 +25,8 @@ COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/compileSync/js/main/pr
 COPY --from=b1 /opt/samples/2024/FireShell/build/js/node_modules ./node_modules
 WORKDIR /opt
 
-ENV USERID=""
-ENV PASSWORD=""
+ENV USERID=
+ENV PASSWORD=
+ENV HTTP_PROXY=
+ENV HTTPS_PROXY=
 CMD ["node", "FireShell-RpcAgent.js"]
