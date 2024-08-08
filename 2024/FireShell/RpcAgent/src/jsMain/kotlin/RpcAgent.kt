@@ -24,7 +24,7 @@ suspend fun main() = runCatching {
                 print("Run: ${req.cmd} ")
                 req.copy(isComplete = true, result = spawn(req.cmd))
             }.getOrElse { req.copy(isComplete = true, exception = it.message) }
-            println("-> ${res.result?.exitCode} Ex:${res.exception}")
+            println("-> ${res.result?.exitCode} Ex:${res.result?.stderr}")
             ds.reference.set<Request>(res)
         }
     }
@@ -42,6 +42,6 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
         ls.stdout.on("data") { data -> stdout.add("$data") }
         ls.stderr.on("data") { data -> stderr.add("$data") }
         ls.on("close") { c -> if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
-        ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmdLine):${err}")) }
+        ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmd,$args):${err}")) }
     }.onFailure { it.printStackTrace() }
 }
