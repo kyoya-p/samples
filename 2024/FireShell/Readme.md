@@ -9,8 +9,10 @@
 # ContainerM
 ```sh:Build
 sh gradlew ContainerM:jsBrowserDistribution
+sh gradlew ContainerM:jsBrowserWebpack  # webpackでファイルバンドルする場合
 ```
 生成物: `ContainerM/build/dist/js/productionExecutable`
+(webpackの結果)`ContainerM/build/kotlin-webpack/js/productionExecutable/ContainerM.js`
 
 ```sh:Run
 cd ContainerM/build/dist/js/productionExecutable

@@ -20,13 +20,12 @@ suspend fun main() = runCatching {
     refReq.orderBy("time", Direction.ASCENDING).where { "isComplete" notEqualTo true }.limit(10).snapshots.collect {
         it.documents.forEach { ds ->
             val req = ds.data<Request>()
-            runCatching {
-                println("Run: ${req.cmd}")
-                val res = spawn(req.cmd)
-                ds.reference.set<Request>(req.copy(isComplete = true, result = res))
-            }.onFailure {
-                ds.reference.set<Request>(req.copy(isComplete = true, exception = it.message))
-            }
+            val res = runCatching {
+                print("Run: ${req.cmd} ")
+                req.copy(isComplete = true, result = spawn(req.cmd))
+            }.getOrElse { req.copy(isComplete = true, exception = it.message) }
+            println("-> ${res.result?.exitCode}")
+            ds.reference.set<Request>(res)
         }
     }
 }.onFailure { println(it.stackTraceToString()) }.getOrElse { }

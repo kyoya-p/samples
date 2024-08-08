@@ -32,15 +32,15 @@ kotlin {
     }
 }
 
-tasks["compileKotlinJs"].doFirst {
-    copy {
-        from("src/jsMain/kotlin/Properties.kt.tmpl")
-        into("src/jsMain/kotlin/")
-        rename { "Properties.kt" }
-        filter { it.replace("$[APPKEY]",
-            System.getenv("APPKEY")
-                ?: throw Exception("Set the App-key of Firebase in the APPKEY environment variable.")
-        )
-        }
-    }
-}
+//tasks["compileKotlinJs"].doFirst {
+//    copy {
+//        from("src/jsMain/kotlin/Properties.kt.tmpl")
+//        into("src/jsMain/kotlin/")
+//        rename { "Properties.kt" }
+//        filter { it.replace("$[APPKEY]",
+//            System.getenv("APPKEY")
+//                ?: throw Exception("Set the App-key of Firebase in the APPKEY environment variable.")
+//        )
+//        }
+//    }
+//}
