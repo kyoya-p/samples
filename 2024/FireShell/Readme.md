@@ -37,15 +37,17 @@ sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/Fire
 # RpcAgent Docker
 ```sh:Build/Publish
 TAG=<doker-image-name>:<docker-image-tag>
-OPTS="--build-arg http_proxy=$http_proxy --build-arg https_proxy=$https_proxy "
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` $OPTS --tag $TAG RpcAgent/docker
+BUILDOPTS="--build-arg http_proxy --build-arg https_proxy"
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` $BUILDOPTS --tag $TAG RpcAgent/docker
 sudo -E docker push $TAG
 ```
 
-```sh:Run 
-export TAG=<doker-image-name>:<docker-image-tag>
-export USERID=<firebase-user-id(email-addres)>
-export PASSWORD=<firebase-user-password>
-sudo -E docker run -e USERID -e PASSWORD -v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock $TAG
+```sh:Run
+TAG=<doker-image-name>:<docker-image-tag>
+USERID=<firebase-user-id(email-addres)>
+PASSWORD=<firebase-user-password>
+OPTS="-v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock"
+ENVS="-e USERID -e PASSWORD -e http_proxy -e https_proxy -e no_proxy"
+sudo -E docker run $ENVS $OPTS $TAG
 ```
 

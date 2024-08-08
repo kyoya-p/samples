@@ -27,6 +27,7 @@ WORKDIR /opt
 
 ENV USERID=
 ENV PASSWORD=
-ENV HTTP_PROXY=
-ENV HTTPS_PROXY=
+ENV http_proxy=
+ENV https_proxy=
+ENV no_proxy=
 CMD ["node", "FireShell-RpcAgent.js"]
