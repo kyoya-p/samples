@@ -8,7 +8,7 @@ RUN apt update && apt upgrade -y \
 
 ARG COMMIT="HEAD"
 RUN git clone --depth 1 https://github.com/kyoya-p/samples
-WORKDIR /opt/samples/2024/KtMPs/KtMpApp
+WORKDIR /opt/samples/2024/FireShell
 RUN sh gradlew kotlinNpmInstall
 RUN sh ./gradlew :KtNodeSvr:jsDevelopmentExecutableCompileSync
 #RUN sh gradlew :KtNodeSvr:jsBrowserWebpack
@@ -22,7 +22,7 @@ RUN apt update && apt upgrade -y \
 
 WORKDIR /opt
 #COPY --from=busybox /bin /bin
-COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/build/js .
+COPY --from=b1 /opt/samples/2024/FireShell/build/js .
 #COPY --from=b1 /opt/samples/2024/KtMPs/KtMpApp/KtNodeSvr/build/kotlin-webpack/js/productionExecutable/KtNodeSvr.js .
 
 ENV APPKEY=""
