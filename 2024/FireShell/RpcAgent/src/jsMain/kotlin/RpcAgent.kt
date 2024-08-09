@@ -3,7 +3,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-
 external val process: dynamic
 external fun require(module: String): dynamic
 
@@ -43,5 +42,5 @@ suspend fun spawn(cmdLine: String) = suspendCoroutine { cont ->
         ls.stderr.on("data") { data -> stderr.add("$data") }
         ls.on("close") { c -> if (r++ == 0) cont.resume(SpawnResult(c, stdout.joinToString(), stderr.joinToString())) }
         ls.on("error") { err -> if (r++ == 0) cont.resumeWithException(Exception("Error: spawn($cmd,$args):${err}")) }
-    }.onFailure { it.printStackTrace() }
+    }.onFailure { cont.resumeWithException(Exception("Error: spawn($cmdLine)")) }
 }
