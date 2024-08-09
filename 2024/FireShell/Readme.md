@@ -45,9 +45,9 @@ sudo -E docker push $TAG
 ```
 
 ```sh:Run
-TAG=<doker-image-name>:<docker-image-tag>
-USERID=<firebase-user-id(email-addres)>
-PASSWORD=<firebase-user-password>
+export TAG=<doker-image-name>:<docker-image-tag>
+export USERID=<firebase-user-id(email-addres)>
+export PASSWORD=<firebase-user-password>
 OPTS="-v /var/run/containerd/containerd.sock:/var/run/containerd/containerd.sock"
 ENVS="-e USERID -e PASSWORD -e http_proxy -e https_proxy -e no_proxy"
 sudo -E docker run $ENVS $OPTS $TAG
