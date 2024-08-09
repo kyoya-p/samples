@@ -23,6 +23,7 @@ npx -y http-server
 
 # RpcAgent 
 ```sh:Build
+sh gradlew kotlinNpmInstall # 関連モジュールダウンロード
 sh gradlew RpcAgent:jsProductionExecutableCompileSync
 ```
 生成物: `RpcAgent/build/compileSync/js/main/productionExecutable/kotlin`
