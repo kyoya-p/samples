@@ -29,13 +29,15 @@ suspend fun rpcViewer() {
         refUser.collection("requests").orderBy("time", Direction.DESCENDING).limit(25).snapshots.collect { qs ->
             with(tableReqs) {
                 innerHTML = ""
-                tHead =
-                    document.create.thead { tr { td { +"TIME" };td { +"COMMAND" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } } }
+                tHead = document.create.thead {
+                    tr { td { +"TIME" };td { +"COMMAND" };td { +"CMPL" };td { +"CODE" };td { +"OUTPUT" };td { +"EXCEPTION" } }
+                }
                 qs.documents.forEachIndexed { i, it ->
                     val req = it.data<Request>()
                     insertRow().apply {
                         insertCell().textContent = "${req.time.toInstant()}"
                         insertCell().textContent = req.cmd
+                        insertCell().textContent = "${req.isComplete}"
                         insertCell().textContent = "${req.result?.exitCode}"
                         insertCell().textContent = req.result?.stdout
                         insertCell().textContent = req.result?.stderr
