@@ -33,7 +33,6 @@ sh gradlew RpcAgent:jsProductionExecutableCompileSync
 export USERID=<firebase-user-id(email-address)>
 export PASSWORD=<firebase-user-password>
 export NODE_PATH="$PWD/build/js/node_modules"
-#sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-KtNodeSvr.js
 sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/FireShell-RpcAgent.js
 ```
 
