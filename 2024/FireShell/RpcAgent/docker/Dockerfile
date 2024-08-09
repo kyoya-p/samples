@@ -18,6 +18,7 @@ RUN apk update && apk upgrade\
  && apk add docker\
  && apk add npm\
  && apk add nodejs
+RUN apk add containerd-ctr
 
 WORKDIR /opt
 #COPY --from=busybox /bin /bin
