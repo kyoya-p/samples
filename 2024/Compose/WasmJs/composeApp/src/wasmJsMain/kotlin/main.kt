@@ -8,5 +8,5 @@ external fun dialog()
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() = ComposeViewport(document.body!!) {
-    Button(onClick = { dialog() }) { Text("alert()") }
+    Button(onClick = { dialog() }) { Text("alert!") }
 }
