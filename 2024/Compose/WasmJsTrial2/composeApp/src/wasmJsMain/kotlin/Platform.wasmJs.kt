@@ -3,4 +3,4 @@ private val platform = object : Platform {
         get() = "Web with Kotlin/Wasm"
 }
 
-actual fun getPlatform(): Platform = platform
+//actual fun getPlatform(): Platform = platform
