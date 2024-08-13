@@ -26,7 +26,21 @@ kotlin {
         }
         binaries.executable()
     }
-    
+    js{
+        browser{
+            val projectDirPath = project.projectDir.path
+            commonWebpackConfig {
+                outputFileName = "composeApp.js"
+                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
+                    static = (static ?: mutableListOf()).apply {
+                        // Serve sources to debug inside browser
+                        add(projectDirPath)
+                    }
+                }
+            }
+        }
+        binaries.executable()
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
