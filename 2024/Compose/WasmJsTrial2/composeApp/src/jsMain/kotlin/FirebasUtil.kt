@@ -1,11 +1,10 @@
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
+import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.firestoreSettings
 import dev.gitlive.firebase.firestore.memoryCacheSettings
 import dev.gitlive.firebase.initialize
-import kotlinx.browser.document
-import kotlinx.browser.window
 
 
 external fun require(module: String)
@@ -22,3 +21,4 @@ val db = Firebase.firestore(app).apply {
     settings = firestoreSettings(settings) { cacheSettings = memoryCacheSettings { } }
 }
 
+ fun authStateChanged()=Firebase.auth(app).authStateChanged

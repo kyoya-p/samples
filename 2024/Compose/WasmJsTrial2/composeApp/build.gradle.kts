@@ -71,12 +71,17 @@ kotlin {
             implementation(compose.ui)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
+
+            implementation("dev.gitlive:firebase-auth:1.13.0")
+            implementation("dev.gitlive:firebase-firestore:1.13.0")
         }
         jsMain.dependencies {
             implementation("dev.gitlive:firebase-auth:1.13.0")
             implementation("dev.gitlive:firebase-firestore:1.13.0")
         }
-
+        wasmJsMain.dependencies{
+                implementation(project(":composeApp"))
+        }
     }
 }
 
