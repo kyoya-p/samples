@@ -8,8 +8,8 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-//import greeting
 
+external fun require(name: String)
 external fun greeting(name: String)
 
 @Composable
