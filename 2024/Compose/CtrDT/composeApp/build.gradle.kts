@@ -11,11 +11,11 @@ plugins {
 kotlin {
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "CtrWasmJs"
+        moduleName = "composeApp"
         browser {
             val projectDirPath = project.projectDir.path
             commonWebpackConfig {
-                outputFileName = "CtrWasmJs.js"
+                outputFileName = "composeApp.js"
                 devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
                     static = (static ?: mutableListOf()).apply {
                         // Serve sources to debug inside browser
@@ -26,22 +26,7 @@ kotlin {
         }
         binaries.executable()
     }
-    js{
-        moduleName = "CtrJs"
-        browser{
-            val projectDirPath = project.projectDir.path
-            commonWebpackConfig {
-                outputFileName = "CtrJs.js"
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(projectDirPath)
-                    }
-                }
-            }
-        }
-        binaries.executable()
-    }
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -52,6 +37,9 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+        }
+        wasmJsMain.dependencies{
+//            implementation( project(":libJs"))
         }
     }
 }
