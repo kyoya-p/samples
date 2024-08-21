@@ -38,9 +38,13 @@ sudo -E node RpcAgent/build/compileSync/js/main/productionExecutable/kotlin/Fire
 # RpcAgent Docker
 ```sh:Build/Publish
 TAG=<doker-image-name>:<docker-image-tag>
-BUILDOPTS="--build-arg http_proxy --build-arg https_proxy"
-sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` $BUILDOPTS --tag $TAG RpcAgent/docker
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` --tag $TAG RpcAgent/docker
 sudo -E docker push $TAG
+```
+```sh:Build with Proxy
+export JAVA_OPTS="-Djavax.net.ssl.trustStore=~/home/lan.sc/cacert.2 -Djavax.net.ssl.trustStorePassword=changeit"
+BUILDOPTS="--build-arg http_proxy --build-arg https_proxy --build-arg JAVA_OPTS"  # with Proxy
+sudo -E docker build --build-arg COMMIT=`git rev-parse HEAD` $BUILDOPTS --tag $TAG RpcAgent/docker
 ```
 
 ```sh:Run
