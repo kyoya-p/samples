@@ -1,6 +1,6 @@
 //TIP コードを<b>実行</b>するには、<shortcut actionId="Run"/> を押すか
 // ガターの <icon src="AllIcons.Actions.Execute"/> アイコンをクリックします。
-fun main() {
+fun mainX() {
     val name = "Kotlin"
     //TIP ハイライトされたテキストにキャレットがある状態で <shortcut actionId="ShowIntentionActions"/> を押すと
     // IntelliJ IDEA によるその修正案を確認できます。
@@ -11,4 +11,10 @@ fun main() {
         // <shortcut actionId="ToggleLineBreakpoint"/> を押すといつでも他のブレークポイントを追加できます。
         println("i = $i")
     }
+}
+
+fun main() {
+    platform.posix.system("date")
+    platform.posix.system("sh -c 'ls -la'")
+    platform.posix.system("sh -c 'exit 999'")
 }
