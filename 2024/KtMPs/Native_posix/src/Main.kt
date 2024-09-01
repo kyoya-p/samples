@@ -1,20 +1,24 @@
-//TIP コードを<b>実行</b>するには、<shortcut actionId="Run"/> を押すか
-// ガターの <icon src="AllIcons.Actions.Execute"/> アイコンをクリックします。
-fun mainX() {
-    val name = "Kotlin"
-    //TIP ハイライトされたテキストにキャレットがある状態で <shortcut actionId="ShowIntentionActions"/> を押すと
-    // IntelliJ IDEA によるその修正案を確認できます。
-    println("Hello, " + name + "!")
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.toKString
+import platform.posix.getenv
+import platform.posix.setenv
+import platform.posix.system
 
-    for (i in 1..5) {
-        //TIP <shortcut actionId="Debug"/> を押してコードのデバッグを開始します。<icon src="AllIcons.Debugger.Db_set_breakpoint"/> ブレークポイントを 1 つ設定しましたが、
-        // <shortcut actionId="ToggleLineBreakpoint"/> を押すといつでも他のブレークポイントを追加できます。
-        println("i = $i")
+@OptIn(ExperimentalForeignApi::class)
+fun main() {
+    setenv("ENV1", "VAL1", 1/*Overwrite*/)
+    val pwd = getenv("ENV1")?.toKString() ?: "UNK"
+    println("ENV1:$pwd")
+    system("echo ${'$'}ENV1")
+
+    for (i in listOf(-1, 0, 1, 2, 255, 256)) {
+        val rc = system("exit $i")
+        println("exec:'exit $i', RC: $rc, exit:${rc / 256}")
     }
 }
 
-fun main() {
-    platform.posix.system("date")
-    platform.posix.system("sh -c 'ls -la'")
-    platform.posix.system("sh -c 'exit 999'")
-}
+/*
+ Refer:
+ - https://ja.manpages.org/
+
+ */
