@@ -11,11 +11,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okio.Path.Companion.toPath
 
+
 suspend fun main(args: Array<String>) {
     val apiKey = System.getenv("GOOGLE_API_KEY") ?: throw IllegalArgumentException("Not Found: GOOGLE_API_KEY")
+
+
     val src = args.getOrElse(0) { "." }.toPath().toFile().walk().filter { it.isFile && it.extension == "kt" }
         .joinToString("\n") { it.readText(Charsets.UTF_8) }
-    val res = gemini<ResGemini>(apiKey, "コードレビューして: ${src}")
+    val res = gemini<ResGemini>(apiKey, "コードレビューして: $src")
     println(res)
 }
 
