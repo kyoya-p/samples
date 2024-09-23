@@ -15,7 +15,8 @@ kotlin {
 
     sourceSets {
         jsMain.dependencies {
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1") // for serialization
+            implementation(npm("@google/generative-ai","0.19.0")) // https://www.npmjs.com/package/@google/generative-ai
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
         }
     }
 }
