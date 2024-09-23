@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "2.0.0"
-    kotlin("plugin.serialization") version "2.0.0"
+    kotlin("multiplatform") version "1.9.20"
+    kotlin("plugin.serialization") version "1.9.20"
 }
 
 repositories {
@@ -9,12 +9,13 @@ repositories {
 
 kotlin {
     js {
-        nodejs { }
+        nodejs()
         binaries.executable()
     }
 
     sourceSets {
         jsMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1") // for serialization
         }
     }
 }
