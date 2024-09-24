@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 async function main() {
     const key = process.env.GOOGLE_API_KEY ?? ""
     const genAI = new GoogleGenerativeAI(key)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flush" })
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
     const chat = model.startChat()
 
     async function qa(q: string) {
