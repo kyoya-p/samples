@@ -14,5 +14,6 @@ async function main() {
     await chat.sendMessage(files)
     await qa("画像を20文字で説明して")
     await qa("カード上の透かし文言は何")
+    await qa("カード上の透かしの矩形領域を示して[ymin, xmin, ymax, xmax]")
 }
 main()
