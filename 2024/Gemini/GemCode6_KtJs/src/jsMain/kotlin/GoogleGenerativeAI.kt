@@ -23,7 +23,23 @@ actual external class GenerativeModel {
 //    actual   fun generateContent(request: Array<Part>): Promise<GenerateContentResult>
 //     fun generateContent(request: GenerateContentRequest): Promise<GenerateContentResult>
 
+    actual fun startChat(): ChatSession
+    actual fun startChat(startChatParams: StartChatParams?): ChatSession
+
     fun countTokens(request: String): Promise<CountTokensResponse>
+}
+
+actual external class StartChatParams {
+    actual val history: Array<Content>?
+//    actual val tools: Array<Tool>?
+//    actual val toolConfig: ToolConfig?
+//    actual val systemInstruction: String? // | Part | Content
+//    actual val cachedContent: String?
+}
+
+actual external class ChatSession {
+    //     sendMessage(request: string | Array<string | Part>, requestOptions?: SingleRequestOptions): Promise<GenerateContentResult>;
+    actual fun sendMessage(request: String): Promise<GenerateContentResult>
 }
 
 actual external class CountTokensResponse {

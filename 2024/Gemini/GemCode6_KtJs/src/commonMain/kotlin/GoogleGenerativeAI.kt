@@ -15,6 +15,20 @@ expect class GoogleGenerativeAI(apiKey: String) {
 
 expect class GenerativeModel {
     fun generateContent(request: String): Promise<GenerateContentResult>
+    fun startChat(): ChatSession
+    fun startChat(startChatParams: StartChatParams?): ChatSession
+}
+
+expect class StartChatParams {
+    //    actual val tools: Array<Tool>?
+//    actual val toolConfig: ToolConfig?
+//    actual val systemInstruction: String? // | Part | Content
+//    actual val cachedContent: String?
+    val history: Array<Content>?
+}
+
+expect class ChatSession {
+    fun sendMessage(request: String): Promise<GenerateContentResult>
 }
 
 expect class CountTokensResponse {
@@ -68,3 +82,4 @@ expect class Content {
     val role: String
     val parts: Array<Part>
 }
+

@@ -34,7 +34,7 @@ kotlin {
 //            implementation("com.squareup.okio:okio:3.9.1")
             implementation(npm("@google/generative-ai", "0.19.0"))
         }
-        jsTest.dependencies {
+        commonTest.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
             implementation("io.kotest:kotest-framework-engine:5.9.1")
             implementation("io.kotest:kotest-assertions-core:5.9.1")
