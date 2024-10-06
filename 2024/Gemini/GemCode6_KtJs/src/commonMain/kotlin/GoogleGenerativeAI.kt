@@ -5,6 +5,10 @@ package google.generativeai
 import kotlin.js.Json
 import kotlin.js.Promise
 
+val GEMINI_1_0_PRO = "gemini-1.0-pro"
+val GEMINI_1_5_FLASH = "gemini-1.5-flash"
+val GEMINI_1_5_PRO = "gemini-1.5-pro"
+
 expect class GoogleGenerativeAI(apiKey: String) {
     fun getGenerativeModel(params: Json): GenerativeModel
 }
