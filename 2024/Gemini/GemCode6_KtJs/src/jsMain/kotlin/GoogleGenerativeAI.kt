@@ -1,6 +1,9 @@
+// 名前空間(複数クラス等)をexportするNPMモジュールを参照する場合、packageに対して@JsModuleを付与する
+
 @file:Suppress("unused", "EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
 @file:JsModule("@google/generative-ai") // NPMモジュール名
 @file:JsNonModule // モジュールとしてではなく、グローバルにアクセス可能にする
+
 
 package google.generativeai
 
