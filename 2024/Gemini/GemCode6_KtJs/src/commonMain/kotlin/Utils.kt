@@ -1,0 +1,14 @@
+import google.generativeai.GoogleGenerativeAI
+import kotlinx.coroutines.await
+import kotlin.js.json
+
+expect fun getApiKey(): String
+
+suspend fun main() {
+    val apiKey = getApiKey()
+    val ai = GoogleGenerativeAI(apiKey)
+    val model = ai.getGenerativeModel(json("model" to GEMINI_1_5_FLASH))
+    val result = model.generateContent("三角、四角、五角形、の次は? 簡潔に").await()
+    println(result.response.text())
+}
+
