@@ -1,24 +1,26 @@
 @file:Suppress("unused", "EXPECT_ACTUAL_CLASSIFIERS_ARE_IN_BETA_WARNING")
-
 @file:JsModule("@google/generative-ai") // NPMモジュール名
 @file:JsNonModule // モジュールとしてではなく、グローバルにアクセス可能にする
+
 package google.generativeai
 
 import kotlin.js.Json
 import kotlin.js.Promise
 
 actual external class GoogleGenerativeAI actual constructor(apiKey: String) {
-    actual  fun getGenerativeModel(params: Json): GenerativeModel
+    actual fun getGenerativeModel(params: Json): GenerativeModel
 }
 
 actual external class GenerativeModel {
     //    generateContent(request: GenerateContentRequest | string | Array<string | Part>, requestOptions?: SingleRequestOptions)
-    actual   fun generateContent(request: String): Promise<GenerateContentResult>
+    actual fun generateContent(request: String): Promise<GenerateContentResult>
+
+//    actual suspend  fun generateContent(request: String): GenerateContentResult
 //    actual   fun generateContent(request: Array<String>): Promise<GenerateContentResult>
 //    actual   fun generateContent(request: Array<Part>): Promise<GenerateContentResult>
 //     fun generateContent(request: GenerateContentRequest): Promise<GenerateContentResult>
 
-       fun countTokens(request: String): Promise<CountTokensResponse>
+    fun countTokens(request: String): Promise<CountTokensResponse>
 }
 
 actual external class CountTokensResponse {
@@ -38,10 +40,14 @@ actual external class TextPart : Part {
 //class CodeExecutionResultPart : Part
 
 actual external class GenerateContentResult {
-    actual val response: GenerateContentResponse
+    actual val response: EnhancedGenerateContentResponse
 }
 
-actual external class GenerateContentResponse {
+actual external class EnhancedGenerateContentResponse : GenerateContentResponse {
+    actual fun text(): String
+}
+
+actual external open class GenerateContentResponse {
     actual val candidates: Array<GenerateContentCandidate>?
 
     //        val  promptFeedback: PromptFeedback?

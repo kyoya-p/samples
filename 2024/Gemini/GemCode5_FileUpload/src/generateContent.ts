@@ -8,7 +8,7 @@ async function main() {
     async function qa(q: string) {
         const a = await model.generateContent(q)
         console.log(`Q: ${q}`)
-        console.log(`A: ${a.response.text()}`)
+        console.log(`A: ${a.response.candidates![0].content.parts[0].text}`)
     }
 
     await qa("三角、四角、五角形、の次は? 簡潔に")

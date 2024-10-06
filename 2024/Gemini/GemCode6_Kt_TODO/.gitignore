@@ -3,6 +3,7 @@
 /build/
 /*.iml
 /.fleet/
+/bin/
 
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
