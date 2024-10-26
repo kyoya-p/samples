@@ -1,3 +1,4 @@
+
 import google.generativeai.GEMINI_1_5_FLASH
 import google.generativeai.GoogleGenerativeAI
 import io.kotest.core.spec.style.FunSpec
@@ -12,6 +13,11 @@ import okio.buffer
 import okio.use
 import kotlin.js.json
 
+import google.generativeai.InlineImage
+import kotlin.io.encoding.Base64.Default.encode
+import kotlin.io.encoding.ExperimentalEncodingApi
+
+@OptIn(ExperimentalEncodingApi::class)
 class GeminiTestClass : FunSpec({
     test("generateContent") {
         val apiKey = getApiKey()
@@ -30,22 +36,23 @@ class GeminiTestClass : FunSpec({
         chat.sendMessage("その次は? 簡潔に").await().response.text().also(::println) shouldContain "六角"
         chat.sendMessage("最後の答えの前は? 簡潔に").await().response.text().also(::println) shouldContain Regex("五角")
     }
+
+    // [TODO]
     test("inlineFile") {
         val apiKey = getApiKey()
         val genai = GoogleGenerativeAI(apiKey)
         val model = genai.getGenerativeModel(json("model" to GEMINI_1_5_FLASH))
 
         //  { inlineData: { data: Buffer.from(fs.readFileSync(path)).toString("base64"), mimeType, } }
-        data class InlineData(val data: String/*B64*/, val mimeType: String)
 
-        val res = HttpClient(Js).get("https://pbs.twimg.com/media/GZVJoPRasAA4zla?format=jpg").body<ByteArray>()
-        fileSystem.write("test.jpg".toPath(), true) { write(res) }
+        val data = HttpClient(Js).get("https://pbs.twimg.com/media/GZVJoPRasAA4zla?format=jpg").body<ByteArray>()
+//        fileSystem.write("test.jpg".toPath(), true) { write(res) }
 
         val chat = model.startChat()
-        chat.sendMessage()
-
-//        val files = listOf(InlineData())
-//        val chat = model.startChat()
+        chat.sendMessage(
+            "",
+            listOf(InlineImage(encode(data), "image/jpeg"))
+        ).await().response.text().also(::println)
 
     }
     test("count") {

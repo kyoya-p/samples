@@ -40,6 +40,7 @@ actual external class StartChatParams {
 actual external class ChatSession {
     //     sendMessage(request: string | Array<string | Part>, requestOptions?: SingleRequestOptions): Promise<GenerateContentResult>;
     actual fun sendMessage(request: String): Promise<GenerateContentResult>
+    actual fun sendMessage(request: String, files: List<InlineImage>): Promise<GenerateContentResult>
 }
 
 actual external class CountTokensResponse {

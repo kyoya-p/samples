@@ -29,6 +29,7 @@ expect class StartChatParams {
 
 expect class ChatSession {
     fun sendMessage(request: String): Promise<GenerateContentResult>
+    fun sendMessage(request: String, files: List<InlineImage>): Promise<GenerateContentResult>
 }
 
 expect class CountTokensResponse {
@@ -83,3 +84,4 @@ expect class Content {
     val parts: Array<Part>
 }
 
+data class InlineImage(val data: String, val mimeType: String)
