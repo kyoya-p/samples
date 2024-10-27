@@ -5,7 +5,6 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import io.ktor.server.response.*
 
 fun Application.configureSecurity() {
     // Please read the jwt property from the config file if you are using EngineMain
@@ -14,11 +13,10 @@ fun Application.configureSecurity() {
     val jwtRealm = "ktor sample app"
     val jwtSecret = "secret"
     authentication {
-        jwt {
+        jwt("jwt1") {
             realm = jwtRealm
             verifier(
-                JWT
-                    .require(Algorithm.HMAC256(jwtSecret))
+                JWT.require(Algorithm.HMAC256(jwtSecret))
                     .withAudience(jwtAudience)
                     .withIssuer(jwtDomain)
                     .build()
