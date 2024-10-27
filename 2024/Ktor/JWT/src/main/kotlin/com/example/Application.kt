@@ -8,8 +8,10 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
+import io.ktor.server.http.content.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import java.io.File
 
 fun main() {
     embeddedServer(CIO, port = 8080, host = "0.0.0.0", module = Application::module).start(wait = true)
@@ -41,9 +43,11 @@ fun Application.module() {
             call.response.headers.append(HttpHeaders.Authorization, "Bearer $token")
             call.respondRedirect("/")
         }
-        authenticate("jwt1") {
-            get("/") { call.respondText("Hello World!") }
-        }
+//        authenticate("jwt1") {
+//            get("/") { call.respondText("Hello World!") }
+//        }
+        staticFiles("/", File("src/main/resources"))
+
     }
 
 }
