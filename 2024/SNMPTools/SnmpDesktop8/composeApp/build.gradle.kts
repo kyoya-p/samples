@@ -63,7 +63,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMP Desktop"
-            packageVersion = "1.8.4"
+            packageVersion = "1.8.5"
             windows {
                 shortcut = true
                 menu = true
