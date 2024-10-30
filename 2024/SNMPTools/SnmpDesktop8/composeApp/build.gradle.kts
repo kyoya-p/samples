@@ -40,9 +40,8 @@ kotlin {
             implementation("com.squareup.okio:okio:3.8.0")  // https://mvnrepository.com/artifact/com.squareup.okio/okio
             implementation("com.charleskorn.kaml:kaml:0.57.0")  // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
             implementation("androidx.datastore:datastore-preferences-core:1.1.1") // https://mvnrepository.com/artifact/androidx.datastore/datastore
-//            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
-//            implementation("androidx.navigation:navigation-compose:2.8.0-alpha08")
-            implementation("jp.wjg.shokkaa:snmp4jutils:1.9.0")  // local private library
+
+            implementation("jp.wjg.shokkaa:snmp4jutils:1.9.1")  // local private library
         }
 
         commonTest.dependencies {
