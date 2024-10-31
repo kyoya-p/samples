@@ -26,8 +26,8 @@ COPY --from=b1 /opt/samples/2024/FireShell/RpcAgent/build/compileSync/js/main/pr
 COPY --from=b1 /opt/samples/2024/FireShell/build/js/node_modules ./node_modules
 WORKDIR /opt
 
-ENV USERID=
-ENV PASSWORD=
+ENV USERID="<FirebaseプロジェクトのAuthenticationに登録したユーザID 例: xxxxx@gmail.com>"
+ENV PASSWORD="<同Authenticationに登録したパスワード>"
 ENV http_proxy=
 ENV https_proxy=
 ENV no_proxy=
