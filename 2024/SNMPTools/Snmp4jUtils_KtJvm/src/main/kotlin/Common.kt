@@ -49,7 +49,6 @@ suspend fun SnmpAsync.sendAsync(
     })
 }
 
-
 suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { continuation ->
     val listener = object : ResponseListener {
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
@@ -57,8 +56,8 @@ suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { cont
                 snmp.cancel(req.pdu, this)
                 @Suppress("UNCHECKED_CAST")
                 val res = when {
-                    r.response == null -> Timeout(r.userObject as Request)
-                    else -> Response(r.userObject as Request, r as SnmpEvent)
+                    r.response == null -> Result.Timeout(r.userObject as Request)
+                    else -> Result.Response(r.userObject as Request, r as SnmpEvent)
                 }
                 continuation.resume(res)
             }.onFailure { it.printStackTrace() }
@@ -69,6 +68,27 @@ suspend fun SnmpAsync.uniCast(req: Request) = suspendCancellableCoroutine { cont
     snmp.send(req.pdu, req.target, req, listener)
     continuation.invokeOnCancellation { snmp.cancel(req.pdu, listener) }
 }
+
+// [TODO]
+suspend fun SnmpAsync.uniCast2(req: Request): Result = suspendCancellableCoroutine { continuation ->
+    val listener: ResponseListener = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
+            (event.source as Snmp).cancel(event.request, this)
+            val response = event.response
+            val request = event.request
+            if (response == null) {
+                println("Request $request timed out")
+                continuation.resume(Result.Timeout(req))
+            } else {
+                println("Received response $response on request $request")
+                @Suppress("UNCHECKED_CAST")
+                continuation.resume(Result.Response(req, event as SnmpEvent))
+            }
+        }
+    }
+    snmp.send(req.pdu, req.target, null, listener)
+}
+
 
 suspend fun SnmpAsync.getInetAddressByName(host: String) = suspendCoroutine<InetAddress> { continuation ->
     val adr = InetAddress.getByName(host)
@@ -118,17 +138,29 @@ fun Snmp.async() = SnmpAsync(this)
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 typealias SnmpEvent = ResponseEvent<UdpAddress>
 
-data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
+data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null) {
+    companion object
+}
+
+fun Request.Companion.from(adr: String, oid: String = ".1.3.6", userData: Any? = null) = Request(
+    SnmpTarget(UdpAddress(InetAddress.getByName(adr), 161), OctetString("public")),
+    PDU(PDU.GETNEXT, listOf(VariableBinding(OID(oid)))),
+    userData
+)
 
 fun defaultTarget(ip: InetAddress) = SnmpTarget(UdpAddress(ip, 161), OctetString("public"))
 fun defaultScanTarget(ip: InetAddress) = defaultTarget(ip).apply { timeout = 5000;retries = 1 }
 fun defaultPDU() = PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6))))
 fun defaultRequest(ip: InetAddress) = Request(defaultTarget(ip), defaultPDU())
 
-sealed class Result
+sealed class Result {
+    data class Response(val request: Request, val received: SnmpEvent) : Result()
+    data class Timeout(val request: Request) : Result()
 
-data class Response(val request: Request, val received: SnmpEvent) : Result()
-data class Timeout(val request: Request) : Result()
+    fun onResponse(op: (Response) -> Any?): Result = apply { if (this is Response) op(this) }
+    fun onTimeout(op: (Timeout) -> Any?): Result = apply { if (this is Timeout) op(this) }
+}
+
 
 @Suppress("EnumEntryName", "SpellCheckingInspection", "unused")
 enum class SampleOID(val oid: String, val oidName: String) {

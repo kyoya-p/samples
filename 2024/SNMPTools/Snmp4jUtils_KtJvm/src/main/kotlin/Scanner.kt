@@ -30,7 +30,7 @@ fun main(args: Array<String>): Unit = runBlocking {
     measureTime {
         scanFlow(ipRangeSet, snmp, maxSessions = 1000) {
             target = defaultSnmpFlowTarget(ip).apply { timeout = 5000; retries = 0 }
-        }.filterResponse().collect {
+        }.filterResponse().collect {it->
             println("${it.received.peerAddress} - ${it.received.response.variableBindings[0]}")
         }
     }.also { dt -> println("${ipRangeSet.totalLength()}/[$dt] (${ipRangeSet.totalLength() / dt.inWholeSeconds.toULong()}/s)") }
@@ -136,8 +136,8 @@ suspend fun Flow<Request>.uniCast(
         override fun <A : Address> onResponse(r: ResponseEvent<A>) {
             ++nRes
             @Suppress("UNCHECKED_CAST") val res = when {
-                r.response == null -> Timeout(r.userObject as Request)
-                else -> Response(r.userObject as Request, r as SnmpEvent)
+                r.response == null -> Result.Timeout(r.userObject as Request)
+                else -> Result.Response(r.userObject as Request, r as SnmpEvent)
             }
             trySendBlocking(res)
             sem.release()
@@ -165,8 +165,8 @@ fun Flow<Request>.send(
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
             runCatching {
                 @Suppress("UNCHECKED_CAST") val res = when {
-                    r.response == null -> Timeout(r.userObject as Request)
-                    else -> Response(r.userObject as Request, r as SnmpEvent)
+                    r.response == null -> Result.Timeout(r.userObject as Request)
+                    else -> Result.Response(r.userObject as Request, r as SnmpEvent)
                 }
                 trySendBlocking(res)
                 snmp.cancel(r.request, this)
@@ -188,7 +188,7 @@ fun ClosedRange<ULong>.asFlow() = flow { for (i in start..endInclusive) emit(i) 
 @ExperimentalCoroutinesApi
 fun MutableRangeSet<ULong>.toFlatFlow() = asFlow().flatMapConcat { it.asFlow() }
 fun Flow<Result>.filterResponse() =
-    filter { it is Response }.map { it as Response }.filter { it.request.target.address == it.received.peerAddress }
+    filter { it is Result.Response }.map { it as Result.Response }.filter { it.request.target.address == it.received.peerAddress }
 
 
 fun String.toRange() = trim().split("-").map { it.trim().toIpV4ULong() }.let { it[0]..it[it.lastIndex] }

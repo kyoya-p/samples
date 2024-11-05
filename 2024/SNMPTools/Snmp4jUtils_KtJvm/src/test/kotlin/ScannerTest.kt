@@ -1,27 +1,20 @@
 @file:Suppress("ClassName")
 
-import jp.wjg.shokkaa.snmp4jutils.*
 import jp.wjg.shokkaa.snmp4jutils.async.*
+import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
+import jp.wjg.shokkaa.snmp4jutils.uniCast
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.count
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.snmp4j.PDU
-import org.snmp4j.event.ResponseEvent
-import org.snmp4j.event.ResponseListener
-import org.snmp4j.fluent.SnmpBuilder
-import org.snmp4j.smi.Address
-import org.snmp4j.smi.Integer32
 import org.snmp4j.smi.OctetString
 import org.snmp4j.smi.VariableBinding
 import java.net.InetAddress
-import java.util.concurrent.Semaphore
-import kotlin.concurrent.thread
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTime
 
@@ -69,8 +62,8 @@ class ScannerTest {
         val ress = flowOf(req).uniCast(snmp).toList()
         assert(ress.size == 1)
         val res = ress[0]
-        assert(res is Response)
-        with(res as Response) {
+        assert(res is Result.Response)
+        with(res as Result.Response) {
             println(received.peerAddress.inetAddress)
             println(received.response.variableBindings)
             println(received.response.errorIndex)
@@ -92,8 +85,8 @@ class ScannerTest {
             val ress = flowOf(req).uniCast(snmp).toList()
             assert(ress.size == 1)
             val res = ress[0]
-            assert(res is Timeout)
-            with(res as Timeout) {
+            assert(res is Result.Timeout)
+            with(res as Result.Timeout) {
                 assert(request.target == req.target)
             }
         }
@@ -140,60 +133,6 @@ class ScannerTest {
             val t1 = flowOf(req).transform { r -> repeat(3000) { emit(r) } }.uniCast(snmp, maxSessions = 3000).count()
             assert(t1 == 3000)
         }.also(::println)
-    }
-
-    @Test
-    fun scanFlow_wideRange_timeout(): Unit = runTest(timeout = 2.hours) {
-        val snmp = createDefaultSenderSnmpAsync()
-        val noTaget = InetAddress.getByName("127.0.0.1")
-        val tg = defaultScanTarget(noTaget).apply { timeout = 5000; retries = 1 }
-        val req = Request(defaultScanTarget(noTaget), defaultPDU())
-        measureTime {
-            val t = 16_777_216  // class-A
-            val t1 = flow { repeat(t) { emit(req.apply { pdu.requestID = Integer32(it) }) } }
-                .measureThroughput(last = t.toULong()) {
-                    uniCast(snmp, maxSessions = 100_000)
-                }.count()
-            assert(t1 == t)
-        }.also(::println)
-    }
-
-    @Test
-    fun simpleSNMP4j_loadtest(): Unit {
-        val snmp = SnmpBuilder().udp().v1().v3().build()
-        var ci = 0
-        var co = 0
-        val range = "10.64.0.0-10.127.255.255".toRange()
-//        val range ="10.32.0.0-10.63.255.255".toRange()
-        val s = 10_000
-        val sem = Semaphore(s)
-        print("\r$ci->$co [${ci - co}] : ")
-        thread {
-            while (true) {
-                print("\r$ci->$co [${ci - co}] : ")
-                Thread.sleep(500)
-            }
-        }
-        for (i in range) {
-//            print("\ri $ci->$co [${ci - co}] : ")
-            val tg = defaultScanTarget(i.toIpV4Adr()).apply { timeout = 5000; retries = 5 }
-
-            sem.acquire()
-            snmp.send(
-                PDU(PDU.GETNEXT, listOf(VariableBinding(OID(1, 3, 6)))),
-                tg,
-                null,
-                object : ResponseListener {
-                    override fun <A : Address?> onResponse(p0: ResponseEvent<A>?) {
-//                        snmp.cancel(p0?.request,this)
-                        ++co
-//                        print("\ro $ci->$co [${ci - co}] : ")
-                        sem.release()
-                    }
-                })
-            ++ci
-        }
-        sem.acquire(s)
     }
 }
 
