@@ -4,10 +4,7 @@ import jp.wjg.shokkaa.snmp4jutils.async.*
 import jp.wjg.shokkaa.snmp4jutils.scrambledIpV4AddressSequence
 import jp.wjg.shokkaa.snmp4jutils.uniCast
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -133,6 +130,12 @@ class ScannerTest {
             val t1 = flowOf(req).transform { r -> repeat(3000) { emit(r) } }.uniCast(snmp, maxSessions = 3000).count()
             assert(t1 == 3000)
         }.also(::println)
+    }
+
+    @Test
+    fun throttle() {
+
+
     }
 }
 

@@ -12,8 +12,11 @@ import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
 import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
+import java.util.concurrent.Semaphore
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main(args: Array<String>): Unit = runBlocking {
     SnmpBuilder().udp().v1().build().async().use { snmp ->
@@ -23,7 +26,9 @@ fun main(args: Array<String>): Unit = runBlocking {
     }
 }
 
-class SnmpAsync(val snmp: Snmp) : AutoCloseable {
+class SnmpAsync(val snmp: Snmp, val throttle: Duration = 0.seconds, val maxSession: Int = 0) : AutoCloseable {
+    val sem = Semaphore(maxSession)
+
     override fun close() = snmp.close()
 
     companion object {
@@ -31,8 +36,17 @@ class SnmpAsync(val snmp: Snmp) : AutoCloseable {
             DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), 161))
 
         fun createDefaultAgentSession() = Snmp(createDefaultAgentTransport()).async()
-
     }
+
+    fun listenerWithMaxSession(cb: (ResponseEvent<UdpAddress>) -> Any?): ResponseListener = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
+            sem.release()
+            (event.source as Snmp).cancel(event.request, this)
+            @Suppress("UNCHECKED_CAST")
+            cb(event as ResponseEvent<UdpAddress>)
+        }
+    }
+
 }
 
 suspend fun SnmpAsync.sendAsync(
