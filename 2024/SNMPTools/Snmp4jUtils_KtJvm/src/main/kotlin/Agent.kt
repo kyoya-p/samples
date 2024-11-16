@@ -33,16 +33,6 @@ suspend fun snmpReceiverFlow(snmp: Snmp): Flow<ResponderEvent> {
     }
 }
 
-suspend fun snmpReceiverFlow_x(snmp: SnmpAsync) = callbackFlow {
-    val commandResponder = object : CommandResponder {
-        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            @Suppress("UNCHECKED_CAST")
-            trySend(event as CommandResponderEvent<UdpAddress>)
-        }
-    }
-    snmp.snmp.addCommandResponder(commandResponder)
-    awaitClose { snmp.snmp.removeCommandResponder(commandResponder) }
-}
 
 @OptIn(DelicateCoroutinesApi::class)
 @Suppress("BlockingMethodInNonBlockingContext", "BlockingMethodInNonBlockingContext")
@@ -78,38 +68,46 @@ suspend fun snmpAgent(
 }
 
 
-@OptIn(ExperimentalCoroutinesApi::class)
+suspend fun snmpReceiverFlow_x(snmp: Snmp, op: suspend (Snmp) -> Unit = {}) = callbackFlow {
+    val commandResponder = object : CommandResponder {
+        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
+            trySend(event as CommandResponderEvent<UdpAddress>)
+        }
+    }
+    snmp.addCommandResponder(commandResponder)
+    awaitClose { snmp.removeCommandResponder(commandResponder) }
+}
+
 suspend fun snmpAgent_x(
     vbl: List<VariableBinding>,
+    oidVbMap: LinkedHashMap<OID, VariableBinding> = linkedMapOf(* vbl.sortedBy { it.oid }.map { it.oid to it }
+        .toTypedArray()),
     port: Int = 161,
-    snmp: Snmp = Snmp(DefaultUdpTransportMapping(UdpAddress(InetAddress.getByName("0.0.0.0"), port))),
-//    hook: (ResponderEvent, PDU) -> PDU = { _, pdu -> pdu },
-    onReceiveHook: (ResponderEvent) -> Flow<ResponderEvent> = { flowOf(it) }
-) {
-    val snmpAsync = snmp.async().apply { listen() }
-    val oidVBMap = TreeMap<OID, VariableBinding>().apply {
-        vbl.forEach { put(it.oid, VariableBinding(it.oid, it.variable)) }
-    }
-    snmpReceiverFlow_x(snmpAsync).flatMapConcat { onReceiveHook(it) }.map { event ->
-        val resPdu = PDU().apply {
-            type = PDU.RESPONSE
-            requestID = event.pdu.requestID
-            errorIndex = 0
-            errorStatus = PDU.noError
-            variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
-                when (event.pdu.type) {
-                    PDU.GETNEXT -> oidVBMap.higherEntry(vb.oid)?.value
-                    else -> oidVBMap[vb.oid]
-                } ?: VariableBinding(vb.oid, noSuchObject).also {
-                    errorStatus = PDU.noSuchName
-                    if (errorIndex == 0) errorIndex = i
-                }
+    adr: UdpAddress = UdpAddress(InetAddress.getByName("0.0.0.0"), port),
+    snmp: Snmp = Snmp(DefaultUdpTransportMapping(adr)).apply { listen() },
+    op: suspend (Snmp) -> Unit = {}
+) = snmpReceiverFlow_x(snmp, op).collect { event ->
+    fun <K : Comparable<K>, V> Map<K, V>.higher(k: K) = keys.find { it > k }?.let { get(it) }
+    val resPdu = PDU().apply {
+        type = PDU.RESPONSE
+        requestID = event.pdu.requestID
+        errorIndex = 0
+        errorStatus = PDU.noError
+        variableBindings = event.pdu.variableBindings.mapIndexed { i, vb ->
+            when (event.pdu.type) {
+                PDU.GETNEXT -> oidVbMap.higher(vb.oid)
+                else -> oidVbMap[vb.oid]
+            } ?: VariableBinding(vb.oid, noSuchObject).also {
+                errorStatus = PDU.noSuchName
+                if (errorIndex == 0) errorIndex = i
             }
         }
-        val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
-        Request(resTarget, resPdu)
-    }.collect { res -> snmpAsync.uniCast(res) }
+    }
+    val resTarget = CommunityTarget(event.peerAddress, OctetString("public"))
+    snmp.send(resPdu, resTarget)
 }
+
 
 
 

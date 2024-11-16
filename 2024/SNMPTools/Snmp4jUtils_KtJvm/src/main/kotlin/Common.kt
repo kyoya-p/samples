@@ -1,6 +1,5 @@
 package jp.wjg.shokkaa.snmp4jutils.async
 
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
@@ -18,13 +17,6 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-fun main(args: Array<String>): Unit = runBlocking {
-    SnmpBuilder().udp().v1().build().async().use { snmp ->
-        val tg = CommunityTarget(UdpAddress(InetAddress.getByName(args[0]), 161), OctetString("public"))
-        val pdu = PDU(PDU.GETNEXT, listOf(VariableBinding(OID("1.3.6"))))
-        val vbl = snmp.send(pdu, tg)
-    }
-}
 
 class SnmpAsync(val snmp: Snmp, val throttle: Duration = 0.seconds, val maxSession: Int = 0) : AutoCloseable {
     val sem = Semaphore(maxSession)
@@ -171,8 +163,10 @@ sealed class Result {
     data class Response(val request: Request, val received: SnmpEvent) : Result()
     data class Timeout(val request: Request) : Result()
 
-    fun onResponse(op: (Response) -> Any?): Result = apply { if (this is Response) op(this) }
-    fun onTimeout(op: (Timeout) -> Any?): Result = apply { if (this is Timeout) op(this) }
+    fun onResponse(op: (Response) -> Any?): Result = also { if (it is Response) op(it) }
+    fun getResponseOrNull() = if (this is Response) received else null
+    fun getValueOrNull(ix: Int) = getResponseOrNull()?.response?.variableBindings?.getOrNull(ix)?.variable
+    fun onTimeout(op: (Timeout) -> Any?): Result = also { if (it is Timeout) op(it) }
 }
 
 
@@ -201,7 +195,8 @@ data class Device(
     val vbl: List<@Contextual VariableBinding>,
 )
 
-fun createDefaultSenderSnmpAsync() = SnmpBuilder().udp().v1().v3().build().async()
+fun createDefaultSenderSnmp() = SnmpBuilder().udp().v1().v3().build()
+fun createDefaultSenderSnmpAsync() = createDefaultSenderSnmp().async()
 
 val sampleMibMap = sortedMapOf<OID, Variable>(
     OID(1, 3, 6, 1, 2, 1, 1, 1) to OctetString("Dummy SNMP Agent"),
