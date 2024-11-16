@@ -1,0 +1,8 @@
+**/build/**
+**/.gradle
+**/.kotlin/**
+**/.idea/**
+
+local.properties
+server/src/main/resources/static/*
+!server/src/main/resources/static/index.html
