@@ -31,10 +31,15 @@ kotlin {
                 implementation(libs.kotlinx.rpc.krpc.ktor.client)
                 implementation(libs.kotlinx.rpc.krpc.serialization.json)
 
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+                implementation("org.jetbrains.kotlinx:kotlinx-html:0.11.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-html
+//                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
+
+
                 implementation(project.dependencies.platform(libs.kotlin.wrappers.bom))
-                implementation(libs.react)
-                implementation(libs.react.dom)
-                implementation(libs.emotion)
+//                implementation(libs.react)
+//                implementation(libs.react.dom)
+//                implementation(libs.emotion)
             }
         }
     }

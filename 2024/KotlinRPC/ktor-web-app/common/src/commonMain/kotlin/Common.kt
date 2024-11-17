@@ -15,8 +15,9 @@ data class UserData(
 
 @Rpc
 interface MyService : RemoteService {
-    suspend fun hello(user: String, userData: UserData): String
-    suspend fun subscribeToNews(): Flow<String>
+    suspend fun version():String
+    suspend fun pull(imageId: String, user: String?=null): Int
+    suspend fun subscribeToNews(): Flow<ContainerStatus>
 }
 
 @Serializable

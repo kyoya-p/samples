@@ -3,31 +3,29 @@
  */
 
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class MyServiceImpl(override val coroutineContext: CoroutineContext) : MyService {
-    override suspend fun hello(user: String, userData: UserData): String {
-        return "Nice to meet you $user, how is it in ${userData.address}?"
+    override suspend fun version(): String = suspendCoroutine { c ->
+        val r = ProcessBuilder("ctr", "-v").start().inputStream.reader().readText().trim()
+        c.resume(r)
     }
 
-    override suspend fun subscribeToNews(): Flow<String> {
-        return flow {
-            repeat(10) {
-                delay(2000)
-                emit("Article number $it")
-            }
+    override suspend fun pull(imageId: String, user: String?): Int = suspendCoroutine { c ->
+        val r = ProcessBuilder("ctr", "i", "pull", user).start().waitFor()
+        c.resume(r)
+    }
+
+    override suspend fun subscribeToNews() = flow {
+        repeat(10) {
+            val imgs = ProcessBuilder("ctr", "i", "ls", "-q").start().inputStream.reader().readLines()
+            println("[[$imgs]]")
+            emit(ContainerStatus(images = imgs.map { Image(name = it) }, containers = listOf()))
+            delay(10000)
         }
     }
 }
 
-class ContainerdServiceImpl(): ContainerdService{
-    override suspend fun status(): Flow<ContainerStatus> {
-        TODO("Not yet implemented")
-    }
-
-    override val coroutineContext: CoroutineContext
-        get() = TODO("Not yet implemented")
-
-}

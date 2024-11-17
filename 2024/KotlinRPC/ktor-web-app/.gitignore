@@ -1,7 +1,5 @@
 **/build/**
 **/.gradle
-**/.kotlin/**
-**/.idea/**
 
 local.properties
 server/src/main/resources/static/*

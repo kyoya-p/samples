@@ -31,13 +31,13 @@ class ApplicationTest {
         }.withService<MyService>()
 
         assertEquals(
-            expected = "Nice to meet you Alex, how is it in address1?",
-            actual = service.hello("Alex", UserData("address1", "last")),
+            expected = "ctr github.com/containerd/containerd 1.7.12",
+            actual = service.version(),
         )
 
         streamScoped {
             assertEquals(
-                expected = List(10) { "Article number $it" },
+                expected = List(10) { ContainerStatus(listOf(Image(name = "")), listOf()) },
                 actual = service.subscribeToNews().toList(),
             )
         }
