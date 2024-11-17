@@ -6,9 +6,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,15 +83,15 @@ fun App() {
             var showIcon by remember { mutableStateOf(false) }
 
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                greeting?.let {
-                    Text(it)
-                } ?: run {
-                    Text("Establishing server connection...")
-                }
+//                greeting?.let {
+//                    Text(it)
+//                } ?: run {
+//                    Text("Establishing server connection...")
+//                }
 
-                news.forEach {
-                    Text("Article: $it")
-                }
+//                news.forEach {
+//                    Text("Article: $it")
+//                }
 
                 status?.let {
                     it.images.forEach { Text(it.name) }
@@ -99,8 +99,9 @@ fun App() {
                     Text("Loading information...")
                 }
 
-                Button(onClick = { showIcon = !showIcon }) {
-                    Text("Click me!")
+                IconButton(onClick = { showIcon = !showIcon }) {
+//                    Text("PULL")
+                    Icon(Icons.Default.Add,"Pull Image")
                 }
 
                 AnimatedVisibility(showIcon) {
