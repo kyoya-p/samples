@@ -57,6 +57,7 @@ fun App() {
     if (service != null) {
         var greeting by remember { mutableStateOf<String?>(null) }
         val news = remember { mutableStateListOf<String>() }
+        var status by remember { mutableStateOf<CtStatus?>(null) }
 
         LaunchedEffect(service) {
             greeting = service.hello(
@@ -72,6 +73,11 @@ fun App() {
                 }
             }
         }
+        LaunchedEffect(service) {
+            streamScoped {
+                service.status().collect { status = it }
+            }
+        }
 
         MaterialTheme {
             var showIcon by remember { mutableStateOf(false) }
@@ -85,6 +91,12 @@ fun App() {
 
                 news.forEach {
                     Text("Article: $it")
+                }
+
+                status?.let {
+                    it.images.forEach { Text(it.name) }
+                } ?: run {
+                    Text("Loading information...")
                 }
 
                 Button(onClick = { showIcon = !showIcon }) {

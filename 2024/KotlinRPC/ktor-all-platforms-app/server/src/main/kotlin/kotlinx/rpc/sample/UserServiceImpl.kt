@@ -4,6 +4,8 @@
 
 package kotlinx.rpc.sample
 
+import CtStatus
+import Image
 import UserData
 import UserService
 import kotlinx.coroutines.delay
@@ -22,6 +24,15 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
                 delay(300)
                 emit("Article number $it")
             }
+        }
+    }
+
+    override suspend fun status() = flow {
+        repeat(10) {
+            val imgs = ProcessBuilder("ctr", "i", "ls", "-q").start().inputStream.reader().readLines()
+            println("[[$imgs]]")
+            emit(CtStatus(images = imgs.map { Image(name = it) }))
+            delay(10000)
         }
     }
 }
