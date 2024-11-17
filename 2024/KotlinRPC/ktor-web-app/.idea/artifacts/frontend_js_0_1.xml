@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="frontend-js-0.1">
+    <output-path>$PROJECT_DIR$/frontend/build/libs</output-path>
+    <root id="archive" name="frontend-js-0.1.jar">
+      <element id="module-output" name="ktor-web-app.frontend.jsMain" />
+    </root>
+  </artifact>
+</component>
