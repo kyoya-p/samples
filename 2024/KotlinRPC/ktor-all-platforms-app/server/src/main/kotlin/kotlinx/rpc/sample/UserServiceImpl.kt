@@ -1,7 +1,3 @@
-/*
- * Copyright 2023-2024 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
- */
-
 package kotlinx.rpc.sample
 
 import CtStatus
@@ -12,7 +8,6 @@ import io.ktor.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -31,10 +26,9 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         }
     }
 
-
+    override suspend fun serverType() = System.getProperty("os.name").toLowerCasePreservingASCIIRules()
     override suspend fun status() = flow {
         repeat(10) {
-            println(System.getProperty("os.name").toLowerCasePreservingASCIIRules())
             val cli = listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")
             val imgs = ProcessBuilder(cli).start().inputStream.reader().readLines()
             println("[[$imgs]]")
@@ -55,10 +49,15 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         c.resume(getStatus())
     }
 
-    override suspend fun process(args: List<String>, stdout: suspend (ByteArray) -> Unit) = suspendCoroutine { c ->
+    override suspend fun runContainer(imgId: String, cntnrId: String, args:List<String>)= suspendCoroutine {c->
+        val cli = listOf("wsl", "--user", "root", "ctr", "run",imgId,cntnrId)+args
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        c.resume(getStatus())
+    }
+
+    override suspend fun process(args: List<String>) = suspendCoroutine { c ->
         val p = ProcessBuilder(args).start()!!
-        launch { stdout(p.inputStream.readBytes()) }
-        c.resume(p.exitValue())
+        c.resume(p.inputStream.reader().readText())
     }
 
     fun ctr(args: List<String>) = ProcessBuilder(args).start().inputStream.reader().readLines()
