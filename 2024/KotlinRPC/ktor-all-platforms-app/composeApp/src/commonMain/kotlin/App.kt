@@ -1,7 +1,3 @@
-/*
- * Copyright 2023-2024 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
- */
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -26,11 +22,7 @@ import org.jetbrains.compose.resources.painterResource
 
 expect val DEV_SERVER_HOST: String
 
-val client by lazy {
-    HttpClient {
-        installRPC()
-    }
-}
+val client by lazy { HttpClient { installRPC() } }
 
 @Composable
 fun App() {
@@ -43,12 +35,7 @@ fun App() {
                 port = 8080
                 encodedPath = "/api"
             }
-
-            rpcConfig {
-                serialization {
-                    json()
-                }
-            }
+            rpcConfig { serialization { json() } }
         }.withService()
     }
 
@@ -59,20 +46,20 @@ fun App() {
         val news = remember { mutableStateListOf<String>() }
         var status by remember { mutableStateOf<CtStatus?>(null) }
 
-        LaunchedEffect(service) {
-            greeting = service.hello(
-                "User from ${getPlatform().name} platform",
-                UserData("Berlin", "Smith")
-            )
-        }
-
-        LaunchedEffect(service) {
-            streamScoped {
-                service.subscribeToNews().collect { article ->
-                    news.add(article)
-                }
-            }
-        }
+//        LaunchedEffect(service) {
+//            greeting = service.hello(
+//                "User from ${getPlatform().name} platform",
+//                UserData("Berlin", "Smith")
+//            )
+//        }
+//
+//        LaunchedEffect(service) {
+//            streamScoped {
+//                service.subscribeToNews().collect { article ->
+//                    news.add(article)
+//                }
+//            }
+//        }
         LaunchedEffect(service) {
             streamScoped {
                 service.status().collect { status = it }
@@ -101,7 +88,7 @@ fun App() {
 
                 IconButton(onClick = { showIcon = !showIcon }) {
 //                    Text("PULL")
-                    Icon(Icons.Default.Add,"Pull Image")
+                    Icon(Icons.Default.Add, "Pull Image")
                 }
 
                 AnimatedVisibility(showIcon) {

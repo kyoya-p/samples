@@ -19,17 +19,10 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 @Suppress("unused")
 fun Application.module() {
     install(RPC)
-
     installCORS()
-
     routing {
         rpc("/api") {
-            rpcConfig {
-                serialization {
-                    json()
-                }
-            }
-
+            rpcConfig { serialization { json() } }
             registerService<UserService> { ctx -> UserServiceImpl(ctx) }
         }
     }

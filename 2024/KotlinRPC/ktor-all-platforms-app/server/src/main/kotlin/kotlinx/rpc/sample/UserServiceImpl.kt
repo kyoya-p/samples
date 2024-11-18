@@ -8,6 +8,7 @@ import CtStatus
 import Image
 import UserData
 import UserService
+import io.ktor.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -29,7 +30,9 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
 
     override suspend fun status() = flow {
         repeat(10) {
-            val imgs = ProcessBuilder("ctr", "i", "ls", "-q").start().inputStream.reader().readLines()
+            println(System.getProperty("os.name").toLowerCasePreservingASCIIRules())
+            val cli = listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")
+            val imgs = ProcessBuilder(cli).start().inputStream.reader().readLines()
             println("[[$imgs]]")
             emit(CtStatus(images = imgs.map { Image(name = it) }))
             delay(10000)
