@@ -1,13 +1,20 @@
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.layout.HorizontalAlignmentLine
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import io.ktor.client.*
 import io.ktor.http.*
 import kotlinx.rpc.krpc.ktor.client.installRPC
@@ -40,12 +47,10 @@ fun App() {
     }
 
     val service = serviceOrNull // for smart casting
-
     if (service != null) {
-        var greeting by remember { mutableStateOf<String?>(null) }
-        val news = remember { mutableStateListOf<String>() }
+//        var greeting by remember { mutableStateOf<String?>(null) }
+//        val news = remember { mutableStateListOf<String>() }
         var status by remember { mutableStateOf<CtStatus?>(null) }
-
 //        LaunchedEffect(service) {
 //            greeting = service.hello(
 //                "User from ${getPlatform().name} platform",
@@ -67,7 +72,7 @@ fun App() {
         }
 
         MaterialTheme {
-            var showIcon by remember { mutableStateOf(false) }
+            var showDialog by remember { mutableStateOf(false) }
 
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
 //                greeting?.let {
@@ -81,25 +86,80 @@ fun App() {
 //                }
 
                 status?.let {
-                    it.images.forEach { Text(it.name) }
+                    if (it.images.isEmpty()) Text("No Images.")
+                    it.images.forEach { imageItem(it) }
                 } ?: run {
                     Text("Loading information...")
                 }
-
-                IconButton(onClick = { showIcon = !showIcon }) {
-//                    Text("PULL")
-                    Icon(Icons.Default.Add, "Pull Image")
+                IconButton(onClick = { showDialog = true }) { Icon(Icons.Default.Add, "Pull Image") }
+                var pullReq by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
+                LaunchedEffect(pullReq) {
+                    pullReq?.invoke()
+                    pullReq = null
+                }
+                if (showDialog) pullImageDialog(onClose = { showDialog = false }) {
+                    pullReq = { status = service.pullImage(it) }
+                    showDialog = false
                 }
 
-                AnimatedVisibility(showIcon) {
-                    Column(
-                        Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    }
-                }
+                console(service)
+            }
+
+
+//                AnimatedVisibility(showIcon) {
+//                    Column(
+//                        Modifier.fillMaxWidth(),
+//                        horizontalAlignment = Alignment.CenterHorizontally
+//                    ) {
+//                        Image(painterResource(Res.drawable.compose_multiplatform), null)
+//                    }
+//                }
+        }
+    }
+}
+
+
+@Composable
+fun imageItem(img: Image) = Card {
+    Row {
+        Text(img.name)
+        IconButton(onClick = {}) { Icon(Icons.Default.Delete, "delete") }
+    }
+}
+
+@Composable
+fun pullImageDialog(onClose: () -> Unit, onOk: (String) -> Unit) = Dialog(onDismissRequest = onClose) {
+    Card {
+        var id by remember { mutableStateOf("") }
+        Column(modifier = Modifier.padding(8.dp)) {
+            TextField(value = id, label = { Text("IMAGE ID:") }, onValueChange = { id = it })
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { onOk(id) }) { Text("PULL") }
+                Button(onClick = onClose) { Text("CANCEL") }
             }
         }
+    }
+}
+
+@Composable
+fun console(service: UserService) {
+    var req by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
+    LaunchedEffect(req) {
+        req?.invoke()
+        req = null
+    }
+    var cmd by remember { mutableStateOf("") }
+    var logs by remember { mutableStateOf("") }
+    Column {
+        Text(logs, maxLines = 7, minLines = 7)
+        TextField(cmd, onValueChange = { cmd = it }, modifier = Modifier.onKeyEvent { ev ->
+            if (ev.key == Key.Enter) {
+                val cs = cmd.trim().split(" ")
+                logs += "+$cs"
+                req = { service.process(cs) { logs += it.decodeToString() } }
+                cmd = ""
+            }
+            true
+        })
     }
 }

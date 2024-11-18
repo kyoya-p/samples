@@ -19,6 +19,10 @@ interface UserService : RemoteService {
     suspend fun subscribeToNews(): Flow<String>
 
     suspend fun status(): Flow<CtStatus>
+    suspend fun pullImage(id: String): CtStatus
+    suspend fun removeImage(id: String): CtStatus
+
+    suspend fun process(args: List<String>, stdout: suspend (ByteArray) -> Unit): Int
 }
 
 @Serializable

@@ -12,7 +12,10 @@ import io.ktor.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserService {
     override suspend fun hello(user: String, userData: UserData): String {
@@ -28,6 +31,7 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         }
     }
 
+
     override suspend fun status() = flow {
         repeat(10) {
             println(System.getProperty("os.name").toLowerCasePreservingASCIIRules())
@@ -38,4 +42,26 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
             delay(10000)
         }
     }
+
+    override suspend fun pullImage(id: String) = suspendCoroutine {
+        val cli = listOf("wsl", "--user", "root", "ctr", "i", "pull", id)
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        it.resume(getStatus())
+    }
+
+    override suspend fun removeImage(id: String) = suspendCoroutine { c ->
+        val cli = listOf("wsl", "--user", "root", "ctr", "i", "rm", id)
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        c.resume(getStatus())
+    }
+
+    override suspend fun process(args: List<String>, stdout: suspend (ByteArray) -> Unit) = suspendCoroutine { c ->
+        val p = ProcessBuilder(args).start()!!
+        launch { stdout(p.inputStream.readBytes()) }
+        c.resume(p.exitValue())
+    }
+
+    fun ctr(args: List<String>) = ProcessBuilder(args).start().inputStream.reader().readLines()
+    fun getImages() = ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).map { Image(it.trim()) }
+    fun getStatus() = CtStatus(images = getImages())
 }
