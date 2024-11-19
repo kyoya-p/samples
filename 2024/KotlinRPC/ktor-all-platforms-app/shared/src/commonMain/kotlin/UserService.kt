@@ -1,6 +1,4 @@
-/*
- * Copyright 2023-2024 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
- */
+package jp.wjg.shokkaa.container
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.rpc.RemoteService
@@ -23,15 +21,22 @@ interface UserService : RemoteService {
     suspend fun pullImage(id: String): CtStatus
     suspend fun removeImage(id: String): CtStatus
     suspend fun runContainer(imgId: String, cntnrId: String, args: List<String>): CtStatus
+
     suspend fun process(args: List<String>): String
 }
 
 @Serializable
 data class Image(
-    val name: String,
+    val id: String,
+)
+@Serializable
+data class Container(
+    val id: String,
+    val imageId: String,
 )
 
 @Serializable
 data class CtStatus(
     val images: List<Image>,
+    val containers: List<Container>,
 )

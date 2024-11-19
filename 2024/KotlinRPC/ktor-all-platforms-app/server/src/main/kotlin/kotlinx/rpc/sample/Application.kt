@@ -4,12 +4,12 @@
 
 package kotlinx.rpc.sample
 
-import UserService
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
+import jp.wjg.shokkaa.container.UserService
 import kotlinx.rpc.krpc.ktor.server.RPC
 import kotlinx.rpc.krpc.ktor.server.rpc
 import kotlinx.rpc.krpc.serialization.json.json

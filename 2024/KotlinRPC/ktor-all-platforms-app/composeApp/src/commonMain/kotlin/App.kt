@@ -15,6 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import io.ktor.client.*
 import io.ktor.http.*
+import jp.wjg.shokkaa.container.Container
+import jp.wjg.shokkaa.container.CtStatus
+import jp.wjg.shokkaa.container.Image
+import jp.wjg.shokkaa.container.UserService
 import kotlinx.rpc.krpc.ktor.client.installRPC
 import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
@@ -59,13 +63,34 @@ fun App() {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
-                req = { statusOrNull = service.runContainer(img.name, "XXXX", listOf()) }
+                req = { statusOrNull = service.runContainer(img.id, "XXXX", listOf()) }
             }) { Icon(Icons.Default.PlayArrow, "run") }
-            Text(img.name)
+            Text(img.id)
             IconButton(onClick = {
                 removing = true
                 req = {
-                    statusOrNull = service.removeImage(img.name)
+                    statusOrNull = service.removeImage(img.id)
+                    removing = false
+                }
+            }) {
+                Icon(Icons.Default.Delete, "delete")
+                if (removing) CircularProgressIndicator()
+            }
+        }
+    }
+    @Composable
+    fun containerItem(ctn: Container) = Card {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            var removing by remember { mutableStateOf(false) }
+            IconButton(onClick = {
+                req = { statusOrNull = service.runContainer(ctn.id, "XXXX", listOf()) }
+            }) { Icon(Icons.Default.PlayArrow, "run") }
+            Text(ctn.id)
+            Text(ctn.imageId)
+            IconButton(onClick = {
+                removing = true
+                req = {
+                    statusOrNull = service.removeImage(ctn.id)
                     removing = false
                 }
             }) {
@@ -93,6 +118,10 @@ fun App() {
                 running = false
             }
         }
+
+        if (status.containers.isEmpty()) Text("No Container.")
+        else status.containers.forEach { containerItem(it) }
+
     }
 
     MaterialTheme {

@@ -1,10 +1,7 @@
 package kotlinx.rpc.sample
 
-import CtStatus
-import Image
-import UserData
-import UserService
 import io.ktor.util.*
+import jp.wjg.shokkaa.container.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -32,7 +29,12 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
             val cli = listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")
             val imgs = ProcessBuilder(cli).start().inputStream.reader().readLines()
             println("[[$imgs]]")
-            emit(CtStatus(images = imgs.map { Image(name = it) }))
+            emit(
+                CtStatus(
+                    images = imgs.map { Image(id = it) },
+                    containers = listOf()
+                )
+            )
             delay(10000)
         }
     }
@@ -49,8 +51,8 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         c.resume(getStatus())
     }
 
-    override suspend fun runContainer(imgId: String, cntnrId: String, args:List<String>)= suspendCoroutine {c->
-        val cli = listOf("wsl", "--user", "root", "ctr", "run",imgId,cntnrId)+args
+    override suspend fun runContainer(imgId: String, cntnrId: String, args: List<String>) = suspendCoroutine { c ->
+        val cli = listOf("wsl", "--user", "root", "ctr", "run", imgId, cntnrId) + args
         ProcessBuilder(cli).start().inputStream.reader().readLines()
         c.resume(getStatus())
     }
@@ -62,5 +64,11 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
 
     fun ctr(args: List<String>) = ProcessBuilder(args).start().inputStream.reader().readLines()
     fun getImages() = ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).map { Image(it.trim()) }
-    fun getStatus() = CtStatus(images = getImages())
+    fun getContainers() = ctr(listOf("wsl", "--user", "root", "ctr", "c", "ls")).map {
+//        val c = it.drop(1).trim().split(" ")
+//        println("[[$c]]")
+        Container(id = it, imageId = it)
+    }
+
+    fun getStatus() = CtStatus(images = getImages(), containers = getContainers())
 }
