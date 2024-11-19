@@ -74,6 +74,7 @@ kotlin {
             implementation(libs.kotlinx.rpc.krpc.ktor.client)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.websockets)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -92,7 +93,7 @@ kotlin {
 }
 
 android {
-    namespace = "kotlinx.rpc.sample"
+    namespace = "jp.wjg.shokkaa.container"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
@@ -100,7 +101,7 @@ android {
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
 
     defaultConfig {
-        applicationId = "kotlinx.rpc.sample"
+        applicationId = "jp.wjg.shokkaa.container"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -131,7 +132,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "kotlinx.rpc.sample"
+            packageName = "jp.wjg.shokkaa.container"
             packageVersion = "1.0.0"
         }
     }

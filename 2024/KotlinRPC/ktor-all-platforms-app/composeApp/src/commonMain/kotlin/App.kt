@@ -15,10 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import io.ktor.client.*
 import io.ktor.http.*
-import jp.wjg.shokkaa.container.Container
-import jp.wjg.shokkaa.container.CtStatus
-import jp.wjg.shokkaa.container.Image
-import jp.wjg.shokkaa.container.UserService
+import jp.wjg.shokkaa.container.*
+import kotlinx.datetime.Clock.System.now
 import kotlinx.rpc.krpc.ktor.client.installRPC
 import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
@@ -34,6 +32,7 @@ val client by lazy { HttpClient { installRPC() } }
 fun App() {
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
     var statusOrNull by remember { mutableStateOf<CtStatus?>(null) }
+    var errorMessage by remember { mutableStateOf("Test") }
 
     LaunchedEffect(Unit) {
         serviceOrNull = client.rpc {
@@ -46,26 +45,24 @@ fun App() {
         }.withService()
     }
 
-    val service = serviceOrNull
-    LaunchedEffect(service) { streamScoped { service?.status()?.collect { statusOrNull = it } } }
-    val status = statusOrNull
-
-    if (service == null || status == null) {
-        CircularProgressIndicator()
-        return
+    val service = serviceOrNull ?: return CircularProgressIndicator()
+    LaunchedEffect(Unit) {
+        streamScoped { service.updateStatus().collect { statusOrNull = it } }
     }
 
+    val status = statusOrNull ?: return CircularProgressIndicator()
+//    val status = CtStatus(images = listOf(), containers = listOf(), tasks = listOf())
     var req by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
     LaunchedEffect(req) { req?.invoke();req = null }
 
     @Composable
     fun imageItem(img: Image) = Card {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
-                req = { statusOrNull = service.runContainer(img.id, "XXXX", listOf()) }
+                req = { statusOrNull = service.runContainer(img.id, "XXXX-${now().toEpochMilliseconds()}", listOf()) }
             }) { Icon(Icons.Default.PlayArrow, "run") }
             Text(img.id)
+            var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
                 removing = true
                 req = {
@@ -78,19 +75,42 @@ fun App() {
             }
         }
     }
+
     @Composable
     fun containerItem(ctn: Container) = Card {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
-                req = { statusOrNull = service.runContainer(ctn.id, "XXXX", listOf()) }
+                req = { statusOrNull = service.execTask(ctn.id) }
             }) { Icon(Icons.Default.PlayArrow, "run") }
             Text(ctn.id)
             Text(ctn.imageId)
             IconButton(onClick = {
                 removing = true
                 req = {
-                    statusOrNull = service.removeImage(ctn.id)
+                    statusOrNull = service.removeContainer(ctn.id)
+                    removing = false
+                }
+            }) {
+                Icon(Icons.Default.Delete, "delete")
+                if (removing) CircularProgressIndicator()
+            }
+        }
+    }
+
+    @Composable
+    fun taskItem(task: Task) = Card {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(task.id)
+            Text(task.processId)
+            Text(task.status)
+            var removing by remember { mutableStateOf(false) }
+            IconButton(onClick = {
+                removing = true
+                req = {
+                    runCatching {
+                        statusOrNull = service.killTask(task.id)
+                    }.onFailure {errorMessage="Kill taks Error" }
                     removing = false
                 }
             }) {
@@ -110,6 +130,13 @@ fun App() {
             Icon(Icons.Default.Add, "Pull Image")
             if (running) CircularProgressIndicator()
         }
+        if (errorMessage.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { errorMessage = "" },
+                buttons = { Button(onClick = { errorMessage = "" }) { Text("OK") } },
+                title = { Text("Error") },
+                text = { Text(errorMessage) })
+        }
         if (showDialog) pullImageDialog(onClose = { showDialog = false }) {
             running = true
             req = {
@@ -121,7 +148,8 @@ fun App() {
 
         if (status.containers.isEmpty()) Text("No Container.")
         else status.containers.forEach { containerItem(it) }
-
+        if (status.tasks.isEmpty()) Text("No Task.")
+        else status.tasks.forEach { taskItem(it) }
     }
 
     MaterialTheme {

@@ -2,10 +2,8 @@
  * Copyright 2023-2024 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package kotlinx.rpc.sample
+package jp.wjg.shokkaa.container
 
-import UserData
-import UserService
 import io.ktor.server.testing.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.rpc.krpc.ktor.client.installRPC

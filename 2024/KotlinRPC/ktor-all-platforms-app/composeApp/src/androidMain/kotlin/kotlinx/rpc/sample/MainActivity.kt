@@ -2,7 +2,7 @@
  * Copyright 2023-2024 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package kotlinx.rpc.sample
+package jp.wjg.shokkaa.container
 
 import App
 import android.os.Bundle

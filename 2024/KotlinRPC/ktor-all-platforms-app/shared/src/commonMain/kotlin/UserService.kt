@@ -17,10 +17,13 @@ interface UserService : RemoteService {
     suspend fun subscribeToNews(): Flow<String>
 
     suspend fun serverType(): String
-    suspend fun status(): Flow<CtStatus>
+    suspend fun updateStatus(): Flow<CtStatus>
     suspend fun pullImage(id: String): CtStatus
     suspend fun removeImage(id: String): CtStatus
     suspend fun runContainer(imgId: String, cntnrId: String, args: List<String>): CtStatus
+    suspend fun removeContainer( cntnrId: String): CtStatus
+    suspend fun execTask(ctrId: String, args: List<String> = listOf()): CtStatus
+    suspend fun killTask(tskId: String, signal: Int = 9): CtStatus
 
     suspend fun process(args: List<String>): String
 }
@@ -29,6 +32,7 @@ interface UserService : RemoteService {
 data class Image(
     val id: String,
 )
+
 @Serializable
 data class Container(
     val id: String,
@@ -36,7 +40,15 @@ data class Container(
 )
 
 @Serializable
+data class Task(
+    val id: String,
+    val processId: String,
+    val status: String,
+)
+
+@Serializable
 data class CtStatus(
     val images: List<Image>,
     val containers: List<Container>,
+    val tasks: List<Task>,
 )

@@ -8,10 +8,10 @@ plugins {
     application
 }
 
-group = "kotlinx.rpc.sample"
+group = "jp.wjg.shokkaa.container"
 version = "1.0.0"
 application {
-    mainClass.set("kotlinx.rpc.sample.ApplicationKt")
+    mainClass.set("jp.wjg.shokkaa.container.ApplicationKt")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=${extra["development"] ?: "false"}")
 }
 

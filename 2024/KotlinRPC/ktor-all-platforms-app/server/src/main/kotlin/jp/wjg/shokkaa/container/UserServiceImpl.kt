@@ -1,7 +1,6 @@
-package kotlinx.rpc.sample
+package jp.wjg.shokkaa.container
 
 import io.ktor.util.*
-import jp.wjg.shokkaa.container.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -24,15 +23,15 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
     }
 
     override suspend fun serverType() = System.getProperty("os.name").toLowerCasePreservingASCIIRules()
-    override suspend fun status() = flow {
+    override suspend fun updateStatus() = flow {
         repeat(10) {
             val cli = listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")
             val imgs = ProcessBuilder(cli).start().inputStream.reader().readLines()
-            println("[[$imgs]]")
             emit(
                 CtStatus(
                     images = imgs.map { Image(id = it) },
-                    containers = listOf()
+                    containers = getContainers(),
+                    tasks = getTasks(),
                 )
             )
             delay(10000)
@@ -57,6 +56,24 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         c.resume(getStatus())
     }
 
+    override suspend fun removeContainer(ctrId: String) = suspendCoroutine { c ->
+        val cli = listOf("wsl", "--user", "root", "ctr", "c", "rm", ctrId)
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        c.resume(getStatus())
+    }
+
+    override suspend fun execTask(ctrId: String, args: List<String>) = suspendCoroutine { c ->
+        val cli = listOf("wsl", "--user", "root", "ctr", "t", "exec", ctrId) + args
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        c.resume(getStatus())
+    }
+
+    override suspend fun killTask(id: String, signal: Int) = suspendCoroutine { c ->
+        val cli = listOf("wsl", "--user", "root", "ctr", "t", "kill", "-s", "$signal")
+        ProcessBuilder(cli).start().inputStream.reader().readLines()
+        c.resume(getStatus())
+    }
+
     override suspend fun process(args: List<String>) = suspendCoroutine { c ->
         val p = ProcessBuilder(args).start()!!
         c.resume(p.inputStream.reader().readText())
@@ -64,11 +81,11 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
 
     fun ctr(args: List<String>) = ProcessBuilder(args).start().inputStream.reader().readLines()
     fun getImages() = ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).map { Image(it.trim()) }
-    fun getContainers() = ctr(listOf("wsl", "--user", "root", "ctr", "c", "ls")).map {
-//        val c = it.drop(1).trim().split(" ")
-//        println("[[$c]]")
-        Container(id = it, imageId = it)
-    }
+    fun getContainers() = ctr(listOf("wsl", "--user", "root", "ctr", "c", "ls"))
+        .drop(1).map { it.split(Regex("\\s+")) }.map { Container(it[0], it[1]) }
 
-    fun getStatus() = CtStatus(images = getImages(), containers = getContainers())
+    fun getTasks() = ctr(listOf("wsl", "--user", "root", "ctr", "t", "ls")).drop(1).map { it.split(Regex("\\s+")) }
+        .map { Task(it[0], it[1], it[2]) }
+
+    fun getStatus() = CtStatus(images = getImages(), containers = getContainers(), tasks = getTasks())
 }
