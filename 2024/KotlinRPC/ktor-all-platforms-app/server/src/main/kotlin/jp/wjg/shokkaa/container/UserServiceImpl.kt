@@ -45,17 +45,20 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         ctr(listOf("wsl", "--user", "root", "ctr", "i", "rm", id)).let { getStatus() }
 
     override suspend fun runContainer(imgId: String, ctrId: String, args: List<String>) =
-//        val cli = listOf("wsl", "--user", "root", "ctr", "run", imgId, cntnrId) + args
         ctr(listOf("wsl", "--user", "root", "ctr", "run", imgId, ctrId) + args).let { getStatus() }
 
     override suspend fun removeContainer(ctrId: String) =
         ctr(listOf("wsl", "--user", "root", "ctr", "c", "rm", ctrId)).let { getStatus() }
 
+    override suspend fun startTask(ctrId: String, args: List<String>) =
+        ctr(listOf("wsl", "--user", "root", "ctr", "t", "start", ctrId) + args).let { getStatus() }
+
     override suspend fun execTask(ctrId: String, args: List<String>) =
         ctr(listOf("wsl", "--user", "root", "ctr", "t", "exec", ctrId) + args).let { getStatus() }
 
-    override suspend fun killTask(ctrId: String, signal: Int) =
-        ctr(listOf("wsl", "--user", "root", "ctr", "t", "kill", "-s", "$signal", ctrId)).let { getStatus() }
+    override suspend fun killTask(ctrId: String,  signal: Int): CtStatus = ctr(
+        listOf("wsl", "--user", "root", "ctr", "t", "kill", "-s", "$signal", ctrId)
+    ).let { getStatus() }
 
     override suspend fun process(args: List<String>) = suspendCoroutine { c ->
         val p = ProcessBuilder(args).start()!!

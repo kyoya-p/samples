@@ -22,7 +22,8 @@ interface UserService : RemoteService {
     suspend fun pullImage(id: String): CtStatus
     suspend fun removeImage(id: String): CtStatus
     suspend fun runContainer(imgId: String, ctrId: String, args: List<String>): CtStatus
-    suspend fun removeContainer( ctrId: String): CtStatus
+    suspend fun removeContainer(ctrId: String): CtStatus
+    suspend fun startTask(ctrId: String, args: List<String> = listOf()): CtStatus
     suspend fun execTask(ctrId: String, args: List<String> = listOf()): CtStatus
     suspend fun killTask(ctrId: String, signal: Int = 9): CtStatus
 
@@ -37,13 +38,13 @@ data class Image(
 @Serializable
 data class Container(
     val id: String,
-    val imageId: String,
+    val imgId: String,
 )
 
 @Serializable
 data class Task(
-    val id: String,
-    val processId: String,
+    val ctrId: String,
+    val pId: String,
     val status: String,
 )
 

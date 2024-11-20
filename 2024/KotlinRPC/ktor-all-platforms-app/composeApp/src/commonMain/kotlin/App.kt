@@ -65,7 +65,7 @@ fun App() {
         ) {
             Icon(Icons.Outlined.Home, "")
             IconButton(onClick = {
-                req = { statusOrNull = service.runContainer(img.id, "XXXX-${now().toEpochMilliseconds()}", listOf()) }
+                req = { statusOrNull = service.runContainer(img.id, "C-${now().toEpochMilliseconds()}", listOf()) }
             }) { Icon(Icons.Default.PlayArrow, "run") }
             Text(img.id)
             var removing by remember { mutableStateOf(false) }
@@ -94,7 +94,7 @@ fun App() {
                 Icon(Icons.Default.PlayArrow, "run")
             }
             Text(ctn.id, Modifier.weight(1f))
-            Text(ctn.imageId, Modifier.weight(1f))
+            Text(ctn.imgId, Modifier.weight(1f))
             IconButton(onClick = {
                 removing = true
                 req = {
@@ -115,15 +115,15 @@ fun App() {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(task.id)
-            Text(task.processId)
+            Text(task.ctrId)
+            Text(task.pId)
             Text(task.status)
             var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
                 removing = true
                 req = {
                     runCatching {
-                        statusOrNull = service.killTask(task.id)
+                        statusOrNull = service.killTask(task.ctrId)
                     }.onFailure { errorMessage = "Error: killTask()" }
                     removing = false
                 }
