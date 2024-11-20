@@ -17,13 +17,14 @@ interface UserService : RemoteService {
     suspend fun subscribeToNews(): Flow<String>
 
     suspend fun serverType(): String
+    suspend fun getStatus(): CtStatus
     suspend fun updateStatus(): Flow<CtStatus>
     suspend fun pullImage(id: String): CtStatus
     suspend fun removeImage(id: String): CtStatus
-    suspend fun runContainer(imgId: String, cntnrId: String, args: List<String>): CtStatus
-    suspend fun removeContainer( cntnrId: String): CtStatus
+    suspend fun runContainer(imgId: String, ctrId: String, args: List<String>): CtStatus
+    suspend fun removeContainer( ctrId: String): CtStatus
     suspend fun execTask(ctrId: String, args: List<String> = listOf()): CtStatus
-    suspend fun killTask(tskId: String, signal: Int = 9): CtStatus
+    suspend fun killTask(ctrId: String, signal: Int = 9): CtStatus
 
     suspend fun process(args: List<String>): String
 }

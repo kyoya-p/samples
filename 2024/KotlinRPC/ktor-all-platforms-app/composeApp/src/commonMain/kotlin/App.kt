@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +33,7 @@ val client by lazy { HttpClient { installRPC() } }
 fun App() {
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
     var statusOrNull by remember { mutableStateOf<CtStatus?>(null) }
-    var errorMessage by remember { mutableStateOf("Test") }
+    var errorMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         serviceOrNull = client.rpc {
@@ -57,7 +58,12 @@ fun App() {
 
     @Composable
     fun imageItem(img: Image) = Card {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Outlined.Home, "")
             IconButton(onClick = {
                 req = { statusOrNull = service.runContainer(img.id, "XXXX-${now().toEpochMilliseconds()}", listOf()) }
             }) { Icon(Icons.Default.PlayArrow, "run") }
@@ -78,13 +84,17 @@ fun App() {
 
     @Composable
     fun containerItem(ctn: Container) = Card {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             var removing by remember { mutableStateOf(false) }
-            IconButton(onClick = {
-                req = { statusOrNull = service.execTask(ctn.id) }
-            }) { Icon(Icons.Default.PlayArrow, "run") }
-            Text(ctn.id)
-            Text(ctn.imageId)
+            IconButton(onClick = { req = { statusOrNull = service.execTask(ctn.id) } }) {
+                Icon(Icons.Default.PlayArrow, "run")
+            }
+            Text(ctn.id, Modifier.weight(1f))
+            Text(ctn.imageId, Modifier.weight(1f))
             IconButton(onClick = {
                 removing = true
                 req = {
@@ -100,7 +110,11 @@ fun App() {
 
     @Composable
     fun taskItem(task: Task) = Card {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text(task.id)
             Text(task.processId)
             Text(task.status)
@@ -110,7 +124,7 @@ fun App() {
                 req = {
                     runCatching {
                         statusOrNull = service.killTask(task.id)
-                    }.onFailure {errorMessage="Kill taks Error" }
+                    }.onFailure { errorMessage = "Error: killTask()" }
                     removing = false
                 }
             }) {
@@ -124,12 +138,18 @@ fun App() {
     fun AppPanel() = Column(Modifier.padding(8.dp).fillMaxWidth(), horizontalAlignment = Alignment.Start) {
         var showDialog by remember { mutableStateOf(false) }
         var running by remember { mutableStateOf(false) }
+
         if (status.images.isEmpty()) Text("No Images.")
         else status.images.forEach { imageItem(it) }
         IconButton(onClick = { showDialog = true }) {
             Icon(Icons.Default.Add, "Pull Image")
             if (running) CircularProgressIndicator()
         }
+        if (status.containers.isEmpty()) Text("No Container.")
+        else status.containers.forEach { containerItem(it) }
+        if (status.tasks.isEmpty()) Text("No Task.")
+        else status.tasks.forEach { taskItem(it) }
+
         if (errorMessage.isNotEmpty()) {
             AlertDialog(
                 onDismissRequest = { errorMessage = "" },
@@ -145,11 +165,6 @@ fun App() {
                 running = false
             }
         }
-
-        if (status.containers.isEmpty()) Text("No Container.")
-        else status.containers.forEach { containerItem(it) }
-        if (status.tasks.isEmpty()) Text("No Task.")
-        else status.tasks.forEach { taskItem(it) }
     }
 
     MaterialTheme {
