@@ -56,7 +56,7 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
     override suspend fun execTask(ctrId: String, args: List<String>) =
         ctr(listOf("wsl", "--user", "root", "ctr", "t", "exec", ctrId) + args).let { getStatus() }
 
-    override suspend fun killTask(ctrId: String,  signal: Int): CtStatus = ctr(
+    override suspend fun killTask(ctrId: String, signal: Int): CtStatus = ctr(
         listOf("wsl", "--user", "root", "ctr", "t", "kill", "-s", "$signal", ctrId)
     ).let { getStatus() }
 
@@ -65,7 +65,6 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         c.resume(p.inputStream.reader().readText())
     }
 
-    data class ProcessResult(val exitCode: Int, val stdout: List<String>)
 
     suspend fun ctr(args: List<String>) = suspendCoroutine {
         val p = ProcessBuilder(args).start()
@@ -83,4 +82,31 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
     suspend fun getTasks() =
         ctr(listOf("wsl", "--user", "root", "ctr", "t", "ls")).stdout.drop(1).map { it.split(Regex("\\s+")) }
             .map { Task(it[0], it[1], it[2]) }
+
+
+    override suspend fun listImages() =
+        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).stdout.map { ImageC(it.trim()) }
+
+}
+
+data class ProcessResult(val exitCode: Int, val stdout: List<String>)
+
+suspend fun ctr(args: List<String>) = suspendCoroutine {
+    val p = ProcessBuilder(args).start()
+    val stdout = p.inputStream.reader().readLines()
+    val rc = p.waitFor()
+    it.resume(ProcessResult(rc, stdout))
+}
+
+class ImageC(override val id: String) : ImageI {
+    override suspend fun runContainer(ctrId: String, args: List<String>) =
+        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).exitCode
+
+    override suspend fun remove(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override val coroutineContext: CoroutineContext
+        get() = TODO("Not yet implemented")
+
 }

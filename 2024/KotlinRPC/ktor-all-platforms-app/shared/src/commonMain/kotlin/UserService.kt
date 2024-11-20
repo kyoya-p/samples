@@ -28,6 +28,23 @@ interface UserService : RemoteService {
     suspend fun killTask(ctrId: String, signal: Int = 9): CtStatus
 
     suspend fun process(args: List<String>): String
+
+    suspend fun listImages(): List<ImageI>
+}
+
+@Rpc
+interface ImageI : RemoteService {
+    val id: String
+    suspend fun runContainer(ctrId: String, args: List<String>): Int
+    suspend fun remove(): Int
+}
+
+@Rpc
+interface ContainerI : RemoteService {
+    val id: String
+    suspend fun startTask(args: List<String>): Int
+    suspend fun execTask(execId: String, args: List<String>): Int
+    suspend fun remove(): Int
 }
 
 @Serializable
