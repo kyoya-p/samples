@@ -34,6 +34,7 @@ fun App() {
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
     var statusOrNull by remember { mutableStateOf<CtStatus?>(null) }
     var errorMessage by remember { mutableStateOf("") }
+    var images by remember { mutableStateOf(listOf<ImageI>()) }
 
     LaunchedEffect(Unit) {
         serviceOrNull = client.rpc {
@@ -48,7 +49,12 @@ fun App() {
 
     val service = serviceOrNull ?: return CircularProgressIndicator()
     LaunchedEffect(Unit) {
-        streamScoped { service.updateStatus().collect { statusOrNull = it } }
+        streamScoped {
+            service.updateStatus().collect {
+                statusOrNull = it
+                images = service.listImages()
+            }
+        }
     }
 
     val status = statusOrNull ?: return CircularProgressIndicator()
@@ -57,7 +63,7 @@ fun App() {
     LaunchedEffect(req) { req?.invoke();req = null }
 
     @Composable
-    fun imageItem(img: Image) = Card {
+    fun ImageI.item() = Card {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -65,14 +71,17 @@ fun App() {
         ) {
             Icon(Icons.Outlined.Home, "")
             IconButton(onClick = {
-                req = { statusOrNull = service.runContainer(img.id, "C-${now().toEpochMilliseconds()}", listOf()) }
+                req = {
+                    run("C-${now().toEpochMilliseconds()}", listOf())
+                    statusOrNull = service.getStatus()
+                }
             }) { Icon(Icons.Default.PlayArrow, "run") }
-            Text(img.id)
+            Text(id)
             var removing by remember { mutableStateOf(false) }
             IconButton(onClick = {
                 removing = true
                 req = {
-                    statusOrNull = service.removeImage(img.id)
+                    statusOrNull = service.removeImage(id)
                     removing = false
                 }
             }) {
@@ -139,8 +148,8 @@ fun App() {
         var showDialog by remember { mutableStateOf(false) }
         var running by remember { mutableStateOf(false) }
 
-        if (status.images.isEmpty()) Text("No Images.")
-        else status.images.forEach { imageItem(it) }
+        if (images.isEmpty()) Text("No Images.")
+        else images.forEach { it.item() }
         IconButton(onClick = { showDialog = true }) {
             Icon(Icons.Default.Add, "Pull Image")
             if (running) CircularProgressIndicator()

@@ -34,7 +34,7 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
                 lastStatus = s
                 emit(s)
             }
-            delay(10000)
+            delay(5000)
         }
     }
 
@@ -89,7 +89,6 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
 
 }
 
-data class ProcessResult(val exitCode: Int, val stdout: List<String>)
 
 suspend fun ctr(args: List<String>) = suspendCoroutine {
     val p = ProcessBuilder(args).start()
@@ -99,10 +98,10 @@ suspend fun ctr(args: List<String>) = suspendCoroutine {
 }
 
 class ImageC(override val id: String) : ImageI {
-    override suspend fun runContainer(ctrId: String, args: List<String>) =
-        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).exitCode
+    override suspend fun run(ctrId: String, args: List<String>) =
+        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q"))
 
-    override suspend fun remove(): Int {
+    override suspend fun remove(): ProcessResult {
         TODO("Not yet implemented")
     }
 

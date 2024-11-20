@@ -32,11 +32,13 @@ interface UserService : RemoteService {
     suspend fun listImages(): List<ImageI>
 }
 
-@Rpc
+@Serializable
+data class ProcessResult(val exitCode: Int, val stdout: List<String>)
+
 interface ImageI : RemoteService {
     val id: String
-    suspend fun runContainer(ctrId: String, args: List<String>): Int
-    suspend fun remove(): Int
+    suspend fun run(ctrId: String, args: List<String>): ProcessResult
+    suspend fun remove(): ProcessResult
 }
 
 @Rpc
