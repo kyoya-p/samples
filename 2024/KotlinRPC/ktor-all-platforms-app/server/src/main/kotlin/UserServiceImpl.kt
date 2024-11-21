@@ -3,6 +3,7 @@ package jp.wjg.shokkaa.container
 import io.ktor.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlin.coroutines.CoroutineContext
@@ -24,17 +25,21 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
     }
 
     override suspend fun serverType() = System.getProperty("os.name").toLowerCasePreservingASCIIRules()
-    override suspend fun getStatus() = CtStatus(images = getImages(), containers = getContainers(), tasks = getTasks())
+
+    //    override suspend fun getStatus() = CtStatus(images = listImages(), containers = getContainers(), tasks = getTasks())
+    override suspend fun getStatus() = CtStatus(images = listImages())
 
     var lastStatus: CtStatus? = null
-    override suspend fun updateStatus() = flow {
-        while (isActive) {
+    override suspend fun updateStatus() = channelFlow {
+        while (true) {
+            println("<<<")
             val s = getStatus()
-            if (s != lastStatus) {
-                lastStatus = s
-                emit(s)
-            }
+//            if (s != lastStatus) {
+//                lastStatus = s
+            trySend(s)
+//            }
             delay(5000)
+            println(">>>")
         }
     }
 
@@ -84,8 +89,21 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
             .map { Task(it[0], it[1], it[2]) }
 
 
-    override suspend fun listImages() =
-        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).stdout.map { ImageC(it.trim()) }
+    override suspend fun listImages(): List<ImageI> =
+        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q")).stdout.map {
+            println("[[$it]]")
+            ImageC(id = it.trim())
+        }
+
+    override suspend fun updateImages(): Flow<List<ImageI>> = flow {
+        while (isActive) {
+            val s = listImages()
+            emit(s)
+            delay(5000)
+        }
+
+    }
+
 
 }
 
@@ -99,7 +117,7 @@ suspend fun ctr(args: List<String>) = suspendCoroutine {
 
 class ImageC(override val id: String) : ImageI {
     override suspend fun run(ctrId: String, args: List<String>) =
-        ctr(listOf("wsl", "--user", "root", "ctr", "i", "ls", "-q"))
+        ctr(listOf("wsl", "--user", "root", "ctr", "run", id, ctrId))
 
     override suspend fun remove(): ProcessResult {
         TODO("Not yet implemented")

@@ -30,11 +30,14 @@ interface UserService : RemoteService {
     suspend fun process(args: List<String>): String
 
     suspend fun listImages(): List<ImageI>
+    suspend fun updateImages(): Flow<List<ImageI>>
 }
 
 @Serializable
 data class ProcessResult(val exitCode: Int, val stdout: List<String>)
 
+
+@Rpc
 interface ImageI : RemoteService {
     val id: String
     suspend fun run(ctrId: String, args: List<String>): ProcessResult
@@ -69,7 +72,7 @@ data class Task(
 
 @Serializable
 data class CtStatus(
-    val images: List<Image>,
-    val containers: List<Container>,
-    val tasks: List<Task>,
+    val images: List<ImageI>,
+//    val containers: List<Container>,
+//    val tasks: List<Task>,
 )
