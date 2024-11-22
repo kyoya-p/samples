@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
@@ -34,6 +35,11 @@ val client by lazy { HttpClient { installRPC() } }
 
 @Composable
 fun App() {
+    class CtImage(val id: String)
+    class CtContainer(val id: String, val imgId: String)
+    class CtTask(val pId: String, val execId: String, val status: String)
+    class CtStatus(val images: List<CtImage>, val containers: List<CtContainer>, val tasks: List<CtTask>)
+
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
     var statusOrNull by remember { mutableStateOf<CtStatus?>(null) }
     var errorMessage by remember { mutableStateOf("") }
@@ -51,61 +57,93 @@ fun App() {
     }
 
     val service = serviceOrNull ?: return CircularProgressIndicator(color = Color.Magenta)
+
+    //    LaunchedEffect(Unit) {
+//        streamScoped {
+//            service.updateStatus().collectLatest {
+//                statusOrNull = it
+//            }
+//        }
+//    }
+    suspend fun CtImage.runContainer(ctrId: String, vararg args: String) = service.ctr("run", "-d", id, ctrId, *args)
+    suspend fun CtImage.remove() = service.ctr("i", "rm", id)
+    suspend fun CtContainer.start(ctrId: String) = service.ctr("run", id, ctrId)
+    suspend fun CtContainer.remove() = service.ctr("c", "rm", id)
+
+    suspend fun getStatus() = CtStatus(
+        images = service.ctr("i", "ls", "-q").stdout.map { CtImage(it.trim()) },
+        containers = service.ctr("c", "ls").stdout.drop(1).map { it.split(Regex("\\s+")) }
+            .map { CtContainer(it[0], it[1]) },
+        tasks = service.ctr("t", "ls").stdout.drop(1).map { it.split(Regex("\\s+")) }
+            .map { CtTask(it[0], it[1], it[2]) }
+    )
+
     LaunchedEffect(Unit) {
-        streamScoped {
-            service.updateStatus().collectLatest {
-                statusOrNull = it
-            }
-        }
+        streamScoped { statusOrNull = getStatus() }
     }
 
     val status = statusOrNull ?: return CircularProgressIndicator(color = Color.Blue)
 
-//    var req by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
+    //    var req by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
 //    LaunchedEffect(req) { req?.invoke();req = null }
 
     @Composable
-    fun ImageI.item() = Card {
+    fun <T> T.ActionButton(icon: ImageVector, action: suspend T.() -> Unit) {
+        var busy by remember { mutableStateOf(false) }
+        IconButton(onClick = {
+            busy = true
+            scope.launch {
+                action()
+                statusOrNull = getStatus()
+                busy = false
+            }
+        }) {
+            Icon(icon, "")
+            if (busy) CircularProgressIndicator()
+        }
+    }
+
+
+    @Composable
+    fun CtImage.item() = Card {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Outlined.Home, "")
-            IconButton(onClick = {
-                scope.launch {
-                    run("C-${now().toEpochMilliseconds() % 1000}", listOf())
-                    statusOrNull = service.getStatus()
-                }
-            }) { Icon(Icons.Default.PlayArrow, "run") }
-            Text(id)
-            var removing by remember { mutableStateOf(false) }
-            IconButton(onClick = {
-                removing = true
-                scope.launch {
-                    statusOrNull = service.removeImage(id)
-                    removing = false
-                }
-            }) {
-                Icon(Icons.Default.Delete, "delete")
-                if (removing) CircularProgressIndicator()
+            ActionButton(Icons.Default.PlayArrow) {
+                val r = runContainer("C-${now().toEpochMilliseconds() % 1000}")
+                if (r.exitCode != 0) errorMessage = "[Ex: ${r.exitCode} ${r.stdout.joinToString("\n")}]"
             }
+            Text(id)
+            ActionButton(Icons.Default.Delete) { remove() }
+//            var removing by remember { mutableStateOf(false) }
+//            IconButton(onClick = {
+//                removing = true
+//                scope.launch {
+////                    statusOrNull = service.removeImage(id)
+//                    removing = false
+//                }
+//            }) {
+//                Icon(Icons.Default.Delete, "delete")
+//                if (removing) CircularProgressIndicator()
+//            }
         }
     }
-//
-//    @Composable
-//    fun containerItem(ctn: Container) = Card {
-//        Row(
-//            verticalAlignment = Alignment.CenterVertically,
-//            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            var removing by remember { mutableStateOf(false) }
+
+    @Composable
+    fun CtContainer.item() = Card {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
 //            IconButton(onClick = { req = { statusOrNull = service.execTask(ctn.id) } }) {
 //                Icon(Icons.Default.PlayArrow, "run")
 //            }
-//            Text(ctn.id, Modifier.weight(1f))
-//            Text(ctn.imgId, Modifier.weight(1f))
+            Text(id, Modifier.weight(1f))
+            Text(imgId, Modifier.weight(1f))
 //            IconButton(onClick = {
 //                removing = true
 //                req = {
@@ -116,8 +154,12 @@ fun App() {
 //                Icon(Icons.Default.Delete, "delete")
 //                if (removing) CircularProgressIndicator()
 //            }
-//        }
-//    }
+            ActionButton(Icons.Default.Delete) {
+                val r = remove()
+                if (r.exitCode != 0) errorMessage = "[Ex: ${r.exitCode} ${r.stdout.joinToString("\n")}]"
+            }
+        }
+    }
 
 //    @Composable
 //    fun taskItem(task: Task) = Card {
@@ -160,8 +202,8 @@ fun App() {
             Icon(Icons.Default.Add, "Pull Image")
             if (running) CircularProgressIndicator()
         }
-//        if (status.containers.isEmpty()) Text("No Container.")
-//        else status.containers.forEach { containerItem(it) }
+        if (status.containers.isEmpty()) Text("No Container.")
+        else status.containers.forEach { it.item() }
 //        if (status.tasks.isEmpty()) Text("No Task.")
 //        else status.tasks.forEach { taskItem(it) }
 
@@ -174,9 +216,10 @@ fun App() {
         }
         if (showDialog) pullImageDialog(onClose = { showDialog = false }) {
             running = true
-            scope.launch{
+            scope.launch {
                 showDialog = false
-                statusOrNull = service.pullImage(it)
+                service.ctr("i", "pull", it)
+                statusOrNull = getStatus()
                 running = false
             }
         }
@@ -237,3 +280,4 @@ fun pullImageDialog(onClose: () -> Unit, onOk: (String) -> Unit) = Dialog(onDism
         }
     }
 }
+
