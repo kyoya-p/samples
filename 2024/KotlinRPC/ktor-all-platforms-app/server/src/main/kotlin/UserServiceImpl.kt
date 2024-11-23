@@ -1,12 +1,10 @@
 package jp.wjg.shokkaa.container
 
 import io.ktor.util.*
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
 import kotlinx.rpc.krpc.streamScoped
 import kotlin.concurrent.thread
 import kotlin.coroutines.CoroutineContext
@@ -83,19 +81,22 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
 //            .map { Task(it[0], it[1], it[2]) }
 
 
-    override suspend fun ctr(vararg args: String) = suspendCoroutine {
-        println("[[${System.getProperty("os.name")}]]")
-//        val n = System.getProperty("os.name")!!
-//        val osType = when {
-//            n.contains("windows", ignoreCase = true) -> "win"
-//            else -> "linux"
-//        }
+    override suspend fun ctr(vararg args: String) = coroutineScope {
+        val command = if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
+            listOf("wsl", "--user", "root", "ctr") + args
+        } else {
+            listOf("ctr") + args
+        }
+
         println("ctr [${args.joinToString(",")}]")
-        val p = ProcessBuilder(listOf("wsl", "--user", "root", "ctr") + args).start()
-        val rc = p.waitFor()
-        val stdout = p.inputStream.reader().readLines()
-        println(stdout.joinToString("\n"))
-        it.resume(ProcessResult(rc, stdout))
+        val process = ProcessBuilder(command).start()
+        val stdout = async { process.inputStream.bufferedReader().readLines() }
+        val stderr = async { process.errorStream.bufferedReader().readLines() } // 標準エラー出力も取得
+        val exitCode = process.waitFor()
+//        val rc = p.waitFor()
+//        val stdout = p.inputStream.reader().readLines()
+//        println(stdout.joinToString("\n"))
+        ProcessResult(exitCode, stdout.await())
     }
 }
 
