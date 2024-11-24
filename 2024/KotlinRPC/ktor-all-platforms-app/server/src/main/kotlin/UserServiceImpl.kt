@@ -1,15 +1,12 @@
 package jp.wjg.shokkaa.container
 
 import io.ktor.util.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.rpc.krpc.streamScoped
-import kotlin.concurrent.thread
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserService {
     override suspend fun hello(user: String, userData: UserData): String {
@@ -91,7 +88,7 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         println("ctr [${args.joinToString(",")}]")
         val process = ProcessBuilder(command).start()
         val stdout = async { process.inputStream.bufferedReader().readLines() }
-        val stderr = async { process.errorStream.bufferedReader().readLines() } // 標準エラー出力も取得
+        val stderr = async { process.errorStream.bufferedReader().readLines() }
         val exitCode = process.waitFor()
 //        val rc = p.waitFor()
 //        val stdout = p.inputStream.reader().readLines()

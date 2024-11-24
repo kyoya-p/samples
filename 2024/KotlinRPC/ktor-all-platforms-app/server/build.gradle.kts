@@ -27,6 +27,9 @@ dependencies {
     implementation(libs.kotlinx.rpc.krpc.server)
     implementation(libs.kotlinx.rpc.krpc.serialization.json)
     implementation(libs.kotlinx.rpc.krpc.ktor.server)
+
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlinx.rpc.krpc.client)
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
