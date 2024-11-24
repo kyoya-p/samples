@@ -2,12 +2,14 @@ package jp.wjg.shokkaa.container
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
 import kotlinx.rpc.krpc.ktor.server.RPC
 import kotlinx.rpc.krpc.ktor.server.rpc
 import kotlinx.rpc.krpc.serialization.json.json
+import java.io.File
 
 fun main(args: Array<String>): Unit = EngineMain.main(args)
 
@@ -19,6 +21,9 @@ fun Application.module() {
         rpc("/api") {
             rpcConfig { serialization { json() } }
             registerService<UserService> { ctx -> UserServiceImpl(ctx) }
+        }
+        staticFileSystem("/", "./") {
+            println("Current Path: ${File(".").absolutePath}")
         }
     }
 }

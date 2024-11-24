@@ -35,3 +35,4 @@ dependencies {
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
     testImplementation(libs.kotlin.test.junit)
 }
+
