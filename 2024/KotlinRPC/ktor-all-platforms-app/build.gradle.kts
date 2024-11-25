@@ -25,6 +25,7 @@ dependencyCheck {
     nvd { apiKey = System.getenv("NVD_API_KEY") }
 }
 
+// TODO
 docker {
     name = project.name
     tag("myRegistry", "my.registry.com/username/my-app:version")
