@@ -13,4 +13,20 @@ plugins {
     alias(libs.plugins.kotlinPluginSerialization) apply false
     alias(libs.plugins.kotlinx.rpc) apply false
     alias(libs.plugins.compose.compiler) apply false
+
+    id("com.palantir.docker") version "0.36.0" // https://github.com/palantir/gradle-docker
+    id("org.owasp.dependencycheck") version "11.1.0" // https://plugins.gradle.org/plugin/org.owasp.dependencycheck
+}
+
+dependencyCheck {
+    format = "ALL"
+    failBuildOnCVSS = 8.5f
+//    scanSet = listOf(projectDir.resolve("server/src/main"))
+    nvd { apiKey = System.getenv("NVD_API_KEY") }
+}
+
+docker {
+    name = project.name
+    tag("myRegistry", "my.registry.com/username/my-app:version")
+    setDockerfile(File("Dockerfile"))
 }
