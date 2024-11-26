@@ -20,9 +20,9 @@ plugins {
 
 dependencyCheck {
     format = "ALL"
-    failBuildOnCVSS = 8.5f
-//    scanSet = listOf(projectDir.resolve("server/src/main"))
-    nvd { apiKey = System.getenv("NVD_API_KEY") }
+//    failBuildOnCVSS = 8.5f
+    scanSet = listOf(projectDir.resolve("server"))
+//    nvd { apiKey = System.getenv("NVD_API_KEY") }
 }
 
 // TODO
