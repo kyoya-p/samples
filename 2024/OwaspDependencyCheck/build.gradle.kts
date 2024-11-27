@@ -22,6 +22,6 @@ dependencyCheck {
 //    format = "ALL"
 //    failBuildOnCVSS = 8.5f
 //    scanSet = listOf(projectDir.resolve("c:/"))
-//    scanSet = listOf(File("c:\\"))
+    scanSet = listOf(File("c:\\"))
     nvd { apiKey = System.getenv("NVD_API_KEY") }
 }
