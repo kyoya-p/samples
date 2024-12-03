@@ -1,7 +1,4 @@
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
@@ -13,17 +10,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import io.ktor.client.*
 import io.ktor.http.*
-import jp.wjg.shokkaa.container.ProcessResult
-import jp.wjg.shokkaa.container.UserService
+import jp.wjg.shokkaa.container.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock.System.now
@@ -38,8 +28,6 @@ import kotlin.time.Duration.Companion.seconds
 expect val DEV_SERVER_HOST: String
 
 val client by lazy { HttpClient { installRPC() } }
-
-
 
 @Composable
 fun App() {
@@ -173,15 +161,8 @@ fun App() {
                 title = { Text("Error") },
                 text = { Text(errorMessage) })
         }
-        if (showDialog) pullImageDialog(onClose = { showDialog = false }) {
-            running = true
-            scope.launch {
-                showDialog = false
-                service.ctr("i", "pull", it)
-                statusOrNull = getStatus()
-                running = false
-            }
-        }
+
+        SnmpRequestField(service)
     }
 
     MaterialTheme {
@@ -203,55 +184,45 @@ fun App() {
             AppPanel()
         }
     }
+
 }
 
-@Composable
-fun informationDialog(onClose: () -> Unit, cont: @Composable ColumnScope.() -> Unit) =
-    Dialog(onDismissRequest = onClose) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            var id by remember { mutableStateOf("") }
-            Column(modifier = Modifier.padding(8.dp)) {
-                cont()
-            }
-        }
-    }
 
 @Composable
-fun <T> T.showIf(f: Boolean, op: @Composable T.() -> Unit): (Boolean) -> Unit {
-    var show by remember { mutableStateOf(false) }
-    return { s: Boolean -> show = s }
-}
-
-@Composable
-fun LeadingIconTextFieldWithPlaceHolder() {
+fun SnmpRequestField(service: UserService) {
     val state = rememberTextFieldState("")
-    BasicTextField(
-        state,
-        textStyle = TextStyle(fontSize = 16.sp),
-        modifier = Modifier.fillMaxWidth().border(1.dp, Color.LightGray, RoundedCornerShape(6.dp)).padding(8.dp),
-//        onValueChange = { state = it },
-    )
-}
+//    BasicTextField(
+//        state,
+//        textStyle = TextStyle(fontSize = 16.sp),
+//        modifier = Modifier.fillMaxWidth().border(1.dp, Color.LightGray, RoundedCornerShape(6.dp)).padding(8.dp),
+////        onValueChange = { state = it },
+//    )
 
-@Composable
-fun pullImageDialog(onClose: () -> Unit, onOk: (String) -> Unit) = Dialog(onDismissRequest = onClose) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        var id by remember { mutableStateOf("") }
-        Column(modifier = Modifier.padding(8.dp)) {
-            TextField(
-                value = id,
-                label = { Text("Image ID:") },
-                onValueChange = { id = it },
-                modifier = Modifier.fillMaxWidth().onKeyEvent { e ->
-                    if (e.key == Key.Enter) onOk(id)
-                    true
-                }
+    Row {
+        var udpAdr by remember { mutableStateOf("") }
+        TextField(udpAdr, label = { Text("Address") }, onValueChange = { udpAdr = it })
+        ActionButton(Icons.Filled.PlayArrow) {
+            val (adr, p) = udpAdr.split(":")
+            val req = SnmpRequest(
+                target = SnmpTargetV1(adr, p.toInt(), "public", 5, 5000),
+                pduType = SnmpRequest.GETNEXT,
+                vbl = listOf(SnmpVarBind(".1.3.6"))
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onOk(id) }) { Text("Pull") }
-                Button(onClick = onClose) { Text("Cancel") }
-            }
+            service.unicast(req)
         }
     }
 }
 
+@Composable
+fun ActionButton(face: ImageVector, op: suspend () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    IconButton(onClick = {
+        busy = true
+        scope.launch {
+            op()
+            busy = false
+        }
+    }) { Icon(face, "") }
+    if (busy) CircularProgressIndicator()
+}

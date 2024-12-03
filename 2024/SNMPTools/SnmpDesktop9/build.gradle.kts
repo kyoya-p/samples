@@ -3,8 +3,6 @@
  */
 
 plugins {
-    // this is necessary to avoid the plugins to be loaded multiple times
-    // in each subproject's classloader
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
     alias(libs.plugins.jetbrainsCompose) apply false
@@ -16,6 +14,7 @@ plugins {
 
     id("com.palantir.docker") version "0.36.0" // https://github.com/palantir/gradle-docker
     id("org.owasp.dependencycheck") version "11.1.0" // https://plugins.gradle.org/plugin/org.owasp.dependencycheck
+
 }
 
 dependencyCheck {

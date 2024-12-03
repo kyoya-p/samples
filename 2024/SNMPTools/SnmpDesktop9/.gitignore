@@ -1,10 +1,10 @@
 **/.idea/
 **/.gradle/
 **/.kotlin/
+**/build/
 
 *.iml
 .gradle
-**/build/
 xcuserdata
 !src/**/build/
 local.properties

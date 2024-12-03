@@ -30,6 +30,7 @@ dependencies {
     implementation(libs.kotlinx.rpc.krpc.ktor.server)
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("org.snmp4j:snmp4j:3.8.2") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
 
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlinx.rpc.krpc.client)

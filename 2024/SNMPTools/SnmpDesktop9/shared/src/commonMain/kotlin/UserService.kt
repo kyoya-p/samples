@@ -4,59 +4,49 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.rpc.RemoteService
 import kotlinx.rpc.annotations.Rpc
 import kotlinx.serialization.Serializable
-import kotlin.coroutines.suspendCoroutine
-
-@Serializable
-data class UserData(
-    val address: String,
-    val lastName: String,
-)
 
 @Rpc
 interface UserService : RemoteService {
-    suspend fun hello(user: String, userData: UserData): String
-    suspend fun subscribeToNews(): Flow<String>
-
     suspend fun serverType(): String
-//    suspend fun getStatus(): CtStatus
-//    suspend fun updateStatus(): Flow<CtStatus>
-//    suspend fun pullImage(id: String): CtStatus
-//    suspend fun removeImage(id: String): CtStatus
-//    suspend fun runContainer(imgId: String, ctrId: String, args: List<String>): CtStatus
-//    suspend fun removeContainer(ctrId: String): CtStatus
-//    suspend fun startTask(ctrId: String, args: List<String> = listOf()): CtStatus
-//    suspend fun execTask(ctrId: String, args: List<String> = listOf()): CtStatus
-//    suspend fun killTask(ctrId: String, signal: Int = 9): CtStatus
-//    suspend fun process(args: List<String>): String
-
-//    suspend fun ctr(args: List<String>): ProcessResult
     suspend fun ctr(vararg args: String): ProcessResult
+    suspend fun unicast(request: SnmpRequest): SnmpResult
+    suspend fun scan(startIp: String, endIp: String, request: SnmpRequest): Flow<SnmpResult>
 }
 
 @Serializable
 data class ProcessResult(val exitCode: Int, val stdout: List<String>)
 
-//@Serializable
-//data class Image(
-//    val id: String,
-//)
-//
-//@Serializable
-//data class Container(
-//    val id: String,
-//    val imgId: String,
-//)
-//
-//@Serializable
-//data class Task(
-//    val ctrId: String,
-//    val pId: String,
-//    val status: String,
-//)
+@Serializable
+data class SnmpTargetV1(val adr: String, val port: Int, val community: String, val retry: Int, val intervalMs: Long)
 
-//@Serializable
-//data class CtStatus(
-//    val images: List<Image>,
-//    val containers: List<Container>,
-//    val tasks: List<Task>,
-//)
+@Serializable
+open class SnmpVariable(val syntax: Int, val value: ByteArray? = null) {
+    class Null : SnmpVariable(5, null)
+}
+
+@Serializable
+open class SnmpVarBind(
+    val strOid: String = "1.3.6",
+    val oid: List<Int> = strOid.split(".").map { it.toInt() },
+    val variable: SnmpVariable? = null
+)
+
+@Serializable
+class SnmpRequest(
+    val tgAdr: String = "127.0.0.1",
+    val target: SnmpTargetV1 = SnmpTargetV1(tgAdr, 161, "public", 5, 5000),
+    val pduType: Int = GETNEXT,
+    val vbl: List<SnmpVarBind> = listOf()
+) {
+    companion object {
+        val GETNEXT = -95
+    }
+}
+
+
+@Serializable
+sealed class SnmpResult(val request: SnmpRequest) {
+    class Timeout(request: SnmpRequest) : SnmpResult(request)
+    class Response(request: SnmpRequest) : SnmpResult(request)
+}
+

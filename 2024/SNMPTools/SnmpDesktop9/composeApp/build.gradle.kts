@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlinPluginSerialization)
 }
 
 kotlin {
@@ -74,6 +75,7 @@ kotlin {
             implementation(libs.kotlinx.rpc.krpc.ktor.client)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.websockets)
+
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
         }
         desktopMain.dependencies {
