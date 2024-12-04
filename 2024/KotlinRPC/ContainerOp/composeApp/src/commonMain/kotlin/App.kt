@@ -39,8 +39,6 @@ expect val DEV_SERVER_HOST: String
 
 val client by lazy { HttpClient { installRPC() } }
 
-
-
 @Composable
 fun App() {
 
@@ -173,11 +171,11 @@ fun App() {
                 title = { Text("Error") },
                 text = { Text(errorMessage) })
         }
-        if (showDialog) pullImageDialog(onClose = { showDialog = false }) {
+        if (showDialog) pullImageDialog(onClose = { showDialog = false }) { id, opts ->
             running = true
             scope.launch {
                 showDialog = false
-                service.ctr("i", "pull", it)
+                service.ctr("i", "pull", *(opts.trim().split(Regex("\\s+")).toTypedArray()), id)
                 statusOrNull = getStatus()
                 running = false
             }
@@ -217,12 +215,6 @@ fun informationDialog(onClose: () -> Unit, cont: @Composable ColumnScope.() -> U
     }
 
 @Composable
-fun <T> T.showIf(f: Boolean, op: @Composable T.() -> Unit): (Boolean) -> Unit {
-    var show by remember { mutableStateOf(false) }
-    return { s: Boolean -> show = s }
-}
-
-@Composable
 fun LeadingIconTextFieldWithPlaceHolder() {
     val state = rememberTextFieldState("")
     BasicTextField(
@@ -234,24 +226,32 @@ fun LeadingIconTextFieldWithPlaceHolder() {
 }
 
 @Composable
-fun pullImageDialog(onClose: () -> Unit, onOk: (String) -> Unit) = Dialog(onDismissRequest = onClose) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        var id by remember { mutableStateOf("") }
-        Column(modifier = Modifier.padding(8.dp)) {
-            TextField(
-                value = id,
-                label = { Text("Image ID:") },
-                onValueChange = { id = it },
-                modifier = Modifier.fillMaxWidth().onKeyEvent { e ->
-                    if (e.key == Key.Enter) onOk(id)
-                    true
+fun AppTextField(value: String, label: @Composable() (() -> Unit)? = null, onValueChange: (String) -> Unit) =
+    TextField(value = value, label = label, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth())
+
+@Composable
+fun pullImageDialog(onClose: () -> Unit, onOk: (id: String, opts: String) -> Unit) =
+    Dialog(onDismissRequest = onClose) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            var id by remember { mutableStateOf(pullImageId ?: "") }
+            var opts by remember { mutableStateOf(pullImageOpts ?: "") }
+            Column(modifier = Modifier.padding(8.dp).fillMaxWidth()) {
+                TextField(id, label = { Text("Image ID:") }, onValueChange = { id = it })
+                TextField(opts, label = { Text("Pull Options:") }, onValueChange = { opts = it })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { pullImageId = id;pullImageOpts = opts; onOk(id, opts) }) { Text("Pull") }
+                    Button(onClick = onClose) { Text("Cancel") }
                 }
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { onOk(id) }) { Text("Pull") }
-                Button(onClick = onClose) { Text("Cancel") }
             }
         }
     }
-}
 
+var pullImageId
+    get() = getStorage("containerOp.imageId")
+    set(v: String?) = setStorage("containerOp.imageId", v)
+var pullImageOpts
+    get() = getStorage("containerOp.imageOpts")
+    set(v: String?) = setStorage("containerOp.imageOpts", v)
+
+expect fun setStorage(k: String, v: String?)
+expect fun getStorage(k: String): String?

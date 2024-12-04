@@ -1,9 +1,13 @@
-# Run
+# Test Run
+```shell
+sh gradlew :server:run & 
+sh gradlew :composeApp:wasmJsBrowserDevelopmentRun
 ```
 
+# Build/Run
+```shell
+
 ```
-
-
 ----
 
 # About
