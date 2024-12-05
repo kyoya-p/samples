@@ -34,12 +34,13 @@ fun App() {
 
     class CtImage(val id: String) {
         var runOpts by localStorage("containerOp.$id")
+        var defaultContainerId by localStorage("containerOp.$id")
     }
 
     class CtContainer(val id: String, val imgId: String)
-
     class CtTask(val execId: String, val pId: String, val status: String)
-//    class CtProcess(val pId: String, val execId: String?)
+
+    //    class CtProcess(val pId: String, val execId: String?)
     class CtStatus(val images: List<CtImage>, val containers: List<CtContainer>, val tasks: Map<String, CtTask>)
 
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
@@ -72,24 +73,24 @@ fun App() {
     val ctrStatus = statusOrNull ?: return CircularProgressIndicator(color = Color.Blue)
     suspend fun CtImage.runContainer(ctrId: String, vararg args: String) = service.ctr("run", "-d", id, ctrId, *args)
     suspend fun CtImage.remove() = service.ctr("i", "rm", id)
-//    suspend fun CtContainer.start(ctrId: String) = service.ctr("run", id, ctrId)
+
+    //    suspend fun CtContainer.start(ctrId: String) = service.ctr("run", id, ctrId)
     suspend fun CtContainer.remove() = service.ctr("c", "rm", id)
     suspend fun CtContainer.start() = service.ctr("t", "start", "-d", id)
-//    suspend fun CtContainer.listProcess() = service.ctr("t", "ps", id).stdout.mkItems { CtProcess(it[0], it[1]) }
+
+    //    suspend fun CtContainer.listProcess() = service.ctr("t", "ps", id).stdout.mkItems { CtProcess(it[0], it[1]) }
     suspend fun CtContainer.killTask(signal: Int = 9) = service.ctr("t", "kill", "-s", "$signal", id)
     suspend fun CtContainer.removeTask() = service.ctr("t", "rm", id)
 
 
     @Composable
-    fun AppRow(content: @Composable RowScope.() -> Unit) = Card {
-        SelectionContainer {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-                content = content
-            )
-        }
+    fun AppRow(content: @Composable RowScope.() -> Unit) = Card(Modifier.padding(1.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+            content = content
+        )
     }
 
     @Composable
@@ -112,13 +113,11 @@ fun App() {
     }
 
     @Composable
-    fun DialogButton(icon: ImageVector, action: @Composable (close: () -> Unit) -> Unit) {
+    fun <T> DialogButton(icon: ImageVector, action: @Composable (close: T.() -> Unit) -> Unit) {
         var show by remember { mutableStateOf(false) }
-        IconButton(onClick = { show = true }) {
-            Icon(icon, "")
-            if (show) Dialog(onDismissRequest = { show = false }) {
-                Card(modifier = Modifier.fillMaxWidth()) { action{ show = false } }
-            }
+        IconButton(onClick = { show = true }) { Icon(icon, "") }
+        if (show) Dialog(onDismissRequest = { show = false }) {
+            Card(modifier = Modifier.fillMaxWidth()) { action { show = false } }
         }
     }
 
@@ -128,15 +127,17 @@ fun App() {
         CtrActionButton(Icons.Default.PlayArrow) { runContainer("C-${now().toEpochMilliseconds() % 1000}") }
         DialogButton(Icons.Default.Settings) { close ->
             var opts by remember { mutableStateOf(runOpts ?: "") }
+            var ctrId by remember { mutableStateOf(defaultContainerId ?: "") }
             Column(Modifier.padding(8.dp).fillMaxWidth()) {
-                AppTextField(opts, label = {Text("Container Run Options")}, onValueChange = { opts = it })
+                AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
+                AppTextField(ctrId, label = { Text("Default Container Id") }, onValueChange = { ctrId = it })
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { runOpts = opts; close() }) { Text("Save") }
-                    Button(onClick = close) { Text("Cancel") }
+                    Button(onClick = { runOpts = opts;defaultContainerId = ctrId; close() }) { Text("Save") }
+                    Button(onClick = { close() }) { Text("Cancel") }
                 }
             }
         }
-        Text(id, Modifier.weight(1f))
+        SelectionContainer(Modifier.weight(1f)) { Text(id) }
         CtrActionButton(Icons.Default.Delete) { remove() }
     }
 
@@ -149,9 +150,9 @@ fun App() {
 //            }
 //        }
         Icon(Icons.Default.Star, "")
-        Text(id, Modifier.weight(.3f))
-        Text(imgId)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(id, Modifier.weight(.2f))
+        Text(imgId, modifier = Modifier.weight(0.6f))
+        Row(modifier = Modifier.weight(0.2f), verticalAlignment = Alignment.CenterVertically) {
             fun CtContainer.status() = ctrStatus.tasks[id]?.status ?: "NO_TSK"
             Text(status())
             CtrActionButton(Icons.Default.PlayArrow) { start() }
