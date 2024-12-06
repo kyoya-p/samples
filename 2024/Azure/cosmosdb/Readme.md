@@ -7,16 +7,26 @@
 
 # Run CosmosDB Emulator
 ```
-docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
-docker run \
-    --publish 8081:8081 \
-    --publish 10250-10255:10250-10255 \
+sudo docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+
+IPADR=xx.xx.xx.xx
+
+sudo docker run \
+    -p 2081:8081 \
+    -p 10250-10255:10250-10255 \
+    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=$IPADR \
     --name linux-emulator \
     --detach \
     mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
+curl --insecure https://localhost:2081/_explorer/emulator.pem > ~/emulatorcert.crt
+# ブラウザ/OSにCosmosDB Emulator証明書emulatorcert.crtを信頼するCAとして登録
+```
+
+
+```
 # データエクスプローラ:
-# https://localhost:8081/_explorer/index.html
+# https://localhost:2081/_explorer/index.html
 ```
 
 # Run
