@@ -61,7 +61,7 @@ fun App() {
 
     val service = serviceOrNull ?: return CircularProgressIndicator(color = Color.Magenta)
 
-    fun <T> List<String>.mkItems(op: (List<String>) -> T) = drop(1).map { it.split(Regex("\\s+")) }.map(op)
+    fun <T> List<String>.mkItems(op: (List<String>) -> T) = drop(1).map { it.appSplit() }.map(op)
     suspend fun getStatus() = CtStatus(
         images = service.ctr("i", "ls", "-q").stdout.map { CtImage(it.trim()) },
         containers = service.ctr("c", "ls").stdout.mkItems { CtContainer(it[0], it[1]) },
@@ -172,11 +172,11 @@ fun App() {
         IconButton(onClick = { showDialog = true }) {
             Icon(Icons.Default.Add, "Pull Image")
             if (running) CircularProgressIndicator()
-            if (showDialog) pullImageDialog(onClose = { showDialog = false }) { id, opts ->
+            if (showDialog) pullImgDialog(onClose = { showDialog = false }) { id, opts ->
                 running = true
                 scope.launch {
                     showDialog = false
-                    service.ctr("i", "pull", *(opts.trim().split(Regex("\\s+")).toTypedArray()), id)
+                    service.ctr("i", "pull", *(opts.appSplit().toTypedArray()), id)
                     statusOrNull = getStatus()
                     running = false
                 }
@@ -230,21 +230,20 @@ fun AppTextField(value: String, label: @Composable() (() -> Unit)? = null, onVal
     TextField(value = value, label = label, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth())
 
 @Composable
-fun pullImageDialog(onClose: () -> Unit, onOk: (id: String, opts: String) -> Unit) =
-    Dialog(onDismissRequest = onClose) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            var id by remember { mutableStateOf(pullImageId ?: "") }
-            var opts by remember { mutableStateOf(pullImageOpts ?: "") }
-            Column(modifier = Modifier.padding(8.dp).fillMaxWidth()) {
-                AppTextField(id, label = { Text("Image ID:") }, onValueChange = { id = it })
-                AppTextField(opts, label = { Text("Pull Options:") }, onValueChange = { opts = it })
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { pullImageId = id;pullImageOpts = opts; onOk(id, opts) }) { Text("Pull") }
-                    Button(onClick = onClose) { Text("Cancel") }
-                }
+fun pullImgDialog(onClose: () -> Unit, onOk: (id: String, opts: String) -> Unit) = Dialog(onDismissRequest = onClose) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        var id by remember { mutableStateOf(pullImageId ?: "") }
+        var opts by remember { mutableStateOf(pullImageOpts ?: "") }
+        Column(modifier = Modifier.padding(8.dp).fillMaxWidth()) {
+            AppTextField(id, label = { Text("Image ID:") }, onValueChange = { id = it })
+            AppTextField(opts, label = { Text("Pull Options:") }, onValueChange = { opts = it })
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { pullImageId = id;pullImageOpts = opts; onOk(id, opts) }) { Text("Pull") }
+                Button(onClick = onClose) { Text("Cancel") }
             }
         }
     }
+}
 
 var pullImageId by localStorage()
 var pullImageOpts by localStorage()
@@ -257,3 +256,5 @@ class localStorage(val appId: String = "containerOp") {
     operator fun getValue(any: Any, p: KProperty<*>) = getStorage("$appId.${p.name}")
     operator fun setValue(any: Any, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
 }
+
+fun String.appSplit() = split(Regex("\\s+")).filter { it.isNotEmpty() }
