@@ -1,21 +1,26 @@
 FROM eclipse-temurin:21-jdk AS builder
 
 RUN apt-get update
-RUN apt-get install -y git
+RUN apt-get upgrade -y
+RUN apt-get install -y --fix-missing git
+RUN apt-get install -y npm
+RUN npm i -g n
+RUN n latest
 
 WORKDIR /builder
 RUN git clone --depth=1 https://github.com/kyoya-p/samples
-ARG BULID=/builder/samples/2024/KotlinRPC/ContainerOp
-WORKDIR $BULID
+ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
+WORKDIR $PROJ
 RUN sh gradlew server:shadowJar
-RUN sh gradlew composeApp:wasmJsBrowserProductionWebpack
+RUN #sh gradlew composeApp:wasmJsBrowserDistribution
+RUN sh gradlew kotlinNpmInstall wasmJsBrowserDistribution
 
 
 FROM eclipse-temurin:21-jre
 WORKDIR /opt
-ARG SERVER=$BUILD/server/build
-ARG COMPOSEAPP=$BUILD/composeApp/build
-COPY --from=builder $SERVER/libs/server-all.jar .
-COPY --from=builder $COMPOSEAPP/kotlin-webpack/wasmJs/productionExecutable/* .
+ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
+COPY --from=builder $PROJ/server/build/libs/server-all.jar .
+COPY --from=builder $PROJ/composeApp/build/dist/wasmJs/productionExecutable/* ./
 
-CMD "/bin/bash"
+#CMD "/bin/bash"
+CMD "/opt/java/openjdk/bin/java -jar server-all.jar"
