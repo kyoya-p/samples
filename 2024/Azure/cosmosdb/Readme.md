@@ -1,5 +1,6 @@
 # 環境
 
+
 - Ubuntu 24.04 on wsl
 - Node.js v23.3.0
 - npm 10.9.0
@@ -7,27 +8,13 @@
 
 # Run CosmosDB Emulator
 ```
-sudo docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
-
-IPADR=xx.xx.xx.xx
-
-sudo docker run \
-    -p 2081:8081 \
-    -p 10250-10255:10250-10255 \
-    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=$IPADR \
-    --name linux-emulator \
-    --detach \
-    mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+docker run --detach --publish 8081:8081 --publish 1234:1234 mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
 
 curl --insecure https://localhost:2081/_explorer/emulator.pem > ~/emulatorcert.crt
 # ブラウザ/OSにCosmosDB Emulator証明書emulatorcert.crtを信頼するCAとして登録
 ```
 
-
-```
-# データエクスプローラ:
-# https://localhost:2081/_explorer/index.html
-```
+データエクスプローラ: `http://localhost:8081`
 
 # Run
 ```
@@ -45,3 +32,4 @@ npm install --save @azure/cosmos
 
 # Refer
 - https://learn.microsoft.com/ja-jp/azure/cosmos-db/how-to-develop-emulator?tabs=windows%2Cjavascript&pivots=api-nosql
+- https://learn.microsoft.com/ja-jp/azure/cosmos-db/emulator-linux
