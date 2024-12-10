@@ -7,13 +7,30 @@ plugins {
     alias(libs.plugins.kotlinPluginSerialization) apply false
     alias(libs.plugins.kotlinx.rpc) apply false
     alias(libs.plugins.compose.compiler) apply false
-
-    id("com.palantir.docker") version "0.36.0" // https://github.com/palantir/gradle-docker
 }
 
-// TODO
-docker {
-    name = project.name
-    tag("myRegistry", "my.registry.com/username/my-app:version")
-    setDockerfile(File("Dockerfile"))
+val buildAppWebTask = tasks.create("buildAppWeb") {
+    group = "container op"
+    dependsOn("server:shadowJar")
+    dependsOn("composeApp:wasmJsBrowserDistribution")
+    doLast {
+        copy {
+            into("build/appWeb")
+            from(
+                "server/build/libs/server-all.jar",
+                "composeApp/build/dist/wasmJs/productionExecutable"
+            )
+        }
+    }
+}
+
+val runAppWebTask = tasks.create("runAppWeb") {
+    group = "container op"
+    dependsOn(buildAppWebTask)
+    doLast {
+        exec {
+            this.workingDir = File("build/appWeb")
+            commandLine("java", "-jar", "server-all.jar")
+        }
+    }
 }
