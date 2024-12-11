@@ -17,13 +17,14 @@ import jp.wjg.shokkaa.container.ProcessResult
 import jp.wjg.shokkaa.container.UserService
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock.System.now
-import kotlinx.datetime.format.Padding
 import kotlinx.rpc.krpc.ktor.client.installRPC
 import kotlinx.rpc.krpc.ktor.client.rpc
 import kotlinx.rpc.krpc.ktor.client.rpcConfig
 import kotlinx.rpc.krpc.serialization.json.json
 import kotlinx.rpc.krpc.streamScoped
 import kotlinx.rpc.withService
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.reflect.KProperty
 
 expect val DEV_SERVER_HOST: String
@@ -34,8 +35,8 @@ val client by lazy { HttpClient { installRPC() } }
 fun App() {
 
     class CtImage(val id: String) {
-        var runOpts by localStorage("containerOp.$id")
-        var ctrId by localStorage("containerOp.$id")
+        var runOpts by localStorageList<String>("containerOp.$id")
+        var ctrId by localStorageString("containerOp.$id")
     }
 
     class CtContainer(val id: String, val imgId: String)
@@ -123,17 +124,18 @@ fun App() {
         CtrActionButton(Icons.Default.PlayArrow) {
             runContainer(
                 ctrId ?: "C${now().toEpochMilliseconds() % 10000}",
-                *(runOpts.appSplit().toTypedArray())
+                *((runOpts ?: listOf()).toTypedArray())
             )
         }
         DialogButton(Icons.Default.Settings) { close ->
-            var opts by remember { mutableStateOf(runOpts ?: "") }
+            var opts by remember { mutableStateOf(runOpts?.joinToString(" ") ?: "") }
             var cid by remember { mutableStateOf(ctrId ?: "") }
             Column(Modifier.padding(8.dp).fillMaxWidth()) {
-                AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
                 AppTextField(cid, label = { Text("Default Container Id") }, onValueChange = { cid = it })
+                AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
+                Checkbox(opts.contains("--rm"), onCheckedChange = {});Text("--rm")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { runOpts = opts;ctrId = cid.ifEmpty { null }; close() }) { Text("Save") }
+                    Button(onClick = { runOpts = opts.appSplit();ctrId = cid.ifEmpty { null }; close() }) { Text("Save") }
                     Button(onClick = { close() }) { Text("Cancel") }
                 }
             }
@@ -144,12 +146,6 @@ fun App() {
 
     @Composable
     fun CtContainer.item() = AppRow {
-//        var ps by remember { mutableStateOf(emptyList<CtProcess>()) }
-//        LaunchedEffect(Unit) {
-//            while (true) {
-//                ps = listProcess(); delay(5.seconds)
-//            }
-//        }
         Icon(Icons.Default.Star, "")
         Text(id, Modifier.weight(.2f))
         Text(imgId, modifier = Modifier.weight(0.6f))
@@ -237,16 +233,26 @@ fun pullImgDialog(onClose: () -> Unit, onOk: (id: String, opts: String) -> Unit)
     }
 }
 
-var pullImageId by localStorage()
-var pullImageOpts by localStorage()
+var pullImageId by localStorageString()
+var pullImageOpts by localStorageString()
 
 expect fun setStorage(k: String, v: String?)
 expect fun getStorage(k: String): String?
-class localStorage(val appId: String = "containerOp") {
+class localStorageString(val appId: String = "containerOp") {
     operator fun getValue(n: Nothing?, p: KProperty<*>) = getStorage("$appId.${p.name}")
     operator fun setValue(n: Nothing?, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
     operator fun getValue(any: Any, p: KProperty<*>) = getStorage("$appId.${p.name}")
     operator fun setValue(any: Any, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
+}
+
+inline fun <reified T> T.toJson(): String = Json.encodeToString(this)
+inline fun <reified T> String.toObject(): T = Json.decodeFromString(this)
+
+class localStorageList<T>(val appId: String = "containerOp") {
+    operator fun getValue(n: Nothing?, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
+    operator fun setValue(n: Nothing?, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
+    operator fun getValue(any: Any, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
+    operator fun setValue(any: Any, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
 }
 
 fun String?.appSplit() = this?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: listOf()
