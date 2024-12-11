@@ -18,7 +18,7 @@ interface UserService : RemoteService {
 }
 
 @Serializable
-data class ProcessResult(val exitCode: Int, val stdout: List<String>)
+data class ProcessResult(val exitCode: Int, val stdout: List<String>, val stderr: List<String>)
 
 //@Serializable
 //data class Image(
