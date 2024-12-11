@@ -124,7 +124,7 @@ fun App() {
     @Composable
     fun CtImage.item() = AppRow {
         Icon(Icons.Outlined.Home, "")
-        CtrActionButton(Icons.Default.PlayArrow) { runContainer("C-${now().toEpochMilliseconds() % 1000}") }
+        CtrActionButton(Icons.Default.PlayArrow) { runContainer("C${now().toEpochMilliseconds() % 10000}") }
         DialogButton(Icons.Default.Settings) { close ->
             var opts by remember { mutableStateOf(runOpts ?: "") }
             var ctrId by remember { mutableStateOf(defaultContainerId ?: "") }

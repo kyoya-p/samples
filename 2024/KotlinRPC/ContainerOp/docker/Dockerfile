@@ -11,16 +11,11 @@ WORKDIR /builder
 RUN git clone --depth=1 https://github.com/kyoya-p/samples
 ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
 WORKDIR $PROJ
-RUN sh gradlew server:shadowJar
-RUN #sh gradlew composeApp:wasmJsBrowserDistribution
-RUN sh gradlew kotlinNpmInstall wasmJsBrowserDistribution
-
+RUN sh gradlew buildAppWeb
 
 FROM eclipse-temurin:21-jre
 WORKDIR /opt
 ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
-COPY --from=builder $PROJ/server/build/libs/server-all.jar .
-COPY --from=builder $PROJ/composeApp/build/dist/wasmJs/productionExecutable/* ./
+COPY --from=builder $PROJ/build/appWeb/ ./
 
-#CMD "/bin/bash"
 CMD "/opt/java/openjdk/bin/java -jar server-all.jar"
