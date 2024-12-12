@@ -10,13 +10,14 @@
 sudo docker pull mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
 IPADR=xx.xx.xx.xx
+    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=$IPADR \
 
 sudo docker run \
-    -p 2081:8081 \
+    -p 8081:8081 \
     -p 10250-10255:10250-10255 \
-    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=$IPADR \
     --name linux-emulator \
     --detach \
+    -e AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE=$IPADR \
     mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
 
 curl --insecure https://localhost:2081/_explorer/emulator.pem > ~/emulatorcert.crt
@@ -26,7 +27,7 @@ curl --insecure https://localhost:2081/_explorer/emulator.pem > ~/emulatorcert.c
 
 ```
 # データエクスプローラ:
-# https://localhost:2081/_explorer/index.html
+# https://localhost:8081/_explorer/index.html
 ```
 
 # Run
