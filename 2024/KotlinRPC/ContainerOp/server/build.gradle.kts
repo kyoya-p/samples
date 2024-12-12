@@ -37,3 +37,9 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+

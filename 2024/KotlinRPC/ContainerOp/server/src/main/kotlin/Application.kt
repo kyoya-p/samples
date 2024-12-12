@@ -3,7 +3,6 @@ package jp.wjg.shokkaa.container
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
-//import io.ktor.server.netty.*
 import io.ktor.server.cio.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.routing.*
@@ -43,7 +42,8 @@ fun Application.installCORS() {
         allowSameOrigin = true
 
         // webpack-dev-server and local development
-        val allowedHosts = listOf("localhost:3000", "localhost:8080", "localhost:8081", "127.0.0.1:8080")
+      	//val allowedHosts = listOf("localhost:3000", "localhost:8080", "localhost:8081", "127.0.0.1:8080")
+        val allowedHosts = listOf("*")
         allowedHosts.forEach { host ->
             allowHost(host, listOf("http", "https", "ws", "wss"))
         }
