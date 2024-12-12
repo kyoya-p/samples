@@ -23,6 +23,8 @@ import kotlinx.rpc.krpc.ktor.client.rpcConfig
 import kotlinx.rpc.krpc.serialization.json.json
 import kotlinx.rpc.krpc.streamScoped
 import kotlinx.rpc.withService
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.reflect.KProperty
 
 expect val DEV_SERVER_HOST: String
@@ -33,14 +35,12 @@ val client by lazy { HttpClient { installRPC() } }
 fun App() {
 
     class CtImage(val id: String) {
-        var runOpts by localStorage("containerOp.$id")
-        var defaultContainerId by localStorage("containerOp.$id")
+        var runOpts by localStorageList<String>("containerOp.$id")
+        var ctrId by localStorageString("containerOp.$id")
     }
 
     class CtContainer(val id: String, val imgId: String)
     class CtTask(val execId: String, val pId: String, val status: String)
-
-    //    class CtProcess(val pId: String, val execId: String?)
     class CtStatus(val images: List<CtImage>, val containers: List<CtContainer>, val tasks: Map<String, CtTask>)
 
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
@@ -71,14 +71,10 @@ fun App() {
     LaunchedEffect(Unit) { streamScoped { statusOrNull = getStatus() } }
 
     val ctrStatus = statusOrNull ?: return CircularProgressIndicator(color = Color.Blue)
-    suspend fun CtImage.runContainer(ctrId: String, vararg args: String) = service.ctr("run", "-d", id, ctrId, *args)
+    suspend fun CtImage.runContainer(ctrId: String, vararg args: String) = service.ctr("run", "-d", *args, id, ctrId)
     suspend fun CtImage.remove() = service.ctr("i", "rm", id)
-
-    //    suspend fun CtContainer.start(ctrId: String) = service.ctr("run", id, ctrId)
     suspend fun CtContainer.remove() = service.ctr("c", "rm", id)
     suspend fun CtContainer.start() = service.ctr("t", "start", "-d", id)
-
-    //    suspend fun CtContainer.listProcess() = service.ctr("t", "ps", id).stdout.mkItems { CtProcess(it[0], it[1]) }
     suspend fun CtContainer.killTask(signal: Int = 9) = service.ctr("t", "kill", "-s", "$signal", id)
     suspend fun CtContainer.removeTask() = service.ctr("t", "rm", id)
 
@@ -103,6 +99,7 @@ fun App() {
                 statusOrNull = getStatus()
                 if (r.exitCode != 0) errorMessage = """ResultCode: ${r.exitCode}
                     |stdout: ${r.stdout.joinToString("\n")}
+                    |stderr: ${r.stderr.joinToString("\n")}
                     |""".trimMargin()
                 busy = false
             }
@@ -124,15 +121,21 @@ fun App() {
     @Composable
     fun CtImage.item() = AppRow {
         Icon(Icons.Outlined.Home, "")
-        CtrActionButton(Icons.Default.PlayArrow) { runContainer("C-${now().toEpochMilliseconds() % 1000}") }
+        CtrActionButton(Icons.Default.PlayArrow) {
+            runContainer(
+                ctrId ?: "C${now().toEpochMilliseconds() % 10000}",
+                *((runOpts ?: listOf()).toTypedArray())
+            )
+        }
         DialogButton(Icons.Default.Settings) { close ->
-            var opts by remember { mutableStateOf(runOpts ?: "") }
-            var ctrId by remember { mutableStateOf(defaultContainerId ?: "") }
+            var opts by remember { mutableStateOf(runOpts?.joinToString(" ") ?: "") }
+            var cid by remember { mutableStateOf(ctrId ?: "") }
             Column(Modifier.padding(8.dp).fillMaxWidth()) {
+                AppTextField(cid, label = { Text("Default Container Id") }, onValueChange = { cid = it })
                 AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
-                AppTextField(ctrId, label = { Text("Default Container Id") }, onValueChange = { ctrId = it })
+                Checkbox(opts.contains("--rm"), onCheckedChange = {});Text("--rm")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { runOpts = opts;defaultContainerId = ctrId; close() }) { Text("Save") }
+                    Button(onClick = { runOpts = opts.appSplit();ctrId = cid.ifEmpty { null }; close() }) { Text("Save") }
                     Button(onClick = { close() }) { Text("Cancel") }
                 }
             }
@@ -143,12 +146,6 @@ fun App() {
 
     @Composable
     fun CtContainer.item() = AppRow {
-//        var ps by remember { mutableStateOf(emptyList<CtProcess>()) }
-//        LaunchedEffect(Unit) {
-//            while (true) {
-//                ps = listProcess(); delay(5.seconds)
-//            }
-//        }
         Icon(Icons.Default.Star, "")
         Text(id, Modifier.weight(.2f))
         Text(imgId, modifier = Modifier.weight(0.6f))
@@ -189,19 +186,10 @@ fun App() {
         if (errorMessage.isNotEmpty()) {
             AlertDialog(
                 onDismissRequest = { errorMessage = "" },
-                buttons = { Button(onClick = { errorMessage = "" }) { Text("OK") } },
+                buttons = { Row(Modifier.padding(8.dp)) { Button(onClick = { errorMessage = "" }) { Text("OK") } } },
                 title = { Text("Error") },
                 text = { Text(errorMessage) })
         }
-//        if (showDialog) pullImageDialog(onClose = { showDialog = false }) { id, opts ->
-//            running = true
-//            scope.launch {
-//                showDialog = false
-//                service.ctr("i", "pull", *(opts.trim().split(Regex("\\s+")).toTypedArray()), id)
-//                statusOrNull = getStatus()
-//                running = false
-//            }
-//        }
     }
 
     MaterialTheme {
@@ -245,16 +233,26 @@ fun pullImgDialog(onClose: () -> Unit, onOk: (id: String, opts: String) -> Unit)
     }
 }
 
-var pullImageId by localStorage()
-var pullImageOpts by localStorage()
+var pullImageId by localStorageString()
+var pullImageOpts by localStorageString()
 
 expect fun setStorage(k: String, v: String?)
 expect fun getStorage(k: String): String?
-class localStorage(val appId: String = "containerOp") {
+class localStorageString(val appId: String = "containerOp") {
     operator fun getValue(n: Nothing?, p: KProperty<*>) = getStorage("$appId.${p.name}")
     operator fun setValue(n: Nothing?, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
     operator fun getValue(any: Any, p: KProperty<*>) = getStorage("$appId.${p.name}")
     operator fun setValue(any: Any, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
 }
 
-fun String.appSplit() = split(Regex("\\s+")).filter { it.isNotEmpty() }
+inline fun <reified T> T.toJson(): String = Json.encodeToString(this)
+inline fun <reified T> String.toObject(): T = Json.decodeFromString(this)
+
+class localStorageList<T>(val appId: String = "containerOp") {
+    operator fun getValue(n: Nothing?, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
+    operator fun setValue(n: Nothing?, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
+    operator fun getValue(any: Any, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
+    operator fun setValue(any: Any, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
+}
+
+fun String?.appSplit() = this?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: listOf()

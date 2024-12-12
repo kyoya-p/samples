@@ -1,12 +1,12 @@
-# Test Run
+# Build
 ```shell
-sh gradlew :server:run & 
-sh gradlew :composeApp:wasmJsBrowserDevelopmentRun
+sh gradlew buildAppWeb
 ```
+Target: `build/AppWeb`
 
-# Build/Run
+# Run
 ```shell
-
+sh gradle runAppWeb
 ```
 ----
 

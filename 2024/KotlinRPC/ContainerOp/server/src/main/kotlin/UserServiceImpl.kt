@@ -13,7 +13,7 @@ class UserServiceImpl(override val coroutineContext: CoroutineContext) : UserSer
         val stdout = async { process.inputStream.bufferedReader().readLines() }
         val stderr = async { process.errorStream.bufferedReader().readLines() }
         val exitCode = process.waitFor()
-        ProcessResult(exitCode, stdout.await())
+        ProcessResult(exitCode, stdout.await(), stderr.await())
     }
 }
 
