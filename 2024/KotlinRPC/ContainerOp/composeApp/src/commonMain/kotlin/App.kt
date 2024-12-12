@@ -28,6 +28,7 @@ import kotlinx.serialization.json.Json
 import kotlin.reflect.KProperty
 
 expect val DEV_SERVER_HOST: String
+expect val DEV_SERVER_PORT: String
 
 val client by lazy { HttpClient { installRPC() } }
 
@@ -52,7 +53,7 @@ fun App() {
         serviceOrNull = client.rpc {
             url {
                 host = DEV_SERVER_HOST
-                port = 8080
+                port = DEV_SERVER_PORT.toInt()
                 encodedPath = "/api"
             }
             rpcConfig { serialization { json() } }
