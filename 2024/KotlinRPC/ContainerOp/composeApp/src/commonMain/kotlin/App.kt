@@ -31,12 +31,14 @@ expect val DEV_SERVER_HOST: String
 expect val DEV_SERVER_PORT: String
 
 val client by lazy { HttpClient { installRPC() } }
+inline fun <reified T> T.toJson(): String = Json.encodeToString(this)
+inline fun <reified T> String.toObject(): T? = runCatching<T> { Json.decodeFromString(this) }.getOrNull()
 
 @Composable
 fun App() {
 
     class CtImage(val id: String) {
-        var runOpts by localStorageList<String>("containerOp.$id")
+        var runOpts by localStorageString("containerOp.$id")
         var ctrId by localStorageString("containerOp.$id")
     }
 
@@ -62,7 +64,7 @@ fun App() {
 
     val service = serviceOrNull ?: return CircularProgressIndicator(color = Color.Magenta)
 
-    fun <T> List<String>.mkItems(op: (List<String>) -> T) = drop(1).map { it.appSplit() }.map(op)
+    fun <T> List<String>.mkItems(op: (List<String>) -> T) = drop(1).map { it.split1() }.map(op)
     suspend fun getStatus() = CtStatus(
         images = service.ctr("i", "ls", "-q").stdout.map { CtImage(it.trim()) },
         containers = service.ctr("c", "ls").stdout.mkItems { CtContainer(it[0], it[1]) },
@@ -79,19 +81,24 @@ fun App() {
     suspend fun CtContainer.killTask(signal: Int = 9) = service.ctr("t", "kill", "-s", "$signal", id)
     suspend fun CtContainer.removeTask() = service.ctr("t", "rm", id)
 
+    @Composable
+    fun AppRow(content: @Composable RowScope.() -> Unit) = Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        content = content
+    )
 
     @Composable
-    fun AppRow(content: @Composable RowScope.() -> Unit) = Card(Modifier.padding(1.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-            content = content
-        )
+    fun AppCheckbox(value: Boolean, label: String, onCheckedChange: (Boolean) -> Unit) = Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(value, onCheckedChange = onCheckedChange)
+        Text(label)
     }
 
     @Composable
-    fun <T> T.CtrActionButton(icon: ImageVector, action: suspend T.() -> ProcessResult) {
+    fun CtrActionButton(icon: ImageVector, action: suspend () -> ProcessResult) {
         var busy by remember { mutableStateOf(false) }
         IconButton(onClick = {
             busy = true
@@ -111,7 +118,7 @@ fun App() {
     }
 
     @Composable
-    fun <T> DialogButton(icon: ImageVector, action: @Composable (close: T.() -> Unit) -> Unit) {
+    fun <T> DialogButton(icon: ImageVector, action: @Composable (close: () -> Unit) -> T) {
         var show by remember { mutableStateOf(false) }
         IconButton(onClick = { show = true }) { Icon(icon, "") }
         if (show) Dialog(onDismissRequest = { show = false }) {
@@ -123,20 +130,30 @@ fun App() {
     fun CtImage.item() = AppRow {
         Icon(Icons.Outlined.Home, "")
         CtrActionButton(Icons.Default.PlayArrow) {
-            runContainer(
-                ctrId ?: "C${now().toEpochMilliseconds() % 10000}",
-                *((runOpts ?: listOf()).toTypedArray())
-            )
+            runContainer(ctrId ?: "C${now().toEpochMilliseconds() % 10000}", *runOpts.split2())
         }
         DialogButton(Icons.Default.Settings) { close ->
-            var opts by remember { mutableStateOf(runOpts?.joinToString(" ") ?: "") }
+            var opts by remember { mutableStateOf(runOpts ?: "") }
             var cid by remember { mutableStateOf(ctrId ?: "") }
             Column(Modifier.padding(8.dp).fillMaxWidth()) {
                 AppTextField(cid, label = { Text("Default Container Id") }, onValueChange = { cid = it })
                 AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
-                Checkbox(opts.contains("--rm"), onCheckedChange = {});Text("--rm")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { runOpts = opts.appSplit();ctrId = cid.ifEmpty { null }; close() }) { Text("Save") }
+                AppRow {
+                    @Composable
+                    fun OptCB(op: String) = AppCheckbox(opts.split1().contains(op), op) {
+                        opts = when (it) {
+                            false -> opts.split1().filterNot { it == op }
+                            true -> opts.split1() + op
+                        }.joinToString(" ")
+                    }
+                    OptCB("--detach")
+                    OptCB("--rm")
+
+                    Box(Modifier.weight(1f))
+                    CtrActionButton(Icons.Default.PlayArrow) {
+                        runContainer(ctrId ?: "C${now().toEpochMilliseconds() % 10000}", *runOpts.split2())
+                    }
+                    Button(onClick = { runOpts = opts;ctrId = cid;close() }) { Text("Save") }
                     Button(onClick = { close() }) { Text("Cancel") }
                 }
             }
@@ -174,7 +191,7 @@ fun App() {
                 running = true
                 scope.launch {
                     showDialog = false
-                    service.ctr("i", "pull", *(opts.appSplit().toTypedArray()), id)
+                    service.ctr("i", "pull", *opts.split2(), id)
                     statusOrNull = getStatus()
                     running = false
                 }
@@ -208,6 +225,13 @@ fun App() {
                         }
                     })
             },
+            floatingActionButton = {
+                var show by remember { mutableStateOf(false) }
+                if (show) pullImgDialog({ show = false }){ id, opts ->
+//                    service.ctr()
+                }
+                FloatingActionButton(onClick = { show = true }) { Icon(Icons.Default.Add, "add") }
+            }
         ) {
             AppPanel()
         }
@@ -246,14 +270,6 @@ class localStorageString(val appId: String = "containerOp") {
     operator fun setValue(any: Any, p: KProperty<*>, s: String?) = setStorage("$appId.${p.name}", s)
 }
 
-inline fun <reified T> T.toJson(): String = Json.encodeToString(this)
-inline fun <reified T> String.toObject(): T = Json.decodeFromString(this)
 
-class localStorageList<T>(val appId: String = "containerOp") {
-    operator fun getValue(n: Nothing?, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
-    operator fun setValue(n: Nothing?, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
-    operator fun getValue(any: Any, p: KProperty<*>): List<T>? = getStorage("$appId.${p.name}")?.toObject()
-    operator fun setValue(any: Any, p: KProperty<*>, s: List<T>?) = setStorage("$appId.${p.name}", s?.toJson())
-}
-
-fun String?.appSplit() = this?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: listOf()
+fun String?.split1() = this?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: listOf()
+fun String?.split2() = split1().toTypedArray()
