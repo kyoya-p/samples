@@ -36,6 +36,7 @@ dependencies {
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
     testImplementation(libs.kotlin.test.junit)
 }
+<<<<<<< HEAD
 
 java {
     toolchain {
@@ -43,3 +44,5 @@ java {
     }
 }
 
+=======
+>>>>>>> 7ae7864ce27af9450c566328e5c0e1e970477dbe
