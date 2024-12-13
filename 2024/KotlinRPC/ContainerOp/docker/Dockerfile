@@ -1,7 +1,6 @@
 FROM eclipse-temurin:21-jdk AS builder
 
 RUN apt-get update
-RUN apt-get upgrade -y
 RUN apt-get install -y --fix-missing git
 RUN apt-get install -y npm
 RUN npm i -g n
@@ -14,6 +13,9 @@ WORKDIR $PROJ
 RUN sh gradlew buildAppWeb
 
 FROM eclipse-temurin:21-jre
+RUN apt-get update
+RUN apt-get install -y containerd
+
 WORKDIR /opt
 ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
 COPY --from=builder $PROJ/build/appWeb/ ./
