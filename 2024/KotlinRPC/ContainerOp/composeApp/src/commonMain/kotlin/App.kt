@@ -37,9 +37,10 @@ inline fun <reified T> String.toObject(): T? = runCatching<T> { Json.decodeFromS
 @Composable
 fun App() {
 
-    class CtImage(val id: String) {
-        var runOpts by localStorageString("containerOp.$id")
+    class CtImage(val id: String, type: String, digest: String, size: String, platforms: String) {
+        var opts by localStorageString("containerOp.$id")
         var ctrId by localStorageString("containerOp.$id")
+        var args by localStorageString("containerOp.$id")
     }
 
     class CtContainer(val id: String, val imgId: String)
@@ -48,7 +49,7 @@ fun App() {
 
     var serviceOrNull: UserService? by remember { mutableStateOf(null) }
     var statusOrNull: CtStatus? by remember { mutableStateOf(null) }
-    var errorMessage by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -66,7 +67,7 @@ fun App() {
 
     fun <T> List<String>.mkItems(op: (List<String>) -> T) = drop(1).map { it.split1() }.map(op)
     suspend fun getStatus() = CtStatus(
-        images = service.ctr("i", "ls", "-q").stdout.map { CtImage(it.trim()) },
+        images = service.ctr("i", "ls").stdout.mkItems { CtImage(it[0], it[1], it[2], it[3] + it[4], it[5]) },
         containers = service.ctr("c", "ls").stdout.mkItems { CtContainer(it[0], it[1]) },
         tasks = service.ctr("t", "ls").stdout.mkItems { CtTask(it[0], it[1], it[2]) }.associate { it.execId to it }
     )
@@ -74,7 +75,9 @@ fun App() {
     LaunchedEffect(Unit) { streamScoped { statusOrNull = getStatus() } }
 
     val ctrStatus = statusOrNull ?: return CircularProgressIndicator(color = Color.Blue)
-    suspend fun CtImage.runContainer(ctrId: String, vararg args: String) = service.ctr("run", "-d", *args, id, ctrId)
+    suspend fun CtImage.runContainer() =
+        service.ctr("run", *opts.split2(), id, ctrId ?: "C${now().nanosecondsOfSecond % 10000}", args ?: "")
+
     suspend fun CtImage.remove() = service.ctr("i", "rm", id)
     suspend fun CtContainer.remove() = service.ctr("c", "rm", id)
     suspend fun CtContainer.start() = service.ctr("t", "start", "-d", id)
@@ -105,7 +108,7 @@ fun App() {
             scope.launch {
                 val r = action()
                 statusOrNull = getStatus()
-                if (r.exitCode != 0) errorMessage = """ResultCode: ${r.exitCode}
+                if (r.exitCode != 0) message = """ResultCode: ${r.exitCode}
                     |stdout: ${r.stdout.joinToString("\n")}
                     |stderr: ${r.stderr.joinToString("\n")}
                     |""".trimMargin()
@@ -129,36 +132,34 @@ fun App() {
     @Composable
     fun CtImage.item() = AppRow {
         Icon(Icons.Outlined.Home, "")
-        CtrActionButton(Icons.Default.PlayArrow) {
-            runContainer(ctrId ?: "C${now().toEpochMilliseconds() % 10000}", *runOpts.split2())
-        }
+        CtrActionButton(Icons.Default.PlayArrow) { runContainer() }
         DialogButton(Icons.Default.Settings) { close ->
-            var opts by remember { mutableStateOf(runOpts ?: "") }
+            var opts by remember { mutableStateOf(opts ?: "--detach") }
             var cid by remember { mutableStateOf(ctrId ?: "") }
+            var args by remember { mutableStateOf(args ?: "") }
             Column(Modifier.padding(8.dp).fillMaxWidth()) {
-                AppTextField(cid, label = { Text("Default Container Id") }, onValueChange = { cid = it })
                 AppTextField(opts, label = { Text("Container Run Options") }, onValueChange = { opts = it })
+                AppTextField(cid, label = { Text("Default Container Id") }, onValueChange = { cid = it })
+                AppTextField(args, label = { Text("Args for container shell") }, onValueChange = { args = it })
                 AppRow {
                     @Composable
-                    fun OptCB(op: String) = AppCheckbox(opts.split1().contains(op), op) {
+                    fun OptCB(vararg fl: String) = AppCheckbox(opts.split1().any { fl.contains(it) }, fl[0]) {
                         opts = when (it) {
-                            false -> opts.split1().filterNot { it == op }
-                            true -> opts.split1() + op
+                            false -> opts.split1().filterNot { fl.contains(it) }
+                            true -> opts.split1() + fl[0]
                         }.joinToString(" ")
                     }
                     OptCB("--detach")
                     OptCB("--rm")
-
                     Box(Modifier.weight(1f))
-                    CtrActionButton(Icons.Default.PlayArrow) {
-                        runContainer(ctrId ?: "C${now().toEpochMilliseconds() % 10000}", *runOpts.split2())
-                    }
-                    Button(onClick = { runOpts = opts;ctrId = cid;close() }) { Text("Save") }
+                    CtrActionButton(Icons.Default.PlayArrow) { runContainer() }
+                    Button(onClick = { this@item.opts = opts;ctrId = cid;close() }) { Text("Save") }
                     Button(onClick = { close() }) { Text("Cancel") }
                 }
             }
         }
         SelectionContainer(Modifier.weight(1f)) { Text(id) }
+        IconButton(onClick = { message = this.toJson() }) { Icon(Icons.Default.Info, "") }
         CtrActionButton(Icons.Default.Delete) { remove() }
     }
 
@@ -201,12 +202,12 @@ fun App() {
         // Containers
         if (ctrStatus.containers.isEmpty()) Text("No Container.")
         else ctrStatus.containers.forEach { ctr -> ctr.item() }
-        if (errorMessage.isNotEmpty()) {
+        if (message.isNotEmpty()) {
             AlertDialog(
-                onDismissRequest = { errorMessage = "" },
-                buttons = { Row(Modifier.padding(8.dp)) { Button(onClick = { errorMessage = "" }) { Text("OK") } } },
+                onDismissRequest = { message = "" },
+                buttons = { Row(Modifier.padding(8.dp)) { Button(onClick = { message = "" }) { Text("OK") } } },
                 title = { Text("Error") },
-                text = { Text(errorMessage) })
+                text = { Text(message) })
         }
     }
 
@@ -227,7 +228,7 @@ fun App() {
             },
             floatingActionButton = {
                 var show by remember { mutableStateOf(false) }
-                if (show) pullImgDialog({ show = false }){ id, opts ->
+                if (show) pullImgDialog({ show = false }) { id, opts ->
 //                    service.ctr()
                 }
                 FloatingActionButton(onClick = { show = true }) { Icon(Icons.Default.Add, "add") }
