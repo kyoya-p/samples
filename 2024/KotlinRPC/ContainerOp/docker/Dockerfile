@@ -20,4 +20,5 @@ WORKDIR /opt
 ARG PROJ=/builder/samples/2024/KotlinRPC/ContainerOp
 COPY --from=builder $PROJ/build/appWeb/ ./
 
-CMD "/opt/java/openjdk/bin/java -jar server-all.jar"
+#CMD "/opt/java/openjdk/bin/java -jar server-all.jar"
+CMD ["java","-jar","server-all.jar"]
