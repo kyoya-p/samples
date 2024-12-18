@@ -1,0 +1,113 @@
+openapi: 3.0.0
+info:
+  title: Gemini API
+  version: 1.0.0
+servers:
+  - url: https://generativelanguage.googleapis.com/v1beta
+paths:
+  /models/gemini-1.5-flash:generateContent:
+    post:
+      summary: コンテンツ生成
+      security:
+        - apiKeyAuth: []
+        - required
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateContentRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateContentResponse'
+        '400':
+          description: 不正なリクエスト
+        '500':
+          description: サーバーエラー
+components:
+  schemas:
+    GenerateContentRequest:
+      type: object
+      properties:
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Content'
+      required:
+        - contents
+    Content:
+      type: object
+      properties:
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Part'
+      required:
+        - parts
+    Part:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+        - text
+    GenerateContentResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate' # candidatesの型定義は残す
+        usageMetadata: # usageMetadataが存在する場合に備えて定義
+          $ref: '#/components/schemas/UsageMetadata'
+        modelVersion:
+          type: string
+      required:
+        - modelVersion # modelVersionは必須
+    Candidate: # candidatesの型定義
+      type: object
+      properties:
+        content:
+          $ref: '#/components/schemas/Content'
+        finishReason:
+          type: string
+        citationMetadata:
+          $ref: '#/components/schemas/CitationMetadata'
+        avgLogprobs:
+          type: number
+          format: float
+    CitationMetadata:
+      type: object
+      properties:
+        citationSources:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitationSource'
+    CitationSource:
+      type: object
+      properties:
+        startIndex:
+          type: integer
+        endIndex:
+          type: integer
+        uri:
+          type: string
+        license:
+          type: string
+    UsageMetadata: # usageMetadataの型定義
+      type: object
+      properties:
+        promptTokenCount:
+          type: integer
+        candidatesTokenCount:
+          type: integer
+        totalTokenCount:
+          type: integer
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      name: key
+      in: query

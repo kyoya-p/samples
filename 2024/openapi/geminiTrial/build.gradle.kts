@@ -68,6 +68,5 @@ val taskGenerateApi = task<org.openapitools.generator.gradle.plugin.tasks.Genera
     )
 }
 
-tasks.named("compileKotlinJvm") {
-    dependsOn(taskGenerateApi)
-}
+tasks.named("compileKotlinJvm") { dependsOn(taskGenerateApi) }
+tasks.named("kotlinNodeJsSetup") { dependsOn(taskGenerateApi) }
