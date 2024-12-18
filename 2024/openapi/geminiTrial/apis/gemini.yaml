@@ -64,8 +64,8 @@ components:
           $ref: '#/components/schemas/UsageMetadata'
         modelVersion:
           type: string
-      required:
-        - modelVersion # modelVersionは必須
+#      required:
+#        - modelVersion # modelVersionは必須
     Candidate: # candidatesの型定義
       type: object
       properties:

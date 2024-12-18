@@ -51,7 +51,7 @@ kotlin {
     }
 }
 
-task<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateClientApi") {
+val taskGenerateApi = task<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateClientApi") {
     group = "openapi tools"
     generatorName.set("kotlin")
     inputSpec.set("$rootDir/apis/gemini.yaml")
@@ -60,10 +60,14 @@ task<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("generateClien
     modelPackage.set("org.example.gemini.model") // 生成されるモデルのパッケージ名
     configOptions.set(
         mapOf(
-            "dateLibrary" to "kotlinx-datetime"
-//            ,"serializationLibrary" to "kotlinx_serialization", //[BUG]この行があると誤った@Serialisableアノテーションが生成される
-            , "useCoroutines" to "true", "library" to "multiplatform"
+            "dateLibrary" to "kotlinx-datetime",
+//            "serializationLibrary" to "kotlinx_serialization", //[BUG]この行があると誤った@Serialisableアノテーションが生成される
+            "useCoroutines" to "true",
+            "library" to "multiplatform"
         )
     )
 }
 
+tasks.named("compileKotlinJvm") {
+    dependsOn(taskGenerateApi)
+}

@@ -1,13 +1,14 @@
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.gemini.api.DefaultApi
-import org.example.gemini.model.ModelsGemini15FlashGenerateContentPostRequest
-import org.example.gemini.model.ModelsGemini15FlashGenerateContentPostRequestContentsInner
-import org.example.gemini.model.ModelsGemini15FlashGenerateContentPostRequestContentsInnerPartsInner
+import org.example.gemini.model.*
 
 expect val GEMINI_API_KEY: String
+
+private val json = Json { ignoreUnknownKeys = true }
 
 suspend fun appMain() {
     val client = HttpClient {
@@ -20,24 +21,13 @@ suspend fun appMain() {
         }
     }
 
-    val url = "https://generativelanguage.googleapis.com/v1beta"
-    val api = DefaultApi(url, client)
-
+    val api = DefaultApi("https://generativelanguage.googleapis.com/v1beta", client)
     val prompt = "GeminiとOpenAPIに関する今日のTipsを一つ教えて"
+    val req = GenerateContentRequest(contents = listOf(Content(parts = listOf(Part(text = prompt)))))
+    println(json.encodeToString(req))
 
-    val requestBody = ModelsGemini15FlashGenerateContentPostRequest(
-        contents = listOf(
-            ModelsGemini15FlashGenerateContentPostRequestContentsInner(
-                parts = listOf(
-                    ModelsGemini15FlashGenerateContentPostRequestContentsInnerPartsInner(text = prompt)
-                )
-            )
-        )
-    )
-    runCatching {
-        val response = api.modelsGemini15FlashgenerateContentPost(GEMINI_API_KEY, requestBody)
-        println(response.body())
-    }.onFailure { e -> println("Error: ${e.message}") }
+    val res = api.modelsGemini15FlashgenerateContentPost(req).body()
+    println(json.encodeToString(res.candidates?.get(0)?.content?.parts?.get(0)?.text))
 
     client.close()
 }
