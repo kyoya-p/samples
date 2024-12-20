@@ -2,13 +2,10 @@ plugins {
     kotlin("multiplatform") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
     id("org.openapi.generator") version "7.10.0" // https://plugins.gradle.org/plugin/org.openapi.generator
-    application
 }
 
 group = "org.example"
 version = "1.0-SNAPSHOT"
-
-application { mainClass.set("MainKt") }
 
 repositories {
     mavenCentral()
@@ -56,7 +53,7 @@ val taskGenerateApi = task<org.openapitools.generator.gradle.plugin.tasks.Genera
     configOptions.set(
         mapOf(
             "dateLibrary" to "kotlinx-datetime",
-//            "serializationLibrary" to "kotlinx_serialization", //[BUG]この行があると誤った@Serialisableアノテーションが生成される
+            "serializationLibrary" to "kotlinx_serialization", //[BUG]この行があると誤った@Serialisableアノテーションが生成される
             "useCoroutines" to "true",
             "library" to "multiplatform"
         )
