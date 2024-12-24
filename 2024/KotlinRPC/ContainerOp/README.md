@@ -8,3 +8,8 @@ Target: `build/AppWeb`
 ```shell
 sh gradle runAppWeb
 ```
+
+# Build container 
+```shell
+sh gradle buildImage
+```

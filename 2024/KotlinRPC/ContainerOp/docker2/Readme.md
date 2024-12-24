@@ -1,8 +1,4 @@
 # Build
-```shell
-sudo docker build -t kyoyap/devenv:ctrop .
-```
-
 # Push / Pull
 ```shell
 sudo docker login
@@ -11,6 +7,7 @@ sudo docker pull kyoyap/devenv:ctrop
 sudo docker logout
 ```
 
+# Run
 ```shell
 # ctrで実行
 ctr i pull -u kyoyap:******** docker.io/kyoyap/devenv:ctrop
