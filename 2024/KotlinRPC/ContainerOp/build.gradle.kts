@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlinPluginSerialization) apply false
     alias(libs.plugins.kotlinx.rpc) apply false
     alias(libs.plugins.compose.compiler) apply false
+    id("com.google.cloud.tools.jib") version "3.4.4"
 }
 
 val buildAppWebTask = tasks.create("buildAppWeb") {
@@ -34,3 +35,4 @@ val runAppWebTask = tasks.create("runAppWeb") {
         }
     }
 }
+

@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("multiplatform") version "2.0.21"
     id("com.google.cloud.tools.jib") version "3.4.4"
 }
 

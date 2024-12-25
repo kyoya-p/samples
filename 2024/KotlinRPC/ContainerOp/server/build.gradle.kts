@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
     application
-    id("com.google.cloud.tools.jib") version "3.4.4"
 }
 
 group = "jp.wjg.shokkaa.container"
@@ -37,16 +36,3 @@ dependencies {
     testImplementation(libs.kotlinx.rpc.krpc.ktor.client)
     testImplementation(libs.kotlin.test.junit)
 }
-
-//ktor {
-    jib {
-        from { image = "eclipse-temurin:21-jre" }
-        to {
-            image = "kyoyap/devenv"
-            tags = setOf("ctrop")
-        }
-        container {
-            ports = listOf("8080") // コンテナが公開するポート
-        }
-    }
-//}
