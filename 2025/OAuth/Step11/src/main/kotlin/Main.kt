@@ -13,7 +13,6 @@ import kotlin.coroutines.suspendCoroutine
 suspend fun main() {
     val client = HttpClient(CIO)
     val redirectUri = "http://127.0.0.1:28080"
-    // 1. 認可リクエストURLの構築
     val authorizationUrl = URLBuilder("https://accounts.google.com/o/oauth2/auth").apply {
         parameters.append("client_id", System.getenv("GOOGLE_CLIENT_ID")!!)
         parameters.append("redirect_uri", redirectUri)
@@ -25,7 +24,6 @@ suspend fun main() {
     val authorizationCode = redirectReceiverServer()!!  // ユーザーがブラウザで認証を完了し、redirectUriにリダイレクトされるのを待つ
     println("authorizationCode=$authorizationCode")
 
-    // 2. トークンリクエスト
     val tokenResponse = client.submitForm(
         url = "https://accounts.google.com/o/oauth2/token",
         formParameters = Parameters.build {
@@ -35,16 +33,8 @@ suspend fun main() {
             append("client_id", System.getenv("GOOGLE_CLIENT_ID")!!)
             append("client_secret", System.getenv("GOOGLE_CLIENT_SECRET")!!)
         }
-    )
-
-    if (tokenResponse.status.isSuccess()) {
-        val tokenResponseBody = tokenResponse.bodyAsText()
-        println("アクセストークン取得成功:\n$tokenResponseBody")
-    } else {
-        println("アクセストークン取得失敗: ${tokenResponse.status}")
-        println(tokenResponse.bodyAsText())
-    }
-
+    ).bodyAsText()
+    println("accessToken:\n$tokenResponse")
     client.close()
 }
 
@@ -57,6 +47,6 @@ suspend fun redirectReceiverServer() = suspendCoroutine { ctn ->
                 cancel()
             }
         }
-    }.start(wait = false)
+    }.start()
 }
 
