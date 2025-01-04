@@ -20,8 +20,9 @@ suspend fun main() {
         parameters.append("scope", "https://www.googleapis.com/auth/userinfo.profile")
     }.buildString()
     println("ブラウザで以下のURLを開いて認証してください:\n$authorizationUrl")
+    // 上で表示されるURLを利用者が開いたブラウザに入力し認証操作を続ける
 
-    val authorizationCode = redirectReceiverServer()!!  // ユーザーがブラウザで認証を完了し、redirectUriにリダイレクトされるのを待つ
+    val authorizationCode = redirectReceiverServer()!! // ここで認証(リダイレクト)を待っている
     println("authorizationCode=$authorizationCode")
 
     val tokenResponse = client.submitForm(
