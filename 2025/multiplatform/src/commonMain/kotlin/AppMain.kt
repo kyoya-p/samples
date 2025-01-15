@@ -10,7 +10,8 @@ expect val fileSystem: FileSystem
 
 @OptIn(DelicateCoroutinesApi::class)
 suspend fun appMain() {
-    fileSystem.write("test.txt".toPath()) { writeUtf8("test") }
+    val path = ".".toPath() / "test.txt"
+    fileSystem.write(path) { writeUtf8("test") }
     val f = flow {
         (1..5).forEach {
             emit(it)
@@ -19,6 +20,6 @@ suspend fun appMain() {
     }
     GlobalScope.launch { f.collect { println(it) } }
     f.collect { println(it) }
-    println(fileSystem.read("test.txt".toPath()) { readUtf8() })
+    println(fileSystem.read(path) { readUtf8() })
 }
 
