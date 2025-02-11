@@ -1,0 +1,204 @@
+openapi: 3.0.1
+info:
+  title: Public-API
+  description: This document is a specification of the public API.
+  version: '1.0'
+servers:
+  - url: https://rmm-mfpdev-apim.azure-api.net/public
+paths:
+  '/download/prndriver/{requestId}':
+    get:
+      tags:
+        - File Download
+      summary: Request to download the printer driver file.
+      description: Requests the download of the printer driver file associated with the device specified by deviceId.
+      operationId: get-download-prndriver-requestid-d-d
+      parameters:
+        - name: requestId
+          in: path
+          description: download request id<br> A empty string is an error.
+          required: true
+          schema:
+            type: string
+        - name: d
+          in: query
+          description: "deviceId of target device<br> Compress using gzip.<br> ●Check content\n  - A null or empty string is an error."
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: "Driver file creation for download was successful.<br> The name of the driver file to be downloaded shall be as follows<br> <table border=\"1\">\n  <tr><th></th><th>Not universal driver</th><th>universal driver</th></tr>\n  <tr><td>Not Use Print Server</td><td>(modelName)_(serialNumber)_(Emulation).zip</td><td>(modelName)_(serialNumber)_(Emulation).zip</td></tr>\n  <tr><td>Use Print Server Not add Prefix</td><td>(modelName)_(serialNumber)_(Emulation).zip</td><td>Print_Server_(Emulation).zip ※Common URL</td></tr>\n  <tr><td>Use Print Server Use add Prefix</td><td>(Prefix)_(modelName)_(serialNumber)_(Emulation).zip</td><td>(Prefix)_Print_Server_(Emulation).zip ※Common URL</td></tr>\n</table>"
+          headers:
+            Location:
+              description: Redirect url.
+              schema:
+                type: string
+        '400':
+          description: Driver file download request error.
+  /agent/activation:
+    post:
+      tags:
+        - Agent Operation
+      summary: Activate the agent using Activation-Code.
+      description: Activate the agent associated with the one-time password.<br> Expire the specified one-time password and generate iotAccessSecret.
+      operationId: post-agent-activation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/activationReq'
+            example:
+              key: string
+      responses:
+        '200':
+          description: Agent activation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/activationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                agentInfo:
+                  agentId: string
+                  iotAccessSecret: string
+                  agentName: string
+                  activationTimestamp: 0
+  /agent/deviceInfoActivation:
+    post:
+      tags:
+        - Agent Operation
+      summary: Activate the agent using device information(modelName/serialId).
+      description: 'Activate the agent based on device information(modelName/serialId).<br> If an agent associated with the specified device information is registered,<br> an iotAccessSecret will be generated.<br> If an agent associated with the specified device information is not registered<br> but the specified device information is registered in the database,<br> the associated agent will be registered and an iotAccessSecret will be generated.'
+      operationId: post-agent-deviceinfoactivation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deviceInfoActivationReq'
+            example:
+              modelName: string
+              serialNumber: string
+      responses:
+        '200':
+          description: Agent activation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deviceInfoActivationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                agentInfo:
+                  agentId: string
+                  iotAccessSecret: string
+                  agentName: string
+                  activationTimestamp: 0
+components:
+  schemas:
+    activationReq:
+      required:
+        - key
+      type: object
+      properties:
+        key:
+          type: string
+          description: "activation key<br> ●Check content\n  - Error for null, null character (i.e. empty string)"
+    deviceInfoActivationReq:
+      required:
+        - modelName
+        - serialNumber
+      type: object
+      properties:
+        modelName:
+          type: string
+          description: "Model Name of target Agent.<br> ●Check content\n  - Error for null, null character (i.e. empty string)"
+        serialNumber:
+          type: string
+          description: "Serial Number of target Agent.<br> ●Check content\n  - Error for null, null character (i.e. empty string)"
+    activationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        agentInfo:
+          type: object
+          properties:
+            agentId:
+              type: string
+              description: agentId
+            iotAccessSecret:
+              type: string
+              description: iotAccessSecret.
+            agentName:
+              type: string
+              description: agent name
+            activationTimestamp:
+              type: number
+              description: Date and time the agent was activated. (format is timestamp)
+    deviceInfoActivationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        agentInfo:
+          type: object
+          properties:
+            agentId:
+              type: string
+              description: agentId
+            iotAccessSecret:
+              type: string
+              description: iotAccessSecret.
+            agentName:
+              type: string
+              description: agent name
+            activationTimestamp:
+              type: number
+              description: Date and time the agent was activated. (format is timestamp)
+    commonRsp:
+      type: object
+      properties:
+        errorList:
+          type: array
+          items:
+            type: object
+            properties:
+              errorCode:
+                type: string
+                description: "Error Code\n  - Error Code list\n    <table border=\"1\">\n      <tr><th>Error code</th><th>Description</th></tr>\n      <tr><td>E0001</td><td>DB Access Error</td></tr>\n      <tr><td>E0004</td><td>JSON Path error</td></tr>\n      <tr><td>E0011</td><td>Parameter mandatory check error</td></tr>\n      <tr><td>E0014</td><td>Parameter format check error</td></tr>\n      <tr><td>E0019</td><td>When target instance (group or device etc.) does not exist</td></tr>\n      <tr><td>E0021</td><td>Invalid token</td></tr>\n      <tr><td>E0024</td><td>No permission Error</td></tr>\n      <tr><td>E0026</td><td>Session timeout error</td></tr>\n      <tr><td>E0048</td><td>Identical value input check error</td></tr>\n      <tr><td>E0050</td><td>Error other than specified group management</td></tr>\n    </table>"
+              errorField:
+                type: string
+                description: Parameter field where error occurred
+              errorValue:
+                type: string
+                description: Value that result into an error
+              errorMessage:
+                type: string
+                description: Error message (Text that human can understand)
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    apiKeyQuery:
+      type: apiKey
+      name: subscription-key
+      in: query
+security:
+  - apiKeyHeader: [ ]
+  - apiKeyQuery: [ ]
+tags:
+  - name: File Download
+    description: API of File Download.
+  - name: Agent Operation
+    description: API of Agent Operation.

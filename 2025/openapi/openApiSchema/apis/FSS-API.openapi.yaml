@@ -1,0 +1,3833 @@
+openapi: 3.0.1
+info:
+  title: FSS-API
+  description: This document is API specification of RMM Field Support System API.
+  version: '1.0'
+servers:
+  - url: https://rmm-mfpdev-apim.azure-api.net/fss
+paths:
+  /service/getServiceList:
+    post:
+      tags:
+        - Connection Status/Service
+      summary: Get a list of devices to be operated by Technical Service.
+      description: Get a list of devices to be operated by Technical Service.<br> Direct-connected devices are not included.
+      operationId: post-service-getservicelist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getServiceListReq'
+            example:
+              startIndex: 0
+              count: 10
+              agentId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Device list subject to Technical service.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getServiceListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                deviceList:
+                  - deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    serviceStatus: service
+                    serviceStarted: 0
+                    polling: true
+                    lastPolling: 0
+                    alertReceived: 0
+                    remoteFssSetup: string
+                    tagIds:
+                      - string
+  /service/getInitialUrl:
+    post:
+      tags:
+        - Connection Status/Service
+      summary: Get the initial registration URL.
+      description: Get the initial connection URL for using the technical service.
+      operationId: post-service-getinitialurl
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getInitialUrlReq'
+            example:
+              agentId: string
+      responses:
+        '200':
+          description: Return the initial connection URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getInitialUrlRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                url: string
+  /service/setService:
+    post:
+      tags:
+        - Connection Status/Service
+      summary: Set the service state.
+      description: Sets the status of the technical service for the specified device.<br> Direct-connected devices shall be excluded.
+      operationId: post-service-setservice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setServiceReq'
+            example:
+              agentId: string
+              deviceIds:
+                - string
+              serviceStatus: service
+              isExclude: true
+      responses:
+        '200':
+          description: Service state setting result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setServiceRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /service/getRegisterDeviceUrl:
+    post:
+      tags:
+        - Connection Status/Service
+      summary: Get the URL for device registration.
+      description: Acquire the URL for device registration by direct connection of MFP.
+      operationId: post-service-getregisterdeviceurl
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getRegisterDeviceUrlReq'
+            example:
+              groupId: string
+      responses:
+        '200':
+          description: Return the Device register URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getRegisterDeviceUrlRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                url: string
+                expiration: 0
+  /service/getFssSetupItem:
+    post:
+      tags:
+        - Connection Status/Service
+      summary: Gets the FSS setup item.
+      description: Gets the FSS setup items for the specified tenant.<br>
+      operationId: post-service-getfsssetupitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFssSetupItemReq'
+            example:
+              groupId: string
+      responses:
+        '200':
+          description: Returns the FSS setup item.<br> Returns the initial value if the FSS setup item does not exist in the database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFssSetupItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                useTls: true
+                alertNotifySetting: 0
+                httpRegPollingSetting: 0
+                httpRegPollingInterval: 0
+                httpManPollingSetting: 0
+                tonerOrderTimingControlType: 0
+                immovableTonerOrderLevel_K: 0
+                immovableTonerOrderLevel_C: 0
+                immovableTonerOrderLevel_M: 0
+                immovableTonerOrderLevel_Y: 0
+  /alert/getAlertList:
+    post:
+      tags:
+        - Alert
+      summary: Get the list of alerts.
+      description: Get the list of alerts for the target tenant.
+      operationId: post-alert-getalertlist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getAlertListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Result of obtaining alert list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getAlertListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                alertList:
+                  - alertId: string
+                    deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    tagIds:
+                      - string
+                    alertType: tonerOrder
+                    alertSentDateTime: string
+                    alertReceived: 0
+  /data/getDataList:
+    post:
+      tags:
+        - Get Data
+      summary: Get a list of devices about get data.
+      description: Get a list of devices to be operated by Technical Service about get data.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-data-getdatalist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getDataListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Device list about get data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getDataListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                deviceList:
+                  - deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    tagIds:
+                      - string
+                    scheduleName: string
+                    scheduleStatus: string
+                    getNow: 0
+                    lastResult: success
+                    lastAccess: 0
+                    lastDataType: mfpdata
+                    logData: supported
+  /data/getDataHistory:
+    post:
+      tags:
+        - Get Data
+      summary: Get the get data history list.
+      description: To the get data history list of the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-data-getdatahistory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getDataHistoryReq'
+            example:
+              startIndex: 0
+              count: 10
+              deviceId: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Result of get data history list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getDataHistoryRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                dataHistoryList:
+                  - dataId: string
+                    dataType: mfpdata
+                    result: success
+                    timestamp: 0
+                    commandResultCode: 0
+  /data/applyDataSchedule:
+    post:
+      tags:
+        - Get Data
+      summary: Apply the get data schedule.
+      description: Apply the get data schedule for the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-data-applydataschedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/applyDataScheduleReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              scheduleId: string
+              dataType: mfpdata
+              isExclude: true
+      responses:
+        '200':
+          description: Apply result of get data schedule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/applyDataScheduleRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /data/setDataSchedule:
+    post:
+      tags:
+        - Get Data
+      summary: Enable/Disable the get data schedule.
+      description: Enable/Disable the get data schedule for the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-data-setdataschedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setDataScheduleReq'
+            example:
+              groupId: string
+              mode: string
+              deviceIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Enable/Disable result of get data schedule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setDataScheduleRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /data/removeDataSchedule:
+    post:
+      tags:
+        - Get Data
+      summary: Remove the get data schedule.
+      description: 'Remove the get data schedule for the specified device.<br> If the schedule is enabled, disable it and then remove it.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".'
+      operationId: post-data-removedataschedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/removeDataScheduleReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Remove result of get data schedule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/removeDataScheduleRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /data/getDataScheduleItemList:
+    post:
+      tags:
+        - Get Data
+      summary: Get the list of get data schedules.
+      description: Get the list of get data schedules for the specified tenant.
+      operationId: post-data-getdatascheduleitemlist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getDataScheduleItemListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+      responses:
+        '200':
+          description: Get Data Schedule List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getDataScheduleItemListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                scheduleItemList:
+                  - scheduleId: string
+                    scheduleName: string
+                    dataType: mfpdata
+                    timeZone: string
+                    executeStartDate: string
+                    recurrence: 1
+                    dayOfWeek:
+                      - 0
+                    timeList:
+                      - hour: 0
+                        minute: 0
+                    oneShotExecuteTimestamp: 0
+  /data/addDataScheduleItem:
+    post:
+      tags:
+        - Get Data
+      summary: Add a get data schedule item.
+      description: Add a get data schedule.
+      operationId: post-data-adddatascheduleitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/addDataScheduleItemReq'
+            example:
+              groupId: string
+              scheduleName: string
+              dataType: mfpdata
+              timeZone: string
+              executeStartDate: string
+              recurrence: 1
+              dayOfWeek:
+                - 0
+              timeList:
+                - hour: 0
+                  minute: 0
+              oneShotExecuteTimestamp: 0
+      responses:
+        '200':
+          description: Result of adding get data schedule item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/addDataScheduleItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /data/updateDataScheduleItem:
+    post:
+      tags:
+        - Get Data
+      summary: Update a get data schedule item.
+      description: Update a get data schedule item.
+      operationId: post-data-updatedatascheduleitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateDataScheduleItemReq'
+            example:
+              groupId: string
+              scheduleId: string
+              scheduleName: string
+              dataType: mfpdata
+              timeZone: string
+              executeStartDate: string
+              recurrence: 1
+              dayOfWeek:
+                - 0
+              timeList:
+                - hour: 0
+                  minute: 0
+              oneShotExecuteTimestamp: 0
+      responses:
+        '200':
+          description: Result of updating get data schedule item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/updataDataScheduleItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /data/deleteDataScheduleItem:
+    post:
+      tags:
+        - Get Data
+      summary: Delete data schedule items.
+      description: Delete data schedule items.
+      operationId: post-data-deletedatascheduleitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteDataScheduleItemReq'
+            example:
+              groupId: string
+              scheduleIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of deleting get data schedule item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteDataScheduleItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/getRemoteDiagList:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Get a list of devices about remote maintenance.
+      description: Get a list of devices to be operated by Technical Service about remote maintenance.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-diag-getremotediaglist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getRemoteDiagListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Device list about remote maintenance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getRemoteDiagListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                deviceList:
+                  - deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    tagIds:
+                      - string
+                    diagName: string
+                    diagSimNo: string
+                    diagDataNo: string
+                    diagValue: string
+                    nextDiag: 0
+                    lastResult: string
+                    lastDiag: 0
+  /diag/getRemoteDiagHistory:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Get the remote maintenance history list.
+      description: Get the remote maintenance history list of the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-diag-getremotediaghistory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getRemoteDiagHistoryReq'
+            example:
+              startIndex: 0
+              count: 10
+              deviceId: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Result of remote maintenance history list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getRemoteDiagHistoryRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                diagHistoryList:
+                  - diagExecId: string
+                    diagSimNo: string
+                    diagDataNo: string
+                    diagValue: string
+                    result: string
+                    timestamp: 0
+                    commandResultCode: 0
+  /diag/applyRemoteDiag:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Apply a remote maintenance.
+      description: Apply remote maintenance for specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-diag-applyremotediag
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/applyRemoteDiagReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              diagId: string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of applying remote maintenance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/applyRemoteDiagRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/setRemoteDiag:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Re-reserve a remote maintenance.
+      description: Re-reserve the remote maintenance applied to the device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-diag-setremotediag
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setRemoteDiagReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Remote maintenance reservation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setRemoteDiagRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/removeRemoteDiag:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Remove a remote maintenance.
+      description: 'Remove remote maintenance for specified device.<br> If not yet executed, cancel the reservation and remove a remote maintenance. Target devices that support the FSS function and whose "serviceStatus" is set to "service".'
+      operationId: post-diag-removeremotediag
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/removeRemoteDiagReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Remote maintenance remove result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/removeRemoteDiagRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/getRemoteDiagItemList:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Get the list of remote maintenance item.
+      description: Get the list of remote maintenance items for the specified tenant.
+      operationId: post-diag-getremotediagitemlist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getRemoteDiagItemListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+      responses:
+        '200':
+          description: Remote diag item List
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getRemoteDiagItemListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                remoteDiagItemList:
+                  - diagId: string
+                    diagName: string
+                    diagSimType: string
+                    diagSimNo: string
+                    diagDataNo: string
+                    diagValue: string
+  /diag/addRemoteDiagItem:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Add a remote maintenance item.
+      description: Add a remote maintenance item.
+      operationId: post-diag-addremotediagitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/addRemoteDiagItemReq'
+            example:
+              groupId: string
+              diagName: string
+              diagSimType: string
+              diagSimNo: string
+              diagDataNo: string
+              diagValue: string
+      responses:
+        '200':
+          description: Result of adding remote maintenance item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/addRemoteDiagItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/updateRemoteDiagItem:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Update a remote maintenance item.
+      description: Update a remote maintenance item.
+      operationId: post-diag-updateremotediagitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateRemoteDiagItemReq'
+            example:
+              groupId: string
+              diagId: string
+              diagName: string
+              diagSimType: string
+              diagSimNo: string
+              diagDataNo: string
+              diagValue: string
+      responses:
+        '200':
+          description: Result of updating remote maintenance item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/updateRemoteDiagItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /diag/deleteRemoteDiagItem:
+    post:
+      tags:
+        - Remote Maintenance
+      summary: Delete remote maintenance items.
+      description: Delete remote maintenance items.
+      operationId: post-diag-deleteremotediagitem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteRemoteDiagItemReq'
+            example:
+              groupId: string
+              diagIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of deleting remote maintenance items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteRemoteDiagItemRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/getFirmwareUpdateList:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get a list of devices about firmware update.
+      description: Get a list of devices to be operated by Technical Service about firmware update.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-fwupd-getfirmwareupdatelist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareUpdateListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Device list about firmware update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareUpdateListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                deviceList:
+                  - deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    tagIds:
+                      - string
+                    fileId: string
+                    fileTitle: string
+                    fileTransferTimestamp: 0
+                    fileTransferTimeZone: string
+                    executeUpdateDateTime: string
+                    updateStatus: string
+                    updateStatusTimestamp: 0
+                    firmwareVersion: string
+                    dskFlag: true
+                    firmwareType: string
+                    otaMode: string
+                    otaSettingStatus: string
+                    otaStartHour: 0
+                    otaEndHour: 0
+                    latestFirmwareVersion: string
+                    isSnmpFW: true
+                    remoteTriggerSetting: string
+  /fwupd/getFirmwareUpdateOTAList:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get a list of devices about Firmware update OTA settings.
+      description: "Get a list of devices that can be used with Firmware update OTA settings.<br> Eligible devices are devices that meet the following conditions:<br>\n  - Supports the FSS function.\n  - \"serviceStatus\" is set to \"service\".\n  - Supports OTA settings."
+      operationId: post-fwupd-getfirmwareupdateotalist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareUpdateOTAListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+              simpleFilters:
+                - key: string
+                  value: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Device list about firmware update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareUpdateOTAListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                deviceList:
+                  - deviceId: string
+                    modelName: string
+                    serialNumber: string
+                    ipAddress: string
+                    friendlyName: string
+                    tagIds:
+                      - string
+                    firmwareVersion: string
+                    dskFlag: true
+                    firmwareType: string
+                    otaMode: string
+                    otaSettingStatus: string
+                    otaStartHour: 0
+                    otaEndHour: 0
+                    latestFirmwareVersion: string
+                    isSnmpFW: true
+  /fwupd/getFirmwareVersionDetails:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get Firmware Version Details of devices.
+      description: Get Firmware Version Detaiols of the device.
+      operationId: post-fwupd-getfirmwareversiondetails
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareVersionDetailsReq'
+            example:
+              groupId: string
+              deviceId: string
+              firmwareDetails: 1
+              modelName: string
+              latestFirmwareVersion: string
+              dskFlag: true
+      responses:
+        '200':
+          description: Device Firmware Details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareVersionDetailsRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                latestFirmwareDetails:
+                  components:
+                    - fwName: string
+                      fwVer: string
+                currentFirmwareDetails:
+                  bundleVersion: string
+                  components:
+                    - fwName: string
+                      fwVer: string
+  /fwupd/getFirmwareUpdateDetail:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get detailed information on firmware updates.
+      description: Get detailed information on firmware updates for the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-fwupd-getfirmwareupdatedetail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareUpdateDetailReq'
+            example:
+              deviceId: string
+      responses:
+        '200':
+          description: Device list about firmware update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareUpdateDetailRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                modelName: string
+                serialNumber: string
+                firmwareVersionDetail:
+                  - name: string
+                    version: string
+  /fwupd/getFirmwareUpdateHistory:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get the firmware update history list.
+      description: Get the firmware update history list of the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-fwupd-getfirmwareupdatehistory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareUpdateHistoryReq'
+            example:
+              startIndex: 0
+              count: 10
+              deviceId: string
+              orderBy:
+                - key: string
+                  order: ascending
+      responses:
+        '200':
+          description: Result of firmware update history list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareUpdateHistoryRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                fwupdHistoryList:
+                  - fileTitle: string
+                    request: string
+                    result: string
+                    timestamp: 0
+                    commandCode: 0
+                    commandResultCode: 0
+                    commandResultCodeDetail: 0
+  /fwupd/getFirmwareDataList:
+    post:
+      tags:
+        - Firmware Update
+      summary: Get firmware data list.
+      description: Get firmware data list for the specified tenant.
+      operationId: post-fwupd-getfirmwaredatalist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/getFirmwareDataListReq'
+            example:
+              startIndex: 0
+              count: 10
+              groupId: string
+      responses:
+        '200':
+          description: Result of firmware data list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getFirmwareDataListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                startIndex: 0
+                count: 0
+                resultCount: 0
+                totalCount: 0
+                firmwareDataList:
+                  - fileId: string
+                    fileTitle: string
+                    fileName: string
+                    fileSize: 0
+  /fwupd/deleteFirmwareData:
+    post:
+      tags:
+        - Firmware Update
+      summary: Delete the firmware data.
+      description: Delete the specified firmware data.
+      operationId: post-fwupd-deletefirmwaredata
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteFirmwareDataReq'
+            example:
+              groupId: string
+              fileIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of delete the fiemware data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteFirmwareDataRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/setUpdateReservation:
+    post:
+      tags:
+        - Firmware Update
+      summary: Schedule a reservation for firmware update.
+      description: Schedule a firmware update for the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".
+      operationId: post-fwupd-setupdatereservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setUpdateReservationReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              fileId: string
+              fileTransferTimestamp: 0
+              fileTransferTimeZone: string
+              executeUpdateDateTime: string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of schedule a firmware update.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setUpdateReservationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/removeUpdateReservation:
+    post:
+      tags:
+        - Firmware Update
+      summary: Remove the firmware update schedule.
+      description: 'Remove the firmware update schedule.<br> If the update has not yet been executed, cancel the update reservation and remove the update reservation.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".'
+      operationId: post-fwupd-removeupdatereservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/removeUpdateReservationReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+      responses:
+        '200':
+          description: Result of remove the firmware update schedule.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/removeUpdateReservationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/sendmail:
+    post:
+      tags:
+        - Firmware Update
+      summary: Firmware update request mail.
+      description: Send firmware update request mail to Service-Main Users
+      operationId: post-fwupd-sendmail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/firmwareUpdateMailReq'
+            example:
+              groupId: string
+              deviceList:
+                - string
+              timezone: string
+      responses:
+        '200':
+          description: Send mail status - firmware update request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/firmwareUpdateMailRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                status: true
+  /fwupd/rmttgr/setFWUpdateRemoteTrigger:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Set the remote trigger settings.
+      description: Set the remote trigger settings.
+      operationId: post-fwupd-rmttgr-setfwupdateremotetrigger
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setFWUpdateRemoteTriggerReq'
+            example:
+              groupId: string
+              deviceId: string
+              command: enabled
+      responses:
+        '200':
+          description: Set the remote trigger settings result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setFWUpdateRemoteTriggerRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/tryConnectGlobalFwServer:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Check the connection to the global firmware server.
+      description: Check the connection to the global firmware server.
+      operationId: post-fwupd-rmttgr-tryconnectglobalfwserver
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/tryConnectGlobalFwServerReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Check the connection to the global firmware server result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/tryConnectGlobalFwServerRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/setUpdateFirmwareVersion:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: 'Set the update version. [for debug-use only]'
+      description: 'Set the update version. (Upload the FUS json file) [for debug-use only]'
+      operationId: post-fwupd-rmttgr-setupdatefirmwareversion
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                json:
+                  $ref: '#/components/schemas/setUpdateFirmwareVersionReq'
+                file:
+                  $ref: '#/components/schemas/setUpdateFirmwareVersionFUSJsonFile'
+      responses:
+        '200':
+          description: Set the update version result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setUpdateFirmwareVersionRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/setUpdateReservation:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Schedule firmware updates with remote triggers.
+      description: Schedule firmware updates with remote triggers.
+      operationId: post-fwupd-rmttgr-setupdatereservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rmttgrSetUpdateReservationReq'
+            example:
+              groupId: string
+              deviceId: string
+              executeUpdateDateTime: string
+      responses:
+        '200':
+          description: Schedule firmware updates with remote triggers result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rmttgrSetUpdateReservationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/removeUpdateReservation:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Remove a reservation for a firmware update using a remote trigger.
+      description: Remove a reservation for a firmware update using a remote trigger.
+      operationId: post-fwupd-rmttgr-removeupdatereservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/rmttgrRemoveUpdateReservationReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Remove a reservation for a firmware update using a remote trigger result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/rmttgrRemoveUpdateReservationRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/cancelUpdateRemoteTriggerSetting:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Cancel the remote trigger settings.
+      description: Cancel the remote trigger settings.
+      operationId: post-fwupd-rmttgr-cancelupdateremotetriggersetting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cancelUpdateRemoteTriggerSettingReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Cancel the remote trigger settings result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cancelUpdateRemoteTriggerSettingRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/cancelTryConnectGlobalFwServer:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Cancel check the connection to the global firmware server.
+      description: Cancel check the connection to the global firmware server.
+      operationId: post-fwupd-rmttgr-canceltryconnectglobalfwserver
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cancelTryConnectGlobalFwServerReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Cancel check the connection to the global firmware server result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cancelTryConnectGlobalFwServerRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/cancelUpdateFirmwareVersionSetting:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Cancel the update version setting.
+      description: Cancel the update version setting.
+      operationId: post-fwupd-rmttgr-cancelupdatefirmwareversionsetting
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cancelUpdateFirmwareVersionSettingReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Cancel the update version setting result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cancelUpdateFirmwareVersionSettingRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/setStatusCheck:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Check the status of Firmware Update.
+      description: Check the status of Firmware Update.
+      operationId: post-fwupd-rmttgr-setstatuscheck
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setStatusCheckReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Check the status of Firmware Update result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setStatusCheckRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fwupd/rmttgr/cancelStatusCheck:
+    post:
+      tags:
+        - Firmware Update Remote Trigger
+      summary: Cancel the status check of Firmware Update.
+      description: Cancel the status check of Firmware Update.
+      operationId: post-fwupd-rmttgr-cancelstatuscheck
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cancelStatusCheckReq'
+            example:
+              groupId: string
+              deviceId: string
+      responses:
+        '200':
+          description: Cancel the status check of Firmware Update result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cancelStatusCheckRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+components:
+  schemas:
+    getServiceListReq:
+      required:
+        - agentId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        agentId:
+          type: string
+          description: "agentId of target agent(AgentFSS).<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>serviceStatus</td><td>Service Status(Connection Status)</td></tr>\n    <tr><td>polling</td><td>Polling Availability</td></tr>\n    <tr><td>remoteFssSetup</td><td>Remote FSS Setup Availability</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>serviceStatus</td><td>\n    <table border=\"1\">\n      <tr><td>service</td></tr>\n      <tr><td>outOfService</td></tr>\n    </table></td></tr>\n    <tr><td>polling</td><td>\n    <table border=\"1\">\n      <tr><td>true</td></tr>\n      <tr><td>false</td></tr>\n    </table></td></tr>\n    <tr><td>remoteFssSetup</td><td>\n    <table border=\"1\">\n      <tr><td>supported</td></tr>\n      <tr><td>notSupported</td></tr>\n    </table></td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>serviceStatus</td><td>Service Status(Connection Status)(*1)</td></tr>\n    <tr><td>serviceStarted</td><td>Date and time when Connected</td></tr>\n    <tr><td>polling</td><td>Polling Availability(*2)</td></tr>\n    <tr><td>lastPolling</td><td>Last Polling date and time</td></tr>\n    <tr><td>alertReceived</td><td>Alert receive Date and Time</td></tr>\n    <tr><td>remoteFssSetup</td><td>Remote FSS Setup Availability(*2)</td></tr>\n  </table>\n\n  *1) Priority of the Service Status is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n        <tr><td>1</td><td>service</td></tr>\n        <tr><td>2</td><td>outOfService</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *2) Priority of the Polling Availability is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n        <tr><td>1</td><td>false</td></tr>\n        <tr><td>2</td><td>true</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *3) Priority of the Remote FSS Setup Availability is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n        <tr><td>1</td><td>supported</td></tr>\n        <tr><td>2</td><td>notSupported</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getInitialUrlReq:
+      required:
+        - agentId
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "agentId of target agent(AgentFSS).<br> ●Check content\n  - A null or empty string is an error."
+    setServiceReq:
+      required:
+        - agentId
+        - deviceIds
+        - serviceStatus
+        - isExclude
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "agentId of target agent(AgentFSS).<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        serviceStatus:
+          enum:
+            - service
+            - outOfService
+          type: string
+          description: "FSS service state to be configured.\n  - service: Enable the FSS service.\n  - outOfService: Disable the FSS service.\n\n●Check content\n  - Any string other than the specified string is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    getRegisterDeviceUrlReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    getFssSetupItemReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    getAlertListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>alertType</td><td>Alert Type</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>alertType</td><td>\n    <table border=\"1\">\n      <tr><td>tonerOrder</td></tr>\n      <tr><td>maintenance</td></tr>\n      <tr><td>trouble</td></tr>\n      <tr><td>jam</td></tr>\n      <tr><td>tonerCartridge</td></tr>\n      <tr><td>serviceCall</td></tr>\n      <tr><td>paperOrder</td></tr>\n      <tr><td>wasteTonerBoxNearFull</td></tr>\n      <tr><td>wasteTonerBoxReplacement</td></tr>\n      <tr><td>imagingUnitOrder</td></tr>\n      <tr><td>imagingUnitReplacement</td></tr>\n    </table></td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>alertType</td><td>Alert Type</td></tr>\n    <tr><td>alertSentDateTime</td><td>Alert(send) Date and Time</td></tr>\n    <tr><td>alertReceived</td><td>Alert receive Date and Time</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getDataListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>scheduleName</td><td>Schedule Name</td></tr>\n    <tr><td>scheduleStatus</td><td>Schedule Status</td></tr>\n    <tr><td>lastResult</td><td>last data get result.</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>scheduleName</td><td>Specify input value</td></tr>\n    <tr><td>scheduleStatus</td><td>\n    <table border=\"1\">\n      <tr><td>available</td></tr>\n      <tr><td>notAvailable</td></tr>\n      <tr><td>notYet</td></tr>\n    </table></td></tr>\n    </td></tr>\n    <tr><td>lastResult</td><td>\n    <table border=\"1\">\n      <tr><td>success</td></tr>\n      <tr><td>failure</td></tr>\n      <tr><td>processing</td></tr>\n      <tr><td>reserved</td></tr>\n      <tr><td>notYet</td></tr>\n    </table></td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>scheduleName</td><td>Schedule Name</td></tr>\n    <tr><td>scheduleStatus</td><td>Schedule Status(*1)</td></tr>\n    <tr><td>getNow</td><td>Date and time when \"Get Now\" is executed at last.</td></tr>\n    <tr><td>lastResult</td><td>last data get result.(*2)</td></tr>\n    <tr><td>lastAccess</td><td>last data get date and time.</td></tr>\n  </table>\n\n  *1) Priority of schedule status is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>notAvailable</td></tr>\n          <tr><td>2</td><td>available</td></tr>\n          <tr><td>3</td><td>notYet</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *2) Priority of the last data get result is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n        <tr><td>1</td><td>failure</td></tr>\n        <tr><td>2</td><td>success</td></tr>\n        <tr><td>3</td><td>processing</td></tr>\n        <tr><td>4</td><td>reserved</td></tr>\n        <tr><td>5</td><td>notYet</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getDataHistoryReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>result</td><td>data get result.(*1)</td></tr>\n    <tr><td>timestamp</td><td>data get date and time.</td></tr>\n    <tr><td>dataType</td><td>data type.(*2)</td></tr>\n  </table>\n\n  *1) Priority of the last data get result is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>failure</td></tr>\n          <tr><td>2</td><td>success</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *2) Priority of the data type is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>mfpdata</td></tr>\n          <tr><td>2</td><td>mfplog</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    applyDataScheduleReq:
+      required:
+        - groupId
+        - deviceIds
+        - scheduleId
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        scheduleId:
+          type: string
+          description: "Schedule ID to be set<br> Specify \"\"(empty string) in case of \"Get Now\"<br> ●Check content\n  - A null is an error."
+        dataType:
+          enum:
+            - mfpdata
+            - mfplog
+          type: string
+          description: "data type for \"Get Now\":\n  - `mfpdata` - MFP Data (FSS Data)\n  - `mfplog` - MFP Log\n\nThis field is required if scheduleId is an empty string."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    setDataScheduleReq:
+      required:
+        - groupId
+        - mode
+        - deviceIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        mode:
+          type: string
+          description: "mode<br>\n  - enable: Enable a configured schedule.\n  - disable: Disable a configured schedule."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    removeDataScheduleReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    getDataScheduleItemListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    addDataScheduleItemReq:
+      required:
+        - groupId
+        - scheduleName
+        - dataType
+        - timeZone
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        scheduleName:
+          type: string
+          description: "Schedule Name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        dataType:
+          enum:
+            - mfpdata
+            - mfplog
+          type: string
+          description: "data type:\n  - `mfpdata` - MFP Data (FSS Data)\n  - `mfplog` - MFP Log"
+        timeZone:
+          type: string
+          description: Timezone
+        executeStartDate:
+          type: string
+          description: executeStartDate<br>The format is "yyyymmdd".<br> This field is required if dataType is "mfpdata".
+        recurrence:
+          enum:
+            - 1
+            - 2
+          type: number
+          description: "recurrence:\n  - 1: DAY\n  - 2: WEEK\n\nThis field is required if dataType is \"mfpdata\"."
+        dayOfWeek:
+          type: array
+          items:
+            type: number
+          description: 'Any value from [1-7] If recurrence is WEEK.<br> This field is required if dataType is "mfpdata".'
+        timeList:
+          type: array
+          items:
+            type: object
+            properties:
+              hour:
+                type: number
+                description: hour
+              minute:
+                type: number
+                description: minute
+          description: timeList<br> This field is required if dataType is "mfpdata".
+        oneShotExecuteTimestamp:
+          type: integer
+          description: One-shot schedule execution date and time.<br> This field is required if dataType is "mfplog".
+          format: int64
+    updateDataScheduleItemReq:
+      required:
+        - groupId
+        - scheduleId
+        - scheduleName
+        - dataType
+        - timeZone
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        scheduleId:
+          type: string
+          description: "scheduleId of target data get schedule.<br> ●Check content\n  - A null or empty string is an error."
+        scheduleName:
+          type: string
+          description: "Schedule Name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        dataType:
+          enum:
+            - mfpdata
+            - mfplog
+          type: string
+          description: "data type:<br>\n  * `mfpdata` - MFP Data (FSS Data)\n  * `mfplog` - MFP Log"
+        timeZone:
+          type: string
+          description: Timezone
+        executeStartDate:
+          type: string
+          description: executeStartDate<br>The format is "yyyymmdd".<br> This field is required if dataType is "mfpdata".
+        recurrence:
+          enum:
+            - 1
+            - 2
+          type: number
+          description: "recurrence:\n  - 1: DAY\n  - 2: WEEK\n\nThis field is required if dataType is \"mfpdata\"."
+        dayOfWeek:
+          type: array
+          items:
+            type: number
+          description: 'Any value from [1-7] If recurrence is WEEK.<br> This field is required if dataType is "mfpdata".'
+        timeList:
+          type: array
+          items:
+            type: object
+            properties:
+              hour:
+                type: number
+                description: hour
+              minute:
+                type: number
+                description: minute
+          description: timeList<br> This field is required if dataType is "mfpdata".
+        oneShotExecuteTimestamp:
+          type: integer
+          description: One-shot schedule execution date and time.<br> This field is required if dataType is "mfplog".
+          format: int64
+    deleteDataScheduleItemReq:
+      required:
+        - groupId
+        - scheduleIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        scheduleIds:
+          type: array
+          items:
+            type: string
+            description: "scheduleId of target data schedule.<br> ●Check content\n  - A null is an error."
+          description: "The scheduleId list of target data schedule.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify scheduleIds details.\n  - true: scheduleIds is unselected schedule.\n  - false: scheduleIds is selected schedule.\n\n●Check content\n  - Error for other than true/false"
+    getRemoteDiagListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>diagName</td><td>Maintenance Name</td></tr>\n    <tr><td>diagSimNo</td><td>Maintenance Sim No</td></tr>\n    <tr><td>diagDataNo</td><td>Maintenance Data No</td></tr>\n    <tr><td>diagValue</td><td>Maintenance Value</td></tr>\n    <tr><td>lastResult</td><td>Last Remote maintenance result</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>diagName</td><td>Specify input value</td></tr>\n    <tr><td>diagSimNo</td><td>Supported Sim No.</td></tr>\n    <tr><td>diagDataNo</td><td>Specify input value</td></tr>\n    <tr><td>diagValue</td><td>Specify input value</td></tr>\n    <tr><td>lastResult</td><td>\n      <table border=\"1\">\n        <tr><td>requested</td></tr>\n        <tr><td>success</td></tr>\n        <tr><td>failure</td></tr>\n        <tr><td>ready</td></tr>\n        <tr><td>notYet</td></tr>\n      </table>\n    </td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>diagName</td><td>Maintenance Name</td></tr>\n    <tr><td>diagSimNo</td><td>Maintenance Sim No</td></tr>\n    <tr><td>diagDataNo</td><td>Maintenance Data No</td></tr>\n    <tr><td>diagValue</td><td>Maintenance Value</td></tr>\n    <tr><td>lastResult</td><td>Last Remote maintenance result(*1)</td></tr>\n    <tr><td>nextDiag</td><td>Execution reserved date and time</td></tr>\n    <tr><td>lastDiag</td><td>Last Remote maintenance execution date and time</td></tr>\n  </table>\n\n  *1) Priority of the Last Remote maintenance result is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>failure</td></tr>\n          <tr><td>2</td><td>requested</td></tr>\n          <tr><td>3</td><td>success</td></tr>\n          <tr><td>4</td><td>ready</td></tr>\n          <tr><td>5</td><td>notYet</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getRemoteDiagHistoryReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>diagSimNo</td><td>Maintenance Sim No</td></tr>\n    <tr><td>diagDataNo</td><td>Maintenance Data No</td></tr>\n    <tr><td>diagValue</td><td>Maintenance Value</td></tr>\n    <tr><td>result</td><td>Remote maintenance result(*1)</td></tr>\n    <tr><td>timestamp</td><td>Remote maintenance execution date and time</td></tr>\n  </table>\n\n  *1) Priority of the Last Remote maintenance result is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>failure</td></tr>\n          <tr><td>2</td><td>requested</td></tr>\n          <tr><td>3</td><td>ready</td></tr>\n          <tr><td>4</td><td>success</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    applyRemoteDiagReq:
+      required:
+        - groupId
+        - deviceIds
+        - diagId
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        diagId:
+          type: string
+          description: "Diag ID to be set<br> ●Check content\n  - A null or empty string is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    setRemoteDiagReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    removeRemoteDiagReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+    getRemoteDiagItemListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    addRemoteDiagItemReq:
+      required:
+        - groupId
+        - diagName
+        - diagSimType
+        - diagSimNo
+        - diagDataNo
+        - diagValue
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        diagName:
+          type: string
+          description: "Maintenance Name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        diagSimType:
+          type: string
+          description: "Maintenance Sim Type<br>\n  - set: Sim setting\n  - exec: Sim execution"
+        diagSimNo:
+          type: string
+          description: "Maintenance Sim No<br> ●Check content<br>\n  Any value other than the specifiable value will be an error. <br>\n  - Sim setting: 2602, 2603, 2605, 2618, 2629, 2635, 2638, 2649, 2653, 2665, 2669, 2704, 2707, 2709, 4404, 4428\n  - Sim execution: 1400, 1500, 1600, 2401, 2402, 2403, 2710, 4406, 4417, 4426, 4462, 5022, 6206, 6308, 6728, 10010"
+        diagDataNo:
+          type: string
+          description: "Maintenance Data No<br> empty String, when there is not data number in Sim.<br> ●Check content\n  - Sim setting: Anything other than empty string and \"1\" to \"99\" is an error.\n  - Sim execution: Anything other than empty string and \"1\" to \"255\" is an error."
+        diagValue:
+          type: string
+          description: "Maintenance Value<br> empty String, when there is not value in Sim.<br> ●Check content\n  - Sim setting: Anything other than empty string and \"0\" to \"1023\" is an error.\n  - Sim execution: Anything other than empty string and \"0\" to \"255\" is an error."
+    updateRemoteDiagItemReq:
+      required:
+        - groupId
+        - diagId
+        - diagName
+        - diagSimType
+        - diagSimNo
+        - diagDataNo
+        - diagValue
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        diagId:
+          type: string
+          description: "diagId of target Remote maintenance Item.<br> ●Check content\n  - A null or empty string is an error."
+        diagName:
+          type: string
+          description: "Maintenance Name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        diagSimType:
+          type: string
+          description: "Maintenance Sim Type<br>\n  - set: Sim setting\n  - exec: Sim execution"
+        diagSimNo:
+          type: string
+          description: "Maintenance Sim No<br> ●Check content<br>\n  Any value other than the specifiable value will be an error. <br>\n  - Sim setting: 2602, 2603, 2605, 2618, 2629, 2635, 2638, 2649, 2653, 2665, 2669, 2704, 2707, 2709, 4404, 4428\n  - Sim execution: 1400, 1500, 1600, 2401, 2402, 2403, 2710, 4406, 4417, 4426, 4462, 5022, 6206, 6308, 6728, 10010"
+        diagDataNo:
+          type: string
+          description: "Maintenance Data No<br> empty String, when there is not data number in Sim.<br> ●Check content\n  - Sim setting: Anything other than empty string and \"1\" to \"99\" is an error.\n  - Sim execution: Anything other than empty string and \"1\" to \"255\" is an error."
+        diagValue:
+          type: string
+          description: "Maintenance Value<br> empty String, when there is not value in Sim.<br> ●Check content\n  - Sim setting: Anything other than empty string and \"0\" to \"1023\" is an error.\n  - Sim execution: Anything other than empty string and \"0\" to \"255\" is an error."
+    deleteRemoteDiagItemReq:
+      required:
+        - groupId
+        - diagIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        diagIds:
+          type: array
+          items:
+            type: string
+            description: "diagId of target Remote maintenance Item.<br> ●Check content\n  - A null is an error."
+          description: "The diagId list of target Remote maintenance Item.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify diagIds details.\n  - true: diagIds is unselected remote maintenance item.\n  - false: diagIds is selected remote maintenance item.\n\n●Check content\n  - Error for other than true/false"
+    getFirmwareUpdateListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>fileTitle</td><td>Firmware Name</td></tr>\n    <tr><td>updateStatus</td><td>Last status</td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n    <tr><td>otaMode</td><td>Current OTA Mode</td></tr>\n    <tr><td>otaSettingStatus</td><td>OTA Setting Status</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>fileTitle</td><td>Firmware Name</td></tr>\n    <tr><td>updateStatus</td><td>\n      <table border=\"1\">\n        <tr><td>notSupported</td></tr>\n        <tr><td>notReserved</td></tr>\n        <tr><td>waitForReserve</td></tr>\n        <tr><td>sending</td></tr>\n        <tr><td>reserved</td></tr>\n        <tr><td>failedToReserve</td></tr>\n        <tr><td>failedToDownload</td></tr>\n        <tr><td>waitForCancel</td></tr>\n        <tr><td>waitForTimeChange</td></tr>\n        <tr><td>timeChanged</td></tr>\n        <tr><td>failedToTimeChange</td></tr>\n        <tr><td>started</td></tr>\n        <tr><td>success</td></tr>\n        <tr><td>failure</td></tr>\n        <tr><td>mfpUserCancel</td></tr>\n      </table>\n    </td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n    <tr><td>fileTitle</td><td>Firmware Name</td></tr>\n    <tr><td>otaMode</td><td>\n      <table border=\"1\">\n        <tr><td>notSupported</td></tr>\n        <tr><td>notSet</td></tr>\n        <tr><td>auto</td></tr>\n        <tr><td>confirmation</td></tr>\n        <tr><td>off</td></tr>\n      </table>\n    <tr><td>otaSettingStatus</td><td>\n      <table border=\"1\">\n        <tr><td>notSupported</td></tr>\n        <tr><td>notSet</td></tr>\n        <tr><td>processing</td></tr>\n        <tr><td>succeeded</td></tr>\n        <tr><td>failed</td></tr>\n      </table>\n    </td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>fileTitle</td><td>Firmware Name</td></tr>\n    <tr><td>executeUpdateDateTime</td><td>firmware update execute reservation date an time</td></tr>\n    <tr><td>updateStatus</td><td>Last status(*1)</td></tr>\n    <tr><td>updateStatusTimestamp</td><td>Last status changed date and time</td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>otaMode</td><td>Current OTA Mode(*2)</td></tr>\n    <tr><td>otaSettingStatus</td><td>OTA Setting Status(*3)</td></tr>\n  </table>\n\n  *1) Priority of the Update Status is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>failure</td></tr>\n          <tr><td>2</td><td>failedToReserve</td></tr>\n          <tr><td>3</td><td>failedToTimeChange</td></tr>\n          <tr><td>4</td><td>failedToDownload</td></tr>\n          <tr><td>5</td><td>mfpUserCancel</td></tr>\n          <tr><td>6</td><td>success</td></tr>\n          <tr><td>7</td><td>reserved</td></tr>\n          <tr><td>8</td><td>timeChanged</td></tr>\n          <tr><td>9</td><td>waitForReserve</td></tr>\n          <tr><td>10</td><td>waitForCancel</td></tr>\n          <tr><td>11</td><td>waitForTimeChange</td></tr>\n          <tr><td>12</td><td>started</td></tr>\n          <tr><td>13</td><td>sending</td></tr>\n          <tr><td>14</td><td>notReserved</td></tr>\n          <tr><td>15</td><td>notSupported</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *2) Priority of the Current OTA Mode is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>notSet</td></tr>\n          <tr><td>2</td><td>off</td></tr>\n          <tr><td>3</td><td>auto</td></tr>\n          <tr><td>4</td><td>confirmation</td></tr>\n          <tr><td>5</td><td>notSupported</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *3) Priority of the OTA Setting Status is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>notSet</td></tr>\n          <tr><td>2</td><td>failed</td></tr>\n          <tr><td>3</td><td>succeeded</td></tr>\n          <tr><td>4</td><td>processing</td></tr>\n          <tr><td>5</td><td>notSupported</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getFirmwareUpdateOTAListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        simpleFilters:
+          type: array
+          items:
+            required:
+              - key
+              - value
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Filter key<br> Specifiable items are as below. - Filter key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>tagIds</td><td>Tag Ids</td></tr>\n    <tr><td>otaMode</td><td>Current OTA Mode</td></tr>\n    <tr><td>otaSettingStatus</td><td>OTA Setting Status</td></tr>\n  </table>\n\n●Check content\n  - Error for other than specified value"
+              value:
+                type: string
+                description: "Filtering target strings <br> Strings that are Specifiable in filter key are as below.\n- Filtering target strings\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Specify input value</td></tr>\n    <tr><td>serialNumber</td><td>Specify input value</td></tr>\n    <tr><td>friendlyName</td><td>Specify input value</td></tr>\n    <tr><td>ipAddress</td><td>Specify input value</td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>tagIds</td><td>Specify input value</td></tr>\n    <tr><td>otaMode</td><td>\n      <table border=\"1\">\n        <tr><td>notSet</td></tr>\n        <tr><td>auto</td></tr>\n        <tr><td>confirmation</td></tr>\n        <tr><td>off</td></tr>\n      </table>\n    <tr><td>otaSettingStatus</td><td>\n      <table border=\"1\">\n        <tr><td>notSet</td></tr>\n        <tr><td>processing</td></tr>\n        <tr><td>succeeded</td></tr>\n        <tr><td>failed</td></tr>\n      </table>\n    </td></tr>\n  </table>"
+          description: Simple Filter
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>modelName</td><td>Model name</td></tr>\n    <tr><td>serialNumber</td><td>Serial number</td></tr>\n    <tr><td>friendlyName</td><td>Custom Name</td></tr>\n    <tr><td>ipAddress</td><td>IP Address</td></tr>\n    <tr><td>firmwareVersion</td><td>Current Firmware version</td></tr>\n    <tr><td>otaMode</td><td>Current OTA Mode(*1)</td></tr>\n    <tr><td>otaSettingStatus</td><td>OTA Setting Status(*2)</td></tr>\n  </table>\n\n  *1) Priority of the Current OTA Mode is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>notSet</td></tr>\n          <tr><td>2</td><td>off</td></tr>\n          <tr><td>3</td><td>auto</td></tr>\n          <tr><td>4</td><td>confirmation</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *2) Priority of the OTA Setting Status is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>notSet</td></tr>\n          <tr><td>2</td><td>failed</td></tr>\n          <tr><td>3</td><td>succeeded</td></tr>\n          <tr><td>4</td><td>processing</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getFirmwareVersionDetailsReq:
+      required:
+        - firmwareDetails
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "- groupId of target device.<br> Note: if firmwareDetails = 1, groupId is required. <br> ● Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "- deviceId of target device.<br> Note: if firmwareDetails = 1, deviceId is required. <br> ● Check content\n  - A null or empty string is an error."
+        firmwareDetails:
+          type: integer
+          description: "1 - Current Firmware Version Details <br> 2 - Latest Firmware Version Details <br> ● Check content\n  - Error for other than numeric value"
+          default: 1
+        modelName:
+          type: string
+          description: '- Model Name of the target device Note: if firmwareDetails = 2, modelName is required.'
+        latestFirmwareVersion:
+          type: string
+          description: '- Latest firmware version available for the mfp model Note: if firmwareDetails = 2, latestFirmwareVersion is required.'
+        dskFlag:
+          type: boolean
+          description: '- DSK Model<br> true: DSK Model <br> false: NOT DSK Model <br> Note: if firmwareDetails = 2, dskFlag is required.'
+    getFirmwareUpdateDetailReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+    getFirmwareUpdateHistoryReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+        orderBy:
+          type: array
+          items:
+            required:
+              - key
+              - order
+            type: object
+            properties:
+              key:
+                type: string
+                description: "Sort Key <br> Specifiable items are as below.\n- Sort Key list\n  <table border=\"1\">\n    <tr><th>Key</th><th>Description</th></tr>\n    <tr><td>fileTitle</td><td>Firmware Update Name</td></tr>\n    <tr><td>request</td><td>Firmware Update request mode(*1)</td></tr>\n    <tr><td>result</td><td>execute result(*2)</td></tr>\n    <tr><td>timestamp</td><td>Request execute date and time</td></tr>\n  </table>\n\n  *1) Priority of the request is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>update</td></tr>\n          <tr><td>2</td><td>cancel</td></tr>\n          <tr><td>3</td><td>change</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n  *1) Priority of the result is as below.\n      <table border=\"1\">\n        <tr><th>Priority Order</th><th>Value</th></tr>\n          <tr><td>1</td><td>failure</td></tr>\n          <tr><td>2</td><td>mfpCancel</td></tr>\n          <tr><td>3</td><td>started</td></tr>\n          <tr><td>4</td><td>ready</td></tr>\n          <tr><td>5</td><td>success</td></tr>\n      </table>\n      When \"ascending\" is specified in \"Sort order\", display the items in order from smallest priority value <br>\n\n●Check content\n  - Error for other than specified value"
+              order:
+                enum:
+                  - ascending
+                  - descending
+                type: string
+                description: "Sort Order <br>\n  - ascending: Ascending\n  - descending: Descending\n\n●Check content\n  - Error for other than specified value"
+          description: Sort Specification
+    getFirmwareDataListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        startIndex:
+          type: integer
+          description: "Start Index <br> ●Check content\n  - Error for other than numeric value"
+          default: 0
+        count:
+          type: integer
+          description: "Number of records <br> ●Check content\n  - Error for other than numeric value"
+          default: 10
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    deleteFirmwareDataReq:
+      required:
+        - groupId
+        - fileIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        fileIds:
+          type: array
+          items:
+            type: string
+            description: "fileId of target Firmware file <br> ●Check content\n  - A null is an error."
+          description: "The fileId list of target Firmware file.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify fileIds details.\n  - true: fileIds is unselected Firmware data.\n  - false: fileIds is selected Firmware data.\n\n●Check content\n  - Error for other than true/false"
+    setUpdateReservationReq:
+      required:
+        - groupId
+        - deviceIds
+        - fileId
+        - fileTransferTimestamp
+        - fileTransferTimeZone
+        - executeUpdateDateTime
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        fileId:
+          type: string
+          description: "fileId of specified Firmware File.<br> ●Check content\n  - A null or empty string is an error."
+        fileTransferTimestamp:
+          type: integer
+          description: "Date and time to start transferring the firmware file to the MFP.<br> This value must be a UTC+0:00 value in timestamp format.<br> ●Check content\n  - Error for other than numeric value"
+          format: int64
+        fileTransferTimeZone:
+          type: string
+          description: "Timezone ID for displaying fileTransferTimestamp.<br> ●Check content\n  - A null or empty string is an error."
+        executeUpdateDateTime:
+          type: string
+          description: "firmware update execute reservation date an time.<br> Format is \"yyyymmddHHMM\"<br> Timezone is dependent on the MFP settings<br> ●Check content\n  - A null or empty string is an error.\n  - Not an 12-digit number is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n●Check content\n  - Error for other than true/false"
+    removeUpdateReservationReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n●Check content\n  - Error for other than true/false"
+    firmwareUpdateMailReq:
+      required:
+        - groupId
+        - deviceList
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "- groupId of target group.<br> ●Check content\n  - A null or empty string is an error"
+        deviceList:
+          type: array
+          items:
+            type: string
+            description: '- deviceId'
+          description: "List of deviceId.<br> ●Check content\n  - An emptry array is an error."
+        timezone:
+          type: string
+          description: '- browser timezone (eg: UTC+05:30)      '
+    setFWUpdateRemoteTriggerReq:
+      required:
+        - groupId
+        - deviceId
+        - command
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+        command:
+          enum:
+            - enabled
+            - disabled
+          type: string
+          description: "Remote Trigger settings to be configured.\n  - enabled: Enable the FWupdate remote trigger.\n  - disabled: Disable the FWupdate remote trigger.\n\n●Check content\n  - Any string other than the specified string is an error."
+    tryConnectGlobalFwServerReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    setUpdateFirmwareVersionReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+        nowait:
+          type: boolean
+          description: "Download time. [for debug-use only]\n  - true: no wait.\n  - false: wait until the schedule time. (default)"
+      description: request parameter part. (Schemas' setUpdateFirmwareVersionReq)
+    setUpdateFirmwareVersionFUSJsonFile:
+      required:
+        - common_info
+        - package_info
+      type: object
+      properties:
+        common_info:
+          required:
+            - bundle
+            - version
+            - version_numeric
+            - download_url
+            - publish_start_date
+            - publish_end_date
+          type: object
+          properties:
+            bundle:
+              type: string
+              description: bundle
+            version:
+              type: string
+              description: version
+            version_numeric:
+              type: integer
+              description: version in numeric
+            download_url:
+              type: string
+              description: '"multiple" or URL of the firmware file to update.'
+            publish_start_date:
+              type: string
+              description: 'start date of publish.<br> Format: YYYY-MM-DDThh:mm:ss.sssZ'
+            publish_end_date:
+              type: string
+              description: 'end date of publish.<br> Format: YYYY-MM-DDThh:mm:ss.sssZ'
+          description: common_info
+        package_info:
+          required:
+            - name
+            - bundle_version
+            - bytes
+            - sha256sum
+            - package_type
+          type: object
+          properties:
+            name:
+              type: string
+              description: Firmware version to update to.
+            bundle_version:
+              type: string
+              description: Firmware version to update to.
+            bytes:
+              type: integer
+              description: File size of the firmware file.
+            sha256sum:
+              type: string
+              description: Hash value of the firmware file.
+            package_type:
+              type: string
+              description: package type
+            download_files:
+              type: array
+              items:
+                required:
+                  - sha256sum
+                  - bytes
+                  - download_url
+                type: object
+                properties:
+                  sha256sum:
+                    type: string
+                    description: Hash value of the devided file.
+                  bytes:
+                    type: integer
+                    description: File size of the devided file.
+                  download_url:
+                    type: string
+                    description: '"multiple" or URL of the firmware file to update.'
+              description: devided file info.<br> This field exists only if "multiple" is set to "common_info.download_url".
+          description: package_info
+      description: file part. (Schemas' setUpdateFirmwareVersionFUSJsonFile)
+    rmttgrSetUpdateReservationReq:
+      required:
+        - groupId
+        - deviceId
+        - executeUpdateDateTime
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+        executeUpdateDateTime:
+          type: string
+          description: "[TBD] firmware update execute reservation date an time.<br> Format is \"yyyymmddHHMM\"<br> Timezone is dependent on the MFP settings<br> ●Check content\n  - A null or empty string is an error.\n  - Not an 12-digit number is an error."
+    rmttgrRemoveUpdateReservationReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    cancelUpdateRemoteTriggerSettingReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    cancelTryConnectGlobalFwServerReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    cancelUpdateFirmwareVersionSettingReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    setStatusCheckReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    cancelStatusCheckReq:
+      required:
+        - groupId
+        - deviceId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        deviceId:
+          type: string
+          description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+    getServiceListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        deviceList:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              serviceStatus:
+                enum:
+                  - service
+                  - outOfService
+                type: string
+                description: "Service Status(Connection Status)<br>\n  * `service` - FSS Service is enabled.\n  * `outOfService` - FSS Service is disabled."
+              serviceStarted:
+                type: integer
+                description: 'Date and time when Connected<br>(In case of 0, it is Disconnected)'
+                format: int64
+              polling:
+                type: boolean
+                description: 'Polling Availability<br>(If it has polling within 24 hours yes-true, no-false.)'
+              lastPolling:
+                type: integer
+                description: 'Last Polling date and time<br>(In case of 0, it means that there is no polling)'
+                format: int64
+              alertReceived:
+                type: integer
+                description: 'Alert Receive Date and Time<br>(In case of 0, it means that no alerts have been received.)'
+                format: int64
+              remoteFssSetup:
+                type: string
+                description: "Remote FSS Setup support availability.<br>\n  * supported: Supports Remote FSS setup.\n  * notSupported: Not support Remote FSS setup."
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+          description: Device list
+    getInitialUrlRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        url:
+          type: string
+          description: Initial connection URL<br> URL is as follows.<br> https://\<\<Agent IP Address>>:\<\<Agent Port number>>/AgentFSS/InitialConnection/
+    setServiceRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    getRegisterDeviceUrlRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        url:
+          type: string
+          description: Initial connection URL<br> URL is as follows.<br> \<\<RMM API Gateway>>/InitialConnection?t=\<\<initial connection token>>
+        expiration:
+          type: integer
+          description: URL expiration<br> This value must be a UTC+0:00 value in timestamp format.
+          format: int64
+    getFssSetupItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        useTls:
+          type: boolean
+          description: "TLS communication settings\n  - true: TLS communication is enable. (default)\n  - false: TLS communication is disable."
+        alertNotifySetting:
+          type: integer
+          description: "Alert setting<br>\n  - 0: Alert send enable. (default)\n  - 1: Alert send disabled."
+        httpRegPollingSetting:
+          type: integer
+          description: "Regular polling setting<br>\n  - 0: Polling enable. (default)\n  - 1: Polling disabled."
+        httpRegPollingInterval:
+          type: integer
+          description: 'Regular polling interval. (unit: minute)<br> The set value is 1-60.<br> Default value is 60.'
+        httpManPollingSetting:
+          type: integer
+          description: "Manual polling setting<br>\n  - 0: Polling enable. (default)\n  - 1: Polling disabled."
+        tonerOrderTimingControlType:
+          type: integer
+          description: "Settings to control the alert timing of toner order alerts.<br>\n  - 0: Fixed residual type.\n  - 1: Consumption measurement type. (default)"
+        immovableTonerOrderLevel_K:
+          type: integer
+          description: "Toner order level for fixed residual type. (black)<br>\n  - 0: When toner end is detected\n  - 1: When toner near end is detected\n  - 2: When reaching 5%\n  - 3: When reaching 10% (default)\n  - 4: When reaching 15%\n  - 5: When reaching 20%\n  - 6: When reaching 25%\n  - 7: When reaching 30%\n  - 8: When reaching 35%\n  - 9: When reaching 40%\n  - 10: When reaching 45%\n  - 11: When reaching 50%"
+        immovableTonerOrderLevel_C:
+          type: integer
+          description: Toner order level for fixed residual type. (cyan)<br> The value is the same as "immovableTonerOrderLevel_K".<br>
+        immovableTonerOrderLevel_M:
+          type: integer
+          description: Toner order level for fixed residual type. (magenta)<br> The value is the same as "immovableTonerOrderLevel_K".<br>
+        immovableTonerOrderLevel_Y:
+          type: integer
+          description: Toner order level for fixed residual type. (yellow)<br> The value is the same as "immovableTonerOrderLevel_K".<br>
+    getAlertListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        alertList:
+          type: array
+          items:
+            type: object
+            properties:
+              alertId:
+                type: string
+                description: alertId
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+              alertType:
+                enum:
+                  - tonerOrder
+                  - maintenance
+                  - trouble
+                  - jam
+                  - tonerCartridge
+                  - serviceCall
+                  - paperOrder
+                  - wasteTonerBoxNearFull
+                  - wasteTonerBoxReplacement
+                  - imagingUnitOrder
+                  - imagingUnitReplacement
+                type: string
+                description: "Alert Type<br>\n  * `tonerOrder` - Toner order alert\n  * `maintenance` - Maintenance alert\n  * `trouble` - Trouble alert\n  * `jam` - Continuous Jam alert\n  * `tonerCartridge` - Toner cartridge replacement alert\n  * `serviceCall` - Service Call alert\n  * `paperOrder` - Paper order alert\n  * `wasteTonerBoxNearFull` - Waste Toner Box Near Full alert\n  * `wasteTonerBoxReplacement` - Waste Toner Box Replacement alert\n  * `imagingUnitOrder` - Imaging Unit Order alert\n  * `imagingUnitReplacement` - Imaing Unit Replacement alert"
+              alertSentDateTime:
+                type: string
+                description: 'Alert(send) date and time<br> Format is "yyyymmddHHMMSS". Timezone is dependent on the MFP settings.<br> In case of empty string, it means that no alerts have been received.'
+              alertReceived:
+                type: integer
+                description: 'Alert Receive Date and Time<br>(In case of 0, it means that no alerts have been received.)'
+                format: int64
+          description: Alert list
+    getDataListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        deviceList:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+              scheduleName:
+                type: string
+                description: Schedule Name
+              scheduleStatus:
+                type: string
+                description: "Get data schedule status.<br>\n  * `available` - Schedule is available.\n  * `notAvailable` - Schedule is not available.\n  * `notYet` - Schedule is not set."
+              getNow:
+                type: integer
+                description: 'Date and time when "Get Now" is executed at last.<br>(In case of 0, it is not specified)'
+                format: int64
+              lastResult:
+                enum:
+                  - success
+                  - failure
+                  - notYet
+                type: string
+                description: "last data get result<br>\n  * `success` - Data get was successful.\n  * `failure` - Data get failed.\n  * `processing` - Data get is in progress.\n  * `reserved` - Data get is reserved.\n  * `notYet` - Data get is not yet."
+              lastAccess:
+                type: integer
+                description: 'last data get date and time.<br>(In case of 0, it is Not Yet)'
+                format: int64
+              lastDataType:
+                enum:
+                  - mfpdata
+                  - mfplog
+                type: string
+                description: "data type of \"Get Now\":<br>\n  * `mfpdata` - MFP Data (FSS Data)\n  * `mfplog` - MFP Log"
+              logData:
+                enum:
+                  - supported
+                  - notSupported
+                type: string
+                description: "MFP Log feature is available or not.\n  - `supported` - MFP Log supported device.\n  - `notSupported` - MFP Log unsupported device."
+          description: device list
+    getDataHistoryRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        dataHistoryList:
+          type: array
+          items:
+            type: object
+            properties:
+              dataId:
+                type: string
+                description: dataId
+              dataType:
+                enum:
+                  - mfpdata
+                  - mfplog
+                type: string
+                description: "data type:<br>\n  * `mfpdata` - MFP Data (FSS Data)\n  * `mfplog` - MFP Log"
+              result:
+                enum:
+                  - success
+                  - failure
+                type: string
+                description: "data get result<br>\n  * `success` - Data get was successful.\n  * `failure` - Data get failed."
+              timestamp:
+                type: integer
+                description: data get date and time.
+                format: int64
+              commandResultCode:
+                type: integer
+                description: Execution result noticed from MFP.
+                format: int64
+          description: Get data list
+    applyDataScheduleRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setDataScheduleRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    removeDataScheduleRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    getDataScheduleItemListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        scheduleItemList:
+          type: array
+          items:
+            type: object
+            properties:
+              scheduleId:
+                type: string
+                description: "scheduleId of target data get schedule.<br> ●Check content\n  - A null or empty string is an error."
+              scheduleName:
+                type: string
+                description: Schedule Name<br>
+              dataType:
+                enum:
+                  - mfpdata
+                  - mfplog
+                type: string
+                description: "data type:<br>\n  * `mfpdata` - MFP Data (FSS Data)\n  * `mfplog` - MFP Log"
+              timeZone:
+                type: string
+                description: Timezone
+              executeStartDate:
+                type: string
+                description: executeStartDate<br>The format is "yyyymmdd".<br> This field is for MFP Data.
+              recurrence:
+                enum:
+                  - 1
+                  - 2
+                type: number
+                description: "recurrence:\n  - 1: DAY\n  - 2: WEEK\n\nThis field is for MFP Data."
+              dayOfWeek:
+                type: array
+                items:
+                  type: number
+                description: 'Any value from [1-7] If recurrence is WEEK.<br> This field is for MFP Data.'
+              timeList:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    hour:
+                      type: number
+                      description: hour
+                    minute:
+                      type: number
+                      description: minute
+                description: timeList<br> This field is for MFP Data.
+              oneShotExecuteTimestamp:
+                type: integer
+                description: One-shot schedule execution date and time.<br> This field is for MFP Log.
+                format: int64
+    addDataScheduleItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    updataDataScheduleItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    deleteDataScheduleItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    getRemoteDiagListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        deviceList:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+              diagName:
+                type: string
+                description: Maintenance Name
+              diagSimNo:
+                type: string
+                description: Maintenance Sim No
+              diagDataNo:
+                type: string
+                description: Maintenance Data No
+              diagValue:
+                type: string
+                description: Maintenance Value
+              nextDiag:
+                type: integer
+                description: Execution reserved date and time
+                format: int64
+              lastResult:
+                type: string
+                description: "Last Remote maintenance result<br>\n  * `requested` - Remote maintenance was requested.\n  * `success` - Remote maintenance was successful.\n  * `failure` - Remote maintenance failed.\n  * `ready` - Remote maintenance(SIM Execute) is ready.\n  * `notYet` - Remote maintenance has never been executed."
+              lastDiag:
+                type: integer
+                description: Last Remote maintenance execution date and time.
+                format: int64
+          description: device list
+    getRemoteDiagHistoryRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        diagHistoryList:
+          type: array
+          items:
+            type: object
+            properties:
+              diagExecId:
+                type: string
+                description: 'diagExecId<br>Unique ID which shows maintenance data of applicable device. '
+              diagSimNo:
+                type: string
+                description: Maintenance Sim No
+              diagDataNo:
+                type: string
+                description: Maintenance Data No
+              diagValue:
+                type: string
+                description: Maintenance Value
+              result:
+                type: string
+                description: "Remote maintenance result<br>\n  * `success` - SIM Setting success. / SIM Execute success.\n  * `failure` - SIM Setting failure. / SIM Execute failure.\n  * `ready` - SIM Execute ready.\n  * `requested` - Remote maintenance requested."
+              timestamp:
+                type: integer
+                description: Remote maintenance execution date and time.
+                format: int64
+              commandResultCode:
+                type: integer
+                description: Execution result noticed from MFP.
+                format: int64
+    applyRemoteDiagRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setRemoteDiagRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    removeRemoteDiagRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    getRemoteDiagItemListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        remoteDiagItemList:
+          type: array
+          items:
+            type: object
+            properties:
+              diagId:
+                type: string
+                description: Remote maintenance diagId
+              diagName:
+                type: string
+                description: Maintenance Name
+              diagSimType:
+                type: string
+                description: "Maintenance Sim Type<br>\n  - set: Sim setting\n  - exec: Sim execution"
+              diagSimNo:
+                type: string
+                description: Maintenance Sim No
+              diagDataNo:
+                type: string
+                description: Maintenance Data No
+              diagValue:
+                type: string
+                description: Maintenance Value
+    addRemoteDiagItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    updateRemoteDiagItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    deleteRemoteDiagItemRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    getFirmwareUpdateListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        deviceList:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+              fileId:
+                type: string
+                description: fileId of Firmware file.
+              fileTitle:
+                type: string
+                description: "Firmware Name<br>\n  - (blank): Firmware Update not supported. Or, Firmware Update is supported, but update has not been reserved by Classic mode.\n  - (name): Firmware update is supported and reserved in Classic mode, or update is in progress."
+              fileTransferTimestamp:
+                type: integer
+                description: Date and time to start transferring the firmware file to the MFP.<br>
+                format: int64
+              fileTransferTimeZone:
+                type: string
+                description: Timezone for fileTransferTimestamp.<br>
+              executeUpdateDateTime:
+                type: string
+                description: firmware update execute reservation date an time.<br> Format is "yyyymmddHHMM"<br> Timezone is dependent on the MFP settings<br>
+              updateStatus:
+                type: string
+                description: "Last status<br> <table border=\"1\">\n  <tr><th>Value</th><th>Description</th></tr>\n  <tr><td>notSupported</td><td>Not supported devices</td></tr>\n  <tr><td>notReserved</td><td>No reservation</td></tr>\n  <tr><td>waitForReserve</td><td>Waiting for reservation</td></tr>\n  <tr><td>sending</td><td>Sending</td></tr>\n  <tr><td>reserved</td><td>Reserved</td></tr>\n  <tr><td>failedToReserve</td><td>Reservation failure</td></tr>\n  <tr><td>failedToDownload</td><td>Download failure</td></tr>\n  <tr><td>waitForCancel</td><td>Waiting for cancel</td></tr>\n  <tr><td>waitForTimeChange</td><td>Waiting for reservation date and time change</td></tr>\n  <tr><td>timeChanged</td><td>Reservation date and time changed</td></tr>\n  <tr><td>failedToTimeChange</td><td>Reservation date and time change failure</td></tr>\n  <tr><td>started</td><td>Update Start</td></tr>\n  <tr><td>success</td><td>Update complete</td></tr>\n  <tr><td>failure</td><td>Update failed</td></tr>\n  <tr><td>mfpUserCancel</td><td>Update canceled by MFP Operation panel</td></tr>\n</table>"
+              updateStatusTimestamp:
+                type: integer
+                description: Last status changed date and time.
+                format: int64
+              firmwareVersion:
+                type: string
+                description: 'Current Firmware version<br> If "UPSIDE BUNDLE" and "BOTTOM BUNDLE" are present, "<< UPSIDE BUNDLE version >> _ << BOTTOM BUNDLE version >>" is returned.<br> If not, returns the version of "ICU(MAIN)".<br> If neither is present, an empty string is returned.'
+              dskFlag:
+                type: boolean
+                description: "DSK model<br>\n  - true: DSK model\n  - false: Not DSK model"
+              firmwareType:
+                type: string
+                description: "Firmware type<br>\n  - normal: Normal Firmware or the firmware version is not obtained\n  - special: Special Firmware"
+              otaMode:
+                type: string
+                description: "Current OTA mode<br> <table border=\"1\">\n  <tr><th>Value</th><th>Description</th></tr>\n  <tr><td>notSupported</td><td>Not supported devices</td></tr>\n  <tr><td>notSet</td><td>Supported OTA mode, and Never been set up from RMM.</td></tr>\n  <tr><td>auto</td><td>Supported OTA mode, and Automatic update is set.</td></tr>\n  <tr><td>confirmation</td><td>Supported OTA mode, and Confirmation update is set.</td></tr>\n  <tr><td>off</td><td>Supported OTA mode, and OTA function is set to off.</td></tr>\n</table>"
+              otaSettingStatus:
+                type: string
+                description: "OTA Setting Status<br> <table border=\"1\">\n  <tr><th>Value</th><th>Description</th></tr>\n  <tr><td>notSupported</td><td>Not supported devices</td></tr>\n  <tr><td>notSet</td><td>Supported OTA mode, and Never been set up from RMM.</td></tr>\n  <tr><td>processing</td><td>Supported OTA mode, and OTA mode setting in reserved, or progress.</td></tr>\n  <tr><td>succeeded</td><td>Supported OTA mode, and OTA mode setting is succeeded.</td></tr>\n  <tr><td>failed</td><td>Supported OTA mode, and OTA mode setting is failed.</td></tr>\n</table>"
+              otaStartHour:
+                type: integer
+                description: 'Start time for accepting updates by OTA<br> For 0~23, start time.<br> For -1, 24-hour reception is available.'
+              otaEndHour:
+                type: integer
+                description: 'End time for accepting updates by OTA<br> For 0~23, end time.<br> For -1, 24-hour reception is available.'
+              latestFirmwareVersion:
+                type: string
+                description: Latest Firmware version available
+              isSnmpFW:
+                type: boolean
+                description: "Completion flag<br>\n  - true: Processing is complete.\n  - false: Processing is in progress."
+              remoteTriggerSetting:
+                type: string
+                description: "FW Update Remote Trigger Setting<br>\n  - enabled: FW Update Remote Trigger enabled.\n  - disabled: FW Update Remote Trigger disabled.\n  - notSupported: FW Update Remote Trigger not supported.\n          "
+    getFirmwareUpdateOTAListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        deviceList:
+          type: array
+          items:
+            type: object
+            properties:
+              deviceId:
+                type: string
+                description: deviceId
+              modelName:
+                type: string
+                description: Model Name
+              serialNumber:
+                type: string
+                description: Serial Number
+              ipAddress:
+                type: string
+                description: IP Address
+              friendlyName:
+                type: string
+                description: Friendly Name(Custom Name)
+              tagIds:
+                type: array
+                items:
+                  type: string
+                  description: tagId
+                description: List of associated tagIds
+              firmwareVersion:
+                type: string
+                description: 'Current Firmware version<br> If "UPSIDE BUNDLE" and "BOTTOM BUNDLE" are present, "<< UPSIDE BUNDLE version >> _ << BOTTOM BUNDLE version >>" is returned.<br> If not, returns the version of "ICU(MAIN)".<br> If neither is present, an empty string is returned.'
+              dskFlag:
+                type: boolean
+                description: "DSK model<br>\n  - true: DSK model\n  - false: Not DSK model"
+              firmwareType:
+                type: string
+                description: "Firmware type<br>\n  - normal: Normal Firmware or the firmware version is not obtained\n  - special: Special Firmware"
+              otaMode:
+                type: string
+                description: "Current OTA mode<br> <table border=\"1\">\n  <tr><th>Value</th><th>Description</th></tr>\n  <tr><td>notSet</td><td>Supported OTA mode, and Never been set up from RMM.</td></tr>\n  <tr><td>auto</td><td>Supported OTA mode, and Automatic update is set.</td></tr>\n  <tr><td>confirmation</td><td>Supported OTA mode, and Confirmation update is set.</td></tr>\n  <tr><td>off</td><td>Supported OTA mode, and OTA function is set to off.</td></tr>\n</table>"
+              otaSettingStatus:
+                type: string
+                description: "OTA Setting Status<br> <table border=\"1\">\n  <tr><th>Value</th><th>Description</th></tr>\n  <tr><td>notSet</td><td>Supported OTA mode, and Never been set up from RMM.</td></tr>\n  <tr><td>processing</td><td>Supported OTA mode, and OTA mode setting in reserved, or progress.</td></tr>\n  <tr><td>succeeded</td><td>Supported OTA mode, and OTA mode setting is succeeded.</td></tr>\n  <tr><td>failed</td><td>Supported OTA mode, and OTA mode setting is failed.</td></tr>\n</table>"
+              otaStartHour:
+                type: integer
+                description: 'Start time for accepting updates by OTA<br> For 0~23, start time.<br> For -1, 24-hour reception is available.'
+              otaEndHour:
+                type: integer
+                description: 'End time for accepting updates by OTA<br> For 0~23, end time.<br> For -1, 24-hour reception is available.'
+              latestFirmwareVersion:
+                type: string
+                description: Latest Firmware version available
+              isSnmpFW:
+                type: boolean
+                description: "Completion flag<br>\n  - true: Processing is complete.\n  - false: Processing is in progress.\n          "
+    getFirmwareVersionDetailsRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        latestFirmwareDetails:
+          type: object
+          properties:
+            components:
+              type: array
+              items:
+                type: object
+                properties:
+                  fwName:
+                    type: string
+                    description: Firmware Name
+                  fwVer:
+                    type: string
+                    description: Firmware Version
+              description: Firmware Version Components
+          description: Latest Firmware Details
+        currentFirmwareDetails:
+          type: object
+          properties:
+            bundleVersion:
+              type: string
+              description: Firmware Bundle Version(UPSIDE BUNDLE_BOTTOM BUNDLE)
+            components:
+              type: array
+              items:
+                type: object
+                properties:
+                  fwName:
+                    type: string
+                    description: Firmware Name
+                  fwVer:
+                    type: string
+                    description: Firmware Version
+              description: Firmware Version Components
+          description: Current Firmware Details
+    getFirmwareUpdateDetailRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        modelName:
+          type: string
+          description: Model Name
+        serialNumber:
+          type: string
+          description: Serial Number
+        firmwareVersionDetail:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Firmware name
+              version:
+                type: string
+                description: Firmware version
+          description: Current Firmware version detail.
+    getFirmwareUpdateHistoryRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        fwupdHistoryList:
+          type: array
+          items:
+            type: object
+            properties:
+              fileTitle:
+                type: string
+                description: Firmware Update Name
+              request:
+                type: string
+                description: "Firmware Update request mode<br>\n  * update: Firmware Update request.\n  * cancel: Firmware Update cancel.\n  * change: Firmware Update reservation date and time change."
+              result:
+                type: string
+                description: "execute result<br>\n  * `success` - Request was successful.(Update succeeded)\n  * `failure` - Request failed.(Update failed)\n  * `ready` - Update Reservation was successfull. (SFU file transfer completed)\n  * `started` - Update started.\n  * `mfpCancel` - Cancel by MFP operation."
+              timestamp:
+                type: integer
+                description: Request execute date and time.
+                format: int64
+              commandCode:
+                type: integer
+                description: Code of command requested to MFP.
+                format: int64
+              commandResultCode:
+                type: integer
+                description: Execution result noticed from MFP.
+                format: int64
+              commandResultCodeDetail:
+                type: integer
+                description: Execution result noticed from MFP.
+                format: int64
+    getFirmwareDataListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        startIndex:
+          type: integer
+          description: Start Index (Same as request parameter)
+        count:
+          type: integer
+          description: Number of requests (Same as request parameter)
+        resultCount:
+          type: integer
+          description: Number of items acquired this time
+        totalCount:
+          type: integer
+          description: Total number of search result
+        firmwareDataList:
+          type: array
+          items:
+            type: object
+            properties:
+              fileId:
+                type: string
+                description: fileId of Firmware file.
+              fileTitle:
+                type: string
+                description: Firmware Update Name
+              fileName:
+                type: string
+                description: Firmware file name
+              fileSize:
+                type: integer
+                description: Firmware file size
+                format: int64
+    deleteFirmwareDataRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setUpdateReservationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    removeUpdateReservationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    firmwareUpdateMailRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        status:
+          type: boolean
+          description: "Firmware update request email send status<br>\n  - true: Email sent successfully.\n  - false: Failed to send email."
+    setFWUpdateRemoteTriggerRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    tryConnectGlobalFwServerRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setUpdateFirmwareVersionRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    rmttgrSetUpdateReservationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    rmttgrRemoveUpdateReservationRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    cancelUpdateRemoteTriggerSettingRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    cancelTryConnectGlobalFwServerRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    cancelUpdateFirmwareVersionSettingRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setStatusCheckRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    cancelStatusCheckRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    commonRsp:
+      type: object
+      properties:
+        errorList:
+          type: array
+          items:
+            type: object
+            properties:
+              errorCode:
+                type: string
+                description: "Error Code\n  - Error Code list\n    <table border=\"1\">\n      <tr><th>Error code</th><th>Description</th></tr>\n      <tr><td>E0001</td><td>DB Access Error</td></tr>\n      <tr><td>E0004</td><td>JSON Parse error</td></tr>\n      <tr><td>E0011</td><td>Parameter mandatory check error</td></tr>\n      <tr><td>E0014</td><td>Parameter format check error</td></tr>\n      <tr><td>E0019</td><td>When target instance (group or device etc.) does not exist</td></tr>\n      <tr><td>E0021</td><td>Invalid token</td></tr>\n      <tr><td>E0024</td><td>No permission Error</td></tr>\n      <tr><td>E0026</td><td>Session timeout error</td></tr>\n      <tr><td>E0050</td><td>Error other than specified group management</td></tr>\n    </table>\n    <br>\n  - Special error code\n    <table border=\"1\">\n      <tr><th>Error code</th><th>Description</th></tr>\n      <tr><td>E0033</td><td>Firmware data Upload size error</td></tr>\n      <tr><td>E0034</td><td>Firmware Unsupported Model error</td></tr>\n      <tr><td>E0035</td><td>Firmware update reservation error</td></tr>\n    </table>"
+              errorField:
+                type: string
+                description: Parameter field where error occurred
+              errorValue:
+                type: string
+                description: Value that result into an error
+              errorMessage:
+                type: string
+                description: Error message (Text that human can understand)
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    authorization:
+      type: apiKey
+      name: Authorization
+      in: header
+security:
+  - apiKeyHeader: [ ]
+  - authorization: [ ]
+tags:
+  - name: Connection Status/Service
+    description: API of Connection Status/Service.
+  - name: Alert
+    description: API of Alert from MFP device.
+  - name: Get Data
+    description: API of Get Data from MFP device.
+  - name: Remote Maintenance
+    description: API of Remote Maintenance.
+  - name: Firmware Update
+    description: API of Firmware Update.
+  - name: Firmware Update Remote Trigger
+    description: API of Firmware Update Remote Trigger.

@@ -29,6 +29,12 @@ dependencies {
     implementation(project(":Snmp4jUtils_KtJvm"))
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "16"
 }
@@ -43,3 +49,4 @@ compose.desktop {
         }
     }
 }
+

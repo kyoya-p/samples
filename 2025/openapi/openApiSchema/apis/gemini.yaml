@@ -1,0 +1,95 @@
+openapi: 3.0.0
+info:
+  title: Gemini API
+  version: v1beta
+servers:
+  - url: 'https://generativelanguage.googleapis.com/v1beta'
+components:
+  schemas:
+    Part:
+      type: object
+      properties:
+        text:
+          type: string
+    Content:
+      type: object
+      properties:
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Part'
+        role:
+          type: string
+    Candidate:
+      type: object
+      properties:
+        content:
+          $ref: '#/components/schemas/Content'
+        finishReason:
+          type: string
+        avgLogprobs:
+          type: number
+          format: float
+    UsageMetadata:
+      type: object
+      properties:
+        promptTokenCount:
+          type: integer
+        candidatesTokenCount:
+          type: integer
+        totalTokenCount:
+          type: integer
+    GenerateContentRequest:
+      type: object
+      properties:
+        contents:
+          type: array
+          items:
+            type: object
+            properties:
+              parts:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Part'
+    GenerateContentResponse:
+      type: object
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+        usageMetadata:
+          $ref: '#/components/schemas/UsageMetadata'
+        modelVersion:
+          type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: key
+paths:
+  '/models/gemini-1.5-flash:generateContent':
+    post:
+      description: desc
+      summary: Generates content using the Gemini model.
+#      operationId: generateContent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateContentRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateContentResponse'
+      security: []
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: key
+          required: true
+          description: functions access key

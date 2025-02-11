@@ -1,0 +1,1141 @@
+openapi: 3.0.1
+info:
+  title: Stateful-API
+  description: This document is API specification of RMM Stateful API.
+  version: '1.0'
+servers:
+  - url: https://rmm-mfpdev-apim.azure-api.net/stateful
+paths:
+  /fss/service/executeFssSetup:
+    post:
+      tags:
+        - FSS Function
+      summary: Execute remote Fss setup.
+      description: Set up the FSS function for the specified MFP.<br> Store setting items in Database as data associated with tenant.<br> The target device must have "printerDevice.capability.fssDataCloning" set to true.<br> Direct-connected devices shall be excluded.<br> The "/service/executionProgress" API is used to check progress.<br>
+      operationId: post-fss-service-executefsssetup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/executeFssSetupReq'
+            example:
+              groupId: string
+              agentId: string
+              deviceIds:
+                - string
+              isExclude: true
+              rewrite: true
+              fssPassword: string
+              useTls: true
+              alertNotifySetting: 0
+              httpRegPollingSetting: 0
+              httpRegPollingInterval: 0
+              httpManPollingSetting: 0
+              tonerOrderTimingControlType: 0
+              immovableTonerOrderLevel_K: 0
+              immovableTonerOrderLevel_C: 0
+              immovableTonerOrderLevel_M: 0
+              immovableTonerOrderLevel_Y: 0
+      responses:
+        '200':
+          description: Execute Fss setup result.<br>
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/executeFssSetupRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                required: string
+  /fss/service/executionProgress:
+    post:
+      tags:
+        - FSS Function
+      summary: Check execution progress.
+      description: Check execution progress.<br>
+      operationId: post-fss-service-executionprogress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/executionProgressReq'
+            example:
+              requestId: string
+      responses:
+        '200':
+          description: Result of check the progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/executionProgressRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                complete: true
+  /fss/alert/exportAlertList:
+    post:
+      tags:
+        - FSS Function
+      summary: Request to export the list of alerts.
+      description: 'Request to export the alert list for the target tenant.<br> The format of the exported data is JSON.<br> The "/export/checkProgress" API is used to check progress.<br> For downloading, use the "/export/downloadExportData" API.'
+      operationId: post-fss-alert-exportalertlist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/exportAlertListReq'
+            example:
+              groupId: string
+      responses:
+        '200':
+          description: Result of request for exporting the list of alerts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportAlertListRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /fss/alert/exportAlertDetail:
+    post:
+      tags:
+        - FSS Function
+      summary: Request to export alert attachment information.
+      description: 'Request to export attachment information for a specified alert.<br> The format of the exported data is JSON, and the downloaded files will be ZIP compressed.<br> The "/export/checkProgress" API is used to check progress.<br> For downloading, use the "/export/downloadExportData" API.'
+      operationId: post-fss-alert-exportalertdetail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/exportAlertDetailReq'
+            example:
+              groupId: string
+              alertIds:
+                - string
+      responses:
+        '200':
+          description: Result of export request for alert attachment information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportAlertDetailRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /fss/data/exportDataDetail:
+    post:
+      tags:
+        - FSS Function
+      summary: Request to export the get data.
+      description: 'Request to export the get data.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".<br> The format of the exported data is JSON, and the downloaded files will be ZIP compressed.<br> The "/export/checkProgress" API is used to check progress.<br> For downloading, use the "/export/downloadExportData" API.'
+      operationId: post-fss-data-exportdatadetail
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/exportDataDetailReq'
+            example:
+              deviceId: string
+              dataIds:
+                - string
+      responses:
+        '200':
+          description: Result of export request for the get data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportDataDetailRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /fss/diag/exportRemoteDiagHistory:
+    post:
+      tags:
+        - FSS Function
+      summary: Request to export the remote mainteance history.
+      description: 'Request to export the remote maintenance history.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service".<br> The format of the exported data is JSON.<br> The "/export/checkProgress" API is used to check progress.<br> For downloading, use the "/export/downloadExportData" API.'
+      operationId: post-fss-diag-exportremotediaghistory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/exportRemoteDiagHistoryReq'
+            example:
+              deviceId: string
+      responses:
+        '200':
+          description: Result of export request for the remote maintenance history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportRemoteDiagHistoryRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /fss/fwupd/uploadFirmwareData:
+    post:
+      tags:
+        - FSS Function
+      summary: Firmware data upload request.
+      description: Firmware data upload request to the specified tenant.<br> This functionality is achieved using "Azure Durable Functions".<br> It is also possible to change only the file title of the uploaded firmware data.
+      operationId: post-fss-fwupd-uploadfirmwaredata
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/uploadFirmwareDataReq'
+            example:
+              groupId: string
+              fileId: string
+              fileTitle: string
+              fileName: string
+              fileSize: 0
+      responses:
+        '200':
+          description: Successfully changed file title of firmware data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uploadFirmwareDataRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+        '202':
+          description: Firmware data upload request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uploadFirmwareDataAcceptRsp'
+              example:
+                id: string
+                uploadUrl: string
+        '400':
+          description: Firmware data upload request not accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uploadFirmwareDataRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fss/fwupd/exportFirmwareUpdateHistory:
+    post:
+      tags:
+        - FSS Function
+      summary: Request to export the  firmware update history list.
+      description: 'Request to export the firmware update history list of the specified device.<br> Target devices that support the FSS function and whose "serviceStatus" is set to "service". The format of the exported data is JSON.<br> The "/export/checkProgress" API is used to check progress.<br> For downloading, use the "/export/downloadExportData" API.'
+      operationId: post-fss-fwupd-exportfirmwareupdatehistory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/exportFirmwareUpdateHistoryReq'
+            example:
+              deviceId: string
+      responses:
+        '200':
+          description: Result of firmware update history list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/exportFirmwareUpdateHistoryRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /fss/fwupd/uploadProgress:
+    post:
+      tags:
+        - FSS Function
+      summary: Check progress of firmware data upload.
+      description: Check the completion of firmware data upload.
+      operationId: post-fss-fwupd-uploadprogress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/firmDataUploadProgressReq'
+            example:
+              instanceId: string
+              command: string
+      responses:
+        '200':
+          description: Firmware data upload completion confirmation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/firmDataUploadProgressRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                result: string
+  /fss/fwupd/setOTAMode:
+    post:
+      tags:
+        - FSS Function
+      summary: Setup OTA Mode request
+      description: "Request to setup OTA Mode.<br> Eligible devices are devices that meet the following conditions:<br>\n  - Supports the FSS function.\n  - \"serviceStatus\" is set to \"service\".\n  - Supports OTA settings."
+      operationId: post-fss-fwupd-setotamode
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setOTAModeReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+              otaMode: string
+              otaStartHour: 0
+              otaEndHour: 0
+      responses:
+        '200':
+          description: Result of request to setup OTA Mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setOTAModeRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fss/fwupd/setOTAModeUsingOnlyMFPIF:
+    post:
+      tags:
+        - FSS Function
+      summary: Setup OTA Mode request
+      description: "Request to setup OTA Mode.<br> Communication with the MFP is performed using only the MFP/IF.<br> Eligible devices are devices that meet the following conditions:<br>\n  - Supports the FSS function.\n  - \"serviceStatus\" is set to \"service\".\n  - Supports OTA settings."
+      operationId: post-fss-fwupd-setotamodeusingonlymfpif
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/setOTAModeUsingOnlyMFPIFReq'
+            example:
+              groupId: string
+              deviceIds:
+                - string
+              isExclude: true
+              otaMode: string
+              otaStartHour: 0
+              otaEndHour: 0
+      responses:
+        '200':
+          description: Result of request to setup OTA Mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/setOTAModeUsingOnlyMFPIFRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /fss/export/checkProgress:
+    post:
+      tags:
+        - FSS Function
+      summary: Check the progress.
+      description: Check the progress.<br>
+      operationId: post-fss-export-checkprogress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/checkProgressReq'
+            example:
+              requestId: string
+      responses:
+        '200':
+          description: Result of check the progress.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/checkProgressRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                complete: true
+  /fss/export/downloadExportData:
+    post:
+      tags:
+        - FSS Function
+      summary: Download the export data.
+      description: Download the export data.
+      operationId: post-fss-export-downloadexportdata
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/downloadExportDataReq'
+            example:
+              requestId: string
+      responses:
+        '200':
+          description: Download url of export data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/downloadExportDataRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                downloadUrl: string
+  /dd/file/uploadDriverFile/:
+    post:
+      tags:
+        - Driver File Function
+      summary: Driver file upload request.
+      description: Driver file upload request to the specified tenant.<br> This functionality is achieved using "Azure Durable Functions".<br>
+      operationId: post-dd-file-uploaddriverfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/uploadDriverFileReq'
+            example:
+              groupId: string
+              driverIdName: string
+              fileName: string
+              fileSize: 0
+      responses:
+        '202':
+          description: Driver file upload request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uploadDriverFileAcceptRsp'
+              example:
+                id: string
+                uploadUrl: string
+        '400':
+          description: Driver file upload request not accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/uploadDriverFileRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+  /dd/file/uploadProgress:
+    post:
+      tags:
+        - Driver File Function
+      summary: Check progress of driver file upload.
+      description: Check the completion of driver file upload.
+      operationId: post-dd-file-uploadprogress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/driverFileUploadProgressReq'
+            example:
+              instanceId: string
+              command: string
+      responses:
+        '200':
+          description: Driver file upload completion confirmation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/driverFileUploadProgressRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                result: string
+                driverId: string
+  /agent/idp/generateSSHKey:
+    post:
+      tags:
+        - Agent Function
+      summary: Generate SSH Key pair
+      description: Requests the agent to generate an SSH key pair.<br> The Agent uploads the generated public key to the RMM.
+      operationId: post-agent-idp-generatesshkey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/generateSSHKeyReq'
+            example:
+              agentId: string
+      responses:
+        '200':
+          description: Generate SSH Key pair request result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/generateSSHKeyRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /agent/idp/deleteSSHKey:
+    post:
+      tags:
+        - Agent Function
+      summary: Delete SSH Key pair
+      description: Request delete the private key held by the Agent.<br> And Delete the registered public key.
+      operationId: post-agent-idp-deletesshkey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/deleteSSHKeyReq'
+            example:
+              agentId: string
+      responses:
+        '200':
+          description: Delete SSH Kay pair request result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/deleteSSHKeyRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                requestId: string
+  /agent/idp/checkSSHKeyProgress:
+    post:
+      tags:
+        - Agent Function
+      summary: Checking the progress of operations on SSH keys
+      description: Returns the execution status and results of SSH key pair generation and SSH key pair deletion.
+      operationId: post-agent-idp-checksshkeyprogress
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/checkSSHKeyProgressReq'
+            example:
+              requestId: string
+      responses:
+        '200':
+          description: Return execution status and results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/checkSSHKeyProgressRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+                status: string
+                resultCode: string
+  /agent/requestLogUpload:
+    post:
+      tags:
+        - Agent Function
+      summary: Log upload request to agent.
+      description: Requests log upload to the specified agent.
+      operationId: post-agent-requestlogupload
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/requestLogUploadReq'
+            example:
+              agentId: string
+      responses:
+        '200':
+          description: Log upload request result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/requestLogUploadRsp'
+              example:
+                common:
+                  errorList:
+                    - errorCode: string
+                      errorField: string
+                      errorValue: string
+                      errorMessage: string
+components:
+  schemas:
+    executeFssSetupReq:
+      required:
+        - groupId
+        - agentId
+        - deviceIds
+        - isExclude
+        - rewrite
+        - useTls
+        - alertNotifySetting
+        - httpRegPollingSetting
+        - httpRegPollingInterval
+        - httpManPollingSetting
+        - tonerOrderTimingControlType
+        - immovableTonerOrderLevel_K
+        - immovableTonerOrderLevel_C
+        - immovableTonerOrderLevel_M
+        - immovableTonerOrderLevel_Y
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> Store the setting items in the tenant of the specified groupId.<br> ●Check content\n  - A null or empty string is an error."
+        agentId:
+          type: string
+          description: "agentId of target agent(AgentTCO).<br> ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+        rewrite:
+          type: boolean
+          description: "Rewrite fssPassword.\n  - true: Rewrite fssPassword.\n  - false: Not rewrite fssPassword.\n\n●Check content\n  - Error for other than true/false"
+        fssPassword:
+          type: string
+          description: "servicefss account password<br> The number of characters that can be entered is 5-32.<br> If rewrite is true, update the servicefss password.<br> If \"rewrite\" is false, sets an empty string.<br> If \"rewrite\" is true, do a content check.\n●Check content\n  - 4 characters or less is an error.\n  - 33 characters or more is an error.\n  - A null or empty string is an error.\n  - any characters other than single-byte alphanumeric symbols are included is an error.\n  - a space is included is an error."
+        useTls:
+          type: boolean
+          description: "TLS communication settings\n  - true: TLS communication is enable.\n  - false: TLS communication is disable.\n\n●Check content\n  - Error for other than true/false"
+        alertNotifySetting:
+          type: integer
+          description: "Alert setting<br>\n  - 0: Alert send enable.\n  - 1: Alert send disabled.\n\n●Check content\n  - Anything other than 0 and 1 is an error."
+        httpRegPollingSetting:
+          type: integer
+          description: "Regular polling setting<br>\n  - 0: Polling enable.\n  - 1: Polling disabled.\n\n●Check content\n  - Anything other than 0 and 1 is an error."
+        httpRegPollingInterval:
+          type: integer
+          description: "Regular polling interval. (unit: minute)<br> The range that can be specified is 1-60.<br>\n●Check content\n  - Less than or equal 0 is an error.\n  - 61 or more is an error."
+        httpManPollingSetting:
+          type: integer
+          description: "Manual polling setting<br>\n  - 0: Polling enable.\n  - 1: Polling disabled.\n\n●Check content\n  - Anything other than 0 and 1 is an error."
+        tonerOrderTimingControlType:
+          type: integer
+          description: "Settings to control the alert timing of toner order alerts.<br>\n  - 0: Fixed residual type.\n  - 1: Consumption measurement type.\n●Check content\n  - Anything other than 0 and 1 is an error."
+        immovableTonerOrderLevel_K:
+          type: integer
+          description: "Toner order level for fixed residual type. (black)<br> The range that can be specified is 0-11.<br>\n  - 0: When toner end is detected\n  - 1: When toner near end is detected\n  - 2: When reaching 5%\n  - 3: When reaching 10%\n  - 4: When reaching 15%\n  - 5: When reaching 20%\n  - 6: When reaching 25%\n  - 7: When reaching 30%\n  - 8: When reaching 35%\n  - 9: When reaching 40%\n  - 10: When reaching 45%\n  - 11: When reaching 50%\n\n●Check content\n  - Less than 0 is an error.\n  - 12 or more is an error."
+        immovableTonerOrderLevel_C:
+          type: integer
+          description: "Toner order level for fixed residual type. (cyan)<br> The range that can be specified is 0-11.<br> The value is the same as \"immovableTonerOrderLevel_K\".<br>\n●Check content\n  - Less than 0 is an error.\n  - 12 or more is an error."
+        immovableTonerOrderLevel_M:
+          type: integer
+          description: "Toner order level for fixed residual type. (magenta)<br> The range that can be specified is 0-11.<br> The value is the same as \"immovableTonerOrderLevel_K\".<br>\n●Check content\n  - Less than 0 is an error.\n  - 12 or more is an error."
+        immovableTonerOrderLevel_Y:
+          type: integer
+          description: "Toner order level for fixed residual type. (yellow)<br> The range that can be specified is 0-11.<br> The value is the same as \"immovableTonerOrderLevel_K\".<br>\n●Check content\n  - Less than 0 is an error.\n  - 12 or more is an error."
+    executionProgressReq:
+      required:
+        - requestId
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: "requestId<br> ●Check content\n  - A null or empty string is an error."
+    exportAlertListReq:
+      required:
+        - groupId
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+    exportAlertDetailReq:
+      required:
+        - groupId
+        - alertIds
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group.<br> ●Check content\n  - A null or empty string is an error."
+        alertIds:
+          type: array
+          items:
+            type: string
+            description: "target alertId<br> ●Check content\n  - A null or empty string is an error."
+          description: "The alertId list of target group.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+    exportDataDetailReq:
+      required:
+        - deviceId
+        - dataIds
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+        dataIds:
+          type: array
+          items:
+            type: string
+            description: "ID indicating the acquired data.<br> ●Check content\n  - A null or empty string is an error."
+          description: "The dataId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+    exportRemoteDiagHistoryReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+    uploadFirmwareDataReq:
+      required:
+        - groupId
+        - fileId
+        - fileTitle
+        - fileName
+        - fileSize
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br> ●Check content\n  - A null or empty string is an error."
+        fileId:
+          type: string
+          description: "fileId of target Firmware file <br> If it is an empty string, it will be newly registered.<br> ●Check content\n  - A null is an error."
+        fileTitle:
+          type: string
+          description: "Firmware update name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        fileName:
+          type: string
+          description: "Firmware file name.<br> If fileId is specified and fileName is an empty string, only fileTitle is updated.<br> (Firmware file is not updated.)<br> ●Check content\n  - A null is an error.\n  - If fileId is an empty string, an empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        fileSize:
+          type: integer
+          description: "Upload file size(unit: byte)<br> ●Check content\n  - Error for other than numeric value"
+          format: int64
+      description: refer to components/schemas/uploadFirmwareDataReq
+    exportFirmwareUpdateHistoryReq:
+      required:
+        - deviceId
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: "deviceId of target device.<br> ●Check content\n  - A null or empty string is an error."
+    firmDataUploadProgressReq:
+      type: object
+      properties:
+        instanceId:
+          type: string
+          description: "instanceId<br> ●Check content\n  - A null or empty string is an error."
+        command:
+          type: string
+          description: "command<br>\n  - status: Check the status.\n  - terminate: Terminate process."
+    setOTAModeReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+        - otaMode
+        - otaStartHour
+        - otaEndHour
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group. ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+        otaMode:
+          type: string
+          description: "Request OTA mode.\n  - auto: Automatic update mode.\n  - confirmation: Confirmation update mode.\n  - off: OTA function off.\n\n●Check content\n  - Error for other than specified value"
+        otaStartHour:
+          type: integer
+          description: "Update acceptance start time\n  - 0 - 23: Update acceptance start time\n  - -1: Available 24 hours\n\n●Check content\n  - Error for other than specified value\n  - Do not check if \"otaMode\" is other than \"auto\"."
+        otaEndHour:
+          type: integer
+          description: "Update acceptance end time\n  - 0 - 23: Update acceptance end time\n  - -1: Available 24 hours\n\n●Check content\n  - Error for other than specified value\n  - Do not check if \"otaMode\" is other than \"auto\"."
+    setOTAModeUsingOnlyMFPIFReq:
+      required:
+        - groupId
+        - deviceIds
+        - isExclude
+        - otaMode
+        - otaStartHour
+        - otaEndHour
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group. ●Check content\n  - A null or empty string is an error."
+        deviceIds:
+          type: array
+          items:
+            type: string
+            description: "The deviceId of target device.<br> ●Check content\n  - A null is an error."
+          description: "The deviceId list of target device.<br> ●Check content\n  - Empty list is allowed.\n  - A null is an error."
+        isExclude:
+          type: boolean
+          description: "Specify deviceIds details.\n  - true: deviceIds is unselected device.\n  - false: deviceIds is selected device.\n\n●Check content\n  - Error for other than true/false"
+        otaMode:
+          type: string
+          description: "Request OTA mode.\n  - auto: Automatic update mode.\n  - confirmation: Confirmation update mode.\n  - off: OTA function off.\n\n●Check content\n  - Error for other than specified value"
+        otaStartHour:
+          type: integer
+          description: "Update acceptance start time\n  - 0 - 23: Update acceptance start time\n  - -1: Available 24 hours\n\n●Check content\n  - Error for other than specified value\n  - Do not check if \"otaMode\" is other than \"auto\"."
+        otaEndHour:
+          type: integer
+          description: "Update acceptance end time\n  - 0 - 23: Update acceptance end time\n  - -1: Available 24 hours\n\n●Check content\n  - Error for other than specified value\n  - Do not check if \"otaMode\" is other than \"auto\"."
+    checkProgressReq:
+      required:
+        - requestId
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: "requestId<br> ●Check content\n  - A null or empty string is an error."
+    downloadExportDataReq:
+      required:
+        - requestId
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: "requestId<br> ●Check content\n  - A null or empty string is an error."
+    uploadDriverFileReq:
+      required:
+        - groupId
+        - driverIdName
+        - fileName
+        - fileSize
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: "groupId of target group <br>\n●Check content\n  - A null or empty string is an error."
+        driverIdName:
+          type: string
+          description: "Driver identification name<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified"
+        fileName:
+          type: string
+          description: "Driver file name.<br> ●Check content\n  - A null or empty string is an error.\n  - Printable characters including multi-byte characters can be specified."
+        fileSize:
+          type: integer
+          description: "Upload file size(unit: byte)<br> ●Check content\n  - Error for other than numeric value"
+          format: int64
+    driverFileUploadProgressReq:
+      type: object
+      properties:
+        instanceId:
+          type: string
+          description: "instanceId<br> ●Check content\n  - A null or empty string is an error."
+        command:
+          type: string
+          description: "command<br>\n  - status: Check the status.\n  - terminate: Terminate process."
+    generateSSHKeyReq:
+      required:
+        - agentId
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "agentId of target AgentIDP<br> ●Check content\n  - A null or empty string is an error."
+    deleteSSHKeyReq:
+      required:
+        - agentId
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "agentId of target AgentIDP<br> ●Check content\n  - A null or empty string is an error."
+    checkSSHKeyProgressReq:
+      required:
+        - requestId
+      type: object
+      properties:
+        requestId:
+          type: string
+          description: "requestId<br> ●Check content\n  - A null or empty string is an error."
+    requestLogUploadReq:
+      required:
+        - agentId
+      type: object
+      properties:
+        agentId:
+          type: string
+          description: "target agentId<br> ●Check content\n  - Error for null, null character (i.e. empty string)"
+    executeFssSetupRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        required:
+          type: string
+          description: requestId
+    executionProgressRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        complete:
+          type: boolean
+          description: "Completion flag<br>\n  - true: Processing is complete.\n  - false: Processing is in progress."
+    exportAlertListRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: requestId
+    exportAlertDetailRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: requestId
+    exportDataDetailRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: requestId
+    exportRemoteDiagHistoryRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: requestId
+    uploadFirmwareDataAcceptRsp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The ID of the orchestration instance. ("Azure Durable Functions" response parameter.)
+        uploadUrl:
+          type: string
+          description: URL to upload firmware data.
+      description: "Response when an upload request for firmware data is accepted.\n"
+    uploadFirmwareDataRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+      description: "Response when the firmware data upload request is not accepted.\n"
+    exportFirmwareUpdateHistoryRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: requestId
+    firmDataUploadProgressRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        result:
+          type: string
+          description: "Execution state<br>\n  - running: Processing is in progress.\n  - succeeded: The process was completed(upload success).\n  - terminated: The process was terminated by terminate command.\n  - unknown: Status command was failed.\n  - failure: The process was completed(upload failure) or Terminate by command was failed."
+    setOTAModeRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    setOTAModeUsingOnlyMFPIFRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    checkProgressRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        complete:
+          type: boolean
+          description: "Completion flag<br>\n  - true: Processing is complete.\n  - false: Processing is in progress."
+    downloadExportDataRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        downloadUrl:
+          type: string
+          description: download url.
+    uploadDriverFileAcceptRsp:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The ID of the orchestration instance. ("Azure Durable Functions" response parameter.)
+        uploadUrl:
+          type: string
+          description: URL to upload Driver file.
+      description: "Response when an upload request for driver file is accepted.\n"
+    uploadDriverFileRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+      description: Response when the driver file upload request is not accepted.
+    driverFileUploadProgressRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        result:
+          type: string
+          description: "Execution state<br>\n  - running: Processing is in progress.\n  - succeeded: The process was completed(upload success).\n  - terminated: The process was terminated by terminate command.\n  - unknown: Status command was failed.\n  - failure: The process was completed(upload failure) or Terminate by command was failed."
+        driverId:
+          type: string
+          description: 'Driver file ID<br> If result is "succeeded", set the ID of the uploaded driver file.<br> If the result is not "succeeded", set an empty string.'
+    generateSSHKeyRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: Generate SSH Kay requestId.
+    deleteSSHKeyRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        requestId:
+          type: string
+          description: Delete SSH Key requestId.
+    checkSSHKeyProgressRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+        status:
+          type: string
+          description: "Execution status.<br>\n  - processing: SSH key generation or SSH key deletion is in progress.\n  - completed: SSH key generation or SSH key deletion completed."
+        resultCode:
+          type: string
+          description: "Execution result code.<br>\n  <table border=\"1\">\n    <tr><th>Result code</th><th>Description</th></tr>\n    <tr><td>00</td><td>success</td></tr>\n    <tr><td>01</td><td>failure</td></tr>\n    <tr><td>02</td><td>failure(Key already exists.)</td></tr>\n    <tr><td>-1</td><td>failure(System error)</td></tr>\n  </table>"
+    requestLogUploadRsp:
+      type: object
+      properties:
+        common:
+          $ref: '#/components/schemas/commonRsp'
+    commonRsp:
+      type: object
+      properties:
+        errorList:
+          type: array
+          items:
+            type: object
+            properties:
+              errorCode:
+                type: string
+                description: "Error Code\n  - Error Code list\n    <table border=\"1\">\n      <tr><th>Error code</th><th>Description</th></tr>\n      <tr><td>E0001</td><td>DB Access Error</td></tr>\n      <tr><td>E0004</td><td>JSON Parse error</td></tr>\n      <tr><td>E0011</td><td>Parameter mandatory check error</td></tr>\n      <tr><td>E0014</td><td>Parameter format check error</td></tr>\n      <tr><td>E0019</td><td>When target instance (group or device etc.) does not exist</td></tr>\n      <tr><td>E0021</td><td>Invalid token</td></tr>\n      <tr><td>E0024</td><td>No permission Error</td></tr>\n      <tr><td>E0026</td><td>Session timeout error</td></tr>\n      <tr><td>E0042</td><td>Data Duplication Error</td></tr>\n      <tr><td>E0050</td><td>Error other than specified group management</td></tr>\n    </table>\n    <br>\n  - Special error code\n    <table border=\"1\">\n      <tr><th>Error code</th><th>Description</th></tr>\n      <tr><td>E0032</td><td>\"Service Tool  DLL\" Call error</td></tr>\n      <tr><td>E0033</td><td>Upload File size error</td></tr>\n      <tr><td>E0034</td><td>Firmware Unsupported Model error</td></tr>\n      <tr><td>E0035</td><td>Firmware update reservation error</td></tr>\n    </table>"
+              errorField:
+                type: string
+                description: Parameter field where error occurred
+              errorValue:
+                type: string
+                description: Value that result into an error
+              errorMessage:
+                type: string
+                description: Error message (Text that human can understand)
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    authorization:
+      type: apiKey
+      name: Authorization
+      in: header
+security:
+  - apiKeyHeader: [ ]
+  - authorization: [ ]
+tags:
+  - name: Agent Function
+    description: API of Agent Function.
+  - name: FSS Function
+    description: API of FSS function.
+  - name: Driver File Function
+    description: API of Driver file Management Function.
