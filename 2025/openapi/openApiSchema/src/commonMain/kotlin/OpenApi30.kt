@@ -1,15 +1,16 @@
-package gen_4
+package gen_3
 
+import com.charleskorn.kaml.YamlNode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class OpenApi(
     val openapi: String? = null,
-    val info: Info? = null,
-    val servers: List<Server?>? = null,
-    val paths: Map<String, PathItem?>? = null,
-    val components: Components? = null
+    val info: YamlNode? = null,
+    val servers: List<Server>? = null,
+    val paths: Map<String, PathItem>? = null,
+    val components: YamlNode? = null
 )
 
 @Serializable
@@ -21,7 +22,7 @@ data class Info(
 
 @Serializable
 data class Server(
-    val url: String? = null,
+    val url: String,
     val description: String? = null
 )
 
@@ -36,11 +37,13 @@ data class PathItem(
 
 @Serializable
 data class Operation(
-    val parameters: List<Parameter?>? = null,
-    val responses: Map<String, Response?>? = null,
+    val description: String? = null,
+    val summary: String? = null,
+    val parameters: List<YamlNode>? = null,
+    val responses: Map<String, YamlNode>? = null,
     val requestBody: RequestBody? = null,
     val deprecated: Boolean? = null,
-    val security: List<SecurityRequirement?>? = null,
+    val security: List<YamlNode?>? = null,
     val servers: List<Server?>? = null
 )
 
@@ -55,7 +58,7 @@ data class Parameter(
 
 @Serializable
 data class RequestBody(
-    val content: Map<String, MediaType?>? = null
+    val content: Map<String, MediaType>? = null
 )
 
 @Serializable
@@ -68,10 +71,11 @@ data class Response(
 
 @Serializable
 data class Header(
-  val schema: Schema? = null,
+    val schema: Schema? = null,
     val description: String? = null,
     val required: Boolean? = null
 )
+
 @Serializable
 data class Link(
     val operationId: String? = null
@@ -92,7 +96,7 @@ data class Example(
 
 @Serializable
 data class Encoding(
-  val contentType: String? = null
+    val contentType: String? = null
 )
 
 @Serializable
@@ -113,7 +117,8 @@ data class Schema(
     val readOnly: Boolean? = null,
     val writeOnly: Boolean? = null,
     val nullable: Boolean? = null,
-    val deprecated: Boolean? = null
+    val deprecated: Boolean? = null,
+    @SerialName("${'$'}ref") val ref: String? = null
 )
 
 
@@ -135,10 +140,21 @@ enum class ParameterLocation {
 
 @Serializable
 enum class SchemaType {
-    @SerialName("string") STRING,
-    @SerialName("number") NUMBER,
-    @SerialName("integer") INTEGER,
-    @SerialName("boolean") BOOLEAN,
-    @SerialName("array") ARRAY,
-    @SerialName("object") OBJECT
+    @SerialName("string")
+    STRING,
+
+    @SerialName("number")
+    NUMBER,
+
+    @SerialName("integer")
+    INTEGER,
+
+    @SerialName("boolean")
+    BOOLEAN,
+
+    @SerialName("array")
+    ARRAY,
+
+    @SerialName("object")
+    OBJECT
 }
