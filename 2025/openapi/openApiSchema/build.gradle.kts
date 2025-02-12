@@ -23,17 +23,15 @@ kotlin {
     linuxX64 { binaries.executable() }
 
     sourceSets {
-        val kotlin_coroutine = "1.10.1"
-        // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
+        val kotlin_coroutine = "1.10.1"     // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-core
         val okio_version = "3.10.2"         // https://mvnrepository.com/artifact/com.squareup.okio/okio
         val commonMain by getting
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_coroutine")
             implementation("com.squareup.okio:okio:$okio_version")
 
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")  // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
-            // implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.5.4")
-            implementation("com.charleskorn.kaml:kaml:0.67.0") // https://github.com/charleskorn/kaml/releases/latest
+//            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")  // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+            implementation("com.charleskorn.kaml:kaml:0.71.0") // https://github.com/charleskorn/kaml/releases/latest
         }
 
         val jsMain by getting
