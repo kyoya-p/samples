@@ -17,7 +17,7 @@ repositories {
 
 kotlin {
     jvm()
-    js { nodejs(); binaries.executable() }
+    js { nodejs(); browser(); binaries.executable() }
     mingwX64 { binaries.executable() }
     linuxX64 { binaries.executable() }
     @OptIn(ExperimentalWasmDsl::class)

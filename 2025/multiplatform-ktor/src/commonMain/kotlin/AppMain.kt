@@ -7,23 +7,20 @@ import io.ktor.client.statement.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.milliseconds
 
+
 @Serializable
-data class Todo(val userId: Int, val id: Int, val title: String, val completed: Boolean)
+data class IP(val ip: String, val location: Location)
+
+@Serializable
+data class Location(val country: String, val city: String)
 
 val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
-suspend fun appMain() = runCatching{
-    println("start:")//TODO
-    (1..5).forEach {
-        val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
-        val res = client.get("http://127.0.0.1:8080/index.html").bodyAsText()
-        println("localhost=")
-        println(res)
-//        val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
-//        val res = client.get("http://jsonplaceholder.typicode.com/todos/$it").body<Todo>()
-//        println(res) //TODO
-        delay(500.milliseconds)
-    }
+suspend fun appMain() = runCatching {
+    val client = HttpClient(CIO) { install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) } }
+    val res = client.get("https://api.ipapi.is/").body<IP>()
+    println(res)
 }.onFailure { it.printStackTrace() }
 
