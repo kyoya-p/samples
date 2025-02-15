@@ -17,7 +17,7 @@ repositories {
 
 kotlin {
     jvm()
-    js { nodejs(); browser(); binaries.executable() }
+    js { binaries.executable();nodejs() }
     mingwX64 { binaries.executable() }
     linuxX64 { binaries.executable() }
     @OptIn(ExperimentalWasmDsl::class)
@@ -25,24 +25,17 @@ kotlin {
 
     sourceSets {
         val ktor_version = "3.1.0"         // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
-        val commonMain by getting
         commonMain.dependencies {
             implementation("io.ktor:ktor-client-cio:$ktor_version")
             implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
             implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
         }
-        val jsMain by getting
         jsMain.dependencies {
-            implementation("io.ktor:ktor-client-js:$ktor_version")
         }
-        val mingwX64Main by getting
         mingwX64Main.dependencies {
         }
-        val linuxX64Main by getting
         linuxX64Main.dependencies {
-            implementation("io.ktor:ktor-client-cio-linuxx64:$ktor_version")
         }
-        val wasmJsMain by getting
         wasmJsMain.dependencies {
             implementation("io.ktor:ktor-client-core:$ktor_version-wasm2")
         }
