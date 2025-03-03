@@ -1,4 +1,3 @@
-
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
@@ -19,6 +18,9 @@ repositories {
 }
 
 dependencies {
+    val ktor_version = "3.1.1"
+    implementation("io.ktor:ktor-network-tls-certificates:$ktor_version")
+
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.client.core)

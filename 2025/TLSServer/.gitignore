@@ -1,6 +1,8 @@
 /.idea/
 /.gradle/
+/.kotlin/
 /build/
+/.keystore
 
 .gradle
 build/
