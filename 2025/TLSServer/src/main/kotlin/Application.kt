@@ -5,6 +5,8 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.tomcat.jakarta.*
 import java.io.File
+import java.io.FileInputStream
+import java.security.KeyStore
 import javax.security.auth.x500.X500Principal
 
 fun main() {
@@ -23,23 +25,28 @@ fun Application.module() {
 
 private fun ApplicationEngine.Configuration.envConfig() {
 
-    val keyStoreFile = File(".keystore")
-    val keyStore = buildKeyStore {
-        certificate("tomcat") {
-            password = "changeit"
-            domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
-            subject = X500Principal("CN=localhost,O=shokkaa,OU=shokkaa")
-        }
-    }
+    val secret = "changeit"
+    val keyStoreFile = File("build/keystore.jks")
 
-    keyStore.saveToFile(keyStoreFile, "changeit")
+//    val keyStore = buildKeyStore {
+//        certificate("tomcat") {
+//            password = secret
+//            domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
+//            subject = X500Principal("CN=localhost,O=shokkaa,OU=shokkaa")
+//        }
+//    }
+//    keyStore.saveToFile(keyStoreFile, secret)
 
-    connector { port = 8080 }
+    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()) // 通常は "JKS" または "PKCS12"
+    FileInputStream(keyStoreFile).use { fis -> keyStore.load(fis, secret.toCharArray()) }
+
+
+//    connector { port = 8080 }
     sslConnector(
         keyStore = keyStore,
         keyAlias = "tomcat",
-        keyStorePassword = { "changeit".toCharArray() },
-        privateKeyPassword = { "changeit".toCharArray() }) {
+        keyStorePassword = { secret.toCharArray() },
+        privateKeyPassword = { secret.toCharArray() }) {
         port = 8443
         keyStorePath = keyStoreFile
     }
