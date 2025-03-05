@@ -26,7 +26,7 @@ fun Application.module() {
 private fun ApplicationEngine.Configuration.envConfig() {
 
     val secret = "changeit"
-    val keyStoreFile = File("build/keystore.jks")
+    val keyStoreFile = File("build/.keystore")
 
 //    val keyStore = buildKeyStore {
 //        certificate("tomcat") {
@@ -40,26 +40,30 @@ private fun ApplicationEngine.Configuration.envConfig() {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType()) // 通常は "JKS" または "PKCS12"
     FileInputStream(keyStoreFile).use { fis -> keyStore.load(fis, secret.toCharArray()) }
 
+    connector {
+        host = "0.0.0.0"
+        port = 8080
+    }
 
-//    connector { port = 8080 }
     sslConnector(
         keyStore = keyStore,
         keyAlias = "tomcat",
         keyStorePassword = { secret.toCharArray() },
-        privateKeyPassword = { secret.toCharArray() }) {
+        privateKeyPassword = { secret.toCharArray() }
+    ) {
         port = 8443
         keyStorePath = keyStoreFile
     }
 }
 
-fun makeCAcert() {
-    val keyStoreFile = File("ca.kts")
-    val keyStore = buildKeyStore {
-        certificate("ca") {
-            password = "changeit"
-            domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
-            subject = X500Principal("CN=localca,O=shokkaa,OU=shokkaa")
-        }
-    }
-    keyStore.saveToFile(keyStoreFile, "changeit")
-}
+//fun makeCAcert() {
+//    val keyStoreFile = File("ca.kts")
+//    val keyStore = buildKeyStore {
+//        certificate("ca") {
+//            password = "changeit"
+//            domains = listOf("127.0.0.1", "0.0.0.0", "localhost")
+//            subject = X500Principal("CN=localca,O=shokkaa,OU=shokkaa")
+//        }
+//    }
+//    keyStore.saveToFile(keyStoreFile, "changeit")
+//}

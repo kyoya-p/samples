@@ -1,5 +1,5 @@
 # make server key & csr
-openssl req -new -newkey rsa:4096 -keyout server.key -out server.csr -nodes -subj "/CN=server"
+openssl req -new -newkey rsa:4096 -keyout server.key -out server.csr -nodes -subj "/CN=server1"
 
 # sign by ca.crt
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
