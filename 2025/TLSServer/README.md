@@ -21,3 +21,8 @@ cp .keystore ../build
 sh gradlew run
 ```
 ブラウザで`https://localhost:8443`を開く
+
+
+
+# refer
+https://zv-louis.hatenablog.com/entry/2018/04/14/222210
