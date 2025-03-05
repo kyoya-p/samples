@@ -31,3 +31,11 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
 
+tasks.processResources {
+    doFirst {
+        copy {
+            from("samples/.keystore")
+            into("build")
+        }
+    }
+}

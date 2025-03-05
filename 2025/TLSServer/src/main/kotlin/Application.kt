@@ -1,13 +1,13 @@
 package com.example
 
-import io.ktor.network.tls.certificates.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.server.tomcat.jakarta.*
 import java.io.File
 import java.io.FileInputStream
 import java.security.KeyStore
-import javax.security.auth.x500.X500Principal
 
 fun main() {
     embeddedServer(
@@ -19,8 +19,12 @@ fun main() {
 }
 
 fun Application.module() {
-    configureSecurity()
-    configureRouting()
+//    configureSecurity()
+    routing {
+        get("/") {
+            call.respondText("Hello World!")
+        }
+    }
 }
 
 private fun ApplicationEngine.Configuration.envConfig() {
