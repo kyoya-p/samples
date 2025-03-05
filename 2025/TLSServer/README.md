@@ -5,12 +5,14 @@
 
 # Local CA証明書作成
 ```shell
-cd build
-sh ../makeca.sh
+cd samples
+sh makeca.sh
 ```
 # 新規サーバ証明書作成と署名
 ```shell
-sh ../sign2.sh
+cd samples
+sh sign2.sh
+cp .keystore ../build
 ```
 
 # サーバ実行
