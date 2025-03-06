@@ -9,7 +9,7 @@ sh makeca.sh
 # 新規サーバ証明書作成と署名
 ```shell
 cd samples
-sh sign2.sh
+sh sign.sh
 cp .keystore ../build
 ```
 
