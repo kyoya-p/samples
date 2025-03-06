@@ -2,21 +2,29 @@
 keytool -delete -alias tomcat -keystore .keystore -storepass changeit
 keytool -delete -alias rootca -keystore .keystore -storepass changeit
 
+set -e
+
 # サーバ秘密鍵新規登録と署名要求生成
-#keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -keystore .keystore -storepass changeit -keypass changeit -validity 365 -dname "CN=server.local.jp, C=JP"
-keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -keystore .keystore -storepass changeit -keypass changeit -validity 365 -dname "CN=server.local.jp, C=JP" -ext SAN=dns:server.local.jp,dns:server
+keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -keystore .keystore -storepass changeit -keypass changeit -validity 365 -dname "CN=server.local.jp, C=JP"
+#keytool -genkeypair -alias tomcat -keyalg RSA -keysize 2048 -keystore .keystore -storepass changeit -keypass changeit -validity 365 -dname "CN=server.local.jp, C=JP" -ext SAN=dns:server.local.jp,dns:server
+
+keytool -certreq -alias tomcat -keystore .keystore -storepass changeit -file server.csr
+#keytool -certreq -alias tomcat -keystore .keystore -storepass changeit -file server.csr -ext SAN=dns:server.local.jp,dns:server
 
 keytool -printcertreq -file server.csr -v
 openssl req -noout -text -in server.csr
 
-# keytool -certreq -alias tomcat -keystore .keystore -storepass changeit -file server.csr
-keytool -certreq -alias tomcat -keystore .keystore -storepass changeit -file server.csr -ext SAN=dns:server.local.jp,dns:server
-
 # 署名要求に従いCA証明書で署名
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+#openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt
+#openssl ca -days 365 -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt \
+#  -extensions "subjectAltName=DNS:server.local.jp"
+
+echo 'subjectAltName =DNS:server.local.jp, IP:127.0.0.1, IP:10.36.104.102' > server.ext
+openssl x509 -req -days 365 -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -extfile server.ext -out server.crt
 
 # CA証明書、サーバ証明書をkeystoreに登録
 keytool -importcert -trustcacerts -alias rootca -file ca.crt -keystore .keystore -storepass changeit -noprompt
 keytool -importcert -alias tomcat -file server.crt -keystore .keystore -storepass changeit
 
 keytool -list -keystore .keystore -storepass changeit
+cp .keystore ../build/.keystore
