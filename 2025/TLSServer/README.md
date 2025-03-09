@@ -19,8 +19,6 @@ sh gradlew run
 ```
 ブラウザで`https://localhost:8443`を開く
 
-
-
 # refer
 https://zenn.dev/jeffi7/articles/10f7b12d6044ad
 https://zv-louis.hatenablog.com/entry/2018/04/14/222210
