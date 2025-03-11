@@ -1,6 +1,4 @@
-@file:Suppress("unused")
 
-package smpl
 
 import org.reflections.Reflections
 import org.reflections.scanners.SubTypesScanner
@@ -11,7 +9,7 @@ import kotlin.reflect.KClass
 
 
 fun main() {
-    val packageName = "smpl"
+    val packageName = "sample"
     val refs = Reflections(
         ConfigurationBuilder().setUrls(ClasspathHelper.forPackage(packageName))
             .setScanners(SubTypesScanner(false), TypeAnnotationsScanner())
@@ -23,41 +21,23 @@ fun main() {
         c.members.forEach { println(it) }
     }
 
-    listClassInfo(A1::class)
+    listClassInfo(sample.A1::class)
 }
 
-open class A
-class A1(val pa11: Int) : A() {
-    val pa12 = 1
-    fun fa1() {}
-}
-
-class A2(val pa21: Int) : A() {
-    val pa22 = 1
-    fun fa2() {}
-}
-
-// KClass クラス自身をリフレクションし KClass.is~関数をすべて実行する
+// リフレクションによりKClass#is~関数のうち引数を与えないものすべて抽出し実行する
 inline fun <reified T : Any> listClassInfo(clazz: KClass<T>) {
-    println("Class: ${clazz.qualifiedName}")
     KClass::class.members.forEach { m ->
-        if (m.name.startsWith("is")) println("${m.name}: ${m.call(clazz)}")
+        if (m.name.startsWith("is") && m.parameters.size <= 1) println("${m.name}: ${m.call(clazz)}")
     }
-//    println("isData: ${classA.isData}")
-//    println("isSealed: ${classA.isSealed}")
-//    println("isInner: ${classA.isInner}")
-//    println("isAbstract: ${classA.isAbstract}")
-//    println("isCompanion: ${classA.isCompanion}")
-//    println("isFinal: ${classA.isFinal}")
-//    println("isOpen: ${classA.isOpen}")
-//    println("isFun: ${classA.isFun}")
-//    println("isValue: ${classA.isValue}")
-//    println("sealedSubclasses: ${classA.sealedSubclasses}")
-//    println("supertypes: ${classA.supertypes}")
-//    println("constructors: ${classA.constructors}")
-//    println("nestedClasses: ${classA.nestedClasses}")
-//    println("declaredMemberProperties: ${classA.declaredMemberProperties}")
-//    println("declaredFunctions: ${classA.declaredFunctions}")
-//    println("A functions: ${classA.functions}")
-//    println("A memberFunctions: ${classA.memberFunctions}")
+
+//    すなわち
+//    println("isData: ${clazz.isData}")
+//    println("isSealed: ${clazz.isSealed}")
+//    println("isInner: ${clazz.isInner}")
+//    println("isAbstract: ${clazz.isAbstract}")
+//    println("isCompanion: ${clazz.isCompanion}")
+//    println("isFinal: ${clazz.isFinal}")
+//    println("isOpen: ${clazz.isOpen}")
+//    println("isFun: ${clazz.isFun}")
+//    println("isValue: ${clazz.isValue}")
 }
