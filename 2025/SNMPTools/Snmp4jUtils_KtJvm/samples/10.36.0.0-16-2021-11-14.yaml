@@ -1,0 +1,2396 @@
+- ip: "10.36.125.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.127.0"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.127.128"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.64"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.122.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.192"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.32"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.160"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426022240\
+      \ MD:3a06/27/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.128.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.96"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.34.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.94.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.224"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.16"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.144"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.144"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.18.144"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9630J HR:3a05 SN:3a ZA1350006671\
+      \ MD:3a12/11/2013) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.171.144"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.144"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.80"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.80"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux SX6C1136 4.9.120 #12 SMP Thu Sep 10 21:3a55:3a38 JST 2020 armv7l"
+- ip: "10.36.132.208"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.208"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.208"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.208"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.208"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.48"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4141FN"
+- ip: "10.36.130.48"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C305W"
+- ip: "10.36.217.48"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.48"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.128.112"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.112"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.112"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.112"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.112"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.122.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux 8P4F-Nakayama 4.9.120 #6 SMP Tue Jan 7 16:3a32:3a24 JST 2020 armv7l"
+- ip: "10.36.134.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.240"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.8"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2650FN"
+- ip: "10.36.184.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.136"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.72"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.94.72"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.72"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.200"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.200"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.130.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6070N"
+- ip: "10.36.49.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4170FN"
+- ip: "10.36.13.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.40"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.168"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.104"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.104"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.232"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 63 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "10.36.50.232"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Canon LBP3950 /P"
+- ip: "10.36.171.232"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.112.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "10.36.172.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6170FN"
+- ip: "10.36.34.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5141FN"
+- ip: "10.36.9.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux sec-auth03.nara.sharp.co.jp 2.6.18-194.el5PAE #1 SMP Tue Mar 16\
+      \ 22:3a00:3a21 EDT 2010 i686"
+- ip: "10.36.29.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3650FN"
+- ip: "10.36.127.24"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.152"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.152"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.152"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426022293\
+      \ MD:3a06/27/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.95.152"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.128.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.172.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.127.88"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.216"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.216"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.10.216"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3640FN"
+- ip: "10.36.184.56"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.56"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.184"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.184"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.120"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.120"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.248"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.4"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.132"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.130.68"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-30C25"
+- ip: "10.36.172.196"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.196"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.139.196"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.220.36"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.36"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4171"
+- ip: "10.36.127.36"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.164"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.73.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3610FN"
+- ip: "10.36.217.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.111.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70C45"
+- ip: "10.36.95.20"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2310F"
+- ip: "10.36.172.148"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.84"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.212"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 BUFFALO BS-G2108M"
+- ip: "10.36.134.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5071"
+- ip: "10.36.139.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.171.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.52"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3661"
+- ip: "10.36.132.180"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.180"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.180"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 BUFFALO BS-G2108M"
+- ip: "10.36.172.116"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.116"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.244"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.244"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.220.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2661"
+- ip: "10.36.18.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 45 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "10.36.70.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 RICOH imagio MP W5100 1.14 / RICOH Network Printer C model / RICOH Network\
+      \ Scanner C model"
+- ip: "10.36.102.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3631DS"
+- ip: "10.36.94.12"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT"
+- ip: "10.36.129.140"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.140"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.76"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.76"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.128.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.72 (Wed Jan 25 10:3a38:3a25 JST 2006)"
+- ip: "10.36.172.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.204"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9631J HR:3a05 SN:3a 5A1435T19248\
+      \ MD:3a08/30/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.124.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.44"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.172"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EHB-SG2B08-PL Web Smart Gigabit Switch"
+- ip: "10.36.184.172"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.172"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.18.172"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux sec-auth01.nara.sharp.co.jp 2.6.18-274.el5PAE #1 SMP Fri Jul 8\
+      \ 17:3a59:3a09 EDT 2011 i686"
+- ip: "10.36.24.108"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.236"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.94.236"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.236"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.236"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.108.28"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2615N"
+- ip: "10.36.220.28"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.28"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M565FN"
+- ip: "10.36.106.28"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4151"
+- ip: "10.36.122.28"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5151"
+- ip: "10.36.184.156"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.156"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.156"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426022341\
+      \ MD:3a06/27/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.111.156"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70M45"
+- ip: "10.36.8.92"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.172.92"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.92"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.220"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.220"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.220"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.60"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.130.60"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3150FN"
+- ip: "10.36.9.60"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.13.60"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.188"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.124"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9631J HR:3a05 SN:3a 5A1506T03540\
+      \ MD:3a02/03/2015) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.172.252"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.34.252"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.252"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.252"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.190.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Cisco IOS Software, C2960 Software (C2960-LANBASE-M), Version 12.2(44)SE,\
+      \ RELEASE SOFTWARE (fc1):0d:0aCopyright (c) 1986-2008 by Cisco Systems, Inc.:0d:0aCompiled\
+      \ Fri 04-Jan-08 21:3a31 by weiliu"
+- ip: "10.36.171.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.95.2"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.108.130"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.34.130"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.130"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.55.66"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-20C25"
+- ip: "10.36.18.194"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 45 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.1 (Build 7601 Multiprocessor Free)"
+- ip: "10.36.125.194"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.34"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.34"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3650FN"
+- ip: "10.36.34.34"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Built-in 10Base-T/100Base-TX Print Server"
+- ip: "10.36.13.162"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.162"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426018262\
+      \ MD:3a06/28/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.172.98"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.98"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.34.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.18.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux nar-asterisk.ns1.nara.sharp.co.jp 2.6.18-194.el5 #1 SMP Fri Apr\
+      \ 2 14:3a58:3a35 EDT 2010 i686"
+- ip: "10.36.217.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.173.226"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.49.18"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6171"
+- ip: "10.36.167.18"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.198.146"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5140FN"
+- ip: "10.36.217.146"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.146"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.82"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.210"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.50"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.50"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.178"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 IEEE 802.11 b/g/n Wireless Access Point/Client/Bridge"
+- ip: "10.36.18.178"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux sec-auth02.nara.sharp.co.jp 2.6.18-274.el5PAE #1 SMP Fri Jul 8\
+      \ 17:3a59:3a09 EDT 2011 i686"
+- ip: "10.36.167.178"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.114"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.114"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.114"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.242"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.10"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.138"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.132.138"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.138"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.130.138"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.138"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.220.74"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.194.74"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4170FN"
+- ip: "10.36.94.74"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.202"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux SX6C1149 4.9.120 #12 SMP Thu Sep 10 21:3a55:3a38 JST 2020 armv7l"
+- ip: "10.36.8.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9631J HR:3a05 SN:3a 5A1435T19253\
+      \ MD:3a08/30/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.130.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4151"
+- ip: "10.36.94.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4050N"
+- ip: "10.36.49.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MELCO LPV2-TX1 Print Server"
+- ip: "10.36.217.42"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.170"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.234"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.234"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.50.234"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP AR-311FP"
+- ip: "10.36.104.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3661"
+- ip: "10.36.184.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.9.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux sec-auth04.nara.sharp.co.jp 2.6.18-194.el5PAE #1 SMP Tue Mar 16\
+      \ 22:3a00:3a21 EDT 2010 i686"
+- ip: "10.36.135.26"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.154"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.154"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.90"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.90"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-30C25"
+- ip: "10.36.217.58"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.58"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.122"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Unix 4.3BSD"
+- ip: "10.36.16.250"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 ELECOM WAB-M2133 Ver1.2.3"
+- ip: "10.36.13.250"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.128.134"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.134"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.198"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.122.38"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-B455W"
+- ip: "10.36.22.38"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3631DS"
+- ip: "10.36.171.38"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.29.22"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Type-B 10Base-T/100Base-TX Print Server"
+- ip: "10.36.167.150"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.86"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.129.86"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4071"
+- ip: "10.36.172.214"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.217.214"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.214"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.54"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5171"
+- ip: "10.36.220.118"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Unix 4.3BSD"
+- ip: "10.36.220.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.246"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.48.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Built-in 10Base-T/100Base-TX Print Server"
+- ip: "10.36.184.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.14.14"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3610FN"
+- ip: "10.36.184.142"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.206"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.74 (Tue Sep 29 11:3a03:3a10 JST 2009)"
+- ip: "10.36.22.206"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.18.46"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.72 (Wed Jan 25 10:3a38:3a25 JST 2006)"
+- ip: "10.36.171.46"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.30"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.30"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2661"
+- ip: "10.36.184.158"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.158"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426011272\
+      \ MD:3a06/25/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.132.94"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.222"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.222"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.190"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.172.193"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.33"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4051"
+- ip: "10.36.7.161"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426022416\
+      \ MD:3a06/27/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.23.225"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.81"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.168.209"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M266FP"
+- ip: "10.36.184.49"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.49"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.13.241"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.9"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.104.137"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 BUFFALO \"BP-X1ST\" \"BP-X1ST Ver.5.20 (2021/10/11 12:3a13:3a09)"
+- ip: "10.36.184.73"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.128.201"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.201"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.72 (Wed Jan 25 10:3a38:3a25 JST 2006)"
+- ip: "10.36.24.201"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux Jade-NewSol-Z1 4.9.120 #12 SMP Thu Sep 10 21:3a55:3a38 JST 2020\
+      \ armv7l"
+- ip: "10.36.104.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3631DS"
+- ip: "10.36.94.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3640FN"
+- ip: "10.36.126.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.133.41"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.169"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.131.105"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.127.105"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.126.233"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.49.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M503F"
+- ip: "10.36.119.25"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5170FV"
+- ip: "10.36.13.153"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.153"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426021054\
+      \ MD:3a06/25/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.128.217"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.125.57"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.159.57"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70C55"
+- ip: "10.36.172.185"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.110.121"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP J9776A 2530-24G Switch, revision YA.16.02.0012, ROM YA.15.19 (/ws/swbuildm/rel_spokane_qaoff/code/build/lakes(swbuildm_rel_spokane_qaoff_rel_spokane))"
+- ip: "10.36.7.121"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9631J HR:3a05 SN:3a 5A1435T19262\
+      \ MD:3a08/30/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.135.121"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.22.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.249"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.123.5"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.122.69"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Unix 4.3BSD"
+- ip: "10.36.167.37"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.139.165"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.112.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C3081DV"
+- ip: "10.36.124.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C306W"
+- ip: "10.36.106.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6170FN"
+- ip: "10.36.49.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5001FN"
+- ip: "10.36.37.21"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5170FN"
+- ip: "10.36.184.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.220.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.34.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.171.149"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.110.213"
+  vbs:
+  - mib: "sysDescr."
+    value: "5 Null"
+- ip: "10.36.111.213"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70C45"
+- ip: "10.36.134.53"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3650FN"
+- ip: "10.36.129.53"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.53"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3630FN"
+- ip: "10.36.23.53"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.102.245"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M3071"
+- ip: "10.36.208.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Type-B 10Base-T/100Base-TX Print Server"
+- ip: "10.36.48.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3150FN"
+- ip: "10.36.156.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2650FV"
+- ip: "10.36.34.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.29.13"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6540FN"
+- ip: "10.36.184.77"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.205"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.72 (Wed Jan 25 10:3a38:3a25 JST 2006)"
+- ip: "10.36.8.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9631J HR:3a05 SN:3a 5A1435T19257\
+      \ MD:3a08/30/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.130.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3150FN"
+- ip: "10.36.34.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2661"
+- ip: "10.36.18.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4  ND-RMS Version 4.72 (Wed Jan 25 10:3a38:3a25 JST 2006)"
+- ip: "10.36.102.45"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6170FV"
+- ip: "10.36.124.173"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.125.173"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.16.29"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5140FN"
+- ip: "10.36.124.29"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-30M35"
+- ip: "10.36.134.157"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.157"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426011355\
+      \ MD:3a06/25/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.179.93"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-50C45"
+- ip: "10.36.124.61"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70C26"
+- ip: "10.36.146.61"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.61"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-C301W"
+- ip: "10.36.7.125"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.217.3"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.24.35"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-6170FN"
+- ip: "10.36.122.35"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M754FN"
+- ip: "10.36.22.35"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5111FN"
+- ip: "10.36.7.163"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426022224\
+      \ MD:3a06/27/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.108.227"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.173.227"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.146.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2630FN"
+- ip: "10.36.73.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5170FN"
+- ip: "10.36.23.19"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5111FN"
+- ip: "10.36.132.147"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.51"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux OS-B 4.9.120 #1 SMP Thu Jul 8 11:3a28:3a09 JST 2021 armv7l"
+- ip: "10.36.92.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2650FN"
+- ip: "10.36.18.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 45 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "10.36.134.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2310F"
+- ip: "10.36.70.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5140FN"
+- ip: "10.36.198.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3140FN"
+- ip: "10.36.14.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON LP-M230FDN"
+- ip: "10.36.222.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5111FN"
+- ip: "10.36.13.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.29.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4101FN"
+- ip: "10.36.167.11"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3650FN"
+- ip: "10.36.24.139"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 HP ETHERNET MULTI-ENVIRONMENT"
+- ip: "10.36.172.203"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.203"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.43"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.49.43"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 MELCO LPV2-TX1 Print Server"
+- ip: "10.36.73.43"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4110FN"
+- ip: "10.36.139.171"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.108.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-5170FN"
+- ip: "10.36.124.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-B557F"
+- ip: "10.36.122.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4170FN"
+- ip: "10.36.22.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.9.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux sec-auth04.nara.sharp.co.jp 2.6.18-194.el5PAE #1 SMP Tue Mar 16\
+      \ 22:3a00:3a21 EDT 2010 i686"
+- ip: "10.36.217.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.167.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2650FN"
+- ip: "10.36.95.27"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M503N"
+- ip: "10.36.7.155"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426011113\
+      \ MD:3a06/25/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.8.91"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 62 Stepping 4 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.1 (Build 7601 Multiprocessor Free)"
+- ip: "10.36.168.91"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2517FN"
+- ip: "10.36.129.91"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M503N"
+- ip: "10.36.134.59"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3161"
+- ip: "10.36.126.59"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.127.59"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.123"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.0.6 PN:3aapc_hw05_aos_606.bin\
+      \ AF1:3av6.0.6 AN1:3aapc_hw05_sumx_606.bin MN:3aAP9631J HR:3a05 SN:3a 5A1435T19263\
+      \ MD:3a08/30/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.127.123"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.124.251"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.198.251"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 EPSON Built-in 10Base-T/100Base-TX Print Server"
+- ip: "10.36.22.7"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.96.135"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.71"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-4070N"
+- ip: "10.36.123.71"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.94.199"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.23.199"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.135.39"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.184.167"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.146.103"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.231"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 63 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "10.36.133.231"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.106.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3661"
+- ip: "10.36.49.23"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-M363F"
+- ip: "10.36.34.151"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.8.87"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a Intel64 Family 6 Model 63 Stepping 2 AT/AT COMPATIBLE -\
+      \ Software:3a Windows Version 6.3 (Build 9600 Multiprocessor Free)"
+- ip: "10.36.134.55"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.102.55"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-70C26"
+- ip: "10.36.184.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.14.15"
+  vbs:
+  - mib: "1.3.6.1.2.1.25.3.2.1.1.1"
+    value: "2 1"
+- ip: "10.36.94.15"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-3110FN"
+- ip: "10.36.18.143"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.24.79"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux NewSol-Z1 4.9.120 #3 SMP Mon Dec 14 13:3a54:3a56 JST 2020 armv7l"
+- ip: "10.36.124.79"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux SO-MTG 4.9.120 #1 SMP Thu Jul 8 11:3a28:3a09 JST 2021 armv7l"
+- ip: "10.36.220.207"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.134.47"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.7.111"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 "
+- ip: "10.36.128.31"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Hardware:3a x86 Family 6 Model 8 Stepping 6 AT/AT COMPATIBLE - Software:3a\
+      \ Windows 2000 Version 5.0 (Build 2195 Uniprocessor Free)"
+- ip: "10.36.94.31"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP MX-2650FV"
+- ip: "10.36.181.31"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 Linux MFPDEV002 2.6.32-504.12.2.el6.x86_64 #1 SMP Sun Feb 1 12:3a14:3a02\
+      \ EST 2015 x86_64"
+- ip: "10.36.7.159"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 APC Web/SNMP Management Card (MB:3av4.0.1 PF:3av6.1.1 PN:3aapc_hw05_aos_611.bin\
+      \ AF1:3av6.1.1 AN1:3aapc_hw05_sumx_611.bin MN:3aAP9630J HR:3a05 SN:3a ZA1426011361\
+      \ MD:3a06/25/2014) (Embedded PowerNet SNMP Agent SW v2.2 compatible)"
+- ip: "10.36.55.63"
+  vbs:
+  - mib: "sysDescr.0"
+    value: "4 SHARP BP-30C25"
