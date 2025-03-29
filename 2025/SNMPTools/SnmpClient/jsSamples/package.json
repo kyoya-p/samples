@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "net-snmp": "^3.20.0"
+  }
+}

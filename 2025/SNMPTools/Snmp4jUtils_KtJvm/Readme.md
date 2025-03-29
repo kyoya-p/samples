@@ -1,5 +1,8 @@
 Snmp4JUtils
 ===
+# Environment
+
+- JDK 21
 
 # Publish
 
