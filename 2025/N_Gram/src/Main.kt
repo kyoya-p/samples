@@ -1,27 +1,39 @@
-fun search(db: List<Record>, query: String, n: Int) {
+import kotlinx.io.buffered
+import kotlinx.io.files.FileSystem
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readLine
+
+val ngramIndexes = mutableMapOf<String, Set<Int>>()
+
+class Record(val text: String, val n: Int, val ngrams: List<String> = text.windowed(n))
+
+fun main() = with(SystemFileSystem) {
+    val n = 2
+    val records = readLines("SampleData_ja.txt").toList().map { Record(it, n) }
+    records.forEachIndexed { ix, r -> r.ngrams.forEach { ngramIndexes[it] = (ngramIndexes[it] ?: emptySet()) + ix } }
+    println("ngramIndexes:${ngramIndexes.size}")
+    ngramMatchingSearch(records, "革新的な再", n)
+}
+
+fun ngramMatchingSearch(db: Collection<Record>, query: String, n: Int) {
     val queryNGrams = query.windowed(n) // N-Gram生成
     println("Query: $query($queryNGrams)")
-    db.forEach { record ->
-        println(record.ngrams)
-        if (queryNGrams.all { ngram -> record.ngrams.contains(ngram) }) {
-            println("=> ${record.text}")
-        }
+    db.filter { record -> queryNGrams.all { ngram -> record.ngrams.contains(ngram) } }.forEach {
+        println("  => ${it.text.take(64)}...")
     }
     println()
 }
 
-class Record(val text: String, val n: Int, val ngrams: List<String> = text.windowed(n))
-
-fun main() {
-    val n = 3
-    val db = listOf(
-        Record("今日はいい天気です。", n),
-        Record("明日は雨が降るでしょう。", n),
-        Record("昨日は晴れていました。", n),
-        Record("明日の天気予報では雪になりそう", n),
-        Record("明日の天気は雪の予報です", n),
-    )
-
-    search(db, "天気", n)
-    search(db, "天気予報", n)
+fun indexSearch(index: Map<String, Set<Int>>, query: String, n: Int) {
+    val queryNGrams = query.windowed(n) // N-Gram生成
+    println("Query: $query($queryNGrams)")
+    db.filter { record -> queryNGrams.all { ngram -> record.ngrams.contains(ngram) } }.forEach {
+        println("  => ${it.text.take(64)}...")
+    }
+    println()
 }
+
+
+fun FileSystem.readLines(file: String) = source(Path(file)).buffered().let { generateSequence { it.readLine() } }
+
