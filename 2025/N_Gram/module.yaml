@@ -1,4 +1,4 @@
-product: windows/app
+product: jvm/app
 
 dependencies:
   - org.jetbrains.kotlinx:kotlinx-io-core:0.7.0
