@@ -1,0 +1,13 @@
+product: jvm/app
+
+dependencies:
+  - $compose.desktop.common
+
+settings:
+  kotlin:
+    serialization: json
+  compose:
+    enabled: true
+    version: 1.6.10
+    experimental:
+      hotReload: enabled
