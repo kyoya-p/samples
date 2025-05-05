@@ -1,0 +1,13 @@
+product: jvm/app
+
+dependencies:
+  - ../shared
+  - $compose.desktop.currentOs
+
+
+settings:
+  compose:
+    enabled: true
+    version: 1.6.10
+    experimental:
+      hotReload: enabled

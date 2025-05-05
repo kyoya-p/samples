@@ -1,0 +1,11 @@
+product: android/app
+
+dependencies:
+  - ../shared
+
+settings:
+  compose:
+    enabled: true
+    version: 1.6.10
+    experimental:
+      hotReload: enabled
