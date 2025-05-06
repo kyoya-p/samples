@@ -7,13 +7,12 @@ dependencies:
   - $compose.material3: exported
 
 dependencies@android:
-  # Compose integration with Android activities
-  - androidx.activity:activity-compose:1.6.10: exported
-  - androidx.appcompat:appcompat:1.6.1: exported
+  - androidx.activity:activity-compose:1.7.0: exported
+  - androidx.appcompat:appcompat:1.7.0: exported
 
 settings:
   compose:
     enabled: true
-    version: 1.6.10
-    experimental:
-      hotReload: enabled
+#    version: 1.6.10
+#    experimental:
+#      hotReload: enabled

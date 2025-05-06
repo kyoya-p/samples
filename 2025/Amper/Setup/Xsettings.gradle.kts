@@ -15,6 +15,6 @@ plugins {
 }
 
 include("shared")
-//include("android-app")
-//include( "ios-app")
+include("android-app")
+include( "ios-app")
 include("jvm-app")
