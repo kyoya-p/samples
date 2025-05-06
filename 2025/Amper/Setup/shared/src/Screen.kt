@@ -25,8 +25,8 @@ fun Screen() = MaterialTheme {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            BasicText("Hello, ${getWorld()}!")
-            Button(onClick = AppDialog("AAA")) { Text("Button") }
+//            BasicText("Hello, ${getWorld()}!")
+            Button(onClick = AppDialog("Hello, ${getWorld()}!")) { Text("Show Dialog") }
         }
     }
 }
@@ -47,9 +47,7 @@ fun AppDialog(
         title = title,
         text = { Column { content() } },
         confirmButton = {
-            Button(onClick = { openDialog = false;scope.launch { onConfirmed() } }) {
-                Text("OK")
-            }
+            Button(onClick = { openDialog = false;scope.launch { onConfirmed() } }) { Text("OK") }
         },
     )
     return { openDialog = true }
