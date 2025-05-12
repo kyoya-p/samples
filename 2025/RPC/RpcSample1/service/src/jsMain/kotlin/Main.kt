@@ -1,0 +1,5 @@
+
+suspend fun main() {
+    appMain()
+}
+
