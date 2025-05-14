@@ -2,6 +2,7 @@
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
+
 plugins {
     kotlin("multiplatform") version "2.1.20"
     id("org.jetbrains.kotlinx.rpc.plugin") version "0.6.2"  // https://plugins.gradle.org/plugin/org.jetbrains.kotlinx.rpc.plugin
@@ -13,16 +14,26 @@ repositories {
 }
 
 kotlin {
-    jvm()
-//    mingwX64()
-    linuxX64()
-    js{browser()}
-    wasmJs{browser()}
+//    jvm()
+    js {
+        nodejs()
+        binaries.executable()
+    }
+//    wasmJs {
+//        nodejs()
+//    }
     sourceSets {
         commonMain.dependencies {
+            implementation(project(":service"))
             implementation("org.jetbrains.kotlinx:kotlinx-rpc-krpc-server:0.6.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-rpc-krpc-ktor-server:0.6.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-rpc-krpc-serialization-json:0.6.2")
+//            implementation("org.jetbrains.kotlinx:kotlinx-rpc-krpc-client:0.6.2")
+        }
+
+//        jvmMain.dependencies {
+//            implementation("org.jetbrains.kotlinx:kotlinx-rpc-krpc-server-jvm:0.6.2")
+//        }
+
+        jsMain.dependencies {
         }
     }
 }
