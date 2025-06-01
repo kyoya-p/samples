@@ -1,17 +1,43 @@
 import io.ktor.client.*
-import io.ktor.client.call.*
+import io.ktor.client.call.body
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
-import io.ktor.serialization.kotlinx.json.*
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 @Serializable
-data class CatFact(val text: String)
+data class Echo(val message: String)
+
+suspend fun requestEcho(server: String, from: String): Echo {
+    val client = HttpClient(CIO) { install(ContentNegotiation) { json() } }
+    return client.get("$server/echo?from=$from").body<Echo>()
+}
+
+
+fun Application.testServer() {
+    install(io.ktor.server.plugins.contentnegotiation.ContentNegotiation) { json() }
+    routing {
+        get("/echo") {
+            val message = call.request.queryParameters["from"]?.let { "Hello, $it!" } ?: "Who are you?"
+            call.respond(Echo(message = message))
+        }
+    }
+}
 
 suspend fun appMain() {
-    val client = HttpClient(CIO) { install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) } }
-    val res = client.get("http://cat-fact.herokuapp.com/facts").body<List<CatFact>>()
-    res.forEachIndexed { i,f->println("$i: ${f.text}") }
+    val svr = embeddedServer(io.ktor.server.cio.CIO, 28080) {
+        testServer()
+    }.startSuspend(wait = false)
+    val res = requestEcho("http://localhost:28080", "Shokkaa").message
+    println("RES: $res")
+    svr.stopSuspend()
 }
+
