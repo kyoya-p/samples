@@ -8,5 +8,5 @@ dependencies {
     implementation(project(":utils"))
 }
 
-application.mainClass = "Main1Kt"
+application.mainClass = "demo3.Main3Kt"
 
