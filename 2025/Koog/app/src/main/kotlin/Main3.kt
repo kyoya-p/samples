@@ -24,7 +24,7 @@ fun main() = runBlocking {
     )
 
     val result =
-        agent.runAndGetResult("ルートディレクトリ以下にあるすべてのファイルを列挙")
+        agent.runAndGetResult("ルートディレクトリのファイルを列挙")
     println(result)
 }
 
