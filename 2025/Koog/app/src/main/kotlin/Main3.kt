@@ -17,11 +17,8 @@ fun main() = runBlocking {
         toolRegistry = toolRegistry,
     )
 
-    agent.runAndGetResult("ブラウザを起動して'https://www.google.com'を開く")
-    while (true) {
-        print("> ")
-        val query = readln()
-        if (query == "q") break
+    agent.runAndGetResult("https://www.google.com で'Koog Kotlin'を検索。最初の検索結果を開く")
+    generateSequence { print("> ");readlnOrNull() }.forEach { query ->
         agent.runAndGetResult(query)
     }
 }
