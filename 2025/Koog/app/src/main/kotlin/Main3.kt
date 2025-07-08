@@ -8,14 +8,8 @@ import kotlinx.coroutines.runBlocking
 
 
 fun main() = runBlocking {
-    val process = ProcessBuilder(
-        "sudo", "docker", "run", "--rm", "-i",
-        "--mount", "type=bind,src=/home/kyoya/works,dst=/projects/works",
-        "mcp/filesystem", "/projects",
-    ).start()
-
     val toolRegistry = McpToolRegistryProvider.fromTransport(
-        transport = McpToolRegistryProvider.defaultStdioTransport(process)
+        transport = McpToolRegistryProvider.defaultSseTransport("http://localhost:8931/sse")
     )
     val agent = AIAgent(
         executor = simpleGoogleAIExecutor(System.getenv("GOOGLE_API_KEY")),
@@ -23,8 +17,12 @@ fun main() = runBlocking {
         toolRegistry = toolRegistry,
     )
 
-    val result =
-        agent.runAndGetResult("ルートディレクトリのファイルを列挙")
-    println(result)
+    agent.runAndGetResult("ブラウザを起動して'https://www.google.com'を開く")
+    while (true) {
+        print("> ")
+        val query = readln()
+        if (query == "q") break
+        agent.runAndGetResult(query)
+    }
 }
 
