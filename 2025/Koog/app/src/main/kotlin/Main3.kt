@@ -9,7 +9,7 @@ import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking {
     val toolRegistry = McpToolRegistryProvider.fromTransport(
-        transport = McpToolRegistryProvider.defaultSseTransport("http://localhost:8931/sse")
+        transport = McpToolRegistryProvider.defaultSseTransport("http://localhost:8931")
     )
     val agent = AIAgent(
         executor = simpleGoogleAIExecutor(System.getenv("GOOGLE_API_KEY")),
