@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 data class Chat(val query: String, val Answer: String)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App() = MaterialTheme {
@@ -34,13 +36,17 @@ fun App() = MaterialTheme {
         Icon(Icons.AutoMirrored.Filled.Send, "Send")
     }
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("MCP Box") },
+                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Settings, "Setting") } })
+        },
 //        floatingActionButton = { queryButton() }
     ) {
         LaunchedEffect(charList.size) {
             if (charList.isNotEmpty()) lazyListState.animateScrollToItem(charList.lastIndex)
         }
         Column(Modifier.fillMaxSize()) {
-            // LazyColumnのラストにスクロールしたい
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = lazyListState) {
                 items(charList) {
                     Column(Modifier.fillMaxWidth()) {
