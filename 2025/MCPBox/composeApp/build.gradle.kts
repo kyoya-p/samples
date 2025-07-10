@@ -9,22 +9,22 @@ plugins {
 
 kotlin {
     jvm("desktop")
-
+    
     sourceSets {
         val desktopMain by getting
-
+        
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
+//            implementation(compose.material)
+            implementation(compose.materialIconsExtended)
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-
-            implementation(libs.datastore)
-            implementation(libs.datastore.preferences)
+//            implementation("androidx.compose.material:material-icons-extended:1.7.8")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -32,8 +32,6 @@ kotlin {
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-
-            implementation("androidx.datastore:datastore-preferences:1.1.7")
         }
     }
 }
