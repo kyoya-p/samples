@@ -1,3 +1,4 @@
+import org.gradle.internal.impldep.org.bouncycastle.oer.its.etsi102941.Url
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -39,6 +40,7 @@ kotlin {
             implementation("androidx.datastore:datastore-preferences:1.1.7")
 //            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor_version}")
+            implementation("ai.koog:koog-agents:0.2.1") // https://mvnrepository.com/artifact/ai.koog/koog-agents
         }
     }
     compilerOptions {
@@ -55,5 +57,22 @@ compose.desktop {
             packageName = "jp.wjg.shokkaa.mcp"
             packageVersion = "1.0.0"
         }
+    }
+}
+
+val nodeJsVersion = "22.17.0-win-x64"
+val nodeJsDownloadUrl = "https://nodejs.org/dist/v22.17.0/node-v$nodeJsVersion.zip"
+val nodeJsArchivePath = layout.buildDirectory.file("nodejs-v$nodeJsVersion.zip")
+
+tasks.register("downloadNodeJs") {
+    doLast {
+        println("Downloading Node.js from $nodeJsDownloadUrl to $nodeJsArchivePath")
+        nodeJsArchivePath.get().asFile.parentFile.mkdirs()
+//        Url(nodeJsDownloadUrl). { input ->
+//            nodeJsArchivePath.get().asFile.outputStream().use { output ->
+//                input.copyTo(output)
+//            }
+//        }
+        println("Node.js downloaded successfully.")
     }
 }
