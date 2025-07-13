@@ -7,20 +7,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import rmmx.AppDialog
+import rmmx.DynamicForm
+import kotlin.reflect.full.createType
+import kotlin.time.Duration.Companion.seconds
 
 data class Chat(val msg: String, val from: String)
 
@@ -29,55 +28,127 @@ data class Chat(val msg: String, val from: String)
 @Composable
 @Preview
 fun App() = MaterialTheme {
+    val chatLogs = remember { mutableStateListOf<Chat>() }
     val scope = rememberCoroutineScope()
     var agent by remember { mutableStateOf<AIAgent?>(null) }
-    LaunchedEffect(Unit) { agent = createAgent() }
+    LaunchedEffect(Unit) {
+//        chatLogs.add(Chat("Start Loading...", "Application"))
+//        setupNodejsEnvironment()
+
+//        launch {
+//            chatLogs.add(Chat("Start MCP Service", "Application"))
+//            val p: Process = getRuntime().exec("npx.cmd -y $nodeMcpServicePlaywright --port 8931")
+//            println("PID=${p.pid()}")
+//            val rc = p.await()
+//            chatLogs.add(Chat("Failed: MCP Service. exitCode: $rc", "Application"))
+//        }
+
+//        chatLogs.add(Chat("Start AI-Agent", "Application"))
+//        agent = createAgent()
+//        chatLogs.add(Chat(if (agent != null) "Succeeded" else "Failed", "Application"))
+    }
     var query by remember { mutableStateOf("") }
-    val chatLogs = remember { mutableStateListOf<Chat>() }
     val lazyListState = rememberLazyListState()
 
     @Composable
-    fun queryButton() = IconButton(onClick = {
-        chatLogs.add(Chat(query, "Answer"))
-        scope.launch {
-            val res = agent?.runAndGetResult(query)
-            chatLogs.add(Chat(res ?: "no answer", "Order"))
-        }
-        query = ""
-    }) {
-        if (agent == null) CircularProgressIndicator()
-        else Icon(Icons.AutoMirrored.Filled.Send, "Send")
-    }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("MCP Box") },
-                actions = { IconButton(onClick = {}) { Icon(Icons.Default.Settings, "Setting") } })
+    fun queryButton() = IconButton(
+        onClick = {
+            scope.launch {
+                chatLogs.add(Chat(query, "Query"))
+                val res = agent?.runAndGetResult(query)
+                chatLogs.add(Chat(res ?: "AIAgent disabled", "Answer"))
+            }
         },
-//        floatingActionButton = { queryButton() }
-    ) {
+        enabled = agent != null,
+    ) { Icon(Icons.AutoMirrored.Filled.Send, "Send") }
+
+    Scaffold {
         LaunchedEffect(chatLogs.size) {
             if (chatLogs.isNotEmpty()) lazyListState.animateScrollToItem(chatLogs.lastIndex)
         }
         Column(Modifier.fillMaxSize()) {
+            TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(),
+                title = { Text("MCP Box") },
+                actions = {
+                    McpEnableSwitch(appSettings.mcpServices[0], onMsg = { chatLogs.add(Chat(it, "Application")) }) {
+                        agent = it
+                    }
+                    IconButton(onClick = SettingsDialog()) { Icon(Icons.Default.Settings, "Setting") }
+                })
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = lazyListState) {
                 items(chatLogs) {
-                    Column(Modifier.fillMaxWidth()) {
-                        Text(it.msg)
-                        Text(it.from)
-                    }
+                    Text("${it.from}: ${it.msg}")
                 }
             }
             TextField(
                 query,
                 trailingIcon = { queryButton() },
-                modifier = Modifier.fillMaxWidth().onKeyEvent {
-                    if (it.key == Key.Enter && it.isCtrlPressed) {
-                        chatLogs.add(Chat(query, "Order"))
-                        query = ""
-                        true
-                    } else false
-                }, onValueChange = { query = it })
+                modifier = Modifier.fillMaxWidth()
+//                    .onKeyEvent {
+//                        if (it.key == Key.Enter && it.isCtrlPressed) {
+//                            chatLogs.add(Chat(query, "Order"))
+//                            query = ""
+//                            false
+//                        } else false
+//                    },
+                , onValueChange = { query = it })
         }
     }
 }
+
+@Composable
+fun McpEnableSwitch(mcp: Mcp, onMsg: (msg: String) -> Unit = {}, onResult: (AIAgent?) -> Unit) {
+    var enabled by remember { mutableStateOf(false) }
+    var process: Process? by remember { mutableStateOf(null) }
+//    var agent: AIAgent? = null
+    LaunchedEffect(enabled) {
+        if (enabled && process == null) {
+            val cmd = mcp.command.split(" ").run { listOf("$nodeJsDir\\${first()}") + drop(1) }
+            onMsg("MCP Service starting :$cmd")
+            process = startNodeProcess(cmd)
+            launch { process?.await { onMsg(it) } }
+            onMsg("MCP Service running {PID:${process?.pid()}}")
+            repeat(20) {
+                createAgent()?.let {
+                    onMsg("MCP Agent created :$it")
+                    // TODO
+//                    val res =
+//                        it.runAndGetResult("https://www.google.com で'Koog Kotlin'を検索。最初の検索結果を開き内容要約(日本語で)")
+//                    println(res)
+                    return@LaunchedEffect onResult(it)
+                }
+                delay(1.seconds)
+            }
+            onMsg("MCP Agent creating failed. timeout")
+        } else if (!enabled && process != null) {
+            onMsg("Stop MCP Service {PID:${process?.pid()}}")
+            process?.descendants()?.forEach { it.destroyForcibly() }
+            process = null
+            onResult(null)
+        }
+    }
+    Switch(
+        checked = enabled,
+        onCheckedChange = { enabled = it }
+    )
+}
+
+@Composable
+fun SettingsDialog() = AppDialog {
+    DynamicForm(
+        v = appSettings,
+        kType = AppSettings::class.createType(),
+        label = "Settings",
+        isNullable = false,
+//    labelWidget = TODO()
+    ) { appSettings = it as AppSettings }
+}
+
+@Composable
+inline fun <T> MutableState<T?>.prepare(crossinline f: suspend () -> T): MutableState<T?> =
+    apply { LaunchedEffect(Unit) { value = f() } }
+
+@Suppress("UNCHECKED_CAST")
+inline fun <T : Any> MutableState<T?>.ifNull(onBreak: () -> Unit): MutableState<T> =
+    apply { value ?: onBreak() } as MutableState<T>

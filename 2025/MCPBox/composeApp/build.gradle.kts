@@ -1,4 +1,3 @@
-import org.gradle.internal.impldep.org.bouncycastle.oer.its.etsi102941.Url
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -6,6 +5,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    kotlin("plugin.serialization") version "2.2.0"
 }
 
 
@@ -38,8 +38,9 @@ kotlin {
 
             implementation("androidx.datastore:datastore:1.1.7")
             implementation("androidx.datastore:datastore-preferences:1.1.7")
-//            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             implementation("io.ktor:ktor-serialization-kotlinx-json:${ktor_version}")
+            implementation("io.ktor:ktor-client-cio:${ktor_version}")
+            implementation("io.ktor:ktor-client-okhttp:${ktor_version}")
             implementation("ai.koog:koog-agents:0.2.1") // https://mvnrepository.com/artifact/ai.koog/koog-agents
         }
     }
