@@ -17,9 +17,11 @@ fun main() = runBlocking {
         toolRegistry = toolRegistry,
     )
 
-    agent.runAndGetResult("https://www.google.com で'Koog Kotlin'を検索。最初の検索結果を開く")
+    val res =
+        agent.runAndGetResult("https://www.google.com で'Koog Kotlin'を検索。最初の検索結果を開き内容要約(日本語で)")
+    println(res)
     generateSequence { print("> ");readlnOrNull() }.forEach { query ->
-        agent.runAndGetResult(query)
+        println(agent.runAndGetResult(query))
     }
 }
 
