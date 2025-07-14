@@ -13,6 +13,9 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.request.head
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -30,22 +33,31 @@ data class Chat(val msg: String, val from: String)
 fun App() = MaterialTheme {
     val chatLogs = remember { mutableStateListOf<Chat>() }
     val scope = rememberCoroutineScope()
-    var agent by remember { mutableStateOf<AIAgent?>(null) }
+//    var agent by remember { mutableStateOf<AIAgent?>(null) }
+    var mcpConnected by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
-//        chatLogs.add(Chat("Start Loading...", "Application"))
-//        setupNodejsEnvironment()
+        chatLogs.add(Chat("Node.js Environment: Downloading...", "Application"))
+        runCatching {
+            setupNodejsEnvironment()
+            chatLogs.add(Chat("Node.js Environment: Complete.", "Application"))
+        }.onFailure {
+            it.printStackTrace()
+            chatLogs.add(Chat("Node.js Environment: Failed. ${it.stackTraceToString()}", "Application"))
+        }
 
-//        launch {
-//            chatLogs.add(Chat("Start MCP Service", "Application"))
-//            val p: Process = getRuntime().exec("npx.cmd -y $nodeMcpServicePlaywright --port 8931")
-//            println("PID=${p.pid()}")
-//            val rc = p.await()
-//            chatLogs.add(Chat("Failed: MCP Service. exitCode: $rc", "Application"))
-//        }
-
-//        chatLogs.add(Chat("Start AI-Agent", "Application"))
-//        agent = createAgent()
-//        chatLogs.add(Chat(if (agent != null) "Succeeded" else "Failed", "Application"))
+        // serviceUrlが接続可能(TCP接続可能)であることをチェック(Ktor HttpClient使用)
+        while (true) {
+            runCatching {
+                HttpClient(CIO).head(appSettings.mcpServices[0].serviceUrl)
+                chatLogs.add(Chat("MCP Service: Connection successful.", "Application"))
+                mcpConnected = true
+            }.onFailure {
+                chatLogs.add(Chat("MCP Service: Connection failed. ${it.message}", "Application"))
+                mcpConnected = false
+            }
+            delay(30.seconds)
+        }
     }
     var query by remember { mutableStateOf("") }
     val lazyListState = rememberLazyListState()
@@ -55,11 +67,13 @@ fun App() = MaterialTheme {
         onClick = {
             scope.launch {
                 chatLogs.add(Chat(query, "Query"))
-                val res = agent?.runAndGetResult(query)
+//                val res = agent?.runAndGetResult(query)
+                val res = runAIAgent(query)
                 chatLogs.add(Chat(res ?: "AIAgent disabled", "Answer"))
             }
         },
-        enabled = agent != null,
+//        enabled = agent != null,
+        enabled = mcpConnected,
     ) { Icon(Icons.AutoMirrored.Filled.Send, "Send") }
 
     Scaffold {
@@ -71,8 +85,8 @@ fun App() = MaterialTheme {
                 colors = TopAppBarDefaults.topAppBarColors(),
                 title = { Text("MCP Box") },
                 actions = {
-                    McpEnableSwitch(appSettings.mcpServices[0], onMsg = { chatLogs.add(Chat(it, "Application")) }) {
-                        agent = it
+                    McpEnableSlider(appSettings.mcpServices[0], onMsg = { chatLogs.add(Chat(it, "Application")) }) {
+                        chatLogs.add(Chat(if (it) "Succeeded" else "Failed", "Application"))
                     }
                     IconButton(onClick = SettingsDialog()) { Icon(Icons.Default.Settings, "Setting") }
                 })
@@ -98,34 +112,31 @@ fun App() = MaterialTheme {
 }
 
 @Composable
-fun McpEnableSwitch(mcp: Mcp, onMsg: (msg: String) -> Unit = {}, onResult: (AIAgent?) -> Unit) {
+fun McpEnableSlider(mcp: Mcp, onMsg: (msg: String) -> Unit = {}, onResult: (succeeded: Boolean) -> Unit) {
     var enabled by remember { mutableStateOf(false) }
     var process: Process? by remember { mutableStateOf(null) }
 //    var agent: AIAgent? = null
     LaunchedEffect(enabled) {
         if (enabled && process == null) {
             val cmd = mcp.command.split(" ").run { listOf("$nodeJsDir\\${first()}") + drop(1) }
-            onMsg("MCP Service starting :$cmd")
+            onMsg("MCP Service starting.. :$cmd")
             process = startNodeProcess(cmd)
             launch { process?.await { onMsg(it) } }
-            onMsg("MCP Service running {PID:${process?.pid()}}")
-            repeat(20) {
-                createAgent()?.let {
-                    onMsg("MCP Agent created :$it")
-                    // TODO
-//                    val res =
-//                        it.runAndGetResult("https://www.google.com で'Koog Kotlin'を検索。最初の検索結果を開き内容要約(日本語で)")
-//                    println(res)
-                    return@LaunchedEffect onResult(it)
-                }
-                delay(1.seconds)
-            }
-            onMsg("MCP Agent creating failed. timeout")
+            onMsg("MCP Service started. {PID:${process?.pid()}}")
+//            repeat(20) {
+//                createAIAgent()?.let {
+//                    onMsg("MCP Agent created :$it")
+//                    return@LaunchedEffect onResult(it)
+//                }
+//                delay(1.seconds)
+//            }
+//            onMsg("MCP Agent creating failed. timeout")
+            onResult(true)
         } else if (!enabled && process != null) {
-            onMsg("Stop MCP Service {PID:${process?.pid()}}")
+            onMsg("MCP Service terminated. {PID:${process?.pid()}}")
             process?.descendants()?.forEach { it.destroyForcibly() }
             process = null
-            onResult(null)
+            onResult(false)
         }
     }
     Switch(

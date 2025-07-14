@@ -2,7 +2,9 @@ package jp.wjg.shokkaa.mcp
 
 
 import io.ktor.client.*
+import io.ktor.client.engine.ProxyBuilder
 import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.http
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -13,6 +15,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.*
 import okio.Path.Companion.toPath
+import java.security.cert.X509Certificate
+import javax.net.ssl.X509TrustManager
 import kotlin.time.Duration.Companion.seconds
 
 val nodeVersion = "22.17.0"
@@ -23,11 +27,18 @@ suspend fun setupNodejsEnvironment() {
     appDir.toFile().mkdirs()
     val zipFile = appDir.resolve("nodejs.zip")
 
+    // Download Node.js (with Proxy)
     HttpClient(CIO) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 60.seconds.inWholeMilliseconds
-            connectTimeoutMillis = 60.seconds.inWholeMilliseconds
-            socketTimeoutMillis = 60.seconds.inWholeMilliseconds
+        install(HttpTimeout) { connectTimeoutMillis = 30.seconds.inWholeMilliseconds }
+        engine {
+            appSettings.httpProxy?.let { if (it.isNotBlank()) proxy = ProxyBuilder.http(it) }
+            https {
+                trustManager = object : X509TrustManager {
+                    override fun checkClientTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+                    override fun checkServerTrusted(p0: Array<out X509Certificate>?, p1: String?) {}
+                    override fun getAcceptedIssuers(): Array<X509Certificate>? = null
+                }
+            }
         }
     }.get(nodejsZipUrl).bodyAsChannel().copyAndClose(zipFile.toFile().writeChannel())
     FileSystem.SYSTEM.unpackZip(zipFile, nodeJsDir.parent!!)
@@ -85,9 +96,9 @@ suspend fun Process.await(
         destroyForcibly()
         runCatching {
             val exitCode = waitFor()
-            onOutput("ÉvÉçÉZÉXÇ™èIóπÇµÇ‹ÇµÇΩÅBèIóπÉRÅ[Éh: " + exitCode)
+            onOutput("ÔøΩvÔøΩÔøΩÔøΩZÔøΩXÔøΩÔøΩÔøΩIÔøΩÔøΩÔøΩÔøΩÔøΩ‹ÇÔøΩÔøΩÔøΩÔøΩBÔøΩIÔøΩÔøΩÔøΩRÔøΩ[ÔøΩh: " + exitCode)
         }.onFailure { e ->
-            onOutput("waitFor()Ç≈ÉGÉâÅ[Ç™î≠ê∂ÇµÇ‹ÇµÇΩ: " + e.message)
+            onOutput("waitFor()ÔøΩ≈ÉGÔøΩÔøΩÔøΩ[ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ‹ÇÔøΩÔøΩÔøΩ: " + e.message)
         }
         println("Terminated destroy(): ${it.message}")
     }.getOrElse { -1 }
