@@ -5,7 +5,7 @@ import ai.koog.agents.mcp.McpToolRegistryProvider
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
 
-suspend fun runAIAgent(query:String):String? = runCatching {
+suspend fun runAIAgent(query: String): String? = runCatching {
     AIAgent(
         executor = simpleGoogleAIExecutor(appSettings.apiKey),
         llmModel = GoogleModels.Gemini2_0Flash,
@@ -24,13 +24,14 @@ suspend fun runAIAgent(query:String):String? = runCatching {
     ).runAndGetResult(query)
 }.onFailure { it.printStackTrace() }.getOrNull()
 
-val nodeMcpServicePlaywright = "@playwright/mcp@latest"
-fun startPlaywrightService() = startNodeProcess(
-    listOf(
-        "cmd.exe", "/c",
-        "$nodeJsDir\\npx.cmd", "-y",
-        nodeMcpServicePlaywright,
-        "--host", "127.0.0.1",
-        "--port", "8931"
-    )
-)
+fun McpService.start(): Process = when (type) {
+    "stdio" if command == "node" -> startNodeProcess(listOf("node") + args.split(" "))
+    else -> throw Exception("not implemented")
+}
+
+suspend fun McpService.startWithEnvironment() = runCatching { start() }.getOrElse {
+    runCatching {
+        setupNodejsEnvironment()
+        start()
+    }.getOrNull()
+}

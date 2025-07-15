@@ -1,6 +1,5 @@
 package jp.wjg.shokkaa.mcp
 
-import ai.koog.agents.core.agent.AIAgent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -19,8 +19,6 @@ import io.ktor.client.request.head
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import rmmx.AppDialog
-import rmmx.DynamicForm
 import kotlin.reflect.full.createType
 import kotlin.time.Duration.Companion.seconds
 
@@ -33,31 +31,31 @@ data class Chat(val msg: String, val from: String)
 fun App() = MaterialTheme {
     val chatLogs = remember { mutableStateListOf<Chat>() }
     val scope = rememberCoroutineScope()
-//    var agent by remember { mutableStateOf<AIAgent?>(null) }
+    var process by remember { mutableStateOf<Process?>(null) }
     var mcpConnected by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        chatLogs.add(Chat("Node.js Environment: Downloading...", "Application"))
-        runCatching {
-            setupNodejsEnvironment()
-            chatLogs.add(Chat("Node.js Environment: Complete.", "Application"))
-        }.onFailure {
-            it.printStackTrace()
-            chatLogs.add(Chat("Node.js Environment: Failed. ${it.stackTraceToString()}", "Application"))
-        }
+//        chatLogs.add(Chat("Node.js Environment: Downloading...", "Application"))
+//        runCatching {
+//            setupNodejsEnvironment()
+//            chatLogs.add(Chat("Node.js Environment: Complete.", "Application"))
+//        }.onFailure {
+//            it.printStackTrace()
+//            chatLogs.add(Chat("Node.js Environment: Failed. ${it.stackTraceToString()}", "Application"))
+//        }
 
         // serviceUrlが接続可能(TCP接続可能)であることをチェック(Ktor HttpClient使用)
-        while (true) {
-            runCatching {
-                HttpClient(CIO).head(appSettings.mcpServices[0].serviceUrl)
-                chatLogs.add(Chat("MCP Service: Connection successful.", "Application"))
-                mcpConnected = true
-            }.onFailure {
-                chatLogs.add(Chat("MCP Service: Connection failed. ${it.message}", "Application"))
-                mcpConnected = false
-            }
-            delay(30.seconds)
-        }
+//        while (true) {
+//            runCatching {
+////                HttpClient(CIO).head(appSettings.mcpServices[0]?.serviceUrl)
+////                chatLogs.add(Chat("MCP Service: Connection successful.", "Application"))
+//                mcpConnected = true
+//            }.onFailure {
+////                chatLogs.add(Chat("MCP Service: Connection failed. ${it.message}", "Application"))
+//                mcpConnected = false
+//            }
+//            delay(15.seconds)
+//        }
     }
     var query by remember { mutableStateOf("") }
     val lazyListState = rememberLazyListState()
@@ -85,9 +83,10 @@ fun App() = MaterialTheme {
                 colors = TopAppBarDefaults.topAppBarColors(),
                 title = { Text("MCP Box") },
                 actions = {
-                    McpEnableSlider(appSettings.mcpServices[0], onMsg = { chatLogs.add(Chat(it, "Application")) }) {
-                        chatLogs.add(Chat(if (it) "Succeeded" else "Failed", "Application"))
-                    }
+                    McpEnableSlider(
+                        appSettings.mcpServices[playwrightMcp]!!,
+                        process = process,
+                    ) { process = it }
                     IconButton(onClick = SettingsDialog()) { Icon(Icons.Default.Settings, "Setting") }
                 })
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = lazyListState) {
@@ -112,35 +111,17 @@ fun App() = MaterialTheme {
 }
 
 @Composable
-fun McpEnableSlider(mcp: Mcp, onMsg: (msg: String) -> Unit = {}, onResult: (succeeded: Boolean) -> Unit) {
-    var enabled by remember { mutableStateOf(false) }
-    var process: Process? by remember { mutableStateOf(null) }
-//    var agent: AIAgent? = null
+fun McpEnableSlider(mcp: McpService, process: Process?, onResult: (process: Process?) -> Unit) {
+    var enabled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(enabled) {
-        if (enabled && process == null) {
-            val cmd = mcp.command.split(" ").run { listOf("$nodeJsDir\\${first()}") + drop(1) }
-            onMsg("MCP Service starting.. :$cmd")
-            process = startNodeProcess(cmd)
-            launch { process?.await { onMsg(it) } }
-            onMsg("MCP Service started. {PID:${process?.pid()}}")
-//            repeat(20) {
-//                createAIAgent()?.let {
-//                    onMsg("MCP Agent created :$it")
-//                    return@LaunchedEffect onResult(it)
-//                }
-//                delay(1.seconds)
-//            }
-//            onMsg("MCP Agent creating failed. timeout")
-            onResult(true)
-        } else if (!enabled && process != null) {
-            onMsg("MCP Service terminated. {PID:${process?.pid()}}")
+        if (enabled) onResult(mcp.startWithEnvironment())
+        else {
             process?.descendants()?.forEach { it.destroyForcibly() }
-            process = null
-            onResult(false)
+            onResult(null)
         }
     }
     Switch(
-        checked = enabled,
+        checked = process != null,
         onCheckedChange = { enabled = it }
     )
 }

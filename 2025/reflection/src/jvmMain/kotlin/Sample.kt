@@ -1,6 +1,4 @@
-@file:Suppress("unused")
 
-package sample
 
 open class A
 class A1(val pa11: Int) : A() {

@@ -3,32 +3,40 @@ package jp.wjg.shokkaa.mcp
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okio.Path.Companion.toPath
+import kotlin.String
 
 @Serializable
 class AppSettings(
     val httpProxy: String? = null,
     val apiKey: String = System.getenv("GOOGLE_API_KEY") ?: "",
     val querys: List<String> = listOf(),
-    val mcpServices: List<Mcp> = builtinMcp,
+    val mcpServices: Map<String, McpService> = builtinMcp,
 )
 
 @Serializable
-class Mcp(
+class McpService(
+    val type: String = "stdio", // "port","stdio"
+    val command: String = "node", // "node"
+    val args: String = "node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931",
     val port: Int = 8931,
     val serviceUrl: String = "http://localhost:8931",
-    val command: String = "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931"
+    val command1: String = "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931"
 )
 
-val builtinMcp = listOf(
-    Mcp(
-        8931,
-        "http://localhost:8931",
-        "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931",
+val playwrightMcp = "playwright/mcp"
+val builtinMcp = mapOf(
+    "playwright/mcp" to McpService(
+        type = "stdin",
+        command = "node",
+        args = "node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest",
+        port = 8931,
+        serviceUrl = "http://localhost:8931",
+        command1 = "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931",
     )
 )
 
 val appDir = System.getProperties().getProperty("user.home", ".")!!.toPath().resolve(".mcpbox")
-val confFile = appDir.resolve("config")
+val confFile = appDir.resolve("mcpbox.config")
 
 val json = Json { prettyPrint = true }
 inline fun <reified T> String.decodeJson() = json.decodeFromString<T>(this)

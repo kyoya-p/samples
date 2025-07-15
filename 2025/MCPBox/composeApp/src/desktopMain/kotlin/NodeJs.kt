@@ -79,6 +79,7 @@ fun startNodeProcess(args: List<String>) = ProcessBuilder(args).apply {
 }.directory(nodeJsDir.toFile()).inheritIO().start()!!
     .also { process -> Runtime.getRuntime().addShutdownHook(Thread { process.destroy() }) }
 
+
 suspend fun Process.await(
     onOutput: (String) -> Unit = { print(it) },
 ): Int = withContext(Dispatchers.Default) {

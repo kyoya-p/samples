@@ -1,12 +1,9 @@
-package rmmx
+package jp.wjg.shokkaa.mcp
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -16,36 +13,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowState
-import androidx.compose.ui.window.application
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.also
-import kotlin.collections.associateWith
-import kotlin.collections.first
-import kotlin.collections.firstOrNull
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.plus
-import kotlin.collections.toMutableList
-import kotlin.jvm.java
-import kotlin.let
-import kotlin.onFailure
-import kotlin.reflect.*
+import kotlin.reflect.KClass
+import kotlin.reflect.KProperty
+import kotlin.reflect.KType
+import kotlin.reflect.KTypeProjection
+import kotlin.reflect.KVariance
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
-import kotlin.runCatching
-import kotlin.sequences.forEach
-import kotlin.text.startsWith
-import kotlin.text.toDoubleOrNull
-import kotlin.text.toFloatOrNull
-import kotlin.text.toIntOrNull
-import kotlin.text.toLongOrNull
 
 
 @Suppress("UNCHECKED_CAST")
@@ -120,7 +99,7 @@ fun DynamicForm(
             }
         }
 
-        List::class -> {
+        List::class, MutableList::class -> {
             var ref by remember { mutableStateOf(0) }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 labelWidget()
@@ -152,6 +131,27 @@ fun DynamicForm(
             }
         }
 
+        Map::class -> {
+           data class Ent(val key: Any, val value: Any)
+            val ent = (v as Map<Any, Any>).entries.map { Ent(it.key, it.value) }
+            val clazz: KClass<*> = ent::class
+            val properties = clazz.declaredMemberProperties
+
+            DynamicForm(
+                ent,
+                kType=ent::class.createType()
+//                kType = ent::class.createType(
+//                    arguments = listOf(KTypeProjection.contravariant(List::class.createType()))
+//                    arguments = listOf(KTypeProjection.contravariant(Ent::class.createType()))
+//                ),
+//                label = "Map",
+//                isNullable = ,
+//                labelWidget = TODO(),
+            ) {
+                //TODO
+            }
+        }
+
         else -> {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 labelWidget()
@@ -169,9 +169,9 @@ fun DynamicForm(
 
             Column(modifier = Modifier.padding(start = 16.dp)) {
                 properties.forEach { property ->
+                    property.dbg("property") //TODO
                     val child = property.getter.call(v)
                     DynamicForm(child, property.returnType, label = property.name) { nC ->
-//                        val constructor = clazz.primaryConstructor ?: return@DynamicForm
                         val nextProps = clazz.memberProperties.associateWith { prop ->
                             if (prop == property) nC else prop.getter.call(v)
                         } as Map<KProperty<Any?>, Any?>
@@ -184,6 +184,8 @@ fun DynamicForm(
 
     }
 }
+
+fun <T> T.dbg(l: String) = println("$l: $this")
 
 fun makeDefaultInstance(kType: KType): Any? {
     val clazz = kType.classifier as KClass<*>
@@ -237,7 +239,7 @@ class AppDialogScope(val closeDialog: () -> Unit)
 @Composable
 fun AppDialog(
     title: String? = null,
-    text: String = "",
+    @Suppress("unused") text: String = "",
     onConfirmed: suspend () -> Unit = {},
     onDismissed: (suspend () -> Unit)? = null,
     onClosed: (suspend () -> Unit)? = null,
