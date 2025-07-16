@@ -13,14 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.head
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.reflect.full.createType
-import kotlin.time.Duration.Companion.seconds
 
 data class Chat(val msg: String, val from: String)
 
@@ -84,7 +79,7 @@ fun App() = MaterialTheme {
                 title = { Text("MCP Box") },
                 actions = {
                     McpEnableSlider(
-                        appSettings.mcpServices[playwrightMcp]!!,
+                        appSettings.mcpServices[0]!!,
                         process = process,
                     ) { process = it }
                     IconButton(onClick = SettingsDialog()) { Icon(Icons.Default.Settings, "Setting") }

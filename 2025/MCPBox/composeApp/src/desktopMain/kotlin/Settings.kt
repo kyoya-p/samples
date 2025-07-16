@@ -10,7 +10,8 @@ class AppSettings(
     val httpProxy: String? = null,
     val apiKey: String = System.getenv("GOOGLE_API_KEY") ?: "",
     val querys: List<String> = listOf(),
-    val mcpServices: Map<String, McpService> = builtinMcp,
+//    val mcpServices: Map<String, McpService> = builtinMcp,
+    val mcpServices: List<McpService> = builtinMcp,
 )
 
 @Serializable
@@ -24,8 +25,8 @@ class McpService(
 )
 
 val playwrightMcp = "playwright/mcp"
-val builtinMcp = mapOf(
-    "playwright/mcp" to McpService(
+val builtinMcp = listOf(
+    McpService(
         type = "stdin",
         command = "node",
         args = "node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest",

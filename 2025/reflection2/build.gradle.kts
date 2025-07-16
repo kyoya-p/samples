@@ -1,8 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.1.21"
+    kotlin("jvm") version "2.2.0"
 }
 
-group = "org.example"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -10,12 +9,5 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(21)
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.2.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-reflect
 }

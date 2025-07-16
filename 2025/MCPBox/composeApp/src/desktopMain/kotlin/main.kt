@@ -7,6 +7,7 @@ fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "MCPBox",
+//        size = DpSize(width = 800.dp, height = 600.dp)
     ) {
         App()
     }

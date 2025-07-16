@@ -19,8 +19,6 @@ import kotlinx.coroutines.launch
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
 import kotlin.reflect.KType
-import kotlin.reflect.KTypeProjection
-import kotlin.reflect.KVariance
 import kotlin.reflect.full.createType
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberProperties
@@ -34,7 +32,8 @@ fun DynamicForm(
     kType: KType,
     label: String? = null,
     isNullable: Boolean = kType.isMarkedNullable,
-    labelWidget: @Composable () -> Unit = { label?.let { Text("$it : $kType") } },
+    kClass: KClass<*> = kType.classifier as KClass<*>,
+    labelWidget: @Composable () -> Unit = { label?.let { Text("$it : ${kClass.simpleName}") } },
     onChange: (Any?) -> Unit = {}
 ): Unit = Column() {
     fun String.toTyped(kType: KType): Any? = when (kType.classifier) {
@@ -132,14 +131,15 @@ fun DynamicForm(
         }
 
         Map::class -> {
-           data class Ent(val key: Any, val value: Any)
-            val ent = (v as Map<Any, Any>).entries.map { Ent(it.key, it.value) }
+//           data class Ent(val key: Any, val value: Any)
+            val ent = (v as Map<Any, Any>).entries//.map { Ent(it.key, it.value) }
             val clazz: KClass<*> = ent::class
             val properties = clazz.declaredMemberProperties
 
+            val k = ent::class.createType()
             DynamicForm(
                 ent,
-                kType=ent::class.createType()
+                kType = k,
 //                kType = ent::class.createType(
 //                    arguments = listOf(KTypeProjection.contravariant(List::class.createType()))
 //                    arguments = listOf(KTypeProjection.contravariant(Ent::class.createType()))
