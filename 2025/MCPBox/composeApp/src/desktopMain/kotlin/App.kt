@@ -108,9 +108,13 @@ fun App() = MaterialTheme {
 @Composable
 fun McpEnableSlider(mcp: McpService, process: Process?, onResult: (process: Process?) -> Unit) {
     var enabled by rememberSaveable { mutableStateOf(false) }
+    var running by remember { mutableStateOf(false) }
     LaunchedEffect(enabled) {
-        if (enabled) onResult(mcp.startWithEnvironment())
-        else {
+        if (enabled) {
+            running = true
+            onResult(mcp.startWithEnvironment({}))
+            running = false
+        } else {
             process?.descendants()?.forEach { it.destroyForcibly() }
             onResult(null)
         }
@@ -120,6 +124,7 @@ fun McpEnableSlider(mcp: McpService, process: Process?, onResult: (process: Proc
         onCheckedChange = { enabled = it }
     )
 }
+
 
 @Composable
 fun SettingsDialog() = AppDialog {

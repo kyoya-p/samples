@@ -29,9 +29,17 @@ fun McpService.start(): Process = when (type) {
     else -> throw Exception("not implemented")
 }
 
-suspend fun McpService.startWithEnvironment() = runCatching { start() }.getOrElse {
+suspend fun McpService.startWithEnvironment(onMessage: (String) -> Unit) = runCatching {
+    onMessage("MCPService.startWithEnvironment(): Starting...")
+    start()
+}.onFailure { onMessage("MCPService.startWithEnvironment(): Started") }.getOrElse {
+    onMessage("MCPService.startWithEnvironment(): Error: failed to start (retry)")
     runCatching {
         setupNodejsEnvironment()
         start()
+    }.onSuccess { onMessage("MCPService.startWithEnvironment(): Started") }.onFailure {
+        onMessage("MCPService.startWithEnvironment(): Error: failed to start.")
+        it.printStackTrace()
     }.getOrNull()
 }
+
