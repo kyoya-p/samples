@@ -42,11 +42,12 @@ kotlin {
             implementation("io.ktor:ktor-client-cio:${ktor_version}")
             implementation("io.ktor:ktor-client-okhttp:${ktor_version}")
             implementation("io.ktor:ktor-network-tls-certificates:${ktor_version}")
-            implementation("ai.koog:koog-agents:0.2.1") // https://mvnrepository.com/artifact/ai.koog/koog-agents
+            implementation("ai.koog:koog-agents:0.3.0") // https://mvnrepository.com/artifact/ai.koog/koog-agents
         }
     }
     compilerOptions {
-        freeCompilerArgs.add("-Xcontext-sensitive-resolution")
+//        freeCompilerArgs.add("-Xcontext-sensitive-resolution")
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }
 

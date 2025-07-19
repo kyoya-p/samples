@@ -16,12 +16,9 @@ class AppSettings(
 
 @Serializable
 class McpService(
-    val type: String = "stdio", // "port","stdio"
+    val type: String = "stdio", // "sse","stdio"
     val command: String = "node", // "node"
     val args: String = "node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931",
-    val port: Int = 8931,
-    val serviceUrl: String = "http://localhost:8931",
-    val command1: String = "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931"
 )
 
 val playwrightMcp = "playwright/mcp"
@@ -30,9 +27,6 @@ val builtinMcp = listOf(
         type = "stdin",
         command = "node",
         args = "node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest",
-        port = 8931,
-        serviceUrl = "http://localhost:8931",
-        command1 = "node.exe node_modules\\npm\\bin\\npx-cli.js -y @playwright/mcp@latest --port 8931",
     )
 )
 
@@ -42,12 +36,6 @@ val confFile = appDir.resolve("mcpbox.config")
 val json = Json { prettyPrint = true }
 inline fun <reified T> String.decodeJson() = json.decodeFromString<T>(this)
 inline fun <reified T> T.encodeJson() = json.encodeToString(this)
-
-// TODO
-fun <T> T.copyBy(op: () -> T) {
-    val v = this
-
-}
 
 var appSettings
     get() = runCatching { json.decodeFromString<AppSettings>(confFile.toFile().readText()) }.getOrElse { AppSettings() }
