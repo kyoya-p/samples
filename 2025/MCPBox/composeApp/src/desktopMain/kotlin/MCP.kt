@@ -4,9 +4,13 @@ import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.mcp.McpToolRegistryProvider.fromTransport
 import ai.koog.agents.snapshot.feature.Persistency
 import ai.koog.agents.snapshot.providers.InMemoryPersistencyStorageProvider
+import ai.koog.prompt.dsl.prompt
+import ai.koog.prompt.executor.clients.google.GoogleLLMClient
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.llms.all.simpleGoogleAIExecutor
+import ai.koog.prompt.params.LLMParams
 import io.modelcontextprotocol.kotlin.sdk.client.StdioClientTransport
+import kotlinx.coroutines.runBlocking
 import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
@@ -54,4 +58,19 @@ suspend fun McpService.startWithEnvironment(): Process? = runCatching {
         logger.log("MCPService.startWithEnvironment(): Error: failed to start", "Application")
         it.printStackTrace()
     }.getOrNull()
+}
+
+fun main() = runBlocking {
+    val prompt = prompt("prompt_name", LLMParams()) {
+        system("あなたは有能なアシスタント")
+        user("ブラウザでバトスピ wiki を開き検索結果の上位3件を参照し")
+        user("内容を教えて")
+    }
+
+    val client = GoogleLLMClient(appSettings.apiKey)
+    val response = client.execute(
+        prompt = prompt,
+        model = GoogleModels.Gemini2_5Flash
+    )
+    println(response)
 }

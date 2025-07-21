@@ -4,9 +4,9 @@ plugins {
 }
 
 dependencies {
-    implementation("ai.koog:koog-agents:0.2.1")
+    implementation("ai.koog:koog-agents:0.3.0") // https://mvnrepository.com/artifact/ai.koog/koog-agents
     implementation(project(":utils"))
 }
 
-application.mainClass = "demo3.Main3Kt"
+application.mainClass = "demo3.Main1_SimpleKt"
 

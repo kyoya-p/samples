@@ -51,6 +51,8 @@ kotlin {
     }
 }
 
+// AI:日本語Windowsで文字化けする対策
+
 compose.desktop {
     application {
         mainClass = "jp.wjg.shokkaa.mcp.MainKt"
