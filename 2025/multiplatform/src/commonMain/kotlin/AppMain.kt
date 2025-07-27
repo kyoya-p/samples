@@ -1,24 +1,20 @@
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.launch
-import okio.FileSystem
-import okio.Path.Companion.toPath
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
+import kotlinx.io.writeString
+//import okio.FileSystem
 
-expect val fileSystem: FileSystem
+//expect val fileSystem: FileSystem
 
-@OptIn(DelicateCoroutinesApi::class)
-suspend fun appMain() {
-    val path = ".".toPath() / "test.txt"
-    fileSystem.write(path) { writeUtf8("test") }
-    val f = flow {
-        (1..5).forEach {
-            emit(it)
-            delay(1000)
-        }
+fun appMain() = with(SystemFileSystem) {
+    val path = Path("./tmp.txt")
+    sink(path).buffered().use { sink ->
+        sink.writeInt(1)
+        sink.writeString("test.")
     }
-    GlobalScope.launch { f.collect { println(it) } }
-    f.collect { println(it) }
-    println(fileSystem.read(path) { readUtf8() })
+    source(path).buffered().use { src ->
+        println(src.readInt())
+        println(src.readString())
+    }
 }

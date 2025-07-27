@@ -1,8 +1,8 @@
-import okio.FileSystem
-import okio.NodeJsFileSystem
+//import okio.FileSystem
+//import okio.NodeJsFileSystem
 
-suspend fun main() {
+fun main() {
     appMain()
 }
 
-actual val fileSystem: FileSystem = NodeJsFileSystem
+//actual val fileSystem: FileSystem = NodeJsFileSystem

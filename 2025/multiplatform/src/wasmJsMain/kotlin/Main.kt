@@ -1,8 +1,8 @@
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import okio.FileSystem
-import okio.fakefilesystem.FakeFileSystem
+//import okio.FileSystem
+//import okio.fakefilesystem.FakeFileSystem
 
 @OptIn(DelicateCoroutinesApi::class)
 fun main() {
@@ -11,4 +11,4 @@ fun main() {
     }
 }
 
-actual val fileSystem: FileSystem = FakeFileSystem()
+//actual val fileSystem: FileSystem = FakeFileSystem()

@@ -52,14 +52,13 @@ suspend fun main() {
 
     runCatching {
         agent.run(
-            "https://batspi.com/index.php?%E3%82%AB%E3%83%BC%E3%83%89%E6%83%85%E5%A0%B1%E7%B5%9E%E8%BE%BC%E3%81%BF を開く。" +
-                    "'絞り込み結果'の項目名をリスト、1.ゴラドン\n" +
-                    "2.ロクケラトプス" +
-                    "...のように表示する。" +
-                    "ページに続きがあれば、'>'ボタンで次のページにジャンプし、リスト表示を繰り返す。"
+            """https://batspi.com/index.php?%E3%82%AB%E3%83%BC%E3%83%89%E6%A4%9C%E7%B4%A2
+                |カード名欄に 'ジーク'を入力し、検索を実行
+                |結果の上から5件カード情報
+            """.trimMargin()
         )
     }.onFailure {
-        "Error: ${it.message}"
+        println("Error: ${it.message}")
         it.printStackTrace()
     }
 }
