@@ -3,9 +3,6 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readString
 import kotlinx.io.writeString
-//import okio.FileSystem
-
-//expect val fileSystem: FileSystem
 
 fun appMain() = with(SystemFileSystem) {
     val path = Path("./tmp.txt")
