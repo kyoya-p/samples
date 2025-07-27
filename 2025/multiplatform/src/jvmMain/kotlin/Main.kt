@@ -1,8 +1,11 @@
-import kotlinx.coroutines.runBlocking
+//import kotlinx.coroutines.runBlocking
 //import okio.FileSystem
 
-fun main() = runBlocking {
+fun main() {
     appMain()
 }
+//fun main() = runBlocking {
+//    appMain()
+//}
 
 //actual val fileSystem = FileSystem.SYSTEM

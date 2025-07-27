@@ -1,14 +1,14 @@
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+//import kotlinx.coroutines.DelicateCoroutinesApi
+//import kotlinx.coroutines.GlobalScope
+//import kotlinx.coroutines.launch
 //import okio.FileSystem
 //import okio.fakefilesystem.FakeFileSystem
 
-@OptIn(DelicateCoroutinesApi::class)
+//@OptIn(DelicateCoroutinesApi::class)
 fun main() {
-    GlobalScope.launch {
+//    GlobalScope.launch {
         appMain()
-    }
+//    }
 }
 
 //actual val fileSystem: FileSystem = FakeFileSystem()
