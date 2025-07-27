@@ -1,5 +1,5 @@
-//import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.runBlocking
 
-fun main() {
+fun main() = runBlocking {
     appMain()
 }
