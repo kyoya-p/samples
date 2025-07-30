@@ -43,7 +43,7 @@ fun main() = application {
                 modifier = Modifier.fillMaxSize().padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 10.dp),
             ) {
                 PlotPanel(
-                    figure = letsPlot(dataXYZ())
+                    figure = letsPlot(dataXYZ(1.0)+dataXYZ(2.0)){color="Z"}
 //                    +geomPolygon { x = "X"; y = "Y"; }
                             + geomLine { x = "X"; y = "X"; }
                             + geomLine { x = "X"; y = "Z" }
@@ -93,16 +93,13 @@ fun createFigures(): List<Pair<String, Figure>> {
     )
 }
 
-fun dataXYZ(): Map<String, List<Double>> {
+fun dataXYZ(z:Double =0.0): Map<String, List<Double>> {
     val rand = java.util.Random()
     val n = 50
-    val xs = List(n) { rand.nextGaussian() }
-    val ys = List(n) { rand.nextGaussian() }
-    val zs = List(n) { rand.nextGaussian() }
     return mapOf(
-        "X" to xs,
-        "Y" to ys,
-        "Z" to zs,
+        "X" to List(n) { rand.nextGaussian() },
+        "Y" to List(n) { rand.nextGaussian() },
+        "Z" to List(n){z},
     )
 }
 

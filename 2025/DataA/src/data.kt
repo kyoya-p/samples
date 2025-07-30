@@ -1,3 +1,4 @@
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -15,6 +16,7 @@ fun listItem() = with(SystemFileSystem) {
         .onEach { println(it) }
         .mapNotNull { runCatching { it.toRecord() }.onFailure { }.getOrNull() }
 }
+fun dataSet1() = listItem().asFlow()
 
 @Serializable
 data class Record(

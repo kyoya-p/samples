@@ -1,10 +1,9 @@
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
-    kotlin("multiplatform") version "2.2.0-RC"
-    kotlin("plugin.serialization") version "2.2.0-RC" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
-    id("io.kotest.multiplatform") version "5.9.1" // https://plugins.gradle.org/plugin/io.kotest.multiplatform
-//    id("io.kotest.multiplatform") version "6.0.0.M3"
+    kotlin("multiplatform") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
+//    id("io.kotest.multiplatform") version "5.9.1" // https://plugins.gradle.org/plugin/io.kotest.multiplatform
 }
 
 group = "org.example"
@@ -16,9 +15,8 @@ repositories {
     google()
 }
 
-val ktor_version = "3.1.0"  // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
+val ktor_version = "3.2.2"  // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
 val kotest_version = "5.9.1"  // https://plugins.gradle.org/plugin/io.kotest.multiplatform
-//val kotest_version = "6.0.0.M4"  // https://plugins.gradle.org/plugin/io.kotest.multiplatform
 
 kotlin {
     jvm()
@@ -36,6 +34,8 @@ kotlin {
 
             implementation("io.ktor:ktor-server-cio:${ktor_version}")
             implementation("io.ktor:ktor-server-content-negotiation:${ktor_version}")
+
+            implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
         }
         wasmJsMain.dependencies {
             implementation("io.ktor:ktor-client-core:$ktor_version-wasm2")
@@ -43,16 +43,18 @@ kotlin {
 
         commonTest.dependencies {
             implementation("io.kotest:kotest-framework-engine:$kotest_version") //https://mvnrepository.com/artifact/io.kotest/kotest-framework-engine
-            implementation("io.ktor:ktor-server-cio:${ktor_version}")
-            implementation("io.ktor:ktor-server-content-negotiation:${ktor_version}")
         }
         jvmTest.dependencies {
             implementation("io.kotest:kotest-runner-junit5:$kotest_version") // https://mvnrepository.com/artifact/io.kotest/kotest-runner-junit5
         }
-
-
-        jvm {
-            testRuns.named("test") { executionTask.configure { useJUnitPlatform() } }
+        jsTest.dependencies{
+//            implementation("org.jetbrains.kotlin:kotlin-test-js:2.2.0")
+//            implementation("io.kotest:kotest-runner-js:$kotest_version")
         }
     }
 }
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
