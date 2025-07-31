@@ -3,4 +3,4 @@
 /.kotlin/
 /build/
 /.run/
-/.test.socket
+/.test.sock
