@@ -3,6 +3,7 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -36,8 +37,13 @@ suspend fun appMain() {
     val svr = embeddedServer(io.ktor.server.cio.CIO, 28080) {
         testServer()
     }.startSuspend(wait = false)
-    val res = requestEcho("http://localhost:28080", "Shokkaa").message
-    println("RES: $res")
+
+    val client = HttpClient(CIO) {
+        defaultRequest { unixSocket("/tmp/test-unix-socket-client.sock") }
+        install(ContentNegotiation) { json() }
+    }
+    client.get("$/echo?from=Shokkaa").body<Echo>()
+
     svr.stopSuspend()
 }
 

@@ -36,6 +36,7 @@ kotlin {
             implementation("io.ktor:ktor-server-content-negotiation:${ktor_version}")
 
             implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
+            implementation("ch.qos.logback:logback-classic:1.5.18") // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
         }
         wasmJsMain.dependencies {
             implementation("io.ktor:ktor-client-core:$ktor_version-wasm2")
