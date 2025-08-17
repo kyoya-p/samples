@@ -1,0 +1,16 @@
+product: jvm/app
+
+dependencies:
+  - $ktor.client.cio
+  - com.fleeksoft.ksoup:ksoup:0.2.5
+  - com.fleeksoft.ksoup:ksoup-kotlinx:0.2.5
+  - com.fleeksoft.ksoup:ksoup-network:0.2.5
+  - com.charleskorn.kaml:kaml:0.67.0  # https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml/latest
+
+settings:
+  ktor: enabled
+  kotlin:
+    serialization:
+      version: 1.8.1
+      format: json
+
