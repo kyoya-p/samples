@@ -1,19 +1,11 @@
 import com.charleskorn.kaml.Yaml
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collectIndexed
-import kotlinx.coroutines.flow.count
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.forEach
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.toList
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import kotlinx.coroutines.flow.*
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -22,7 +14,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-val json = Json
+//val json = Json
 val yaml = Yaml.default
 
 @Serializable
@@ -38,7 +30,8 @@ suspend fun main() = with(SystemFileSystem) {
     if (!exists(Path("data.out"))) {
         sink(Path("data.out")).buffered().use { out ->
             listCards().collectIndexed { i, card ->
-                out.writeString(yaml.encodeToString(mapOf(card.id to card)))
+                val c = yaml.encodeToString(mapOf(card.id to card))
+                out.writeString("$c\n")
                 println("$i ${card.id} ${card.name}")
             }
         }
