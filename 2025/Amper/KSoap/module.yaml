@@ -11,6 +11,6 @@ settings:
   ktor: enabled
   kotlin:
     serialization:
-      version: 1.8.1
+      version: 2.2.10
       format: json
 

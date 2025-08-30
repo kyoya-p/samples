@@ -12,9 +12,7 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
-//val json = Json
 val yaml = Yaml.default
 
 @Serializable
