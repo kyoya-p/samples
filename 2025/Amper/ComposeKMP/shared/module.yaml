@@ -5,6 +5,7 @@ product:
 dependencies:
   - $compose.foundation: exported
   - $compose.material3: exported
+  - $compose.components.resources
 
 dependencies@android:
   # Compose integration with Android activities

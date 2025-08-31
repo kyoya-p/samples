@@ -1,5 +1,5 @@
 modules:
-  - android-app
-  - ios-app
+#  - android-app
+#  - ios-app
   - jvm-app
   - shared
