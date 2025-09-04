@@ -18,6 +18,9 @@ val textStyle = TextStyle(
 
 @Composable
 fun App() = MaterialTheme {
+    val ff = FontFamily(
+        Font(Res.font.your_custom_font_regular)
+    )
 
     Column {
         var text by remember { mutableStateOf("|i|l|あ|\n|w|M||") }
