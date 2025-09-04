@@ -1,17 +1,18 @@
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import girder.library.resources.MPLUS1Code_Medium
 import girder.library.resources.Res
 import org.jetbrains.compose.resources.Font
 import kotlin.math.abs
-import kotlin.text.split
 
 @Composable
 fun App() = MaterialTheme {
@@ -21,126 +22,30 @@ fun App() = MaterialTheme {
         fontSize = 16.sp,
         fontFamily = customFont,
     )
-
-    @Composable
-    fun String.textWidth(): Int {
-        val measuredResult = rememberTextMeasurer()
-        return measuredResult.measure(this, textStyle).size.width
-    }
-
-
-    @Composable
-    fun Grid<String>.colWidth(): List<Int> =
-        (0..<cols()).map { y -> maxOf { it.getOrNull(y)?.trim()?.textWidth() ?: 0 } }
-
-    @Composable
-    fun <T, R> Grid<T>.flatMap(op: @Composable (T) -> R): Grid<R> = map { it.map { op(it) } }
-
-    @Composable
-    fun <T, R> Grid<T>.flatMapIndexed(op: @Composable (y: Int, x: Int, T) -> R): Grid<R> =
-        mapIndexed { y, r -> r.mapIndexed { x, c -> op(y, x, c) } }
-
-    fun <T> Grid<T>.toText() = joinToString("\n") { it.joinToString("|") }
-
-
-    fun String.splitGrid(): Grid<String> = split("\n").map { it.trim().split('|').map { it } }
-
     Column {
-        var text by remember { mutableStateOf("||l|\n|あ||") }
-        var grid: List<List<String>> by remember { mutableStateOf(text.splitGrid()) }
+//        var textField by remember { mutableStateOf("||l|\n|あ||") }
+        var textField by remember { mutableStateOf(TextFieldValue("||l|\n|あ||")) }
 
-        TextField(
-            text,
-            textStyle = textStyle,
-            onValueChange = {
-                grid = it.splitGrid()
-                val nText = grid.toText()
-                if (nText != text) text = it
-            })
+        TextField(textField, textStyle = textStyle, onValueChange = { textField = it })
+        Text(
+            """
+            len=${textField.text.length}
+            selection=${textField.selection}
+            composition=${textField.composition}
+ 
+        """.trimIndent()
+        )
 
-        val colWidth = grid.colWidth()
-        val tGrid = grid.flatMap { it.trim() }
-//        Text(text.alignPipes(textStyle), style = textStyle)
-        text=text.alignPipes(textStyle)
+        textField = TextFieldValue(
+            text = textField.text.alignPipes(textStyle),
+            selection = textField.selection, //キャレット座標保持
+            composition = textField.composition
+        )
     }
-}
-
-/*
-- 文字列を"\n"で分離しrows:List<String>とする
-- 文字幅はUI状の文字幅であり textMeasurer.measure() で算出される。単位はdp
-- y行目について:
-  - 左端からm番目の位置の"|"(パイプ)の直前までの文字列の文字幅を pipePos[y][m] とする
-  - 各yについて最大のpipePos[y][m]を maxPipePos[m]とする
-- 各行の各mについて左端から順に:
-  - 左端から”｜”直前までの文字列の文字幅と、それに" "(スペース)を追加した文字列の文字幅のどちらがmaxPipePos[m]に近いか比較し、
-  - " "を追加したほうが近ければ左端からの文字列に" "を追加したものについて、上の比較を繰り返す
-  - 追加しないほうが近ければ、処理を終える
-- 返値は各行を"\n"をセパレータとして結合したもの
-*/
-@Composable
-fun String.align(style: TextStyle): String {
-    val rows = split("\n")
-    val textMeasurer = rememberTextMeasurer()
-
-    fun String.textWidth(): Int = textMeasurer.measure(this, style).size.width
-
-    val pipePositions = mutableListOf<MutableList<Int>>()
-    for (row in rows) {
-        val currentRowPipePositions = mutableListOf<Int>()
-        var currentWidth = 0
-        for ((index, char) in row.withIndex()) {
-            currentWidth += char.toString().textWidth()
-            if (char == '|') {
-                currentRowPipePositions.add(currentWidth)
-            }
-        }
-        pipePositions.add(currentRowPipePositions)
-    }
-
-    val maxPipes = pipePositions.maxOfOrNull { it.size } ?: 0
-    val alignedPipePositions = MutableList(maxPipes) { mutableListOf<Int>() }
-
-    for (rowPipePositions in pipePositions) {
-        for ((pipeIndex, pos) in rowPipePositions.withIndex()) {
-            if (pipeIndex < maxPipes) {
-                alignedPipePositions[pipeIndex].add(pos)
-            }
-        }
-    }
-
-    val averagePipePositions = alignedPipePositions.map { positions ->
-        if (positions.isEmpty()) 0 else positions.sum() / positions.size
-    }
-
-    val alignedRows = rows.map { row ->
-        val newRow = StringBuilder()
-        var currentTextWidth = 0
-        var pipeIndex = 0
-
-        for (char in row) {
-            if (char == '|') {
-                val targetPos =
-                    if (pipeIndex < averagePipePositions.size) averagePipePositions[pipeIndex] else currentTextWidth
-                val spaceWidth = " ".textWidth()
-                val padding = if (spaceWidth > 0) (targetPos - currentTextWidth) / spaceWidth else 0
-                repeat(padding) { newRow.append(' ') }
-                newRow.append(char)
-                currentTextWidth = newRow.toString().textWidth()
-                pipeIndex++
-            } else {
-                newRow.append(char)
-                currentTextWidth += char.toString().textWidth()
-            }
-        }
-        newRow.toString()
-    }
-    return alignedRows.joinToString("\n")
 }
 
 typealias Grid<T> = List<List<T>>
 
-fun <T> Grid<T>.cols() = maxOf { it.size }
-fun String.toGrid(): Grid<String> = split("\n").map { it.split("|") }
 
 
 /*
@@ -162,7 +67,9 @@ fun String.alignPipes(style: TextStyle): String = runCatching {
     @Composable
     fun Grid<String>.pipePos(): Grid<Int> = map { r ->
         r.mapIndexed { x, c -> r.take(x + 1).joinToString("|").textWidth() }
+
     } // 各行でn番目の"|"までの文字幅
+    fun <T> Grid<T>.cols() = maxOf { it.size }
 
     @Composable
     fun Grid<Int>.max(): List<Int> = (0..<cols()).map { x -> maxOf { it.getOrNull(x) ?: 0 } }
@@ -174,9 +81,7 @@ fun String.alignPipes(style: TextStyle): String = runCatching {
         var s1 = this
         while (true) {
             val s2 = "$s1 "
-            val w1 = s1.textWidth()
-            val w2 = s2.textWidth()
-            if (abs(w - w1) <= abs(w - w2)) return s1
+            if (abs(w - s1.textWidth()) <= abs(w - s2.textWidth())) return s1
             s1 = s2
         }
     }
