@@ -13,7 +13,7 @@ fun main(args: Array<String>) {
             val ix = offset + i
             val v = e.value
             val c = (v shr 8).toPrintable() + (v and 0xff).toPrintable()
-            println("$ix,${ix.toHexString()},$v,${v.toHexString().takeLast(4)},\"$c\"")
+            println("$ix,${ix.toHexString().takeLast(4)},$v,${v.toHexString().takeLast(4)},\"$c\"")
         }
     }
     master.disconnect()
