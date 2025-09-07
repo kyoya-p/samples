@@ -1,3 +1,19 @@
+# デプロイ
+```sh:ビルド
+sh gradlew :composeApp:wasmJsBrowserDistribution
+```
+生成場所: `composeApp/build/dist/wasmJs/productionExecutable`
+
+```sh:デプロイ
+sh gradlew gitPublishPush
+```
+デプロイ先:
+  URL: https://kyoya-p.github.io/flexpillar-v2
+
+
+*********
+
+
 This is a Kotlin Multiplatform project targeting Web.
 
 * [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.

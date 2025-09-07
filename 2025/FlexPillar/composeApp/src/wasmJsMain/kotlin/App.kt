@@ -1,3 +1,5 @@
+package v1
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,7 +25,6 @@ fun App() = MaterialTheme {
         fontFamily = customFont,
     )
     Column {
-//        var textField by remember { mutableStateOf("||l|\n|あ||") }
         var textField by remember { mutableStateOf(TextFieldValue("||l|\n|あ||")) }
 
         TextField(textField, textStyle = textStyle, onValueChange = { textField = it })
@@ -31,8 +32,6 @@ fun App() = MaterialTheme {
             """
             len=${textField.text.length}
             selection=${textField.selection}
-            composition=${textField.composition}
- 
         """.trimIndent()
         )
 
@@ -45,8 +44,6 @@ fun App() = MaterialTheme {
 }
 
 typealias Grid<T> = List<List<T>>
-
-
 
 /*
 各行の左端から各 "|"(パイプ)の位置(位置はUI上の位置でありString.textWidth()関数で算出される)を同じ位置にするよう"|"の前に空白を挿入する
