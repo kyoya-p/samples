@@ -17,6 +17,6 @@ gitPublish {
     }
 }
 
-//tasks.named("gitPublishPush") {
-//    dependsOn(":composeApp:wasmJsBrowserDistribution")
-//}
+tasks.named("gitPublishCopy") {
+    dependsOn(":composeApp:wasmJsBrowserDistribution")
+}

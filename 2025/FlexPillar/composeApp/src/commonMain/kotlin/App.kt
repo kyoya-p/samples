@@ -2,6 +2,7 @@ package v2
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -22,28 +23,21 @@ fun App() = MaterialTheme {
     var newTextField by remember { mutableStateOf(textField) }
     var text by remember { mutableStateOf("||1|11|111|あ|ああ|") }
     Column {
-//        TextGridField(
-//            value = textField,
-//            textStyle = defaultTextStyle(),
-//            paddingLetter = '.',
-//            onValueChange = { textField = it }
-//        )
-
         TextField(
             textField,
             modifier = Modifier.padding(4.dp),
             textStyle = defaultTextStyle(),
-            onValueChange = {
-                textField = it
-                println(it)
-            })
+            onValueChange = { newTextField = it }
+        )
         Text(textField.text.alignPipes(), style = defaultTextStyle())
-//        newTextField = TextFieldValue(
-//            text = newTextField.text.alignPipes(defaultTextStyle()),
-//            selection = textField.selection,
-//            composition = textField.composition,
-//        )
+        textField = TextFieldValue(
+            text = newTextField.text.alignPipes(),
+            selection = newTextField.selection,
+            composition = newTextField.composition,
+        )
 
+        HorizontalDivider()
+        Text("FlexPillar-0.2.250909")
     }
 }
 
@@ -51,54 +45,52 @@ typealias Grid<T> = List<List<T>>
 
 val textWidth = mutableMapOf<String, Int>()
 
-@Composable
-fun TextStyle.textWidth(s: String): Int {
-    if (textWidth.containsKey(s)) return textWidth[s]!!
-    val w = rememberTextMeasurer().measure(s, this).size.width
-    textWidth[s] = w
-    return w
-}
-//
 //@Composable
-//fun defaultTextStyle(): TextStyle {
-//    val customFont = FontFamily(Font(Res.font.MPLUS1Code_Medium, FontWeight.Normal))
-//    return TextStyle(
-//        fontWeight = FontWeight.Normal,
-//        fontSize = 16.sp,
-//        fontFamily = customFont,
-//    )
+//fun TextStyle.textWidth(s: String): Int {
+//    if (textWidth.containsKey(s)) return textWidth[s]!!
+//    val w = rememberTextMeasurer().measure(s, this).size.width
+//    textWidth[s] = w
+//    return w
 //}
 
 @Composable
-fun TextGridField(
-    value: TextFieldValue,
-    textStyle: TextStyle = defaultTextStyle(),
-    paddingLetter: Char = ' ',
-    onValueChange: (TextFieldValue) -> Unit
-) = Column(Modifier.padding(4.dp)) {
-    var textField by remember { mutableStateOf(value) }
-    var newTextField by remember { mutableStateOf(value) }
-    TextField(value, textStyle = textStyle, onValueChange = { textField = it })
-    Text(
-        """
-len=${value.text.length}
-selection=${value.selection}
-===========
-${value.text.alignPipes()}}
-===========
-ver: 0.2
-        """.trimIndent(), style = textStyle
-    )
-    newTextField = TextFieldValue(
-        text = value.text.alignPipes(),
-        selection = value.selection, //キャレット座標保持
-        composition = value.composition
-    )
-
-    LaunchedEffect(newTextField) {
-        onValueChange(newTextField)
-    }
+fun String.textWidth(style: TextStyle): Int {
+//    if (textWidth.containsKey(s)) return textWidth[s]!!
+    val w = rememberTextMeasurer().measure(this, style).size.width
+//    textWidth[s] = w
+    return w
 }
+
+//@Composable
+//fun TextGridField(
+//    value: TextFieldValue,
+//    textStyle: TextStyle = defaultTextStyle(),
+//    paddingLetter: Char = ' ',
+//    onValueChange: (TextFieldValue) -> Unit
+//) = Column(Modifier.padding(4.dp)) {
+//    var textField by remember { mutableStateOf(value) }
+//    var newTextField by remember { mutableStateOf(value) }
+//    TextField(value, textStyle = textStyle, onValueChange = { textField = it })
+//    Text(
+//        """
+//len=${value.text.length}
+//selection=${value.selection}
+//===========
+//${value.text.alignPipes()}}
+//===========
+//ver: 0.2
+//        """.trimIndent(), style = textStyle
+//    )
+//    newTextField = TextFieldValue(
+//        text = value.text.alignPipes(),
+//        selection = value.selection, //キャレット座標保持
+//        composition = value.composition
+//    )
+//
+//    LaunchedEffect(newTextField) {
+//        onValueChange(newTextField)
+//    }
+//}
 
 /*
 各行の左端から各 "|"(パイプ)の位置(位置はUI上の位置でありString.textWidth()関数で算出される)を同じ位置にするよう"|"の前に空白を挿入する
@@ -113,33 +105,15 @@ fun String.alignPipes(
     style: TextStyle = defaultTextStyle(),
     paddingLetter: Char = ' ',
 ): String = runCatching {
-//    val customFont = FontFamily(Font(Res.font.MPLUS1Code_Medium, FontWeight.Normal))
-//    val style = TextStyle(
-////        fontWeight = FontWeight.Normal,
-////        fontSize = 16.sp,
-//        fontFamily = customFont,
-//    )
-//    val style = defaultTextStyle()
-
     val grid = split("\n").map { it.split("|") }
-    grid.onEach { r ->
-        r.onEach { print("'$it':${style.textWidth(it)}") }
-    }
-    println()
-
-    @Composable // 各行n番目の"|"までの文字幅
-    fun Grid<String>.pipePos(): Grid<Int> = map { r ->
-        r.mapIndexed { x, c -> style.textWidth(r.take(x + 1).joinToString("|")) }
-    }
-
-    fun <T> Grid<T>.cols() = maxOf { it.size }
 
     @Composable
     fun Grid<Int>.max(): List<Int> = (0..<maxOf { it.size }).map { x -> maxOf { it.getOrNull(x) ?: 0 } }
+
+    // 各行n番目の"|"までの文字幅の最大値を返す
     val maxPipePos = grid.map { r ->
-        r.mapIndexed { x, c -> style.textWidth(r.take(x + 1).joinToString("|")) }
+        r.mapIndexed { x, c -> r.take(x + 1).joinToString("|").textWidth(style) }
     }.max()
-    println(":max")
 
     // 指定文字幅に最も近くなるよう文字列に" "を加える
     @Composable
@@ -147,7 +121,7 @@ fun String.alignPipes(
         var s1 = this
         while (true) {
             val s2 = "$s1 "
-            if (abs(w - style.textWidth(s1)) <= abs(w - style.textWidth(s2))) return s1
+            if (abs(w - s1.textWidth(style)) <= abs(w - s2.textWidth(style))) return s1
             s1 = s2
         }
     }
@@ -155,7 +129,7 @@ fun String.alignPipes(
     // 各列の左端からの文字幅を最大の文字幅に合わせる
     val rows = MutableList(grid.size) { grid[it][0].dropLastWhile { it == paddingLetter } }
     for (x in 1..<maxPipePos.size) {
-        val mw = rows.maxOf { style.textWidth(it) }
+        val mw = rows.maxOf { it.textWidth(style) }
         for (y in grid.indices) {
             rows[y] = rows[y].padding(mw)
             val c = grid[y].getOrNull(x)?.dropLastWhile { it == paddingLetter } ?: continue

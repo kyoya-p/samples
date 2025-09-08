@@ -1,3 +1,8 @@
+# テスト
+```sh
+sh gradlew :composeApp:wasmJsBrowserDevelopmentRun
+```
+
 # デプロイ
 ```sh:ビルド
 sh gradlew :composeApp:wasmJsBrowserDistribution
@@ -5,10 +10,9 @@ sh gradlew :composeApp:wasmJsBrowserDistribution
 生成場所: `composeApp/build/dist/wasmJs/productionExecutable`
 
 ```sh:デプロイ
-sh gradlew gitPublishPush
+sh gradlew gitPublishCommit gitPublishPush
 ```
-デプロイ先:
-  URL: https://kyoya-p.github.io/flexpillar-v2
+デプロイURL: https://kyoya-p.github.io/flexpillar-v2
 
 
 *********
