@@ -1,4 +1,4 @@
-rootProject.name = "girder"
+rootProject.name = "flexpillar"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
