@@ -10,7 +10,7 @@ gitPublish {
     branch = "gh-pages"
     contents {
         from("composeApp/build/dist/wasmJs/productionExecutable")
-        into("flexpillar-v2")
+        into("TextGridField-v0")
     }
     preserve {
         include("**/*")
