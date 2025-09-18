@@ -48,4 +48,3 @@ compose.resources {
     packageOfResClass = "girder.library.resources"
     generateResClass = auto
 }
-

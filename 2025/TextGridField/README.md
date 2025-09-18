@@ -12,4 +12,4 @@ sh gradlew :composeApp:wasmJsBrowserDistribution
 ```sh:デプロイ
 sh gradlew gitPublishCommit gitPublishPush
 ```
-デプロイURL: https://kyoya-p.github.io/TextGridField-v0
+デプロイURL: https://kyoya-p.github.io/TextGridField-v4

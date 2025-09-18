@@ -1,4 +1,4 @@
-rootProject.name = "flexpillar"
+rootProject.name = "textgridfield"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

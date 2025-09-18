@@ -1,4 +1,4 @@
-package v2
+package v3
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -26,19 +27,16 @@ fun App() = MaterialTheme {
             textStyle = defaultTextStyle(),
             onValueChange = { newTextField = it }
         )
-        Text(textField.text.alignPipes(), style = defaultTextStyle())
-        textField = TextFieldValue(
-            text = newTextField.text.alignPipes(),
-            selection = newTextField.selection,
-            composition = newTextField.composition,
-        )
+        textField = newTextField.align(defaultTextStyle(), paddingLetter = ' ')
 
         HorizontalDivider()
-        Text("FlexPillar-0.2.250909")
+        Text("TextGridField-0.3.250918")
     }
 }
 
 typealias Grid<T> = List<List<T>>
+
+const val zeroWidthSpace = '\u200B'
 
 @Composable
 fun String.textWidth(style: TextStyle): Int {
@@ -46,11 +44,28 @@ fun String.textWidth(style: TextStyle): Int {
     return w
 }
 
-// 各行の左端から各"|"の前に空白を挿入しUI上の位置を揃える
+// カーソル位置にマーカーを埋め込む
+@Composable
+fun TextFieldValue.align(style: TextStyle = defaultTextStyle(), paddingLetter: Char = ' ') : TextFieldValue {
+    fun String.insMarker(p: Int) = take(p) + zeroWidthSpace + drop(p)
+    fun String.delMarker(): Pair<Int, String> = indexOf(zeroWidthSpace).let { it to take(it) + drop(it + 1) }
+    val (s, e) = with(selection) { if (start > end) end to start else start to end }
+    return text.insMarker(e).insMarker(s).alignPipes(style, paddingLetter)
+        .delMarker().let { (p1, s1) ->
+            s1.delMarker().let { (p2, s2) ->
+                TextFieldValue(
+                    text = s2,
+                    selection = with(selection) { if (start > end) TextRange(p2, p1) else TextRange(p1, p2) }
+                )
+            }
+        }
+}
+
+// 各行の各"|"の前に空白を挿入しUI上の位置を揃える
 @Composable
 fun String.alignPipes(
-    style: TextStyle = defaultTextStyle(),
-    paddingLetter: Char = ' ',
+    style: TextStyle,
+    paddingLetter: Char,
 ): String = runCatching {
     val grid = split("\n").map { it.split("|") }
 
