@@ -57,8 +57,7 @@ fun String.textWidth(textMeasurer: TextMeasurer, style: TextStyle): Int {
 }
 
 
-// カーソル位置にマーカーを埋め込まない
-fun TextFieldValue.align(textMeasurer: TextMeasurer, style: TextStyle, paddingLetter: Char): TextFieldValue {
+fun TextFieldValue.X(textMeasurer: TextMeasurer, style: TextStyle, paddingLetter: Char): TextFieldValue {
 //    fun String.insMarker(p: Int) = take(p) + zeroWidthSpace + drop(p)
 //    fun String.delMarker(): Pair<Int, String> = indexOf(zeroWidthSpace).let { it to take(it) + drop(it + 1) }
     var (s, e) = with(selection) { if (start > end) end to start else start to end }
@@ -67,6 +66,33 @@ fun TextFieldValue.align(textMeasurer: TextMeasurer, style: TextStyle, paddingLe
         selection = selection,
         composition = composition,
     )
+}
+// '\n'で区切られた各行のそれぞれの'|'の位置をあわせるよう'|'の前に' '(スぺース)を挿入
+// その際、alinePipes()は使用せず、TextFieldValue.insert(), TextFieldValue.remove()を使用
+fun TextFieldValue.aline(textMeasurer: TextMeasurer, style: TextStyle, paddingLetter: Char): TextFieldValue {
+
+}
+
+fun TextFieldValue.insert(pos: Int, str: String): TextFieldValue {
+    val newText = text.take(pos) + str + text.drop(pos)
+    val (p1, p2) = selection.start to selection.end
+    val newSelection = when {
+        p1 > pos -> TextRange(p1 + str.length, p2 + str.length)
+        p2 > pos -> TextRange(p1, p2 + str.length)
+        else -> selection
+    }
+    return TextFieldValue(newText, newSelection, composition)
+}
+
+fun TextFieldValue.remove(pos: Int, len: Int): TextFieldValue {
+    val newText = text.take(pos) + text.drop(pos + len)
+    val (p1, p2) = selection.start to selection.end
+    val newSelection = when {
+        p1 > pos -> TextRange(p1 - len, p2 - len)
+        p2 > pos -> TextRange(p1, p2 - len)
+        else -> selection
+    }
+    return TextFieldValue(newText, newSelection, composition)
 }
 
 fun String.posToXY(p: Int): Pair<Int, Int> =
