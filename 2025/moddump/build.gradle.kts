@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.0.20"
-//    application
+    application
 //    id("com.github.johnrengelman.shadow") version "7.1.2" // https://plugins.gradle.org/plugin/com.github.johnrengelman.shadow
     id("org.panteleyev.jpackageplugin") version "1.7.6" // https://plugins.gradle.org/plugin/org.panteleyev.jpackageplugin
 }
