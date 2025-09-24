@@ -20,9 +20,10 @@ fun modbusMain(args: Array<String>) {
     master.disconnect()
 }
 
-@OptIn(ExperimentalStdlibApi::class)
-fun Int.toPrintable() = if (this !in 0x20..<0x80 || this == ','.code) {
-    "<${toHexString().takeLast(2)}>"
-} else {
-    toChar().toString()
-}
+data class Record(val address:Int, val data:Int)
+fun Record.toText() =
+
+//@OptIn(ExperimentalStdlibApi::class)
+fun Int.toPrintable() = if (this !in 0x20..<0x80 || this == ','.code) "<${toHexString().takeLast(2)}>"
+else toChar().toString()
+

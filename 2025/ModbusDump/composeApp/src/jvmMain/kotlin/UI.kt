@@ -1,6 +1,7 @@
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,9 +34,12 @@ fun UI() = MaterialTheme {
         IntField(windowSize, label = "Data Windows Size", onValueChange = { windowSize = it })
         TextField(mode, label = { Text("Mode") }, onValueChange = { mode = it })
 
-        var  by remember { mutableStateOf("") }
+        var result by remember { mutableStateOf("no-data") }
 
         Button(onClick = { showContent = !showContent }) { Text("Dump") }
+        SelectionContainer {
+            Text(result)
+        }
     }
 }
 
