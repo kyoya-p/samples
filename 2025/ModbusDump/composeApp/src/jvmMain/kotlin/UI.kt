@@ -18,9 +18,9 @@ fun UI() = MaterialTheme {
     Column(
         modifier = Modifier
 //            .background(MaterialTheme.colorScheme.primaryContainer)
-            .safeContentPadding()
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+//            .safeContentPadding()
+//            .fillMaxSize(),
+//        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         var host by remember { mutableStateOf("127.0.0.1") }
         var adrFrom by remember { mutableStateOf(0) }
@@ -28,9 +28,12 @@ fun UI() = MaterialTheme {
         var windowSize by remember { mutableStateOf(1) }
         var mode by remember { mutableStateOf("") }
         TextField(host, label = { Text("Target Address") }, onValueChange = { host = it })
-        IntField(adrFrom, label = "Data Address", onValueChange = { adrFrom = it })
+        IntField(adrFrom, label = "Data Address From", onValueChange = { adrFrom = it })
+        IntField(adrTo, label = "Data Address To", onValueChange = { adrTo = it })
         IntField(windowSize, label = "Data Windows Size", onValueChange = { windowSize = it })
         TextField(mode, label = { Text("Mode") }, onValueChange = { mode = it })
+
+        var  by remember { mutableStateOf("") }
 
         Button(onClick = { showContent = !showContent }) { Text("Dump") }
     }
