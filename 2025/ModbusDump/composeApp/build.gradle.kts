@@ -27,6 +27,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("com.ghgande:j2mod:3.2.1")
         }
     }
 }
