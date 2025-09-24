@@ -9,7 +9,7 @@ plugins {
 
 kotlin {
     jvm()
-    
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -34,12 +34,17 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "org.example.project.MainKt"
+        mainClass = "MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.example.project"
+//            packageName = "org.example.project"
             packageVersion = "1.0.0"
+            windows {
+                upgradeUuid = "d73507d7-21a0-4351-b0e6-5226191262d1"
+                menu = true
+                shortcut=true
+            }
         }
     }
 }
