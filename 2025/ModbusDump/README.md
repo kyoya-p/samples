@@ -8,3 +8,8 @@ sh gradlew run xxx xxx xxx $ CLI
 ```sh
 sh gradlew packageMsi
 ```
+
+# Refer
+
+- https://www.modbustools.com/
+

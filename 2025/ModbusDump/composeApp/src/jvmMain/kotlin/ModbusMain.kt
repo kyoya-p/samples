@@ -4,24 +4,34 @@ import kotlinx.coroutines.flow.flow
 @OptIn(ExperimentalStdlibApi::class)
 fun modbusMain(args: Array<String>) {
     val host = args[0]
-    val offset = args[1].toInt()
-    val length = args[2].toInt()
-    val windowSize = args[3].toInt()
+    val unitId = args[1].toInt()
+    val offset = args[2].toInt()
+    val length = args[3].toInt()
+    val windowSize = args[4].toInt()
     val master = ModbusTCPMaster(host)
     master.connect()
-    master.modbusScan(offset, length, windowSize, ModbusMode.READ_HOLDING_REGISTERS).forEach {
-//        println(it.toText())
+    master.modbusScan(unitId, offset, length, windowSize, ModbusMode.READ_HOLDING_REGISTERS).forEach {
         println(it)
     }
     master.disconnect()
 }
 
-fun ModbusTCPMaster.modbusScan(start: Int, length: Int, windowSize: Int, mode: ModbusMode) = sequence {
-    for (offset in start..<start + length step windowSize) {
-        readMultipleRegisters(offset, windowSize)?.forEachIndexed { i, e ->
-            yield(Record(offset + i, e.value))
+fun ModbusTCPMaster.modbusScan(unitId: Int, start: Int, length: Int, windowSize: Int, mode: ModbusMode) = sequence {
+    when (mode) {
+        ModbusMode.READ_HOLDING_REGISTERS -> for (offset in start..<start + length step windowSize) {
+            readMultipleRegisters(unitId, offset, windowSize).forEachIndexed { i, e ->
+                yield(Record(offset + i, e.value))
+            }
         }
+
+        ModbusMode.READ_COILS -> for (offset in start..<start + length) {
+            val v = readCoils(unitId, offset, length)?.let {
+            }
+        }
+
+        else -> throw Exception("Unsupported mode: ${mode.name}")
     }
+
 }
 
 enum class ModbusMode {
