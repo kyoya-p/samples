@@ -19,7 +19,7 @@ else application {
 @Serializable
 data class AppData(
     val hostAdr: String = "",
-    val unitId: Int = 0,
+    val unitId: Int = 1,
     val regAdr: Int = 0,
     val regCount: Int = 16,
     val bulkSize: Int = 1,
