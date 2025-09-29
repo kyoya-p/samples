@@ -13,7 +13,7 @@ fun modbusMain(args: Array<String>) = runCatching {
 
     master.connect()
     val mode: ModbusMode =
-        ModbusMode.entries.firstOrNull { it == modeCode } ?: throw Exception("Unknown mode: $modeCode")
+        ModbusMode.entries.first { it.code == modeCode }
     master.modbusScan(unitId, offset, length, windowSize, mode).forEach {
         println(it)
     }
@@ -21,11 +21,15 @@ fun modbusMain(args: Array<String>) = runCatching {
 }.getOrElse { ex ->
     println(ex.message)
     println(
-        """
-        usage: ModbusDump hostAdr unitId mode ...
+        $$"""
+        usage: ModbusDump $hostAdr $unitId mode ...
         - hostAdr: target device address
         - unitId: sensor id (default=1)
-        - mode: read mode 
+        - mode: read mode 1:READ_COILS, 2:READ_INPUT_DISCRETES, 3:READ_HOLDING_REGISTERS, 4:READ_INPUT_REGISTERS
+        
+        [mode=3/READ_HOLDING_REGISTERS]
+        usage: ModbusDump $hostAdr $unitId 3 $dataAddress $dataLength $dataAcquisitionSize
+        
     """.trimIndent()
     )
 }
@@ -44,16 +48,20 @@ fun ModbusTCPMaster.modbusScan(unitId: Int, start: Int, length: Int, windowSize:
             }
         }
 
-        else -> throw Exception("Unsupported mode: ${mode.name}")
+        else -> throw Exception("Unsupported mode: ${mode.face}")
     }
 
 }
 
-enum class ModbusMode(code: Int, face: String) {
+enum class ModbusMode(
+    val code: Int,
+    val face: String
+) {
+
     READ_COILS(Modbus.READ_COILS, "1:READ_COILS"),
     READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2:READ_INPUT_DISCRETES"),
     READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3:READ_HOLDING_REGISTERS"),
-    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4:READ_INPUT_REGISTERS"),
+    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4:READ_INPUT_REGISTERS"), ;
 }
 
 data class Record(val offset: Int, val data: Int)
@@ -67,4 +75,3 @@ fun Record.toText(): String {
 
 fun Int.toPrintable() = if (this !in 0x20..<0x80 || this == ','.code) "<${toHexString().takeLast(2)}>"
 else toChar().toString()
-

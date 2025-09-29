@@ -38,18 +38,30 @@ fun UI() = MaterialTheme {
     Row {
         var host by remember { mutableStateOf(config.hostAdr) }
         var unitId by remember { mutableStateOf(config.unitId) }
+        var mode by remember { mutableStateOf(config.mode) }
+
         var offset by remember { mutableStateOf(config.regAdr) }
         var length by remember { mutableStateOf(config.regCount) }
         var windowSize by remember { mutableStateOf(config.bulkSize) }
-        var mode by remember { mutableStateOf(config.mode) }
         var result by remember { mutableStateOf(config.result) }
         Column {
             TextField(host, label = { Text("Device address") }, onValueChange = { host = it })
             IntField(unitId, label = "Unit ID", onValueChange = { unitId = it })
+            EnumDropdownMenu(selectedOption = mode, options = ModbusMode.entries) { if (it != null) mode = it }
+
             IntField(offset, label = "Data address", onValueChange = { offset = it })
             IntField(length, label = "# of Data items", onValueChange = { length = it })
             IntField(windowSize, label = "Data acquisition quantity", onValueChange = { windowSize = it })
-            EnumDropdownMenu(selectedOption = mode, options = ModbusMode.entries) { if (it != null) mode = it }
+
+            config = config.copy(
+                hostAdr = host,
+                unitId = unitId,
+                regAdr = offset,
+                regCount = length,
+                bulkSize = windowSize,
+                mode = mode,
+                result = result,
+            )
 
             var run by remember { mutableStateOf(false) }
             Button(onClick = {
@@ -87,15 +99,39 @@ fun UI() = MaterialTheme {
                 adapter = rememberScrollbarAdapter(scrollState = state)
             )
         }
-        config = config.copy(
-            hostAdr = host,
-            unitId = unitId,
-            regAdr = offset,
-            regCount = length,
-            bulkSize = windowSize,
-            mode = mode,
-            result = result,
-        )
+    }
+}
+
+@Composable
+fun ReadHoldingRegisters(onResult: (String) -> Unit) {
+    var offset by remember { mutableStateOf(config.regAdr) }
+    var length by remember { mutableStateOf(config.regCount) }
+    var windowSize by remember { mutableStateOf(config.bulkSize) }
+
+    var run by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf(config.result) }
+
+    IntField(offset, label = "Data address", onValueChange = { offset = it })
+    IntField(length, label = "# of Data items", onValueChange = { length = it })
+    IntField(windowSize, label = "Data acquisition quantity", onValueChange = { windowSize = it })
+
+    LaunchedEffect(run) {
+        if (run) {
+            result += """host: ${config.hostAdr}
+                    |offset: $offset
+                    |length: $length
+                    |windowSize: $windowSize
+                    |
+                """.trimMargin()
+            runCatching {
+                val master = ModbusTCPMaster(config.hostAdr)
+                master.connect()
+                master.modbusScan(config.unitId, offset, length, windowSize, config.mode)
+                    .forEach { result += it.toText() + "\n" }
+                master.disconnect()
+            }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
+            run = false
+        }
     }
 }
 
