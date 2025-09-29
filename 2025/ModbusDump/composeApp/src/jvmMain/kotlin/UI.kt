@@ -4,26 +4,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
@@ -35,72 +25,99 @@ import kotlin.enums.EnumEntries
 
 @Composable
 fun UI() = MaterialTheme {
+    val x = config
+    var params: AppData by remember { mutableStateOf(x) }
+    var run by remember { mutableStateOf(false) }
     Row {
-        var host by remember { mutableStateOf(config.hostAdr) }
-        var unitId by remember { mutableStateOf(config.unitId) }
-        var mode by remember { mutableStateOf(config.mode) }
-
-        var offset by remember { mutableStateOf(config.regAdr) }
-        var length by remember { mutableStateOf(config.regCount) }
-        var windowSize by remember { mutableStateOf(config.bulkSize) }
-        var result by remember { mutableStateOf(config.result) }
         Column {
-            TextField(host, label = { Text("Device address") }, onValueChange = { host = it })
-            IntField(unitId, label = "Unit ID", onValueChange = { unitId = it })
-            EnumDropdownMenu(selectedOption = mode, options = ModbusMode.entries) { if (it != null) mode = it }
-
-            IntField(offset, label = "Data address", onValueChange = { offset = it })
-            IntField(length, label = "# of Data items", onValueChange = { length = it })
-            IntField(windowSize, label = "Data acquisition quantity", onValueChange = { windowSize = it })
-
-            config = config.copy(
-                hostAdr = host,
-                unitId = unitId,
-                regAdr = offset,
-                regCount = length,
-                bulkSize = windowSize,
-                mode = mode,
-                result = result,
-            )
-
-            var run by remember { mutableStateOf(false) }
-            Button(onClick = {
-                result = ""
-                run = true
-            }) { Text("Dump") }
-
-            LaunchedEffect(run) {
-                if (run) {
-                    result += """host: $host
-                    |offset: $offset
-                    |length: $length
-                    |windowSize: $windowSize
-                    |
-                """.trimMargin()
-                    runCatching {
-                        val master = ModbusTCPMaster(host)
-                        master.connect()
-                        master.modbusScan(unitId, offset, length, windowSize, mode)
-                            .forEach { result += it.toText() + "\n" }
-                        master.disconnect()
-                    }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
-                    run = false
-                }
+            params.ParameterField { params = it }
+            Button(onClick = { run = true }) { Text("Dump") }
+        }
+        Column {
+            Box(modifier = Modifier.fillMaxSize()) {
+                val state = rememberScrollState()
+                Text(text = params.result, modifier = Modifier.verticalScroll(state = state))
+                VerticalScrollbar(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(horizontal = 4.dp),
+                    adapter = rememberScrollbarAdapter(scrollState = state)
+                )
             }
         }
-        Box(modifier = Modifier.fillMaxSize()) {
-            val state = rememberScrollState()
-            Text(text = result, modifier = Modifier.verticalScroll(state = state))
-            VerticalScrollbar(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .padding(horizontal = 4.dp),
-                adapter = rememberScrollbarAdapter(scrollState = state)
-            )
+    }
+    config = params
+
+    LaunchedEffect(run) {
+        if (run) with(config) {
+            var out = """hostAdr: $hostAdr
+                    |registerAdr: $regAdr
+                    |registerCount: $regCount
+                    |bulkSize: $bulkSize
+                    |
+                """.trimMargin()
+            runCatching {
+                val master = ModbusTCPMaster(hostAdr)
+                master.connect()
+                master.modbusScan(unitId, regAdr, regCount, bulkSize, mode)
+                    .forEach { out += it.toText() + "\n" }
+                master.disconnect()
+            }.onFailure { out += "${it.message}\n${it.stackTraceToString()}" }
+            config = copy(result = result + out)
+            run = false
         }
     }
 }
+
+@Composable
+fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
+    TextField(hostAdr, label = { Text("Device address") }, onValueChange = { onChange(copy(hostAdr = it)) })
+    IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
+    EnumDropdownMenu(selectedOption = mode, options = ModbusMode.entries) { onChange(copy(mode = it)) }
+
+    when (mode) {
+        ModbusMode.READ_COILS -> {
+            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
+        }
+        ModbusMode.READ_HOLDING_REGISTERS -> {
+            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+            IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
+            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
+        }
+
+        else -> {}
+    }
+
+//
+//    var run by remember { mutableStateOf(false) }
+//    Button(onClick = {
+//        onChange(copy(result = ""))
+//        run = true
+//    }) { Text("Dump") }
+//
+//    LaunchedEffect(run) {
+//        if (run) {
+//            var out = """hostAdr: $hostAdr
+//                    |registerAdr: $regAdr
+//                    |registerCount: $regCount
+//                    |bulkSize: $bulkSize
+//                    |
+//                """.trimMargin()
+//            runCatching {
+//                val master = ModbusTCPMaster(hostAdr)
+//                master.connect()
+//                master.modbusScan(unitId, regAdr, regCount, bulkSize, mode)
+//                    .forEach { out += it.toText() + "\n" }
+//                master.disconnect()
+//            }.onFailure { out += "${it.message}\n${it.stackTraceToString()}" }
+//            onChange(copy(result = result + out))
+//            run = false
+//        }
+//    }
+}
+
 
 @Composable
 fun ReadHoldingRegisters(onResult: (String) -> Unit) {
@@ -158,7 +175,7 @@ inline fun <reified E : Enum<E>> EnumDropdownMenu(
     options: EnumEntries<E>,
     nullable: Boolean = false,
     modifier: Modifier = Modifier,
-    crossinline onChange: (E?) -> Unit,
+    crossinline onChange: (E) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -180,11 +197,10 @@ inline fun <reified E : Enum<E>> EnumDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            if (nullable) androidx.compose.material3.DropdownMenuItem(
-                text = { Text("") },
-                onClick = { onChange(null); expanded = false },
-            )
-
+//            if (nullable) androidx.compose.material3.DropdownMenuItem(
+//                text = { Text("") },
+//                onClick = { onChange(null); expanded = false },
+//            )
             options.forEach { option ->
                 androidx.compose.material3.DropdownMenuItem(
                     text = { Text(option.name) },
