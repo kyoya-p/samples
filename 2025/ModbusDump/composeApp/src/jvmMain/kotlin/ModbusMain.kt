@@ -3,18 +3,18 @@ import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 
 @OptIn(ExperimentalStdlibApi::class)
 fun modbusMain(args: Array<String>) = runCatching {
-    val host = args[0]
+    println("ModbusDump:")
+    val hostAdr = args[0]
     val unitId = args[1].toInt()
     val modeCode = args[2].toInt()
-    val offset = args[3].toInt()
-    val length = args[4].toInt()
-    val windowSize = args[5].toInt()
-    val master = ModbusTCPMaster(host)
+    val regAdr = args.getOrElse(3) { "0" }.toInt()
+    val regCount = args.getOrElse(4) { "1" }.toInt()
+    val bulkSize = args.getOrElse(5) { "1" }.toInt()
 
+    val master = ModbusTCPMaster(hostAdr)
     master.connect()
-    val mode: ModbusMode =
-        ModbusMode.entries.first { it.code == modeCode }
-    master.modbusScan(unitId, offset, length, windowSize, mode).forEach {
+    val mode = ModbusMode.entries.first { it.code == modeCode }
+    master.read(AppData(hostAdr, unitId, regAdr, regCount, bulkSize)).forEach {
         println(it)
     }
     master.disconnect()
@@ -34,30 +34,47 @@ fun modbusMain(args: Array<String>) = runCatching {
     )
 }
 
-fun ModbusTCPMaster.modbusScan(unitId: Int, start: Int, length: Int, windowSize: Int, mode: ModbusMode) = sequence {
-    when (mode) {
-        ModbusMode.READ_HOLDING_REGISTERS -> for (offset in start..<start + length step windowSize) {
-            readMultipleRegisters(unitId, offset, windowSize).forEachIndexed { i, e ->
-                yield(Record(offset + i, e.value))
+fun ModbusTCPMaster.read(params: AppData) = with(params) {
+    sequence {
+        when (mode) {
+           ModbusMode.READ_COILS -> {
+                val v = readCoils(unitId, regAdr, regCount)?.let { bitVector ->
+                    for (i in 0..<bitVector.size()) {
+                        val b = if(bitVector.getBit(i)) "1" else "0"
+                        yield("$i,${i.toHexString().takeLast(4)},$b")
+                    }
+                }
             }
-        }
-
-        ModbusMode.READ_COILS -> for (offset in start..<start + length) {
-            val v = readCoils(unitId, offset, length)?.let { bitVector ->
-                bitVector.size()
+            ModbusMode.READ_INPUT_DISCRETES -> {
+                val v = readInputDiscretes(unitId, regAdr, regCount)?.let { bitVector ->
+                    for (i in 0..<bitVector.size()) {
+                        val b = if(bitVector.getBit(i)) "1" else "0"
+                        yield("$i,${i.toHexString().takeLast(4)},$b")
+                    }
+                }
             }
-        }
 
-        else -> throw Exception("Unsupported mode: ${mode.face}")
+            ModbusMode.READ_HOLDING_REGISTERS -> for (offset in regAdr..<regAdr + regCount) {
+                readMultipleRegisters(unitId, offset, bulkSize).forEachIndexed { i, e ->
+                    yield(Record(offset + i, e.value).toText())
+                }
+            }
+            ModbusMode.READ_INPUT_REGISTERS -> for (offset in regAdr..<regAdr + regCount) {
+                readInputRegisters(unitId, offset, bulkSize).forEachIndexed { i, e ->
+                    yield(Record(offset + i, e.value).toText())
+                }
+            }
+
+
+            else -> throw Exception("Unsupported mode: ${mode.face}")
+        }
     }
-
 }
 
 enum class ModbusMode(
     val code: Int,
     val face: String
 ) {
-
     READ_COILS(Modbus.READ_COILS, "1:READ_COILS"),
     READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2:READ_INPUT_DISCRETES"),
     READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3:READ_HOLDING_REGISTERS"),

@@ -1,13 +1,28 @@
+# Usage
+```sh:GUI
+moddump
+```
+```sh:CLI
+moddump -h # Help
+```
+
 # Debug run
 ```sh
 sh gradlew run # GUI
-sh gradlew run xxx xxx xxx $ CLI
 ```
 
 # Build
-```sh
+```sh: Windows Installer作成
 sh gradlew packageMsi
 ```
+成果物: `composeApp\build\compose\binaries\main\msi\moddump-x.x.x.msi`
+実行: `moddump-x.x.x.msi`
+
+```sh:実行ファイル作成
+sh gradlew createDistributable  # windows .exe file
+```
+成果物: `composeApp/build/compose/binaries/main/app/moddump` フォルダ以下
+実行: `moddump.exe`
 
 # Refer
 

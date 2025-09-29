@@ -8,12 +8,16 @@ import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
-fun main(args: Array<String>) = if (args.isNotEmpty()) modbusMain(args)
-else application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "ModbusDump",
-    ) { UI() }
+fun main(args: Array<String>) {
+    if (args.isNotEmpty()) modbusMain(args)
+    else application {
+        Window(
+            onCloseRequest = ::exitApplication,
+            title = "ModbusDump",
+        ) {
+            UI()
+        }
+    }
 }
 
 @Serializable

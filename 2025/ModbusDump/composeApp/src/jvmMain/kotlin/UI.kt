@@ -2,11 +2,10 @@ import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,15 +16,18 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
+import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
+import kotlinx.datetime.toLocalDateTime
 import kotlin.enums.EnumEntries
+import kotlin.time.Clock.System.now
+import kotlin.time.ExperimentalTime
 
+@OptIn(ExperimentalTime::class)
 @Composable
 fun UI() = MaterialTheme {
-    val x = config
+    val x = config.copy(result = "")
     var params: AppData by remember { mutableStateOf(x) }
     var run by remember { mutableStateOf(false) }
     Row {
@@ -33,41 +35,37 @@ fun UI() = MaterialTheme {
             params.ParameterField { params = it }
             Button(onClick = { run = true }) { Text("Dump") }
         }
-        Column {
+        SelectionContainer {
             Box(modifier = Modifier.fillMaxSize()) {
                 val state = rememberScrollState()
                 Text(text = params.result, modifier = Modifier.verticalScroll(state = state))
-                VerticalScrollbar(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                        .padding(horizontal = 4.dp),
-                    adapter = rememberScrollbarAdapter(scrollState = state)
-                )
+                VerticalScrollbar(adapter = rememberScrollbarAdapter(scrollState = state))
             }
         }
     }
-    config = params
-
     LaunchedEffect(run) {
-        if (run) with(config) {
-            var out = """hostAdr: $hostAdr
-                    |registerAdr: $regAdr
-                    |registerCount: $regCount
-                    |bulkSize: $bulkSize
-                    |
-                """.trimMargin()
+        if (run) with(params) {
+            var out = """date: ${now().toLocalDateTime(currentSystemDefault())}
+hostAdr: $hostAdr
+unitId: $unitId
+mode: ${mode.face}
+registerAdr: $regAdr
+registerCount: $regCount
+bulkSize: $bulkSize
+
+"""
             runCatching {
                 val master = ModbusTCPMaster(hostAdr)
                 master.connect()
-                master.modbusScan(unitId, regAdr, regCount, bulkSize, mode)
-                    .forEach { out += it.toText() + "\n" }
+                master.read(params).forEach { out += "$it\n" }
                 master.disconnect()
             }.onFailure { out += "${it.message}\n${it.stackTraceToString()}" }
-            config = copy(result = result + out)
+            params = copy(result = out)
+            println(out)
             run = false
         }
     }
+    config = params
 }
 
 @Composable
@@ -81,73 +79,22 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
             IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
             IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
         }
+
+        ModbusMode.READ_INPUT_DISCRETES -> {
+            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
+        }
+
         ModbusMode.READ_HOLDING_REGISTERS -> {
             IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
             IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
             IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
         }
 
-        else -> {}
-    }
-
-//
-//    var run by remember { mutableStateOf(false) }
-//    Button(onClick = {
-//        onChange(copy(result = ""))
-//        run = true
-//    }) { Text("Dump") }
-//
-//    LaunchedEffect(run) {
-//        if (run) {
-//            var out = """hostAdr: $hostAdr
-//                    |registerAdr: $regAdr
-//                    |registerCount: $regCount
-//                    |bulkSize: $bulkSize
-//                    |
-//                """.trimMargin()
-//            runCatching {
-//                val master = ModbusTCPMaster(hostAdr)
-//                master.connect()
-//                master.modbusScan(unitId, regAdr, regCount, bulkSize, mode)
-//                    .forEach { out += it.toText() + "\n" }
-//                master.disconnect()
-//            }.onFailure { out += "${it.message}\n${it.stackTraceToString()}" }
-//            onChange(copy(result = result + out))
-//            run = false
-//        }
-//    }
-}
-
-
-@Composable
-fun ReadHoldingRegisters(onResult: (String) -> Unit) {
-    var offset by remember { mutableStateOf(config.regAdr) }
-    var length by remember { mutableStateOf(config.regCount) }
-    var windowSize by remember { mutableStateOf(config.bulkSize) }
-
-    var run by remember { mutableStateOf(false) }
-    var result by remember { mutableStateOf(config.result) }
-
-    IntField(offset, label = "Data address", onValueChange = { offset = it })
-    IntField(length, label = "# of Data items", onValueChange = { length = it })
-    IntField(windowSize, label = "Data acquisition quantity", onValueChange = { windowSize = it })
-
-    LaunchedEffect(run) {
-        if (run) {
-            result += """host: ${config.hostAdr}
-                    |offset: $offset
-                    |length: $length
-                    |windowSize: $windowSize
-                    |
-                """.trimMargin()
-            runCatching {
-                val master = ModbusTCPMaster(config.hostAdr)
-                master.connect()
-                master.modbusScan(config.unitId, offset, length, windowSize, config.mode)
-                    .forEach { result += it.toText() + "\n" }
-                master.disconnect()
-            }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
-            run = false
+        ModbusMode.READ_INPUT_REGISTERS -> {
+            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+            IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
+            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
         }
     }
 }
@@ -173,7 +120,6 @@ fun IntField(
 inline fun <reified E : Enum<E>> EnumDropdownMenu(
     selectedOption: E?,
     options: EnumEntries<E>,
-    nullable: Boolean = false,
     modifier: Modifier = Modifier,
     crossinline onChange: (E) -> Unit,
 ) {
@@ -197,10 +143,6 @@ inline fun <reified E : Enum<E>> EnumDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-//            if (nullable) androidx.compose.material3.DropdownMenuItem(
-//                text = { Text("") },
-//                onClick = { onChange(null); expanded = false },
-//            )
             options.forEach { option ->
                 androidx.compose.material3.DropdownMenuItem(
                     text = { Text(option.name) },

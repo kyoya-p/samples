@@ -32,15 +32,11 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation("com.ghgande:j2mod:3.2.1")
-//            implementation("androidx.datastore:datastore:1.1.7")
-//            implementation("androidx.datastore:datastore-preferences:1.1.7")
-//            implementation("org.jetbrains.kotlin:kotlin-serialization-core:2.2.20") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-serialization
-//            implementation("org.jetbrains.kotlin:kotlin-serialization-json:2.2.20") // https://mvnrepository.com/artifact/org.jetbrains.kotlin/kotlin-serialization
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")// https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
         }
     }
 }
-
 
 compose.desktop {
     application {
@@ -48,8 +44,8 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-//            packageName = "org.example.project"
-            packageVersion = "1.0.0"
+            packageName = "moddump"
+            packageVersion = "1.0.1"
             windows {
                 upgradeUuid = "d73507d7-21a0-4351-b0e6-5226191262d1"
                 menu = true
