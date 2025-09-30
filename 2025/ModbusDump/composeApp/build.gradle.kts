@@ -44,7 +44,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "moddump"
-            packageVersion = "$packageVersion"
+            packageVersion = "1.0.3"
             windows {
                 upgradeUuid = "d73507d7-21a0-4351-b0e6-5226191262d1"
                 menu = true
@@ -53,6 +53,4 @@ compose.desktop {
         }
     }
 }
-
-val packageVersion = "1.0.3"
 
