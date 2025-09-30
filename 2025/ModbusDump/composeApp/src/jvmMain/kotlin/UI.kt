@@ -3,6 +3,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -17,10 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
 import kotlinx.datetime.toLocalDateTime
-import kotlin.enums.EnumEntries
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
 
@@ -31,7 +33,7 @@ fun UI() = MaterialTheme {
     var params: AppData by remember { mutableStateOf(x) }
     var run by remember { mutableStateOf(false) }
     Row {
-        Column {
+        Column(modifier = Modifier.width(360.dp)) {
             params.ParameterField { params = it }
             Button(onClick = { run = true }) { Text("Dump") }
         }
@@ -72,26 +74,15 @@ bulkSize: $bulkSize
 fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
     TextField(hostAdr, label = { Text("Device address") }, onValueChange = { onChange(copy(hostAdr = it)) })
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
-    EnumDropdownMenu(selectedOption = mode, options = ModbusMode.entries) { onChange(copy(mode = it)) }
+    DropdownMenu(mode, ModbusMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
 
     when (mode) {
-        ModbusMode.READ_COILS -> {
+        ModbusMode.READ_COILS, ModbusMode.READ_INPUT_DISCRETES -> {
             IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
             IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
         }
 
-        ModbusMode.READ_INPUT_DISCRETES -> {
-            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
-        }
-
-        ModbusMode.READ_HOLDING_REGISTERS -> {
-            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-            IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
-            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
-        }
-
-        ModbusMode.READ_INPUT_REGISTERS -> {
+        ModbusMode.READ_HOLDING_REGISTERS, ModbusMode.READ_INPUT_REGISTERS -> {
             IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
             IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
             IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
@@ -104,6 +95,7 @@ fun IntField(
     v: Int,
     sv: MutableState<String> = remember { mutableStateOf(v.toString()) },
     label: String,
+    modifier: Modifier = Modifier,
     onValueChange: (Int) -> Unit,
 ) = TextField(
     sv.value,
@@ -112,16 +104,19 @@ fun IntField(
         runCatching { onValueChange(it.toInt()) }
     },
     label = { Text(label) },
+    modifier = modifier,
     isError = runCatching { sv.value.toInt() }.isFailure
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-inline fun <reified E : Enum<E>> EnumDropdownMenu(
-    selectedOption: E?,
-    options: EnumEntries<E>,
-    modifier: Modifier = Modifier,
+inline fun <reified E : Enum<E>> DropdownMenu(
+    selectedOption: E,
+    options: Iterable<E>,
+    label: String,
     crossinline onChange: (E) -> Unit,
+    modifier: Modifier = Modifier,
+    crossinline itemFace: (ix: Int, e: E) -> String,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -131,24 +126,22 @@ inline fun <reified E : Enum<E>> EnumDropdownMenu(
         modifier = modifier
     ) {
         TextField(
-            value = selectedOption?.name ?: "",
+            value = itemFace(-1, selectedOption),
             onValueChange = { },
             readOnly = true,
             trailingIcon = { TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true),
-            label = { Text(options[0].javaClass.simpleName) }
+            label = { Text(label) }
         )
 
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { option ->
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEachIndexed { i, option ->
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(option.name) },
+                    text = { Text(itemFace(i, option)) },
                     onClick = { onChange(option); expanded = false },
                 )
             }
         }
     }
 }
+

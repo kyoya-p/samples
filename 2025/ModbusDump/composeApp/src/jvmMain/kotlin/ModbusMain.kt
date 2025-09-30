@@ -75,10 +75,10 @@ enum class ModbusMode(
     val code: Int,
     val face: String
 ) {
-    READ_COILS(Modbus.READ_COILS, "1:READ_COILS"),
-    READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2:READ_INPUT_DISCRETES"),
-    READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3:READ_HOLDING_REGISTERS"),
-    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4:READ_INPUT_REGISTERS"), ;
+    READ_COILS(Modbus.READ_COILS, "1: Read Coils"),
+    READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2: Read Input Discretes"),
+    READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3: Read Holding Registers"),
+    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4: Read Input Registers"), ;
 }
 
 data class Record(val offset: Int, val data: Int)
