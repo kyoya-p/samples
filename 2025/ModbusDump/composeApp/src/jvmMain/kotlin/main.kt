@@ -31,8 +31,8 @@ data class AppData(
     val result: String = "",
 )
 
-val home = System.getProperty("user.home")!!
-val configFile = Path("$home/.modbusdump/config.json")
+val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
+val configFile = Path("$appHome/config.json")
 
 var config: AppData
     get() = runCatching {

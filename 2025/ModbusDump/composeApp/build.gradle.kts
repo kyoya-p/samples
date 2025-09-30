@@ -22,8 +22,6 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-
-            implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -32,6 +30,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation("com.ghgande:j2mod:3.2.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")// https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
         }
@@ -45,7 +44,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "moddump"
-            packageVersion = "1.0.1"
+            packageVersion = "$packageVersion"
             windows {
                 upgradeUuid = "d73507d7-21a0-4351-b0e6-5226191262d1"
                 menu = true
@@ -54,3 +53,6 @@ compose.desktop {
         }
     }
 }
+
+val packageVersion = "1.0.3"
+

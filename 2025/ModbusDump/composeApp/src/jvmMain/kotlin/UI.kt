@@ -1,15 +1,17 @@
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
@@ -19,10 +21,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
+import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.writeString
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
 
@@ -31,23 +42,32 @@ import kotlin.time.ExperimentalTime
 fun UI() = MaterialTheme {
     val x = config.copy(result = "")
     var params: AppData by remember { mutableStateOf(x) }
+    var result by remember { mutableStateOf(params.result) }
     var run by remember { mutableStateOf(false) }
     Row {
-        Column(modifier = Modifier.width(360.dp)) {
+        Column {
             params.ParameterField { params = it }
-            Button(onClick = { run = true }) { Text("Dump") }
+            Row {
+                Button(enabled = !run, onClick = { run = true }) { Text("Dump") }
+                if (run) CircularProgressIndicator()
+            }
         }
+        Spacer(Modifier.width(4.dp))
         SelectionContainer {
             Box(modifier = Modifier.fillMaxSize()) {
-                val state = rememberScrollState()
-                Text(text = params.result, modifier = Modifier.verticalScroll(state = state))
-                VerticalScrollbar(adapter = rememberScrollbarAdapter(scrollState = state))
+                val scrollState = rememberScrollState()
+                Text(text = result, modifier = Modifier.verticalScroll(state = scrollState).fillMaxSize())
+                VerticalScrollbar(
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+                    adapter = rememberScrollbarAdapter(scrollState = scrollState)
+                )
             }
         }
     }
     LaunchedEffect(run) {
         if (run) with(params) {
-            var out = """date: ${now().toLocalDateTime(currentSystemDefault())}
+            launch(Dispatchers.Default) {
+                result = """date: ${now().toLocalDateTime(currentSystemDefault())}
 hostAdr: $hostAdr
 unitId: $unitId
 mode: ${mode.face}
@@ -56,15 +76,18 @@ registerCount: $regCount
 bulkSize: $bulkSize
 
 """
-            runCatching {
-                val master = ModbusTCPMaster(hostAdr)
-                master.connect()
-                master.read(params).forEach { out += "$it\n" }
-                master.disconnect()
-            }.onFailure { out += "${it.message}\n${it.stackTraceToString()}" }
-            params = copy(result = out)
-            println(out)
-            run = false
+                runCatching {
+                    val master = ModbusTCPMaster(hostAdr)
+                    master.connect()
+                    master.read(params).forEach { result += "$it\n" }
+                    master.disconnect()
+                }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
+                val dt = now().toLocalDateTime(currentSystemDefault())
+                    .format(LocalDateTime.Format { year(); monthNumber(); day(); hour(); minute(); second() })
+                SystemFileSystem.sink(Path(appHome, "moddump-$dt-$hostAdr-$unitId.log")).buffered()
+                    .use { it.writeString(result) }
+                run = false
+            }
         }
     }
     config = params
@@ -144,4 +167,3 @@ inline fun <reified E : Enum<E>> DropdownMenu(
         }
     }
 }
-

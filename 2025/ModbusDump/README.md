@@ -2,9 +2,6 @@
 ```sh:GUI
 moddump
 ```
-```sh:CLI
-moddump -h # Help
-```
 
 # Debug run
 ```sh
@@ -19,9 +16,9 @@ sh gradlew packageMsi
 実行: `moddump-x.x.x.msi`
 
 ```sh:実行ファイル作成
-sh gradlew createDistributable  # windows .exe file
+sh gradlew createDistributable
 ```
-成果物: `composeApp/build/compose/binaries/main/app/moddump` フォルダ以下
+成果物: `composeApp/build/compose/binaries/main/app/moddump` フォルダ以下  
 実行: `moddump.exe`
 
 # Refer
