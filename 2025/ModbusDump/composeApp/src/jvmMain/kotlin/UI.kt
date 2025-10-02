@@ -48,7 +48,7 @@ fun UI() = MaterialTheme {
         Column {
             params.ParameterField { params = it }
             Row {
-                Button(enabled = !run, onClick = { run = true }) { Text("Dump") }
+                Button( onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
                 if (run) CircularProgressIndicator()
             }
         }

@@ -1,5 +1,6 @@
 import com.ghgande.j2mod.modbus.Modbus
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 @OptIn(ExperimentalStdlibApi::class)
 fun modbusMain(args: Array<String>) = runCatching {
@@ -33,6 +34,10 @@ fun modbusMain(args: Array<String>) = runCatching {
     )
 }
 
+//suspend fun x() = suspendCancellableCoroutine { cont ->
+//
+//}
+
 fun ModbusTCPMaster.read(params: AppData) = with(params) {
     sequence {
         when (mode) {
@@ -55,19 +60,15 @@ fun ModbusTCPMaster.read(params: AppData) = with(params) {
             }
 
             ModbusMode.READ_HOLDING_REGISTERS -> for (offset in regAdr..<regAdr + regCount step bulkSize) {
-                readMultipleRegisters(unitId, offset, bulkSize).forEachIndexed { i, e ->
-                    yield(Record(offset + i, e.value).toText())
-                }
+                runCatching { readMultipleRegisters(unitId, offset, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield(Record(offset + i, e.value).toText()) }
+                }.onFailure { yield("$offset, ${offset.toHex4()}, ${it.message}") }
             }
 
-            ModbusMode.READ_INPUT_REGISTERS -> {
-                var c = 0
-                for (offset in regAdr..<regAdr + regCount step bulkSize) {
-                    readInputRegisters(unitId, offset, bulkSize).forEachIndexed { i, e ->
-                        println("$offset,$i,${c++}") //TODO
-                        yield(Record(offset + i, e.value).toText())
-                    }
-                }
+            ModbusMode.READ_INPUT_REGISTERS -> for (offset in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readInputRegisters(unitId, offset, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield(Record(offset + i, e.value).toText()) }
+                }.onFailure { yield("$offset, ${offset.toHex4()}, ${it.message}") }
             }
         }
     }
@@ -85,11 +86,12 @@ enum class ModbusMode(
 
 data class Record(val offset: Int, val data: Int)
 
+fun Int.toHex4() = toHexString().takeLast(4)
 fun Record.toText(): String {
     val v = data
     val c = (v shr 8).toPrintable() + (v and 0xff).toPrintable()
     val b = v.toString(2)
-    return "$offset,${offset.toHexString().takeLast(4)},$v,${v.toHexString().takeLast(4)},\"$c\",$b"
+    return "$offset,${offset.toHex4()},$v,${v.toHex4()},\"$c\",$b"
 }
 
 fun Int.toPrintable() = if (this !in 0x20..<0x80 || this == ','.code) "<${toHexString().takeLast(2)}>"
