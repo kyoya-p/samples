@@ -1,6 +1,8 @@
 import com.ghgande.j2mod.modbus.Modbus
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
-import kotlinx.coroutines.suspendCancellableCoroutine
+import com.ghgande.j2mod.modbus.procimg.Register
+import com.ghgande.j2mod.modbus.util.BitVector
+import kotlin.Char
 
 @OptIn(ExperimentalStdlibApi::class)
 fun modbusMain(args: Array<String>) = runCatching {
@@ -22,53 +24,74 @@ fun modbusMain(args: Array<String>) = runCatching {
     println(ex.message)
     println(
         $$"""
-        usage: ModbusDump $hostAdr $unitId mode ...
+        usage: ModbusDump $hostAdr $unitId $mode $dataAddress $numberOfDataItem $bulkSize
         - hostAdr: target device address
         - unitId: sensor id (default=1)
-        - mode: read mode 1:READ_COILS, 2:READ_INPUT_DISCRETES, 3:READ_HOLDING_REGISTERS, 4:READ_INPUT_REGISTERS
+        - mode: read mode
+          - 1:READ_COILS,
+          - 2:READ_INPUT_DISCRETES,
+          - 3:READ_HOLDING_REGISTERS,
+          - 4:READ_INPUT_REGISTERS
+          - 13:READ_HOLDING_REGISTERS - Double word,
+          - 14:READ_INPUT_REGISTERS - Double word,
         
         [mode=3/READ_HOLDING_REGISTERS]
-        usage: ModbusDump $hostAdr $unitId 3 $dataAddress $dataLength $dataAcquisitionSize
-        
+        usage: ModbusDump $hostAdr $unitId  1 $dataAddress $dataLength
+        usage: ModbusDump $hostAdr $unitId  2 $dataAddress $dataLength
+        usage: ModbusDump $hostAdr $unitId  3 $dataAddress $dataLength $dataAcquisitionSize
+        usage: ModbusDump $hostAdr $unitId  4 $dataAddress $dataLength $dataAcquisitionSize
+        usage: ModbusDump $hostAdr $unitId 13 $dataAddress $dataLength $dataAcquisitionSize
+        usage: ModbusDump $hostAdr $unitId 14 $dataAddress $dataLength $dataAcquisitionSize
     """.trimIndent()
     )
 }
 
-//suspend fun x() = suspendCancellableCoroutine { cont ->
-//
-//}
-
+fun BitVector.forEachIndexed(op: (Int, String) -> Unit) = (0..<size()).forEach { op(it, if (getBit(it)) "1" else "0") }
+operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
+fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
 fun ModbusTCPMaster.read(params: AppData) = with(params) {
     sequence {
         when (mode) {
-            ModbusMode.READ_COILS -> {
-                readCoils(unitId, regAdr, regCount)?.let { bv ->
-                    for (i in 0..<bv.size()) {
-                        val b = if (bv.getBit(i)) "1" else "0"
-                        yield("$i,${i.toHexString().takeLast(4)},$b")
+            ModbusMode.READ_COILS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readCoils(unitId, ofs, bulkSize) }.onSuccess { bv ->
+                    for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            ModbusMode.READ_INPUT_DISCRETES -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readInputDiscretes(unitId, ofs, bulkSize) }.onSuccess { bv ->
+                    for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            ModbusMode.READ_HOLDING_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readMultipleRegisters(unitId, ofs, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            ModbusMode.READ_INPUT_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readInputRegisters(unitId, ofs, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            ModbusMode.READ_HOLDING_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+                runCatching { readMultipleRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
+                    it.asSequence().chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
                     }
-                }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_INPUT_DISCRETES -> {
-                readInputDiscretes(unitId, regAdr, regCount)?.let { bv ->
-                    for (i in 0..<bv.size()) {
-                        val b = if (bv.getBit(i)) "1" else "0"
-                        yield("$i,${i.toHexString().takeLast(4)},$b")
+            ModbusMode.READ_INPUT_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+                runCatching { readInputRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
+                    it.asSequence().chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
                     }
-                }
-            }
-
-            ModbusMode.READ_HOLDING_REGISTERS -> for (offset in regAdr..<regAdr + regCount step bulkSize) {
-                runCatching { readMultipleRegisters(unitId, offset, bulkSize) }.onSuccess {
-                    it.forEachIndexed { i, e -> yield(Record(offset + i, e.value).toText()) }
-                }.onFailure { yield("$offset, ${offset.toHex4()}, ${it.message}") }
-            }
-
-            ModbusMode.READ_INPUT_REGISTERS -> for (offset in regAdr..<regAdr + regCount step bulkSize) {
-                runCatching { readInputRegisters(unitId, offset, bulkSize) }.onSuccess {
-                    it.forEachIndexed { i, e -> yield(Record(offset + i, e.value).toText()) }
-                }.onFailure { yield("$offset, ${offset.toHex4()}, ${it.message}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
         }
     }
@@ -82,17 +105,36 @@ enum class ModbusMode(
     READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2.Read Input Discretes"),
     READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3.Read Holding Registers"),
     READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4.Read Input Registers"),
+    READ_HOLDING_REGISTERS_DWORD(Modbus.READ_HOLDING_REGISTERS, "13.Read Holding Regs x2"),
+    READ_INPUT_REGISTERS_DWORD(Modbus.READ_INPUT_REGISTERS, "14.Read Input Regs x2"),
 }
 
-data class Record(val offset: Int, val data: Int)
+fun Int.toAddress() = "${toString().padStart(5)}, ${toString(16).padStart(4, '0')}"
 
-fun Int.toHex4() = toHexString().takeLast(4)
-fun Record.toText(): String {
-    val v = data
-    val c = (v shr 8).toPrintable() + (v and 0xff).toPrintable()
-    val b = v.toString(2)
-    return "$offset,${offset.toHex4()},$v,${v.toHex4()},\"$c\",$b"
+@OptIn(ExperimentalUnsignedTypes::class)
+fun Short.toText(): String {
+    val ba = (0..<1).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
+    val h = ba.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }
+    val b = ba.joinToString("_") { it.toUByte().toString(2).padStart(8, '0') }
+    val s = ba.fold("") { a, e -> a + e.toByte().toPrintable() }
+    val d = toString().padStart(2 * 5 / 2)
+    val ud = toUShort().toString().padStart(2 * 5 / 2)
+    return "$d, $ud, $h, $b, \"$s\""
 }
 
-fun Int.toPrintable() = if (this !in 0x20..<0x80 || this == ','.code) "<${toHexString().takeLast(2)}>"
-else toChar().toString()
+@OptIn(ExperimentalUnsignedTypes::class)
+fun Int.toText(): String {
+    val ba = (0..<3).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
+    val h = ba.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }
+    val b = ba.joinToString("_") { it.toUByte().toString(2).padStart(8, '0') }
+    val s = ba.fold("") { a, e -> a + e.toByte().toPrintable() }
+    val d = "$this".padStart(4 * 5 / 2)
+    val ud = toUInt().toString().padStart(4 * 5 / 2)
+    return "$d, $ud, $h, $b, \"$s\""
+}
+
+private fun Byte.toPrintable(): String = when {
+    this < 0x20 || this == 0x7f.toByte() || this == ','.code.toByte() -> "\\x${toUByte().toString(16).padStart(2, '0')}"
+    this == '\\'.code.toByte() -> "\\\\"
+    else -> Char(toUShort()).toString()
+}

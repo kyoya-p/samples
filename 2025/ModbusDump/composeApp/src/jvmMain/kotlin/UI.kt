@@ -22,6 +22,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +49,7 @@ fun UI() = MaterialTheme {
         Column {
             params.ParameterField { params = it }
             Row {
-                Button( onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
+                Button(onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
                 if (run) CircularProgressIndicator()
             }
         }
@@ -56,7 +57,11 @@ fun UI() = MaterialTheme {
         SelectionContainer {
             Box(modifier = Modifier.fillMaxSize()) {
                 val scrollState = rememberScrollState()
-                Text(text = result, modifier = Modifier.verticalScroll(state = scrollState).fillMaxSize())
+                Text(
+                    text = result,
+                    modifier = Modifier.verticalScroll(state = scrollState).fillMaxSize(),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace)
+                )
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
                     adapter = rememberScrollbarAdapter(scrollState = scrollState)
@@ -99,18 +104,19 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
     DropdownMenu(mode, ModbusMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
 
-    when (mode) {
-        ModbusMode.READ_COILS, ModbusMode.READ_INPUT_DISCRETES -> {
-            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
-        }
+//    when (mode) {
+//        ModbusMode.READ_COILS, ModbusMode.READ_INPUT_DISCRETES -> {
+//            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+//            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
+//            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
+//        }
 
-        ModbusMode.READ_HOLDING_REGISTERS, ModbusMode.READ_INPUT_REGISTERS -> {
-            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-            IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
-            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
-        }
-    }
+//        ModbusMode.READ_HOLDING_REGISTERS, ModbusMode.READ_INPUT_REGISTERS, ModbusMode.READ_HOLDING_REGISTERS_DWORD, ModbusMode.READ_INPUT_REGISTERS_DWORD -> {
+    IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
+    IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
+    IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
+//        }
+//    }
 }
 
 @Composable
