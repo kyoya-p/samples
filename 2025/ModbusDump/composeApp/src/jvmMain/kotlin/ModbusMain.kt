@@ -34,14 +34,10 @@ fun modbusMain(args: Array<String>) = runCatching {
           - 4:READ_INPUT_REGISTERS
           - 13:READ_HOLDING_REGISTERS - Double word,
           - 14:READ_INPUT_REGISTERS - Double word,
+        - dataAddress: First address of the data to be retrieved
+        - numberOfDataItem: Number of data to be retrieved .
+        - bulkSize: Number of data to be retrieved in one request.
         
-        [mode=3/READ_HOLDING_REGISTERS]
-        usage: ModbusDump $hostAdr $unitId  1 $dataAddress $dataLength
-        usage: ModbusDump $hostAdr $unitId  2 $dataAddress $dataLength
-        usage: ModbusDump $hostAdr $unitId  3 $dataAddress $dataLength $dataAcquisitionSize
-        usage: ModbusDump $hostAdr $unitId  4 $dataAddress $dataLength $dataAcquisitionSize
-        usage: ModbusDump $hostAdr $unitId 13 $dataAddress $dataLength $dataAcquisitionSize
-        usage: ModbusDump $hostAdr $unitId 14 $dataAddress $dataLength $dataAcquisitionSize
     """.trimIndent()
     )
 }
