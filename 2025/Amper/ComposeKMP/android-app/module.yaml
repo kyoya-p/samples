@@ -1,8 +1,0 @@
-product: android/app
-
-dependencies:
-  - ../shared
-
-settings:
-  compose: enabled
-  junit: junit-4

@@ -13,7 +13,7 @@ sh gradlew run # GUI
 sh gradlew packageMsi
 ```
 成果物: `composeApp\build\compose\binaries\main\msi\moddump-x.x.x.msi`
-実行: `moddump-x.x.x.msi`
+インストール実行: `moddump-x.x.x.msi`
 
 ```sh:実行ファイル作成
 sh gradlew createDistributable
@@ -22,6 +22,7 @@ sh gradlew createDistributable
 実行: `moddump.exe`
 
 # TODO
+- id:2510 リアルタイムスキャン
 
 # Refer
 
