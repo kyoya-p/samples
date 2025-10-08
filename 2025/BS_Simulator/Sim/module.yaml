@@ -1,18 +1,16 @@
 product: jvm/app
 
 dependencies:
-#  - $compose.desktop.common
+  #  - $compose.desktop.common
   - io.ktor:ktor-client-core:3.1.2
   - io.ktor:ktor-client-cio:3.1.2
 #  - org.kobjects.ktxml:core:0.3.2
-  - io.github.pdvrieze.xmlutil:core:0.91.0
-  - io.ktor:ktor-serialization-kotlinx-xml:3.3.0
-
-
+#  - io.github.pdvrieze.xmlutil:core:0.91.0
+#  - io.ktor:ktor-serialization-kotlinx-xml:3.3.0
 
 settings:
   kotlin:
-    serialization: xml
+    serialization: json
 #  compose:
 #    enabled: true
 #    version: 1.6.10

@@ -8,7 +8,8 @@ fun main() {
             hands = listOf(),
             field = Field(objects = listOf()),
             reserve = 4,
-            coreTrash = 0
+            coreTrash = 0,
+            cardTrash = emptyList(),
         ),
     ).drow(4)
 
@@ -23,5 +24,5 @@ fun main() {
     }
 
     println("\n--- Final Game State ---")
-    println(Json{}.encodeToString(game))
+    println(Json {}.encodeToString(game))
 }

@@ -1,24 +1,42 @@
+@kotlinx.serialization.Serializable
 data class Game(
     val myBoard: Board,
     val isTerminated: Boolean = false
 )
 
-data class Board(val deck: Deck, val trash: List<Card>, val hands: List<Card>, val field: Field, val reserve: Int, val coreTrash: Int)
+@kotlinx.serialization.Serializable
+data class Board(
+    val deck: Deck,
+    val cardTrash: List<Card>,
+    val hands: List<Card>,
+    val field: Field,
+    val reserve: Int,
+    val coreTrash: Int
+)
+
+@kotlinx.serialization.Serializable
 data class Deck(val fixed: Int/*戦闘からn枚が固定カード*/, val cards: List<Card>)
+@kotlinx.serialization.Serializable
 data class Field(val objects: List<Object>)
+@kotlinx.serialization.Serializable
 data class Card(
     val cardType: CardType,
     val cardName: String,
     val cardSymbols: List<Symbol>,
     val cardCost: Int,
-    val cardReduction: List<Symbol>
+    val cardReduction: List<ReductionSymbol>,
+    val lvCosts: List<Int>
 ) {
     fun cost() = cardCost
     fun reduction() = cardReduction
     fun symbols() = cardSymbols
 }
 
+@kotlinx.serialization.Serializable
 data class Symbol(val color: List<SymbolColor>, val value: Int)
+@kotlinx.serialization.Serializable
+data class ReductionSymbol(val color: SymbolColor, val value: Int)
+@kotlinx.serialization.Serializable
 data class Object(val cards: List<Card>, val cores: Int)
 
 enum class CardType(val type: String) {
@@ -27,7 +45,12 @@ enum class CardType(val type: String) {
 }
 
 enum class SymbolColor {
+    RED,
     PURPLE,
     GREEN,
-    GOD
+    WHITE,
+    YELLOW,
+    BLUE,
+    GOD,
+    ULTIMATE
 }

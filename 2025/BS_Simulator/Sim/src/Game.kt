@@ -6,7 +6,8 @@ fun initGame() = Game(
         hands = listOf(),
         field = Field(objects = listOf()),
         reserve = 4,
-        coreTrash = 0
+        coreTrash = 0,
+        cardTrash = emptyList(),
     )
 ).drow(4)
 
@@ -80,7 +81,7 @@ fun Game.summonSpirit(card: Card): Game {
     val fieldSymbols = myBoard.field.objects.flatMap { it.cards.first().cardSymbols }
     for (reductionSymbol in card.cardReduction) {
         val matchingSymbolsOnField = fieldSymbols.count { fieldSymbol ->
-            reductionSymbol.color.any { it == fieldSymbol.color.first() } // Assuming single color for field symbol
+            fieldSymbol.color.any { it == reductionSymbol.color }
         }
         totalReduction += minOf(matchingSymbolsOnField, reductionSymbol.value)
     }
@@ -91,17 +92,22 @@ fun Game.summonSpirit(card: Card): Game {
         val updatedHands = myBoard.hands.toMutableList()
         updatedHands.remove(card)
 
-        val newObject = Object(cards = listOf(card), cores = card.cardCost) // Still using card.cardCost for initial cores on spirit
-        val updatedFieldObjects = myBoard.field.objects + newObject
+        val initialCoresOnSpirit = card.lvCosts.firstOrNull() ?: 1
+        val coresToMoveFromReserve = maxOf(actualCost, initialCoresOnSpirit)
 
-        return copy(
-            myBoard = myBoard.copy(
-                hands = updatedHands,
-                reserve = myBoard.reserve - actualCost,
-                coreTrash = myBoard.coreTrash + actualCost,
-                field = myBoard.field.copy(objects = updatedFieldObjects)
+        if (myBoard.reserve >= coresToMoveFromReserve) {
+            val newObject = Object(cards = listOf(card), cores = initialCoresOnSpirit)
+            val updatedFieldObjects = myBoard.field.objects + newObject
+
+            return copy(
+                myBoard = myBoard.copy(
+                    hands = updatedHands,
+                    reserve = myBoard.reserve - coresToMoveFromReserve,
+                    coreTrash = myBoard.coreTrash + coresToMoveFromReserve,
+                    field = myBoard.field.copy(objects = updatedFieldObjects)
+                )
             )
-        )
+        }
     }
     return this // Cannot summon, return current game state
 }
