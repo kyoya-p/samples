@@ -41,8 +41,12 @@ val Card_ブレイドラX = Card(
 )
 
 val Deck1 = Deck(
-    fixed = 1, // Assuming fixed cards are still 1 for now, though the rule update didn't specify.
+    fixed = 4, // 初期手札の4枚は固定カードとする
     cards = listOf<Card>(
+        Card_ブレイドラX,
+        Card_ブレイドラX,
+        Card_ブレイドラX,
+        Card_ブレイドラX, // 初期手札にブレイドラXが来るようにする
         Card_ユニコーンモード,
         Card_ユニコーンモード,
         Card_ユニコーンモード,
@@ -55,9 +59,6 @@ val Deck1 = Deck(
         Card_デストロイモード,
         Card_デストロイモード,
         Card_デストロイモード, // 6 Destroy Mode
-        Card_ブレイドラX,
-        Card_ブレイドラX,
-        Card_ブレイドラX,
         Card_ブレイドラX,
         Card_ブレイドラX,
         Card_ブレイドラX,

@@ -1,9 +1,12 @@
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Game(
     val myBoard: Board,
     val isTerminated: Boolean = false
 )
 
-@kotlinx.serialization.Serializable
+@Serializable
 data class Board(
     val deck: Deck,
     val cardTrash: List<Card>,
@@ -13,9 +16,11 @@ data class Board(
     val coreTrash: Int
 )
 
-@kotlinx.serialization.Serializable
+@Serializable
 data class Deck(val fixed: Int/*戦闘からn枚が固定カード*/, val cards: List<Card>)
+@Serializable
 data class Field(val objects: List<Object>)
+@Serializable
 data class Card(
     val cardType: CardType,
     val cardName: String,
@@ -29,11 +34,11 @@ data class Card(
     fun symbols() = cardSymbols
 }
 
-@kotlinx.serialization.Serializable
+@Serializable
 data class Symbol(val color: List<SymbolColor>, val value: Int)
-@kotlinx.serialization.Serializable
+@Serializable
 data class ReductionSymbol(val color: SymbolColor, val value: Int)
-@kotlinx.serialization.Serializable
+@Serializable
 data class Object(val cards: List<Card>, val cores: Int)
 
 enum class CardType(val type: String) {

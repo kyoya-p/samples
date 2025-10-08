@@ -1,9 +1,10 @@
-fun Deck.shuffled() = copy(cards = cards.take(1) + cards.drop(1).shuffled())
+fun Deck.shuffled() = copy(
+    cards = cards.take(fixed) + cards.drop(fixed).shuffled()
+)
 
 fun initGame() = Game(
     myBoard = Board(
         deck = Deck1.shuffled(),
-        trash = listOf(),
         hands = listOf(),
         field = Field(objects = listOf()),
         reserve = 4,
