@@ -1,8 +1,12 @@
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Game(
     val myBoard: Board,
     val isTerminated: Boolean = false
 )
 
+@Serializable
 data class Board(val deck: Deck, val trash: List<Card>, val hands: List<Card>, val field: Field, val reserve: Int, val coreTrash: Int)
 data class Deck(val fixed: Int/*戦闘からn枚が固定カード*/, val cards: List<Card>)
 data class Field(val objects: List<Object>)
@@ -29,5 +33,6 @@ enum class CardType(val type: String) {
 enum class SymbolColor {
     PURPLE,
     GREEN,
-    GOD
+    GOD,
+    RED
 }

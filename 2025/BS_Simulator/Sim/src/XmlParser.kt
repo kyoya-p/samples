@@ -1,3 +1,4 @@
+/*
 fun main() {
     val format = XML(mySerialModule) {
         // configuration options
@@ -9,3 +10,4 @@ fun main() {
 @Serializable
 @XmlSerialName(value = "song")
 data class OpenLyricsSong
+*/

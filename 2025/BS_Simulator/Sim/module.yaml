@@ -7,12 +7,12 @@ dependencies:
 #  - org.kobjects.ktxml:core:0.3.2
   - io.github.pdvrieze.xmlutil:core:0.91.0
   - io.ktor:ktor-serialization-kotlinx-xml:3.3.0
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0
 
 
 
 settings:
   kotlin:
-    serialization: xml
 #  compose:
 #    enabled: true
 #    version: 1.6.10

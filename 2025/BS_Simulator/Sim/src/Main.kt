@@ -5,6 +5,7 @@ fun main() {
     var game = Game(
         myBoard = Board(
             deck = Deck1.shuffled(),
+            trash = listOf(),
             hands = listOf(),
             field = Field(objects = listOf()),
             reserve = 4,
