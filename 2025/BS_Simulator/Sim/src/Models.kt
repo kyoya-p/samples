@@ -1,4 +1,3 @@
-@kotlinx.serialization.Serializable
 data class Game(
     val myBoard: Board,
     val isTerminated: Boolean = false
@@ -16,9 +15,7 @@ data class Board(
 
 @kotlinx.serialization.Serializable
 data class Deck(val fixed: Int/*戦闘からn枚が固定カード*/, val cards: List<Card>)
-@kotlinx.serialization.Serializable
 data class Field(val objects: List<Object>)
-@kotlinx.serialization.Serializable
 data class Card(
     val cardType: CardType,
     val cardName: String,
