@@ -1,5 +1,7 @@
+import kotlinx.coroutines.yield
+
 fun Deck.shuffled() = copy(
-    cards = cards.take(fixed) + cards.drop(fixed).shuffled()
+    cards = if (fixed == 0) cards.shuffled() else cards.take(fixed) + cards.drop(fixed).shuffled()
 )
 
 fun initGame() = Game(
@@ -24,61 +26,89 @@ fun Game.drow(n: Int): Game {
     )
 }
 
-fun Game.turn(): Game {
-    var game = this
-    if (game.isTerminated) return game // Stop if already terminated
+fun Game.turn(): Sequence<Game> = sequence {
+    var game = this@turn
+    if (game.isTerminated) {
+        yield(game)
+        return@sequence
+    }
 
-    game = game.drawStep()
-    if (game.isTerminated) return game // Check after draw
+    // コアステップ
+    game = game.coreStep()
+    if (game.isTerminated) {
+        yield(game)
+        return@sequence
+    }
 
+    // ドローステップ
+    game = game.drawStep() ?:
+    if (game.isTerminated) {
+        yield(game)
+        return@sequence
+    }
+
+    // リフレッシュステップ
     game = game.refreshStep()
-    if (game.isTerminated) return game // Check after refresh
+    if (game.isTerminated) {
+        yield(game)
+        return@sequence
+    }
 
-    game = game.mainStep()
-    return game
-}
+    // メインステップ
+    game.mainStep().forEach { mainStepResult ->
+        // 選択された状態に対して、スピリットの消滅チェックを行う
+        val updatedFieldObjects = mainStepResult.myBoard.field.objects.filter { obj ->
+            val minCoresForLv1 = obj.cards.first().lvCosts.firstOrNull() ?: 1
+            obj.cores >= minCoresForLv1
+        }
+        val annihilatedSpirits = mainStepResult.myBoard.field.objects.filterNot { obj ->
+            val minCoresForLv1 = obj.cards.first().lvCosts.firstOrNull() ?: 1
+            obj.cores >= minCoresForLv1
+        }
 
-fun Game.drawStep(): Game {
-    val cardToDraw = myBoard.deck.cards.firstOrNull()
-    return if (cardToDraw != null) {
-        copy(
-            myBoard = myBoard.copy(
-                deck = myBoard.deck.copy(cards = myBoard.deck.cards.drop(1)),
-                hands = myBoard.hands + cardToDraw
+        val updatedCardTrash = mainStepResult.myBoard.cardTrash.toMutableList()
+        annihilatedSpirits.forEach {
+            updatedCardTrash.addAll(it.cards)
+        }
+
+        yield(
+            mainStepResult.copy(
+                myBoard = mainStepResult.myBoard.copy(
+                    field = mainStepResult.myBoard.field.copy(objects = updatedFieldObjects),
+                    cardTrash = updatedCardTrash
+                )
             )
         )
-    } else {
-        this // No cards to draw
     }
 }
 
-fun Game.refreshStep(): Game {
-    return copy(
-        myBoard = myBoard.copy(
-            reserve = myBoard.reserve + myBoard.coreTrash,
-            coreTrash = 0
-        )
-    )
-}
+fun Game.coreStep(): Game = copy(myBoard = myBoard.copy(reserve = myBoard.reserve + 1))
 
-fun Game.mainStep(): Game {
-    // Try to summon the first available spirit card
-    val spiritCardInHand = myBoard.hands.firstOrNull { it.cardType == CardType.SPIRIT }
+fun Game.drawStep() = if (myBoard.deck.cards.isEmpty()) null else drow(1)
 
-    if (spiritCardInHand != null && myBoard.reserve >= spiritCardInHand.cardCost) {
-        var updatedGame = summonSpirit(spiritCardInHand)
-        // Check termination condition
-        if (spiritCardInHand.cardName.contains("デストロイモード")) {
-            println("Termination condition met: 'Destroy Mode' summoned!")
-            return updatedGame.copy(isTerminated = true)
-        }
-        return updatedGame
+fun Game.refreshStep(): Game = copy(myBoard = with(myBoard) { copy(reserve = reserve + coreTrash, coreTrash = 0) })
+
+fun Game.toText() = """
+    |Hand: ${myBoard.hands.map { it.cardName }}
+    |Field: ${myBoard.field.objects.map { it.cards.first().cardName + "(" + it.cores + ")" }}
+    |Reserve: ${myBoard.reserve}
+    |Core Trash: ${myBoard.coreTrash}
+    |Card Trash: ${myBoard.cardTrash.map { it.cardName }}
+    |""".trimMargin()
+
+fun Game.mainStep(): Sequence<Game> = sequence {
+    // 手札のカードを召喚する
+    myBoard.hands.forEach { card ->
+        yieldAll(summonSpirit(card))
     }
-    return this // No spirit to summon or not enough cores
+
+    // 何もせずにターンを終了する
+    yieldAll(sequenceOf())
 }
 
-fun Game.summonSpirit(card: Card): Game {
-    // Calculate cost reduction
+
+fun Game.summonSpirit(card: Card): Sequence<Game> = sequence {
+    // コスト計算
     var totalReduction = 0
     val fieldSymbols = myBoard.field.objects.flatMap { it.cards.first().cardSymbols }
     for (reductionSymbol in card.cardReduction) {
@@ -87,29 +117,111 @@ fun Game.summonSpirit(card: Card): Game {
         }
         totalReduction += minOf(matchingSymbolsOnField, reductionSymbol.value)
     }
-
     val actualCost = maxOf(0, card.cardCost - totalReduction)
+    val minCoresOnSpirit = card.lvCosts.firstOrNull() ?: 1
+    val totalCoresToPay = actualCost + minCoresOnSpirit
 
-    if (myBoard.reserve >= actualCost) {
-        val updatedHands = myBoard.hands.toMutableList()
-        updatedHands.remove(card)
+    // 支払い可能なコアの組み合わせを探索する再帰関数
+    fun findPaymentCombinations(
+        currentReserve: Int,
+        currentFieldObjects: List<Object>,
+        remainingToPay: Int,
+        currentCoreTrash: Int, // 支払いによって増えたコアの合計を保持
+        objectIndex: Int // フィールドオブジェクトのインデックス
+    ): Sequence<Game> = sequence {
+        if (remainingToPay == 0) {
+            // 支払い完了
+            val updatedHands = myBoard.hands.toMutableList()
+            updatedHands.remove(card)
 
-        val initialCoresOnSpirit = card.lvCosts.firstOrNull() ?: 1
-        val coresToMoveFromReserve = maxOf(actualCost, initialCoresOnSpirit)
+            val newObject = Object(cards = listOf(card), cores = minCoresOnSpirit)
+            val finalFieldObjects = currentFieldObjects.filter { obj ->
+                val minCoresForLv1 = obj.cards.first().lvCosts.firstOrNull() ?: 1
+                obj.cores >= minCoresForLv1
+            }
+            val annihilatedSpiritsInSummon = currentFieldObjects.filterNot { obj ->
+                val minCoresForLv1 = obj.cards.first().lvCosts.firstOrNull() ?: 1
+                obj.cores >= minCoresForLv1
+            }
 
-        if (myBoard.reserve >= coresToMoveFromReserve) {
-            val newObject = Object(cards = listOf(card), cores = initialCoresOnSpirit)
-            val updatedFieldObjects = myBoard.field.objects + newObject
+            val updatedCardTrash = myBoard.cardTrash.toMutableList()
+            annihilatedSpiritsInSummon.forEach {
+                updatedCardTrash.addAll(it.cards)
+            }
 
-            return copy(
-                myBoard = myBoard.copy(
-                    hands = updatedHands,
-                    reserve = myBoard.reserve - coresToMoveFromReserve,
-                    coreTrash = myBoard.coreTrash + coresToMoveFromReserve,
-                    field = myBoard.field.copy(objects = updatedFieldObjects)
+            yield(
+                copy(
+                    myBoard = myBoard.copy(
+                        hands = updatedHands,
+                        reserve = currentReserve, // 支払い後のリザーブ
+                        coreTrash = currentCoreTrash, // 修正: coresPaidFromReserve + coresPaidFromField はすでにcurrentCoreTrashに含まれている
+                        field = myBoard.field.copy(objects = finalFieldObjects + newObject),
+                        cardTrash = updatedCardTrash
+                    )
                 )
             )
+            return@sequence
+        }
+
+        // 支払い残高がある場合のみ処理を続行
+        if (remainingToPay > 0) {
+            // リザーブから支払う
+            if (currentReserve > 0) {
+                val payFromReserve = minOf(currentReserve, remainingToPay)
+                yieldAll(
+                    findPaymentCombinations(
+                        currentReserve - payFromReserve,
+                        currentFieldObjects,
+                        remainingToPay - payFromReserve,
+                        currentCoreTrash + payFromReserve, // 修正: currentCoreTrashに加算
+                        objectIndex
+                    )
+                )
+            }
+
+            // フィールド上のスピリットから支払う
+            if (objectIndex < currentFieldObjects.size) {
+                val obj = currentFieldObjects[objectIndex]
+                val minCoresForLv1 = obj.cards.first().lvCosts.firstOrNull() ?: 1
+                val availableCoresOnSpirit = obj.cores - minCoresForLv1
+
+                if (availableCoresOnSpirit > 0) {
+                    val payFromSpirit = minOf(availableCoresOnSpirit, remainingToPay)
+                    val newFieldObjects = currentFieldObjects.toMutableList()
+                    newFieldObjects[objectIndex] = obj.copy(cores = obj.cores - payFromSpirit)
+
+                    yieldAll(
+                        findPaymentCombinations(
+                            currentReserve,
+                            newFieldObjects,
+                            remainingToPay - payFromSpirit,
+                            currentCoreTrash + payFromSpirit, // 修正: currentCoreTrashに加算
+                            objectIndex + 1
+                        )
+                    )
+                }
+                // このスピリットから支払わない場合、次のスピリットへ
+                yieldAll(
+                    findPaymentCombinations(
+                        currentReserve,
+                        currentFieldObjects,
+                        remainingToPay,
+                        currentCoreTrash,
+                        objectIndex + 1
+                    )
+                )
+            }
         }
     }
-    return this // Cannot summon, return current game state
+
+    // 支払い探索を開始
+    yieldAll(
+        findPaymentCombinations(
+            myBoard.reserve,
+            myBoard.field.objects,
+            totalCoresToPay,
+            myBoard.coreTrash, // 修正: 初期coreTrashを渡す
+            0
+        )
+    )
 }

@@ -3,7 +3,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Game(
     val myBoard: Board,
-    val isTerminated: Boolean = false
+    val isTerminated: Boolean = false,
+    val turnCount: Int = 0
 )
 
 @Serializable
@@ -54,5 +55,5 @@ enum class SymbolColor {
     YELLOW,
     BLUE,
     GOD,
-    ULTIMATE
+    ULTIMATE,
 }
