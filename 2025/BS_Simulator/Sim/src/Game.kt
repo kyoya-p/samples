@@ -1,20 +1,16 @@
 import kotlinx.coroutines.yield
 
+fun Game.start() = generateSequence(this) {
+    val game = coreStep()
+}
+
+fun Game.selection() = sequence {
+    if (turnCount != 1) yield(Event.MoveCore(CorePlace.Boid, CorePlace.Reserve), 1)
+}
+
 fun Deck.shuffled() = copy(
     cards = if (fixed == 0) cards.shuffled() else cards.take(fixed) + cards.drop(fixed).shuffled()
 )
-
-fun initGame() = Game(
-    myBoard = Board(
-        deck = Deck1.shuffled(),
-        hands = listOf(),
-        field = Field(objects = listOf()),
-        reserve = 4,
-        coreTrash = 0,
-        cardTrash = emptyList(),
-    )
-).drow(4)
-
 
 fun Game.drow(n: Int): Game {
     val cards = myBoard.deck.cards.take(n)
@@ -27,32 +23,13 @@ fun Game.drow(n: Int): Game {
 }
 
 fun Game.turn(): Sequence<Game> = sequence {
-    var game = this@turn
-    if (game.isTerminated) {
-        yield(game)
-        return@sequence
-    }
+    var game = copy(turnCount = turnCount + 1)
 
-    // コアステップ
+    if (myBoard.deck.cards.isEmpty()) return@sequence // デッキなし敗北
+
     game = game.coreStep()
-    if (game.isTerminated) {
-        yield(game)
-        return@sequence
-    }
-
-    // ドローステップ
-    game = game.drawStep() ?:
-    if (game.isTerminated) {
-        yield(game)
-        return@sequence
-    }
-
-    // リフレッシュステップ
+    game = game.drawStep() ?: return@sequence
     game = game.refreshStep()
-    if (game.isTerminated) {
-        yield(game)
-        return@sequence
-    }
 
     // メインステップ
     game.mainStep().forEach { mainStepResult ->
@@ -89,6 +66,7 @@ fun Game.drawStep() = if (myBoard.deck.cards.isEmpty()) null else drow(1)
 fun Game.refreshStep(): Game = copy(myBoard = with(myBoard) { copy(reserve = reserve + coreTrash, coreTrash = 0) })
 
 fun Game.toText() = """
+    |Turn: $turnCount
     |Hand: ${myBoard.hands.map { it.cardName }}
     |Field: ${myBoard.field.objects.map { it.cards.first().cardName + "(" + it.cores + ")" }}
     |Reserve: ${myBoard.reserve}
