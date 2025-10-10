@@ -89,7 +89,7 @@ bulkSize: $bulkSize
                 }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
                 val dt = now().toLocalDateTime(currentSystemDefault())
                     .format(LocalDateTime.Format { year(); monthNumber(); day(); hour(); minute(); second() })
-                SystemFileSystem.sink(Path(appHome, "moddump-$dt-$hostAdr-$unitId.log")).buffered()
+                SystemFileSystem.sink(Path(appHome, "moddump-$dt-${hostAdr.filter { it.isDigit() || it == '.' }}-$unitId.log")).buffered()
                     .use { it.writeString(result) }
                 run = false
             }
@@ -100,24 +100,20 @@ bulkSize: $bulkSize
 
 @Composable
 fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
-    TextField(hostAdr, label = { Text("Device address") }, onValueChange = { onChange(copy(hostAdr = it)) })
+    TextField(
+        hostAdr,
+        label = { Text("Device address") },
+        singleLine = true,
+        isError = !hostAdr.trim().all { it.isDigit() || it == '.' },
+        onValueChange = { onChange(copy(hostAdr = it)) })
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
     DropdownMenu(mode, ModbusMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
-
-//    when (mode) {
-//        ModbusMode.READ_COILS, ModbusMode.READ_INPUT_DISCRETES -> {
-//            IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-//            IntField(regCount, label = "# of Bit Length", onValueChange = { onChange(copy(regCount = it)) })
-//            IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
-//        }
-
-//        ModbusMode.READ_HOLDING_REGISTERS, ModbusMode.READ_INPUT_REGISTERS, ModbusMode.READ_HOLDING_REGISTERS_DWORD, ModbusMode.READ_INPUT_REGISTERS_DWORD -> {
     IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
     IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
     IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })
-//        }
-//    }
 }
+
+fun String.toIntHex() = trim().run { if (startsWith("0x")) drop(2).toInt(16) else toInt() }
 
 @Composable
 fun IntField(
@@ -130,11 +126,15 @@ fun IntField(
     sv.value,
     onValueChange = {
         sv.value = it
-        runCatching { onValueChange(it.toInt()) }
+        runCatching { onValueChange(it.toIntHex()) }
     },
-    label = { Text(label) },
+    label = {
+        val i = runCatching { sv.value.toIntHex().let { "$it / 0x${it.toString(16).uppercase()}" } }.getOrElse { "---" }
+        Text("$label ( $i )")
+    },
     modifier = modifier,
-    isError = runCatching { sv.value.toInt() }.isFailure
+    isError = runCatching { sv.value.toIntHex() }.isFailure,
+    singleLine = true,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
