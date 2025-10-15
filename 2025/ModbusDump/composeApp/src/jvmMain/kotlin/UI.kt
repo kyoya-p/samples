@@ -107,7 +107,7 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
         isError = !hostAdr.trim().all { it.isDigit() || it == '.' },
         onValueChange = { onChange(copy(hostAdr = it)) })
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
-    DropdownMenu(mode, ModbusMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
+    DropdownMenu(mode, MBMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
     IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
     IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
     IntField(bulkSize, label = "Data acquisition quantity", onValueChange = { onChange(copy(bulkSize = it)) })

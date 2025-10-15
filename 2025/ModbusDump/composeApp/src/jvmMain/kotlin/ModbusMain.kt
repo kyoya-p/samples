@@ -45,34 +45,122 @@ fun modbusMain(args: Array<String>) = runCatching {
 fun BitVector.forEachIndexed(op: (Int, String) -> Unit) = (0..<size()).forEach { op(it, if (getBit(it)) "1" else "0") }
 operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
 fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
-fun ModbusTCPMaster.read(params: AppData) = with(params) {
-    sequence {
+
+sealed class MBRes(val adr: Int, val message: String) {
+    class OK(adr: Int, message: String) : MBRes(adr, message)
+    class Error(adr: Int, message: String, val ex: Throwable) : MBRes(adr, message)
+}
+
+class SummaryResult(val success: Int, val error: Int, val total: Int)
+
+fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = with(params) {
+    val alignedBulkSize = when (mode) {
+        MBMode.READ_HOLDING_REGISTERS_DWORD, MBMode.READ_INPUT_REGISTERS_DWORD -> (bulkSize + 1) / 2 * 2
+        else -> bulkSize
+    }
+    for (ofs in regAdr..<regAdr + regCount step alignedBulkSize) {
+        runCatching {
+            when (mode) {
+                MBMode.READ_COILS -> readCoils(unitId, ofs, bulkSize).forEachIndexed { i, m -> cb(MBRes.OK(ofs, m)) }
+                MBMode.READ_INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, bulkSize).forEachIndexed { i, m ->
+                    cb(MBRes.OK(ofs, m))
+                }
+
+                MBMode.READ_HOLDING_REGISTERS -> readMultipleRegisters(unitId, ofs, bulkSize).forEachIndexed { i, e ->
+                    cb(MBRes.OK(ofs, e.value.toShort().toText()))
+                }
+
+                MBMode.READ_INPUT_REGISTERS -> readInputRegisters(unitId, ofs, bulkSize).forEachIndexed { i, e ->
+                    cb(MBRes.OK(ofs, e.value.toShort().toText()))
+                }
+
+                MBMode.READ_HOLDING_REGISTERS_DWORD -> readMultipleRegisters(unitId, ofs, alignedBulkSize).asSequence()
+                    .chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        cb(MBRes.OK(ofs + i * 2, v.toText()))
+                    }
+
+                MBMode.READ_INPUT_REGISTERS_DWORD -> readInputRegisters(unitId, ofs, alignedBulkSize).asSequence()
+                    .chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        cb(MBRes.OK(ofs + i * 2, v.toText()))
+                    }
+
+            }
+        }.onFailure { ex -> cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex)) }
+
         when (mode) {
-            ModbusMode.READ_COILS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+            MBMode.READ_COILS -> runCatching { readCoils(unitId, ofs, bulkSize) }.onSuccess { bv ->
+                for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+            }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+
+            MBMode.READ_INPUT_DISCRETES -> runCatching {
+                readInputDiscretes(unitId, ofs, bulkSize)
+            }.onSuccess { bv ->
+                for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+            }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+
+            MBMode.READ_HOLDING_REGISTERS -> runCatching {
+                readMultipleRegisters(unitId, ofs, bulkSize)
+            }.onSuccess {
+                it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+            }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+
+
+            MBMode.READ_INPUT_REGISTERS ->
+                runCatching { readInputRegisters(unitId, ofs, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+
+
+            MBMode.READ_HOLDING_REGISTERS_DWORD -> runCatching {
+                readMultipleRegisters(unitId, ofs, alignedBulkSize)
+            }.onSuccess {
+                it.asSequence().chunked(2).forEachIndexed { i, e ->
+                    val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                    yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_INPUT_REGISTERS_DWORD -> runCatching {
+                readInputRegisters(unitId, ofs, alignedBulkSize)
+            }.onSuccess {
+                it.asSequence().chunked(2).forEachIndexed { i, e ->
+                    val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                    yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+        }
+    }
+
+    sequence {
+
+        when (mode) {
+            MBMode.READ_COILS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
                 runCatching { readCoils(unitId, ofs, bulkSize) }.onSuccess { bv ->
                     for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
                 }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_INPUT_DISCRETES -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+            MBMode.READ_INPUT_DISCRETES -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
                 runCatching { readInputDiscretes(unitId, ofs, bulkSize) }.onSuccess { bv ->
                     for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
                 }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_HOLDING_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+            MBMode.READ_HOLDING_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
                 runCatching { readMultipleRegisters(unitId, ofs, bulkSize) }.onSuccess {
                     it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
                 }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_INPUT_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+            MBMode.READ_INPUT_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
                 runCatching { readInputRegisters(unitId, ofs, bulkSize) }.onSuccess {
                     it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
                 }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_HOLDING_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+            MBMode.READ_HOLDING_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
                 runCatching { readMultipleRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
                     it.asSequence().chunked(2).forEachIndexed { i, e ->
                         val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
@@ -81,7 +169,7 @@ fun ModbusTCPMaster.read(params: AppData) = with(params) {
                 }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
             }
 
-            ModbusMode.READ_INPUT_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+            MBMode.READ_INPUT_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
                 runCatching { readInputRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
                     it.asSequence().chunked(2).forEachIndexed { i, e ->
                         val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
@@ -93,9 +181,57 @@ fun ModbusTCPMaster.read(params: AppData) = with(params) {
     }
 }
 
-enum class ModbusMode(
+fun ModbusTCPMaster.read(params: AppData) = with(params) {
+    sequence {
+        when (mode) {
+            MBMode.READ_COILS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readCoils(unitId, ofs, bulkSize) }.onSuccess { bv ->
+                    for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_INPUT_DISCRETES -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readInputDiscretes(unitId, ofs, bulkSize) }.onSuccess { bv ->
+                    for (i in 0..<bulkSize) yield("${(i + ofs).toAddress()}, ${bv[i]}")
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_HOLDING_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readMultipleRegisters(unitId, ofs, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_INPUT_REGISTERS -> for (ofs in regAdr..<regAdr + regCount step bulkSize) {
+                runCatching { readInputRegisters(unitId, ofs, bulkSize) }.onSuccess {
+                    it.forEachIndexed { i, e -> yield("${(ofs + i).toAddress()}, ${e.value.toShort().toText()}") }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_HOLDING_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+                runCatching { readMultipleRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
+                    it.asSequence().chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
+                    }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+
+            MBMode.READ_INPUT_REGISTERS_DWORD -> for (ofs in regAdr..<regAdr + regCount step ((bulkSize + 1) / 2) * 2) {
+                runCatching { readInputRegisters(unitId, ofs, ((bulkSize + 1) / 2) * 2) }.onSuccess {
+                    it.asSequence().chunked(2).forEachIndexed { i, e ->
+                        val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
+                        yield("${(ofs + i * 2).toAddress()}, ${v.toText()}")
+                    }
+                }.onFailure { ex -> yield("${ofs.toAddress()}, ${ex.message}") }
+            }
+        }
+    }
+}
+
+enum class MBMode(
     val code: Int,
-    val face: String
+    val face: String,
 ) {
     READ_COILS(Modbus.READ_COILS, "1.Read Coils"),
     READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2.Read Input Discretes"),

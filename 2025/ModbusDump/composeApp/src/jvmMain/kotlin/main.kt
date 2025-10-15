@@ -30,7 +30,7 @@ data class AppData(
     val regAdr: Int = 0,
     val regCount: Int = 8,
     val bulkSize: Int = 1,
-    val mode: ModbusMode = ModbusMode.READ_HOLDING_REGISTERS,
+    val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
     val result: String = "",
 )
 
