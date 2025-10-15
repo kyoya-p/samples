@@ -9,6 +9,7 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import v2.ReadMode
 
 fun main(args: Array<String>) {
     if (args.isNotEmpty()) modbusMain(args)
@@ -18,7 +19,7 @@ fun main(args: Array<String>) {
             title = "ModbusDump",
             state = rememberWindowState(width = 1024.dp, height = 768.dp),
         ) {
-            UI()
+            v2.UI() //TODO
         }
     }
 }
@@ -29,8 +30,10 @@ data class AppData(
     val unitId: Int = 1,
     val regAdr: Int = 0,
     val regCount: Int = 8,
-    val bulkSize: Int = 1,
+    val nAcq: Int = 1,
     val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
+    val mode2: ReadMode = ReadMode.REGISTERS.HOLDING_REGISTERS(),
+    val nWord: Int = 1, //TODO
     val result: String = "",
 )
 
