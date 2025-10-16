@@ -170,7 +170,7 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = 
             }?.run {
                 asSequence().chunked(chunk).forEachIndexed { i, e ->
                     val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
-                    cb(MBRes.OK(ofs + i * chunk, v.toText()))
+                    cb(MBRes.OK(ofs + i * chunk, v.toText(chunk)))
                 }
             }
         }.onFailure { ex -> cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex)) }
@@ -182,7 +182,7 @@ enum class ReadType(val id: Int, val face: String) {
     COILS(1, "1.Read Coils"),
     INPUT_DISCRETES(2, "2.Read Input Discretes"),
     HOLDING_REGISTERS(3, "3.Read Holding Registers"),
-    INPUT_REGISTERS(4, "4.Read Input Registers"),
     HOLDING_REGISTERS_X2(13, "3.Read Holding Registers x2"),
+    INPUT_REGISTERS(4, "4.Read Input Registers"),
     INPUT_REGISTERS_X2(14, "4.Read Input Registers x2"),
 }

@@ -120,13 +120,13 @@ fun Short.toText(): String {
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-fun Int.toText(): String {
-    val ba = (0..<3).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
+fun Int.toText(words: Int = 1): String {
+    val ba = (0..<2 * words).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
     val h = ba.joinToString("") { it.toString(16).padStart(2, '0') }
     val b = ba.joinToString("_") { it.toString(2).padStart(8, '0') }
     val s = ba.fold("") { a, e -> a + e.toByte().toPrintable() }
-    val d = "$this".padStart(4 * 5 / 2)
-    val ud = toUInt().toString().padStart(4 * 5 / 2)
+    val d = "$this".padStart(2 * words * 5 / 2)
+    val ud = toUInt().toString().padStart(2 * words * 5 / 2)
     return "$d, $ud, $h, $b, \"$s\""
 }
 
