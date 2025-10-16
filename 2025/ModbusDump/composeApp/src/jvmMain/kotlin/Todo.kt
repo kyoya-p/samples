@@ -170,7 +170,7 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = 
             }?.run {
                 asSequence().chunked(chunk).forEachIndexed { i, e ->
                     val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
-                    cb(MBRes.OK(ofs + i * chunk, v.toText(chunk)))
+                    cb(MBRes.OK(ofs + i * chunk, "${ofs.toAddress()}, ${v.toText(chunk)}"))
                 }
             }
         }.onFailure { ex -> cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex)) }
