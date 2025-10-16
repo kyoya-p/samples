@@ -41,7 +41,7 @@ fun modbusMain(args: Array<String>) = runCatching {
     )
 }
 
-fun BitVector.forEachIndexed(op: (Int, String) -> Unit) = (0..<size()).forEach { op(it, if (getBit(it)) "1" else "0") }
+fun BitVector.forEachIndexed(op: (Int, Boolean) -> Unit) = (0..<size()).forEach { op(it, getBit(it)) }
 operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
 fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
 

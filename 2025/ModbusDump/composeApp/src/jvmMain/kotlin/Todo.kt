@@ -103,7 +103,8 @@ bulk-size: $nAcq
                     val master = ModbusTCPMaster(hostAdr)
                     master.connect()
 //                    master.read(params).forEach { result += "$it\n" }
-                    master.read(params) { result += "${it.message}\n" }
+                    val count = master.read(params) { result += "${it.message}\n" }
+                    result += "\n$count\n"
                     master.disconnect()
                 }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
                 val dt = now().toLocalDateTime(currentSystemDefault())
@@ -148,21 +149,25 @@ sealed class MBRes(val adr: Int, val message: String) {
     class Error(adr: Int, message: String, val ex: Throwable) : MBRes(adr, message)
 }
 
-class SummaryResult(val success: Int, val error: Int, val total: Int)
 
-fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = with(params) {
+fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = with(params) {
     val chunk = when (mode2) {
         HOLDING_REGISTERS_X2, INPUT_REGISTERS_X2 -> 2
         else -> 1
     }
     val nAcqAligned = (nAcq + (chunk - 1)) / chunk * chunk
+    var total = ResultCount(0, 0)
+    val resData = mutableMapOf<Int, Int>()
     for (ofs in regAdr..<regAdr + regCount step nAcqAligned) {
         runCatching {
             when (mode2) {
                 COILS -> readCoils(unitId, ofs, nAcq)
                 INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
                 else -> null
-            }?.forEachIndexed { i, m -> cb(MBRes.OK(ofs, m)) }
+            }?.forEachIndexed { i, v ->
+                cb(MBRes.OK(ofs, "$v"))
+                resData[ofs + i] = if (v) 1 else 0
+            }
             when (mode2) {
                 HOLDING_REGISTERS, HOLDING_REGISTERS_X2 -> readMultipleRegisters(unitId, ofs, nAcqAligned)
                 INPUT_REGISTERS, INPUT_REGISTERS_X2 -> readInputRegisters(unitId, ofs, nAcqAligned)
@@ -171,18 +176,31 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = 
                 asSequence().chunked(chunk).forEachIndexed { i, e ->
                     val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
                     cb(MBRes.OK(ofs + i * chunk, "${ofs.toAddress()}, ${v.toText(chunk)}"))
+                    resData[ofs + i] = v
                 }
             }
-        }.onFailure { ex -> cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex)) }
+            total = total.copy(total = total.total + 1)
+        }.onFailure { ex ->
+            total = total.copy(error = total.error + 1)
+            cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex))
+        }
+        SystemFileSystem.sink(Path("XXX.mbus")).buffered().use { it.writeString(resData.toString()) }
     }
-    return@with SummaryResult(0, 0, 0)
+    return@with total
 }
 
-enum class ReadType(val id: Int, val face: String) {
-    COILS(1, "1.Read Coils"),
-    INPUT_DISCRETES(2, "2.Read Input Discretes"),
-    HOLDING_REGISTERS(3, "3.Read Holding Registers"),
-    HOLDING_REGISTERS_X2(13, "3.Read Holding Registers x2"),
-    INPUT_REGISTERS(4, "4.Read Input Registers"),
-    INPUT_REGISTERS_X2(14, "4.Read Input Registers x2"),
+enum class ReadType(val face: String) {
+    COILS("1.Read Coils"),
+    INPUT_DISCRETES("2.Read Input Discretes"),
+    HOLDING_REGISTERS("3.Read Holding Registers"),
+    HOLDING_REGISTERS_X2("3.Read Holding Registers x2"),
+    INPUT_REGISTERS("4.Read Input Registers"),
+    INPUT_REGISTERS_X2("4.Read Input Registers x2"),
 }
+
+data class ModbusDataSet(
+    val readType: ReadType,
+    val dataSet: Map<Int, Int>
+)
+
+data class ResultCount(val total: Int, val error: Int)
