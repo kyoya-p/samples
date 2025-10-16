@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import appHome
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 import config
+import forEachIndexed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
@@ -43,8 +44,9 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
-import kotlinx.serialization.Serializable
-import read
+import toAddress
+import toText
+import v2.ReadType.*
 import kotlin.collections.fold
 import kotlin.sequences.chunked
 import kotlin.sequences.forEachIndexed
@@ -89,18 +91,19 @@ fun UI() = MaterialTheme {
         if (run) with(params) {
             launch(Dispatchers.Default) {
                 result = """date: ${now().toLocalDateTime(currentSystemDefault())}
-hostAdr: $hostAdr
-unitId: $unitId
-mode: ${mode.face}
-registerAdr: $regAdr
-registerCount: $regCount
-bulkSize: $nAcq
+host-adr: $hostAdr
+unit-id: $unitId
+read-mode: ${mode2.face}
+register-adr: $regAdr
+register-count: $regCount
+bulk-size: $nAcq
 
 """
                 runCatching {
                     val master = ModbusTCPMaster(hostAdr)
                     master.connect()
-                    master.read(params).forEach { result += "$it\n" }
+//                    master.read(params).forEach { result += "$it\n" }
+                    master.read(params) { result += "${it.message}\n" }
                     master.disconnect()
                 }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
                 val dt = now().toLocalDateTime(currentSystemDefault())
@@ -129,30 +132,45 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
         isError = !hostAdr.trim().all { it.isDigit() || it == '.' },
         onValueChange = { onChange(copy(hostAdr = it)) })
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
-    DropdownMenu(mode, MBMode.entries, "Mode", { onChange(copy(mode = it)) }) { _, e -> e.face }
+    DropdownMenu<ReadType>(
+        selectedOption = mode2,
+        options = ReadType.entries.map { it },
+        label = "Read Mode",
+        onChange = { onChange(copy(mode2 = it)) },
+    ) { _, e -> e.face }
     IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
     IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
     IntField(nAcq, label = "Data acquisition quantity", onValueChange = { onChange(copy(nAcq = it)) })
 }
 
-/*
+sealed class MBRes(val adr: Int, val message: String) {
+    class OK(adr: Int, message: String) : MBRes(adr, message)
+    class Error(adr: Int, message: String, val ex: Throwable) : MBRes(adr, message)
+}
+
+class SummaryResult(val success: Int, val error: Int, val total: Int)
 
 fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = with(params) {
-    val nAcqAligned = if (mode2 is ReadMode.REGISTERS) (nAcq + 1) / mode2.nWord * mode2.nWord else nAcq
+    val chunk = when (mode2) {
+        HOLDING_REGISTERS_X2, INPUT_REGISTERS_X2 -> 2
+        else -> 1
+    }
+    val nAcqAligned = (nAcq + (chunk - 1)) / chunk * chunk
     for (ofs in regAdr..<regAdr + regCount step nAcqAligned) {
         runCatching {
             when (mode2) {
-                is ReadMode.BIT_VECTORS -> when (mode2) {
-                    is ReadMode.BIT_VECTORS.COILS -> readCoils(unitId, ofs, nAcq)
-                    is ReadMode.BIT_VECTORS.INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
-                }.forEachIndexed { i, m -> cb(MBRes.OK(ofs, m)) }
-
-                is ReadMode.REGISTERS -> when (mode2) {
-                    is ReadMode.REGISTERS.HOLDING_REGISTERS -> readMultipleRegisters(unitId, ofs, nAcqAligned)
-                    is ReadMode.REGISTERS.INPUT_REGISTERS -> readInputRegisters(unitId, ofs, nAcqAligned)
-                }.asSequence().chunked(2).forEachIndexed { i, e ->
+                COILS -> readCoils(unitId, ofs, nAcq)
+                INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
+                else -> null
+            }?.forEachIndexed { i, m -> cb(MBRes.OK(ofs, m)) }
+            when (mode2) {
+                HOLDING_REGISTERS, HOLDING_REGISTERS_X2 -> readMultipleRegisters(unitId, ofs, nAcqAligned)
+                INPUT_REGISTERS, INPUT_REGISTERS_X2 -> readInputRegisters(unitId, ofs, nAcqAligned)
+                else -> null
+            }?.run {
+                asSequence().chunked(chunk).forEachIndexed { i, e ->
                     val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
-                    cb(MBRes.OK(ofs + i * 2, v.toText()))
+                    cb(MBRes.OK(ofs + i * chunk, v.toText()))
                 }
             }
         }.onFailure { ex -> cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex)) }
@@ -160,45 +178,11 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): SummaryResult = 
     return@with SummaryResult(0, 0, 0)
 }
 
-*/
-@Serializable
-sealed class ReadMode() {
-    @Serializable
-    sealed class BIT_VECTORS : ReadMode() {
-        @Serializable
-        class COILS : BIT_VECTORS()
-
-        @Serializable
-        class INPUT_DISCRETES : BIT_VECTORS()
-    }
-
-    @Serializable
-    sealed class REGISTERS() : ReadMode() {
-        @Serializable
-        class HOLDING_REGISTERS() : REGISTERS()
-
-        @Serializable
-        class INPUT_REGISTERS() : REGISTERS()
-    }
-    @Serializable
-    sealed class REGISTERSx2() : ReadMode() {
-        @Serializable
-        class HOLDING_REGISTERS() : REGISTERSx2()
-
-        @Serializable
-        class INPUT_REGISTERS() : REGISTERSx2()
-    }
-
-    companion object {
-        val items: Map<ReadMode, String> = mapOf(
-            BIT_VECTORS.COILS() to "1.Read Coils",
-            BIT_VECTORS.INPUT_DISCRETES() to "2.Read Input Discretes",
-            REGISTERS.HOLDING_REGISTERS() to "3.Read Holding Registers",
-            REGISTERS.INPUT_REGISTERS() to "4.Read Input Registers",
-            REGISTERS.HOLDING_REGISTERS() to "3.Read Holding Registers - x2 word",
-            REGISTERS.INPUT_REGISTERS() to "4.Read Input Registers - x2 word"
-        )
-    }
-
-    val face get() = items[this]!!
+enum class ReadType(val id: Int, val face: String) {
+    COILS(1, "1.Read Coils"),
+    INPUT_DISCRETES(2, "2.Read Input Discretes"),
+    HOLDING_REGISTERS(3, "3.Read Holding Registers"),
+    INPUT_REGISTERS(4, "4.Read Input Registers"),
+    HOLDING_REGISTERS_X2(13, "3.Read Holding Registers x2"),
+    INPUT_REGISTERS_X2(14, "4.Read Input Registers x2"),
 }

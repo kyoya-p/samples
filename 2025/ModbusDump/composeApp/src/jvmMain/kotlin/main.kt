@@ -9,7 +9,7 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
-import v2.ReadMode
+import v2.ReadType
 
 fun main(args: Array<String>) {
     if (args.isNotEmpty()) modbusMain(args)
@@ -20,6 +20,7 @@ fun main(args: Array<String>) {
             state = rememberWindowState(width = 1024.dp, height = 768.dp),
         ) {
             v2.UI() //TODO
+//            UI() //TODO
         }
     }
 }
@@ -32,7 +33,7 @@ data class AppData(
     val regCount: Int = 8,
     val nAcq: Int = 1,
     val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
-    val mode2: ReadMode = ReadMode.REGISTERS.HOLDING_REGISTERS(),
+    val mode2: ReadType = ReadType.HOLDING_REGISTERS,
     val nWord: Int = 1, //TODO
     val result: String = "",
 )

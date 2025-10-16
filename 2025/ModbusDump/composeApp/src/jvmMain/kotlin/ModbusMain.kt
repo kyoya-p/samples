@@ -45,13 +45,6 @@ fun BitVector.forEachIndexed(op: (Int, String) -> Unit) = (0..<size()).forEach {
 operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
 fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
 
-sealed class MBRes(val adr: Int, val message: String) {
-    class OK(adr: Int, message: String) : MBRes(adr, message)
-    class Error(adr: Int, message: String, val ex: Throwable) : MBRes(adr, message)
-}
-
-class SummaryResult(val success: Int, val error: Int, val total: Int)
-
 fun ModbusTCPMaster.read(params: AppData) = with(params) {
     sequence {
         when (mode) {
