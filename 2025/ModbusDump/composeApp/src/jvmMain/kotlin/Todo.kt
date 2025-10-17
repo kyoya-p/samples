@@ -165,7 +165,7 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = wi
                 INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
                 else -> null
             }?.forEachIndexed { i, v ->
-                cb(MBRes.OK(ofs, "$v"))
+                cb(MBRes.OK(ofs + i, "$v"))
                 resData[ofs + i] = if (v) 1 else 0
             }
             when (mode2) {
@@ -175,8 +175,8 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = wi
             }?.run {
                 asSequence().chunked(chunk).forEachIndexed { i, e ->
                     val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
-                    cb(MBRes.OK(ofs + i * chunk, "${ofs.toAddress()}, ${v.toText(chunk)}"))
-                    resData[ofs + i] = v
+                    cb(MBRes.OK(ofs + i * chunk, "${(ofs + i * chunk).toAddress()}, ${v.toText(chunk)}"))
+                    resData[ofs + i * chunk] = v
                 }
             }
             total = total.copy(total = total.total + 1)
@@ -200,7 +200,7 @@ enum class ReadType(val face: String) {
 
 data class ModbusDataSet(
     val readType: ReadType,
-    val dataSet: Map<Int, Int>
+    val dataSet: Map<Int, Int>,
 )
 
 data class ResultCount(val total: Int, val error: Int)

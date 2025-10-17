@@ -1,11 +1,12 @@
 # Usage
-```sh:GUI
+```sh
 moddump
 ```
 
 # Debug run
 ```sh
-sh gradlew run # GUI
+sh gradlew run
+sh gradlew hotRunJvm --auto # Hot Reload
 ```
 
 # Build
