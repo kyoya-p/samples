@@ -7,15 +7,9 @@ import com.ghgande.j2mod.modbus.util.BitVector
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
-import kotlinx.io.readString
 import kotlinx.io.writeString
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import modbusdump.AppData
 import v2.ReadType.*
-import kotlin.collections.fold
-import kotlin.sequences.chunked
-import kotlin.sequences.forEachIndexed
-import kotlin.use
 
 sealed class MBRes(val adr: Int, val message: String) {
     class OK(adr: Int, message: String) : MBRes(adr, message)
@@ -78,29 +72,29 @@ data class ModbusDataSet(
 data class ResultCount(val total: Int, val error: Int)
 
 
-@Serializable
-data class AppData(
-    val hostAdr: String = "",
-    val unitId: Int = 1,
-    val regAdr: Int = 0,
-    val regCount: Int = 8,
-    val nAcq: Int = 1,
-    val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
-    val mode2: ReadType = ReadType.HOLDING_REGISTERS,
-    val nWord: Int = 1, //TODO
-    val result: String = "",
-)
+//@Serializable
+//data class AppData(
+//    val hostAdr: String = "",
+//    val unitId: Int = 1,
+//    val regAdr: Int = 0,
+//    val regCount: Int = 8,
+//    val nAcq: Int = 1,
+//    val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
+//    val mode2: ReadType = ReadType.HOLDING_REGISTERS,
+//    val nWord: Int = 1, //TODO
+//    val result: String = "",
+//)
 
-val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
-val configFile = Path("$appHome/config.json")
-var config
-    get() = runCatching {
-        Json.decodeFromString<AppData>(SystemFileSystem.source(configFile).buffered().readString())
-    }.getOrElse { AppData() }
-    set(a) = with(SystemFileSystem) {
-        if (!exists(configFile)) createDirectories(configFile.parent!!)
-        sink(configFile).buffered().use { it.writeString(Json.encodeToString(a)) }
-    }
+//val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
+//val configFile = Path("$appHome/config.json")
+//var config
+//    get() = runCatching {
+//        Json.decodeFromString<AppData>(SystemFileSystem.source(configFile).buffered().readString())
+//    }.getOrElse { AppData() }
+//    set(a) = with(SystemFileSystem) {
+//        if (!exists(configFile)) createDirectories(configFile.parent!!)
+//        sink(configFile).buffered().use { it.writeString(Json.encodeToString(a)) }
+//    }
 
 fun BitVector.forEachIndexed(op: (Int, Boolean) -> Unit) = (0..<size()).forEach { op(it, getBit(it)) }
 operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
