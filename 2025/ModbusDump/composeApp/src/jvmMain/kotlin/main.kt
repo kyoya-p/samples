@@ -1,3 +1,6 @@
+package modbusdump
+
+import MBMode
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -9,6 +12,7 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import modbusMain
 import v2.ReadType
 
 fun main(args: Array<String>) {

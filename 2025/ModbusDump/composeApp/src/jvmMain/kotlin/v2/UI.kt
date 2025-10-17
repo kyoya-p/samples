@@ -1,8 +1,5 @@
 package v2
 
-import AppData
-import DropdownMenu
-import IntField
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,11 +14,17 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import appHome
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
-import config
-import forEachIndexed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
@@ -44,12 +44,6 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
-import toAddress
-import toText
-import v2.ReadType.*
-import kotlin.collections.fold
-import kotlin.sequences.chunked
-import kotlin.sequences.forEachIndexed
 import kotlin.stackTraceToString
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
@@ -123,7 +117,6 @@ bulk-size: $nAcq
     config = params
 }
 
-
 @Composable
 fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
     TextField(
@@ -144,63 +137,64 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
     IntField(nAcq, label = "Data acquisition quantity", onValueChange = { onChange(copy(nAcq = it)) })
 }
 
-sealed class MBRes(val adr: Int, val message: String) {
-    class OK(adr: Int, message: String) : MBRes(adr, message)
-    class Error(adr: Int, message: String, val ex: Throwable) : MBRes(adr, message)
-}
 
+fun String.toIntHex() = trim().run { if (startsWith("0x")) drop(2).toInt(16) else toInt() }
 
-fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = with(params) {
-    val chunk = when (mode2) {
-        HOLDING_REGISTERS_X2, INPUT_REGISTERS_X2 -> 2
-        else -> 1
-    }
-    val nAcqAligned = (nAcq + (chunk - 1)) / chunk * chunk
-    var total = ResultCount(0, 0)
-    val resData = mutableMapOf<Int, Int>()
-    for (ofs in regAdr..<regAdr + regCount step nAcqAligned) {
-        runCatching {
-            when (mode2) {
-                COILS -> readCoils(unitId, ofs, nAcq)
-                INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
-                else -> null
-            }?.forEachIndexed { i, v ->
-                cb(MBRes.OK(ofs, "$v"))
-                resData[ofs + i] = if (v) 1 else 0
-            }
-            when (mode2) {
-                HOLDING_REGISTERS, HOLDING_REGISTERS_X2 -> readMultipleRegisters(unitId, ofs, nAcqAligned)
-                INPUT_REGISTERS, INPUT_REGISTERS_X2 -> readInputRegisters(unitId, ofs, nAcqAligned)
-                else -> null
-            }?.run {
-                asSequence().chunked(chunk).forEachIndexed { i, e ->
-                    val v = e.fold(0U) { a, e -> a * 0x10000U + e.value.toUInt() }.toInt()
-                    cb(MBRes.OK(ofs + i * chunk, "${ofs.toAddress()}, ${v.toText(chunk)}"))
-                    resData[ofs + i] = v
-                }
-            }
-            total = total.copy(total = total.total + 1)
-        }.onFailure { ex ->
-            total = total.copy(error = total.error + 1)
-            cb(MBRes.Error(ofs, "${ofs.toAddress()}, ${ex.message}", ex))
-        }
-        SystemFileSystem.sink(Path("XXX.mbus")).buffered().use { it.writeString(resData.toString()) }
-    }
-    return@with total
-}
-
-enum class ReadType(val face: String) {
-    COILS("1.Read Coils"),
-    INPUT_DISCRETES("2.Read Input Discretes"),
-    HOLDING_REGISTERS("3.Read Holding Registers"),
-    HOLDING_REGISTERS_X2("3.Read Holding Registers x2"),
-    INPUT_REGISTERS("4.Read Input Registers"),
-    INPUT_REGISTERS_X2("4.Read Input Registers x2"),
-}
-
-data class ModbusDataSet(
-    val readType: ReadType,
-    val dataSet: Map<Int, Int>
+@Composable
+fun IntField(
+    v: Int,
+    sv: MutableState<String> = remember { mutableStateOf(v.toString()) },
+    label: String,
+    modifier: Modifier = Modifier,
+    onValueChange: (Int) -> Unit,
+) = TextField(
+    sv.value,
+    onValueChange = {
+        sv.value = it
+        runCatching { onValueChange(it.toIntHex()) }
+    },
+    label = {
+        val i = runCatching { sv.value.toIntHex().let { "$it / 0x${it.toString(16).uppercase()}" } }.getOrElse { "---" }
+        Text("$label ( $i )")
+    },
+    modifier = modifier,
+    isError = runCatching { sv.value.toIntHex() }.isFailure,
+    singleLine = true,
 )
 
-data class ResultCount(val total: Int, val error: Int)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+inline fun <reified E> DropdownMenu(
+    selectedOption: E,
+    options: Iterable<E>,
+    label: String,
+    crossinline onChange: (E) -> Unit,
+    modifier: Modifier = Modifier,
+    crossinline itemFace: (ix: Int, e: E) -> String,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier
+    ) {
+        TextField(
+            value = itemFace(-1, selectedOption),
+            onValueChange = { },
+            readOnly = true,
+            trailingIcon = { TrailingIcon(expanded = expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true),
+            label = { Text(label) }
+        )
+
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEachIndexed { i, option ->
+                DropdownMenuItem(
+                    text = { Text(itemFace(i, option)) },
+                    onClick = { onChange(option); expanded = false },
+                )
+            }
+        }
+    }
+}

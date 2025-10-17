@@ -3,6 +3,7 @@ import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 import com.ghgande.j2mod.modbus.procimg.Register
 import com.ghgande.j2mod.modbus.util.BitVector
 import kotlinx.serialization.Serializable
+import modbusdump.AppData
 import kotlin.Char
 
 @OptIn(ExperimentalStdlibApi::class)

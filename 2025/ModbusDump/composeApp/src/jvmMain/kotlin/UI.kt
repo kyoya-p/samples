@@ -1,3 +1,5 @@
+package modbusdump
+
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,7 @@ import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
+import read
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
 
@@ -76,7 +79,7 @@ fun UI() = MaterialTheme {
                 result = """date: ${now().toLocalDateTime(currentSystemDefault())}
 hostAdr: $hostAdr
 unitId: $unitId
-mode: ${mode.face}
+mode: $mode
 registerAdr: $regAdr
 registerCount: $regCount
 bulkSize: $nAcq
