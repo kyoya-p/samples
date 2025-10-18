@@ -1,4 +1,4 @@
-package v2
+package modbusdump.v2
 
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.layout.Box
@@ -56,9 +56,8 @@ import kotlin.use
 @OptIn(ExperimentalTime::class)
 @Composable
 fun UI() = MaterialTheme {
-    val x = config.copy(result = "")
-    var params: AppData by remember { mutableStateOf(x) }
-    var result by remember { mutableStateOf(params.result) }
+    var params: AppData by remember { mutableStateOf(config) }
+    var result by remember { mutableStateOf("") }
     var run by remember { mutableStateOf(false) }
     Row {
         Column {
@@ -90,7 +89,7 @@ fun UI() = MaterialTheme {
                 result = """date: ${now().toLocalDateTime(currentSystemDefault())}
 host-adr: $hostAdr
 unit-id: $unitId
-read-mode: ${mode2.face}
+read-mode: ${mode.face}
 register-adr: $regAdr
 register-count: $regCount
 bulk-size: $nAcq
@@ -122,18 +121,13 @@ bulk-size: $nAcq
 
 @Composable
 fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
-    TextField(
-        hostAdr,
-        label = { Text("Device address") },
-        singleLine = true,
-        isError = !hostAdr.trim().all { it.isDigit() || it == '.' },
-        onValueChange = { onChange(copy(hostAdr = it)) })
+    TcpField { onChange(it) }
     IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
     DropdownMenu<ReadType>(
-        selectedOption = mode2,
+        selectedOption = mode,
         options = ReadType.entries.map { it },
         label = "Read Mode",
-        onChange = { onChange(copy(mode2 = it)) },
+        onChange = { onChange(copy(mode = it)) },
     ) { _, e -> e.face }
     IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
     IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
@@ -142,6 +136,20 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
 
 
 fun String.toIntHex() = trim().run { if (startsWith("0x")) drop(2).toInt(16) else toInt() }
+
+@Composable
+fun AppData.TcpField(
+    toTcp: (String) -> AppData = { s -> (s + ":502").split(":").let { copy(it[0], port = it[1].toIntHex()) } },
+    toString: () -> String = { "${hostAdr.trim()}${if (port != 502) ":$port" else ""}" },
+    sv: MutableState<String> = remember { mutableStateOf(toString()) },
+    onValueChange: (AppData) -> Unit
+) = TextField(
+    value = sv.value,
+    label = { Text("Target (address: $hostAdr, port: $port)") },
+    singleLine = true,
+    isError = runCatching { toTcp(sv.value) }.isFailure,
+    onValueChange = { sv.value = it; runCatching { onValueChange(toTcp(it)) } },
+)
 
 @Composable
 fun IntField(

@@ -1,15 +1,13 @@
-package v2
+package modbusdump.v2
 
-import com.ghgande.j2mod.modbus.Modbus
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
-import com.ghgande.j2mod.modbus.procimg.Register
 import com.ghgande.j2mod.modbus.util.BitVector
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 import modbusdump.AppData
-import v2.ReadType.*
+import modbusdump.v2.ReadType.*
 
 sealed class MBRes(val adr: Int, val message: String) {
     class OK(adr: Int, message: String) : MBRes(adr, message)
@@ -17,7 +15,7 @@ sealed class MBRes(val adr: Int, val message: String) {
 }
 
 fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = with(params) {
-    val chunk = when (mode2) {
+    val chunk = when (mode) {
         HOLDING_REGISTERS_X2, INPUT_REGISTERS_X2 -> 2
         else -> 1
     }
@@ -26,7 +24,7 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = wi
     val resData = mutableMapOf<Int, Int>()
     for (ofs in regAdr..<regAdr + regCount step nAcqAligned) {
         runCatching {
-            when (mode2) {
+            when (mode) {
                 COILS -> readCoils(unitId, ofs, nAcq)
                 INPUT_DISCRETES -> readInputDiscretes(unitId, ofs, nAcq)
                 else -> null
@@ -34,7 +32,7 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = wi
                 cb(MBRes.OK(ofs, "$v"))
                 resData[ofs + i] = if (v) 1 else 0
             }
-            when (mode2) {
+            when (mode) {
                 HOLDING_REGISTERS, HOLDING_REGISTERS_X2 -> readMultipleRegisters(unitId, ofs, nAcqAligned)
                 INPUT_REGISTERS, INPUT_REGISTERS_X2 -> readInputRegisters(unitId, ofs, nAcqAligned)
                 else -> null
@@ -98,32 +96,32 @@ data class ResultCount(val total: Int, val error: Int)
 
 fun BitVector.forEachIndexed(op: (Int, Boolean) -> Unit) = (0..<size()).forEach { op(it, getBit(it)) }
 operator fun BitVector.get(i: Int) = if (getBit(i)) "1" else "0"
-fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
+//fun List<Register>.toLong() = fold(0L) { a, e -> a * 0x10000L + e.value }
 
-enum class MBMode(
-    val code: Int,
-    val face: String,
-) {
-    READ_COILS(Modbus.READ_COILS, "1.Read Coils"),
-    READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2.Read Input Discrete"),
-    READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3.Read Holding Registers"),
-    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4.Read Input Registers"),
-    READ_HOLDING_REGISTERS_DWORD(Modbus.READ_HOLDING_REGISTERS, "13.Read Holding Regs x2"),
-    READ_INPUT_REGISTERS_DWORD(Modbus.READ_INPUT_REGISTERS, "14.Read Input Regs x2"),
-}
+//enum class MBMode(
+//    val code: Int,
+//    val face: String,
+//) {
+//    READ_COILS(Modbus.READ_COILS, "1.Read Coils"),
+//    READ_INPUT_DISCRETES(Modbus.READ_INPUT_DISCRETES, "2.Read Input Discrete"),
+//    READ_HOLDING_REGISTERS(Modbus.READ_HOLDING_REGISTERS, "3.Read Holding Registers"),
+//    READ_INPUT_REGISTERS(Modbus.READ_INPUT_REGISTERS, "4.Read Input Registers"),
+//    READ_HOLDING_REGISTERS_DWORD(Modbus.READ_HOLDING_REGISTERS, "13.Read Holding Regs x2"),
+//    READ_INPUT_REGISTERS_DWORD(Modbus.READ_INPUT_REGISTERS, "14.Read Input Regs x2"),
+//}
 
 fun Int.toAddress() = "${toString().padStart(5)}, ${toString(16).padStart(4, '0')}"
 
-@OptIn(ExperimentalUnsignedTypes::class)
-fun Short.toText(): String {
-    val ba = (0..<1).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
-    val h = ba.joinToString("") { it.toString(16).padStart(2, '0') }
-    val b = ba.joinToString("_") { it.toString(2).padStart(8, '0') }
-    val s = ba.fold("") { a, e -> a + e.toByte().toPrintable() }
-    val d = toString().padStart(2 * 5 / 2)
-    val ud = toUShort().toString().padStart(2 * 5 / 2)
-    return "$d, $ud, $h, $b, \"$s\""
-}
+//@OptIn(ExperimentalUnsignedTypes::class)
+//fun Short.toText(): String {
+//    val ba = (0..<1).scan(toUInt()) { a, _ -> a shr 8 }.map { it.toUByte() }.reversed().toUByteArray()
+//    val h = ba.joinToString("") { it.toString(16).padStart(2, '0') }
+//    val b = ba.joinToString("_") { it.toString(2).padStart(8, '0') }
+//    val s = ba.fold("") { a, e -> a + e.toByte().toPrintable() }
+//    val d = toString().padStart(2 * 5 / 2)
+//    val ud = toUShort().toString().padStart(2 * 5 / 2)
+//    return "$d, $ud, $h, $b, \"$s\""
+//}
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun Int.toText(words: Int = 1): String {

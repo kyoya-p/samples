@@ -12,7 +12,9 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
-import v2.read
+import modbusdump.v2.MBRes
+import modbusdump.v2.UI
+import modbusdump.v2.read
 
 fun main(args: Array<String>) {
     if (args.isNotEmpty()) modbusMain(args)
@@ -22,7 +24,7 @@ fun main(args: Array<String>) {
             title = "ModbusDump",
             state = rememberWindowState(width = 1024.dp, height = 768.dp),
         ) {
-            v2.UI() //TODO
+            UI() //TODO
 //            UI() //TODO
         }
     }
@@ -41,7 +43,7 @@ fun modbusMain(args: Array<String>) = runCatching {
 
     val master = ModbusTCPMaster(hostAdr)
     master.connect()
-    master.read(AppData(hostAdr, unitId, regAdr, regCount , bulkSize)) {
+    master.read(AppData(hostAdr, unitId, regAdr, regCount, bulkSize)) {
         println(it)
     }
 //    master.read(AppData(hostAdr, unitId, regAdr, regCount, bulkSize)) { println(it) }
@@ -67,20 +69,20 @@ fun modbusMain(args: Array<String>) = runCatching {
     )
 }
 
-typealias ReadType = v2.ReadType
-typealias MBRes = v2.MBRes
+typealias ReadType = modbusdump.v2.ReadType
+typealias MBRes = MBRes
 
 @Serializable
 data class AppData(
     val hostAdr: String = "",
+    val port: Int = 502,
     val unitId: Int = 1,
     val regAdr: Int = 0,
     val regCount: Int = 8,
     val nAcq: Int = 1,
-//    val mode: MBMode = MBMode.READ_HOLDING_REGISTERS,
-    val mode2: ReadType = ReadType.HOLDING_REGISTERS,
-    val nWord: Int = 1, //TODO
-    val result: String = "",
+    val mode: ReadType = ReadType.HOLDING_REGISTERS,
+    val nWord: Int = 1,
+//    val result: String = "",
 )
 
 val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
