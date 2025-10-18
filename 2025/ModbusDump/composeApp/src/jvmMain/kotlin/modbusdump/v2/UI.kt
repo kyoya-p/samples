@@ -122,16 +122,16 @@ bulk-size: $nAcq
 @Composable
 fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
     TcpField { onChange(it) }
-    IntField(unitId, label = "Unit ID", onValueChange = { onChange(copy(unitId = it)) })
-    DropdownMenu<ReadType>(
-        selectedOption = mode,
+    IntField(unitId, label = "Unit ID") { onChange(copy(unitId = it)) }
+    DropdownMenu(
+        selected = mode,
         options = ReadType.entries.map { it },
         label = "Read Mode",
-        onChange = { onChange(copy(mode = it)) },
-    ) { _, e -> e.face }
-    IntField(regAdr, label = "Data address", onValueChange = { onChange(copy(regAdr = it)) })
-    IntField(regCount, label = "# of Data items", onValueChange = { onChange(copy(regCount = it)) })
-    IntField(nAcq, label = "Data acquisition quantity", onValueChange = { onChange(copy(nAcq = it)) })
+        itemFace = { _, e -> e.face },
+    ) { onChange(copy(mode = it)) }
+    IntField(regAdr, label = "Data address") { onChange(copy(regAdr = it)) }
+    IntField(regCount, label = "# of Data items") { onChange(copy(regCount = it)) }
+    IntField(nAcq, label = "Data acquisition quantity") { onChange(copy(nAcq = it)) }
 }
 
 
@@ -176,22 +176,20 @@ fun IntField(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 inline fun <reified E> DropdownMenu(
-    selectedOption: E,
+    selected: E,
     options: Iterable<E>,
     label: String,
-    crossinline onChange: (E) -> Unit,
-    modifier: Modifier = Modifier,
     crossinline itemFace: (ix: Int, e: E) -> String,
+    crossinline onChange: (E) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
-        modifier = modifier
     ) {
         TextField(
-            value = itemFace(-1, selectedOption),
+            value = itemFace(-1, selected),
             onValueChange = { },
             readOnly = true,
             trailingIcon = { TrailingIcon(expanded = expanded) },
