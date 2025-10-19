@@ -43,7 +43,13 @@ fun modbusMain(args: Array<String>) = runCatching {
 
     val master = ModbusTCPMaster(hostAdr)
     master.connect()
-    master.read(AppData(hostAdr, unitId, regAdr, regCount, bulkSize)) {
+    master.read(
+        AppData(
+            hostAdr,
+            mode = ReadType.entries.first { it.code == modeCode },
+            unitId, regAdr, regCount, bulkSize
+        )
+    ) {
         println(it)
     }
 //    master.read(AppData(hostAdr, unitId, regAdr, regCount, bulkSize)) { println(it) }
@@ -75,12 +81,12 @@ typealias MBRes = MBRes
 @Serializable
 data class AppData(
     val hostAdr: String = "",
+    val mode: ReadType = ReadType.HOLDING_REGISTERS,
     val port: Int = 502,
     val unitId: Int = 1,
     val regAdr: Int = 0,
     val regCount: Int = 8,
     val nAcq: Int = 1,
-    val mode: ReadType = ReadType.HOLDING_REGISTERS,
     val nWord: Int = 1,
 //    val result: String = "",
 )

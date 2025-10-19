@@ -9,7 +9,10 @@ plugins {
     kotlin("plugin.serialization") version "2.2.20" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
 }
 
+
 kotlin {
+    compilerOptions { freeCompilerArgs.add("-Xcontext-parameters") }
+
     jvm()
 
     sourceSets {

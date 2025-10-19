@@ -53,13 +53,13 @@ fun ModbusTCPMaster.read(params: AppData, cb: (MBRes) -> Unit): ResultCount = wi
     return@with total
 }
 
-enum class ReadType(val face: String) {
-    COILS("1.Read Coils"),
-    INPUT_DISCRETES("2.Read Input Discretes"),
-    HOLDING_REGISTERS("3.Read Holding Registers"),
-    HOLDING_REGISTERS_X2("3.Read Holding Registers x2"),
-    INPUT_REGISTERS("4.Read Input Registers"),
-    INPUT_REGISTERS_X2("4.Read Input Registers x2"),
+enum class ReadType(val code:Int, val face: String) {
+    COILS(1, "1.Read Coils"),
+    INPUT_DISCRETES(2, "2.Read Input Discretes"),
+    HOLDING_REGISTERS(3, "3.Read Holding Registers"),
+    HOLDING_REGISTERS_X2(23, "23.Read Holding Registers x2"),
+    INPUT_REGISTERS(4, "4.Read Input Registers"),
+    INPUT_REGISTERS_X2(24, "24.Read Input Registers x2"),
 }
 
 data class ModbusDataSet(
