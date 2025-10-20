@@ -1,57 +1,52 @@
-import java.util.*
-import kotlin.math.max
-
 // カードとスピリットのデータクラス
-data class SpiritCard(
+sealed class Card(
     val name: String,
-    val cost: Int, // 召喚コスト
-    val reductionSymbol: Int, // 軽減シンボル数 (赤シンボルとして扱う)
-    val levelCosts: Map<Int, Int> // レベル -> そのレベルに必要なコア数
-)
-
-data class Spirit(
-    val card: SpiritCard,
-    var currentLevel: Int,
-    var coresOnSpirit: Int
+    val cost: Int, // コスト
+    val reductionSymbol: Int, // 軽減シンボル数
+    val symbols: Int, // シンボル数
 ) {
-    // フィールドにいるスピリットが提供する軽減シンボル数
-    fun getProvidedSymbols(): Int {
-        return 1 // スピリットは1つのシンボルを提供すると仮定
+    class SpiritCard(
+        name: String,
+        cost: Int, // 召喚コスト
+        reductionSymbol: Int, // 軽減シンボル数 (赤シンボルとして扱う)
+        symbols: Int, // シンボル数
+        val levelCosts: Map<Int, Int> // レベル -> そのレベルに必要なコア数
+    ) : Card(name, cost, reductionSymbol, symbols) {
+        override fun getProvidedSymbols(): Int = 1
     }
 
-    fun deepCopy(): Spirit {
-        return Spirit(card, currentLevel, coresOnSpirit)
+    open fun getProvidedSymbols(): Int = 0 //TODO     // フィールドオブジェクトが提供する軽減シンボル数
+}
+
+sealed class FieldObject(val card: Card,val cores:Int) {
+
+    class Spirit(
+        _card: Card.SpiritCard,
+        _cores: Int
+    ) : FieldObject(_card,_cores) {
+        fun calculateLevel(): Int {
+            return (card as Card.SpiritCard).levelCosts.entries
+                .filter { it.value <= cores }
+                .maxOfOrNull { it.key } ?: 0 // 該当するレベルがなければ0
+        }
     }
 
-    // スピリット上のコア数に基づいて現在のレベルを計算
-    fun calculateLevel(): Int {
-        return card.levelCosts.entries
-            .filter { it.value <= coresOnSpirit }
-            .maxOfOrNull { it.key } ?: 0 // 該当するレベルがなければ0
-    }
+    fun getProvidedSymbols() = card.getProvidedSymbols()
 }
 
 // ゲームの状態を表すデータクラス
 data class Board(
-    val hand: List<SpiritCard>,
-    val reserveCores: Int,
-    val fieldObjects: List<Spirit>,
+    val hand: List<Card>,
+    val reserveCores: Int = 4,
+    val fieldObjects: List<FieldObject.Spirit> = emptyList(),
     val trashCores: Int = 0
 ) {
     fun getTotalReductionSymbols() = fieldObjects.sumOf { it.getProvidedSymbols() } // フィールド上の合計軽減シンボル数を取得
-    fun deepCopy(): Board {
-        return Board(
-            hand = hand.map { it }.toMutableList(), // SpiritCardは不変なのでシャローコピーでOK
-            reserveCores = reserveCores,
-            fieldObjects = fieldObjects.map { it.deepCopy() }.toMutableList(),
-            trashCores = trashCores
-        )
-    }
 
     override fun toString(): String {
         val handStr = if (hand.isEmpty()) "[]" else hand.joinToString(", ") { it.name }
         val fieldStr = if (fieldObjects.isEmpty()) "[]" else fieldObjects.joinToString(", ") {
-            "${it.card.name} (Lv${it.currentLevel}, Core:${it.coresOnSpirit})"
+            "${it.card.name} (Lv${it.calculateLevel()}, Core:${it.cores})"
         }
         return """
                  Hand: $handStr
@@ -93,20 +88,22 @@ data class Board(
 // 可能なアクション
 sealed class Action() {
     object DoNothing : Action() // 何もしない（ターンをパスするなど）
-    data class Summon(val card: SpiritCard) : Action() // スピリット召喚
-    data class LevelUp(val spirit: Spirit, val targetLevel: Int) : Action() // スピリットのレベルアップ
+    data class Summon(val card: Card.SpiritCard) : Action() // スピリット召喚
+    data class LevelUp(val spirit: FieldObject.Spirit, val targetLevel: Int) : Action() // スピリットのレベルアップ
 
     //    data class PlaceCoreOnSpirit(val spirit: Spirit) : Action() // リザーブからスピリットにコアを置く
     data class SwapObjectCores(val ix: Int, val iy: Int) : Action() // フィールドオブジェクトのコアを入れ替える
     data class SwapReserveCores(val ix: Int) : Action() // フィールドオブジェクトのコアを入れ替える
 }
 
-// 現在の状態から可能なアクションのリストを取得
-fun Board.getPossibleActions() = sequence {
+// 現在の状態から可能な行動/効果のリストを取得
+fun Board.listChoices() = sequence {
     yield(Action.DoNothing) // 何もしない=ステップを進める
 
     // Main
-    hand.forEach { yield(Action.Summon(it)) } // 手札から償還
+    hand.map { it as Card.SpiritCard }.forEach { yield(Action.Summon(it)) } // 手札から発揮
+    // TODO Trashから発揮
+    // TODO FieldObjectから発揮
     val nObj = fieldObjects.indices
     nObj.forEach { a -> nObj.forEach { b -> if (a != b) yield(Action.SwapObjectCores(a, b)) } } // オブジェクト間のコア置換
     nObj.forEach { yield(Action.SwapReserveCores(it)) } // リザーブとのコア置換
@@ -119,46 +116,7 @@ fun Board.applyAction(action: Action) = sequence<Board> {
         is Action.Summon -> {
             val cardToSummon = action.card
             if (hand.contains(cardToSummon)) {
-                // 召喚コストの計算
-                val actualCost = max(0, cardToSummon.cost - getTotalReductionSymbols() - cardToSummon.reductionSymbol)
-
-                if (reserveCores >= actualCost) {
-                    val newHand = hand.toMutableList().apply { remove(cardToSummon) }
-                    val newReserveCores = reserveCores - actualCost
-                    val newSpirit = Spirit(cardToSummon, 0, 0) // 召喚時はコア0、レベル0
-                    val newFieldObjects = fieldObjects.toMutableList().apply { add(newSpirit) }
-
-                    // 召喚後、リザーブのコアをスピリットに置くすべての場合を考慮
-                    // 1コアから召喚コスト分のコアを置く
-                    for (coresToPlace in 1..actualCost) {
-                        if (newReserveCores >= coresToPlace) {
-                            val stateAfterPlacingCores = Board(
-                                hand = newHand,
-                                reserveCores = newReserveCores - coresToPlace,
-                                fieldObjects = newFieldObjects.toMutableList().apply {
-                                    // 新しいスピリットにコアを置く
-                                    this[this.lastIndex] = newSpirit.copy(coresOnSpirit = coresToPlace)
-                                },
-                                trashCores = trashCores + actualCost - coresToPlace
-                            )
-                            // スピリットのレベルを更新
-                            stateAfterPlacingCores.fieldObjects.last().currentLevel =
-                                stateAfterPlacingCores.fieldObjects.last().calculateLevel()
-                            yield(stateAfterPlacingCores)
-                        }
-                    }
-                    // コアを1つも置かない場合も考慮 (コスト0召喚など)
-                    if (actualCost == 0) {
-                        yield(
-                            Board(
-                                hand = newHand,
-                                reserveCores = newReserveCores,
-                                fieldObjects = newFieldObjects,
-                                trashCores = trashCores + actualCost
-                            )
-                        )
-                    }
-                }
+//TODO
             }
         }
 
@@ -176,25 +134,14 @@ fun Board.applyAction(action: Action) = sequence<Board> {
                 val spirit2 = fieldObjects[idx2]
 
                 // コアの移動パターンをすべて試す
-                for (coresToMove in 1..maxOf(spirit1.coresOnSpirit, spirit2.coresOnSpirit)) {
+                for (coresToMove in 1..maxOf(spirit1.cores, spirit2.cores)) {
                     // spirit1 -> spirit2
-                    if (spirit1.coresOnSpirit >= coresToMove) {
-                        val newFieldObjects = fieldObjects.toMutableList()
-                        newFieldObjects[idx1] = spirit1.copy(coresOnSpirit = spirit1.coresOnSpirit - coresToMove)
-                        newFieldObjects[idx2] = spirit2.copy(coresOnSpirit = spirit2.coresOnSpirit + coresToMove)
-                        newFieldObjects[idx1].currentLevel = newFieldObjects[idx1].calculateLevel()
-                        newFieldObjects[idx2].currentLevel = newFieldObjects[idx2].calculateLevel()
-                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
+                    if (spirit1.cores >= coresToMove) {
+                        // TODO
                     }
                     // spirit2 -> spirit1
-                    if (spirit2.coresOnSpirit >= coresToMove) {
-                        val newFieldObjects = fieldObjects.toMutableList()
-                        newFieldObjects[idx1] = spirit1.copy(coresOnSpirit = spirit1.coresOnSpirit + coresToMove)
-                        newFieldObjects[idx2] = spirit2.copy(coresOnSpirit = spirit2.coresOnSpirit - coresToMove)
-                        newFieldObjects[idx1].currentLevel =
-                            newFieldObjects[idx1].calculateLevel()
-                            newFieldObjects[idx2].calculateLevel()
-                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
+                    if (spirit2.cores >= coresToMove) {
+                        //TODO
                     }
                 }
             }
@@ -207,32 +154,32 @@ fun Board.applyAction(action: Action) = sequence<Board> {
 
                 // リザーブからスピリットへコアを移動
                 if (reserveCores > 0) {
-                    for (coresToMove in 1..reserveCores) {
-                        val newFieldObjects = fieldObjects.toMutableList()
-                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit + coresToMove)
-                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
-                        yield(
-                            this@applyAction.copy(
-                                reserveCores = reserveCores - coresToMove,
-                                fieldObjects = newFieldObjects
-                            )
-                        )
-                    }
+//                    for (coresToMove in 1..reserveCores) {
+//                        val newFieldObjects = fieldObjects.toMutableList()
+//                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit + coresToMove)
+//                        newFieldObjects[idx].calculateLevel() = newFieldObjects[idx].calculateLevel()
+//                        yield(
+//                            this@applyAction.copy(
+//                                reserveCores = reserveCores - coresToMove,
+//                                fieldObjects = newFieldObjects
+//                            )
+//                        )
+//                    }
                 }
 
                 // スピリットからリザーブへコアを移動
-                if (spirit.coresOnSpirit > 0) {
-                    for (coresToMove in 1..spirit.coresOnSpirit) {
-                        val newFieldObjects = fieldObjects.toMutableList()
-                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit - coresToMove)
-                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
-                        yield(
-                            this@applyAction.copy(
-                                reserveCores = reserveCores + coresToMove,
-                                fieldObjects = newFieldObjects
-                            )
-                        )
-                    }
+                if (spirit.cores > 0) {
+//                    for (coresToMove in 1..spirit.coresOnSpirit) {
+//                        val newFieldObjects = fieldObjects.toMutableList()
+//                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit - coresToMove)
+//                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
+//                        yield(
+//                            this@applyAction.copy(
+//                                reserveCores = reserveCores + coresToMove,
+//                                fieldObjects = newFieldObjects
+//                            )
+//                        )
+//                    }
                 }
             }
         }
@@ -241,18 +188,20 @@ fun Board.applyAction(action: Action) = sequence<Board> {
 
 fun main() {
     // カードの定義
-    val dragnovScout = SpiritCard(
+    val dragnovScout = Card.SpiritCard(
         name = "ドラグノ偵察兵",
         cost = 2,
         reductionSymbol = 1,
-        levelCosts = mapOf(1 to 1, 2 to 2)
+        levelCosts = mapOf(1 to 1, 2 to 2),
+        symbols = 1,
     )
 
-    val rokuceratops = SpiritCard(
+    val rokuceratops = Card.SpiritCard(
         name = "ロクケラトプス",
         cost = 1,
         reductionSymbol = 1,
-        levelCosts = mapOf(1 to 1, 2 to 2, 3 to 3)
+        levelCosts = mapOf(1 to 1, 2 to 2, 3 to 3),
+        symbols = 1,
     )
 
     // 初期ゲーム状態
