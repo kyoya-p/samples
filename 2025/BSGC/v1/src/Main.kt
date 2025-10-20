@@ -32,33 +32,32 @@ data class Spirit(
 }
 
 // ゲームの状態を表すデータクラス
-data class GameState(
-    val hand: MutableList<SpiritCard>,
-    var reserveCores: Int,
-    val fieldSpirits: MutableList<Spirit>
+data class Board(
+    val hand: List<SpiritCard>,
+    val reserveCores: Int,
+    val fieldObjects: List<Spirit>,
+    val trashCores: Int = 0
 ) {
-    // フィールド上の合計軽減シンボル数を取得
-    fun getTotalReductionSymbols(): Int {
-        return fieldSpirits.sumOf { it.getProvidedSymbols() }
-    }
-
-    fun deepCopy(): GameState {
-        return GameState(
+    fun getTotalReductionSymbols() = fieldObjects.sumOf { it.getProvidedSymbols() } // フィールド上の合計軽減シンボル数を取得
+    fun deepCopy(): Board {
+        return Board(
             hand = hand.map { it }.toMutableList(), // SpiritCardは不変なのでシャローコピーでOK
             reserveCores = reserveCores,
-            fieldSpirits = fieldSpirits.map { it.deepCopy() }.toMutableList()
+            fieldObjects = fieldObjects.map { it.deepCopy() }.toMutableList(),
+            trashCores = trashCores
         )
     }
 
     override fun toString(): String {
         val handStr = if (hand.isEmpty()) "[]" else hand.joinToString(", ") { it.name }
-        val fieldStr = if (fieldSpirits.isEmpty()) "[]" else fieldSpirits.joinToString(", ") {
+        val fieldStr = if (fieldObjects.isEmpty()) "[]" else fieldObjects.joinToString(", ") {
             "${it.card.name} (Lv${it.currentLevel}, Core:${it.coresOnSpirit})"
         }
         return """
                  Hand: $handStr
                  Reserve: Core: $reserveCores
                  Field: $fieldStr
+                 Trash: Core: $trashCores
              """.trimIndent()
     }
 
@@ -67,15 +66,16 @@ data class GameState(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as GameState
+        other as Board
 
         if (hand.toSet() != other.hand.toSet()) return false // 手札の順序は考慮しない
         if (reserveCores != other.reserveCores) return false
-        if (fieldSpirits.size != other.fieldSpirits.size) return false
+        if (fieldObjects.size != other.fieldObjects.size) return false
+        if (trashCores != other.trashCores) return false
 
         // フィールドのスピリットを名前でソートして比較することで、順序の違いを吸収
-        val sortedThisSpirits = fieldSpirits.sortedBy { it.card.name }
-        val sortedOtherSpirits = other.fieldSpirits.sortedBy { it.card.name }
+        val sortedThisSpirits = fieldObjects.sortedBy { it.card.name }
+        val sortedOtherSpirits = other.fieldObjects.sortedBy { it.card.name }
         if (sortedThisSpirits != sortedOtherSpirits) return false
 
         return true
@@ -84,135 +84,160 @@ data class GameState(
     override fun hashCode(): Int {
         var result = hand.toSet().hashCode()
         result = 31 * result + reserveCores
-        result = 31 * result + fieldSpirits.sortedBy { it.card.name }.hashCode()
+        result = 31 * result + fieldObjects.sortedBy { it.card.name }.hashCode()
+        result = 31 * result + trashCores
         return result
     }
 }
 
 // 可能なアクション
-sealed class Action {
+sealed class Action() {
     object DoNothing : Action() // 何もしない（ターンをパスするなど）
     data class Summon(val card: SpiritCard) : Action() // スピリット召喚
     data class LevelUp(val spirit: Spirit, val targetLevel: Int) : Action() // スピリットのレベルアップ
-    data class PlaceCoreOnSpirit(val spirit: Spirit) : Action() // リザーブからスピリットにコアを置く
+
+    //    data class PlaceCoreOnSpirit(val spirit: Spirit) : Action() // リザーブからスピリットにコアを置く
+    data class SwapObjectCores(val ix: Int, val iy: Int) : Action() // フィールドオブジェクトのコアを入れ替える
+    data class SwapReserveCores(val ix: Int) : Action() // フィールドオブジェクトのコアを入れ替える
 }
 
 // 現在の状態から可能なアクションのリストを取得
-fun getPossibleActions(state: GameState): List<Action> {
-    val actions = mutableListOf<Action>()
+fun Board.getPossibleActions() = sequence {
+    yield(Action.DoNothing) // 何もしない=ステップを進める
 
-    // 召喚アクション
-    for (cardInHand in state.hand) {
-        val actualCost = max(0, cardInHand.cost - state.getTotalReductionSymbols()) // コストは0まで軽減可能
-        // 召喚コストとLv1維持コア1個を支払えるか確認
-        if (state.reserveCores >= actualCost + 1) {
-            actions.add(Action.Summon(cardInHand))
+    // Main
+    hand.forEach { yield(Action.Summon(it)) } // 手札から償還
+    val nObj = fieldObjects.indices
+    nObj.forEach { a -> nObj.forEach { b -> if (a != b) yield(Action.SwapObjectCores(a, b)) } } // オブジェクト間のコア置換
+    nObj.forEach { yield(Action.SwapReserveCores(it)) } // リザーブとのコア置換
+}
+
+// アクションを適用し、新しいゲームの状態を返す
+fun Board.applyAction(action: Action) = sequence<Board> {
+    when (action) {
+        is Action.DoNothing -> yield(this@applyAction)
+        is Action.Summon -> {
+            val cardToSummon = action.card
+            if (hand.contains(cardToSummon)) {
+                // 召喚コストの計算
+                val actualCost = max(0, cardToSummon.cost - getTotalReductionSymbols() - cardToSummon.reductionSymbol)
+
+                if (reserveCores >= actualCost) {
+                    val newHand = hand.toMutableList().apply { remove(cardToSummon) }
+                    val newReserveCores = reserveCores - actualCost
+                    val newSpirit = Spirit(cardToSummon, 0, 0) // 召喚時はコア0、レベル0
+                    val newFieldObjects = fieldObjects.toMutableList().apply { add(newSpirit) }
+
+                    // 召喚後、リザーブのコアをスピリットに置くすべての場合を考慮
+                    // 1コアから召喚コスト分のコアを置く
+                    for (coresToPlace in 1..actualCost) {
+                        if (newReserveCores >= coresToPlace) {
+                            val stateAfterPlacingCores = Board(
+                                hand = newHand,
+                                reserveCores = newReserveCores - coresToPlace,
+                                fieldObjects = newFieldObjects.toMutableList().apply {
+                                    // 新しいスピリットにコアを置く
+                                    this[this.lastIndex] = newSpirit.copy(coresOnSpirit = coresToPlace)
+                                },
+                                trashCores = trashCores + actualCost - coresToPlace
+                            )
+                            // スピリットのレベルを更新
+                            stateAfterPlacingCores.fieldObjects.last().currentLevel =
+                                stateAfterPlacingCores.fieldObjects.last().calculateLevel()
+                            yield(stateAfterPlacingCores)
+                        }
+                    }
+                    // コアを1つも置かない場合も考慮 (コスト0召喚など)
+                    if (actualCost == 0) {
+                        yield(
+                            Board(
+                                hand = newHand,
+                                reserveCores = newReserveCores,
+                                fieldObjects = newFieldObjects,
+                                trashCores = trashCores + actualCost
+                            )
+                        )
+                    }
+                }
+            }
         }
-    }
 
-    // レベルアップアクション
-    for (spiritOnField in state.fieldSpirits) {
-        val currentLevel = spiritOnField.currentLevel
-        val coresOnSpirit = spiritOnField.coresOnSpirit
+        is Action.LevelUp -> {
+            // このアクションは現在使用されていないが、将来のために残す
+            // スピリットのレベルアップは、コアの配置によって自動的に行われるため、明示的なアクションとしては不要かもしれない
+            // ただし、リザーブからコアを移動させるアクションと組み合わせることで実現可能
+            yield(this@applyAction)
+        }
 
-        // 現在のレベルより高いレベルで、かつそのレベルに必要なコア数が現在のコア数より多い場合
-        for (targetLevel in (currentLevel + 1)..(spiritOnField.card.levelCosts.keys.maxOrNull() ?: currentLevel)) {
-            val requiredCoresForTargetLevel = spiritOnField.card.levelCosts[targetLevel]!!
-            if (requiredCoresForTargetLevel > coresOnSpirit) {
-                val coresToMove = requiredCoresForTargetLevel - coresOnSpirit
-                if (state.reserveCores >= coresToMove) {
-                    actions.add(Action.LevelUp(spiritOnField, targetLevel))
+        is Action.SwapObjectCores -> {
+            val (idx1, idx2) = Pair(action.ix, action.iy)
+            if (idx1 in fieldObjects.indices && idx2 in fieldObjects.indices && idx1 != idx2) {
+                val spirit1 = fieldObjects[idx1]
+                val spirit2 = fieldObjects[idx2]
+
+                // コアの移動パターンをすべて試す
+                for (coresToMove in 1..maxOf(spirit1.coresOnSpirit, spirit2.coresOnSpirit)) {
+                    // spirit1 -> spirit2
+                    if (spirit1.coresOnSpirit >= coresToMove) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx1] = spirit1.copy(coresOnSpirit = spirit1.coresOnSpirit - coresToMove)
+                        newFieldObjects[idx2] = spirit2.copy(coresOnSpirit = spirit2.coresOnSpirit + coresToMove)
+                        newFieldObjects[idx1].currentLevel = newFieldObjects[idx1].calculateLevel()
+                        newFieldObjects[idx2].currentLevel = newFieldObjects[idx2].calculateLevel()
+                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
+                    }
+                    // spirit2 -> spirit1
+                    if (spirit2.coresOnSpirit >= coresToMove) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx1] = spirit1.copy(coresOnSpirit = spirit1.coresOnSpirit + coresToMove)
+                        newFieldObjects[idx2] = spirit2.copy(coresOnSpirit = spirit2.coresOnSpirit - coresToMove)
+                        newFieldObjects[idx1].currentLevel =
+                            newFieldObjects[idx1].calculateLevel()
+                            newFieldObjects[idx2].calculateLevel()
+                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
+                    }
+                }
+            }
+        }
+
+        is Action.SwapReserveCores -> {
+            val idx = action.ix
+            if (idx in fieldObjects.indices) {
+                val spirit = fieldObjects[idx]
+
+                // リザーブからスピリットへコアを移動
+                if (reserveCores > 0) {
+                    for (coresToMove in 1..reserveCores) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit + coresToMove)
+                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
+                        yield(
+                            this@applyAction.copy(
+                                reserveCores = reserveCores - coresToMove,
+                                fieldObjects = newFieldObjects
+                            )
+                        )
+                    }
+                }
+
+                // スピリットからリザーブへコアを移動
+                if (spirit.coresOnSpirit > 0) {
+                    for (coresToMove in 1..spirit.coresOnSpirit) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit - coresToMove)
+                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
+                        yield(
+                            this@applyAction.copy(
+                                reserveCores = reserveCores + coresToMove,
+                                fieldObjects = newFieldObjects
+                            )
+                        )
+                    }
                 }
             }
         }
     }
-
-
-    // コアをスピリットに置くアクション
-    if (state.reserveCores > 0) {
-        for (spiritOnField in state.fieldSpirits) {
-            actions.add(Action.PlaceCoreOnSpirit(spiritOnField))
-        }
-    }
-
-    return actions
 }
-
-// アクションを適用し、新しいゲームの状態を返す
-fun applyAction(state: GameState, action: Action): GameState {
-    val newState = state.deepCopy() // 状態を変更しないようにコピーで作業
-
-    when (action) {
-        is Action.Summon -> {
-            val actualCost = max(0, action.card.cost - newState.getTotalReductionSymbols())
-            newState.reserveCores -= actualCost
-            newState.hand.remove(action.card)
-
-            val newSpirit = Spirit(action.card, 1, 1) // Lv1で召喚、コア1個を置く
-            newState.reserveCores -= 1 // Lv1維持コアをリザーブから支払う
-            newState.fieldSpirits.add(newSpirit)
-        }
-
-        is Action.LevelUp -> {
-            // newStateのfieldSpiritsから対象のスピリットを見つけて変更
-            val spiritToLevel =
-                newState.fieldSpirits.find { it.card == action.spirit.card && it.coresOnSpirit == action.spirit.coresOnSpirit }!!
-            val requiredCoresForTargetLevel = spiritToLevel.card.levelCosts[action.targetLevel]!!
-            val coresToMove = requiredCoresForTargetLevel - spiritToLevel.coresOnSpirit
-
-            newState.reserveCores -= coresToMove
-            spiritToLevel.coresOnSpirit += coresToMove
-            spiritToLevel.currentLevel = action.targetLevel
-        }
-
-        Action.DoNothing -> {
-            // 何もしないアクションは状態を変更しない
-        }
-
-        is Action.PlaceCoreOnSpirit -> {
-            // newStateのfieldSpiritsから対象のスピリットを見つけて変更
-            val spiritToPlaceCore =
-                newState.fieldSpirits.find { it.card == action.spirit.card && it.coresOnSpirit == action.spirit.coresOnSpirit }!!
-            newState.reserveCores -= 1
-            spiritToPlaceCore.coresOnSpirit += 1
-            spiritToPlaceCore.currentLevel = spiritToPlaceCore.calculateLevel() // 新しいコア数に基づいてレベルを再計算
-        }
-    }
-    return newState
-}
-
-// メインステップのシミュレーションを行い、最終的な状態のセットを返す
-fun simulateMainStep(initialState: GameState): Set<GameState> {
-    val finalStates = mutableSetOf<GameState>()
-    val queue: Queue<GameState> = LinkedList()
-    queue.add(initialState)
-
-    val visitedStates = mutableSetOf<GameState>() // 訪問済み状態を記録
-
-    while (queue.isNotEmpty()) {
-        val currentState = queue.poll()
-
-        if (visitedStates.contains(currentState)) {
-            continue
-        }
-        visitedStates.add(currentState)
-
-        val possibleActions = getPossibleActions(currentState)
-
-        if (possibleActions.isEmpty()) {
-            finalStates.add(currentState)
-            continue
-        }
-
-        for (action in possibleActions) {
-            val nextState = applyAction(currentState, action)
-            queue.add(nextState)
-        }
-    }
-    return finalStates
-}
-
-
 
 fun main() {
     // カードの定義
@@ -231,18 +256,18 @@ fun main() {
     )
 
     // 初期ゲーム状態
-    val initialState = GameState(
-        hand = mutableListOf(dragnovScout, rokuceratops),
+    val initialState = Board(
+        hand = mutableListOf(dragnovScout),
         reserveCores = 4,
-        fieldSpirits = mutableListOf()
+        fieldObjects = mutableListOf()
     )
 
-    val finalStates = simulateMainStep(initialState)
-
-    println("GameStatus(${finalStates.size}):")
-    finalStates.sortedBy { it.toString() }.forEachIndexed { index, state -> // 出力を一貫させるためにソート
-        println("--- Pattern ${index + 1} ---")
-        println(state)
-    }
+//    val finalStates = simulateMainStep(initialState)
+//
+//    println("GameStatus(${finalStates.size}):")
+//    finalStates.sortedBy { it.toString() }.forEachIndexed { index, state -> // 出力を一貫させるためにソート
+//        println("--- Pattern ${index + 1} ---")
+//        println(state)
+//    }
 }
 	 
