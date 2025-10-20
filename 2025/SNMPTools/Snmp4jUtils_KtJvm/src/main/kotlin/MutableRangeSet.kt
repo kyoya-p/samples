@@ -1,7 +1,6 @@
 package jp.wjg.shokkaa.snmp4jutils
 
-import java.util.*
-
+import java.util.LinkedList
 
 abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, Cloneable {
     private val ranges = LinkedList<ClosedRange<T>>()
@@ -15,22 +14,12 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
         ranges.addAll(rangeSet)
     }
 
-    constructor(p0: Any)
+//    constructor(p0: Any)
 
-    override val size: Int
-        get() = ranges.size
-
-    fun containsValue(value: T): Boolean = ranges.any { it.contains(value) }
-
+    override val size: Int get() = ranges.size
+//    fun containsValue(value: T): Boolean = ranges.any { it.contains(value) }
     override fun contains(element: ClosedRange<T>) =
         ranges.any { r -> element.start.compareTo(r.start) >= 0 && element.endInclusive.compareTo(r.endInclusive) <= 0 }
-
-//    override fun contains(element: ClosedRange<T>): Boolean {
-//        for (range in ranges)
-//            if (element.start.compareTo(range.start) >= 0 && element.endInclusive.compareTo(range.endInclusive) <= 0)
-//                return true
-//        return false
-//    }
 
     override fun containsAll(elements: Collection<ClosedRange<T>>): Boolean = elements.all { contains(it) }
 
@@ -103,6 +92,7 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
     }
 
     override fun removeAll(elements: Collection<ClosedRange<T>>) = elements.map { remove(it) }.any { it }
+
     fun retain(element: ClosedRange<T>): Boolean {
         var changed = false
 
@@ -204,19 +194,6 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
 }
 
 
-class IntRangeSet : MutableRangeSet<Int> {
-    constructor() : super()
-    constructor(ranges: List<IntRange>) : super(ranges)
-    constructor(vararg ranges: IntRange) : this(ranges.asList())
-    private constructor(rangeSet: IntRangeSet) : super(rangeSet)
-
-    override fun createRange(start: Int, endInclusive: Int): IntRange = IntRange(start, endInclusive)
-    override fun incrementValue(value: Int): Int = value + 1
-    override fun decrementValue(value: Int): Int = value - 1
-    override fun clone(): MutableRangeSet<Int> = IntRangeSet(this)
-}
-
-
 class ULongRangeSet : MutableRangeSet<ULong> {
     constructor() : super()
     constructor(ranges: List<ULongRange>) : super(ranges)
@@ -229,10 +206,6 @@ class ULongRangeSet : MutableRangeSet<ULong> {
     override fun clone(): MutableRangeSet<ULong> = ULongRangeSet(this)
 }
 
-fun ClosedRange<Int>.length() = if (isEmpty()) 0 else endInclusive - start + 1
-fun IntRangeSet.totalLength() = sumOf { it.length() }
-
-//fun <T> MutableRangeSet<T>.to() = toSequence()
 fun ClosedRange<ULong>.length() = if (isEmpty()) 0UL else (endInclusive - start + 1UL)
 fun ULongRangeSet.totalLength() = sumOf { it.length() }
 

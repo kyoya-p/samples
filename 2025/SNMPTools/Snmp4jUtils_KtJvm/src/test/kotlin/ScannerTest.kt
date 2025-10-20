@@ -132,11 +132,6 @@ class ScannerTest {
         }.also(::println)
     }
 
-    @Test
-    fun throttle() {
-
-
-    }
 }
 
 
