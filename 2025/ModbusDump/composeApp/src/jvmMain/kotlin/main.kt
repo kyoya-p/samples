@@ -15,6 +15,7 @@ import kotlinx.serialization.json.*
 import modbusdump.v2.MBRes
 import modbusdump.v2.UI
 import modbusdump.v2.read
+import modbusdump.v2.toTcp
 
 fun main(args: Array<String>) {
     if (args.isNotEmpty()) modbusMain(args)
@@ -23,10 +24,7 @@ fun main(args: Array<String>) {
             onCloseRequest = ::exitApplication,
             title = "ModbusDump",
             state = rememberWindowState(width = 1024.dp, height = 768.dp),
-        ) {
-            UI() //TODO
-//            UI() //TODO
-        }
+        ) { UI() }
     }
 }
 
@@ -34,7 +32,7 @@ fun main(args: Array<String>) {
 @OptIn(ExperimentalStdlibApi::class)
 fun modbusMain(args: Array<String>) = runCatching {
     println("ModbusDump:")
-    val hostAdr = args[0]
+    val (hostAdr, port) = args[0].toTcp()
     val unitId = args[1].toInt()
     val modeCode = args[2].toInt()
     val regAdr = args.getOrElse(3) { "0" }.toInt()
@@ -45,9 +43,9 @@ fun modbusMain(args: Array<String>) = runCatching {
     master.connect()
     master.read(
         AppData(
-            hostAdr,
+            hostAdr = hostAdr, port = port,
             mode = ReadType.entries.first { it.code == modeCode },
-            unitId, regAdr, regCount, bulkSize
+            unitId = unitId, regAdr = regAdr, regCount = regCount, nAcq = bulkSize
         )
     ) {
         println(it)
@@ -76,22 +74,20 @@ fun modbusMain(args: Array<String>) = runCatching {
 }
 
 typealias ReadType = modbusdump.v2.ReadType
-typealias MBRes = MBRes
 
 @Serializable
 data class AppData(
     val hostAdr: String = "",
-    val mode: ReadType = ReadType.HOLDING_REGISTERS,
     val port: Int = 502,
+    val mode: ReadType = ReadType.HOLDING_REGISTERS,
     val unitId: Int = 1,
     val regAdr: Int = 0,
     val regCount: Int = 8,
     val nAcq: Int = 1,
     val nWord: Int = 1,
-//    val result: String = "",
 )
 
-val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
+val     appHome = Path("${System.getProperty("user.home")}/.modbusdump")
 val configFile = Path("$appHome/config.json")
 var config
     get() = runCatching {

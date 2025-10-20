@@ -136,13 +136,14 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
 
 
 fun String.toIntHex() = trim().run { if (startsWith("0x")) drop(2).toInt(16) else toInt() }
+fun String.toTcp(): Pair<String, Int> = (this + ":502").split(":").let { (it[0] to it[1].toIntHex()) }
 
 @Composable
 fun AppData.TcpField(
     toTcp: (String) -> AppData = { s -> (s + ":502").split(":").let { copy(it[0], port = it[1].toIntHex()) } },
     toString: () -> String = { "${hostAdr.trim()}${if (port != 502) ":$port" else ""}" },
     sv: MutableState<String> = remember { mutableStateOf(toString()) },
-    onValueChange: (AppData) -> Unit
+    onValueChange: (AppData) -> Unit,
 ) = TextField(
     value = sv.value,
     label = { Text("Target (address: $hostAdr, port: $port)") },
