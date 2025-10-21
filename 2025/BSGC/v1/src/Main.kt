@@ -18,12 +18,12 @@ sealed class Card(
     open fun getProvidedSymbols(): Int = 0 //TODO     // フィールドオブジェクトが提供する軽減シンボル数
 }
 
-sealed class FieldObject(val card: Card,val cores:Int) {
+sealed class FieldObject(val card: Card, val cores: Int) {
 
     class Spirit(
         _card: Card.SpiritCard,
         _cores: Int
-    ) : FieldObject(_card,_cores) {
+    ) : FieldObject(_card, _cores) {
         fun calculateLevel(): Int {
             return (card as Card.SpiritCard).levelCosts.entries
                 .filter { it.value <= cores }
@@ -33,6 +33,21 @@ sealed class FieldObject(val card: Card,val cores:Int) {
 
     fun getProvidedSymbols() = card.getProvidedSymbols()
 }
+//TODO
+sealed interface SymbolType{
+    sealed interface SymbolColor {
+        interface R : SymbolColor
+        interface P : SymbolColor
+        interface G : SymbolColor
+        interface W : SymbolColor
+        interface Y : SymbolColor
+        interface B : SymbolColor
+    }
+    interface God:SymbolType
+    interface U:SymbolType
+}
+
+class Game(val board: Board, @Suppress("unused") val board2: Board)
 
 // ゲームの状態を表すデータクラス
 data class Board(
@@ -89,24 +104,45 @@ data class Board(
 sealed class Action() {
     object DoNothing : Action() // 何もしない（ターンをパスするなど）
     data class Summon(val card: Card.SpiritCard) : Action() // スピリット召喚
-    data class LevelUp(val spirit: FieldObject.Spirit, val targetLevel: Int) : Action() // スピリットのレベルアップ
-
-    //    data class PlaceCoreOnSpirit(val spirit: Spirit) : Action() // リザーブからスピリットにコアを置く
     data class SwapObjectCores(val ix: Int, val iy: Int) : Action() // フィールドオブジェクトのコアを入れ替える
     data class SwapReserveCores(val ix: Int) : Action() // フィールドオブジェクトのコアを入れ替える
 }
 
 // 現在の状態から可能な行動/効果のリストを取得
-fun Board.listChoices() = sequence {
+fun Game.listChoices() = sequence {
     yield(Action.DoNothing) // 何もしない=ステップを進める
 
     // Main
-    hand.map { it as Card.SpiritCard }.forEach { yield(Action.Summon(it)) } // 手札から発揮
+    board.hand.map { it as Card.SpiritCard }.forEach { yield(Action.Summon(it)) } // 手札から発揮
+    val nObj = board.fieldObjects.size
+    (0..<nObj).forEach { a -> (a + 1..<nObj).forEach { b -> yield(Action.SwapObjectCores(a, b)) } } // オブジェクト間のコア置換
+    (0..<nObj).forEach { yield(Action.SwapReserveCores(it)) } // リザーブとのコア置換
     // TODO Trashから発揮
     // TODO FieldObjectから発揮
-    val nObj = fieldObjects.indices
-    nObj.forEach { a -> nObj.forEach { b -> if (a != b) yield(Action.SwapObjectCores(a, b)) } } // オブジェクト間のコア置換
-    nObj.forEach { yield(Action.SwapReserveCores(it)) } // リザーブとのコア置換
+}
+
+// 現在の状態からActionの結果、可能な行動/効果のリストを取得
+fun Game.listChoices(a: Action) = sequence<Game> {
+    when (a) {
+        is Action.DoNothing -> {}  // ステップ終了
+        is Action.Summon -> listSummon(a)
+        is Action.SwapReserveCores -> swapReserveCores(a)
+        is Action.SwapObjectCores -> swapObjectCores(a)
+    }
+}
+
+fun Game.fieldSymbols() = board.fieldObjects.sumOf { it.getProvidedSymbols() }
+
+fun Game.listSummon(a: Action.Summon) = sequence<Game> {
+    a.card.cost - fieldSymbols()
+}
+
+fun Game.swapReserveCores(a: Action.SwapReserveCores) {
+
+}
+
+fun Game.swapObjectCores(a: Action.SwapObjectCores) {
+
 }
 
 // アクションを適用し、新しいゲームの状態を返す
@@ -118,13 +154,6 @@ fun Board.applyAction(action: Action) = sequence<Board> {
             if (hand.contains(cardToSummon)) {
 //TODO
             }
-        }
-
-        is Action.LevelUp -> {
-            // このアクションは現在使用されていないが、将来のために残す
-            // スピリットのレベルアップは、コアの配置によって自動的に行われるため、明示的なアクションとしては不要かもしれない
-            // ただし、リザーブからコアを移動させるアクションと組み合わせることで実現可能
-            yield(this@applyAction)
         }
 
         is Action.SwapObjectCores -> {

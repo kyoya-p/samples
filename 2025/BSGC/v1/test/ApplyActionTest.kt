@@ -29,13 +29,24 @@ class WorldTest {
         assert(b1.listChoices().toSet() == setOf(Action.DoNothing, Action.SwapReserveCores(0)))
 
         val b2 = Board(hand = emptyList(), fieldObjects = listOf(s1, s1))
-        b2.listChoices().forEach { println(it) } // TODO
         assert(
             b2.listChoices().toSet() == setOf(
                 Action.DoNothing,
                 Action.SwapReserveCores(0),
                 Action.SwapReserveCores(1),
                 Action.SwapObjectCores(0, 1)
+            )
+        )
+        val b3= Board(hand = emptyList(), fieldObjects = listOf(s1, s1,s1))
+        assert(
+            b2.listChoices().toSet() == setOf(
+                Action.DoNothing,
+                Action.SwapReserveCores(0),
+                Action.SwapReserveCores(1),
+                Action.SwapReserveCores(2),
+                Action.SwapObjectCores(0, 1),
+                Action.SwapObjectCores(0, 2),
+                Action.SwapObjectCores(1, 2),
             )
         )
     }
