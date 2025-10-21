@@ -1,21 +1,19 @@
+import Colors
+
 // カードとスピリットのデータクラス
 sealed class Card(
     val name: String,
     val cost: Int, // コスト
     val reductionSymbol: Int, // 軽減シンボル数
-    val symbols: Int, // シンボル数
+    val symbols: Symbols, // シンボル数
 ) {
     class SpiritCard(
         name: String,
         cost: Int, // 召喚コスト
         reductionSymbol: Int, // 軽減シンボル数 (赤シンボルとして扱う)
-        symbols: Int, // シンボル数
+        symbols: Symbols, // シンボル数
         val levelCosts: Map<Int, Int> // レベル -> そのレベルに必要なコア数
-    ) : Card(name, cost, reductionSymbol, symbols) {
-        override fun getProvidedSymbols(): Int = 1
-    }
-
-    open fun getProvidedSymbols(): Int = 0 //TODO     // フィールドオブジェクトが提供する軽減シンボル数
+    ) : Card(name, cost, reductionSymbol, symbols)
 }
 
 sealed class FieldObject(val card: Card, val cores: Int) {
@@ -31,10 +29,11 @@ sealed class FieldObject(val card: Card, val cores: Int) {
         }
     }
 
-    fun getProvidedSymbols() = card.getProvidedSymbols()
+    fun symbols() = card.symbols
 }
+
 //TODO
-sealed interface SymbolType{
+sealed interface SymbolType {
     sealed interface SymbolColor {
         interface R : SymbolColor
         interface P : SymbolColor
@@ -43,21 +42,49 @@ sealed interface SymbolType{
         interface Y : SymbolColor
         interface B : SymbolColor
     }
-    interface God:SymbolType
-    interface U:SymbolType
+
+    interface God : SymbolType
+    interface U : SymbolType
 }
 
-class Game(val board: Board, @Suppress("unused") val board2: Board)
+class Colors(val c: Int) {
+    companion object {
+        val Clear = Colors(0b0000_0000)
+        val R = Colors(0b0000_0001)
+        val P = Colors(0b0000_0010)
+        val G = Colors(0b0000_0100)
+        val W = Colors(0b0000_1000)
+        val Y = Colors(0b0001_0000)
+        val B = Colors(0b0010_0000)
+    }
+}
+
+fun union(vararg o: Colors) = Colors(o.fold(0) { a, e -> a or e.c })
+fun intersect(vararg o: Colors) = Colors(o.fold(0) { a, e -> a or e.c })
+
+class Symbol(val color: Colors, val n: Int = 1) {
+    companion object {
+        val R1 = Symbol(Colors.R, 1)
+    }
+    fun sum(vararg ss:Symbol)=Symbol(color,n+ss.sumOf { it.n })
+}
+
+typealias Symbols = Set<Symbol>
+
+
+fun R(n: Int): Symbols = setOf(Symbol(Colors.R, n))
+val R1 = R(1)
+val NoSymbol = setOf(Symbol(Colors.Clear, 0))
+
+class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
 
 // ゲームの状態を表すデータクラス
 data class Board(
-    val hand: List<Card>,
+    val hand: List<Card> = emptyList(),
     val reserveCores: Int = 4,
     val fieldObjects: List<FieldObject.Spirit> = emptyList(),
     val trashCores: Int = 0
 ) {
-    fun getTotalReductionSymbols() = fieldObjects.sumOf { it.getProvidedSymbols() } // フィールド上の合計軽減シンボル数を取得
-
     override fun toString(): String {
         val handStr = if (hand.isEmpty()) "[]" else hand.joinToString(", ") { it.name }
         val fieldStr = if (fieldObjects.isEmpty()) "[]" else fieldObjects.joinToString(", ") {
@@ -125,16 +152,19 @@ fun Game.listChoices() = sequence {
 fun Game.listChoices(a: Action) = sequence<Game> {
     when (a) {
         is Action.DoNothing -> {}  // ステップ終了
-        is Action.Summon -> listSummon(a)
+        is Action.Summon -> summon(a)
         is Action.SwapReserveCores -> swapReserveCores(a)
         is Action.SwapObjectCores -> swapObjectCores(a)
     }
 }
 
-fun Game.fieldSymbols() = board.fieldObjects.sumOf { it.getProvidedSymbols() }
+//TODO
+fun Game.fieldSymbols(): Symbols =
+    board.fieldObjects.fold(NoSymbol) { a, e -> a + e.symbols() }.toSet()
 
-fun Game.listSummon(a: Action.Summon) = sequence<Game> {
-    a.card.cost - fieldSymbols()
+fun Game.summon(a: Action.Summon) = sequence<Game> {
+    a.card.cost - fieldSymbols() //TODO
+
 }
 
 fun Game.swapReserveCores(a: Action.SwapReserveCores) {
@@ -222,7 +252,7 @@ fun main() {
         cost = 2,
         reductionSymbol = 1,
         levelCosts = mapOf(1 to 1, 2 to 2),
-        symbols = 1,
+        symbols = R1,
     )
 
     val rokuceratops = Card.SpiritCard(
@@ -230,7 +260,7 @@ fun main() {
         cost = 1,
         reductionSymbol = 1,
         levelCosts = mapOf(1 to 1, 2 to 2, 3 to 3),
-        symbols = 1,
+        symbols = R1,
     )
 
     // 初期ゲーム状態
@@ -248,4 +278,3 @@ fun main() {
 //        println(state)
 //    }
 }
-	 
