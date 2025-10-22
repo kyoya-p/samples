@@ -1,5 +1,3 @@
-import Colors
-
 // カードとスピリットのデータクラス
 sealed class Card(
     val name: String,
@@ -32,51 +30,40 @@ sealed class FieldObject(val card: Card, val cores: Int) {
     fun symbols() = card.symbols
 }
 
-//TODO
-sealed interface SymbolType {
-    sealed interface SymbolColor {
-        interface R : SymbolColor
-        interface P : SymbolColor
-        interface G : SymbolColor
-        interface W : SymbolColor
-        interface Y : SymbolColor
-        interface B : SymbolColor
-    }
+typealias Color = Int
 
-    interface God : SymbolType
-    interface U : SymbolType
-}
+val C: Color = 0x0000_0000
+val R: Color = 0x0000_0001
+val P: Color = 0x0000_0010
+val G: Color = 0x0000_0100
+val W: Color = 0x0000_1000
+val Y: Color = 0x0001_0000
+val B: Color = 0x0010_0000
 
-class Colors(val c: Int) {
+fun Color.isColor(c: Color) = if (c == C) this == 0 else (this and c) != 0
+infix operator fun Color.contains(c: Color) = (this and c )!= 0
+fun union(vararg o: Color): Color = o.fold(0) { a, e -> a or e }
+fun intersect(vararg o: Color): Color = o.fold(0) { a, e -> a or e }
+
+class Symbol(val color: Color, val n: Int = 1) {
     companion object {
-        val Clear = Colors(0b0000_0000)
-        val R = Colors(0b0000_0001)
-        val P = Colors(0b0000_0010)
-        val G = Colors(0b0000_0100)
-        val W = Colors(0b0000_1000)
-        val Y = Colors(0b0001_0000)
-        val B = Colors(0b0010_0000)
+        val R1 = Symbol(R, 1)
+        val P1 = Symbol(P, 1)
+        val G1 = Symbol(G, 1)
     }
-}
 
-fun union(vararg o: Colors) = Colors(o.fold(0) { a, e -> a or e.c })
-fun intersect(vararg o: Colors) = Colors(o.fold(0) { a, e -> a or e.c })
-
-class Symbol(val color: Colors, val n: Int = 1) {
-    companion object {
-        val R1 = Symbol(Colors.R, 1)
-    }
-    fun sum(vararg ss:Symbol)=Symbol(color,n+ss.sumOf { it.n })
+    fun sum(vararg ss: Symbol) = Symbol(color, n + ss.sumOf { it.n })
 }
 
 typealias Symbols = Set<Symbol>
 
+val R1 = setOf(Symbol(R, 1))
+val P1 = setOf(Symbol(P, 1))
+val G1 = setOf(Symbol(G, 1))
 
-fun R(n: Int): Symbols = setOf(Symbol(Colors.R, n))
-val R1 = R(1)
-val NoSymbol = setOf(Symbol(Colors.Clear, 0))
+val NoSymbol = setOf(Symbol(C, 0))
 
-class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
+data class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
 
 // ゲームの状態を表すデータクラス
 data class Board(
@@ -163,8 +150,7 @@ fun Game.fieldSymbols(): Symbols =
     board.fieldObjects.fold(NoSymbol) { a, e -> a + e.symbols() }.toSet()
 
 fun Game.summon(a: Action.Summon) = sequence<Game> {
-    a.card.cost - fieldSymbols() //TODO
-
+//    a.card.cost - fieldSymbols() //TODO
 }
 
 fun Game.swapReserveCores(a: Action.SwapReserveCores) {

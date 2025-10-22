@@ -2,6 +2,25 @@ import kotlin.test.Test
 
 class WorldTest {
     @Test
+    fun symbol() {
+        val r1 = Symbol.R1
+        assert(r1.color == R)
+        assert(r1.color != G)
+
+        val g1 = Symbol.G1
+        assert(g1.color != R)
+        assert(g1.color == G)
+
+        val rg1 = union(R, G)
+        assert(rg1.isColor(R))
+        assert(rg1.isColor(G))
+        assert(!rg1.isColor(P))
+        assert(!rg1.isColor(C))
+        assert(C.isColor(C))
+        assert(!C.isColor(R))
+   }
+
+    @Test
     fun hands012() {
         val hand0 = listOf<Card.SpiritCard>()
         val hand1 = listOf(ドラグノ偵察兵)
@@ -55,6 +74,8 @@ class WorldTest {
     fun filedSyms() {
         val s1 = FieldObject.Spirit(ドラグノ偵察兵, 1)
         val g1 = Game(Board(hand = emptyList(), fieldObjects = listOf(s1)))
+
+        println(g1)
         assert(g1.fieldSymbols() == R1)
     }
 }
