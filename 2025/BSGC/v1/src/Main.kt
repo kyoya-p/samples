@@ -1,3 +1,7 @@
+import kotlin.collections.plus
+import kotlin.sequences.flatMap
+import kotlin.sequences.map
+
 // カードとスピリットのデータクラス
 sealed class Card(
     val name: String,
@@ -19,12 +23,12 @@ sealed class FieldObject(val card: Card, val cores: Int) {
     class Spirit(
         _card: Card.SpiritCard,
         _cores: Int
-    ) : FieldObject(_card, _cores) {
-        fun calculateLevel(): Int {
-            return (card as Card.SpiritCard).levelCosts.entries
-                .filter { it.value <= cores }
-                .maxOfOrNull { it.key } ?: 0 // 該当するレベルがなければ0
-        }
+    ) : FieldObject(_card, _cores)
+
+    fun calculateLevel(): Int {
+        return (card as Card.SpiritCard).levelCosts.entries
+            .filter { it.value <= cores }
+            .maxOfOrNull { it.key } ?: 0 // 該当するレベルがなければ0
     }
 
     fun symbols() = card.symbols
@@ -32,44 +36,91 @@ sealed class FieldObject(val card: Card, val cores: Int) {
 
 typealias Color = Int
 
-val C: Color = 0x0000_0000
+val C: Color = 0x0000_0000 // Clear
 val R: Color = 0x0000_0001
 val P: Color = 0x0000_0010
 val G: Color = 0x0000_0100
 val W: Color = 0x0000_1000
 val Y: Color = 0x0001_0000
 val B: Color = 0x0010_0000
+val primaryColors = setOf(R, P, G, W, Y, B)
 
-fun Color.isColor(c: Color) = if (c == C) this == 0 else (this and c) != 0
-infix operator fun Color.contains(c: Color) = (this and c )!= 0
-fun union(vararg o: Color): Color = o.fold(0) { a, e -> a or e }
-fun intersect(vararg o: Color): Color = o.fold(0) { a, e -> a or e }
+// 順列
+/*
+def johntrot_rv(n):
+  if n == 1: return [[1]]
+  perm = []
+  for k, pm in enumerate(johntrot_rv(n-1)):
+    for i in range(n):
+      i1 = n-1-i if k%2==0 else i
+      perm += [pm[:i1]+[n]+pm[i1:]]
+  return perm
 
-class Symbol(val color: Color, val n: Int = 1) {
-    companion object {
-        val R1 = Symbol(R, 1)
-        val P1 = Symbol(P, 1)
-        val G1 = Symbol(G, 1)
-    }
+* */
 
-    fun sum(vararg ss: Symbol) = Symbol(color, n + ss.sumOf { it.n })
+fun perm(n: Int): Sequence<List<Int>> = when (n) {
+    0 -> sequenceOf(emptyList())
+    1 -> sequenceOf(listOf(1))
+    else -> perm(n - 1).flatMap { p -> (0..n - 1).map { i -> p.take(i) + n + p.drop(i) } }
 }
 
-typealias Symbols = Set<Symbol>
+fun perm_HeapAlgorithm(n:Int) : Sequence<List<Int>> = when (n) {
+    // 変数(var)を使わない
+    0 -> sequenceOf(emptyList())
+    else -> sequence {
+        val a = (1..n).toMutableList()
+        val c = IntArray(n) { 0 }
+        yield(a.toList())
 
-val R1 = setOf(Symbol(R, 1))
-val P1 = setOf(Symbol(P, 1))
-val G1 = setOf(Symbol(G, 1))
+        var i = 1
+        while (i < n) {
+            if (c[i] < i) {
+                val k = if (i % 2 == 0) 0 else c[i]
+                val temp = a[i]
+                a[i] = a[k]
+                a[k] = temp
+                c[i]++
+                i = 1
+                yield(a.toList())
+            } else {
+                c[i] = 0
+                i++
+            }
+        }
+    }
+}
 
-val NoSymbol = setOf(Symbol(C, 0))
+fun <T> Collection<T>.perm(n: Int): Sequence<List<T>> = when (n) {
+    0 -> sequenceOf(emptyList())
+    else -> asSequence().flatMap { elem -> (this - elem).perm(n - 1).map { it + elem } }
+}
 
-data class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
+fun <T> Collection<T>.comb(n: Int): Sequence<List<T>> = perm(n).distinctBy { it.toSet() }
+
+
+fun Color.isColor(c: Color) = if (c == C) this == 0 else (this and c) != 0
+infix operator fun Color.contains(c: Color) = (this and c) != 0
+fun union(vararg o: Color): Color = o.fold(0) { a, e -> a or e }
+fun intersect(vararg o: Color): Color = o.fold(0) { a, e -> a and e }
+
+data class Symbol(val color: Color, val symbols: Int)
+
+typealias Symbols = Map<Color, Int>
+
+operator fun Symbols.plus(o: Symbols) = entries.map { it.key }
+
+
+val R1: Symbols = mapOf(R to 1)
+val P1: Symbols = mapOf(P to 1)
+val G1: Symbols = mapOf(G to 1)
+
+val NoSymbol: Symbols = emptyMap()
 
 // ゲームの状態を表すデータクラス
 data class Board(
     val hand: List<Card> = emptyList(),
     val reserveCores: Int = 4,
-    val fieldObjects: List<FieldObject.Spirit> = emptyList(),
+    val fieldObjects: List<FieldObject> = emptyList(),
     val trashCores: Int = 0
 ) {
     override fun toString(): String {
@@ -114,6 +165,13 @@ data class Board(
     }
 }
 
+data class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
+
+//fun Game.fieldSymbols() = board.fieldObjects.fold(NoSymbol) { e, a -> a.symbols() + e }
+fun Game.fieldSymbols(): Int = TODO()
+//board.fieldObjects.fold(1) { a,e-> 1 }
+
+
 // 可能なアクション
 sealed class Action() {
     object DoNothing : Action() // 何もしない（ターンをパスするなど）
@@ -146,8 +204,7 @@ fun Game.listChoices(a: Action) = sequence<Game> {
 }
 
 //TODO
-fun Game.fieldSymbols(): Symbols =
-    board.fieldObjects.fold(NoSymbol) { a, e -> a + e.symbols() }.toSet()
+//fun Game.fieldSymbols(): Symbols = board.fieldObjects.flatMap { it.card.symbols }.toSet()
 
 fun Game.summon(a: Action.Summon) = sequence<Game> {
 //    a.card.cost - fieldSymbols() //TODO
@@ -168,7 +225,29 @@ fun Board.applyAction(action: Action) = sequence<Board> {
         is Action.Summon -> {
             val cardToSummon = action.card
             if (hand.contains(cardToSummon)) {
-//TODO
+                // コスト計算
+                val actualCost: Int = TODO()
+
+                if (reserveCores >= actualCost) {
+                    // 手札からカードを除去
+                    val newHand = hand.toMutableList().apply { remove(cardToSummon) }
+
+                    // フィールドにスピリットを追加（最低1コアを置く）
+                    val newFieldObjects = fieldObjects.toMutableList().apply {
+                        add(FieldObject.Spirit(cardToSummon, 1))
+                    }
+
+                    // リザーブコアを更新
+                    val newReserveCores = reserveCores - actualCost
+
+                    yield(
+                        this@applyAction.copy(
+                            hand = newHand,
+                            reserveCores = newReserveCores,
+                            fieldObjects = newFieldObjects
+                        )
+                    )
+                }
             }
         }
 
@@ -182,11 +261,21 @@ fun Board.applyAction(action: Action) = sequence<Board> {
                 for (coresToMove in 1..maxOf(spirit1.cores, spirit2.cores)) {
                     // spirit1 -> spirit2
                     if (spirit1.cores >= coresToMove) {
-                        // TODO
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx1] =
+                            FieldObject.Spirit(spirit1.card as Card.SpiritCard, spirit1.cores - coresToMove)
+                        newFieldObjects[idx2] =
+                            FieldObject.Spirit(spirit2.card as Card.SpiritCard, spirit2.cores + coresToMove)
+                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
                     }
                     // spirit2 -> spirit1
                     if (spirit2.cores >= coresToMove) {
-                        //TODO
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx1] =
+                            FieldObject.Spirit(spirit1.card as Card.SpiritCard, spirit1.cores + coresToMove)
+                        newFieldObjects[idx2] =
+                            FieldObject.Spirit(spirit2.card as Card.SpiritCard, spirit2.cores - coresToMove)
+                        yield(this@applyAction.copy(fieldObjects = newFieldObjects))
                     }
                 }
             }
@@ -199,32 +288,32 @@ fun Board.applyAction(action: Action) = sequence<Board> {
 
                 // リザーブからスピリットへコアを移動
                 if (reserveCores > 0) {
-//                    for (coresToMove in 1..reserveCores) {
-//                        val newFieldObjects = fieldObjects.toMutableList()
-//                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit + coresToMove)
-//                        newFieldObjects[idx].calculateLevel() = newFieldObjects[idx].calculateLevel()
-//                        yield(
-//                            this@applyAction.copy(
-//                                reserveCores = reserveCores - coresToMove,
-//                                fieldObjects = newFieldObjects
-//                            )
-//                        )
-//                    }
+                    for (coresToMove in 1..reserveCores) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx] =
+                            FieldObject.Spirit(spirit.card as Card.SpiritCard, spirit.cores + coresToMove)
+                        yield(
+                            this@applyAction.copy(
+                                reserveCores = reserveCores - coresToMove,
+                                fieldObjects = newFieldObjects
+                            )
+                        )
+                    }
                 }
 
                 // スピリットからリザーブへコアを移動
                 if (spirit.cores > 0) {
-//                    for (coresToMove in 1..spirit.coresOnSpirit) {
-//                        val newFieldObjects = fieldObjects.toMutableList()
-//                        newFieldObjects[idx] = spirit.copy(coresOnSpirit = spirit.coresOnSpirit - coresToMove)
-//                        newFieldObjects[idx].currentLevel = newFieldObjects[idx].calculateLevel()
-//                        yield(
-//                            this@applyAction.copy(
-//                                reserveCores = reserveCores + coresToMove,
-//                                fieldObjects = newFieldObjects
-//                            )
-//                        )
-//                    }
+                    for (coresToMove in 1..spirit.cores) {
+                        val newFieldObjects = fieldObjects.toMutableList()
+                        newFieldObjects[idx] =
+                            FieldObject.Spirit(spirit.card as Card.SpiritCard, spirit.cores - coresToMove)
+                        yield(
+                            this@applyAction.copy(
+                                reserveCores = reserveCores + coresToMove,
+                                fieldObjects = newFieldObjects
+                            )
+                        )
+                    }
                 }
             }
         }

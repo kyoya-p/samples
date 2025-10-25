@@ -1,1 +1,10 @@
 product: jvm/app
+
+settings:
+  kotlin:
+    languageVersion: 2.3
+    freeCompilerArgs:
+      - -Xdata-flow-based-exhustiveness
+      - -Xcontext-parameter
+      - -Xreturn-value-checker=check
+
