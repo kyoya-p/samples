@@ -7,19 +7,11 @@ fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
 infix operator fun List<Int>.compareTo(o: List<Int>): Int = asSequence().zip(o.asSequence())
     .map { (a, b) -> a - b }.firstOrNull { it != 0 } ?: (size - o.size)
 
-
-// List<Int>のComparetor
-class ListComparator : Comparator<List<Int>> {
-    override fun compare(a: List<Int>, b: List<Int>): Int = a.asSequence().zip(b.asSequence())
-        .map { (a, b) -> a - b }.firstOrNull { it != 0 } ?: (a.size - b.size)
-}
-
-
 // カードとスピリットのデータクラス
 sealed class Card(
     val name: String,
     val cost: Int, // コスト
-    val reductionSymbol: Int, // 軽減シンボル数
+    val reductionSymbol: Int, // 軽減シンボル数//TODO
     val symbols: Symbols, // シンボル数
 ) {
     class SpiritCard(
@@ -70,7 +62,6 @@ fun perm(t: Int, n: Int) = sequence {
     }
 
     val elements = (0..<t).toList()
-    val indices = (0..<t).toMutableList()
     val c = IntArray(t) { 0 }
     val a = elements.toMutableList()
 

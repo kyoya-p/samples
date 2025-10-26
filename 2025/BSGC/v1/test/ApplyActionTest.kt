@@ -1,3 +1,5 @@
+@file:Suppress("NonAsciiCharacters", "ObjectPropertyName")
+
 package bssim
 
 import kotlin.collections.listOf
@@ -225,6 +227,7 @@ val ドラグノ偵察兵 = Card.SpiritCard(
     levelCosts = mapOf(1 to 1, 2 to 2),
     symbols = R1,
 )
+@Suppress("unused")
 val メラット = Card.SpiritCard(
     name = "メラット",
     cost = 2,
@@ -233,6 +236,7 @@ val メラット = Card.SpiritCard(
     symbols = R1,
 )
 
+@Suppress("unused")
 val `グリプ・ハンズ` = Card.SpiritCard(
     name = "グリプ・ハンズ",
     cost = 3,
