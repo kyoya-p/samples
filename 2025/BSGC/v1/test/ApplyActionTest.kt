@@ -1,37 +1,42 @@
-import org.junit.jupiter.api.assertAll
+package bssim
+
 import kotlin.collections.listOf
 import kotlin.test.Test
-import kotlin.time.measureTime
-
-fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
 
 class WorldTest {
     @Test
-    fun combs() {
+    fun utils() {
 //        measureTime { perm(10).count().dbg("perm(n)=10:") }.dbg()
 //        measureTime { permH(11).count().dbg("permH(n)=11:") }.dbg()
+
         assert(perm(0, 0).toSet() == setOf(listOf<Int>()))
         assert(perm(1, 1).toSet() == setOf(listOf(0)))
         assert(perm(2, 2).toSet() == setOf(listOf(0, 1), listOf(1, 0)))
         assert(
-            perm(3, 3).toSet().dbg("P(3,3)") == setOf(
-                listOf(0, 1, 2),
-                listOf(0, 2, 1),
-                listOf(1, 0, 2),
-                listOf(1, 2, 0),
-                listOf(2, 0, 1),
-                listOf(2, 1, 0),
+            perm(3, 3).toSet() == setOf(
+                listOf(0, 1, 2), listOf(0, 2, 1),
+                listOf(1, 0, 2), listOf(1, 2, 0),
+                listOf(2, 0, 1), listOf(2, 1, 0),
             )
         )
         assert(
-            perm(3, 2).toSet().dbg("P(3,2)") == setOf(
+            perm(3, 2).toSet() == setOf(
                 listOf(0, 1), listOf(0, 2),
                 listOf(1, 0), listOf(1, 2),
                 listOf(2, 0), listOf(2, 1),
             )
         )
         assert(
-            perm(4, 3).toSet().dbg("P(4,3)") == setOf(
+            perm(4, 2).toSet() == setOf(
+                listOf(0, 1), listOf(0, 2), listOf(0, 3),
+                listOf(1, 0), listOf(1, 2), listOf(1, 3),
+                listOf(2, 0), listOf(2, 1), listOf(2, 3),
+                listOf(3, 0), listOf(3, 1), listOf(3, 2),
+            )
+        )
+
+        assert(
+            perm(4, 3).toSet() == setOf(
                 listOf(0, 1, 2), listOf(0, 1, 3),
                 listOf(0, 2, 1), listOf(0, 2, 3),
                 listOf(0, 3, 1), listOf(0, 3, 2),
@@ -51,7 +56,7 @@ class WorldTest {
         )
 
         assert(
-            perm(4, 4).toSet().dbg("P(4,4)") == setOf(
+            perm(4, 4).toSet() == setOf(
                 listOf(0, 1, 2, 3), listOf(0, 1, 3, 2),
                 listOf(0, 2, 1, 3), listOf(0, 2, 3, 1),
                 listOf(0, 3, 1, 2), listOf(0, 3, 2, 1),
@@ -70,14 +75,24 @@ class WorldTest {
             )
         )
 
-        comb(3).toSet().dbg("C(3)=")
+        assert(comb(0, 0).toList().dbg("C00=") == listOf(listOf<Int>()))
+        assert(comb(0, 1).toList().dbg("C01=") == listOf<List<Int>>())
+        assert(comb(1, 1).toList().dbg("C11=") == listOf(listOf(0)))
+        assert(comb(2, 1).toList().dbg("C21=") == listOf(listOf(0), listOf(1)))
+        assert(comb(2, 2).toList().dbg("C22=") == listOf(listOf(0, 1)))
+        assert(comb(2, 3).toList().dbg("C23=") == listOf<List<Int>>())
+        assert(comb(3, 0).toList().dbg("C30=") == listOf(listOf<Int>()))
+        assert(comb(3, 1).toList().dbg("C31=") == listOf(listOf(0), listOf(1), listOf(2)))
+        assert(comb(3, 2).toList().dbg("C32=") == listOf(listOf(0, 1), listOf(0, 2), listOf(1, 2)))
+        assert(comb(3, 3).toList().dbg("C33=") == listOf(listOf(0, 1, 2)))
+        assert(comb(3, 4).toList().dbg("C34=") == listOf<List<Int>>())
     }
 
     @Test
     fun symbol() {
-        listOf('A', 'B').perm(2).forEach {
-            println(it)
-        }
+//        listOf('A', 'B').perm(2, 2).forEach {
+//            println(it)
+//        }
 
         //TODO
         //        val r1 = Symbol.R1
@@ -160,10 +175,7 @@ class WorldTest {
         assert(e3.perm(0).toSet() == res0.toSet())
         assert(e3.perm(1).toSet() == res1.toSet())
         assert(e3.perm(2).toSet() == res2.toSet())
-
-
         assert(e3.perm(3).toSet() == res3.toSet())
-
 
         val cRes0 = res0.map { it.toSet() }.toSet()
         val cRes1 = res1.map { it.toSet() }.toSet()

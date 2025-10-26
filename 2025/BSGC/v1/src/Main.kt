@@ -1,6 +1,19 @@
-import kotlin.collections.plus
-import kotlin.sequences.flatMap
+package bssim
+
 import kotlin.sequences.map
+
+fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
+
+infix operator fun List<Int>.compareTo(o: List<Int>): Int = asSequence().zip(o.asSequence())
+    .map { (a, b) -> a - b }.firstOrNull { it != 0 } ?: (size - o.size)
+
+
+// List<Int>のComparetor
+class ListComparator : Comparator<List<Int>> {
+    override fun compare(a: List<Int>, b: List<Int>): Int = a.asSequence().zip(b.asSequence())
+        .map { (a, b) -> a - b }.firstOrNull { it != 0 } ?: (a.size - b.size)
+}
+
 
 // カードとスピリットのデータクラス
 sealed class Card(
@@ -45,21 +58,10 @@ val Y: Color = 0x0001_0000
 val B: Color = 0x0010_0000
 val primaryColors = setOf(R, P, G, W, Y, B)
 
-/*
-def johntrot_rv(n):
-  if n == 1: return [[1]]
-  perm = []
-  for k, pm in enumerate(johntrot_rv(n-1)):
-    for i in range(n):
-      i1 = n-1-i if k%2==0 else i
-      perm += [pm[:i1]+[n]+pm[i1:]]
-  return perm
-
-* */
 
 // t個の要素からn個を選択する場合の順列
-fun perm(t:Int, pick:Int) = sequence {
-    if (pick == 0) {
+fun perm(t: Int, n: Int) = sequence {
+    if (n == 0) {
         yield(emptyList())
         return@sequence
     }
@@ -73,7 +75,7 @@ fun perm(t:Int, pick:Int) = sequence {
     val a = elements.toMutableList()
 
     // 初期順列
-    yield(a.take(pick))
+    yield(a.take(n))
 
     var i = 1
     while (i < t) {
@@ -84,7 +86,7 @@ fun perm(t:Int, pick:Int) = sequence {
             a[k] = temp
             c[i]++
             i = 1
-            yield(a.take(pick))
+            yield(a.take(n))
         } else {
             c[i] = 0
             i++
@@ -92,66 +94,54 @@ fun perm(t:Int, pick:Int) = sequence {
     }
 }
 
-
-//fun perm0(n: Int): Sequence<List<Int>> = when (n) {
-//    0 -> sequenceOf(emptyList())
-//    1 -> sequenceOf(listOf(0))
-//    else -> perm(n - 1).flatMap { p -> (0..n - 1).map { i -> p.take(i) + (n - 1) + p.drop(i) } }
-//}
-
-// Heap's Algorithm
-//fun perm(n: Int): Sequence<List<Int>> = sequence {
-//    val a = (0..<n).toMutableList()
-//    val c = IntArray(n) { 0 }
-//    yield(a.toList())
-//
-//    var i = 1
-//    while (i < n) {
-//        if (c[i] < i) {
-//            val k = if (i % 2 == 0) 0 else c[i]
-//            val temp = a[i]
-//            a[i] = a[k]
-//            a[k] = temp
-//            c[i]++
-//            i = 1
-//            yield(a.toList())
-//        } else {
-//            c[i] = 0
-//            i++
-//        }
-//    }
-//}
+// 上のperm(t,n)を使用
+fun <T> Collection<T>.perm(n: Int): Sequence<List<T>> = sequence {
+    perm(size, n).forEach { ix -> yield(ix.map { elementAt(it) }) }
+}
 
 
-fun comb(n: Int) = sequence {
-    val a = (0..<n).toMutableList()
-    val c = IntArray(n) { 0 }
+// t個の要素(0,1,2..)からn個を選択する場合の組合せ
+fun comb(t: Int, n: Int): Sequence<List<Int>> = sequence {
+    if (n == 0) {
+        yield(emptyList())
+        return@sequence
+    }
+    if (t < n) {
+        return@sequence
+    }
+
+    val a = IntArray(n)
+    val p = IntArray(n + 1)
+
+    for (i in 0 until n) {
+        a[i] = i
+    }
+    for (i in 0..n) {
+        p[i] = i
+    }
+
     yield(a.toList())
 
-    var i = 1
-    while (i < n) {
-        if (c[i] < i) {
-            val k = if (i % 2 == 0) 0 else c[i]
-            val temp = a[i]
-            a[i] = a[k]
-            a[k] = temp
-            c[i]++
-            i = 1
-            yield(a.toList())
+    var i = n - 1
+    while (i >= 0) {
+        if (a[i] == t - n + i) {
+            i--
         } else {
-            c[i] = 0
-            i++
+            p[i] = a[i]
+            a[i]++
+            for (j in i + 1 until n) {
+                a[j] = a[j - 1] + 1
+            }
+            yield(a.toList())
+            i = n - 1
         }
     }
 }
 
-fun <T> Collection<T>.perm(n: Int): Sequence<List<T>> = when (n) {
-    0 -> sequenceOf(emptyList())
-    else -> asSequence().flatMap { elem -> (this - elem).perm(n - 1).map { it + elem } }
+
+fun <T> Collection<T>.comb(n: Int): Sequence<List<T>> = sequence {
+    comb(size, n).forEach { ix -> yield(ix.map { elementAt(it) }) }
 }
-
-fun <T> Collection<T>.comb(n: Int): Sequence<List<T>> = perm(n).distinctBy { it.toSet() }
-
 
 fun Color.isColor(c: Color) = if (c == C) this == 0 else (this and c) != 0
 infix operator fun Color.contains(c: Color) = (this and c) != 0
