@@ -1,19 +1,76 @@
+import org.junit.jupiter.api.assertAll
 import kotlin.collections.listOf
 import kotlin.test.Test
 import kotlin.time.measureTime
 
-fun <T> T.dbg() = apply { println(this) }
+fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
 
 class WorldTest {
     @Test
     fun combs() {
-        val n = 10
-        measureTime { perm(n).count().dbg() }.dbg()
-        measureTime { perm(n + 1).count().dbg() }.dbg()
-        measureTime { perm(n + 2).count().dbg() }.dbg()
-        measureTime { perm_HeapAlgorithm(n).count().dbg() }.dbg()
-        measureTime { perm_HeapAlgorithm(n + 1).count().dbg() }.dbg()
-        measureTime { perm_HeapAlgorithm(n + 2).count().dbg() }.dbg()
+//        measureTime { perm(10).count().dbg("perm(n)=10:") }.dbg()
+//        measureTime { permH(11).count().dbg("permH(n)=11:") }.dbg()
+        assert(perm(0, 0).toSet() == setOf(listOf<Int>()))
+        assert(perm(1, 1).toSet() == setOf(listOf(0)))
+        assert(perm(2, 2).toSet() == setOf(listOf(0, 1), listOf(1, 0)))
+        assert(
+            perm(3, 3).toSet().dbg("P(3,3)") == setOf(
+                listOf(0, 1, 2),
+                listOf(0, 2, 1),
+                listOf(1, 0, 2),
+                listOf(1, 2, 0),
+                listOf(2, 0, 1),
+                listOf(2, 1, 0),
+            )
+        )
+        assert(
+            perm(3, 2).toSet().dbg("P(3,2)") == setOf(
+                listOf(0, 1), listOf(0, 2),
+                listOf(1, 0), listOf(1, 2),
+                listOf(2, 0), listOf(2, 1),
+            )
+        )
+        assert(
+            perm(4, 3).toSet().dbg("P(4,3)") == setOf(
+                listOf(0, 1, 2), listOf(0, 1, 3),
+                listOf(0, 2, 1), listOf(0, 2, 3),
+                listOf(0, 3, 1), listOf(0, 3, 2),
+
+                listOf(1, 0, 2), listOf(1, 0, 3),
+                listOf(1, 2, 0), listOf(1, 2, 3),
+                listOf(1, 3, 0), listOf(1, 3, 2),
+
+                listOf(2, 0, 1), listOf(2, 0, 3),
+                listOf(2, 1, 0), listOf(2, 1, 3),
+                listOf(2, 3, 0), listOf(2, 3, 1),
+
+                listOf(3, 0, 1), listOf(3, 0, 2),
+                listOf(3, 1, 0), listOf(3, 1, 2),
+                listOf(3, 2, 0), listOf(3, 2, 1),
+            )
+        )
+
+        assert(
+            perm(4, 4).toSet().dbg("P(4,4)") == setOf(
+                listOf(0, 1, 2, 3), listOf(0, 1, 3, 2),
+                listOf(0, 2, 1, 3), listOf(0, 2, 3, 1),
+                listOf(0, 3, 1, 2), listOf(0, 3, 2, 1),
+
+                listOf(1, 0, 2, 3), listOf(1, 0, 3, 2),
+                listOf(1, 2, 0, 3), listOf(1, 2, 3, 0),
+                listOf(1, 3, 0, 2), listOf(1, 3, 2, 0),
+
+                listOf(2, 0, 1, 3), listOf(2, 0, 3, 1),
+                listOf(2, 1, 0, 3), listOf(2, 1, 3, 0),
+                listOf(2, 3, 0, 1), listOf(2, 3, 1, 0),
+
+                listOf(3, 0, 1, 2), listOf(3, 0, 2, 1),
+                listOf(3, 1, 0, 2), listOf(3, 1, 2, 0),
+                listOf(3, 2, 0, 1), listOf(3, 2, 1, 0)
+            )
+        )
+
+        comb(3).toSet().dbg("C(3)=")
     }
 
     @Test

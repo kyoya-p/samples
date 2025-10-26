@@ -45,7 +45,6 @@ val Y: Color = 0x0001_0000
 val B: Color = 0x0010_0000
 val primaryColors = setOf(R, P, G, W, Y, B)
 
-// 順列
 /*
 def johntrot_rv(n):
   if n == 1: return [[1]]
@@ -58,34 +57,90 @@ def johntrot_rv(n):
 
 * */
 
-fun perm(n: Int): Sequence<List<Int>> = when (n) {
-    0 -> sequenceOf(emptyList())
-    1 -> sequenceOf(listOf(1))
-    else -> perm(n - 1).flatMap { p -> (0..n - 1).map { i -> p.take(i) + n + p.drop(i) } }
+// t個の要素からn個を選択する場合の順列
+fun perm(t:Int, pick:Int) = sequence {
+    if (pick == 0) {
+        yield(emptyList())
+        return@sequence
+    }
+    if (t == 0) {
+        return@sequence
+    }
+
+    val elements = (0..<t).toList()
+    val indices = (0..<t).toMutableList()
+    val c = IntArray(t) { 0 }
+    val a = elements.toMutableList()
+
+    // 初期順列
+    yield(a.take(pick))
+
+    var i = 1
+    while (i < t) {
+        if (c[i] < i) {
+            val k = if (i % 2 == 0) 0 else c[i]
+            val temp = a[i]
+            a[i] = a[k]
+            a[k] = temp
+            c[i]++
+            i = 1
+            yield(a.take(pick))
+        } else {
+            c[i] = 0
+            i++
+        }
+    }
 }
 
-fun perm_HeapAlgorithm(n:Int) : Sequence<List<Int>> = when (n) {
-    // 変数(var)を使わない
-    0 -> sequenceOf(emptyList())
-    else -> sequence {
-        val a = (1..n).toMutableList()
-        val c = IntArray(n) { 0 }
-        yield(a.toList())
 
-        var i = 1
-        while (i < n) {
-            if (c[i] < i) {
-                val k = if (i % 2 == 0) 0 else c[i]
-                val temp = a[i]
-                a[i] = a[k]
-                a[k] = temp
-                c[i]++
-                i = 1
-                yield(a.toList())
-            } else {
-                c[i] = 0
-                i++
-            }
+//fun perm0(n: Int): Sequence<List<Int>> = when (n) {
+//    0 -> sequenceOf(emptyList())
+//    1 -> sequenceOf(listOf(0))
+//    else -> perm(n - 1).flatMap { p -> (0..n - 1).map { i -> p.take(i) + (n - 1) + p.drop(i) } }
+//}
+
+// Heap's Algorithm
+//fun perm(n: Int): Sequence<List<Int>> = sequence {
+//    val a = (0..<n).toMutableList()
+//    val c = IntArray(n) { 0 }
+//    yield(a.toList())
+//
+//    var i = 1
+//    while (i < n) {
+//        if (c[i] < i) {
+//            val k = if (i % 2 == 0) 0 else c[i]
+//            val temp = a[i]
+//            a[i] = a[k]
+//            a[k] = temp
+//            c[i]++
+//            i = 1
+//            yield(a.toList())
+//        } else {
+//            c[i] = 0
+//            i++
+//        }
+//    }
+//}
+
+
+fun comb(n: Int) = sequence {
+    val a = (0..<n).toMutableList()
+    val c = IntArray(n) { 0 }
+    yield(a.toList())
+
+    var i = 1
+    while (i < n) {
+        if (c[i] < i) {
+            val k = if (i % 2 == 0) 0 else c[i]
+            val temp = a[i]
+            a[i] = a[k]
+            a[k] = temp
+            c[i]++
+            i = 1
+            yield(a.toList())
+        } else {
+            c[i] = 0
+            i++
         }
     }
 }
