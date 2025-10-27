@@ -7,4 +7,3 @@ settings:
       - -Xdata-flow-based-exhustiveness
       - -Xcontext-parameter
       - -Xreturn-value-checker=check
-
