@@ -2,7 +2,6 @@ package bssim
 
 import kotlin.sequences.map
 
-fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
 
 infix operator fun List<Int>.compareTo(o: List<Int>): Int = asSequence().zip(o.asSequence())
     .map { (a, b) -> a - b }.firstOrNull { it != 0 } ?: (size - o.size)
@@ -202,11 +201,6 @@ data class Board(
 }
 
 data class Game(val board: Board, @Suppress("unused") val board2: Board = Board())
-
-//fun Game.fieldSymbols() = board.fieldObjects.fold(NoSymbol) { e, a -> a.symbols() + e }
-fun Game.fieldSymbols(): Int = TODO()
-//board.fieldObjects.fold(1) { a,e-> 1 }
-
 
 // 可能なアクション
 sealed class Action() {

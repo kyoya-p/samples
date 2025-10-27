@@ -1,16 +1,34 @@
 @file:Suppress("NonAsciiCharacters", "ObjectPropertyName")
 
-package bssim
-
+import bssim.Action
+import bssim.B
+import bssim.Board
+import bssim.Card
+import bssim.FieldObject
+import bssim.G
+import bssim.Game
+import bssim.P
+import bssim.P1
+import bssim.R
+import bssim.R1
+import bssim.Symbol
+import bssim.Symbols
+import bssim.W
+import bssim.Y
+import bssim.comb
+import bssim.listChoices
+import bssim.perm
+import bssim.primaryColors
 import kotlin.collections.listOf
 import kotlin.test.Test
+import kotlin.time.measureTime
+
+fun <T> T.dbg(m: String = "") = apply { println("$m${this}") }
+
 
 class WorldTest {
     @Test
     fun utils() {
-//        measureTime { perm(10).count().dbg("perm(n)=10:") }.dbg()
-//        measureTime { permH(11).count().dbg("permH(n)=11:") }.dbg()
-
         assert(perm(0, 0).toSet() == setOf(listOf<Int>()))
         assert(perm(1, 1).toSet() == setOf(listOf(0)))
         assert(perm(2, 2).toSet() == setOf(listOf(0, 1), listOf(1, 0)))
@@ -91,7 +109,22 @@ class WorldTest {
     }
 
     @Test
+    fun utilsTime() {
+        measureTime { perm(10, 10).count().dbg("perm(10):") }.dbg()
+        measureTime { perm(11, 11).count().dbg("perm(11):") }.dbg()
+        measureTime { perm(10, 10).count().dbg("comb(10):") }.dbg()
+        measureTime { perm(11, 11).count().dbg("comb(11):") }.dbg()
+    }
+
+    @Test
     fun symbol() {
+
+        val s1= Symbol(
+            color = R,
+            symbols = 1
+        )
+val ss1= Symbols
+
 //        listOf('A', 'B').perm(2, 2).forEach {
 //            println(it)
 //        }
@@ -227,6 +260,7 @@ val ドラグノ偵察兵 = Card.SpiritCard(
     levelCosts = mapOf(1 to 1, 2 to 2),
     symbols = R1,
 )
+
 @Suppress("unused")
 val メラット = Card.SpiritCard(
     name = "メラット",

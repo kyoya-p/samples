@@ -23,7 +23,9 @@ sh gradlew createDistributable
 実行: `moddump.exe`
 
 # TODO
-- id:2510 リアルタイムスキャン
+- 2510 ダミー機能
+- 2508 リアルタイムスキャン
+- 2509 Dump中断
 
 # Refer
 

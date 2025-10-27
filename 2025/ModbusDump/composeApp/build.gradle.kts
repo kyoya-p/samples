@@ -47,7 +47,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "moddump"
-            packageVersion = "1.0.7"
+            packageVersion = "1.0.8"
             windows {
                 upgradeUuid = "d73507d7-21a0-4351-b0e6-5226191262d1"
                 menu = true

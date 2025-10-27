@@ -21,7 +21,9 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -53,15 +55,96 @@ import kotlin.time.ExperimentalTime
 import kotlin.use
 
 
-@OptIn(ExperimentalTime::class)
+@OptIn(ExperimentalTime::class, ExperimentalMaterial3Api::class)
 @Composable
 fun UI() = MaterialTheme {
     var params: AppData by remember { mutableStateOf(config) }
+    var mode by remember { mutableStateOf(0) } // 0=client,1=server
+    Column {
+        TopAppBar(
+            title = { Text("Modbus Dump ${if (mode != 0) "Server" else ""}") },
+            actions = {
+                TextButton(onClick = { mode = 1 - mode }) { Text(if (mode == 0) "              " else "🚧🚧🚧") }
+//                TextButton(onClick = { mode = 1 }) { Text("Server(TODO)") }
+            },
+        )
+        when (mode) {
+            0 -> params.ModDump { params = it }
+            1 -> {}
+        }
+
+//        var result by remember { mutableStateOf("") }
+//        var run by remember { mutableStateOf(false) }
+//        Row {
+//            Column {
+//                params.ParameterField { params = it }
+//                Row {
+//                    Button(onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
+//                    if (run) CircularProgressIndicator()
+//                }
+//            }
+//            Spacer(Modifier.width(4.dp))
+//            SelectionContainer {
+//                Box(modifier = Modifier.fillMaxSize()) {
+//                    val scrollState = rememberScrollState()
+//                    Text(
+//                        text = result,
+//                        modifier = Modifier.verticalScroll(state = scrollState).fillMaxSize(),
+//                        style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace)
+//                    )
+//                    VerticalScrollbar(
+//                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
+//                        adapter = rememberScrollbarAdapter(scrollState = scrollState)
+//                    )
+//                }
+//            }
+//        }
+//        LaunchedEffect(run) {
+//            if (run) with(params) {
+//                launch(Dispatchers.Default) {
+//                    result = """date: ${now().toLocalDateTime(currentSystemDefault())}
+//host-adr: $hostAdr
+//unit-id: $unitId
+//read-mode: ${mode.face}
+//register-adr: $regAdr
+//register-count: $regCount
+//bulk-size: $nAcq
+//
+//"""
+//                    runCatching {
+//                        val master = ModbusTCPMaster(hostAdr)
+//                        master.connect()
+////                    master.read(params).forEach { result += "$it\n" }
+//                        val count = master.read(params) { result += "${it.message}\n" }
+//                        result += "\n$count\n"
+//                        master.disconnect()
+//                    }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
+//                    val dt = now().toLocalDateTime(currentSystemDefault())
+//                        .format(LocalDateTime.Format { year(); monthNumber(); day(); hour(); minute(); second() })
+//                    SystemFileSystem.sink(
+//                        Path(
+//                            appHome,
+//                            "moddump-$dt-${hostAdr.filter { it.isDigit() || it == '.' }}-$unitId.log"
+//                        )
+//                    ).buffered()
+//                        .use { it.writeString(result) }
+//                    run = false
+//                }
+//            }
+//        }
+    }
+    config = params
+}
+
+@OptIn(ExperimentalTime::class)
+@Composable
+fun AppData.ModDump(onChangeParams: (AppData) -> Unit) {
+    val params = this
     var result by remember { mutableStateOf("") }
     var run by remember { mutableStateOf(false) }
     Row {
         Column {
-            params.ParameterField { params = it }
+            params.ParameterField { onChangeParams(it) }
             Row {
                 Button(onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
                 if (run) CircularProgressIndicator()
@@ -116,7 +199,6 @@ bulk-size: $nAcq
             }
         }
     }
-    config = params
 }
 
 @Composable
@@ -166,7 +248,8 @@ fun IntField(
         runCatching { onValueChange(it.toIntHex()) }
     },
     label = {
-        val i = runCatching { sv.value.toIntHex().let { "$it / 0x${it.toString(16).uppercase()}" } }.getOrElse { "---" }
+        val i =
+            runCatching { sv.value.toIntHex().let { "$it / 0x${it.toString(16).uppercase()}" } }.getOrElse { "---" }
         Text("$label ( $i )")
     },
     modifier = modifier,
