@@ -36,6 +36,8 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")// https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-datetime
+
+            implementation("com.darkrockstudios:mpfilepicker:3.1.0")
         }
     }
 }

@@ -49,6 +49,7 @@ import kotlinx.io.writeString
 import modbusdump.AppData
 import modbusdump.appHome
 import modbusdump.config
+import modbusdump.modbusdump.v3.ModServer
 import kotlin.stackTraceToString
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
@@ -70,7 +71,7 @@ fun UI() = MaterialTheme {
         )
         when (mode) {
             0 -> params.ModDump { params = it }
-            1 -> {}
+            1 -> params.ModServer { params = it }
         }
 
 //        var result by remember { mutableStateOf("") }

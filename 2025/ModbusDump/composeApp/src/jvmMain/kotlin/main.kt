@@ -12,7 +12,6 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
-import modbusdump.v2.MBRes
 import modbusdump.v2.UI
 import modbusdump.v2.read
 import modbusdump.v2.toTcp
@@ -85,9 +84,13 @@ data class AppData(
     val regCount: Int = 8,
     val nAcq: Int = 1,
     val nWord: Int = 1,
+    val srcFiles: List<ModbusSource> = emptyList()
 )
 
-val     appHome = Path("${System.getProperty("user.home")}/.modbusdump")
+@Serializable
+data class ModbusSource(val path: String, val unitId: Int, val listenPort: Int)
+
+val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
 val configFile = Path("$appHome/config.json")
 var config
     get() = runCatching {
