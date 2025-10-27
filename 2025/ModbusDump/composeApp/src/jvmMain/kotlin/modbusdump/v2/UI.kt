@@ -73,66 +73,6 @@ fun UI() = MaterialTheme {
             0 -> params.ModDump { params = it }
             1 -> params.ModServer { params = it }
         }
-
-//        var result by remember { mutableStateOf("") }
-//        var run by remember { mutableStateOf(false) }
-//        Row {
-//            Column {
-//                params.ParameterField { params = it }
-//                Row {
-//                    Button(onClick = { run = !run }) { if (!run) Text("Dump") else Text("Stop") }
-//                    if (run) CircularProgressIndicator()
-//                }
-//            }
-//            Spacer(Modifier.width(4.dp))
-//            SelectionContainer {
-//                Box(modifier = Modifier.fillMaxSize()) {
-//                    val scrollState = rememberScrollState()
-//                    Text(
-//                        text = result,
-//                        modifier = Modifier.verticalScroll(state = scrollState).fillMaxSize(),
-//                        style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace)
-//                    )
-//                    VerticalScrollbar(
-//                        modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
-//                        adapter = rememberScrollbarAdapter(scrollState = scrollState)
-//                    )
-//                }
-//            }
-//        }
-//        LaunchedEffect(run) {
-//            if (run) with(params) {
-//                launch(Dispatchers.Default) {
-//                    result = """date: ${now().toLocalDateTime(currentSystemDefault())}
-//host-adr: $hostAdr
-//unit-id: $unitId
-//read-mode: ${mode.face}
-//register-adr: $regAdr
-//register-count: $regCount
-//bulk-size: $nAcq
-//
-//"""
-//                    runCatching {
-//                        val master = ModbusTCPMaster(hostAdr)
-//                        master.connect()
-////                    master.read(params).forEach { result += "$it\n" }
-//                        val count = master.read(params) { result += "${it.message}\n" }
-//                        result += "\n$count\n"
-//                        master.disconnect()
-//                    }.onFailure { result += "${it.message}\n${it.stackTraceToString()}" }
-//                    val dt = now().toLocalDateTime(currentSystemDefault())
-//                        .format(LocalDateTime.Format { year(); monthNumber(); day(); hour(); minute(); second() })
-//                    SystemFileSystem.sink(
-//                        Path(
-//                            appHome,
-//                            "moddump-$dt-${hostAdr.filter { it.isDigit() || it == '.' }}-$unitId.log"
-//                        )
-//                    ).buffered()
-//                        .use { it.writeString(result) }
-//                    run = false
-//                }
-//            }
-//        }
     }
     config = params
 }
@@ -219,11 +159,14 @@ fun AppData.ParameterField(onChange: (AppData) -> Unit) = Column {
 
 
 fun String.toIntHex() = trim().run { if (startsWith("0x")) drop(2).toInt(16) else toInt() }
-fun String.toTcp(): Pair<String, Int> = (this + ":502").split(":").let { (it[0] to it[1].toIntHex()) }
+fun String.toTcp(): Pair<String, Int> {
+    val let = ("$this:502").split(":").let { (it[0] to it[1].toIntHex()) }
+    return let
+}
 
 @Composable
 fun AppData.TcpField(
-    toTcp: (String) -> AppData = { s -> (s + ":502").split(":").let { copy(it[0], port = it[1].toIntHex()) } },
+    toTcp: (String) -> AppData = { s -> ("$s:502").split(":").let { copy(it[0], port = it[1].toIntHex()) } },
     toString: () -> String = { "${hostAdr.trim()}${if (port != 502) ":$port" else ""}" },
     sv: MutableState<String> = remember { mutableStateOf(toString()) },
     onValueChange: (AppData) -> Unit,

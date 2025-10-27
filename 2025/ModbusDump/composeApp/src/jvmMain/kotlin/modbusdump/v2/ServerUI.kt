@@ -1,6 +1,7 @@
 package modbusdump.modbusdump.v3
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.Text
@@ -17,17 +18,30 @@ import modbusdump.ModbusSource
 
 @Composable
 fun AppData.ModServer(onChangeParams: (AppData) -> Unit) = Column {
-    LazyVerticalGrid(columns = GridCells.Fixed(4)) {
-        fun row(e: ModbusSource) {
-            item { Text(e.path) }
-            item { Text("${e.unitId}") }
-            item { Text("${e.listenPort}") }
-            item { Text("") }
-        }
-        this@ModServer.srcFiles.forEach {
-            row(it)
+//    LazyVerticalGrid(columns = GridCells.Fixed(4)) {
+//        fun row(e: ModbusSource) {
+//            item { Text(e.path) }
+//            item { Text("${e.unitId}") }
+//            item { Text("${e.listenPort}") }
+//            item { Text("") }
+//        }
+//        this@ModServer.srcFiles.forEach {
+//            row(it)
+//        }
+//    }
+
+    // Tableを生成
+    @Composable fun row(e: ModbusSource) {
+        Row{
+            Text(e.path)
+            Text("${e.unitId}")
+            Text("${e.listenPort}")
         }
     }
+    this@ModServer.srcFiles.forEach {
+        row(it)
+    }
+
 
     TextButton(onClick = FileDialog {
         onChangeParams(copy(srcFiles = it.mapIndexed { i, e ->
