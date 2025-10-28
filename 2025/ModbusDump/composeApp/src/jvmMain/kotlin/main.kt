@@ -84,11 +84,16 @@ data class AppData(
     val regCount: Int = 8,
     val nAcq: Int = 1,
     val nWord: Int = 1,
-    val srcFiles: List<ModbusSource> = emptyList()
+    val srcFiles: List<ModbusDevice> = emptyList()
 )
 
 @Serializable
-data class ModbusSource(val path: String, val unitId: Int, val listenPort: Int)
+data class ModbusDevice(
+    val path: String,
+    val unitId: Int = 1,
+    val mode: ReadType = ReadType.HOLDING_REGISTERS,
+    val listenPort: Int = 502
+)
 
 val appHome = Path("${System.getProperty("user.home")}/.modbusdump")
 val configFile = Path("$appHome/config.json")

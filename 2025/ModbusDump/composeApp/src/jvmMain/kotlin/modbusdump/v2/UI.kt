@@ -20,6 +20,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.ghgande.j2mod.modbus.facade.ModbusTCPMaster
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone.Companion.currentSystemDefault
@@ -47,9 +49,11 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 import modbusdump.AppData
+import modbusdump.ModbusDevice
 import modbusdump.appHome
 import modbusdump.config
 import modbusdump.modbusdump.v3.ModServer
+import modbusdump.modbusdump.v3.startModbusDevice
 import kotlin.stackTraceToString
 import kotlin.time.Clock.System.now
 import kotlin.time.ExperimentalTime
@@ -59,12 +63,29 @@ import kotlin.use
 @OptIn(ExperimentalTime::class, ExperimentalMaterial3Api::class)
 @Composable
 fun UI() = MaterialTheme {
+    // TODO
+    var serv: Boolean by remember { mutableStateOf(false) }
+    var job: Job? by remember { mutableStateOf(null) }
+    LaunchedEffect(serv) {
+        if (serv) {
+            job = launch { ModbusDevice("").startModbusDevice() }
+            println("Started!!")
+        }
+    }
     var params: AppData by remember { mutableStateOf(config) }
     var mode by remember { mutableStateOf(0) } // 0=client,1=server
     Column {
         TopAppBar(
             title = { Text("Modbus Dump ${if (mode != 0) "Server" else ""}") },
             actions = {
+                Switch(serv, onCheckedChange = {
+                    println("job?.cancel() :$it  $job") // TODO
+                    serv = it
+                    if (!it) {
+                        job?.cancel()
+                        job = null
+                    }
+                })
                 TextButton(onClick = { mode = 1 - mode }) { Text(if (mode == 0) "              " else "🚧🚧🚧") }
             },
         )
@@ -180,8 +201,8 @@ fun AppData.TcpField(
 @Composable
 fun IntField(
     v: Int,
-    sv: MutableState<String> = remember { mutableStateOf(v.toString()) },
     label: String,
+    sv: MutableState<String> = remember { mutableStateOf(v.toString()) },
     modifier: Modifier = Modifier,
     onValueChange: (Int) -> Unit,
 ) = TextField(
@@ -205,7 +226,7 @@ fun IntField(
 inline fun <reified E> DropdownMenu(
     selected: E,
     options: Iterable<E>,
-    label: String,
+    label: String? = null,
     crossinline itemFace: (ix: Int, e: E) -> String,
     crossinline onChange: (E) -> Unit,
 ) {
@@ -221,7 +242,7 @@ inline fun <reified E> DropdownMenu(
             readOnly = true,
             trailingIcon = { TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable, true),
-            label = { Text(label) }
+            label = label?.let { { Text(it) } }
         )
 
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {

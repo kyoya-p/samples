@@ -15,31 +15,42 @@ import androidx.compose.ui.unit.dp
 import com.darkrockstudios.libraries.mpfilepicker.MultipleFilePicker
 import kotlinx.io.files.Path
 import modbusdump.AppData
-import modbusdump.ModbusSource
+import modbusdump.ModbusDevice
+import modbusdump.ReadType
+import modbusdump.v2.DropdownMenu
 
 
 @Composable
 fun AppData.ModServer(onChangeParams: (AppData) -> Unit) = Column {
     @Composable
-    fun row(e: ModbusSource, onChange: (ModbusSource) -> Unit) {
+    fun row(e: ModbusDevice, onChange: (ModbusDevice) -> Unit) {
         @Composable
-        fun Cell(s: String, w: Int? = null, onChange: (String) -> Unit) = TextField(
+        fun Cell(s: String, w: Int? = null, isError: Boolean = false, onChange: (String) -> Unit) = TextField(
             s, modifier = w?.let { Modifier.width(it.dp) } ?: Modifier.weight(1f),
-            isError = false, singleLine = true, onValueChange = onChange
+            isError = isError, singleLine = true, onValueChange = onChange
         )
         Row {
             Cell(e.path) { onChange(e.copy(path = it)); println(it) }
+//            IntField(e.unitId, "", modifier = Modifier.width(40.dp)){}
             TextField("${e.unitId}", modifier = Modifier.width(40.dp), onValueChange = {})
             TextField("${e.listenPort}", modifier = Modifier.width(70.dp), onValueChange = {})
+            DropdownMenu(
+                selected = e.mode,
+                options = ReadType.entries.map { it },
+                itemFace = { _, e -> e.face },
+            ) {
+                println(it)
+                onChange(e.copy(mode = it))
+            }
         }
     }
-    this@ModServer.srcFiles.forEachIndexed { i, e ->
+    srcFiles.forEachIndexed { i, e ->
         row(e) { onChangeParams(copy(srcFiles = srcFiles.toMutableList().apply { set(i, it) })) }
     }
 
     TextButton(onClick = FileDialog {
         onChangeParams(copy(srcFiles = it.mapIndexed { i, e ->
-            ModbusSource(e.toString(), 1 + i, 502 + i)
+            ModbusDevice(e.toString(), 1 + i, ReadType.HOLDING_REGISTERS, 502 + i)
         }))
     }) { Text("Select Source Files") }
 }
