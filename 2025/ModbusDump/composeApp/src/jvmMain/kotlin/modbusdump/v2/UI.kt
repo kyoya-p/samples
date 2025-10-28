@@ -66,7 +66,6 @@ fun UI() = MaterialTheme {
             title = { Text("Modbus Dump ${if (mode != 0) "Server" else ""}") },
             actions = {
                 TextButton(onClick = { mode = 1 - mode }) { Text(if (mode == 0) "              " else "🚧🚧🚧") }
-//                TextButton(onClick = { mode = 1 }) { Text("Server(TODO)") }
             },
         )
         when (mode) {
