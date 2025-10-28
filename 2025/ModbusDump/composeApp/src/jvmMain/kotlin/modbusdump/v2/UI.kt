@@ -68,8 +68,9 @@ fun UI() = MaterialTheme {
     var job: Job? by remember { mutableStateOf(null) }
     LaunchedEffect(serv) {
         if (serv) {
-            job = launch { ModbusDevice("").startModbusDevice() }
+            job = launch(Dispatchers.Default) { ModbusDevice("").startModbusDevice() }
             println("Started!!")
+//            job?.cancel() //TODO
         }
     }
     var params: AppData by remember { mutableStateOf(config) }

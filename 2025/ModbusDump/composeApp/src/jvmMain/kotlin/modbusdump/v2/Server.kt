@@ -21,7 +21,7 @@ fun main() {
 suspend fun ModbusDevice.startModbusDevice() = suspendCancellableCoroutine { continuation ->
     val slave: ModbusSlave = ModbusSlaveFactory.createTCPSlave(listenPort, 5)
     val spi = SimpleProcessImage(1)
-    spi.addRegister(0, SimpleInputRegister(1234))
+    spi.addRegister(0, SimpleInputRegister(1234)) //TODO
     slave.addProcessImage(1, spi)
     continuation.invokeOnCancellation {
         println("Canceled!!!") //TODO
