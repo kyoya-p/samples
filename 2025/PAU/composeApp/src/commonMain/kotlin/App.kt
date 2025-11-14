@@ -212,7 +212,7 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         newIp,
         singleLine = true,
         isError = isError,
-        label = { Text("Target Address") },
+        label = { Text("Target Address (${newIp.toRangeSet().totalLength()} adr)") },
         placeholder = { Text("Scan Range e.g: 1.0.0.1-1.0.0.254") },
         suffix = {},
         leadingIcon = {},
@@ -302,7 +302,7 @@ fun AppData.SearchDialog(
             item {
                 Row {
                     Text(i.toString(), Modifier.width(40.dp), maxLines = 1)
-                    Text(if (mfps.containsKey(ip)) "✅️" else "", Modifier.width(20.dp))
+                    Text(if (mfps.containsKey(ip)) "☑️" else "➕️", Modifier.width(20.dp))
                     Text(ip, Modifier.width(160.dp), maxLines = 1)
                 }
             }
