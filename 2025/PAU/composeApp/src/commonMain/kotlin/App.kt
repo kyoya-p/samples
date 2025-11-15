@@ -278,14 +278,13 @@ fun AppData.SearchDialog(
                 pdu = scanPdu(reqId = it.toInt())
             )
         }.collect { r ->
-            println(
-                "Ap:${Thread.currentThread().name}") //TODO
-                ++ cRes
-                        if (r is Result.Response) {
-                            ++cDetect
-                            ips[r.request.target.address.inetAddress.toIpV4String()] =
-                                r.received.peerAddress.inetAddress.toIpV4String()
-                        }
+            println("Ap:${Thread.currentThread().name} $cRes") //TODO
+            ++cRes
+            if (r is Result.Response) {
+                ++cDetect
+                ips[r.request.target.address.inetAddress.toIpV4String()] =
+                    r.received.peerAddress.inetAddress.toIpV4String()
+            }
         }
         job.cancelAndJoin()
         val t = (now() - start).inWholeSeconds

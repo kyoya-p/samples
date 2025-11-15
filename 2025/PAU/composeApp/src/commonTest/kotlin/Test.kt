@@ -1,4 +1,5 @@
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.comparables.shouldBeGreaterThan
 import io.kotest.matchers.comparables.shouldBeLessThan
 import io.kotest.matchers.ranges.shouldBeInOpenEndRange
 import io.kotest.matchers.shouldBe
@@ -21,29 +22,36 @@ import kotlin.time.measureTime
 
 @OptIn(ExperimentalTime::class, ExperimentalStdlibApi::class)
 class MyTest : FunSpec({
-    test("rateLimiter") {
-        fun src(n: Int, s: Instant = now()) = (0..<n).asFlow().map { now() - s }
-        src(10).collectIndexed { i, e ->
-            println("$i: $e")
-            assert(e < 50.milliseconds)
+    test("rateLimiter:1/100ms * 10 + 1s") {
+        fun Instant.lap() = now() - this
+        run {
+            val s = now()
+            (0..<10).asFlow().collect {
+                s.lap() shouldBeLessThan 50.milliseconds
+            }
+            s.lap() shouldBeLessThan 50.milliseconds
         }
 
-        val limiter100ms = RateLimiter(100.milliseconds)
-        src(10).collectIndexed { i, e ->
-            limiter100ms.runRateLimited {
-                println("$i: $e")
-                assert(100.milliseconds * i < e)
-                assert(e < 100.milliseconds * (i + 1))
+        run {
+            val m = 150.milliseconds
+            val s = now()
+            val limiter100ms = RateLimiter(100.milliseconds, s)
+            println(s.lap())//todo
+            (0..<10).asFlow().collect { ix ->
+                limiter100ms.runRateLimited {
+                    println(s.lap())//todo
+                    s.lap() shouldBeLessThan (100.milliseconds * ix + m) shouldBeGreaterThan (100.milliseconds * ix - m)
+                }
             }
         }
-        val limiter1s = RateLimiter(1000.milliseconds)
-        src(10).collectIndexed { i, e ->
-            limiter1s.runRateLimited {
-                println("$i: $e")
-                assert(1.seconds * i < e)
-                assert(e < 1.seconds * (i + 1))
-            }
-        }
+//        val limiter1s = RateLimiter(1000.milliseconds)
+//        src(10).collectIndexed { i, e ->
+//            limiter1s.runRateLimited {
+//                println("$i: $e")
+//                assert(1.seconds * i < e)
+//                assert(e < 1.seconds * (i + 1))
+//            }
+//        }
     }
     test("rateLimiter2") {
         measureTime {

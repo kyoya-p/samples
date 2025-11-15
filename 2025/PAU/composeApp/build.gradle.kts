@@ -1,3 +1,4 @@
+import io.kotest.framework.gradle.tasks.KotestJvmTask
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -42,9 +43,12 @@ kotlin {
 //            implementation(project("::Snmp4jUtils_KtJvm"))
         }
         commonTest.dependencies {
+            val kotest_version = "6.0.4"
             implementation(kotlin("test"))
             implementation(libs.kotest.framework.engine)
-            implementation("io.kotest:kotest-assertions-core:6.0.4")
+            implementation("io.kotest:kotest-assertions-core:$kotest_version")
+            implementation("io.kotest:kotest-runner-junit5:$kotest_version")
+            implementation("io.kotest:kotest-extensions-htmlreporter:$kotest_version")
         }
     }
 }
@@ -64,4 +68,7 @@ compose.desktop {
             }
         }
     }
+}
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
 }

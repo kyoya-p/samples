@@ -19,6 +19,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Clock.System.now
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -153,7 +154,7 @@ fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 @OptIn(ExperimentalTime::class)
 class RateLimiter @OptIn(ExperimentalTime::class) constructor(
     val interval: Duration,
-    val origin: Instant = now(),
+    val origin: Instant = now() - 10.milliseconds,
 ) {
     private val tokenChannel = Channel<Unit>(Channel.RENDEZVOUS)
 
@@ -164,7 +165,7 @@ class RateLimiter @OptIn(ExperimentalTime::class) constructor(
                 val currentTime = now()
                 val passedIntervals = ((currentTime - origin) / interval + 1.0).toInt()
                 nextExecutionTime = origin + interval * passedIntervals
-                if (currentTime <= nextExecutionTime) delay(nextExecutionTime - currentTime)
+                if (currentTime < nextExecutionTime) delay(nextExecutionTime - currentTime)
                 tokenChannel.send(Unit)
             }
         }
@@ -201,7 +202,7 @@ fun snmpSendFlow(
     val total = ipRange.totalLength().toInt()
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-            println("CB:${Thread.currentThread().name}") //TODO
+            println("CB:${Thread.currentThread().name} $count") //TODO
 
             ++count
             runCatching {
