@@ -3,6 +3,10 @@
 ```sh:hot reload
 sh gradlew hotRunJvm --auto
 ```
+
+```shell:test
+sh gradlew clean kotest
+```
 ```shell:Build msi
 sh gradlew composeApp:packageMsi
 ```

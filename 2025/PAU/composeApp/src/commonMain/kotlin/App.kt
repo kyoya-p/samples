@@ -193,7 +193,7 @@ fun OneShotColorAnimationSample(tColor: Pair<Color, Color>, update: MutableState
 }
 
 fun String.toRange() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
-fun String.toRangeSet() = ULongRangeSet(split(",").map { it.toRange() })
+fun String.toRangeSet() = ULongRangeSet(split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() })
 
 @Composable
 fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {

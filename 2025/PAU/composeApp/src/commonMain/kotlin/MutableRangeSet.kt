@@ -37,6 +37,9 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
 
     override fun isEmpty(): Boolean = ranges.isEmpty()
 
+    // Rangeを追加する、ただし領域が重複しないよう調整する
+    // 例えば [0..1, 0..1] は同じ領域を二つなので
+    // 結果が変わらなければfalseを返す
     override fun add(element: ClosedRange<T>): Boolean {
         var new = element
         if (new.start > new.endInclusive) return false
@@ -47,29 +50,29 @@ abstract class MutableRangeSet<T : Comparable<T>> : MutableSet<ClosedRange<T>>, 
             val existing = iterator.next()
             addIndex++
 
-            if (new.endInclusive.compareTo(decrementValue(existing.start)) < 0) {
+            if (new.endInclusive < decrementValue(existing.start)) {
                 ranges.add(addIndex, new)
                 return true
             }
 
-            if (new.start.compareTo(existing.start) < 0) {
-                if (new.endInclusive.compareTo(existing.endInclusive) < 0)
+            if (new.start < existing.start) {
+                if (new.endInclusive < existing.endInclusive)
                     new = createRange(new.start, existing.endInclusive)
                 iterator.remove()
                 addIndex--
                 continue
             }
 
-            if (new.endInclusive.compareTo(existing.endInclusive) <= 0) return false
+            if (new.endInclusive <= existing.endInclusive) return false
 
-            if (new.start.compareTo(incrementValue(existing.endInclusive)) <= 0) {
+            if (new.start <= incrementValue(existing.endInclusive)) {
                 new = createRange(existing.start, new.endInclusive)
                 iterator.remove()
                 addIndex--
             }
         }
 
-        ranges.add(new)
+        ranges.add(new) // If we reach here, new should be added at the end
         return true
     }
 
