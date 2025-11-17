@@ -25,14 +25,9 @@ class OpenEndRangeListTest : FunSpec({
         return result
     }
 
-    fun Collection<ClosedRange<ULong>>.toOpenEndRangeList(): List<OpenEndRange<ULong>> {
-        return this.toRangeList().map { it.start..<it.endInclusive + 1UL }
-    }
-
     fun List<ClosedRange<ULong>>.asFlatSequence(): Sequence<ULong> = asSequence().flatMap { it.start..it.endInclusive }
 
-
-    test("1111") {
+    test("rangeList") {
         val r1 = 1UL..1UL
         val r2 = 2UL..2UL
         val r3 = 3UL..3UL
