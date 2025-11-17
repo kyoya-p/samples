@@ -24,7 +24,10 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-val defaultSenderSnmp by lazy { SnmpBuilder().udp(UdpAddress(4161)).v1().v3().build()!! }
+val defaultSenderSnmp by lazy {
+    SnmpBuilder().udp(UdpAddress()).v1().v3().build()!!
+}
+
 fun createDefaultSenderSnmp() = defaultSenderSnmp
 
 typealias SnmpTarget = CommunityTarget<UdpAddress>
