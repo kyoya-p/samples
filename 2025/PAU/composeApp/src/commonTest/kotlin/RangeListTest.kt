@@ -1,32 +1,13 @@
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import jp.wjg.shokkaa.snmp.RangeSet
+import jp.wjg.shokkaa.snmp.asFlatSequence
+import jp.wjg.shokkaa.snmp.toRangeList
 import kotlin.time.ExperimentalTime
 
 
 @OptIn(ExperimentalTime::class, ExperimentalStdlibApi::class)
-class OpenEndRangeListXTest : FunSpec({
-    fun Collection<ClosedRange<ULong>>.toRangeList(): List<ClosedRange<ULong>> {
-        if (this.isEmpty()) return emptyList()
-
-        val sortedRanges = this.sortedBy { it.start }
-        val result = mutableListOf<ClosedRange<ULong>>()
-
-        for (currentRange in sortedRanges) {
-            if (currentRange.isEmpty()) continue
-            if (result.isEmpty() || result.last().endInclusive < currentRange.start - 1UL) {
-                result.add(currentRange)
-            } else {
-                val lastRange = result.removeLast()
-                val mergedStart = minOf(lastRange.start, currentRange.start)
-                val mergedEnd = maxOf(lastRange.endInclusive, currentRange.endInclusive)
-                result.add(mergedStart..mergedEnd)
-            }
-        }
-        return result
-    }
-
-    fun List<ClosedRange<ULong>>.asFlatSequence(): Sequence<ULong> = asSequence().flatMap { it.start..it.endInclusive }
-
+class OpenEndRangeListTest : FunSpec({
     test("rangeList") {
         val r1 = 1UL..1UL
         val r2 = 2UL..2UL
@@ -54,10 +35,13 @@ class OpenEndRangeListXTest : FunSpec({
         val r19 = 1UL..9UL
         val r01 = 0UL..1UL
 
-        listOf<ULongRange>().toRangeList().asFlatSequence().toList() shouldBe listOf()
+        fun List<ClosedRange<ULong>>.asFlatSequence() = asFlatSequence { it + 1UL }
+
+        listOf<ULongRange>().toRangeList().asFlatSequence { it + 1UL }.toList() shouldBe listOf()
         listOf(r1).toRangeList().asFlatSequence().toList() shouldBe listOf(1UL)
         listOf(r1, r2).toRangeList().asFlatSequence().toList() shouldBe listOf(1UL, 2UL)
         listOf(r2, r1).toRangeList().asFlatSequence().toList() shouldBe listOf(1UL, 2UL)
         listOf(r1, r3).toRangeList().asFlatSequence().toList() shouldBe listOf(1UL, 3UL)
     }
 })
+

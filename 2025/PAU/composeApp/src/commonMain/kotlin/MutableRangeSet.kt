@@ -236,16 +236,20 @@ class ULongRangeSet : MutableRangeSet<ULong> {
     override fun clone(): MutableRangeSet<ULong> = ULongRangeSet(this)
 }
 
-fun ClosedRange<Int>.length() = if (isEmpty()) 0 else endInclusive - start + 1
-fun IntRangeSet.totalLength() = sumOf { it.length() }
+//fun ClosedRange<Int>.length() = if (isEmpty()) 0 else endInclusive - start + 1
+//fun IntRangeSet.totalLength() = sumOf { it.length() }
+//fun RangeSet<Int>.totalLength() = sumOf { it.endInclusive - it.start + 1 }
+//fun RangeSet<UInt>.totalLength() = sumOf { it.endInclusive - it.start + 1U }
+//fun RangeSet<Long>.totalLength() = sumOf { it.endInclusive - it.start + 1 }
+//fun RangeSet<ULong>.totalLength() = sumOf { it.endInclusive - it.start + 1U }
 
 //fun <T> MutableRangeSet<T>.to() = toSequence()
-fun ClosedRange<ULong>.length() = if (isEmpty()) 0UL else (endInclusive - start + 1UL)
-fun ULongRangeSet.totalLength() = sumOf { it.length() }
+//fun ClosedRange<ULong>.length() = if (isEmpty()) 0UL else (endInclusive - start + 1UL)
+//fun ULongRangeSet.totalLength() = sumOf { it.length() }
 
-fun MutableRangeSet<ULong>.asFlatSequence() = asSequence().flatMap { (it.start..it.endInclusive).asSequence() }
-fun MutableRangeSet<ULong>.toFlatFlow(slice: ULong = 1UL) = flow {
-    repeat(slice.toInt()) { i ->
-        this@toFlatFlow.asFlatSequence().filter { it.mod(slice.toULong()) == i.toULong() }.forEach { e -> emit(e) }
-    }
-}
+//fun MutableRangeSet<ULong>.asFlatSequence() = asSequence().flatMap { (it.start..it.endInclusive).asSequence() }
+//fun MutableRangeSet<ULong>.toFlatFlow(slice: ULong = 1UL) = flow {
+//    repeat(slice.toInt()) { i ->
+//        this@toFlatFlow.asFlatSequence().filter { it.mod(slice.toULong()) == i.toULong() }.forEach { e -> emit(e) }
+//    }
+//}

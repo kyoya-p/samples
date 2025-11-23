@@ -24,11 +24,15 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-val defaultSenderSnmp by lazy {
-    SnmpBuilder().udp(UdpAddress()).v1().v3().build()!!
-}
+import org.snmp4j.transport.DefaultUdpTransportMapping
 
-fun createDefaultSenderSnmp() = defaultSenderSnmp
+val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
+
+fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
+    val trasport = DefaultUdpTransportMapping()
+    trasport.receiveBufferSize = bufferSizeByte
+    return SnmpBuilder().udp(UdpAddress()).tm(trasport).v1().v3().build()!!
+}
 
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 typealias SnmpEvent = ResponseEvent<UdpAddress>
@@ -187,7 +191,7 @@ fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
     ExperimentalUnsignedTypes::class
 )
 fun snmpSendFlow(
-    ipRange: ULongRangeSet,
+    ipRange: IpV4RangeSet,
     snmp: Snmp = createDefaultSenderSnmp(),
     rps: Int,
     scrambleBlock: Int,

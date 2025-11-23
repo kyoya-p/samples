@@ -15,6 +15,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.delay
 import kotlinx.io.files.Path
+import getOperatingSystem
 
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration.Companion.milliseconds
@@ -24,7 +25,9 @@ data class Echo(val message: String)
 
 suspend fun appMain() {
     testService()
-    unixDomainSocket_TODO()
+    if (!getOperatingSystem().startsWith("Windows")) {
+        unixDomainSocket_TODO()
+    }
 }
 
 fun Application.testService() {

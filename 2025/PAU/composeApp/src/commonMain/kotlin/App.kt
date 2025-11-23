@@ -192,14 +192,14 @@ fun OneShotColorAnimationSample(tColor: Pair<Color, Color>, update: MutableState
     Box(modifier = Modifier.size(14.dp).background(animatedColor.value))
 }
 
-fun String.toRange() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
-fun String.toRangeSet() = ULongRangeSet(split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() })
+//fun String.toRange() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
+//fun String.toRangeSet() = ULongRangeSet(split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() })
 
 @Composable
 fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
     fun AppData.addMfps(r: String) = onChange(
         copy(mfps = mfps.toMutableMap().apply {
-            r.toRangeSet().asFlatSequence().forEach { ip ->
+            r.toIpV4RangeSet().asFlatSequence { it + 1UL }.forEach { ip ->
                 val adr = ip.toIpV4String()
                 this[adr] = Mfp(ip = adr, port = 161, v1CommStr = "public")
             }
@@ -207,12 +207,12 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
     )
 
     var newIp by remember { mutableStateOf(scanRange) }
-    val isError = runCatching { newIp.toRangeSet() }.isFailure
+    val isError = runCatching { newIp.toIpV4RangeSet() }.isFailure
     OutlinedTextField(
         newIp,
         singleLine = true,
         isError = isError,
-        label = { Text("Target Address (${newIp.toRangeSet().totalLength()} adr)") },
+        label = { Text("Target Address (${newIp.toIpV4RangeSet().totalLength()} adr)") },
         placeholder = { Text("Scan Range e.g: 1.0.0.1-1.0.0.254") },
         suffix = {},
         leadingIcon = {},
@@ -228,7 +228,7 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         },
         onValueChange = {
             newIp = it
-            runCatching { newIp.toRangeSet() }.onSuccess { onChange(copy(scanRange = newIp)) }
+            runCatching { newIp.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = newIp)) }
         }
     )
 }
@@ -247,7 +247,7 @@ fun AppData.SearchDialog(
     onConfirmed = { onChange(copy(mfps = addMfps(ips.keys))); closeDialog() },
     onDismissed = { closeDialog() },
 ) {
-    val range = scanRange.toRangeSet()
+    val range = scanRange.toIpV4RangeSet()
     val total = range.totalLength().toInt()
     var start by remember { mutableStateOf(now()) }
     var msgCount by remember { mutableStateOf("") }
@@ -268,7 +268,8 @@ fun AppData.SearchDialog(
             }
         }
 
-        snmpSendFlow(scanRange.toRangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+//        snmpSendFlow(scanRange.toRangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+            snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),
