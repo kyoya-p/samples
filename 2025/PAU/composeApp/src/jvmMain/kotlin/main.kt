@@ -7,8 +7,9 @@ import java.util.*
 
 
 fun main() = application {
+    val alwaysOnTop = System.getProperty("app.alwaysOnTop", "false").toBoolean()
     Window(
-        alwaysOnTop = true,
+        alwaysOnTop = alwaysOnTop,
         onCloseRequest = ::exitApplication,
         title = "",
     ) {

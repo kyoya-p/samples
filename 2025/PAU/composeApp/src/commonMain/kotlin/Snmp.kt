@@ -109,8 +109,6 @@ suspend fun snmpUnicast(
 ) = suspendCoroutine { conti ->
     val listener: ResponseListener = object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
-            println("CB:${Thread.currentThread().name}") //TODO
-
             (event.source as Snmp).cancel(event.request, this)
             val response = event.response
             if (response == null) {

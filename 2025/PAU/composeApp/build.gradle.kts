@@ -40,12 +40,11 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation("org.snmp4j:snmp4j:3.9.6")
-//            implementation(project("::Snmp4jUtils_KtJvm"))
         }
         commonTest.dependencies {
-            val kotest_version = "6.0.4"
+            val kotest_version = "6.0.5" // https://mvnrepository.com/artifact/io.kotest/kotest-framework-engine
             implementation(kotlin("test"))
-            implementation(libs.kotest.framework.engine)
+            implementation("io.kotest:kotest-framework-engine:$kotest_version")
             implementation("io.kotest:kotest-assertions-core:$kotest_version")
             implementation("io.kotest:kotest-runner-junit5:$kotest_version")
             implementation("io.kotest:kotest-extensions-htmlreporter:$kotest_version")
@@ -60,7 +59,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "PAU"
-            packageVersion = "1.0.4"
+            packageVersion = "1.0.8"
             windows {
                 upgradeUuid = "b7c7a509-b6ea-0554-90a5-217cf641e5cd"
                 menu = true
