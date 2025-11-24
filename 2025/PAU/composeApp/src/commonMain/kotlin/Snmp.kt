@@ -26,8 +26,7 @@ import kotlin.time.Instant
 
 import org.snmp4j.transport.DefaultUdpTransportMapping
 
-val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
-
+//val defautSenderSnmp by lazy { createDefaultSenderSnmp() }
 fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
     val trasport = DefaultUdpTransportMapping()
     trasport.receiveBufferSize = bufferSizeByte
@@ -113,6 +112,8 @@ suspend fun snmpUnicast(
 ) = suspendCoroutine { conti ->
     val listener: ResponseListener = object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
+//            println("CB:${Thread.currentThread().name}") //TODO
+
             (event.source as Snmp).cancel(event.request, this)
             val response = event.response
             if (response == null) {
@@ -207,7 +208,7 @@ fun snmpSendFlow(
     val total = ipRange.totalLength().toInt()
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-            println("CB:${Thread.currentThread().name} $count") //TODO
+//            println("CB:${Thread.currentThread().name} $count") //TODO
 
             ++count
             runCatching {
@@ -230,7 +231,6 @@ fun snmpSendFlow(
             ips.forEachIndexed { i, ip ->
                 val req = requestBuilder(ip)
                 snmp.send(req.pdu, req.target, req, listener)
-                if (ip.toIpV4String() == "192.168.11.41") println(ip.toIpV4String())//TODO
             }
         }
     awaitClose {}

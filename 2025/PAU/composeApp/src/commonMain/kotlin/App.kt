@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import io.ktor.client.request.invoke
 import jp.wjg.shokkaa.snmp.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -97,21 +98,25 @@ fun AppData.SettingDialog(
     onDismissed = { closeDialog() },
     onOpen = { appData.value = this@SettingDialog },
 ) {
+    var app by appData
+
     @Composable
     fun SnmpConfig.SnmpConfigField(onChange: (SnmpConfig) -> Unit) = Column {
-        IntField(retries, "Retries") { onChange(copy(retries = it)) }
-        IntField(intervalMS, "Timeout[msec]") { onChange(copy(intervalMS = it)) }
+        val packets = retries + 1
+        val maxTO = intervalMS.milliseconds * packets
+        IntField(retries, "Retries [0~](max $packets packets / request)") { onChange(copy(retries = it)) }
+        IntField(intervalMS, "Timeout[msec] (max $maxTO / request)") { onChange(copy(intervalMS = it)) }
         TextField(
-            commStrV1,
-            label = { Text("Community String [SNMPv1]") },
+            commStrV1, label = { Text("Community String") },
             onValueChange = { onChange(copy(commStrV1 = it)) })
     }
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        var app by appData
-        IntField(app.snmpRPS, "SNMP Rate(rps)") { app = app.copy(snmpRPS = it) }
-        IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
-        IntField(app.updateInterval, "Update Interval[sec] (0=off)") { app = app.copy(updateInterval = it) }
+        val pps = (scanSnmp.retries + 1) * snmpRPS
         app.scanSnmp.SnmpConfigField { app = app.copy(scanSnmp = it) }
+        IntField(app.updateInterval, "Update Interval[sec] (0=no update)") { app = app.copy(updateInterval = it) }
+        IntField(app.snmpRPS, "SNMP Rate[rps] (max $pps packets/s)") { app = app.copy(snmpRPS = it) }
+        IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
+        IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
     }
 }
 
@@ -127,6 +132,7 @@ fun scanPdu(reqId: Int? = null) = PDU(reqId = reqId)
 
 suspend fun snmpGetDevInfo(ip: String) =
     snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4ULong().toInt()))
+//    snmpSend(Request(ip, devInfoPdu(ip.toIpV4ULong().toInt())))
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -208,11 +214,12 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
 
     var newIp by remember { mutableStateOf(scanRange) }
     val isError = runCatching { newIp.toIpV4RangeSet() }.isFailure
+    val nIpAdr = runCatching { newIp.toIpV4RangeSet().totalLength().toString() }.getOrElse { "--" }
     OutlinedTextField(
         newIp,
         singleLine = true,
         isError = isError,
-        label = { Text("Target Address (${newIp.toIpV4RangeSet().totalLength()} adr)") },
+        label = { Text("Target Address ($nIpAdr adr)") },
         placeholder = { Text("Scan Range e.g: 1.0.0.1-1.0.0.254") },
         suffix = {},
         leadingIcon = {},
@@ -269,7 +276,7 @@ fun AppData.SearchDialog(
         }
 
 //        snmpSendFlow(scanRange.toRangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
-            snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+        snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),
@@ -279,7 +286,7 @@ fun AppData.SearchDialog(
                 pdu = scanPdu(reqId = it.toInt())
             )
         }.collect { r ->
-            println("Ap:${Thread.currentThread().name} $cRes") //TODO
+//            println("Ap:${Thread.currentThread().name} $cRes") //TODO
             ++cRes
             if (r is Result.Response) {
                 ++cDetect
@@ -374,7 +381,8 @@ data class AppData(
     val scanSnmp: SnmpConfig = SnmpConfig(),
     val updateInterval: Int = 10,
     val mfps: Map<String, Mfp> = emptyMap(),
-    val snmpRPS: Int = 100
+    val snmpRPS: Int = 100,
+    val receiveBufferSize: Int = 1024 * 1024,
 )
 
 @Serializable
@@ -383,7 +391,7 @@ data class SnmpConfig(val intervalMS: Int = 5000, val retries: Int = 5, val comm
 @Serializable
 data class Mfp(val ip: String, val port: Int, val v1CommStr: String)
 
-val appHome = Path("${System.getProperty("user.home")}/.pau").also { println(it) }
+val appHome = Path("${System.getProperty("user.home")}/.pau")
 val configFile = Path("$appHome/config.json")
 var config
     get() = runCatching {
