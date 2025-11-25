@@ -201,6 +201,50 @@ fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
 }.cancellable()
 
 @OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
+fun snmpSendFlow_TODO(
+    ipRange: IpV4RangeSet,
+    snmp: Snmp = defaultSenderSnmp,
+    rps: Int,
+    scrambleBlock: Int,
+    requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
+): Flow<Result> = callbackFlow {
+    fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
+        val mask = (1UL shl nBits) - 1UL
+        val rndTable = (0UL..mask).shuffled()
+        for (w in 0UL..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
+    }
+
+    var count = 0
+    val total = ipRange.totalLength().toInt()
+    val listener = object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            ++count
+            runCatching {
+                val reqAdr = r.response?.requestID?.value?.toUInt()
+                val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
+
+                @Suppress("UNCHECKED_CAST")
+                val res = when {
+                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
+                    else -> Result.Timeout(r.userObject as Request)
+                }
+                trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
+                snmp.cancel(r.request, this)
+            }.onFailure { it.printStackTrace() }
+            if (count >= total) close()
+        }
+    }
+    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).chunked(rps).rateLimited(RateLimiter(1.seconds))
+        .collect { ips ->
+            ips.forEachIndexed { i, ip ->
+                val req = requestBuilder(ip)
+                snmp.send(req.pdu, req.target, req, listener)
+            }
+        }
+    awaitClose {}
+}.cancellable()
+
+@OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
 fun snmpSendFlow(
     ipRange: IpV4RangeSet,
     snmp: Snmp = defaultSenderSnmp,
