@@ -390,7 +390,7 @@ data class AppData(
     val updateInterval: Int = 10,
     val mfps: Map<String, Mfp> = emptyMap(),
     val snmpRPS: Int = 100,
-    val receiveBufferSize: Int = 1024 * 1024,
+    val receiveBufferSize: Int = 1024 * 16,
 )
 
 @Serializable
