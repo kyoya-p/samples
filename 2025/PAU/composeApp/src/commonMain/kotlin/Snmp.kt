@@ -8,13 +8,13 @@ import kotlinx.coroutines.flow.*
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
+import org.snmp4j.TransportMapping
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
 import org.snmp4j.fluent.SnmpBuilder
 import org.snmp4j.smi.*
+import org.snmp4j.transport.DefaultUdpTransportMapping
 import java.net.InetAddress
-import kotlin.collections.fold
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Clock.System.now
@@ -24,9 +24,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-import org.snmp4j.transport.DefaultUdpTransportMapping
-
-//val defautSenderSnmp by lazy { createDefaultSenderSnmp() }
+val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
 fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
     val trasport = DefaultUdpTransportMapping()
     trasport.receiveBufferSize = bufferSizeByte
@@ -38,6 +36,27 @@ typealias SnmpEvent = ResponseEvent<UdpAddress>
 
 data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null) {
     companion object
+}
+
+// TODO
+// 非同期呼び出しによる流量調整Snmpクラス
+class ThrottledSnmp(val snmp: Snmp, val reteLimiter: RateLimiter, val queueLimiter: RateLimiter? = null) {
+    suspend fun send(
+        pdu: PDU,
+        target: SnmpTarget,
+//        transport: TransportMapping<UdpAddress>,
+        userHandle: Any?,
+        listener: ResponseListener
+    ) = reteLimiter.runRateLimited {
+        snmp.send(pdu, target, userHandle, localListener { listener.onResponse(it) })
+    }
+
+    fun cancel(request: PDU, listener: ResponseListener) = snmp.cancel(request, listener)
+
+    @Suppress("UNCHECKED_CAST")
+    fun localListener(onResponse: (ResponseEvent<UdpAddress>) -> Unit): ResponseListener = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) = onResponse(event as ResponseEvent<UdpAddress>)
+    }
 }
 
 fun Request(
@@ -108,12 +127,10 @@ suspend fun snmpUnicast(
     vbl: List<VariableBinding> = oids.map { VariableBinding(it) },
     pdu: PDU = PDU(reqType, vbl),
     req: Request = Request(target, pdu),
-    snmp: Snmp = createDefaultSenderSnmp()
+    snmp: Snmp = defaultSenderSnmp,
 ) = suspendCoroutine { conti ->
     val listener: ResponseListener = object : ResponseListener {
         override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
-//            println("CB:${Thread.currentThread().name}") //TODO
-
             (event.source as Snmp).cancel(event.request, this)
             val response = event.response
             if (response == null) {
@@ -153,10 +170,6 @@ fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 
-/**
- * レートリミッター。
- * 時刻 origin + interval * n に実行するようディレイを入れる
- */
 @OptIn(ExperimentalTime::class)
 class RateLimiter @OptIn(ExperimentalTime::class) constructor(
     val interval: Duration,
@@ -187,13 +200,10 @@ fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
     collect { v -> rateLimiter.runRateLimited { emit(v) } }
 }.cancellable()
 
-@OptIn(
-    ExperimentalAtomicApi::class, ExperimentalCoroutinesApi::class, ExperimentalTime::class,
-    ExperimentalUnsignedTypes::class
-)
+@OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
 fun snmpSendFlow(
     ipRange: IpV4RangeSet,
-    snmp: Snmp = createDefaultSenderSnmp(),
+    snmp: Snmp = defaultSenderSnmp,
     rps: Int,
     scrambleBlock: Int,
     requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
@@ -208,22 +218,20 @@ fun snmpSendFlow(
     val total = ipRange.totalLength().toInt()
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-//            println("CB:${Thread.currentThread().name} $count") //TODO
-
             ++count
             runCatching {
                 val reqAdr = r.response?.requestID?.value?.toUInt()
                 val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
-                @Suppress("UNCHECKED_CAST")
-                when {
-                    resAdr != null && resAdr == reqAdr
-                        -> trySendBlocking(Result.Response(r.userObject as Request, r as SnmpEvent))
 
-                    else -> trySendBlocking(Result.Timeout(r.userObject as Request))
+                @Suppress("UNCHECKED_CAST")
+                val res = when {
+                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
+                    else -> Result.Timeout(r.userObject as Request)
                 }
+                trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
                 snmp.cancel(r.request, this)
             }.onFailure { it.printStackTrace() }
-            if (count == total) close()
+            if (count >= total) close()
         }
     }
     ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).chunked(rps).rateLimited(RateLimiter(1.seconds))
@@ -236,7 +244,7 @@ fun snmpSendFlow(
     awaitClose {}
 }.cancellable()
 
-suspend fun snmpSend(req: Request, snmp: Snmp = createDefaultSenderSnmp()) = suspendCancellableCoroutine { conti ->
+suspend fun snmpSend(req: Request, snmp: Snmp = defaultSenderSnmp) = suspendCancellableCoroutine { conti ->
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
             runCatching {

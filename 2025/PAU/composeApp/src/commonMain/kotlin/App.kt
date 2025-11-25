@@ -21,14 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import io.ktor.client.request.invoke
 import jp.wjg.shokkaa.snmp.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -218,14 +212,14 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         val nIpAdr = newIp.toIpV4RangeSet().totalLength()
         val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
         val tReqTotal = ((nIpAdr.toDouble().seconds / snmpRPS.toDouble() + tReq) * 10).inWholeSeconds.seconds / 10
-        if (nIpAdr > 0UL) "($nIpAdr adr, ⌛scan $tReqTotal)" else ""
+        if (nIpAdr > 0UL) "($nIpAdr adr, ⌛ideal scan $tReqTotal)" else ""
     }.getOrElse { "" }
     OutlinedTextField(
         newIp,
         singleLine = true,
         isError = isError,
         label = { Text("Target Address $ipsStatus") },
-        placeholder = { Text("Scan Range e.g: 1.0.0.1-1.0.0.254") },
+        placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
         suffix = {},
         leadingIcon = {
             val isExceeded = (newIp.toIpV4RangeSet().totalLength() + mfps.size.toULong()) > 10_000UL
@@ -274,8 +268,9 @@ fun AppData.SearchDialog(
         var cDetect = 0
         start = now()
         fun rps(n: Int, dt: Long = (now() - start).inWholeSeconds) = if (dt <= 0) "--rps" else "${n / dt}rps"
-        fun count(n: Int, dt: Long = (now() - start).inWholeSeconds) = "$n (${n * 100 / total}%) ${rps(n)}"
-        fun msgCount() = "$cDetect found / ${count(cRes)} result / ${count(cSend)} sent / $total total "
+        fun count(n: Int) = "$n (${n * 100 / total}%) ${rps(n)}"
+        fun dt() = (now() - start).inWholeMilliseconds.milliseconds
+        fun msgCount() = "$cDetect found / ${count(cRes)} result / ${count(cSend)} sent / $total total ${dt()}"
         val job = launch {
             while (isActive) {
                 msgCount = msgCount()
@@ -283,7 +278,6 @@ fun AppData.SearchDialog(
             }
         }
 
-//        snmpSendFlow(scanRange.toRangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
         snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
@@ -294,7 +288,6 @@ fun AppData.SearchDialog(
                 pdu = scanPdu(reqId = it.toInt())
             )
         }.collect { r ->
-//            println("Ap:${Thread.currentThread().name} $cRes") //TODO
             ++cRes
             if (r is Result.Response) {
                 ++cDetect
