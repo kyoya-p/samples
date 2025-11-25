@@ -214,23 +214,31 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
 
     var newIp by remember { mutableStateOf(scanRange) }
     val isError = runCatching { newIp.toIpV4RangeSet() }.isFailure
-    val nIpAdr = runCatching { newIp.toIpV4RangeSet().totalLength().toString() }.getOrElse { "--" }
+    val ipsStatus: String = runCatching {
+        val nIpAdr = newIp.toIpV4RangeSet().totalLength()
+        val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
+        val tReqTotal = ((nIpAdr.toDouble().seconds / snmpRPS.toDouble() + tReq) * 10).inWholeSeconds.seconds / 10
+        if (nIpAdr > 0UL) "($nIpAdr adr, ⌛scan $tReqTotal)" else ""
+    }.getOrElse { "" }
     OutlinedTextField(
         newIp,
         singleLine = true,
         isError = isError,
-        label = { Text("Target Address ($nIpAdr adr)") },
+        label = { Text("Target Address $ipsStatus") },
         placeholder = { Text("Scan Range e.g: 1.0.0.1-1.0.0.254") },
         suffix = {},
-        leadingIcon = {},
+        leadingIcon = {
+            val isExceeded = (newIp.toIpV4RangeSet().totalLength() + mfps.size.toULong()) > 10_000UL
+            IconButton(enabled = !isError && !isExceeded, onClick = { addMfps(newIp) }) {
+                Icon(
+                    Icons.Default.Add,
+                    "Add"
+                )
+            }
+        },
         trailingIcon = {
-            Row {
-                IconButton(enabled = !isError, onClick = { addMfps(newIp) }) {
-                    Icon(Icons.Default.Add, "Add")
-                }
-                IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
-                    Icon(Icons.Default.Search, "Search")
-                }
+            IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
+                Icon(Icons.Default.Search, "Search")
             }
         },
         onValueChange = {

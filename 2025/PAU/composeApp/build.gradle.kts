@@ -59,7 +59,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "PAU"
-            packageVersion = "1.0.8"
+            packageVersion = "1.0.9"
             windows {
                 upgradeUuid = "b7c7a509-b6ea-0554-90a5-217cf641e5cd"
                 menu = true
