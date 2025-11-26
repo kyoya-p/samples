@@ -278,7 +278,9 @@ fun AppData.SearchDialog(
             }
         }
 
-        snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+//        snmpSendFlow_X(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+        val throttledSnmp = ThrottledSnmp(defaultSenderSnmp,1000)
+        snmpSendFlow_TODO(scanRange.toIpV4RangeSet(), throttledSnmp, rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),

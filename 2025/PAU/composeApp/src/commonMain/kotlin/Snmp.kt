@@ -5,6 +5,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Semaphore
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -39,24 +40,31 @@ data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = nu
 }
 
 // TODO
-// 非同期呼び出しによる流量調整Snmpクラス
-class ThrottledSnmp(val snmp: Snmp, val reteLimiter: RateLimiter, val queueLimiter: RateLimiter? = null) {
-    suspend fun send(
+// 呼び出しブロックによる流量調整Snmpクラス
+class ThrottledSnmp(val snmp: Snmp, val concurrencyLimit: Int = 1) {
+    val semaphore = Semaphore(concurrencyLimit)
+
+    inline suspend fun send(
         pdu: PDU,
         target: SnmpTarget,
-//        transport: TransportMapping<UdpAddress>,
         userHandle: Any?,
-        listener: ResponseListener
-    ) = reteLimiter.runRateLimited {
-        snmp.send(pdu, target, userHandle, localListener { listener.onResponse(it) })
+        crossinline listener: (ResponseEvent<UdpAddress>) -> Unit
+    ) {
+        semaphore.acquire()
+        snmp.send(pdu, target, userHandle, localListener {
+            listener(it)
+            semaphore.release()
+        })
     }
 
     fun cancel(request: PDU, listener: ResponseListener) = snmp.cancel(request, listener)
 
     @Suppress("UNCHECKED_CAST")
-    fun localListener(onResponse: (ResponseEvent<UdpAddress>) -> Unit): ResponseListener = object : ResponseListener {
-        override fun <A : Address?> onResponse(event: ResponseEvent<A>) = onResponse(event as ResponseEvent<UdpAddress>)
-    }
+    inline fun localListener(crossinline onResponse: (ResponseEvent<UdpAddress>) -> Unit): ResponseListener =
+        object : ResponseListener {
+            override fun <A : Address?> onResponse(event: ResponseEvent<A>) =
+                onResponse(event as ResponseEvent<UdpAddress>)
+        }
 }
 
 fun Request(
@@ -203,7 +211,7 @@ fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
 @OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
 fun snmpSendFlow_TODO(
     ipRange: IpV4RangeSet,
-    snmp: Snmp = defaultSenderSnmp,
+    snmp: ThrottledSnmp,
     rps: Int,
     scrambleBlock: Int,
     requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
@@ -216,36 +224,31 @@ fun snmpSendFlow_TODO(
 
     var count = 0
     val total = ipRange.totalLength().toInt()
-    val listener = object : ResponseListener {
-        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-            ++count
-            runCatching {
-                val reqAdr = r.response?.requestID?.value?.toUInt()
-                val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
+    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).collect { ip ->
+        requestBuilder(ip).run {
+            snmp.send(pdu, target, this) { r ->
+                ++count
+                runCatching {
+                    val reqAdr = r.response?.requestID?.value?.toUInt()
+                    val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
 
-                @Suppress("UNCHECKED_CAST")
-                val res = when {
-                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
-                    else -> Result.Timeout(r.userObject as Request)
-                }
-                trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
-                snmp.cancel(r.request, this)
-            }.onFailure { it.printStackTrace() }
-            if (count >= total) close()
-        }
-    }
-    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).chunked(rps).rateLimited(RateLimiter(1.seconds))
-        .collect { ips ->
-            ips.forEachIndexed { i, ip ->
-                val req = requestBuilder(ip)
-                snmp.send(req.pdu, req.target, req, listener)
+                    @Suppress("UNCHECKED_CAST")
+                    val res = when {
+                        resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r)
+                        else -> Result.Timeout(r.userObject as Request)
+                    }
+                    trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
+//                    snmp.cancel(r.request, this@run)
+                }.onFailure { it.printStackTrace() }
+                if (count >= total) close()
             }
         }
+    }
     awaitClose {}
 }.cancellable()
 
 @OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
-fun snmpSendFlow(
+fun snmpSendFlow_X(
     ipRange: IpV4RangeSet,
     snmp: Snmp = defaultSenderSnmp,
     rps: Int,
