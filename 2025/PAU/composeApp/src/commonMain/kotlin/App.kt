@@ -109,7 +109,6 @@ fun AppData.SettingDialog(
         app.scanSnmp.SnmpConfigField { app = app.copy(scanSnmp = it) }
         IntField(app.updateInterval, "Update Interval[sec] (0=no update)") { app = app.copy(updateInterval = it) }
         IntField(app.snmpRPS, "SNMP Rate[rps] (max $pps packets/s)") { app = app.copy(snmpRPS = it) }
-        IntField(app.snmpConcurency, "SNMP Parallel [req]") { app = app.copy(snmpConcurency = it) }
         IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
         IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
     }
@@ -207,28 +206,26 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         })
     )
 
-    var newIp by remember { mutableStateOf(scanRange) }
-    val isError = runCatching { newIp.toIpV4RangeSet() }.isFailure
+    var ip by remember { mutableStateOf(scanRange) }
+    val isError = runCatching { ip.toIpV4RangeSet() }.isFailure
     val ipsStatus: String = runCatching {
-        val nIpAdr = newIp.toIpV4RangeSet().totalLength()
+        val nIpAdr = ip.toIpV4RangeSet().totalLength()
         val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
         val tReqTotal = ((nIpAdr.toDouble().seconds / snmpRPS.toDouble() + tReq) * 10).inWholeSeconds.seconds / 10
-        if (nIpAdr > 0UL) "($nIpAdr adr, ⌛ideal scan $tReqTotal)" else ""
+        if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
     }.getOrElse { "" }
     OutlinedTextField(
-        newIp,
+        ip,
         singleLine = true,
         isError = isError,
-        label = { Text("Target Address $ipsStatus") },
+        label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
         placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
         suffix = {},
         leadingIcon = {
-            val isExceeded = (newIp.toIpV4RangeSet().totalLength() + mfps.size.toULong()) > 10_000UL
-            IconButton(enabled = !isError && !isExceeded, onClick = { addMfps(newIp) }) {
-                Icon(
-                    Icons.Default.Add,
-                    "Add"
-                )
+            val isMany =
+                runCatching { ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
+            IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
+                Icon(Icons.Default.Add, "Add")
             }
         },
         trailingIcon = {
@@ -237,8 +234,8 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
             }
         },
         onValueChange = {
-            newIp = it
-            runCatching { newIp.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = newIp)) }
+            ip = it
+            runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
         }
     )
 }
@@ -279,9 +276,7 @@ fun AppData.SearchDialog(
             }
         }
 
-//        snmpSendFlow_X(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
-        val throttledSnmp = ThrottledSnmp(defaultSenderSnmp, 1000) //TODO
-        snmpSendFlow_TODO(scanRange.toIpV4RangeSet(), throttledSnmp, rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+        snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),
@@ -386,7 +381,6 @@ data class AppData(
     val updateInterval: Int = 10,
     val mfps: Map<String, Mfp> = emptyMap(),
     val snmpRPS: Int = 100,
-    val snmpConcurency: Int = 1000,
     val receiveBufferSize: Int = 1024 * 16,
 )
 

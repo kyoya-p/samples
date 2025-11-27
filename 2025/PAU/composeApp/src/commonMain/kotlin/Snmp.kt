@@ -1,5 +1,6 @@
 package jp.wjg.shokkaa.snmp
 
+import jdk.jfr.DataAmount
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -9,7 +10,6 @@ import kotlinx.coroutines.sync.Semaphore
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
-import org.snmp4j.TransportMapping
 import org.snmp4j.event.ResponseEvent
 import org.snmp4j.event.ResponseListener
 import org.snmp4j.fluent.SnmpBuilder
@@ -41,30 +41,26 @@ data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = nu
 
 // TODO
 // 呼び出しブロックによる流量調整Snmpクラス
-class ThrottledSnmp(val snmp: Snmp, val concurrencyLimit: Int = 1) {
-    val semaphore = Semaphore(concurrencyLimit)
-
+class ThrottledSnmp @OptIn(ExperimentalTime::class) constructor(
+    val snmp: Snmp,
+    val rateLimiter: RateLimiter = RateLimiter(1.seconds)
+) {
+    val reqQue = ArrayDeque<Request>(100)
     inline suspend fun send(
         pdu: PDU,
         target: SnmpTarget,
         userHandle: Any?,
         crossinline listener: (ResponseEvent<UdpAddress>) -> Unit
     ) {
-        semaphore.acquire()
-        snmp.send(pdu, target, userHandle, localListener {
-            listener(it)
-            semaphore.release()
-        })
+        snmp.send(pdu, target, userHandle, localListener { listener(it) })
     }
 
     fun cancel(request: PDU, listener: ResponseListener) = snmp.cancel(request, listener)
 
     @Suppress("UNCHECKED_CAST")
-    inline fun localListener(crossinline onResponse: (ResponseEvent<UdpAddress>) -> Unit): ResponseListener =
-        object : ResponseListener {
-            override fun <A : Address?> onResponse(event: ResponseEvent<A>) =
-                onResponse(event as ResponseEvent<UdpAddress>)
-        }
+    inline fun localListener(crossinline onResponse: (ResponseEvent<UdpAddress>) -> Unit) = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) = onResponse(event as ResponseEvent<UdpAddress>)
+    }
 }
 
 fun Request(
@@ -181,7 +177,8 @@ fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 @OptIn(ExperimentalTime::class)
 class RateLimiter @OptIn(ExperimentalTime::class) constructor(
     val interval: Duration,
-    val origin: Instant = now() - 10.milliseconds,
+    val amount: Int = 1,
+    val origin: Instant = now(),
 ) {
     private val tokenChannel = Channel<Unit>(Channel.RENDEZVOUS)
 
@@ -208,47 +205,12 @@ fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
     collect { v -> rateLimiter.runRateLimited { emit(v) } }
 }.cancellable()
 
-@OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
-fun snmpSendFlow_TODO(
-    ipRange: IpV4RangeSet,
-    snmp: ThrottledSnmp,
-    rps: Int,
-    scrambleBlock: Int,
-    requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
-): Flow<Result> = callbackFlow {
-    fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
-        val mask = (1UL shl nBits) - 1UL
-        val rndTable = (0UL..mask).shuffled()
-        for (w in 0UL..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
-    }
-
-    var count = 0
-    val total = ipRange.totalLength().toInt()
-    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).collect { ip ->
-        requestBuilder(ip).run {
-            snmp.send(pdu, target, this) { r ->
-                ++count
-                runCatching {
-                    val reqAdr = r.response?.requestID?.value?.toUInt()
-                    val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
-
-                    @Suppress("UNCHECKED_CAST")
-                    val res = when {
-                        resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r)
-                        else -> Result.Timeout(r.userObject as Request)
-                    }
-                    trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
-//                    snmp.cancel(r.request, this@run)
-                }.onFailure { it.printStackTrace() }
-                if (count >= total) close()
-            }
-        }
-    }
-    awaitClose {}
-}.cancellable()
+@OptIn(ExperimentalCoroutinesApi::class)
+fun <T> Flow<T>.throttle(rateLimiter: RateLimiter): Flow<T> =
+    flow { chunked(rateLimiter.amount).collect { rateLimiter.runRateLimited { it.forEach { emit(it) } } } }
 
 @OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
-fun snmpSendFlow_X(
+fun snmpSendFlow(
     ipRange: IpV4RangeSet,
     snmp: Snmp = defaultSenderSnmp,
     rps: Int,
