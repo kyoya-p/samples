@@ -98,17 +98,18 @@ fun AppData.SettingDialog(
     fun SnmpConfig.SnmpConfigField(onChange: (SnmpConfig) -> Unit) = Column {
         val packets = retries + 1
         val maxTO = intervalMS.milliseconds * packets
-        IntField(retries, "Retries [0~](max $packets packets / request)") { onChange(copy(retries = it)) }
-        IntField(intervalMS, "Timeout[msec] (max $maxTO / request)") { onChange(copy(intervalMS = it)) }
+        IntField(retries, "Retries [0~](max $packets packets / req)") { onChange(copy(retries = it)) }
+        IntField(intervalMS, "Timeout[msec] (max $maxTO / req)") { onChange(copy(intervalMS = it)) }
         TextField(
             commStrV1, label = { Text("Community String") },
             onValueChange = { onChange(copy(commStrV1 = it)) })
     }
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        val pps = (scanSnmp.retries + 1) * snmpRPS
+        val pps = (app.scanSnmp.retries + 1) * app.snmpRPS
         app.scanSnmp.SnmpConfigField { app = app.copy(scanSnmp = it) }
         IntField(app.updateInterval, "Update Interval[sec] (0=no update)") { app = app.copy(updateInterval = it) }
         IntField(app.snmpRPS, "SNMP Rate[rps] (max $pps packets/s)") { app = app.copy(snmpRPS = it) }
+        IntField(app.snmpConcurency, "SNMP Parallel [req]") { app = app.copy(snmpConcurency = it) }
         IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
         IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
     }
@@ -279,7 +280,7 @@ fun AppData.SearchDialog(
         }
 
 //        snmpSendFlow_X(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
-        val throttledSnmp = ThrottledSnmp(defaultSenderSnmp,1000)
+        val throttledSnmp = ThrottledSnmp(defaultSenderSnmp, 1000) //TODO
         snmpSendFlow_TODO(scanRange.toIpV4RangeSet(), throttledSnmp, rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
@@ -385,6 +386,7 @@ data class AppData(
     val updateInterval: Int = 10,
     val mfps: Map<String, Mfp> = emptyMap(),
     val snmpRPS: Int = 100,
+    val snmpConcurency: Int = 1000,
     val receiveBufferSize: Int = 1024 * 16,
 )
 
