@@ -1,12 +1,10 @@
 package jp.wjg.shokkaa.snmp
 
-import jdk.jfr.DataAmount
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.sync.Semaphore
 import org.snmp4j.CommunityTarget
 import org.snmp4j.PDU
 import org.snmp4j.Snmp
@@ -20,7 +18,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Clock.System.now
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -43,7 +40,7 @@ data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = nu
 // 呼び出しブロックによる流量調整Snmpクラス
 class ThrottledSnmp @OptIn(ExperimentalTime::class) constructor(
     val snmp: Snmp,
-    val rateLimiter: RateLimiter = RateLimiter(1.seconds)
+    val rateLimiter: RateLimiter = RateLimiter(interval=1.seconds,1)
 ) {
     val reqQue = ArrayDeque<Request>(100)
     inline suspend fun send(
