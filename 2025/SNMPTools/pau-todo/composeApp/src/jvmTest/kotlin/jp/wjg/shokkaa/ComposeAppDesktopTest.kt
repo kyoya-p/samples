@@ -1,12 +1,10 @@
 package jp.wjg.shokkaa
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
 
-class ComposeAppDesktopTest {
-
-    @Test
-    fun example() {
-        assertEquals(3, 1 + 2)
+class ComposeAppDesktopTest : FunSpec({
+    test("example") {
+        1 + 2 shouldBe 3
     }
-}
+})

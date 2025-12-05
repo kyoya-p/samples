@@ -8,7 +8,11 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        testRuns["test"].executionTask.configure {
+            useJUnitPlatform()
+        }
+    }
     
     sourceSets {
         commonMain.dependencies {
@@ -23,6 +27,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotest.runner.junit5)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.kotest.property)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
