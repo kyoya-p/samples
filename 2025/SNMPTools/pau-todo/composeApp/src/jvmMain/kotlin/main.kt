@@ -1,3 +1,5 @@
+package jp.wjg.shokkaa.snmp
+
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import jp.wjg.shokkaa.snmp.App

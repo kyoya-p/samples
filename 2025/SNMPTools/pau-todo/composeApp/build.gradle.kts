@@ -43,11 +43,11 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "jp.wjg.shokkaa.MainKt"
+        mainClass = "jp.wjg.shokkaa.snmp.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "jp.wjg.shokkaa"
+            packageName = "jp.wjg.shokkaa.snmp"
             packageVersion = "1.0.0"
         }
     }
