@@ -1,0 +1,313 @@
+package jp.wjg.shokkaa.snmp
+
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.*
+import org.snmp4j.CommunityTarget
+import org.snmp4j.Snmp
+import org.snmp4j.event.ResponseEvent
+import org.snmp4j.event.ResponseListener
+import org.snmp4j.fluent.SnmpBuilder
+import org.snmp4j.smi.Address
+import org.snmp4j.transport.DefaultUdpTransportMapping
+import java.net.InetAddress
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Clock.System.now
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
+typealias UdpAddress = org.snmp4j.smi.UdpAddress
+typealias SnmpTarget = CommunityTarget<UdpAddress>
+typealias SnmpEvent = ResponseEvent<UdpAddress>
+typealias OctetString = org.snmp4j.smi.OctetString
+typealias OID = org.snmp4j.smi.OID
+typealias Integer32 = org.snmp4j.smi.Integer32
+typealias PDU = org.snmp4j.PDU
+typealias VariableBinding = org.snmp4j.smi.VariableBinding
+typealias SecurityModel = Int
+typealias SecurityLevel = Int
+typealias StateReference = org.snmp4j.mp.StateReference<UdpAddress>
+
+interface MessageProcessingModel : org.snmp4j.mp.MessageProcessingModel {
+    typealias MPv1 = org.snmp4j.mp.MPv1
+    typealias MPv2c = org.snmp4j.mp.MPv2c
+    typealias MPv3 = org.snmp4j.mp.MPv3
+    typealias Code = Int
+
+    companion object {
+        val MPv1: Code = 0
+        val MPv2c: Code = 1
+        val MPv3: Code = 3
+    }
+}
+
+val SecurityModel.ANY get() = 0
+val SecurityModel.SNMPv1 get() = 1
+val SecurityModel.SNMPv2c get() = 2
+val SecurityModel.USM get() = 3
+val SecurityModel.TSM get() = 4
+
+val SecurityLevel.NOAUTH_NOPRIV get() = 1
+val SecurityLevel.AUTH_NOPRIV get() = 2
+val SecurityLevel.AUTH_PRIV get() = 3
+
+val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
+fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
+    val trasport = DefaultUdpTransportMapping()
+    trasport.receiveBufferSize = bufferSizeByte
+    return SnmpBuilder().udp(UdpAddress()).tm(trasport).v1().v3().build()!!
+}
+
+data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null) {
+//    companion object
+}
+
+// TODO
+// 呼び出しブロックによる流量調整Snmpクラス
+class ThrottledSnmp @OptIn(ExperimentalTime::class) constructor(
+    val snmp: Snmp,
+    val rateLimiter: RateLimiter = RateLimiter(interval = 1.seconds, 1)
+) {
+    val reqQue = ArrayDeque<Request>(100)
+    inline suspend fun send(
+        pdu: PDU,
+        target: SnmpTarget,
+        userHandle: Any?,
+        crossinline listener: (ResponseEvent<UdpAddress>) -> Unit
+    ) {
+        snmp.send(pdu, target, userHandle, localListener { listener(it) })
+    }
+
+    fun cancel(request: PDU, listener: ResponseListener) = snmp.cancel(request, listener)
+
+    @Suppress("UNCHECKED_CAST")
+    inline fun localListener(crossinline onResponse: (ResponseEvent<UdpAddress>) -> Unit) = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) = onResponse(event as ResponseEvent<UdpAddress>)
+    }
+}
+
+fun Request(
+    strAdr: String = "127.0.0.1",
+    port: Int = 161,
+    udpAdr: UdpAddress = UdpAddress(InetAddress.getByName(strAdr), port),
+
+    reqType: Int = PDU.GETNEXT,
+
+    commStrV1: String = "public",
+    comm: OctetString = OctetString(commStrV1),
+
+    nRetry: Int = 5,
+    interval: Duration = 5.seconds,
+    intervalMs: Long = interval.inWholeMilliseconds,
+    target: SnmpTarget = SnmpTarget(udpAdr, comm).apply { retries = nRetry; timeout = intervalMs },
+
+    strOid: String = ".1.3.6",
+    strOids: List<String> = listOf(strOid),
+    oids: Array<OID> = strOids.map { OID(it) }.toTypedArray(),
+    vbl: List<VariableBinding> = oids.map { VariableBinding(it) },
+    reqId: UInt? = null,
+    pdu: PDU = PDU(reqType, vbl).apply { reqId?.let { reqId -> requestID = Integer32(reqId.toInt()) } },
+
+    userData: Any? = null
+) = Request(target = target, pdu = pdu, userData = userData)
+
+fun PDU(
+    type: Int = PDU.GETNEXT,
+    strOid: String? = null,
+    strOids: List<String> = listOfNotNull(strOid),
+    oids: Array<OID> = strOids.map { OID(it) }.toTypedArray(),
+    vbl: List<VariableBinding> = oids.map { VariableBinding(it) },
+    reqId: Int? = null,
+    ei: Int = 0, es: Int = 0,
+) = PDU(type, vbl).apply {
+    reqId?.let { reqId -> requestID = Integer32(reqId) }
+    errorIndex = ei
+    errorStatus = es
+}
+
+class SnmpReceived(
+    val peerAddress: UdpAddress,
+    val mpModelCode: MessageProcessingModel.Code,
+    val secModel: SecurityModel,
+    val secName: ByteArray,
+    val secLevel: SecurityLevel,
+    val pdu: PDU,
+    val maxSizeResponseScopedPDU: Int,
+    val stateReference: StateReference
+)
+
+sealed class Result(val request: Request) {
+    class Response(request: Request, val received: SnmpEvent) : Result(request)
+    class Timeout(request: Request) : Result(request)
+
+    fun onResponse(op: (Response) -> Any?): Result = also { if (it is Response) op(it) }
+    fun getResponseOrNull() = if (this is Response) received else null
+    fun onTimeout(op: (Timeout) -> Any?): Result = also { if (it is Timeout) op(it) }
+}
+
+suspend fun snmpUnicast(
+    strAdr: String = "127.0.0.1",
+    reqType: Int = PDU.GETNEXT,
+    strOid: String = ".1.3.6",
+    strOids: List<String> = listOf(strOid),
+    oids: Array<OID> = strOids.map { OID(it) }.toTypedArray(),
+
+    port: Int = 161,
+    udpAdr: UdpAddress = UdpAddress(InetAddress.getByName(strAdr), port),
+    commStrV1: String = "public",
+    retries: Int = 5,
+    interval: Duration = 5.seconds,
+    intervalMs: Long = interval.inWholeMilliseconds,
+    target: SnmpTarget = SnmpTarget(udpAdr, OctetString(commStrV1)).apply {
+        this.retries = retries
+        timeout = intervalMs
+    },
+    vbl: List<VariableBinding> = oids.map { VariableBinding(it) },
+    pdu: PDU = PDU(reqType, vbl),
+    req: Request = Request(target, pdu),
+    snmp: Snmp = defaultSenderSnmp,
+) = suspendCoroutine { conti ->
+    val listener: ResponseListener = object : ResponseListener {
+        override fun <A : Address?> onResponse(event: ResponseEvent<A>) {
+            (event.source as Snmp).cancel(event.request, this)
+            val response = event.response
+            if (response == null) {
+                conti.resume(Result.Timeout(req))
+            } else {
+                @Suppress("UNCHECKED_CAST")
+                conti.resume(Result.Response(req, event as SnmpEvent))
+            }
+        }
+    }
+    snmp.send(req.pdu, req.target, null, listener)
+}
+
+fun String.toIpV4UInt(): UInt = split(".").fold(0u) { a, e -> a * 0x100u + e.toUInt() }
+fun UInt.toIpV4String(): String = (3 downTo 0).map { (this shr (it * 8)) and 0xffu }.joinToString(".")
+
+fun ByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(this)
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun UByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(toByteArray())
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun UByteArray.toIpV4ULong(): ULong = fold(0UL) { a: ULong, e: UByte -> (a shl 8) + e }
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toUByteArray() = UByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toUByte() }
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toIpV4Adr() = toUByteArray().toIpV4Adr()
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun ULong.toIpV4String() = toUByteArray().joinToString(".")
+fun String.toIpV4Adr(): InetAddress = InetAddress.getByName(this)
+fun String.toIpV4ULong() = trim().ifEmpty { throw Exception("Exception: Empty '$this' ") }.toIpV4Adr().toIpV4ULong()
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun InetAddress.toIpV4UByteArray() = address.toUByteArray()
+fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
+
+@OptIn(ExperimentalTime::class)
+class RateLimiter @OptIn(ExperimentalTime::class) constructor(
+    val interval: Duration,
+    val amount: Int = 1,
+    val origin: Instant = now(),
+) {
+    private val tokenChannel = Channel<Unit>(Channel.RENDEZVOUS)
+
+    init {
+        CoroutineScope(Dispatchers.Default).launch {
+            var nextExecutionTime = origin
+            while (isActive) {
+                val currentTime = now()
+                val passedIntervals = ((currentTime - origin) / interval + 1.0).toInt()
+                nextExecutionTime = origin + interval * passedIntervals
+                if (currentTime < nextExecutionTime) delay(nextExecutionTime - currentTime)
+                tokenChannel.send(Unit)
+            }
+        }
+    }
+
+    suspend fun <T> runRateLimited(block: suspend () -> T): T {
+        tokenChannel.receive()
+        return block()
+    }
+}
+
+fun <T> Flow<T>.rateLimited(rateLimiter: RateLimiter): Flow<T> = flow {
+    collect { v -> rateLimiter.runRateLimited { emit(v) } }
+}.cancellable()
+
+@OptIn(ExperimentalCoroutinesApi::class)
+fun <T> Flow<T>.throttle(rateLimiter: RateLimiter): Flow<T> =
+    flow { chunked(rateLimiter.amount).collect { rateLimiter.runRateLimited { it.forEach { emit(it) } } } }
+
+@OptIn(ExperimentalTime::class, ExperimentalUnsignedTypes::class, ExperimentalCoroutinesApi::class)
+fun snmpSendFlow(
+    ipRange: IpV4RangeSet,
+    snmp: Snmp = defaultSenderSnmp,
+    rps: Int,
+    scrambleBlock: Int,
+    requestBuilder: (ip: UInt) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
+): Flow<Result> = callbackFlow {
+    fun Flow<UInt>.scrambled(nBits: Int): Flow<UInt> = flow {
+        val mask = (1U shl nBits) - 1U
+        val rndTable = (0U..mask).shuffled()
+        for (w in 0U..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
+    }
+
+
+    var count = 0UL
+    val total = ipRange.totalLength().toULong()
+    val listener = object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            ++count
+            runCatching {
+                val reqAdr = r.response?.requestID?.value?.toUInt()
+                val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
+
+                @Suppress("UNCHECKED_CAST")
+                val res = when {
+                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
+                    else -> Result.Timeout(r.userObject as Request)
+                }
+                trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
+                snmp.cancel(r.request, this)
+            }.onFailure { it.printStackTrace() }
+            if (count >= total) close()
+        }
+    }
+    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).chunked(rps).rateLimited(RateLimiter(1.seconds))
+        .collect { ips ->
+            ips.forEachIndexed { i, ip ->
+                val req = requestBuilder(ip)
+                snmp.send(req.pdu, req.target, req, listener)
+            }
+        }
+    awaitClose {}
+}.cancellable()
+
+suspend fun snmpSend(req: Request, snmp: Snmp = defaultSenderSnmp) = suspendCancellableCoroutine { conti ->
+    val listener = object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            runCatching {
+                @Suppress("UNCHECKED_CAST")
+                when {
+                    r.response == null -> conti.resume(Result.Timeout(r.userObject as Request))
+                    else -> conti.resume(Result.Response(r.userObject as Request, r as SnmpEvent))
+                }
+                snmp.cancel(r.request, this)
+            }.onFailure { it.printStackTrace() }
+        }
+    }
+    snmp.send(req.pdu, req.target, req, listener)
+}

@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -13,7 +14,6 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -34,6 +34,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+
+            implementation("org.snmp4j:snmp4j:3.9.6") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
         }
     }
 }
