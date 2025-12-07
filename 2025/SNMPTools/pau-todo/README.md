@@ -1,27 +1,34 @@
-This is a Kotlin Multiplatform project targeting Desktop (JVM).
+# Build
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+```sh:hot reload
+sh gradlew hotRunJvm --auto
+```
 
-### Build and Run Desktop (JVM) Application
+```shell:test
+sh gradlew clean jvmTest
+```
+```shell:Build msi
+sh gradlew composeApp:packageMsi
+```
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
 
----
+# 履歴
+- ✅25/11/12 ブロードキャスト応答除外
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+# TODO
+- ハイレート時スキャンレスポンス漏れ  
+  WiresharkでReqは全検出、Res感なし。ただしOKの場合、最後のResは検出
+  UDPポートは空いている  
+  UDP受信スレッドの問題か? バッファ拡張か?
+  - 10.0.0.0-10.0.50.255,192.168.11.41, 500 rps,t/o 30(6x5s)
+    - ok3 / ng0
+  - 10.0.0.0-10.0.50.255,192.168.11.41, 1000 rps,t/o 30(6x5s)
+    - ok3 / ng0
+  - 10.0.0.0-10.0.200.255,192.168.11.41(51457), 1000 rps,t/o 30(6x5s)
+    - ok3 / ng1
+  - 10.0.0.0-10.0.255.255,192.168.11.41, 1000 rps,t/o 30(6x5s)
+    - ok3 / ng2
+  - 10.0.0.0-10.0.255.255,192.168.11.41, 2000 rps,t/o 30(6x5s)
+    - ok2 / ng4
+  - 10.0.0.0-10.0.255.255,192.168.11.41, 3000rps t/o 30(6x5s)
+    - ok1 / ng1

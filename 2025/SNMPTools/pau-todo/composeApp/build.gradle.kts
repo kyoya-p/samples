@@ -1,11 +1,13 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    kotlin("plugin.serialization") version "1.9.0" // https://mvnrepository.com/art
+    // ifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+    id("io.kotest") version "6.0.4"  // https://plugins.gradle.org/plugin/io.kotest
 }
 
 kotlin {
@@ -22,8 +24,16 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(compose.materialIconsExtended)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+
+            val ktor_version = "3.3.3" // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
+            implementation("io.ktor:ktor-client-cio:$ktor_version")
+            implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+            implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
