@@ -24,7 +24,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import okio.Path.Companion.toPath
-import org.snmp4j.smi.OID
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -45,7 +44,13 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     var filePath by remember { mutableStateOf(app.mibFile) }
 
     LaunchedEffect(app) { appStore.set(app) }
-    LaunchedEffect(mib) { snmpAgent(vbl = mib) }
+    LaunchedEffect(mib) {
+        snmpAgent(vbl = mib) { ev, pdu ->
+            println("$ev: $pdu")
+            snackBarMessage="$ev: $pdu"
+            pdu
+        }
+    }
     LaunchedEffect(filePath) { app = app.copy(mibFile = filePath) }
 
     runCatching { mib = loadMib(filePath.toPath().toFile()) }
@@ -76,7 +81,7 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     )
     Scaffold(
         modifier = Modifier.padding(8.dp),
-        snackbarHost = { if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage, maxLines = 1) } },
+//        snackbarHost = {  },
     ) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             snmpCaptureDialog.placing()
@@ -86,6 +91,7 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
                 Button(onClick = ::saveMib) { Text("Save") }
                 Button(onClick = ::loadMib) { Text("Load") }
             }
+            if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage, maxLines = 1) }
         }
     }
 }
