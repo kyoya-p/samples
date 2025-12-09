@@ -8,13 +8,24 @@ import jp.wjg.shokkaa.snmp.OctetString
 import jp.wjg.shokkaa.snmp.PDU
 import jp.wjg.shokkaa.snmp.Request
 import jp.wjg.shokkaa.snmp.Response
+import jp.wjg.shokkaa.snmp.Snmp
+import jp.wjg.shokkaa.snmp.SnmpReceived
 import jp.wjg.shokkaa.snmp.Target
 import jp.wjg.shokkaa.snmp.Timeout
 import jp.wjg.shokkaa.snmp.UdpAddress
 import jp.wjg.shokkaa.snmp.createSnmp
 import jp.wjg.shokkaa.snmp.toIpv4
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
-import java.net.InetAddress
+import kotlinx.coroutines.launch
+import org.snmp4j.CommandResponder
+import org.snmp4j.CommandResponderEvent
+import org.snmp4j.security.SecurityModels
+import org.snmp4j.security.SecurityProtocols
+import org.snmp4j.security.USM
+import org.snmp4j.smi.Address
+import org.snmp4j.transport.DefaultUdpTransportMapping
+import org.snmp4j.transport.UdpTransportMapping
 import kotlin.time.Duration.Companion.milliseconds
 
 class SnmpTest : FunSpec({
@@ -22,7 +33,7 @@ class SnmpTest : FunSpec({
         fun String.toByteArray() = split(".").map { it.toUByte().toByte() }.toByteArray()
         val a1 = Inet4Address("1.2.3.4".toByteArray())
         val a2 = a1.toRaw()
-        a2 shouldBe InetAddress.getByAddress("1.2.3.4".toByteArray())
+        a2 shouldBe java.net.InetAddress.getByAddress("1.2.3.4".toByteArray())
 
         val u1 = UdpAddress(Inet4Address("255.255.255.255".toByteArray()), 256)
         val u2: org.snmp4j.smi.UdpAddress = u1.toRaw()
@@ -35,9 +46,14 @@ class SnmpTest : FunSpec({
     }
 
     test("SnmpSend") {
-        val snmp = createSnmp(1024 )
-//        val adr = UdpAddress("192.168.11.18".toIpv4(), 161)
-        val adr = UdpAddress("127.0.0.1".toIpv4(), 161)
+        launch {
+            val snmp = createSnmp(UdpAddress(Inet4Address(byteArrayOf(127, 0, 0, 1))), 1024)
+            snmp.snmpReceiver(UdpAddress(Inet4Address(byteArrayOf(127, 0, 0, 1)), 10161)) {
+                println(it)
+            }
+        }
+        val snmp = createSnmp(UdpAddress(Inet4Address(byteArrayOf(127, 0, 0, 1))),1024)
+        val adr = UdpAddress("127.0.0.1".toIpv4(), 10161)
         snmp.send(
             Request(Target(adr, OctetString("public".toByteArray())), pdu = PDU())
         ) {
@@ -51,7 +67,7 @@ class SnmpTest : FunSpec({
         delay(1000.milliseconds)
     }
 
-//    test("Snmp Agent") {
+    //    test("Snmp Agent") {
 //        val port = 16100
 //        val community = "public"
 //        val oid = ".1.3.6.1.2.1.1.1.0"
@@ -102,44 +118,52 @@ class SnmpTest : FunSpec({
 //    }
 //})
 //
-//suspend fun snmpReceiver(udpAdr: String, onResult: Snmp.(SnmpReceived) -> Unit) {
-//    val address = UdpAddress(udpAdr)
-//    val transport = DefaultUdpTransportMapping(address)
-//    val snmp = Snmp(transport)
-//
-//    val usm = USM(
-//        SecurityProtocols.getInstance().addDefaultProtocols(),
-//        OctetString(MessageProcessingModel.MPv3.createLocalEngineID()), 0
-//    )
-//    SecurityModels.getInstance().addSecurityModel(usm)
-//
-//    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv1())
-//    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv2c())
-//    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv3(usm))
-//
-//    snmp.addCommandResponder(object : CommandResponder {
-//        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-//            @Suppress("UNCHECKED_CAST")
-//            if (event != null && event.peerAddress is UdpAddress) {
-//                val res = SnmpReceived(
-//                    peerAddress = event.peerAddress as UdpAddress,
-//                    mpModelCode = event.messageProcessingModel,
-//                    secModel = TODO(),
-//                    secName = TODO(),
-//                    secLevel = TODO(),
-//                    pdu = TODO(),
-//                    maxSizeResponseScopedPDU = TODO(),
-//                    stateReference = TODO()
-//                )
-//                snmp.onResult(res)
-//            }
-//        }
-//    })
-//
-//    snmp.listen()
-//    try {
-//        awaitCancellation()
-//    } finally {
-//        snmp.close()
-//    }
+
 })
+
+
+suspend fun Snmp.snmpReceiver(
+    udpAdr: UdpAddress,
+    transport: UdpTransportMapping = DefaultUdpTransportMapping(udpAdr.toRaw()),
+    onResult: Snmp.(SnmpReceived) -> Unit
+) {
+//        val transport = DefaultUdpTransportMapping(udpAdr.toRaw())
+    val usm = USM(
+        SecurityProtocols.getInstance().addDefaultProtocols(),
+        org.snmp4j.smi.OctetString(MessageProcessingModel.MPv3.createLocalEngineID()),
+        0
+    )
+    SecurityModels.getInstance().addSecurityModel(usm)
+    val snmp = (this as SnmpImpl).snmp
+    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv1())
+    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv2c())
+    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv3(usm))
+
+    snmp.addCommandResponder(object : CommandResponder {
+        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
+            @Suppress("UNCHECKED_CAST")
+            if (event != null && event.peerAddress is org.snmp4j.smi.UdpAddress) {
+                val res = SnmpReceived(
+                    peerAddress = event.peerAddress as UdpAddress,
+                    mpModelCode = event.messageProcessingModel,
+                    secModel = event.securityModel,
+                    secName = event.securityName,
+                    secLevel = event.securityLevel,
+                    pdu = event.pdu.toPDU(),
+                    maxSizeResponseScopedPDU = event.maxSizeResponsePDU,
+                    stateReference_todo = null //  event.stateReference,
+                )
+                onResult(res)
+            }
+        }
+    })
+
+    snmp.listen()
+    try {
+        awaitCancellation()
+    } finally {
+        snmp.close()
+    }
+}
+
+

@@ -17,12 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import jp.wjg.shokkaa.RateLimiter
 import kotlinx.coroutines.*
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -42,7 +42,7 @@ import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppMain() = MaterialTheme {
+fun App() = MaterialTheme {
     var app by remember { mutableStateOf(config) }
 
     @OptIn(ExperimentalTime::class)
@@ -54,7 +54,6 @@ fun AppMain() = MaterialTheme {
 @Composable
 fun AppData.MfpToolMain(onChange: (AppData) -> Unit) = Column {
     val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
-    val snmp by remember { mutableStateOf(createSnmp(receiveBufferSize)) }
     TopAppBar(
         title = { Text("PAU", fontWeight = FontWeight.Bold, overflow = TextOverflow.Clip) },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -71,7 +70,7 @@ fun AppData.MfpToolMain(onChange: (AppData) -> Unit) = Column {
             Column(Modifier.verticalScroll(state).weight(1f)) {
                 //LazyColumn不可。LazyColumnは画面表示中のMFPのみインスタン化するため非表示の機器は情報採取されない。
                 mfps.entries.forEach { (_, mfp) ->
-                    mfp.StatusRow(snmp, globalSnmpThrottle, updateInterval = updateInterval.seconds, onRemove = { ip ->
+                    mfp.StatusRow(globalSnmpThrottle, updateInterval = updateInterval.seconds, onRemove = { ip ->
                         onChange(copy(mfps = mfps.toMutableMap().apply { remove(ip) }))
                     })
                 }
@@ -116,20 +115,23 @@ fun AppData.SettingDialog(
     }
 }
 
-fun String.toOid() = OID(split(".").map { it.toInt() })
-val oidSysDescOid = "1.3.6".toOid()
-val oidUptime = "1.3.6.1.2.1.1.3".toOid()
-val oidPrtGeneralSerialNumber = "1.3.6.1.2.1.43.5.1.1.17".toOid()
-fun devInfoPdu(reqId: Int = 0) = PDU(
-    vbl = listOf(oidSysDescOid, oidUptime, oidPrtGeneralSerialNumber).map { VariableBinding(it) },
+val oidSysDescOid = "1.3.6"
+val oidUptime = "1.3.6.1.2.1.1.3"
+val oidPrtGeneralSerialNumber = "1.3.6.1.2.1.43.5.1.1.17"
+fun devInfoPdu(reqId: Int? = null) = PDU(
+    strOids = listOf(oidSysDescOid, oidUptime, oidPrtGeneralSerialNumber),
     reqId = reqId,
 )
 
-fun scanPdu(reqId: Int = 0) = PDU(reqId = reqId)
+fun scanPdu(reqId: Int? = null) = PDU(reqId = reqId)
 
+suspend fun snmpGetDevInfo(ip: String) =
+    snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4ULong().toInt()))
+//    snmpSend(Request(ip, devInfoPdu(ip.toIpV4ULong().toInt())))
+
+@OptIn(ExperimentalTime::class)
 @Composable
 fun Mfp.StatusRow(
-    snmp: Snmp,
     globalSnmpThrottle: RateLimiter,
     updateInterval: Duration,
     onRemove: (ip: String) -> Unit
@@ -149,13 +151,13 @@ fun Mfp.StatusRow(
         while (true) {
             runCatching {
                 globalSnmpThrottle.runRateLimited {
-//                    snmpGetDevInfo(ip).onResponse {
-//                        errStatus = null
-//                        model = it.received.response[0].variable.toString()
-//                        serial = it.received.response[2].variable.toString()
-//                        uptime = it.received.response[1].variable.toLong().milliseconds * 10
-//                        color = Green
-//                    }.onTimeout { errStatus = "no respons"; color = Red }
+                    snmpGetDevInfo(ip).onResponse {
+                        errStatus = null
+                        model = it.received.response[0].variable.toString()
+                        serial = it.received.response[2].variable.toString()
+                        uptime = it.received.response[1].variable.toLong().milliseconds * 10
+                        color = Green
+                    }.onTimeout { errStatus = "no respons"; color = Red }
                 }
             }.onFailure { errStatus = "${it.message}"; color = Red }
             ++update.value
@@ -191,34 +193,30 @@ fun OneShotColorAnimationSample(tColor: Pair<Color, Color>, update: MutableState
     Box(modifier = Modifier.size(14.dp).background(animatedColor.value))
 }
 
-fun String.toIpv4UInt() = splitToSequence(".").fold(0u) { a, e -> a * 0x100u + e.toUInt() }
-fun String.toIpv4UByteArray() = split(".").map { it.toInt().toByte() }.toByteArray()
-fun String.toIpv4() = Inet4Address(toIpv4UByteArray())
-fun String.toRange() = split("-").map { it.toIpv4UInt() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
-fun String.toRangeSet() = split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() }.toRangeList()
-fun UInt.toIpV4String() = (3 downTo 0).joinToString(".") { (this shr (it * 8)).toString(10) }
+//fun String.toRange() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
+//fun String.toRangeSet() = ULongRangeSet(split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() })
 
 @Composable
 fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
     fun AppData.addMfps(r: String) = onChange(
         copy(mfps = mfps.toMutableMap().apply {
-            r.toRangeSet().asFlatSequence { it + 1U }.forEach { ip ->
+            r.toIpV4RangeSet().asFlatSequence { it + 1UL }.forEach { ip ->
                 val adr = ip.toIpV4String()
                 this[adr] = Mfp(ip = adr, port = 161, v1CommStr = "public")
             }
         })
     )
 
-    var range by remember { mutableStateOf(scanRange) }
-    val isError = runCatching { range.toRangeSet() }.isFailure
+    var ip by remember { mutableStateOf(scanRange) }
+    val isError = runCatching { ip.toIpV4RangeSet() }.isFailure
     val ipsStatus: String = runCatching {
-        val nIpAdr = range.toRangeSet().totalLength()
+        val nIpAdr = ip.toIpV4RangeSet().totalLength()
         val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
         val tReqTotal = ((nIpAdr.toDouble().seconds / snmpRPS.toDouble() + tReq) * 10).inWholeSeconds.seconds / 10
         if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
     }.getOrElse { "" }
     OutlinedTextField(
-        range,
+        ip,
         singleLine = true,
         isError = isError,
         label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
@@ -226,8 +224,8 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         suffix = {},
         leadingIcon = {
             val isMany =
-                runCatching { range.toRangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
-            IconButton(enabled = !isError && !isMany, onClick = { addMfps(range) }) {
+                runCatching { ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
+            IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
                 Icon(Icons.Default.Add, "Add")
             }
         },
@@ -237,8 +235,8 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
             }
         },
         onValueChange = {
-            range = it
-            runCatching { range.toRangeSet() }.onSuccess { onChange(copy(scanRange = range)) }
+            ip = it
+            runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
         }
     )
 }
@@ -257,7 +255,7 @@ fun AppData.SearchDialog(
     onConfirmed = { onChange(copy(mfps = addMfps(ips.keys))); closeDialog() },
     onDismissed = { closeDialog() },
 ) {
-    val range = scanRange.toRangeSet()
+    val range = scanRange.toIpV4RangeSet()
     val total = range.totalLength().toInt()
     var start by remember { mutableStateOf(now()) }
     var msgCount by remember { mutableStateOf("") }
@@ -269,7 +267,7 @@ fun AppData.SearchDialog(
         var cDetect = 0
         start = now()
         fun rps(n: Int, dt: Long = (now() - start).inWholeSeconds) = if (dt <= 0) "--rps" else "${n / dt}rps"
-        fun count(n: Int) = if(total>0) "$n (${n * 100 / total}%) ${rps(n)}" else "$n"
+        fun count(n: Int) = "$n (${n * 100 / total}%) ${rps(n)}"
         fun dt() = (now() - start).inWholeMilliseconds.milliseconds
         fun msgCount() = "$cDetect found / ${count(cRes)} result / ${count(cSend)} sent / $total total ${dt()}"
         val job = launch {
@@ -279,23 +277,23 @@ fun AppData.SearchDialog(
             }
         }
 
-//        snmpSendFlow(scanRange.toRangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
-//            ++cSend
-//            Request(
-//                strAdr = it.toIpV4String(),
-//                nRetry = scanSnmp.retries,
-//                interval = scanSnmp.intervalMS.milliseconds,
-//                commStrV1 = scanSnmp.commStrV1,
-//                pdu = scanPdu(reqId = it.toInt())
-//            )
-//        }.collect { r ->
-//            ++cRes
-//            if (r is Result.Response) {
-//                ++cDetect
-//                ips[r.request.target.address.inetAddress.toIpV4String()] =
-//                    r.received.peerAddress.inetAddress.toIpV4String()
-//            }
-//        }
+        snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+            ++cSend
+            Request(
+                strAdr = it.toIpV4String(),
+                nRetry = scanSnmp.retries,
+                interval = scanSnmp.intervalMS.milliseconds,
+                commStrV1 = scanSnmp.commStrV1,
+                pdu = scanPdu(reqId = it.toInt())
+            )
+        }.collect { r ->
+            ++cRes
+            if (r is Result.Response) {
+                ++cDetect
+                ips[r.request.target.address.inetAddress.toIpV4String()] =
+                    r.received.peerAddress.inetAddress.toIpV4String()
+            }
+        }
         job.cancelAndJoin()
         val t = (now() - start).inWholeSeconds
         msgCount = msgCount()

@@ -20,6 +20,12 @@ import androidx.compose.ui.Modifier
 import com.charleskorn.kaml.Yaml
 import io.github.xxfast.kstore.KStore
 import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
@@ -46,8 +52,14 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     LaunchedEffect(app) { appStore.set(app) }
     LaunchedEffect(mib) {
         snmpAgent(vbl = mib) { ev, pdu ->
-            println("$ev: $pdu")
-            snackBarMessage="$ev: $pdu"
+            val t = now().toLocalDateTime(TimeZone.currentSystemDefault())
+            val format =
+                LocalDateTime.Format {
+                    year(); char('/'); monthNumber(); char('/'); dayOfMonth(); char(' ')
+                    hour(); char(':'); minute(); char(':'); second()
+                }
+
+            snackBarMessage = "${t.format(format)} ${ev.peerAddress.inetAddress}: ${pdu.variableBindings.getOrNull(0)}"
             pdu
         }
     }

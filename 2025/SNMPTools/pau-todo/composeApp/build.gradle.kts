@@ -17,7 +17,31 @@ kotlin {
         }
     }
     sourceSets {
-        commonMain.dependencies {
+//        commonMain.dependencies {
+//            implementation(compose.runtime)
+//            implementation(compose.foundation)
+//            implementation(compose.material3)
+//            implementation(compose.ui)
+//            implementation(compose.components.resources)
+//            implementation(compose.components.uiToolingPreview)
+//            implementation(compose.materialIconsExtended)
+//            implementation(libs.androidx.lifecycle.viewmodelCompose)
+//            implementation(libs.androidx.lifecycle.runtimeCompose)
+//
+//            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+//
+//            val ktor_version = "3.3.3" // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
+//            implementation("io.ktor:ktor-client-cio:$ktor_version")
+//            implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+//            implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+//        }
+//        commonTest.dependencies {
+//            implementation(libs.kotlin.test)
+//            implementation(libs.kotest.runner.junit5)
+//            implementation(libs.kotest.assertions.core)
+//            implementation(libs.kotest.property)
+//        }
+        jvmMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
@@ -34,18 +58,17 @@ kotlin {
             implementation("io.ktor:ktor-client-cio:$ktor_version")
             implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
             implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
-        }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation(libs.kotest.runner.junit5)
-            implementation(libs.kotest.assertions.core)
-            implementation(libs.kotest.property)
-        }
-        jvmMain.dependencies {
+
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
 
             implementation("org.snmp4j:snmp4j:3.9.6") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+        }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotest.runner.junit5)
+            implementation(libs.kotest.assertions.core)
+            implementation(libs.kotest.property)
         }
     }
 }
@@ -53,12 +76,17 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "jp.wjg.shokkaa.snmp.MainKt"
+        mainClass = "jp.wjg.shokkaa.snmp.MainJvmKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "jp.wjg.shokkaa.snmp"
-            packageVersion = "1.0.0"
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "SnmpScanner"
+            packageVersion = "1.1.0"
+            windows {
+                upgradeUuid = "b7c7a509-b6ea-0554-90a5-217cf641e5cd"
+                menu = true
+                shortcut = true
+            }
         }
     }
 }

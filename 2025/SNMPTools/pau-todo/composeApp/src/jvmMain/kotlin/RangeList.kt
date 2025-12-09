@@ -22,18 +22,21 @@ fun <T : Comparable<T>> RangeSet<T>.toRangeList(): List<ClosedRange<T>> {
     return result
 }
 
-fun <T : Comparable<T>> Collection<ClosedRange<T>>.asFlatSequence(inc: (T) -> T): Sequence<T> =
-    asSequence().flatMap { r ->
-        sequence {
-            var p = r.start
-            while (p <= r.endInclusive) {
-                yield(p)
-                p = inc(p)
-            }
+fun <T : Comparable<T>> Collection<ClosedRange<T>>.asFlatSequence(inc: (T) -> T): Sequence<T> = asSequence().flatMap { r ->
+    sequence {
+        var p = r.start
+        while (p <= r.endInclusive) {
+            yield(p)
+            p = inc(p)
         }
     }
+}
 
-typealias UIntRangeSet = Collection<ClosedRange<UInt>>
+typealias IpV4RangeSet = Collection<ClosedRange<ULong>>
 
-fun UIntRangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1u }
-fun UIntRangeSet.asFlatSequence(): Sequence<UInt> = asFlatSequence<UInt>(inc = { it + 1u })
+fun String.toIpV4Range() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
+fun String.toIpV4RangeSet() =
+    split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toIpV4Range() }.toRangeList()
+
+fun IpV4RangeSet.asFlatSequence() : Sequence<ULong> = asFlatSequence<ULong>(inc = { it + 1u })
+fun IpV4RangeSet.totalLength() = sumOf { it.endInclusive - it.start + 1u }
