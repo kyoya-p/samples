@@ -40,17 +40,13 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() = MaterialTheme {
     var app by remember { mutableStateOf(config) }
-
-    @OptIn(ExperimentalTime::class)
-
     Scaffold { app.MfpToolMain { app = it; config = app } }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppData.MfpToolMain(onChange: (AppData) -> Unit) = Column {
     val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
@@ -129,7 +125,6 @@ suspend fun snmpGetDevInfo(ip: String) =
     snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4ULong().toInt()))
 //    snmpSend(Request(ip, devInfoPdu(ip.toIpV4ULong().toInt())))
 
-@OptIn(ExperimentalTime::class)
 @Composable
 fun Mfp.StatusRow(
     globalSnmpThrottle: RateLimiter,

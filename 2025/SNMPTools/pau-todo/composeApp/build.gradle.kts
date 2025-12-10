@@ -17,30 +17,6 @@ kotlin {
         }
     }
     sourceSets {
-//        commonMain.dependencies {
-//            implementation(compose.runtime)
-//            implementation(compose.foundation)
-//            implementation(compose.material3)
-//            implementation(compose.ui)
-//            implementation(compose.components.resources)
-//            implementation(compose.components.uiToolingPreview)
-//            implementation(compose.materialIconsExtended)
-//            implementation(libs.androidx.lifecycle.viewmodelCompose)
-//            implementation(libs.androidx.lifecycle.runtimeCompose)
-//
-//            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
-//
-//            val ktor_version = "3.3.3" // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
-//            implementation("io.ktor:ktor-client-cio:$ktor_version")
-//            implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-//            implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
-//        }
-//        commonTest.dependencies {
-//            implementation(libs.kotlin.test)
-//            implementation(libs.kotest.runner.junit5)
-//            implementation(libs.kotest.assertions.core)
-//            implementation(libs.kotest.property)
-//        }
         jvmMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -81,7 +57,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SnmpScanner"
-            packageVersion = "1.1.0"
+            packageVersion = "1.1.1"
             windows {
                 upgradeUuid = "b7c7a509-b6ea-0554-90a5-217cf641e5cd"
                 menu = true

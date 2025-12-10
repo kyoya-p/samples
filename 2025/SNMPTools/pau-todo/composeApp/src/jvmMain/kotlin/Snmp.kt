@@ -21,6 +21,13 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+//todo
+class ThrottledSnmpX(val snmp: Snmp, val rateLimiter: RateLimiter)
+
+suspend fun ThrottledSnmpX.send(req: Request) {
+
+}
+
 
 val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
 fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
