@@ -32,15 +32,13 @@ fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
 typealias SnmpTarget = CommunityTarget<UdpAddress>
 typealias SnmpEvent = ResponseEvent<UdpAddress>
 
-data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null) {
-    companion object
-}
+data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
 
 // TODO
 // 呼び出しブロックによる流量調整Snmpクラス
 class ThrottledSnmp @OptIn(ExperimentalTime::class) constructor(
     val snmp: Snmp,
-    val rateLimiter: RateLimiter = RateLimiter(interval=1.seconds,1)
+    val rateLimiter: RateLimiter = RateLimiter(interval = 1.seconds, 1)
 ) {
     val reqQue = ArrayDeque<Request>(100)
     inline suspend fun send(
@@ -171,8 +169,7 @@ fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 
-@OptIn(ExperimentalTime::class)
-class RateLimiter @OptIn(ExperimentalTime::class) constructor(
+class RateLimiter(
     val interval: Duration,
     val amount: Int = 1,
     val origin: Instant = now(),

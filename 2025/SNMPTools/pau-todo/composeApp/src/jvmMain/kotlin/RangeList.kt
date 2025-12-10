@@ -1,6 +1,7 @@
 package jp.wjg.shokkaa.snmp
 
 typealias RangeSet<T> = Collection<ClosedRange<T>>
+typealias IpV4RangeSet = Collection<ClosedRange<ULong>>
 
 fun <T : Comparable<T>> RangeSet<T>.toRangeList(): List<ClosedRange<T>> {
     if (this.isEmpty()) return emptyList()
@@ -32,7 +33,6 @@ fun <T : Comparable<T>> Collection<ClosedRange<T>>.asFlatSequence(inc: (T) -> T)
     }
 }
 
-typealias IpV4RangeSet = Collection<ClosedRange<ULong>>
 
 fun String.toIpV4Range() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
 fun String.toIpV4RangeSet() =
