@@ -145,7 +145,7 @@ fun Mfp.StatusRow(
         delay(Random.nextLong(199).milliseconds)
         while (true) {
             runCatching {
-                globalSnmpThrottle.runRateLimited {
+                globalSnmpThrottle.runIntermittent  {
                     snmpGetDevInfo(ip).onResponse {
                         errStatus = null
                         model = it.received.response[0].variable.toString()
