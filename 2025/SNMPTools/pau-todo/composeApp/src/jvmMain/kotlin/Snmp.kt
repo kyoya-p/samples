@@ -197,10 +197,6 @@ class RateLimiter(
     }
 }
 
-fun <T> Flow<T>.rateLimitedX(rateLimiter: RateLimiter): Flow<T> = flow {
-    collect { v -> rateLimiter.runIntermittent { emit(v) } }
-}.cancellable()
-
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.throttled(rateLimiter: RateLimiter): Flow<T> = flow {
     chunked(rateLimiter.unit).collect { rateLimiter.runIntermittent { it.forEach { emit(it) } } }
@@ -240,12 +236,10 @@ fun snmpSendFlow(
             if (count >= total) close()
         }
     }
-    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).chunked(rps).rateLimitedX(RateLimiter(1.seconds))
-        .collect { ips ->
-            ips.forEachIndexed { i, ip ->
-                val req = requestBuilder(ip)
-                snmp.send(req.pdu, req.target, req, listener)
-            }
+    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).throttled(RateLimiter(1.seconds, rps))
+        .collect { ip ->
+            val req = requestBuilder(ip)
+            snmp.send(req.pdu, req.target, req, listener)
         }
     awaitClose {}
 }.cancellable()
@@ -254,8 +248,12 @@ typealias Ipv4Int = UInt
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackFlow {
+    var cSend = 0
+    var cRes = 0
+    var sendCmpl = false
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            ++cRes
             runCatching {
                 val reqAdr = r.response?.requestID?.value?.toUInt()
                 val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
@@ -267,18 +265,22 @@ fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackF
                 }
                 trySendBlocking(res)
             }.onFailure { it.printStackTrace() }
+            if (sendCmpl && cRes >= cSend) this@callbackFlow.close()
         }
     }
-    launch {
+    val sendJob = launch {
         onCompletion {
-            println("act=cmpl")
+            println("act=cmpl $cSend")
+            sendCmpl = true
         }.collect { req ->
+            ++cSend
             snmp.send(req.pdu, req.target, req, listener)
         }
-        this@callbackFlow.close()
+        println("c=$cSend")
     }
     awaitClose {
         println("Closed")//todo
+        sendJob.cancel()
     }
 }.cancellable()
 

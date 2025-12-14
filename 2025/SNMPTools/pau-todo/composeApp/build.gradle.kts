@@ -5,15 +5,22 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    kotlin("plugin.serialization") version "1.9.0" // https://mvnrepository.com/art
-    // ifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+    kotlin("plugin.serialization") version "2.2.21" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
     id("io.kotest") version "6.0.4"  // https://plugins.gradle.org/plugin/io.kotest
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    mavenLocal()
 }
 
 kotlin {
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
+            maxHeapSize = "2g"
         }
     }
     sourceSets {
@@ -34,6 +41,7 @@ kotlin {
             implementation("io.ktor:ktor-client-cio:$ktor_version")
             implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
             implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+            implementation("io.ktor:ktor-serialization-kotlinx-protobuf:$ktor_version")
 
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
@@ -45,6 +53,8 @@ kotlin {
             implementation(libs.kotest.runner.junit5)
             implementation(libs.kotest.assertions.core)
             implementation(libs.kotest.property)
+
+            implementation("io.github.koalaplot:koalaplot-core:0.10.3") // https://mvnrepository.com/artifact/io.github.koalaplot/koalaplot-core
         }
     }
 }
