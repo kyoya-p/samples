@@ -75,7 +75,7 @@ class SnmpTest : FunSpec({
     }
 
     test("SnmpSend-0") {
-        val fRes = SystemFileSystem.sink(Path("res-0.pb")).buffered()
+        val fRes = SystemFileSystem.sink(Path("build/res-0.pb")).buffered()
 
         val snmp = createDefaultSenderSnmp()
         val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
@@ -112,14 +112,22 @@ class SnmpTest : FunSpec({
 //        }
     }
 
-    test("SnmpSend-1") {
-        val fRes = SystemFileSystem.sink(Path("res-1.pb")).buffered()
 
+    @Serializable
+    data class D(
+        @ProtoNumber(1) val x: Int,
+        @ProtoNumber(2) val y1: Int,
+        @ProtoNumber(3) val y2: Int
+    )
+
+    test("SnmpSend-1") {
+        val fRes = SystemFileSystem.sink(Path("build/res-1.pb")).buffered()
+        val listData = mutableListOf<D>()
         val snmp = createDefaultSenderSnmp()
         val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
         val rateLimiter = RateLimiter(interval = 1.seconds, unit = 100)
         val ts = now()
-        (0U..<100_000U).asFlow().map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
+        (0U..<1_000U).asFlow().map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
             .map { Request(udpAdr = it, nRetry = 0, interval = 1.seconds, userData = now() - ts) }
             .throttled(rateLimiter = rateLimiter)
             .send(snmp)
@@ -127,22 +135,17 @@ class SnmpTest : FunSpec({
                 when (res) {
                     is Result.Response -> println("Response ${res.received.response}")
                     is Result.Timeout -> {
-                        @Serializable
-                        data class D(
-                            @ProtoNumber(1) val x: Int,
-                            @ProtoNumber(2) val y1: Int,
-                            @ProtoNumber(3) val y2: Int
-                        )
-
                         val d = D(
                             x = (res.request.target.address.inetAddress.toIpV4UInt() - startAdr).toInt(),
                             y1 = (res.request.userData as Duration).inWholeMilliseconds.toInt(),
                             y2 = (now() - ts).inWholeMilliseconds.toInt(),
                         )
-                        fRes.write(ProtoBuf.encodeToByteArray(d))
+                        println(d)
+                        listData.addLast(d)
                     }
                 }
             }
+        fRes.write(ProtoBuf.encodeToByteArray(listData))
         fRes.close()
     }
 
