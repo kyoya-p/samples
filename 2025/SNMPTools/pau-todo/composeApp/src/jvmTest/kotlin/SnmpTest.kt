@@ -1,24 +1,11 @@
 package jp.wjg.shokkaa.snmp.jvm
 
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import io.github.koalaplot.core.Symbol
-import io.github.koalaplot.core.line.LinePlot2
 import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
-import io.github.koalaplot.core.xygraph.Point
-import io.github.koalaplot.core.xygraph.XYGraph
-import io.github.koalaplot.core.xygraph.autoScaleXRange
-import io.github.koalaplot.core.xygraph.autoScaleYRange
-import io.github.koalaplot.core.xygraph.rememberIntLinearAxisModel
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ranges.shouldBeIn
-import io.ktor.utils.io.core.writeByteBuffer
 import jp.wjg.shokkaa.snmp.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collectIndexed
@@ -39,6 +26,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlin.time.measureTime
 
 @OptIn(ExperimentalKoalaPlotApi::class, ExperimentalSerializationApi::class)
@@ -74,92 +62,65 @@ class SnmpTest : FunSpec({
         } shouldBeIn around(400.milliseconds)
     }
 
-    test("SnmpSend-0") {
-        val fRes = SystemFileSystem.sink(Path("build/res-0.pb")).buffered()
-
-        val snmp = createDefaultSenderSnmp()
-        val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
-        val ts = now()
-        (0U..<100_000U).asFlow().map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
-            .map { Request(udpAdr = it, nRetry = 0, interval = 1.seconds, userData = now() - ts) }.send(snmp)
-            .collect { res ->
-                when (res) {
-                    is Result.Response -> println("Response ${res.received.response}")
-                    is Result.Timeout -> {
-                        @Serializable
-                        data class D(
-                            @ProtoNumber(1) val x: Int,
-                            @ProtoNumber(2) val y1: Int,
-                            @ProtoNumber(3) val y2: Int
-                        )
-
-                        val d = D(
-                            x = (res.request.target.address.inetAddress.toIpV4UInt() - startAdr).toInt(),
-                            y1 = (res.request.userData as Duration).inWholeMilliseconds.toInt(),
-                            y2 = (now() - ts).inWholeMilliseconds.toInt(),
-                        )
-                        fRes.write(ProtoBuf.encodeToByteArray(d))
-                    }
-                }
-            }
-        fRes.close()
-        delay(1000.milliseconds)
-
-//        application {
-//            Window(onCloseRequest = ::exitApplication, title = "") {
-//                sendRecvGraph(resSendData, resRecvData)
-//            }
-//        }
-    }
-
-
     @Serializable
     data class D(
-        @ProtoNumber(1) val x: Int,
-        @ProtoNumber(2) val y1: Int,
-        @ProtoNumber(3) val y2: Int
+        @ProtoNumber(1) val n: Int,
+        @ProtoNumber(2) val t1: Int,
+        @ProtoNumber(3) val t2: Int
     )
 
-    test("SnmpSend-1") {
-        val fRes = SystemFileSystem.sink(Path("build/res-1.pb")).buffered()
+    suspend fun snmpFlowTester(testName: String, tStart: Instant, src: Flow<Request>) {
+        val fRes = SystemFileSystem.sink(Path("build/$testName.pb")).buffered()
         val listData = mutableListOf<D>()
         val snmp = createDefaultSenderSnmp()
-        val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
-        val rateLimiter = RateLimiter(interval = 1.seconds, unit = 100)
-        val ts = now()
-        (0U..<1_000U).asFlow().map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
-            .map { Request(udpAdr = it, nRetry = 0, interval = 1.seconds, userData = now() - ts) }
-            .throttled(rateLimiter = rateLimiter)
-            .send(snmp)
-            .collect { res ->
-                when (res) {
-                    is Result.Response -> println("Response ${res.received.response}")
-                    is Result.Timeout -> {
-                        val d = D(
-                            x = (res.request.target.address.inetAddress.toIpV4UInt() - startAdr).toInt(),
-                            y1 = (res.request.userData as Duration).inWholeMilliseconds.toInt(),
-                            y2 = (now() - ts).inWholeMilliseconds.toInt(),
-                        )
-                        println(d)
-                        listData.addLast(d)
-                    }
-                }
-            }
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        src.send(snmp).collect { res ->
+//            when (res) {
+//                is Result.Response -> println("Response ${res.received.response}")
+//                is Result.Timeout -> println("Timeout ${res.request}")
+//            }
+            val d = D(
+                n = (res.request.target.address.inetAddress.toIpV4UInt() - startAdr).toInt(),
+                t1 = (res.request.userData as Duration).inWholeMilliseconds.toInt(),
+                t2 = (now() - tStart).inWholeMilliseconds.toInt(),
+            )
+//            println(d)
+            listData.addLast(d)
+        }
         fRes.write(ProtoBuf.encodeToByteArray(listData))
         fRes.close()
     }
 
+    test("SnmpSend-0") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val ts = now()
+        val src = (0U..<10_000U).asFlow()
+            .map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
+            .map { Request(udpAdr = it, nRetry = 0, interval = 1.seconds, userData = now() - ts) }
+        snmpFlowTester("SnmpSend-0", ts, src)
+    }
+
+    test("SnmpSend-1") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 1.seconds, unit = 1000)
+        val ts = now()
+        val src = (0U..<10_000U).asFlow()
+            .map { UdpAddress((it + startAdr).toIpV4Adr(), 161) }
+            .map { Request(udpAdr = it, nRetry = 0, interval = 1.seconds, userData = now() - ts) }
+            .throttled(rateLimiter = rateLimiter)
+        snmpFlowTester("SnmpSend-1", ts, src)
+    }
 })
 
-@OptIn(ExperimentalKoalaPlotApi::class)
-@Composable
-fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
-    XYGraph(
-        rememberIntLinearAxisModel(data1.autoScaleXRange()),
-        rememberIntLinearAxisModel((data1 + data2).autoScaleYRange()),
-    ) {
-        val dot = @Composable { c: Color -> Symbol(size = 1.dp, fillBrush = SolidColor(c), outlineBrush = null) }
-        LinePlot2(data1, symbol = { dot(Color.Blue) })
-        LinePlot2(data2, symbol = { dot(Color.Red) })
-    }
-}
+//@OptIn(ExperimentalKoalaPlotApi::class)
+//@Composable
+//fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
+//    XYGraph(
+//        rememberIntLinearAxisModel(data1.autoScaleXRange()),
+//        rememberIntLinearAxisModel((data1 + data2).autoScaleYRange()),
+//    ) {
+//        val dot = @Composable { c: Color -> Symbol(size = 1.dp, fillBrush = SolidColor(c), outlineBrush = null) }
+//        LinePlot2(data1, symbol = { dot(Color.Blue) })
+//        LinePlot2(data2, symbol = { dot(Color.Red) })
+//    }
+//}
