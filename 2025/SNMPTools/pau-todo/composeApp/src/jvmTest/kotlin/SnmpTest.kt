@@ -4,7 +4,9 @@ import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.ranges.shouldBeIn
 import jp.wjg.shokkaa.snmp.*
-import jp.wjg.shokkaa.util.D
+import jp.wjg.shokkaa.snmp.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -12,14 +14,13 @@ import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.io.buffered
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.files.Path
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
-import kotlinx.serialization.protobuf.ProtoNumber
 import org.snmp4j.smi.UdpAddress
 import java.net.InetAddress
 import kotlin.time.Clock.System.now
@@ -67,16 +68,16 @@ class SnmpTest : FunSpec({
 
     suspend fun snmpFlowTester(testName: String, tStart: Instant, src: Flow<Request>) {
         val fRes = SystemFileSystem.sink(Path("build/$testName.pb")).buffered()
-        val listData = mutableListOf<D>()
+        val listData = mutableListOf<Log>()
         val snmp = createDefaultSenderSnmp()
         val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
-        src.map { r -> r.copy(userData = (r.userData as D).copy(t1 = tStart.lap())) }
+        src.map { r -> r.copy(userData = (r.userData as Log).copy(t1 = tStart.lap())) }
             .send(snmp).collect { res ->
 //            when (res) {
 //                is Result.Response -> println("Response ${res.received.response}")
 //                is Result.Timeout -> println("Timeout ${res.request}")
 //            }
-                val d0 = res.request.userData as D
+                val d0 = res.request.userData as Log
                 val d = d0.copy(t2 = tStart.lap())
                 listData.addLast(d)
             }
@@ -91,7 +92,7 @@ class SnmpTest : FunSpec({
             Request(
                 udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
                 nRetry = 0, interval = 1.seconds,
-                userData = D(n = ix.toInt(), ts.lap(), 0, 0),
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
             )
         }
         snmpFlowTester("SnmpSend-0", ts, src)
@@ -105,7 +106,7 @@ class SnmpTest : FunSpec({
             Request(
                 udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
                 nRetry = 0, interval = 1.seconds,
-                userData = D(n = ix.toInt(), ts.lap(), 0, 0),
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
             )
         }.throttled(rateLimiter = rateLimiter)
         snmpFlowTester("SnmpSend-1", ts, src)
@@ -118,7 +119,7 @@ class SnmpTest : FunSpec({
             Request(
                 udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
                 nRetry = 0, interval = 1.seconds,
-                userData = D(n = ix.toInt(), ts.lap(), 0, 0),
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
             )
         }.throttled(rateLimiter = rateLimiter)
         snmpFlowTester("SnmpSend-2", ts, src)
@@ -131,7 +132,7 @@ class SnmpTest : FunSpec({
             Request(
                 udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
                 nRetry = 0, interval = 1.seconds,
-                userData = D(n = ix.toInt(), ts.lap(), 0, 0),
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
             )
         }.throttled(rateLimiter = rateLimiter)
         snmpFlowTester("SnmpSend-3", ts, src)
@@ -144,10 +145,33 @@ class SnmpTest : FunSpec({
             Request(
                 udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
                 nRetry = 0, interval = 1.seconds,
-                userData = D(n = ix.toInt(), ts.lap(), 0, 0),
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
             )
         }.throttled(rateLimiter = rateLimiter)
         snmpFlowTester("SnmpSend-4", ts, src)
+    }
+
+
+    test("SnmpSend-5 wide-range") {
+        val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 1.seconds, unit = 5000)
+        val ts = now()
+        val src = (0U..<256U * 256U * 256U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        var c = 0
+        val j = launch(Dispatchers.Default) {
+            while (true) {
+                println("count=$c")
+                delay(1.seconds)
+            }
+        }
+        src.send(createDefaultSenderSnmp()).collect { ++c }
+        j.cancelAndJoin()
     }
 })
 

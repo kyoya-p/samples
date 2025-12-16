@@ -8,10 +8,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,23 +46,62 @@ import kotlin.time.ExperimentalTime
 @Composable
 fun App() = MaterialTheme {
     var app by remember { mutableStateOf(config) }
-    Scaffold { app.MfpToolMain { app = it; config = app } }
+    Scaffold { app.Main { app = it; config = app } }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppData.MfpToolMain(onChange: (AppData) -> Unit) = Column {
-    val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
-    TopAppBar(
-        title = { Text("PAU", fontWeight = FontWeight.Bold, overflow = TextOverflow.Clip) },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        actions = {
-            MfpAddField(globalSnmpThrottle) { onChange(it) }
-            IconButton(onClick = { onChange(copy(mfps = emptyMap())) }) { Icon(Icons.Default.Delete, "delete") }
-            IconButton(onClick = SettingDialog { onChange(it) }) { Icon(Icons.Default.Settings, "settings") }
-        }
-    )
+fun AppData.Main(
+    drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
+    scope: CoroutineScope = rememberCoroutineScope(),
+    mode: MutableState<Int> = remember { mutableStateOf(0) },
+    onChange: (AppData) -> Unit
+) = ModalNavigationDrawer(
+    drawerState = drawerState,
+    drawerContent = {
+        fun close() = scope.launch { drawerState.close() }
 
+        @Composable
+        fun Item(label: String, id: Int, onClick: () -> Unit = { mode.value = id; close() }) = NavigationDrawerItem(
+            label = { Text(text = label) },
+            selected = mode.value == id,
+            onClick = onClick,
+        )
+        ModalDrawerSheet {
+            Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
+            HorizontalDivider()
+            Item("\uD83D\uDDA8\uFE0FDevices", 0)
+            Item("📊Metrics", 1)
+            Item("⚙Settings", 99, onClick = SettingDialog { onChange(it) }.also { close() })
+        }
+    }
+) {
+    Column {
+        val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
+        TopAppBar(
+            navigationIcon = {
+                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                    Icon(Icons.Filled.PlayArrow, "drawer")
+                }
+            },
+            title = { Text("PAU", fontWeight = FontWeight.Bold, overflow = TextOverflow.Clip) },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            actions = {
+                MfpAddField(globalSnmpThrottle) { onChange(it) }
+                IconButton(onClick = { onChange(copy(mfps = emptyMap())) }) { Icon(Icons.Default.Delete, "delete") }
+                IconButton(onClick = SettingDialog { onChange(it) }) { Icon(Icons.Default.Settings, "settings") }
+            },
+        )
+        when (mode.value) {
+            0 -> DevList { onChange(it) }
+            1 -> SendLogGraph(listOf(Log(0, 0, 1, 3), Log(1, 2, 3, 4)))
+        }
+    }
+}
+
+@Composable
+fun AppData.DevList(onChange: (AppData) -> Unit) {
+    val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
     Row(Modifier.padding(4.dp).fillMaxWidth()) {
         val state = rememberScrollState()
         key(mfps, snmpRPS) {
@@ -80,14 +122,9 @@ fun AppData.MfpToolMain(onChange: (AppData) -> Unit) = Column {
 }
 
 @Composable
-fun AppData.SettingDialog(
+fun AppData.Settings(
     appData: MutableState<AppData> = remember { mutableStateOf(this) },
     onChange: (AppData) -> Unit
-) = AppDialog(
-    title = "Setting",
-    onConfirmed = { onChange(appData.value); closeDialog() },
-    onDismissed = { closeDialog() },
-    onOpen = { appData.value = this@SettingDialog },
 ) {
     var app by appData
 
@@ -108,7 +145,21 @@ fun AppData.SettingDialog(
         IntField(app.snmpRPS, "SNMP Rate[rps] (max $pps packets/s)") { app = app.copy(snmpRPS = it) }
         IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
         IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
+        onChange(app)
     }
+}
+
+@Composable
+fun AppData.SettingDialog(
+    appData: MutableState<AppData> = remember { mutableStateOf(this) },
+    onChange: (AppData) -> Unit
+) = AppDialog(
+    title = "Setting",
+    onConfirmed = { onChange(appData.value); closeDialog() },
+    onDismissed = { closeDialog() },
+    onOpen = { appData.value = this@SettingDialog },
+) {
+    Settings { appData.value = it }
 }
 
 val oidSysDescOid = "1.3.6"
@@ -145,7 +196,7 @@ fun Mfp.StatusRow(
         delay(Random.nextLong(199).milliseconds)
         while (true) {
             runCatching {
-                globalSnmpThrottle.runIntermittent  {
+                globalSnmpThrottle.runIntermittent {
                     snmpGetDevInfo(ip).onResponse {
                         errStatus = null
                         model = it.received.response[0].variable.toString()
@@ -187,9 +238,6 @@ fun OneShotColorAnimationSample(tColor: Pair<Color, Color>, update: MutableState
     }
     Box(modifier = Modifier.size(14.dp).background(animatedColor.value))
 }
-
-//fun String.toRange() = split("-").map { it.toIpV4ULong() }.let { it[0]..if (it.size == 1) it[0] else it[1] }
-//fun String.toRangeSet() = ULongRangeSet(split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { it.toRange() })
 
 @Composable
 fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
@@ -235,6 +283,33 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         }
     )
 }
+
+@Composable
+fun AppData.Search() = OutlinedTextField(
+    value = scanRange,
+    singleLine = true,
+    isError = isError,
+    label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
+    placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
+    suffix = {},
+    leadingIcon = {
+        val isMany =
+            runCatching { ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
+        IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
+            Icon(Icons.Default.Add, "Add")
+        }
+    },
+    trailingIcon = {
+        IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
+            Icon(Icons.Default.Search, "Search")
+        }
+    },
+    onValueChange = {
+        ip = it
+        runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
+    }
+)
+
 
 @OptIn(ExperimentalAtomicApi::class, ExperimentalTime::class)
 @Composable
@@ -312,9 +387,7 @@ fun AppData.SearchDialog(
     }
 }
 
-class AppDialogScope(
-    val closeDialog: () -> Unit
-)
+class AppDialogScope(val closeDialog: () -> Unit)
 
 @Composable
 fun AppDialog(
@@ -328,6 +401,7 @@ fun AppDialog(
     onOpen: (() -> Unit) = {},
     content: @Composable AppDialogScope.() -> Unit = { Text(text) },
 ): () -> Unit {
+
     var opened by remember { mutableStateOf(false) }
     if (opened) {
         AlertDialog(

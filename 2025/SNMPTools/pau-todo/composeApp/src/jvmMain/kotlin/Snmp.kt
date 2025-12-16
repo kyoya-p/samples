@@ -33,30 +33,6 @@ typealias SnmpEvent = ResponseEvent<UdpAddress>
 
 data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = null)
 
-// TODO
-// 呼び出しブロックによる流量調整Snmpクラス
-//class ThrottledSnmp @OptIn(ExperimentalTime::class) constructor(
-//    val snmp: Snmp,
-//    val rateLimiter: RateLimiter = RateLimiter(interval = 1.seconds, 1)
-//) {
-//    val reqQue = ArrayDeque<Request>(100)
-//    inline suspend fun send(
-//        pdu: PDU,
-//        target: SnmpTarget,
-//        userHandle: Any?,
-//        crossinline listener: (ResponseEvent<UdpAddress>) -> Unit
-//    ) {
-//        snmp.send(pdu, target, userHandle, localListener { listener(it) })
-//    }
-//
-//    fun cancel(request: PDU, listener: ResponseListener) = snmp.cancel(request, listener)
-//
-//    @Suppress("UNCHECKED_CAST")
-//    inline fun localListener(crossinline onResponse: (ResponseEvent<UdpAddress>) -> Unit) = object : ResponseListener {
-//        override fun <A : Address?> onResponse(event: ResponseEvent<A>) = onResponse(event as ResponseEvent<UdpAddress>)
-//    }
-//}
-
 fun Request(
     strAdr: String = "127.0.0.1",
     port: Int = 161,

@@ -1,10 +1,9 @@
-package jp.wjg.shokkaa.util
+package jp.wjg.shokkaa.snmp
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
-import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -20,16 +19,9 @@ import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.DragData
 import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.LinearGradient
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
-import io.github.koalaplot.core.ChartLayout
 import io.github.koalaplot.core.Symbol
-import io.github.koalaplot.core.bar.HorizontalBarPlot
-import io.github.koalaplot.core.bar.HorizontalBarPlotEntry
-import io.github.koalaplot.core.bar.VerticalBarPlot
 import io.github.koalaplot.core.line.LinePlot2
 import io.github.koalaplot.core.style.LineStyle
 import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
@@ -45,18 +37,17 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.protobuf.ProtoNumber
-import org.jetbrains.skia.GradientStyle
 import kotlin.math.max
 
-fun main() = application {
-    val alwaysOnTop = System.getProperty("app.alwaysOnTop", "false").toBoolean()
-    Window(onCloseRequest = ::exitApplication) {
-        App()
-    }
-}
+//fun main() = application {
+//    val alwaysOnTop = System.getProperty("app.alwaysOnTop", "false").toBoolean()
+//    Window(onCloseRequest = ::exitApplication) {
+//        App2()
+//    }
+//}
 
 @Serializable
-data class D @OptIn(ExperimentalSerializationApi::class) constructor(
+data class Log @OptIn(ExperimentalSerializationApi::class) constructor(
     @ProtoNumber(1) val n: Int, // 要求連番
     @ProtoNumber(2) val t0: Int, // 要求生成時刻
     @ProtoNumber(3) val t1: Int, // 送信時刻
@@ -65,10 +56,10 @@ data class D @OptIn(ExperimentalSerializationApi::class) constructor(
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalSerializationApi::class)
 @Composable
-fun App() = MaterialTheme {
+fun App2() = MaterialTheme {
     var sFile by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
-    val data = remember { mutableStateListOf<D>() }
+    val data = remember { mutableStateListOf<Log>() }
 
     LaunchedEffect(sFile) {
         loading = true
@@ -79,7 +70,7 @@ fun App() = MaterialTheme {
                     val path = Path(sFile)
                     if (SystemFileSystem.exists(path)) {
                         val srcData = SystemFileSystem.source(path).buffered().readByteArray()
-                        val dList = ProtoBuf.decodeFromByteArray<List<D>>(srcData)
+                        val dList = ProtoBuf.decodeFromByteArray<List<Log>>(srcData)
                         data.addAll(dList)
                     }
                 }.onFailure {
@@ -95,7 +86,7 @@ fun App() = MaterialTheme {
         Column(modifier = Modifier.padding(it)) {
             DropFileBox(onDrop = { sFile = it }) {
 //                sendRecvGraph(data1, data2)
-                sendLifeGraph(data)
+                SendLogGraph(data)
             }
         }
     }
@@ -149,13 +140,13 @@ fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
 
 @OptIn(ExperimentalKoalaPlotApi::class)
 @Composable
-fun sendLifeGraph(data1: List<D>) {
+fun SendLogGraph(data: List<Log>) {
     XYGraph(
-        rememberIntLinearAxisModel(0..(data1.maxOfOrNull { max(it.t1, it.t2) } ?: 1)),
-        rememberIntLinearAxisModel(0..(data1.maxOfOrNull { it.n } ?: 1)),
+        rememberIntLinearAxisModel(0..(data.maxOfOrNull { max(it.t1, it.t2) } ?: 1)),
+        rememberIntLinearAxisModel(0..(data.maxOfOrNull { it.n } ?: 1)),
     ) {
         val dot = @Composable { c: Color -> Symbol(size = 1.8.dp, fillBrush = SolidColor(c), outlineBrush = null) }
-        data1.forEach {
+        data.forEach {
             LinePlot2(
                 data = listOf(Point(it.t1, it.n), Point(it.t2, it.n)),
                 lineStyle = LineStyle(brush = SolidColor(Color.LightGray), strokeWidth = 1.dp),
@@ -163,7 +154,7 @@ fun sendLifeGraph(data1: List<D>) {
             )
         }
         LinePlot2(
-            data1.map { Point(it.t0, it.n) },
+            data.map { Point(it.t0, it.n) },
             symbol = { dot(Color.Black) }
         )
     }
