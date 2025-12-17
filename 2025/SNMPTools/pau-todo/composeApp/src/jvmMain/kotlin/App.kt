@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -27,6 +28,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -77,7 +80,7 @@ fun AppData.Main(
     }
 ) {
     Column {
-        val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
+        val globalSnmpThrottle = key(scanRate) { scanRate.toRateLimiter() }
         TopAppBar(
             navigationIcon = {
                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -101,14 +104,13 @@ fun AppData.Main(
 
 @Composable
 fun AppData.DevList(onChange: (AppData) -> Unit) {
-    val globalSnmpThrottle = key(snmpRPS) { RateLimiter(interval = 1.seconds / snmpRPS) }
     Row(Modifier.padding(4.dp).fillMaxWidth()) {
         val state = rememberScrollState()
-        key(mfps, snmpRPS) {
+        key(mfps, scanRate) {
             Column(Modifier.verticalScroll(state).weight(1f)) {
                 //LazyColumn不可。LazyColumnは画面表示中のMFPのみインスタン化するため非表示の機器は情報採取されない。
                 mfps.entries.forEach { (_, mfp) ->
-                    mfp.StatusRow(globalSnmpThrottle, updateInterval = updateInterval.seconds, onRemove = { ip ->
+                    mfp.StatusRow(scanRate.toRateLimiter(), updateInterval = updateInterval.seconds, onRemove = { ip ->
                         onChange(copy(mfps = mfps.toMutableMap().apply { remove(ip) }))
                     })
                 }
@@ -138,11 +140,22 @@ fun AppData.Settings(
             commStrV1, label = { Text("Community String") },
             onValueChange = { onChange(copy(commStrV1 = it)) })
     }
+
+    @Composable
+    fun ScanRateField(onChange: (String) -> Unit) = TextField(
+        value = app.scanRate,
+        onValueChange = { runCatching { onChange(it) }.getOrNull() },
+        label = @Composable { Text("xxx") },
+        isError = runCatching { app.scanRate.splitToInts().size != 2 }.getOrElse { false },
+        singleLine = true,
+    )
+
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        val pps = (app.scanSnmp.retries + 1) * app.snmpRPS
+        val (n, dMs) = app.scanRate.splitToInts()
+        val pps = (app.scanSnmp.retries + 1) * n * 1000 / dMs
         app.scanSnmp.SnmpConfigField { app = app.copy(scanSnmp = it) }
         IntField(app.updateInterval, "Update Interval[sec] (0=no update)") { app = app.copy(updateInterval = it) }
-        IntField(app.snmpRPS, "SNMP Rate[rps] (max $pps packets/s)") { app = app.copy(snmpRPS = it) }
+        ScanRateField { app = app.copy(scanRate = it) }
         IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
         IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
         onChange(app)
@@ -173,8 +186,7 @@ fun devInfoPdu(reqId: Int? = null) = PDU(
 fun scanPdu(reqId: Int? = null) = PDU(reqId = reqId)
 
 suspend fun snmpGetDevInfo(ip: String) =
-    snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4ULong().toInt()))
-//    snmpSend(Request(ip, devInfoPdu(ip.toIpV4ULong().toInt())))
+    snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4UInt().toInt()))
 
 @Composable
 fun Mfp.StatusRow(
@@ -243,7 +255,7 @@ fun OneShotColorAnimationSample(tColor: Pair<Color, Color>, update: MutableState
 fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
     fun AppData.addMfps(r: String) = onChange(
         copy(mfps = mfps.toMutableMap().apply {
-            r.toIpV4RangeSet().asFlatSequence { it + 1UL }.forEach { ip ->
+            r.toIpV4RangeSet().asFlatSequence { it + 1U }.forEach { ip ->
                 val adr = ip.toIpV4String()
                 this[adr] = Mfp(ip = adr, port = 161, v1CommStr = "public")
             }
@@ -255,9 +267,10 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
     val ipsStatus: String = runCatching {
         val nIpAdr = ip.toIpV4RangeSet().totalLength()
         val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
-        val tReqTotal = ((nIpAdr.toDouble().seconds / snmpRPS.toDouble() + tReq) * 10).inWholeSeconds.seconds / 10
+        val (n, d) = scanRate.splitToInts()
+        val tReqTotal = (d.milliseconds * n * nIpAdr.toInt() + tReq)
         if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
-    }.getOrElse { "" }
+    }.getOrElse { "-" }
     OutlinedTextField(
         ip,
         singleLine = true,
@@ -285,30 +298,37 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
 }
 
 @Composable
-fun AppData.Search() = OutlinedTextField(
-    value = scanRange,
-    singleLine = true,
-    isError = isError,
-    label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
-    placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
-    suffix = {},
-    leadingIcon = {
-        val isMany =
-            runCatching { ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
-        IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
-            Icon(Icons.Default.Add, "Add")
+fun AppData.Scanning(
+    enabled: Boolean = runCatching { scanRate.splitToInts().size == 2 }.getOrElse { false },
+    onChange: (AppData) -> Unit,
+) {
+    var running by remember { mutableStateOf(true) }
+    var cSend = 0
+    var cRes = 0
+    var status by remember { mutableStateOf("starting...") }
+    val snmp = defaultSenderSnmp
+    LaunchedEffect(Unit) {
+        val range = scanRange.toIpV4RangeSet()
+        val total = range.totalLength()
+        range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).map { ++cSend; Request() }.send(snmp).collect {
+            ++cRes
+            println(cRes)
+            status = "$cSend/$cRes/$total"
         }
-    },
-    trailingIcon = {
-        IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
-            Icon(Icons.Default.Search, "Search")
-        }
-    },
-    onValueChange = {
-        ip = it
-        runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
+        running = false
     }
-)
+    OutlinedTextField(
+        value = status,
+        singleLine = true,
+        label = { Text(scanRange) },
+        trailingIcon = {
+            IconButton(enabled = enabled, onClick = { onChange(copy(page = 0)) }) {
+                Icon(Icons.Default.Close, "close")
+            }
+        },
+        onValueChange = {}
+    )
+}
 
 
 @OptIn(ExperimentalAtomicApi::class, ExperimentalTime::class)
@@ -347,7 +367,7 @@ fun AppData.SearchDialog(
             }
         }
 
-        snmpSendFlow(scanRange.toIpV4RangeSet(), rps = snmpRPS, scrambleBlock = scanScrambleBlock) {
+        snmpSendFlow(scanRange.toIpV4RangeSet(), rateLimitter = rateLimiter, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),
@@ -445,12 +465,13 @@ fun IntField(
 
 @Serializable
 data class AppData(
+    val page: Int = 0, // 0=devList,1=Metrics
     val scanRange: String = "",
     val scanScrambleBlock: Int = 10,
     val scanSnmp: SnmpConfig = SnmpConfig(),
     val updateInterval: Int = 10,
     val mfps: Map<String, Mfp> = emptyMap(),
-    val snmpRPS: Int = 100,
+    val scanRate: String = "50/500", // r/ms
     val receiveBufferSize: Int = 1024 * 16,
 )
 

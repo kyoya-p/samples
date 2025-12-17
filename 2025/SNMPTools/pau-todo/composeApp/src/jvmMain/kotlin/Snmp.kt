@@ -17,6 +17,7 @@ import java.net.InetAddress
 import kotlin.coroutines.resume
 import kotlin.time.Clock.System.now
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
@@ -137,19 +138,22 @@ fun ULong.toIpV4Adr() = toUByteArray().toIpV4Adr()
 fun UInt.toIpV4String() = toUByteArray().joinToString(".")
 fun ULong.toIpV4String() = toUByteArray().joinToString(".")
 fun String.toIpV4Adr(): InetAddress = InetAddress.getByName(this)
-fun String.toIpV4ULong() = trim().ifEmpty { throw Exception("Exception: Empty '$this' ") }.toIpV4Adr().toIpV4ULong()
+
+//fun String.toIpV4ULong() = trim().ifEmpty { throw Exception("Exception: Empty '$this' ") }.toIpV4Adr().toIpV4ULong()
+fun String.toIpV4UInt() = trim().ifEmpty { throw Exception("Exception: Empty '$this' ") }.toIpV4Adr().toIpV4UInt()
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4UByteArray() = address.toUByteArray()
-fun InetAddress.toIpV4ULong() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
-fun InetAddress.toIpV4UInt() = address.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
+
+//fun InetAddress.toIpV4ULong() = addressss.fold(0UL) { a: ULong, e: Byte -> (a shl 8) + e.toUByte() }
+fun InetAddress.toIpV4UInt() = address.fold(0U) { a: UInt, e: Byte -> (a shl 8) + e.toUByte() }
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun InetAddress.toIpV4String() = toIpV4UByteArray().joinToString(".")
 
 class RateLimiter(
     val interval: Duration,
-    val unit: Int = 1,
+    val unit: Int,
     val origin: Instant = now(),
 ) {
     private val tokenChannel = Channel<Unit>(Channel.RENDEZVOUS)
@@ -173,6 +177,9 @@ class RateLimiter(
     }
 }
 
+fun String.splitToInts() = split("/", limit = 2).map { it.toInt() }.let { if (it.size == 1) it + listOf(1000) else it }
+fun String.toRateLimiter() = splitToInts().let { RateLimiter(it[1].milliseconds, unit = it[0]) }
+
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.throttled(rateLimiter: RateLimiter): Flow<T> = flow {
     chunked(rateLimiter.unit).collect { rateLimiter.runIntermittent { it.forEach { emit(it) } } }
@@ -182,15 +189,15 @@ fun <T> Flow<T>.throttled(rateLimiter: RateLimiter): Flow<T> = flow {
 fun snmpSendFlow(
     ipRange: IpV4RangeSet,
     snmp: Snmp = defaultSenderSnmp,
-    rps: Int,
+    rateLimitter: RateLimiter,
     scrambleBlock: Int,
-    requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
+    requestBuilder: (ip: UInt) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip) },
 ): Flow<Result> = callbackFlow {
-    fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
-        val mask = (1UL shl nBits) - 1UL
-        val rndTable = (0UL..mask).shuffled()
-        for (w in 0UL..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
-    }
+//    fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
+//        val mask = (1UL shl nBits) - 1UL
+//        val rndTable = (0UL..mask).shuffled()
+//        for (w in 0UL..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
+//    }
 
     var count = 0
     val total = ipRange.totalLength().toInt()
@@ -212,7 +219,7 @@ fun snmpSendFlow(
             if (count >= total) close()
         }
     }
-    ipRange.asFlatSequence().asFlow().scrambled(scrambleBlock).throttled(RateLimiter(1.seconds, rps))
+    ipRange.asUIntFlatSequence().asFlow().scrambled(scrambleBlock).throttled(rateLimitter)
         .collect { ip ->
             val req = requestBuilder(ip)
             snmp.send(req.pdu, req.target, req, listener)
