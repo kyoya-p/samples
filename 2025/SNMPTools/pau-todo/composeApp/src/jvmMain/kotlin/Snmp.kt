@@ -36,8 +36,9 @@ data class Request(val target: SnmpTarget, val pdu: PDU, val userData: Any? = nu
 
 fun Request(
     strAdr: String = "127.0.0.1",
+    inetAdr: InetAddress = InetAddress.getByName(strAdr),
     port: Int = 161,
-    udpAdr: UdpAddress = UdpAddress(InetAddress.getByName(strAdr), port),
+    udpAdr: UdpAddress = UdpAddress(inetAdr, port),
 
     reqType: Int = PDU.GETNEXT,
 
@@ -177,8 +178,7 @@ class RateLimiter(
     }
 }
 
-fun String.splitToInts() = split("/", limit = 2).map { it.toInt() }.let { if (it.size == 1) it + listOf(1000) else it }
-fun String.toRateLimiter() = splitToInts().let { RateLimiter(it[1].milliseconds, unit = it[0]) }
+fun AppData.rateLimiter() = scanRate().let { RateLimiter(it[1].milliseconds, unit = it[0]) }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T> Flow<T>.throttled(rateLimiter: RateLimiter): Flow<T> = flow {
@@ -193,12 +193,6 @@ fun snmpSendFlow(
     scrambleBlock: Int,
     requestBuilder: (ip: UInt) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip) },
 ): Flow<Result> = callbackFlow {
-//    fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
-//        val mask = (1UL shl nBits) - 1UL
-//        val rndTable = (0UL..mask).shuffled()
-//        for (w in 0UL..mask) collect { ip -> if (ip and mask == rndTable[w.toInt()]) emit(ip) }
-//    }
-
     var count = 0
     val total = ipRange.totalLength().toInt()
     val listener = object : ResponseListener {
@@ -222,7 +216,12 @@ fun snmpSendFlow(
     ipRange.asUIntFlatSequence().asFlow().scrambled(scrambleBlock).throttled(rateLimitter)
         .collect { ip ->
             val req = requestBuilder(ip)
-            snmp.send(req.pdu, req.target, req, listener)
+            runCatching {
+                snmp.send(req.pdu, req.target, req, listener)
+            }.onFailure {
+                ++count
+                if (count >= total) close()
+            }
         }
     awaitClose {}
 }.cancellable()

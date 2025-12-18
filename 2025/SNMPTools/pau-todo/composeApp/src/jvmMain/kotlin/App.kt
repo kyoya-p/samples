@@ -80,7 +80,7 @@ fun AppData.Main(
     }
 ) {
     Column {
-        val globalSnmpThrottle = key(scanRate) { scanRate.toRateLimiter() }
+        val globalSnmpThrottle = key(scanRate) { rateLimiter() }
         TopAppBar(
             navigationIcon = {
                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
@@ -110,7 +110,7 @@ fun AppData.DevList(onChange: (AppData) -> Unit) {
             Column(Modifier.verticalScroll(state).weight(1f)) {
                 //LazyColumn不可。LazyColumnは画面表示中のMFPのみインスタン化するため非表示の機器は情報採取されない。
                 mfps.entries.forEach { (_, mfp) ->
-                    mfp.StatusRow(scanRate.toRateLimiter(), updateInterval = updateInterval.seconds, onRemove = { ip ->
+                    mfp.StatusRow(rateLimiter(), updateInterval = updateInterval.seconds, onRemove = { ip ->
                         onChange(copy(mfps = mfps.toMutableMap().apply { remove(ip) }))
                     })
                 }
@@ -125,10 +125,10 @@ fun AppData.DevList(onChange: (AppData) -> Unit) {
 
 @Composable
 fun AppData.Settings(
-    appData: MutableState<AppData> = remember { mutableStateOf(this) },
+//    appData: MutableState<AppData> = remember { mutableStateOf(this) },
     onChange: (AppData) -> Unit
 ) {
-    var app by appData
+    var app by remember { mutableStateOf(this) }
 
     @Composable
     fun SnmpConfig.SnmpConfigField(onChange: (SnmpConfig) -> Unit) = Column {
@@ -142,20 +142,21 @@ fun AppData.Settings(
     }
 
     @Composable
-    fun ScanRateField(onChange: (String) -> Unit) = TextField(
-        value = app.scanRate,
-        onValueChange = { runCatching { onChange(it) }.getOrNull() },
-        label = @Composable { Text("xxx") },
-        isError = runCatching { app.scanRate.splitToInts().size != 2 }.getOrElse { false },
-        singleLine = true,
-    )
-
+    fun ScanRateField() {
+        val status =
+            runCatching { app.scanRate().let { "Scan Rate ( ${it[0]} req / ${it[1]} msec )" } }.getOrNull()
+        TextField(
+            value = app.scanRate,
+            onValueChange = { app = app.copy(scanRate = it) },
+            label = { Text(status ?: "-") },
+            isError = status == null,
+            singleLine = true,
+        )
+    }
     Column(Modifier.verticalScroll(rememberScrollState())) {
-        val (n, dMs) = app.scanRate.splitToInts()
-        val pps = (app.scanSnmp.retries + 1) * n * 1000 / dMs
         app.scanSnmp.SnmpConfigField { app = app.copy(scanSnmp = it) }
         IntField(app.updateInterval, "Update Interval[sec] (0=no update)") { app = app.copy(updateInterval = it) }
-        ScanRateField { app = app.copy(scanRate = it) }
+        ScanRateField()
         IntField(app.scanScrambleBlock, "Scan Scramble Block[0-16]") { app = app.copy(scanScrambleBlock = it) }
         IntField(app.receiveBufferSize, "Receive Buffer Size[Byte]") { app = app.copy(receiveBufferSize = it) }
         onChange(app)
@@ -168,6 +169,7 @@ fun AppData.SettingDialog(
     onChange: (AppData) -> Unit
 ) = AppDialog(
     title = "Setting",
+    validation = { appData.value.run { scanRate().size == 2 } },
     onConfirmed = { onChange(appData.value); closeDialog() },
     onDismissed = { closeDialog() },
     onOpen = { appData.value = this@SettingDialog },
@@ -262,70 +264,89 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
         })
     )
 
-    var ip by remember { mutableStateOf(scanRange) }
-    val isError = runCatching { ip.toIpV4RangeSet() }.isFailure
-    val ipsStatus: String = runCatching {
-        val nIpAdr = ip.toIpV4RangeSet().totalLength()
-        val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
-        val (n, d) = scanRate.splitToInts()
-        val tReqTotal = (d.milliseconds * n * nIpAdr.toInt() + tReq)
-        if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
-    }.getOrElse { "-" }
-    OutlinedTextField(
-        ip,
-        singleLine = true,
-        isError = isError,
-        label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
-        placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
-        suffix = {},
-        leadingIcon = {
-            val isMany =
-                runCatching { ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL }.getOrElse { true }
-            IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
-                Icon(Icons.Default.Add, "Add")
+    var scanning by remember { mutableStateOf(false) }
+
+    @Composable
+    fun RangeField() {
+        var ip by remember { mutableStateOf(scanRange) }
+        val isError = runCatching { ip.toIpV4RangeSet() }.isFailure
+        val ipsStatus: String = runCatching {
+            val nIpAdr = ip.toIpV4RangeSet().totalLength()
+            val tReq = scanSnmp.intervalMS.milliseconds * (scanSnmp.retries + 1)
+            val (n, d) = scanRate()
+            val tReqTotal = (tReq + nIpAdr.toInt().seconds / (n.seconds / d.milliseconds))
+            if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
+        }.getOrElse { "-" }
+        OutlinedTextField(
+            ip,
+            singleLine = true,
+            isError = isError,
+            label = { Text(if (ipsStatus == "") "Target Address" else ipsStatus) },
+            placeholder = { Text("e.g: 10.0.0.1-10.0.0.254,192.168.1.1") },
+            suffix = {},
+            leadingIcon = {
+                val isMany =
+                    runCatching {
+                        ip.toIpV4RangeSet().totalLength() + mfps.size.toULong() > 10_000UL
+                    }.getOrElse { true }
+                IconButton(enabled = !isError && !isMany, onClick = { addMfps(ip) }) {
+                    Icon(Icons.Default.Add, "Add")
+                }
+            },
+            trailingIcon = {
+                Row {
+                    IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
+                        Icon(Icons.Default.Search, "Search")
+                    }
+                    IconButton(enabled = !isError, onClick = { scanning = true }) {
+                        Icon(Icons.Default.Search, "Search")
+                    }
+                }
+            },
+            onValueChange = {
+                ip = it
+                runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
             }
-        },
-        trailingIcon = {
-            IconButton(enabled = !isError, onClick = SearchDialog(rateLimiter) { onChange(it) }) {
-                Icon(Icons.Default.Search, "Search")
-            }
-        },
-        onValueChange = {
-            ip = it
-            runCatching { ip.toIpV4RangeSet() }.onSuccess { onChange(copy(scanRange = ip)) }
-        }
-    )
+        )
+    }
+    when (scanning) {
+        false -> RangeField()
+        true -> Scanning(close = { scanning = false }) { onChange(it) }
+    }
 }
 
 @Composable
 fun AppData.Scanning(
-    enabled: Boolean = runCatching { scanRate.splitToInts().size == 2 }.getOrElse { false },
+    close: () -> Unit,
     onChange: (AppData) -> Unit,
 ) {
-    var running by remember { mutableStateOf(true) }
     var cSend = 0
     var cRes = 0
     var status by remember { mutableStateOf("starting...") }
     val snmp = defaultSenderSnmp
+    val range = scanRange.toIpV4RangeSet()
+    val total = range.totalLength()
+    fun status() = "$cRes res / $cSend send / $total"
+
     LaunchedEffect(Unit) {
-        val range = scanRange.toIpV4RangeSet()
-        val total = range.totalLength()
-        range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).map { ++cSend; Request() }.send(snmp).collect {
+        range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).throttled(rateLimiter()).map { ip ->
+            ++cSend
+            status = status()
+            Request(ip.toIpV4String())
+        }.send(snmp).collect {
+            println(it.request.target.address) //todo
             ++cRes
-            println(cRes)
-            status = "$cSend/$cRes/$total"
+            status = status()
         }
-        running = false
     }
+    @Composable
+    fun CloseButton(onClick: () -> Unit) = IconButton(onClick) { Icon(Icons.Default.Close, "close") }
+
     OutlinedTextField(
         value = status,
         singleLine = true,
         label = { Text(scanRange) },
-        trailingIcon = {
-            IconButton(enabled = enabled, onClick = { onChange(copy(page = 0)) }) {
-                Icon(Icons.Default.Close, "close")
-            }
-        },
+        trailingIcon = { CloseButton { close() } },
         onValueChange = {}
     )
 }
@@ -414,6 +435,7 @@ fun AppDialog(
     title: String? = null,
     text: String = "",
     onConfirmed: (suspend AppDialogScope.() -> Unit)? = null,
+    validation: () -> Boolean = { true },
     onDismissed: (suspend AppDialogScope.() -> Unit)? = null,
     onClosed: (suspend () -> Unit)? = null,
     titleWidget: (@Composable () -> Unit)? = title?.let { { Text(it) } },
@@ -430,7 +452,12 @@ fun AppDialog(
             title = titleWidget,
             text = { Column { AppDialogScope({ opened = false }).content() } },
             confirmButton = onConfirmed?.let { op ->
-                { Button({ scope.launch { AppDialogScope { opened = false }.op() } }) { Text("OK") } }
+                {
+                    Button(
+                        onClick = { scope.launch { AppDialogScope { opened = false }.op() } },
+                        enabled = runCatching { validation() }.getOrElse { false }
+                    ) { Text("OK") }
+                }
             } ?: {},
             dismissButton = onDismissed?.let { op ->
                 { Button({ scope.launch { AppDialogScope { opened = false }.op() } }) { Text("Cancel") } }
@@ -475,6 +502,10 @@ data class AppData(
     val receiveBufferSize: Int = 1024 * 16,
 )
 
+fun AppData.scanRate(): List<Int> =
+    scanRate.split("/", limit = 2).map { it.toInt() }.let { if (it.size == 1) it + listOf(1000) else it }
+
+
 @Serializable
 data class SnmpConfig(val intervalMS: Int = 5000, val retries: Int = 5, val commStrV1: String = "public")
 
@@ -485,7 +516,9 @@ val appHome = Path("${System.getProperty("user.home")}/.pau")
 val configFile = Path("$appHome/config.json")
 var config
     get() = runCatching {
-        Json.decodeFromString<AppData>(SystemFileSystem.source(configFile).buffered().readString())
+        Json.decodeFromString<AppData>(SystemFileSystem.source(configFile).buffered().readString()).apply {
+            require(scanRate()[0] >= 0)
+        }
     }.getOrElse { AppData() }
     set(a) = with(SystemFileSystem) {
         if (!exists(configFile)) createDirectories(configFile.parent!!)
