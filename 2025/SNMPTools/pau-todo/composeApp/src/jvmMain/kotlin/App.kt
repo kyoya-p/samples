@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package jp.wjg.shokkaa.snmp
 
 import androidx.compose.animation.Animatable
@@ -35,8 +37,10 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readString
 import kotlinx.io.writeString
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.protobuf.ProtoNumber
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 import kotlin.time.Clock.System.now
@@ -45,6 +49,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 @Composable
 fun App() = MaterialTheme {
@@ -52,12 +57,29 @@ fun App() = MaterialTheme {
     Scaffold { app.Main { app = it; config = app } }
 }
 
+
+// type PageModeに応じた数値定数定義(PageMode.DEVLIST=0, PageMode.METRICS=1)
+enum class PageMode { DEVLIST, METRICS, TIMECHART }
+
+@Serializable
+data class Log(
+    @ProtoNumber(1) val n: Int, // 要求連番
+    @ProtoNumber(2) val t0: Int, // 要求生成時刻
+    @ProtoNumber(3) val t1: Int, // 送信時刻
+    @ProtoNumber(4) val t2: Int, // コールバック時刻
+)
+
+data class Metrics(
+    val histgram: ArrayDeque<Int> = ArrayDeque(),
+    val logs: ArrayDeque<Log>,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppData.Main(
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
     scope: CoroutineScope = rememberCoroutineScope(),
-    mode: MutableState<Int> = remember { mutableStateOf(0) },
+    mode: MutableState<PageMode> = remember { mutableStateOf(PageMode.DEVLIST) },
     onChange: (AppData) -> Unit
 ) = ModalNavigationDrawer(
     drawerState = drawerState,
@@ -65,21 +87,27 @@ fun AppData.Main(
         fun close() = scope.launch { drawerState.close() }
 
         @Composable
-        fun Item(label: String, id: Int, onClick: () -> Unit = { mode.value = id; close() }) = NavigationDrawerItem(
-            label = { Text(text = label) },
-            selected = mode.value == id,
-            onClick = onClick,
-        )
+        fun Item(label: String, id: PageMode, onClick: () -> Unit = { mode.value = id; close() }) =
+            NavigationDrawerItem(
+                label = { Text(text = label) },
+                selected = mode.value == id,
+                onClick = onClick,
+            )
         ModalDrawerSheet {
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
-            Item("\uD83D\uDDA8\uFE0FDevices", 0)
-            Item("📊Metrics", 1)
-            Item("⚙Settings", 99, onClick = SettingDialog { onChange(it) }.also { close() })
+            Item("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
+            Item("📊Metrics", PageMode.METRICS)
+            Item("📊TImeChart", PageMode.TIMECHART)
+            Item("⚙Settings", mode.value, onClick = SettingDialog { onChange(it) }.also { close() })
         }
     }
 ) {
     Column {
+        var log = Metrics(
+            histgram = ArrayDeque(0),
+            logs = ArrayDeque(0)
+        )
         val globalSnmpThrottle = key(scanRate) { rateLimiter() }
         TopAppBar(
             navigationIcon = {
@@ -96,8 +124,10 @@ fun AppData.Main(
             },
         )
         when (mode.value) {
-            0 -> DevList { onChange(it) }
-            1 -> SendLogGraph(listOf(Log(0, 0, 1, 3), Log(1, 2, 3, 4)))
+            PageMode.DEVLIST -> DevList { onChange(it) }
+//            PageMode.METRICS -> SendLogGraph(log)
+            PageMode.METRICS -> FibonacciBarPlot()
+            PageMode.TIMECHART -> DynamicTimeSeriesChart()
         }
     }
 }
@@ -320,24 +350,31 @@ fun AppData.Scanning(
     close: () -> Unit,
     onChange: (AppData) -> Unit,
 ) {
+    var scanning by remember { mutableStateOf(true) }
     var cSend = 0
     var cRes = 0
     var status by remember { mutableStateOf("starting...") }
     val snmp = defaultSenderSnmp
     val range = scanRange.toIpV4RangeSet()
-    val total = range.totalLength()
-    fun status() = "$cRes res / $cSend send / $total"
+    val total = range.totalLength().toLong()
+    fun status() = "$cRes(${cRes * 100 / total}%) res / $cSend(${cSend * 100 / total}%) send / $total"
 
     LaunchedEffect(Unit) {
         range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).throttled(rateLimiter()).map { ip ->
             ++cSend
             status = status()
-            Request(ip.toIpV4String())
+            Request(
+                ip.toIpV4String(),
+                commStrV1 = scanSnmp.commStrV1,
+                nRetry = scanSnmp.retries,
+                interval = scanSnmp.intervalMS.milliseconds,
+            )
         }.send(snmp).collect {
             println(it.request.target.address) //todo
             ++cRes
             status = status()
         }
+        scanning = false
     }
     @Composable
     fun CloseButton(onClick: () -> Unit) = IconButton(onClick) { Icon(Icons.Default.Close, "close") }
@@ -346,6 +383,7 @@ fun AppData.Scanning(
         value = status,
         singleLine = true,
         label = { Text(scanRange) },
+        leadingIcon = { if (scanning) CircularProgressIndicator() },
         trailingIcon = { CloseButton { close() } },
         onValueChange = {}
     )

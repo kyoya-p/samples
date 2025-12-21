@@ -60,7 +60,6 @@ kotlin {
     }
 }
 
-
 compose.desktop {
     application {
         mainClass = "jp.wjg.shokkaa.snmp.MainJvmKt"

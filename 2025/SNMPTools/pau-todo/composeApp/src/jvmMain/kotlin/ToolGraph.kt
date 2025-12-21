@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package jp.wjg.shokkaa.snmp
 
 import androidx.compose.foundation.BorderStroke
@@ -7,10 +9,8 @@ import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -21,76 +21,16 @@ import androidx.compose.ui.draganddrop.dragData
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import io.github.koalaplot.core.ChartLayout
 import io.github.koalaplot.core.Symbol
+import io.github.koalaplot.core.animation.StartAnimationUseCase
+import io.github.koalaplot.core.bar.*
 import io.github.koalaplot.core.line.LinePlot2
-import io.github.koalaplot.core.style.LineStyle
 import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
 import io.github.koalaplot.core.xygraph.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.io.buffered
-import kotlinx.io.files.Path
-import kotlinx.io.files.SystemFileSystem
-import kotlinx.io.readByteArray
+import kotlinx.coroutines.delay
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.protobuf.ProtoBuf
-import kotlinx.serialization.protobuf.ProtoNumber
-import kotlin.math.max
-
-//fun main() = application {
-//    val alwaysOnTop = System.getProperty("app.alwaysOnTop", "false").toBoolean()
-//    Window(onCloseRequest = ::exitApplication) {
-//        App2()
-//    }
-//}
-
-@Serializable
-data class Log @OptIn(ExperimentalSerializationApi::class) constructor(
-    @ProtoNumber(1) val n: Int, // 要求連番
-    @ProtoNumber(2) val t0: Int, // 要求生成時刻
-    @ProtoNumber(3) val t1: Int, // 送信時刻
-    @ProtoNumber(4) val t2: Int, // コールバック時刻
-)
-
-@OptIn(ExperimentalFoundationApi::class, ExperimentalSerializationApi::class)
-@Composable
-fun App2() = MaterialTheme {
-    var sFile by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    val data = remember { mutableStateListOf<Log>() }
-
-    LaunchedEffect(sFile) {
-        loading = true
-        launch(Dispatchers.Default) {
-            if (sFile.isNotEmpty()) {
-                runCatching {
-                    data.clear()
-                    val path = Path(sFile)
-                    if (SystemFileSystem.exists(path)) {
-                        val srcData = SystemFileSystem.source(path).buffered().readByteArray()
-                        val dList = ProtoBuf.decodeFromByteArray<List<Log>>(srcData)
-                        data.addAll(dList)
-                    }
-                }.onFailure {
-                    it.printStackTrace()
-                }
-                loading = false
-            } else loading = false
-        }
-    }
-
-    Scaffold {
-        if (loading) CircularProgressIndicator()
-        Column(modifier = Modifier.padding(it)) {
-            DropFileBox(onDrop = { sFile = it }) {
-//                sendRecvGraph(data1, data2)
-                SendLogGraph(data)
-            }
-        }
-    }
-}
+import kotlin.random.Random
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -138,24 +78,118 @@ fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
     }
 }
 
+// Sample
 @OptIn(ExperimentalKoalaPlotApi::class)
 @Composable
-fun SendLogGraph(data: List<Log>) {
-    XYGraph(
-        rememberIntLinearAxisModel(0..(data.maxOfOrNull { max(it.t1, it.t2) } ?: 1)),
-        rememberIntLinearAxisModel(0..(data.maxOfOrNull { it.n } ?: 1)),
+fun FibonacciBarPlot() {
+    fun fibonacci() = generateSequence(0 to 1) { it.second to it.first + it.second }.map { it.second }
+    val fibonacci = remember { fibonacci().take(32) }
+
+    fun barChartEntries(): List<VerticalBarPlotEntry<Int, Int>> {
+        return buildList {
+            fibonacci.forEachIndexed { index, y ->
+                add(DefaultVerticalBarPlotEntry((index + 1), DefaultBarPosition(0, y)))
+            }
+        }
+    }
+
+    val barChartEntries = remember { barChartEntries() }
+
+    ChartLayout(
+        title = { "aaaa" }
     ) {
-        val dot = @Composable { c: Color -> Symbol(size = 1.8.dp, fillBrush = SolidColor(c), outlineBrush = null) }
-        data.forEach {
-            LinePlot2(
-                data = listOf(Point(it.t1, it.n), Point(it.t2, it.n)),
-                lineStyle = LineStyle(brush = SolidColor(Color.LightGray), strokeWidth = 1.dp),
-                symbol = { p -> dot(if (p.x == it.t1) Color.Blue else Color.Red) }
+        val XAxisRange = 0..fibonacci.count() + 1
+        val YAxisRange = 0..fibonacci.max()
+
+        XYGraph(
+            xAxisModel = IntLinearAxisModel(
+                XAxisRange,
+//                minimumMajorTickIncrement = 1,
+//                minimumMajorTickSpacing = 10.dp,
+//                minViewExtent = 3,
+//                minorTickCount = 0
+            ),
+            yAxisModel = IntLinearAxisModel(
+                YAxisRange,
+//                minimumMajorTickIncrement = 1,
+//                minorTickCount = 0
+            ),
+//            xAxisStyle = rememberAxisStyle(
+//                tickPosition = tickPositionState.horizontalAxis,
+//                color = Color.LightGray
+//            ),
+//            xAxisLabels = {
+//                if (!thumbnail) {
+//                    AxisLabel(it.toString(0), Modifier.padding(top = 2.dp))
+//                }
+//            },
+//            xAxisTitle = { "Position in Sequence" },
+//            yAxisStyle = rememberAxisStyle(tickPosition = tickPositionState.verticalAxis),
+//            yAxisLabels = {
+//                if (!thumbnail) AxisLabel(it.toString(1), Modifier.absolutePadding(right = 2.dp))
+//            },
+//            yAxisTitle = { "Value" },
+            verticalMajorGridLineStyle = null
+        ) {
+            VerticalBarPlot(
+                data = barChartEntries,
+                bar = { index, _, _ ->
+                    DefaultBar(
+                        brush = SolidColor(Color.Blue),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(barChartEntries[index].y.end.toString())
+                    }
+                },
+                barWidth = 0.8f
             )
         }
-        LinePlot2(
-            data.map { Point(it.t0, it.n) },
-            symbol = { dot(Color.Black) }
-        )
+    }
+}
+
+// データポイントの型定義（X軸：時間[Long], Y軸：値[Float]）
+data class TimeData(val timestamp: Long, val value: Float)
+
+// AI:Animationしない
+@OptIn(ExperimentalKoalaPlotApi::class)
+@Composable
+fun DynamicTimeSeriesChart() {
+    var plotData by remember { mutableStateOf(listOf<TimeData>()) }
+    var currentTime by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            val nextValue = Random.nextFloat() * 100f
+            val newData = TimeData(currentTime, nextValue)
+            plotData = (plotData + newData).takeLast(20)
+            currentTime++
+            delay(1000)
+        }
+    }
+
+    ChartLayout {
+        XYGraph(
+            xAxisModel = rememberLongLinearAxisModel(
+                range = (currentTime - 20)..currentTime+1
+            ),
+            yAxisModel = rememberFloatLinearAxisModel(range = 0f..100f),
+//                xAxisTitle = { Text("Time (s)") },
+//                yAxisTitle = { Text("Value") }
+        ) {
+            VerticalBarPlot(
+                data = plotData.map { DefaultVerticalBarPlotEntry(it.timestamp, DefaultBarPosition(0f, it.value)) },
+//                animationSpec = null,
+                bar = { index, _, _ ->
+                    DefaultBar(
+                        brush = SolidColor(Color.Blue),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(plotData[index].timestamp.toString()) }
+                },
+                startAnimationUseCase = StartAnimationUseCase(
+                    executionType = StartAnimationUseCase.ExecutionType.None
+                ) ,
+//                barWidth = 0.1f
+            )
+        }
     }
 }
