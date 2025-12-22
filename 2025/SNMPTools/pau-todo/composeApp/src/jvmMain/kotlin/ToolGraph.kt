@@ -2,6 +2,7 @@
 
 package jp.wjg.shokkaa.snmp
 
+import androidx.compose.animation.core.snap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
@@ -22,10 +23,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import io.github.koalaplot.core.ChartLayout
-import io.github.koalaplot.core.Symbol
 import io.github.koalaplot.core.animation.StartAnimationUseCase
 import io.github.koalaplot.core.bar.*
-import io.github.koalaplot.core.line.LinePlot2
+import io.github.koalaplot.core.style.KoalaPlotTheme
 import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
 import io.github.koalaplot.core.xygraph.*
 import kotlinx.coroutines.delay
@@ -65,30 +65,20 @@ fun DropFileBox(onDrop: (String) -> Unit = {}, content: @Composable ColumnScope.
     ) { Column { content() } }
 }
 
-@OptIn(ExperimentalKoalaPlotApi::class)
-@Composable
-fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
-    XYGraph(
-        rememberIntLinearAxisModel((data1 + data2).autoScaleXRange()),
-        rememberIntLinearAxisModel(data1.autoScaleYRange()),
-    ) {
-        val dot = @Composable { c: Color -> Symbol(size = 1.5.dp, fillBrush = SolidColor(c), outlineBrush = null) }
-        LinePlot2(data1, symbol = { dot(Color.Blue) })
-        LinePlot2(data2, symbol = { dot(Color.Red) })
-    }
-}
-
 // Sample
 @OptIn(ExperimentalKoalaPlotApi::class)
 @Composable
-fun FibonacciBarPlot() {
-    fun fibonacci() = generateSequence(0 to 1) { it.second to it.first + it.second }.map { it.second }
-    val fibonacci = remember { fibonacci().take(32) }
+fun IntFuncBarPlot(range: IntRange, func: (Int) -> Int) {
+    val data = remember { mutableStateListOf<Int>() }
 
     fun barChartEntries(): List<VerticalBarPlotEntry<Int, Int>> {
         return buildList {
-            fibonacci.forEachIndexed { index, y ->
-                add(DefaultVerticalBarPlotEntry((index + 1), DefaultBarPosition(0, y)))
+//            data.forEachIndexed { index, y ->
+//                add(DefaultVerticalBarPlotEntry(index, DefaultBarPosition(0, y)))
+//            }
+            range.forEach { x ->
+                data.add(func(x))
+                add(DefaultVerticalBarPlotEntry(x, DefaultBarPosition(0, func(x))))
             }
         }
     }
@@ -98,8 +88,8 @@ fun FibonacciBarPlot() {
     ChartLayout(
         title = { "aaaa" }
     ) {
-        val XAxisRange = 0..fibonacci.count() + 1
-        val YAxisRange = 0..fibonacci.max()
+        val XAxisRange = range.start - 1..range.endInclusive + 1
+        val YAxisRange = 0..(data.toList().maxOrNull() ?: 0) + 1
 
         XYGraph(
             xAxisModel = IntLinearAxisModel(
@@ -147,6 +137,65 @@ fun FibonacciBarPlot() {
     }
 }
 
+@OptIn(ExperimentalKoalaPlotApi::class)
+@Composable
+fun IntListBarPlot(data: List<Int>, range: IntRange = 0..data.lastIndex) = KoalaPlotTheme(animationSpec = snap()) {
+
+    val barChartEntries2 = range.map { x -> DefaultVerticalBarPlotEntry(x, DefaultBarPosition(0, data[x])) }
+
+    ChartLayout(
+        title = { "aaaa" }
+    ) {
+        val XAxisRange = range.start - 1..range.endInclusive + 1
+        val YAxisRange = 0..(data.toList().maxOrNull() ?: 0) + 1
+
+        XYGraph(
+            xAxisModel = IntLinearAxisModel(
+                XAxisRange,
+//                minimumMajorTickIncrement = 1,
+//                minimumMajorTickSpacing = 10.dp,
+//                minViewExtent = 3,
+//                minorTickCount = 0
+            ),
+            yAxisModel = IntLinearAxisModel(
+                YAxisRange,
+//                minimumMajorTickIncrement = 1,
+//                minorTickCount = 0
+            ),
+//            xAxisStyle = rememberAxisStyle(
+//                tickPosition = tickPositionState.horizontalAxis,
+//                color = Color.LightGray
+//            ),
+//            xAxisLabels = {
+//                if (!thumbnail) {
+//                    AxisLabel(it.toString(0), Modifier.padding(top = 2.dp))
+//                }
+//            },
+//            xAxisTitle = { "Position in Sequence" },
+//            yAxisStyle = rememberAxisStyle(tickPosition = tickPositionState.verticalAxis),
+//            yAxisLabels = {
+//                if (!thumbnail) AxisLabel(it.toString(1), Modifier.absolutePadding(right = 2.dp))
+//            },
+//            yAxisTitle = { "Value" },
+            verticalMajorGridLineStyle = null
+        ) {
+            VerticalBarPlot(
+                data = barChartEntries2,
+                bar = { index, _, _ ->
+                    DefaultBar(
+                        brush = SolidColor(Color.Blue),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(barChartEntries2[index].y.end.toString())
+                    }
+                },
+
+                barWidth = 1.001f,
+            )
+        }
+    }
+}
+
 // データポイントの型定義（X軸：時間[Long], Y軸：値[Float]）
 data class TimeData(val timestamp: Long, val value: Float)
 
@@ -170,7 +219,7 @@ fun DynamicTimeSeriesChart() {
     ChartLayout {
         XYGraph(
             xAxisModel = rememberLongLinearAxisModel(
-                range = (currentTime - 20)..currentTime+1
+                range = (currentTime - 20)..currentTime + 20
             ),
             yAxisModel = rememberFloatLinearAxisModel(range = 0f..100f),
 //                xAxisTitle = { Text("Time (s)") },
@@ -178,7 +227,6 @@ fun DynamicTimeSeriesChart() {
         ) {
             VerticalBarPlot(
                 data = plotData.map { DefaultVerticalBarPlotEntry(it.timestamp, DefaultBarPosition(0f, it.value)) },
-//                animationSpec = null,
                 bar = { index, _, _ ->
                     DefaultBar(
                         brush = SolidColor(Color.Blue),
@@ -187,8 +235,8 @@ fun DynamicTimeSeriesChart() {
                 },
                 startAnimationUseCase = StartAnimationUseCase(
                     executionType = StartAnimationUseCase.ExecutionType.None
-                ) ,
-//                barWidth = 0.1f
+                ),
+                barWidth = 0.8f,
             )
         }
     }

@@ -49,7 +49,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 @Composable
 fun App() = MaterialTheme {
@@ -123,14 +122,26 @@ fun AppData.Main(
                 IconButton(onClick = SettingDialog { onChange(it) }) { Icon(Icons.Default.Settings, "settings") }
             },
         )
+
+        val logs = remember { mutableStateListOf<Int>() }
+        LaunchedEffect(Unit) {
+            launch(Dispatchers.Default) {
+                val ts = now()
+                repeat(1000) {
+                    delay(1.seconds);
+                    logs.add((now() - ts).inWholeMilliseconds.toInt() % 120 )
+                }
+            }
+        }
         when (mode.value) {
             PageMode.DEVLIST -> DevList { onChange(it) }
-//            PageMode.METRICS -> SendLogGraph(log)
-            PageMode.METRICS -> FibonacciBarPlot()
+            PageMode.METRICS -> IntListBarPlot(logs)
             PageMode.TIMECHART -> DynamicTimeSeriesChart()
         }
     }
 }
+
+fun fibonacci(x: Int) = generateSequence(0 to 1) { it.second to it.first + it.second }.map { it.second }.drop(x).first()
 
 @Composable
 fun AppData.DevList(onChange: (AppData) -> Unit) {

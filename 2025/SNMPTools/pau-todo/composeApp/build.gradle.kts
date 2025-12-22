@@ -48,14 +48,13 @@ kotlin {
 
             implementation("org.snmp4j:snmp4j:3.9.6") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
 
-            implementation("io.github.koalaplot:koalaplot-core:0.10.3") // https://mvnrepository.com/artifact/io.github.koalaplot/koalaplot-core
+            implementation("io.github.koalaplot:koalaplot-core:0.10.4") // https://mvnrepository.com/artifact/io.github.koalaplot/koalaplot-core
         }
         jvmTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotest.runner.junit5)
             implementation(libs.kotest.assertions.core)
             implementation(libs.kotest.property)
-
         }
     }
 }
