@@ -174,16 +174,3 @@ class SnmpTest : FunSpec({
         j.cancelAndJoin()
     }
 })
-
-//@OptIn(ExperimentalKoalaPlotApi::class)
-//@Composable
-//fun sendRecvGraph(data1: List<Point<Int, Int>>, data2: List<Point<Int, Int>>) {
-//    XYGraph(
-//        rememberIntLinearAxisModel(data1.autoScaleXRange()),
-//        rememberIntLinearAxisModel((data1 + data2).autoScaleYRange()),
-//    ) {
-//        val dot = @Composable { c: Color -> Symbol(size = 1.dp, fillBrush = SolidColor(c), outlineBrush = null) }
-//        LinePlot2(data1, symbol = { dot(Color.Blue) })
-//        LinePlot2(data2, symbol = { dot(Color.Red) })
-//    }
-//}
