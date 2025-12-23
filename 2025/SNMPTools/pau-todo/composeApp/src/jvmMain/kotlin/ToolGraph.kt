@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -189,8 +190,7 @@ fun IntListBarPlot(data: List<Int>, range: IntRange = 0..data.lastIndex) = Koala
                         Text(barChartEntries2[index].y.end.toString())
                     }
                 },
-
-                barWidth = 1.001f,
+//                barWidth = 1.001f,
             )
         }
     }

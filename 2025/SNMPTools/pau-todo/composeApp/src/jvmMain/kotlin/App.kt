@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import io.github.koalaplot.sample.LiveTimeChart
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
@@ -72,6 +73,7 @@ data class Metrics(
     val histgram: ArrayDeque<Int> = ArrayDeque(),
     val logs: ArrayDeque<Log>,
 )
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,16 +129,16 @@ fun AppData.Main(
         LaunchedEffect(Unit) {
             launch(Dispatchers.Default) {
                 val ts = now()
-                repeat(1000) {
-                    delay(1.seconds);
-                    logs.add((now() - ts).inWholeMilliseconds.toInt() % 120 )
+                repeat(10000) {
+                    delay(100.milliseconds)
+                    logs.add((now() - ts).inWholeMilliseconds.toInt() % 120)
                 }
             }
         }
         when (mode.value) {
             PageMode.DEVLIST -> DevList { onChange(it) }
             PageMode.METRICS -> IntListBarPlot(logs)
-            PageMode.TIMECHART -> DynamicTimeSeriesChart()
+            PageMode.TIMECHART -> LiveTimeChart(false)
         }
     }
 }

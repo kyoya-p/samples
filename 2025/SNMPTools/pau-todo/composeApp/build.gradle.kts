@@ -34,6 +34,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutines)
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
 
@@ -42,6 +43,7 @@ kotlin {
             implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
             implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
             implementation("io.ktor:ktor-serialization-kotlinx-protobuf:$ktor_version")
+            implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
 
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
