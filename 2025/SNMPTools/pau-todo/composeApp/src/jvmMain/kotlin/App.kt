@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import io.github.koalaplot.core.xygraph.Point
 import io.github.koalaplot.sample.LiveTimeChart
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.asFlow
@@ -98,9 +99,9 @@ fun AppData.Main(
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
             PageSelect("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
-            PageSelect("📊Metrics", PageMode.METRICS)
+//            PageSelect("📊Metrics", PageMode.METRICS)
             PageSelect("📊TimeChart", PageMode.TIMECHART)
-            Button(SettingDialog { onChange(it) }.also { close() }) { Text("⚙Settings" ) }
+            NavigationDrawerItem({ Text("⚙Settings") }, false, SettingDialog { onChange(it) }.also { close() })
         }
     }
 ) {
@@ -116,7 +117,8 @@ fun AppData.Main(
                     Icon(Icons.Filled.PlayArrow, "drawer")
                 }
             },
-            title = { Text("PAU", fontWeight = FontWeight.Bold, overflow = TextOverflow.Clip) },
+            title = {},
+//            title = { Text("PAU", fontWeight = FontWeight.Bold, overflow = TextOverflow.Clip) },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             actions = {
                 MfpAddField(globalSnmpThrottle) { onChange(it) }
@@ -135,10 +137,11 @@ fun AppData.Main(
                 }
             }
         }
+        var v = 0
         when (mode.value) {
             PageMode.DEVLIST -> DevList { onChange(it) }
             PageMode.METRICS -> IntListBarPlot(logs)
-            PageMode.TIMECHART -> LiveTimeChart(false)
+            PageMode.TIMECHART -> LiveTimeChart { Point(now().toEpochMilliseconds(), v++) }
         }
     }
 }
@@ -320,7 +323,8 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
             val tReqTotal = (tReq + nIpAdr.toInt().seconds / (n.seconds / d.milliseconds))
             if (nIpAdr > 0UL) "$nIpAdr adr, ⌛ideal scan $tReqTotal" else ""
         }.getOrElse { "-" }
-        OutlinedTextField(
+        //OutlinedTextField(
+        TextField(
             ip,
             singleLine = true,
             isError = isError,
