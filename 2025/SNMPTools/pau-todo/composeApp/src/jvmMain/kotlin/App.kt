@@ -99,7 +99,7 @@ fun AppData.Main(
             HorizontalDivider()
             PageSelect("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
             PageSelect("📊Metrics", PageMode.METRICS)
-            PageSelect("📊TImeChart", PageMode.TIMECHART)
+            PageSelect("📊TimeChart", PageMode.TIMECHART)
             Button(SettingDialog { onChange(it) }.also { close() }) { Text("⚙Settings" ) }
         }
     }
