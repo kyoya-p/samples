@@ -88,7 +88,7 @@ fun AppData.Main(
         fun close() = scope.launch { drawerState.close() }
 
         @Composable
-        fun Item(label: String, id: PageMode, onClick: () -> Unit = { mode.value = id; close() }) =
+        fun PageSelect(label: String, id: PageMode, onClick: () -> Unit = { mode.value = id; close() }) =
             NavigationDrawerItem(
                 label = { Text(text = label) },
                 selected = mode.value == id,
@@ -97,10 +97,10 @@ fun AppData.Main(
         ModalDrawerSheet {
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
-            Item("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
-            Item("📊Metrics", PageMode.METRICS)
-            Item("📊TImeChart", PageMode.TIMECHART)
-            Item("⚙Settings", mode.value, onClick = SettingDialog { onChange(it) }.also { close() })
+            PageSelect("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
+            PageSelect("📊Metrics", PageMode.METRICS)
+            PageSelect("📊TImeChart", PageMode.TIMECHART)
+            Button(SettingDialog { onChange(it) }.also { close() }) { Text("⚙Settings" ) }
         }
     }
 ) {
