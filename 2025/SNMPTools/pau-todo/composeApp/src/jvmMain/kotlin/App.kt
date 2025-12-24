@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import io.github.koalaplot.sample.LiveTimeChart
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
@@ -73,6 +74,7 @@ data class Metrics(
     val logs: ArrayDeque<Log>,
 )
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppData.Main(
@@ -86,7 +88,7 @@ fun AppData.Main(
         fun close() = scope.launch { drawerState.close() }
 
         @Composable
-        fun Select(label: String, id: PageMode, onClick: () -> Unit = { mode.value = id; close() }) =
+        fun Item(label: String, id: PageMode, onClick: () -> Unit = { mode.value = id; close() }) =
             NavigationDrawerItem(
                 label = { Text(text = label) },
                 selected = mode.value == id,
@@ -95,9 +97,10 @@ fun AppData.Main(
         ModalDrawerSheet {
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
-            Select("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
-            Select("📊Metrics", PageMode.METRICS)
-            Button(onClick = SettingDialog { onChange(it) }.also { close() }) { Text("⚙Settings") }
+            Item("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
+            Item("📊Metrics", PageMode.METRICS)
+            Item("📊TImeChart", PageMode.TIMECHART)
+            Item("⚙Settings", mode.value, onClick = SettingDialog { onChange(it) }.also { close() })
         }
     }
 ) {
@@ -126,8 +129,8 @@ fun AppData.Main(
         LaunchedEffect(Unit) {
             launch(Dispatchers.Default) {
                 val ts = now()
-                repeat(1000) {
-                    delay(1.seconds);
+                repeat(10000) {
+                    delay(100.milliseconds)
                     logs.add((now() - ts).inWholeMilliseconds.toInt() % 120)
                 }
             }
@@ -135,7 +138,7 @@ fun AppData.Main(
         when (mode.value) {
             PageMode.DEVLIST -> DevList { onChange(it) }
             PageMode.METRICS -> IntListBarPlot(logs)
-            PageMode.TIMECHART -> DynamicTimeSeriesChart()
+            PageMode.TIMECHART -> LiveTimeChart(false)
         }
     }
 }
