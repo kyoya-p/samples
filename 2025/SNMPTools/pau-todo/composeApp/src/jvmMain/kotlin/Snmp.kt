@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package jp.wjg.shokkaa.snmp
 
 import kotlinx.coroutines.*
@@ -129,14 +131,12 @@ fun UByteArray.toIpV4Adr(): InetAddress = InetAddress.getByAddress(toByteArray()
 @OptIn(ExperimentalUnsignedTypes::class)
 fun UByteArray.toIpV4ULong(): ULong = fold(0UL) { a: ULong, e: UByte -> (a shl 8) + e }
 
-@OptIn(ExperimentalUnsignedTypes::class)
 fun UInt.toUByteArray() = UByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffU).toUByte() }
 fun ULong.toUByteArray() = UByteArray(4) { i -> ((this shr ((3 - i) * 8)) and 0xffUL).toUByte() }
 
-@OptIn(ExperimentalUnsignedTypes::class)
 fun ULong.toIpV4Adr() = toUByteArray().toIpV4Adr()
+fun UInt.toIpV4Adr() = toUByteArray().toIpV4Adr()
 
-@OptIn(ExperimentalUnsignedTypes::class)
 fun UInt.toIpV4String() = toUByteArray().joinToString(".")
 fun ULong.toIpV4String() = toUByteArray().joinToString(".")
 fun String.toIpV4Adr(): InetAddress = InetAddress.getByName(this)
@@ -235,7 +235,7 @@ fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackF
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
             ++cRes
             val res = runCatching {
-                val reqAdr = r.response?.requestID?.value?.toUInt()
+                val reqAdr = (r.userObject as Request).target.address.inetAddress.toIpV4UInt()
                 val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
                 @Suppress("UNCHECKED_CAST")
                 when {
@@ -248,9 +248,7 @@ fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackF
         }
     }
     val sendJob = launch {
-        onCompletion {
-            sendCmpl = true
-        }.collect { req ->
+        onCompletion { sendCmpl = true }.collect { req ->
             ++cSend
             snmp.send(req.pdu, req.target, req, listener)
         }

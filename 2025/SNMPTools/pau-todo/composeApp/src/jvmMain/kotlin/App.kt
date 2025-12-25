@@ -103,7 +103,6 @@ fun AppData.Main(
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
             PageSelect("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
-//            PageSelect("📊Metrics", PageMode.METRICS)
             PageSelect("📊TimeChart", PageMode.TIMECHART)
             NavigationDrawerItem({ Text("⚙Settings") }, false, SettingDialog { onChange(it) }.also { close() })
         }
@@ -367,10 +366,7 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
 }
 
 @Composable
-fun AppData.Scanning(
-    close: () -> Unit,
-    onChange: (AppData) -> Unit,
-) {
+fun AppData.Scanning(close: () -> Unit, onChange: (AppData) -> Unit) {
     var scanning by remember { mutableStateOf(true) }
     var cSend = 0
     var cRes = 0
@@ -378,14 +374,14 @@ fun AppData.Scanning(
     val snmp = defaultSenderSnmp
     val range = scanRange.toIpV4RangeSet()
     val total = range.totalLength().toLong()
-    fun status() = "$cRes(${cRes * 100 / total}%) res / $cSend(${cSend * 100 / total}%) send / $total"
+    fun status() = "$cRes(${cRes * 100 / total}%) res / $cSend(${cSend * 100 / total}%) send / $total adr"
 
     LaunchedEffect(Unit) {
         range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).throttled(rateLimiter()).map { ip ->
             ++cSend
             status = status()
             Request(
-                ip.toIpV4String(),
+                inetAdr = ip.toIpV4Adr(),
                 commStrV1 = scanSnmp.commStrV1,
                 nRetry = scanSnmp.retries,
                 interval = scanSnmp.intervalMS.milliseconds,
@@ -411,6 +407,8 @@ fun AppData.Scanning(
             }
         }
         scanning = false
+        delay(3.seconds)
+        close()
     }
     @Composable
     fun CloseButton(onClick: () -> Unit) = IconButton(onClick) { Icon(Icons.Default.Close, "close") }
@@ -418,7 +416,7 @@ fun AppData.Scanning(
     TextField(
         value = status,
         singleLine = true,
-        label = { Text(scanRange) },
+//        label = { Text(scanRange) },
         leadingIcon = { if (scanning) CircularProgressIndicator() },
         trailingIcon = { CloseButton { close() } },
         onValueChange = {}
