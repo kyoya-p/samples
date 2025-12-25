@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.filled.AddReaction
+import androidx.compose.material.icons.filled.AddRoad
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ZoomIn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -346,7 +350,7 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
                         Icon(Icons.Default.Search, "Search")
                     }
                     IconButton(enabled = !isError, onClick = { scanning = true }) {
-                        Icon(Icons.Default.Search, "Search")
+                        Icon(Icons.Default.ZoomIn, "Search add")
                     }
                 }
             },
@@ -386,17 +390,32 @@ fun AppData.Scanning(
                 nRetry = scanSnmp.retries,
                 interval = scanSnmp.intervalMS.milliseconds,
             )
-        }.send(snmp).collect {
-            println(it.request.target.address) //todo
+        }.send(snmp).collect { res ->
             ++cRes
             status = status()
+            res.onResponse { "Resp: $it" }
+            when (res) {
+                is Result.Response -> {
+                    launch(Dispatchers.Main) {
+                        println("Res: ${res.request.target.address}") //todo
+                        onChange(copy(mfps = mfps.toMutableMap().also {
+                            val ip = res.request.target.address.inetAddress.toIpV4String()
+                            it[ip] = Mfp(ip = ip, port = scanSnmp.port, v1CommStr = scanSnmp.commStrV1)
+                        }))
+                    }
+                }
+
+//                is Result.Timeout -> {} //todo
+//                is Result.Exception -> println(res)//todo
+                else -> {}
+            }
         }
         scanning = false
     }
     @Composable
     fun CloseButton(onClick: () -> Unit) = IconButton(onClick) { Icon(Icons.Default.Close, "close") }
 
-    OutlinedTextField(
+    TextField(
         value = status,
         singleLine = true,
         label = { Text(scanRange) },
@@ -562,7 +581,12 @@ fun AppData.scanRate(): List<Int> =
 
 
 @Serializable
-data class SnmpConfig(val intervalMS: Int = 5000, val retries: Int = 5, val commStrV1: String = "public")
+data class SnmpConfig(
+    val intervalMS: Int = 5000,
+    val retries: Int = 5,
+    val commStrV1: String = "public",
+    val port: Int = 161,
+)
 
 @Serializable
 data class Mfp(val ip: String, val port: Int, val v1CommStr: String)

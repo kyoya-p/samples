@@ -77,9 +77,10 @@ fun PDU(
 sealed class Result(val request: Request) {
     class Response(request: Request, val received: SnmpEvent) : Result(request)
     class Timeout(request: Request) : Result(request)
+    class Exception(request: Request, val ex: Throwable) : Result(request)
 
     fun onResponse(op: (Response) -> Any?): Result = also { if (it is Response) op(it) }
-    fun getResponseOrNull() = if (this is Response) received else null
+    fun onException(op: (Exception) -> Any?): Result = also { if (it is Exception) op(it) }
     fun onTimeout(op: (Timeout) -> Any?): Result = also { if (it is Timeout) op(it) }
 }
 
@@ -197,7 +198,6 @@ fun snmpSendFlow(
     val total = ipRange.totalLength().toInt()
     val listener = object : ResponseListener {
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-            ++count
             runCatching {
                 val reqAdr = r.response?.requestID?.value?.toUInt()
                 val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
@@ -209,8 +209,8 @@ fun snmpSendFlow(
                 }
                 trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
                 snmp.cancel(r.request, this)
-            }.onFailure { it.printStackTrace() }
-            if (count >= total) close()
+            }.onFailure { /* Ignored */ }
+            if (++count >= total) close()
         }
     }
     ipRange.asUIntFlatSequence().asFlow().scrambled(scrambleBlock).throttled(rateLimitter)
@@ -218,10 +218,8 @@ fun snmpSendFlow(
             val req = requestBuilder(ip)
             runCatching {
                 snmp.send(req.pdu, req.target, req, listener)
-            }.onFailure {
-                ++count
-                if (count >= total) close()
-            }
+            }.onFailure { /* Ignored */ }
+            if (++count >= total) close()
         }
     awaitClose {}
 }.cancellable()
@@ -229,42 +227,38 @@ fun snmpSendFlow(
 typealias Ipv4Int = UInt
 
 @OptIn(ExperimentalUnsignedTypes::class)
-fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> =
-    callbackFlow {
-        var cSend = 0
-        var cRes = 0
-        var sendCmpl = false
-        val listener = object : ResponseListener {
-            override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-                ++cRes
-                runCatching {
-                    val reqAdr = r.response?.requestID?.value?.toUInt()
-                    val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
-
-                    @Suppress("UNCHECKED_CAST")
-                    val res = when {
-                        resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
-                        else -> Result.Timeout(r.userObject as Request)
-                    }
-                    trySendBlocking(res)
-                }.onFailure { it.printStackTrace() }
-                if (sendCmpl && cRes >= cSend) this@callbackFlow.close()
-            }
+fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackFlow {
+    var cSend = 0
+    var cRes = 0
+    var sendCmpl = false
+    val listener = object : ResponseListener {
+        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
+            ++cRes
+            val res = runCatching {
+                val reqAdr = r.response?.requestID?.value?.toUInt()
+                val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
+                @Suppress("UNCHECKED_CAST")
+                when {
+                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
+                    else -> Result.Timeout(r.userObject as Request)
+                }
+            }.getOrElse { Result.Exception(r.userObject as Request, it) }
+            trySendBlocking(res)
+            if (sendCmpl && cRes >= cSend) this@callbackFlow.close()
         }
-        val sendJob = launch {
-            onCompletion {
-                println("act=cmpl $cSend")
-                sendCmpl = true
-            }.collect { req ->
-                ++cSend
-                snmp.send(req.pdu, req.target, req, listener)
-            }
-            println("c=$cSend")
+    }
+    val sendJob = launch {
+        onCompletion {
+            sendCmpl = true
+        }.collect { req ->
+            ++cSend
+            snmp.send(req.pdu, req.target, req, listener)
         }
-        awaitClose {
-            sendJob.cancel()
-        }
-    }.cancellable()
+    }
+    awaitClose {
+        sendJob.cancel()
+    }
+}.cancellable()
 
 
 //suspend fun snmpSend(req: Request, snmp: Snmp = defaultSenderSnmp) = suspendCancellableCoroutine { conti ->
