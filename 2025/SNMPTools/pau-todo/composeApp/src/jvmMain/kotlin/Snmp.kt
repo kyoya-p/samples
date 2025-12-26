@@ -190,7 +190,7 @@ fun <T> Flow<T>.throttled(rateLimiter: RateLimiter): Flow<T> = flow {
 fun snmpSendFlow(
     ipRange: IpV4RangeSet,
     snmp: Snmp = defaultSenderSnmp,
-    rateLimitter: RateLimiter,
+    rateLimiter: RateLimiter,
     scrambleBlock: Int,
     requestBuilder: (ip: UInt) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip) },
 ): Flow<Result> = callbackFlow {
@@ -213,12 +213,12 @@ fun snmpSendFlow(
             if (++count >= total) close()
         }
     }
-    ipRange.asUIntFlatSequence().asFlow().scrambled(scrambleBlock).throttled(rateLimitter)
+    ipRange.asUIntFlatSequence().asFlow().scrambled(scrambleBlock).throttled(rateLimiter)
         .collect { ip ->
             val req = requestBuilder(ip)
             runCatching {
                 snmp.send(req.pdu, req.target, req, listener)
-            }.onFailure { /* Ignored */ }
+            }.onFailure { println("Error: $it") }//todo
             if (++count >= total) close()
         }
     awaitClose {}
@@ -258,19 +258,3 @@ fun Flow<Request>.send(snmp: Snmp = defaultSenderSnmp): Flow<Result> = callbackF
     }
 }.cancellable()
 
-
-//suspend fun snmpSend(req: Request, snmp: Snmp = defaultSenderSnmp) = suspendCancellableCoroutine { conti ->
-//    val listener = object : ResponseListener {
-//        override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
-//            runCatching {
-//                @Suppress("UNCHECKED_CAST")
-//                when {
-//                    r.response == null -> conti.resume(Result.Timeout(r.userObject as Request))
-//                    else -> conti.resume(Result.Response(r.userObject as Request, r as SnmpEvent))
-//                }
-//                snmp.cancel(r.request, this)
-//            }.onFailure { it.printStackTrace() }
-//        }
-//    }
-//    snmp.send(req.pdu, req.target, req, listener)
-//}

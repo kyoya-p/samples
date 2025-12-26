@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddBox
-import androidx.compose.material.icons.filled.AddReaction
-import androidx.compose.material.icons.filled.AddRoad
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,8 +26,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import io.github.koalaplot.core.xygraph.Point
@@ -99,20 +94,17 @@ fun AppData.Main(
                 selected = mode.value == id,
                 onClick = onClick,
             )
+
         ModalDrawerSheet {
             Text("SNMP Scanner", modifier = Modifier.padding(16.dp))
             HorizontalDivider()
             PageSelect("\uD83D\uDDA8\uFE0FDevices", PageMode.DEVLIST)
-            PageSelect("📊TimeChart", PageMode.TIMECHART)
+            PageSelect("📊Time Chart [TODO]", PageMode.TIMECHART)
             NavigationDrawerItem({ Text("⚙Settings") }, false, SettingDialog { onChange(it) }.also { close() })
         }
     }
 ) {
     Column {
-        var log = Metrics(
-            histgram = ArrayDeque(0),
-            logs = ArrayDeque(0)
-        )
         val globalSnmpThrottle = key(scanRate) { rateLimiter() }
         TopAppBar(
             navigationIcon = {
@@ -359,14 +351,25 @@ fun AppData.MfpAddField(rateLimiter: RateLimiter, onChange: (AppData) -> Unit) {
             }
         )
     }
+
+    val devs = remember { mutableStateMapOf<String, Mfp>().apply { putAll(mfps) } }
     when (scanning) {
         false -> RangeField()
-        true -> Scanning(close = { scanning = false }) { onChange(it) }
+        true -> Scanning(close = { scanning = false }) { ip ->
+            val newMfp = Mfp(ip.toIpV4String(), 161, "public")
+//            val newMfps = mfps.toMutableMap().also { it[ip.toIpV4String()] = newMfp }
+            devs[ip.toIpV4String()] = newMfp
+            println("NEW ${newMfp}  ") //todo
+            onChange(copy(mfps = devs))
+        }
     }
 }
 
 @Composable
-fun AppData.Scanning(close: () -> Unit, onChange: (AppData) -> Unit) {
+fun AppData.Scanning(
+    close: () -> Unit,
+    onDetected: (ip: UInt) -> Unit
+) {
     var scanning by remember { mutableStateOf(true) }
     var cSend = 0
     var cRes = 0
@@ -389,20 +392,13 @@ fun AppData.Scanning(close: () -> Unit, onChange: (AppData) -> Unit) {
         }.send(snmp).collect { res ->
             ++cRes
             status = status()
-            res.onResponse { "Resp: $it" }
             when (res) {
                 is Result.Response -> {
-                    launch(Dispatchers.Main) {
-                        println("Res: ${res.request.target.address}") //todo
-                        onChange(copy(mfps = mfps.toMutableMap().also {
-                            val ip = res.request.target.address.inetAddress.toIpV4String()
-                            it[ip] = Mfp(ip = ip, port = scanSnmp.port, v1CommStr = scanSnmp.commStrV1)
-                        }))
+                    launch {
+                        onDetected(res.received.peerAddress.inetAddress.toIpV4UInt())
                     }
                 }
 
-//                is Result.Timeout -> {} //todo
-//                is Result.Exception -> println(res)//todo
                 else -> {}
             }
         }
@@ -429,7 +425,7 @@ fun AppData.Scanning(close: () -> Unit, onChange: (AppData) -> Unit) {
 fun AppData.SearchDialog(
     rateLimiter: RateLimiter,
     addMfps: AppData.(Set<String>) -> Map<String, Mfp> = { ips ->
-        mfps.toMutableMap().also { ips.map { ip -> it[ip] = Mfp(ip, 161, "public") } }
+        mfps.toMutableMap().also { map -> ips.forEach { ip -> map[ip] = Mfp(ip, 161, "public") } }
     },
     ips: SnapshotStateMap<String, String> = remember { mutableStateMapOf() },
     onChange: (AppData) -> Unit,
@@ -460,7 +456,7 @@ fun AppData.SearchDialog(
             }
         }
 
-        snmpSendFlow(scanRange.toIpV4RangeSet(), rateLimitter = rateLimiter, scrambleBlock = scanScrambleBlock) {
+        snmpSendFlow(scanRange.toIpV4RangeSet(), rateLimiter = rateLimiter, scrambleBlock = scanScrambleBlock) {
             ++cSend
             Request(
                 strAdr = it.toIpV4String(),
