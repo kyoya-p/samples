@@ -69,12 +69,6 @@ data class Log(
     @ProtoNumber(4) val t2: Int, // コールバック時刻
 )
 
-data class Metrics(
-    val histgram: ArrayDeque<Int> = ArrayDeque(),
-    val logs: ArrayDeque<Log>,
-)
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppData.Main(
@@ -140,8 +134,6 @@ fun AppData.Main(
         }
     }
 }
-
-fun fibonacci(x: Int) = generateSequence(0 to 1) { it.second to it.first + it.second }.map { it.second }.drop(x).first()
 
 @Composable
 fun AppData.DevList(onChange: (AppData) -> Unit) {
@@ -378,11 +370,16 @@ fun AppData.Scanning(
     val range = scanRange.toIpV4RangeSet()
     val total = range.totalLength().toLong()
     fun status() = "$cRes(${cRes * 100 / total}%) res / $cSend(${cSend * 100 / total}%) send / $total adr"
-
     LaunchedEffect(Unit) {
+        val monitor = launch {
+            while (isActive) {
+                status = status()
+                delay(500.milliseconds)
+            }
+        }
+
         range.asUIntFlatSequence().asFlow().scrambled(scanScrambleBlock).throttled(rateLimiter()).map { ip ->
             ++cSend
-            status = status()
             Request(
                 inetAdr = ip.toIpV4Adr(),
                 commStrV1 = scanSnmp.commStrV1,
@@ -391,19 +388,15 @@ fun AppData.Scanning(
             )
         }.send(snmp).collect { res ->
             ++cRes
-            status = status()
             when (res) {
-                is Result.Response -> {
-                    launch {
-                        onDetected(res.received.peerAddress.inetAddress.toIpV4UInt())
-                    }
-                }
-
+                is Result.Response -> launch { onDetected(res.received.peerAddress.inetAddress.toIpV4UInt()) }
                 else -> {}
             }
         }
         scanning = false
+        status = status()
         delay(3.seconds)
+        monitor.cancelAndJoin()
         close()
     }
     @Composable
@@ -412,7 +405,7 @@ fun AppData.Scanning(
     TextField(
         value = status,
         singleLine = true,
-//        label = { Text(scanRange) },
+        label = { Text(scanRange) },
         leadingIcon = { if (scanning) CircularProgressIndicator() },
         trailingIcon = { CloseButton { close() } },
         onValueChange = {}
@@ -474,7 +467,6 @@ fun AppData.SearchDialog(
             }
         }
         job.cancelAndJoin()
-        val t = (now() - start).inWholeSeconds
         msgCount = msgCount()
         running = false
     }
