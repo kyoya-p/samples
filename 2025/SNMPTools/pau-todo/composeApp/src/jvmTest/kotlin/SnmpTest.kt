@@ -1,132 +1,176 @@
+package jp.wjg.shokkaa.snmp.jvm
+
+import io.github.koalaplot.core.util.ExperimentalKoalaPlotApi
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
-import jp.wjg.shokkaa.snmp.toIpV4String
-import jp.wjg.shokkaa.snmp.toIpV4UInt
-import kotlinx.coroutines.delay
-import org.snmp4j.CommandResponder
-import org.snmp4j.CommandResponderEvent
-import org.snmp4j.Snmp
-import org.snmp4j.security.SecurityProtocols
-import org.snmp4j.security.USM
-import org.snmp4j.smi.OctetString
-import org.snmp4j.transport.DefaultUdpTransportMapping
-import io.kotest.matchers.shouldNotBe
-import jp.wjg.shokkaa.snmp.MessageProcessingModel
-import jp.wjg.shokkaa.snmp.Result
-import jp.wjg.shokkaa.snmp.SnmpReceived
-import jp.wjg.shokkaa.snmp.UdpAddress
+import io.kotest.matchers.ranges.shouldBeIn
+import jp.wjg.shokkaa.snmp.*
+import jp.wjg.shokkaa.snmp.Log
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.snmp4j.CommunityTarget
-import org.snmp4j.PDU
-import org.snmp4j.mp.MPv3
-import org.snmp4j.mp.StatusInformation
-import org.snmp4j.security.SecurityModels
-import org.snmp4j.smi.Address
-import org.snmp4j.smi.OID
-import org.snmp4j.smi.VariableBinding
+import kotlinx.io.buffered
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.files.Path
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
+import org.snmp4j.smi.UdpAddress
+import java.net.InetAddress
+import kotlin.time.Clock.System.now
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.microseconds
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+import kotlin.time.measureTime
 
+@OptIn(ExperimentalKoalaPlotApi::class, ExperimentalSerializationApi::class)
 class SnmpTest : FunSpec({
-    test("Snmp IP") {
-        "1.2.3.4".toIpV4UInt() shouldBe 0x01_02_03_04u
-        "255.255.255.255".toIpV4UInt() shouldBe 0xff_ff_ff_ffu
-        "0.0.0.1000".toIpV4UInt() shouldBe 1000u // Not the usual way
+    fun around(d: Duration) = (d / 1.1)..(d * 1.1)
+    fun Instant.lap() = (now() - this).inWholeMilliseconds.toInt()
 
-        0x04_03_02_01u.toIpV4String() shouldBe "4.3.2.1"
-        0xff_ff_ff_ffu.toIpV4String() shouldBe "255.255.255.255"
+    test("RateLimiter0") {
+        val ts = now()
+        val src = (0..<10).asFlow().onEach { delay(1.milliseconds) }.map { now() - ts }
+        measureTime {
+            src.buffer().collectIndexed { i, e ->
+                println("$e - ${now() - ts}")
+            }
+        } shouldBeIn 0.microseconds..500.milliseconds
+    }
+    test("RateLimiter1") {
+        val ts = now()
+        val src = (0..<10).asFlow().map { now() - ts }
+        measureTime {
+            src.throttled(RateLimiter(100.milliseconds, 1)).collectIndexed { i, e ->
+                println("$e - ${now() - ts}")
+                e shouldBeIn 100.milliseconds * i..100.milliseconds * (i + 1)
+            }
+        } shouldBeIn around(1000.milliseconds)
+    }
+    test("RateLimiter2") {
+        val ts = now()
+        val src = (0..<10).asFlow().onEach { delay(1.milliseconds) }.map { now() - ts }
+        measureTime {
+            src.throttled(RateLimiter(100.milliseconds, 3)).collectIndexed { i, e ->
+                println("$e - ${now() - ts}")
+                e shouldBeIn 100.milliseconds * (i / 3)..100.milliseconds * (i / 3 + 1)
+            }
+        } shouldBeIn around(400.milliseconds)
     }
 
-    test("Snmp Agent") {
-        val port = 16100
-        val community = "public"
-        val oid = ".1.3.6.1.2.1.1.1.0"
-        val responseText = "Hello SNMP"
+    suspend fun snmpFlowTester(testName: String, tStart: Instant, src: Flow<Request>) {
+        val fRes = SystemFileSystem.sink(Path("build/$testName.pb")).buffered()
+        val listData = mutableListOf<Log>()
+        val snmp = createDefaultSenderSnmp()
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        src.map { r -> r.copy(userData = (r.userData as Log).copy(t1 = tStart.lap())) }
+            .send(snmp).collect { res ->
+//            when (res) {
+//                is Result.Response -> println("Response ${res.received.response}")
+//                is Result.Timeout -> println("Timeout ${res.request}")
+//            }
+                val d0 = res.request.userData as Log
+                val d = d0.copy(t2 = tStart.lap())
+                listData.addLast(d)
+            }
+        fRes.write(ProtoBuf.encodeToByteArray(listData))
+        fRes.close()
+    }
 
-        // Start Agent
-        val agJob = launch(Dispatchers.IO) {
-            snmpReceiver("127.0.0.1/$port") { recv ->
-                val pdu = recv.pdu
-                if (pdu != null) {
-                    val responsePdu = PDU(pdu)
-                    responsePdu.type = PDU.RESPONSE
-                    responsePdu.errorStatus = PDU.noError
-                    responsePdu.errorIndex = 0
-                    responsePdu.variableBindings.firstOrNull()?.let { vb ->
-                        vb.variable = OctetString(responseText)
-                    }
-                    messageDispatcher.returnResponsePdu<UdpAddress>(
-                        recv.mpModelCode,
-                        recv.secModel,
-                        recv.secName,
-                        recv.secLevel,
-                        responsePdu,
-                        recv.maxSizeResponseScopedPDU,
-                        recv.stateReference,
-                        StatusInformation()
-                    )
-                }
+    test("SnmpSend-0 unlimited") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val ts = now()
+        val src = (0U..<10_000U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }
+        snmpFlowTester("SnmpSend-0", ts, src)
+    }
+
+    test("SnmpSend-1 1000r/0.5s") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 0.5.seconds, unit = 1000)
+        val ts = now()
+        val src = (0U..<10_000U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        snmpFlowTester("SnmpSend-1", ts, src)
+    }
+    test("SnmpSend-2 1000r/0.1s") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 0.1.seconds, unit = 1000)
+        val ts = now()
+        val src = (0U..<10_000U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        snmpFlowTester("SnmpSend-2", ts, src)
+    }
+    test("SnmpSend-3 3000r/0.1s") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 0.1.seconds, unit = 3000)
+        val ts = now()
+        val src = (0U..<10_000U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        snmpFlowTester("SnmpSend-3", ts, src)
+    }
+    test("SnmpSend-4 5000r/1s") {
+        val startAdr = InetAddress.getByName("10.36.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 1.seconds, unit = 5000)
+        val ts = now()
+        val src = (0U..<60_000U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        snmpFlowTester("SnmpSend-4", ts, src)
+    }
+
+
+    test("SnmpSend-5 wide-range") {
+        val startAdr = InetAddress.getByName("10.0.0.0").toIpV4UInt()
+        val rateLimiter = RateLimiter(interval = 1.seconds, unit = 5000)
+        val ts = now()
+        val src = (0U..<256U * 256U * 256U).asFlow().map { ix ->
+            Request(
+                udpAdr = UdpAddress((ix + startAdr).toIpV4Adr(), 161),
+                nRetry = 0, interval = 1.seconds,
+                userData = Log(n = ix.toInt(), ts.lap(), 0, 0),
+            )
+        }.throttled(rateLimiter = rateLimiter)
+        var c = 0
+        val j = launch(Dispatchers.Default) {
+            while (true) {
+                println("count=$c")
+                delay(1.seconds)
             }
         }
-
-        delay(100) // Wait for agent to start
-        val snmp = Snmp(DefaultUdpTransportMapping())
-        val targetAddress = UdpAddress("127.0.0.1/$port")
-        val pdu = PDU()
-        pdu.add(VariableBinding(OID(oid)))
-        pdu.type = PDU.GET
-        val result = snmp.get(pdu, CommunityTarget(targetAddress, OctetString(community)))
-
-        // Send Request
-
-        // Verify Response
-        val response = result.response.variableBindings
-        response shouldNotBe null
-        response?.response?.variableBindings?.firstOrNull()?.variable?.toString() shouldBe responseText
-
-        job.cancel()
+        src.send(createDefaultSenderSnmp()).collect { ++c }
+        j.cancelAndJoin()
     }
-}
-)
-
-suspend fun snmpReceiver(udpAdr: String, onResult: Snmp.(SnmpReceived) -> Unit) {
-    val address = UdpAddress(udpAdr)
-    val transport = DefaultUdpTransportMapping(address)
-    val snmp = Snmp(transport)
-
-    val usm = USM(
-        SecurityProtocols.getInstance().addDefaultProtocols(),
-        OctetString(MPv3.createLocalEngineID()), 0
-    )
-    SecurityModels.getInstance().addSecurityModel(usm)
-
-    snmp.messageDispatcher.addMessageProcessingModel(MessageProcessingModel.MPv1())
-    snmp.messageDispatcher.addMessageProcessingModel(MPv2c())
-    snmp.messageDispatcher.addMessageProcessingModel(MPv3(usm))
-
-    snmp.addCommandResponder(object : CommandResponder {
-        override fun <A : Address?> processPdu(event: CommandResponderEvent<A>?) {
-            @Suppress("UNCHECKED_CAST")
-            if (event != null && event.peerAddress is UdpAddress) {
-                val res = SnmpReceived(
-                    peerAddress = event.peerAddress as UdpAddress,
-                    mpModel = TODO(),
-                    secModel = TODO(),
-                    secName = TODO(),
-                    secLevel = TODO(),
-                    pdu = TODO(),
-                    maxSizeResponseScopedPDU = TODO(),
-                    stateReference = TODO()
-                )
-                snmp.onResult(res)
-            }
-        }
-    })
-
-    snmp.listen()
-    try {
-        awaitCancellation()
-    } finally {
-        snmp.close()
-    }
-}
+})

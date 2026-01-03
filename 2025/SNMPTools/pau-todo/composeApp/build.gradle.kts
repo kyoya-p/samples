@@ -1,54 +1,79 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    kotlin("plugin.serialization") version "2.2.21" // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.serialization
+    id("io.kotest") version "6.0.4"  // https://plugins.gradle.org/plugin/io.kotest
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    mavenLocal()
 }
 
 kotlin {
     jvm {
         testRuns["test"].executionTask.configure {
             useJUnitPlatform()
+            maxHeapSize = "2g"
         }
     }
     sourceSets {
-        commonMain.dependencies {
+        jvmMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
+            implementation(compose.materialIconsExtended)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.kotlinx.coroutines)
+
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0") // https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-serialization-json
+
+            val ktor_version = "3.3.3" // https://mvnrepository.com/artifact/io.ktor/ktor-client-core
+            implementation("io.ktor:ktor-client-cio:$ktor_version")
+            implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+            implementation("io.ktor:ktor-serialization-kotlinx-xml:$ktor_version")
+            implementation("io.ktor:ktor-serialization-kotlinx-protobuf:$ktor_version")
+            implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
+
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutinesSwing)
+
+            implementation("org.snmp4j:snmp4j:3.9.6") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
+
+            implementation("io.github.koalaplot:koalaplot-core:0.10.4") // https://mvnrepository.com/artifact/io.github.koalaplot/koalaplot-core
         }
-        commonTest.dependencies {
+        jvmTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotest.runner.junit5)
             implementation(libs.kotest.assertions.core)
             implementation(libs.kotest.property)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-            implementation(libs.kotlinx.coroutinesSwing)
-
-            implementation("org.snmp4j:snmp4j:3.9.6") // https://mvnrepository.com/artifact/org.snmp4j/snmp4j
-        }
     }
 }
 
-
 compose.desktop {
     application {
-        mainClass = "jp.wjg.shokkaa.MainKt"
+        mainClass = "jp.wjg.shokkaa.snmp.MainJvmKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "jp.wjg.shokkaa"
-            packageVersion = "1.0.0"
+            targetFormats(TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "SnmpScanner"
+            packageVersion = "1.1.1"
+            windows {
+                upgradeUuid = "b7c7a509-b6ea-0554-90a5-217cf641e5cd"
+                menu = true
+                shortcut = true
+            }
         }
     }
 }
