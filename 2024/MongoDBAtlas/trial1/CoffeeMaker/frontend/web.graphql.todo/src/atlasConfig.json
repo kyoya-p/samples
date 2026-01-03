@@ -1,9 +1,0 @@
-{
-    "appId": "coffeemaker-yxouv",
-    "appUrl": "https://realm.mongodb.com/groups/6589e6ddc21c4148bfd84689/apps/659a09c93f5b4bc6abcfc74f",
-    "baseUrl": "https://realm.mongodb.com",
-    "clientApiBaseUrl": "https://realm.mongodb.com",
-    "dataApiBaseUrl": "https://data.mongodb-api.com",
-    "dataExplorerLink": "https://cloud.mongodb.com/links/6589e6ddc21c4148bfd84689/explorer/cluster1/database/collection/find",
-    "dataSourceName": "mongodb-atlas"
-}
