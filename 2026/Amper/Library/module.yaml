@@ -1,0 +1,20 @@
+product:
+  type: lib
+#  platforms: [jvm, android, iosArm64, iosSimulatorArm64, iosX64]
+  platforms: [jvm]
+
+repositories:
+  - id: mavenLocal
+    url: mavenLocal
+    publish: true
+
+settings:
+#  android:
+#    namespace: jp.wjg.shokkaa
+#    compileSdk: 35
+#    minSdk: 24
+  publishing:
+    group: jp.wjg.shokkaa
+    name: amper-test
+    version: 0.9.9
+    enabled: true
