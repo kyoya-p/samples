@@ -18,6 +18,10 @@ data class ValueRange(
 
 fun main(args: Array<String>) = runBlocking {
     val apiKey = getEnv("GOOGLE_API_KEY")
+    if(apiKey.isBlank()){
+        login()
+    }
+
     val spreadsheetId = getEnv("SPREADSHEET_ID")
     val range = "A1:C5"
 

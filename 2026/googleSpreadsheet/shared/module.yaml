@@ -8,6 +8,10 @@ settings:
 dependencies:
   - $ktor.client.cio
   - $ktor.client.contentNegotiation
+  - $ktor.server.cio
+  - $ktor.server.contentNegotiation
   - $ktor.serialization.kotlinx.json
 dependencies@linux:
   - io.ktor:ktor-client-curl:3.2.3
+dependencies@mingw:
+  - $ktor.client.winhttp
