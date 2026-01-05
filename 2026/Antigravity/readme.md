@@ -4,7 +4,7 @@
   - googleアカウントでログイン
   - API経由でspreadsheetを生成
   - Google spreadsheet をAPIで操作
-  - 説明は日本語
+
 
 
 
