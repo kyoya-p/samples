@@ -12,9 +12,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "SheetMaster Desktop") {
-        App()
+fun main(args: Array<String>) {
+    // Check if we were launched via a deep link
+    if (args.isNotEmpty()) {
+        val link = args[0]
+        if (link.contains("code=")) {
+            val code = link.substringAfter("code=").substringBefore("&")
+            println("Auth code received via deep link: $code")
+            GoogleSheetsService.onAuthCodeReceived(code)
+            // If this is a secondary instance, we should exit after sending the code
+            System.exit(0)
+        }
+    }
+
+    application {
+        Window(onCloseRequest = ::exitApplication, title = "SheetMaster Desktop") {
+            App()
+        }
     }
 }
 
@@ -41,15 +55,11 @@ fun App() {
                 Button(onClick = {
                     scope.launch {
                         status = "Authenticating..."
-                        try {
-                            withContext(Dispatchers.IO) {
-                                GoogleSheetsService.getService("user")
-                            }
-                            isAuthenticated = true
-                            status = "Authenticated ✅"
-                        } catch (e: Exception) {
-                            status = "Error: ${e.message}"
+                        withContext(Dispatchers.IO) {
+                            GoogleSheetsService.getService("user")
                         }
+                        isAuthenticated = true
+                        status = "Authenticated ✅"
                     }
                 }) {
                     Text("Login with Google")
@@ -64,14 +74,13 @@ fun App() {
                         Button(onClick = {
                             scope.launch {
                                 status = "Creating..."
-                                try {
-                                    val id = withContext(Dispatchers.IO) {
-                                        GoogleSheetsService.createSpreadsheet("user", spreadsheetTitle)
-                                    }
-                                    spreadsheetId = id
-                                    status = "Created! ID: $id"
-                                } catch (e: Exception) {
-                                    status = "Error: ${e.message}"
+                                val id = withContext(Dispatchers.IO) {
+                                    GoogleSheetsService.createSpreadsheet("user", spreadsheetTitle)
+                                }
+                                spreadsheetId = id
+                                status = "Created! ID: $id"
+                                withContext(Dispatchers.IO) {
+                                    GoogleSheetsService.openInBrowser(id)
                                 }
                             }
                         }) {
@@ -89,14 +98,10 @@ fun App() {
                         Button(onClick = {
                             scope.launch {
                                 status = "Updating..."
-                                try {
-                                    withContext(Dispatchers.IO) {
-                                        GoogleSheetsService.updateCell("user", spreadsheetId, range, cellValue)
-                                    }
-                                    status = "Updated!"
-                                } catch (e: Exception) {
-                                    status = "Error: ${e.message}"
+                                withContext(Dispatchers.IO) {
+                                    GoogleSheetsService.updateCell("user", spreadsheetId, range, cellValue)
                                 }
+                                status = "Updated!"
                             }
                         }) {
                             Text("Update Cell")

@@ -75,16 +75,15 @@ object GoogleSheetsService {
         // Command to run the app with the URL as the first argument
         val command = "\"$javaPath\" -cp \"$classpath\" $mainClass \"%1\""
         
-        try {
-            // We use reg.exe to modify the registry for current user
-            val baseKey = "HKCU\\Software\\Classes\\$scheme"
-            Runtime.getRuntime().exec(arrayOf("reg", "add", baseKey, "/ve", "/t", "REG_SZ", "/d", "URL:Google Auth Protocol", "/f")).waitFor()
-            Runtime.getRuntime().exec(arrayOf("reg", "add", baseKey, "/v", "URL Protocol", "/t", "REG_SZ", "/d", "", "/f")).waitFor()
-            Runtime.getRuntime().exec(arrayOf("reg", "add", "$baseKey\\shell\\open\\command", "/ve", "/t", "REG_SZ", "/d", command, "/f")).waitFor()
-            println("Successfully registered protocol: $scheme")
-        } catch (e: Exception) {
-            println("Failed to register protocol: ${e.message}")
-        }
+        // We use reg.exe to modify the registry for current user
+        val baseKey = "HKCU\\Software\\Classes\\$scheme"
+        println("Registering protocol with command: $command")
+        
+        Runtime.getRuntime().exec(arrayOf("reg", "add", baseKey, "/ve", "/t", "REG_SZ", "/d", "URL:Google Auth Protocol", "/f")).waitFor()
+        Runtime.getRuntime().exec(arrayOf("reg", "add", baseKey, "/v", "URL Protocol", "/t", "REG_SZ", "/d", "", "/f")).waitFor()
+        Runtime.getRuntime().exec(arrayOf("reg", "add", "$baseKey\\shell\\open\\command", "/ve", "/t", "REG_SZ", "/d", command, "/f")).waitFor()
+        
+        println("Successfully registered protocol in registry.")
     }
 
     /**
@@ -92,11 +91,7 @@ object GoogleSheetsService {
      * If this is a second instance, it writes to a signal file.
      */
     fun onAuthCodeReceived(code: String) {
-        try {
-            Files.writeString(signalFilePath, code)
-        } catch (e: Exception) {
-            println("Failed to write signal file: ${e.message}")
-        }
+        Files.writeString(signalFilePath, code)
         codeFuture.complete(code)
     }
 
@@ -111,7 +106,7 @@ object GoogleSheetsService {
         registerWindowsProtocol()
         
         // Clean up old signal file
-        try { Files.deleteIfExists(signalFilePath) } catch (e: Exception) {}
+        Files.deleteIfExists(signalFilePath)
 
         val authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
                 "client_id=$clientId&" +
@@ -128,12 +123,27 @@ object GoogleSheetsService {
         }
 
         println("Waiting for authorization code from browser (custom scheme redirect)...")
+        println("If the browser fails to redirect, you can manually paste the 'code' parameter here:")
         
-        // Polling loop for signal file (for the main instance)
-        val startTime = System.currentTimeMillis()
-        val timeout = TimeUnit.MINUTES.toMillis(5)
-        
+        // Concurrent manual input and signal file polling
         var authCode: String? = null
+        val startTime = System.currentTimeMillis()
+        val timeout = TimeUnit.MINUTES.toMillis(30)
+
+        // Start a thread to read from console as a fallback
+        val consoleReader = Thread {
+            val sc = Scanner(System.`in`)
+            if (sc.hasNextLine()) {
+                val line = sc.nextLine()
+                if (line.isNotBlank()) {
+                    val code = if (line.contains("code=")) line.substringAfter("code=").substringBefore("&") else line.trim()
+                    onAuthCodeReceived(code)
+                }
+            }
+        }
+        consoleReader.isDaemon = true
+        consoleReader.start()
+        
         while (System.currentTimeMillis() - startTime < timeout) {
             if (Files.exists(signalFilePath)) {
                 authCode = Files.readString(signalFilePath).trim()
@@ -198,5 +208,39 @@ object GoogleSheetsService {
             .update(spreadsheetId, range, body)
             .setValueInputOption("RAW")
             .execute()
+    }
+
+    fun openInBrowser(spreadsheetId: String) {
+        val url = "https://docs.google.com/spreadsheets/d/$spreadsheetId"
+        println("Opening spreadsheet in browser: $url")
+        val os = System.getProperty("os.name").lowercase()
+        
+        // On Windows, 'cmd /c start' is often more reliable than Desktop.browse
+        if (os.contains("win")) {
+            try {
+                Runtime.getRuntime().exec(arrayOf("cmd", "/c", "start", url))
+                println("Triggered 'cmd /c start' for Windows (Primary)")
+                return 
+            } catch (e: Exception) {
+                println("Windows 'cmd /c start' failed, falling back to Desktop.browse: ${e.message}")
+            }
+        }
+
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(URI(url))
+                println("Successfully called Desktop.browse")
+            } else {
+                println("Desktop.browse not supported, trying fallback...")
+                if (os.contains("mac")) {
+                    Runtime.getRuntime().exec(arrayOf("open", url))
+                    println("Triggered 'open' fallback for macOS")
+                } else {
+                    println("No fallback available for $os")
+                }
+            }
+        } catch (e: Exception) {
+            println("Error opening browser: ${e.message}")
+        }
     }
 }
