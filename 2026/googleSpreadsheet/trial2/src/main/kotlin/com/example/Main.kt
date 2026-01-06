@@ -13,14 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 fun main(args: Array<String>) {
-    // Check if we were launched via a deep link
     if (args.isNotEmpty()) {
         val link = args[0]
         if (link.contains("code=")) {
             val code = link.substringAfter("code=").substringBefore("&")
             println("Auth code received via deep link: $code")
             GoogleSheetsService.onAuthCodeReceived(code)
-            // If this is a secondary instance, we should exit after sending the code
             System.exit(0)
         }
     }
