@@ -7,6 +7,7 @@ import com.google.api.services.sheets.v4.SheetsScopes
 import com.google.api.services.sheets.v4.model.Spreadsheet
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties
 import com.google.api.services.sheets.v4.model.ValueRange
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.awt.Desktop
 import java.io.File
@@ -30,9 +31,47 @@ object GoogleSheetsService {
     private val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS, SheetsScopes.DRIVE_FILE)
     
+    // Token Management
+    private data class TokenData(
+        val accessToken: String,
+        val refreshToken: String?,
+        val expirationTimeMillis: Long
+    )
+
     private var accessToken: String? = null
+    private var refreshToken: String? = null
+    private var expirationTimeMillis: Long = 0
     private var codeFuture = CompletableFuture<String>()
+    
+    private val tokenFilePath = Paths.get(System.getProperty("user.home"), ".sheetmaster_tokens.json")
     private val signalFilePath = Paths.get(System.getProperty("java.io.tmpdir"), "sheetmaster_auth_signal")
+
+    init {
+        loadTokens()
+    }
+
+    private fun saveTokens() {
+        if (accessToken == null) return
+        val json = JsonObject()
+        json.addProperty("access_token", accessToken)
+        json.addProperty("refresh_token", refreshToken)
+        json.addProperty("expiration_time", expirationTimeMillis)
+        Files.writeString(tokenFilePath, json.toString())
+    }
+
+    private fun loadTokens() {
+        if (Files.exists(tokenFilePath)) {
+            try {
+                val json = JsonParser.parseString(Files.readString(tokenFilePath)).asJsonObject
+                accessToken = json.get("access_token")?.asString
+                refreshToken = json.get("refresh_token")?.asString
+                expirationTimeMillis = json.get("expiration_time")?.asLong ?: 0
+                println("Loaded tokens from local storage.")
+            } catch (e: Exception) {
+                println("Failed to load tokens: ${e.message}")
+            }
+        }
+    }
 
     // PKCE Helpers
     private fun generateVerifier(): String {
@@ -50,10 +89,23 @@ object GoogleSheetsService {
     }
 
     fun getClientId(): String {
-        val inputStream = GoogleSheetsService::class.java.getResourceAsStream("/credentials.json")
-            ?: throw Exception("credentials.json not found")
+        // Look for credentials.json in current directory first, then fallback to resources
+        val file = File("credentials.json")
+        val inputStream = if (file.exists()) {
+            println("Loading credentials from ${file.absolutePath}")
+            file.inputStream()
+        } else {
+            GoogleSheetsService::class.java.getResourceAsStream("/credentials.json")
+        } ?: throw Exception("credentials.json not found in current directory or resources")
+
         val json = JsonParser.parseReader(InputStreamReader(inputStream)).asJsonObject
-        return json.getAsJsonObject("installed").get("client_id").asString
+        
+        // Use "installed" or "web" but we prefer secret-less client ID types (like iOS/Android/Desktop)
+        return when {
+            json.has("installed") -> json.getAsJsonObject("installed").get("client_id").asString
+            json.has("web") -> json.getAsJsonObject("web").get("client_id").asString
+            else -> throw Exception("Unsupported credentials.json format")
+        }
     }
 
     fun getCustomScheme(): String {
@@ -95,15 +147,20 @@ object GoogleSheetsService {
         codeFuture.complete(code)
     }
 
-    fun authorizeManual(): String {
+    fun authorizeManual(testRedirectUri: String? = null): String {
         val clientId = getClientId()
         val scheme = getCustomScheme()
-        val redirectUri = "$scheme:/oauth2callback"
+        val redirectUri = testRedirectUri ?: "$scheme:/oauth2callback"
         val verifier = generateVerifier()
         val challenge = generateChallenge(verifier)
         
-        // Ensure protocol is registered
-        registerWindowsProtocol()
+        // Reset code future to avoid using old codes from previous attempts
+        codeFuture = CompletableFuture<String>()
+        
+        // Ensure protocol is registered if using custom scheme
+        if (testRedirectUri == null) {
+            registerWindowsProtocol()
+        }
         
         // Clean up old signal file
         Files.deleteIfExists(signalFilePath)
@@ -161,14 +218,14 @@ object GoogleSheetsService {
             throw Exception("Authorization timed out or failed.")
         }
         
-        // Token Exchange
+        // Token Exchange (Secret-less PKCE)
         val client = HttpClient.newHttpClient()
         val requestBody = "code=$authCode&" +
                 "client_id=$clientId&" +
                 "redirect_uri=${URLEncoder.encode(redirectUri, "UTF-8")}&" +
                 "grant_type=authorization_code&" +
                 "code_verifier=$verifier"
-
+        
         val request = HttpRequest.newBuilder()
             .uri(URI.create("https://oauth2.googleapis.com/token"))
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -182,11 +239,61 @@ object GoogleSheetsService {
 
         val tokenJson = JsonParser.parseString(tokenResponse.body()).asJsonObject
         accessToken = tokenJson.get("access_token").asString
+        refreshToken = tokenJson.get("refresh_token")?.asString ?: refreshToken
+        val expiresIn = tokenJson.get("expires_in").asLong
+        expirationTimeMillis = System.currentTimeMillis() + (expiresIn * 1000)
+        
+        saveTokens()
         return accessToken!!
     }
 
-    fun getService(userId: String): Sheets {
-        val token = accessToken ?: authorizeManual()
+    private fun refreshAccessToken(): String {
+        println("Refreshing access token...")
+        val clientId = getClientId()
+        val client = HttpClient.newHttpClient()
+        val requestBody = "client_id=$clientId&" +
+                "refresh_token=$refreshToken&" +
+                "grant_type=refresh_token"
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("https://oauth2.googleapis.com/token"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+            .build()
+
+        val tokenResponse = client.send(request, HttpResponse.BodyHandlers.ofString())
+        if (tokenResponse.statusCode() != 200) {
+            println("Token refresh failed: ${tokenResponse.body()}")
+            // If refresh fails, we might need to re-authorize manually
+            accessToken = null
+            refreshToken = null
+            Files.deleteIfExists(tokenFilePath)
+            return authorizeManual()
+        }
+
+        val tokenJson = JsonParser.parseString(tokenResponse.body()).asJsonObject
+        accessToken = tokenJson.get("access_token").asString
+        // Some providers might not return a new refresh token if it's still valid
+        if (tokenJson.has("refresh_token")) {
+            refreshToken = tokenJson.get("refresh_token").asString
+        }
+        val expiresIn = tokenJson.get("expires_in").asLong
+        expirationTimeMillis = System.currentTimeMillis() + (expiresIn * 1000)
+        
+        saveTokens()
+        return accessToken!!
+    }
+
+    fun getService(): Sheets {
+        val token = when {
+            accessToken != null && System.currentTimeMillis() < expirationTimeMillis - 60000 -> {
+                println("Using cached access token.")
+                accessToken!!
+            }
+            refreshToken != null -> refreshAccessToken()
+            else -> authorizeManual()
+        }
+        
         return Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY) { request ->
             request.headers.authorization = "Bearer $token"
         }
@@ -194,20 +301,30 @@ object GoogleSheetsService {
             .build()
     }
 
-    fun createSpreadsheet(userId: String, title: String): String {
-        val service = getService(userId)
+    fun createSpreadsheet(title: String): String {
+        val service = getService()
         val spreadsheet = Spreadsheet().setProperties(SpreadsheetProperties().setTitle(title))
         val result = service.spreadsheets().create(spreadsheet).execute()
         return result.spreadsheetId
     }
 
-    fun updateCell(userId: String, spreadsheetId: String, range: String, value: String) {
-        val service = getService(userId)
+    fun updateCell(spreadsheetId: String, range: String, value: String) {
+        val service = getService()
         val body = ValueRange().setValues(listOf(listOf(value)))
         service.spreadsheets().values()
             .update(spreadsheetId, range, body)
             .setValueInputOption("RAW")
             .execute()
+    }
+
+    /**
+     * Internal method to set tokens directly (useful for tests)
+     */
+    fun setTokens(access: String, refresh: String?, expiresAt: Long) {
+        this.accessToken = access
+        this.refreshToken = refresh
+        this.expirationTimeMillis = expiresAt
+        saveTokens()
     }
 
     fun openInBrowser(spreadsheetId: String) {

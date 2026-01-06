@@ -53,11 +53,16 @@ fun App() {
                 Button(onClick = {
                     scope.launch {
                         status = "Authenticating..."
-                        withContext(Dispatchers.IO) {
-                            GoogleSheetsService.getService("user")
+                        try {
+                            withContext(Dispatchers.IO) {
+                                GoogleSheetsService.getService()
+                            }
+                            isAuthenticated = true
+                            status = "Authenticated ✅"
+                        } catch (e: Exception) {
+                            status = "Error: ${e.message}"
+                            println("Authentication failed: ${e.message}")
                         }
-                        isAuthenticated = true
-                        status = "Authenticated ✅"
                     }
                 }) {
                     Text("Login with Google")
@@ -73,7 +78,7 @@ fun App() {
                             scope.launch {
                                 status = "Creating..."
                                 val id = withContext(Dispatchers.IO) {
-                                    GoogleSheetsService.createSpreadsheet("user", spreadsheetTitle)
+                                    GoogleSheetsService.createSpreadsheet(spreadsheetTitle)
                                 }
                                 spreadsheetId = id
                                 status = "Created! ID: $id"
@@ -97,7 +102,7 @@ fun App() {
                             scope.launch {
                                 status = "Updating..."
                                 withContext(Dispatchers.IO) {
-                                    GoogleSheetsService.updateCell("user", spreadsheetId, range, cellValue)
+                                    GoogleSheetsService.updateCell(spreadsheetId, range, cellValue)
                                 }
                                 status = "Updated!"
                             }

@@ -1,9 +1,8 @@
 指示:
-  - アリケーションを作成
-  - APIキーを取得
   - googleアカウントでログイン
   - API経由でspreadsheetを生成
   - Google spreadsheet をAPIで操作
+  - clientId, clientSecretをアプリに持たない(secret-less PKCE)
 
 # 実行
 
@@ -35,26 +34,5 @@
    - 認証後のタブが `google.com` に留まる制約下でも、ユーザーを迷わせずシートへ誘導可能。
 
 ## 検証結果
-
-### 最新の実行ログ (V10)
-```text
---- Starting Sheets API Test ---
-1. Creating a test spreadsheet...
-Successfully registered protocol in registry.
-Waiting for authorization code from browser (custom scheme redirect)...
-Success! Received Auth Code.
-Success! Created Spreadsheet ID: [SpreadsheetID]
-Opening spreadsheet in browser: https://docs.google.com/spreadsheets/d/[SpreadsheetID]
-2. Updating cell A1 with 'Hello Compose Desktop!'...
-Success! Cell updated.
---- Test Completed Successfully ---
-```
-
-## ドキュメント
-- [実装プラン (implementation_plan.md)](file:///C:/Users/kyoya/.gemini/antigravity/brain/29a17cdc-c53a-44e0-9d1b-90b2267ed196/implementation_plan.md)
-- [完了ウォークスルー (walkthrough.md)](file:///C:/Users/kyoya/.gemini/antigravity/brain/29a17cdc-c53a-44e0-9d1b-90b2267ed196/walkthrough.md)
-
-## 今後の展望
-この基盤により、不特定多数のユーザーが自身の Google アカウントで安全にログインし、アプリが提供するスプレッドシート操作機能を享受できるようになります。自動表示機能の追加により、UX 面でも高い完成度を達成しました。
 
 
