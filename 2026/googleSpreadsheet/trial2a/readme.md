@@ -3,6 +3,8 @@
   - API経由でspreadsheetを生成
   - Google spreadsheet をAPIで操作
   - clientId, clientSecretをアプリに持たない(secret-less PKCE)
+  - 下記URLのiOSクライアントアプリの記述を参考に
+    https://developers.google.com/identity/protocols/oauth2/resources/loopback-migration?hl=ja
 
 # 実行
 
@@ -32,7 +34,3 @@
 4. **認証後のスプレッドシート自動表示**:
    - 認証完了シグナルを受信した直後、作成されたスプレッドシートをブラウザの新しいタブで即座に開くロジックを実装。
    - 認証後のタブが `google.com` に留まる制約下でも、ユーザーを迷わせずシートへ誘導可能。
-
-## 検証結果
-
-
