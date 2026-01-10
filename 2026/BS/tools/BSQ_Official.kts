@@ -1,21 +1,25 @@
-/* **指示ここから**
+/* **指示(AI編集禁止)**
   BSサイトに問い合わせる
-  modules: Kotlinx.io. Serialization, Ktor3.3.3, KSoap
+  dependOn:
+  - kotlinx.io
+  - org.jetbrains.kotlinx:kotlinx-io-core:0.8.2
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0
+  - io.ktor:ktor-client:3.3.3
+  - io.ktor:ktor-http:3.3.3
+  - ksoap:
 
-基本IF:
+# usage
+```
+kotiln BSQ_official.kts [-h] [Keyword,Keyword,...]
+```
+-h またはパラメなし: ヘルプ表示
+
+基本I/F:
 val searchWords = args.map{it.toString}
 typealias CardId = String
 @Serializable data class Card(val id: String, val name: String)
 suspend fun listCards(kfreeKyword: String): List<CardId> {}
 suspend fun Card.updateCache(cardId: CardId) :Card {}
+
 **指示ここまで** */
-
-@file:Repository("https://repo.maven.apache.org/maven2")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.6.0")
-@file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
-@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
-@file:DependsOn("io.ktor:ktor-http-jvm:3.0.3")
-@file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.3")
-
 

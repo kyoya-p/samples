@@ -1,6 +1,5 @@
 @file:Repository("https://repo.maven.apache.org/maven2")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.6.0")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.6.0")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core:0.8.2")
 @file:DependsOn("io.ktor:ktor-client-core-jvm:3.0.3")
 @file:DependsOn("io.ktor:ktor-client-cio-jvm:3.0.3")
 @file:DependsOn("io.ktor:ktor-http-jvm:3.0.3")
