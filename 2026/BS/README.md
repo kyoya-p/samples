@@ -47,5 +47,25 @@ kotlin gemini/search_system.kts -s 超星 -e "回復"
 python gemini/inspect_search_page.py
 ```
 
+## ツール
+
+`tools/` ディレクトリには、データの取得や検証のための補助的なスクリプトが含まれています。
+
+### 公式サイトデータ収集用 Kotlin Script (`tools/AccessBattleSpiritsStdLib.main.kts`)
+
+バトスピ公式サイトから最新のカード情報を自動取得・保存するためのスクリプトです。外部ライブラリを使用せず、Java標準機能のみで動作するため、最も安定して実行可能です。
+
+#### 機能
+- 指定した条件（系統、属性、コスト範囲等）で公式サイトを検索。
+- 検索結果の全カードについて、詳細ページ（iframe）から以下の情報を抽出：
+    - **基本情報**: ID, 名称, カテゴリ, コスト, 属性, 軽減, 系統
+    - **詳細情報**: Lv別コスト・BP、効果テキスト（アイコン等の置換処理含む）
+- 取得したデータを `GEMINI.md` 形式のJSONファイルとして `cards/` ディレクトリに保存。
+
+#### 実行方法
+```bash
+kotlin tools/AccessBattleSpiritsStdLib.main.kts
+```
+
 ## データ
 カードデータは `card/` ディレクトリにJSONファイルとして保存されています。
