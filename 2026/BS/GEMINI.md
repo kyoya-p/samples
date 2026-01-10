@@ -1,11 +1,19 @@
 # バトスピデッキ構築補助
 
-- [wiki検索](https://batspi.com/index.php?%E3%82%AB%E3%83%BC%E3%83%89%E6%A4%9C%E7%B4%A2)
+- 言語: 日本語
+
+# 情報元サイト
+
 - [公式サイト](https://www.battlespirits.com/cardlist)
+- [wiki検索](https://batspi.com/index.php?%E3%82%AB%E3%83%BC%E3%83%89%E6%A4%9C%E7%B4%A2)
  
 # カード情報データベース
+- カードに関する問い合わせに対しては上記サイトから検索し、結果をcardsフォルダにファイルキャッシュとして格納
+- cards_list.txt にキャッシュファイル名の情報を格納
+- キャッシュにある場合はサイトからの情報取得は不要
 
-- ファイル名: cards/カードID.カード名.タイプ.attr.family.json
+- ファイル名: cards/カードID_カード名_タイプ_attr_family.json
+  - 例: SD51-X03_超星使徒スピッツァードラゴン_S_赤紫緑白黄青_超星,星竜.json
 
 - 内容
   - id: "BS-**"
