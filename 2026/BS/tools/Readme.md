@@ -1,15 +1,17 @@
 # バトスピデッキ構築補助ツール
 
 このプロジェクトは、バトルスピリッツカードの検索と管理を支援します。
+**AIはこのファイルの変更禁止**
 
 # 使用  
 ```shell  
-kotlin tools/bsq.main.kts [-h] [-n] [-l] [Keyword Keyword ...]  
+kotlin tools/bsq.main.kts [-h] [-n] [-l] [-c キャッシュフォルダ] [Keyword Keyword ...]  
 ```  
 -h: またはパラメなし: ヘルプ表示  
 -n: 検索結果件数表示
 -l: カード基本情報(id,名前)のみ1行1件で列挙 (キャッシュは行われます)
--c(デフォルト): Keywordで指示され検出したカードの情報をキャッシュファイル(cards)として保存
+-c キャッシュフォルダ: 指定したフォルダにカード情報をキャッシュとして保持。指定なければ`~/.bscards`
+Keyword: Keywordで指示され検出したカードの情報をキャッシュファイル(cards)として保存
 
 # 設計
 - 言語/プラットフォーム
@@ -22,8 +24,8 @@ dependOn:
 - [kotlinx-io](https://kotlinlang.org/api/kotlinx-io/) :0.8.1
 - com.fleeksoft.ksoup:ksoup-network:0.2.5
 - org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3 (JVM)
-- io.ktor:ktor-client:3.0.3 (JVM)
-- io.ktor:ktor-http:3.0.3 (JVM)
+- io.ktor:ktor-client:3.3.3 (JVM)
+- io.ktor:ktor-http:3.3.3 (JVM)
 - org.jsoup:jsoup:1.17.2 (Instead of regex/ksoap)
 ```
 

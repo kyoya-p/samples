@@ -1,13 +1,13 @@
 #!/usr/bin/env kotlin
 
 @file:Repository("https://repo.maven.apache.org/maven2")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core:0.8.2")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-@file:DependsOn("io.ktor:ktor-client-core-jvm:3.0.3")
-@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.0.3")
-@file:DependsOn("io.ktor:ktor-client-content-negotiation-jvm:3.0.3")
-@file:DependsOn("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.3")
-@file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.1.2")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core:0.8.1")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+@file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-client-content-negotiation-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-serialization-kotlinx-json-jvm:3.3.3")
+@file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.5")
 @file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
 
 import com.fleeksoft.ksoup.Ksoup
@@ -29,8 +29,7 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.buffered
 import kotlinx.io.writeString
 
-// --- Configuration & Global Client ---
-
+// --- Global Client ---
 val client = HttpClient(CIO) {
     followRedirects = true
     install(ContentNegotiation) {
@@ -46,39 +45,52 @@ typealias CardId = String
 data class Card(
     val id: String, 
     val name: String,
-    // Store internal state for full caching
-    val category: String = "S",
-    val attr: String = "",
-    val cost: Int = 0,
-    val symbol: String = "",
-    val reduction: String = "",
-    val family: List<String> = emptyList(),
-    val lvCost: List<String> = emptyList(),
-    val effect: String = ""
+    val category: String ,
+    val attr: String ,
+    val cost: Int ,
+    val symbol: String ,
+    val reduction: String ,
+    val family: List<String> ,
+    val lvCost: List<String> ,
+    val effect: String ,
 )
 
-// --- Helper for File Operations (kotlinx-io) ---
+// --- Argument Parsing ---
 
-fun saveJson(filePath: String, jsonObject: JsonObject) {
-    val path = Path(filePath)
-    // Create parent directory if needed
-    val parent = Path("cards")
-    if (!SystemFileSystem.exists(parent)) {
-        SystemFileSystem.createDirectories(parent)
-    }
-    
-    val json = Json { prettyPrint = true }
-    val content = json.encodeToString(JsonObject.serializer(), jsonObject)
-    
-    SystemFileSystem.sink(path).buffered().use { sink ->
-        sink.writeString(content)
-    }
+val argsList = args.toList()
+val help = argsList.contains("-h") || argsList.isEmpty()
+val showCount = argsList.contains("-n")
+val listOnly = argsList.contains("-l")
+
+var cacheDirStr: String = ""
+val cIndex = argsList.indexOf("-c")
+if (cIndex != -1 && cIndex + 1 < argsList.size) {
+    cacheDirStr = argsList[cIndex + 1]
+} else {
+    // Default to ~/.bscards
+    // Note: Use System.getProperty for home dir, avoiding java.io.File
+    val home = System.getProperty("user.home")
+    cacheDirStr = "$home/.bscards"
 }
 
-// --- Logic Functions (Per Readme I/F) ---
+val keywords = argsList.filterIndexed { index, s -> 
+    !s.startsWith("-") && (index == 0 || argsList[index-1] != "-c") 
+}
 
-suspend fun listCards(kfreeKyword: String): List<CardId> {
-    val response: HttpResponse = client.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
+if (help) {
+    println("Usage: kotlin bsq.main.kts [-h] [-n] [-l] [-c キャッシュフォルダ] [Keyword ...]")
+    println("  -h: Show help")
+    println("  -n: Show count of results")
+    println("  -l: List basic info (ID, Name) only")
+    println("  -c: Specify cache directory (Default: ~/.bscards)")
+    System.exit(0)
+}
+
+// --- Functions (Per Readme I/F) ---
+
+suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card> {
+    val kfreeKyword = keywords.joinToString(" ")
+    val response: HttpResponse = httpClient.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         setBody(FormDataContent(Parameters.build {
             append("freewords", kfreeKyword)
             append("view_switch", "on") 
@@ -88,32 +100,30 @@ suspend fun listCards(kfreeKyword: String): List<CardId> {
     val listHtml = response.bodyAsText()
     val doc = Ksoup.parse(listHtml)
     
-    val ids = mutableListOf<CardId>()
-    doc.select("span.num").forEach { 
-        val id = it.text().trim()
-        if (id.isNotEmpty()) ids.add(id)
+    val foundCards = mutableListOf<Card>()
+    val items = doc.select("li.cardCol.js-detail")
+    
+    for (item in items) {
+        val id = item.select("span.num").text().trim()
+        if (id.isEmpty()) continue
+        
+        val name = item.select("h3.name").text().trim()
+        foundCards.add(Card(id, name))
     }
     
-    return ids
+    return foundCards
 }
 
-suspend fun Card.updateCache(cardId: CardId): Card {
-    val detailUrl = "https://www.battlespirits.com/cardlist/detail_iframe.php?card_no=$cardId&card_no2=$cardId"
+suspend fun Card.updateCache(httpClient: HttpClient) {
+    val detailUrl = "https://www.battlespirits.com/cardlist/detail_iframe.php?card_no=${this.id}&card_no2=${this.id}"
     
-    val response = client.get(detailUrl)
+    val response = httpClient.get(detailUrl)
     val html = response.bodyAsText()
     val doc = Ksoup.parse(html)
     
-    // Selectors adjusted based on HAR:
-    // Name: h2.cardName
-    // Cost: dd.costVal
-    // Attr: span.attribute
-    // System: span.system
-    // Reduction: dd.alleviationVal
-    
+    // Selectors from HAR analysis
     val fetchedName = doc.select("h2.cardName").text().trim()
     val finalName = if (fetchedName.isNotEmpty()) fetchedName else this.name
-    
     val cost = doc.select("dd.costVal").text().toIntOrNull() ?: 0
     val attr = doc.select("span.attribute").text().trim()
     val system = doc.select("span.system").text().trim()
@@ -146,77 +156,62 @@ suspend fun Card.updateCache(cardId: CardId): Card {
     
     val familyList = system.split("・").filter { it.isNotBlank() }
     
-    val fullCard = Card(
-        id = cardId,
-        name = finalName,
-        attr = attr,
-        cost = cost,
-        symbol = if (attr.isNotEmpty()) "${attr.take(1)}1" else "",
-        reduction = reductionStr,
-        family = familyList,
-        lvCost = lvCostList,
-        effect = effectText
-    )
+    // Final Data for JSON
+    val category = "S" // Default
+    val symbol = if (attr.isNotEmpty()) "${attr.take(1)}1" else ""
     
-    // Construct JSON for database (GEMINI.md compliant)
     val jsonObject = buildJsonObject {
-        put("id", fullCard.id)
-        put("cardName", fullCard.name)
-        put("category", fullCard.category)
-        put("attr", fullCard.attr)
-        put("cost", fullCard.cost)
-        put("symbol", fullCard.symbol)
-        put("reduction", fullCard.reduction)
-        putJsonArray("family") { fullCard.family.forEach { add(it) } }
-        putJsonArray("lvCost") { fullCard.lvCost.forEach { add(it) } }
-        put("effect", fullCard.effect)
+        put("id", id)
+        put("cardName", finalName)
+        put("category", category)
+        put("attr", attr)
+        put("cost", cost)
+        put("symbol", symbol)
+        put("reduction", reductionStr)
+        putJsonArray("family") { familyList.forEach { add(it) } }
+        putJsonArray("lvCost") { lvCostList.forEach { add(it) } }
+        put("effect", effectText)
         put("note", "")
+    }
+    
+    // Save using kotlinx-io
+    val baseDir = Path(cacheDirStr)
+    if (!SystemFileSystem.exists(baseDir)) {
+        SystemFileSystem.createDirectories(baseDir)
     }
     
     val safeName = finalName.replace("/", "_")
     val familyStr = familyList.joinToString(",")
-    val fileName = "cards/$cardId.$safeName.${fullCard.category}.$attr.$familyStr.json"
+    val fileName = "$id.$safeName.$category.$attr.$familyStr.json"
+    val filePath = Path(baseDir, fileName)
     
-    saveJson(fileName, jsonObject)
+    val json = Json { prettyPrint = true }
+    val content = json.encodeToString(JsonObject.serializer(), jsonObject)
     
-    return fullCard
+    SystemFileSystem.sink(filePath).buffered().use { sink ->
+        sink.writeString(content)
+    }
 }
 
-// --- Main CLI Entry ---
-
-val argsList = args.toList()
-val showCount = argsList.contains("-n")
-val listOnly = argsList.contains("-l")
-val help = argsList.contains("-h") || argsList.isEmpty()
-
-val keywords = argsList.filter { !it.startsWith("-") }
-
-if (help) {
-    println("Usage: kotlin bsq.main.kts [-h] [-n] [-l] [Keyword ...]")
-    println("  -h: Show help")
-    println("  -n: Show count of results")
-    println("  -l: List basic info (ID, Name) only")
-    System.exit(0)
-}
+// --- Main Execution ---
 
 runBlocking {
     try {
-        val searchWords = keywords.joinToString(" ")
-        val ids = listCards(searchWords)
+        val cards = listCards(keywords, client)
         
         if (showCount) {
-            println("Found ${ids.size} cards.")
+            println("Found ${cards.size} cards.")
         }
         
-        for (id in ids) {
-            val baseCard = Card(id, "Loading...")
-            val fullCard = baseCard.updateCache(id)
+        for (card in cards) {
+            // Update cache (fetches details and saves file)
+            card.updateCache(client)
             
             if (listOnly || !showCount) {
-                println("${fullCard.id} ${fullCard.name}")
+                println("${card.id} ${card.name}")
             }
             
-            delay(200) 
+            delay(200)
         }
         
     } catch (e: Exception) {
