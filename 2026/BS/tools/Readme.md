@@ -1,71 +1,37 @@
-# バトスピデッキ構築補助
+# バトスピデッキ構築補助ツール
 
-このプロジェクトは、「超星」などの特定の系統に焦点を当てたバトルスピリッツカードの検索と管理を支援します。
+このプロジェクトは、バトルスピリッツカードの検索と管理を支援します。
 
-## スクリプト
+# 使用  
+```shell  
+kotlin tools/bsq.main.kts [-h] [-n] [-l] [Keyword Keyword ...]  
+```  
+-h: またはパラメなし: ヘルプ表示  
+-n: 検索結果件数表示
+-l: カード基本情報(id,名前)のみ1行1件で列挙 (キャッシュは行われます)
+-c(デフォルト): Keywordで指示され検出したカードの情報をキャッシュファイル(cards)として保存
 
-`gemini/` ディレクトリには、バトスピWikiからカードデータをスクレイピングするためのPythonスクリプトが含まれています。
+# 設計
+- 言語/プラットフォーム
+  - Kotlin KMP (Script runs on JVM)
+  - javaモジュール(java.io等)不可
 
-### 前提条件
-
-- Python 3.7以上
-- Playwright
-- BeautifulSoup4
-
-### インストール
-
-1. Pythonパッケージをインストールします:
-   ```bash
-   pip install playwright beautifulsoup4
-   ```
-2. Playwrightブラウザをインストールします:
-   ```bash
-   playwright install chromium
-   ```
-
-### 使用方法
-
-#### カード検索
-`search_system.py` スクリプトを実行して、Wiki上でカードを検索します。系統や効果テキストを指定できます。
-
-
-```shell : 系統と効果を組み合わせて検索
-python gemini/search_system.py -s 超星 -e "回復"
+- 依存モジュール
+```
+dependOn:  
+- [kotlinx-io](https://kotlinlang.org/api/kotlinx-io/) :0.8.1
+- com.fleeksoft.ksoup:ksoup-network:0.2.5
+- org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3 (JVM)
+- io.ktor:ktor-client:3.0.3 (JVM)
+- io.ktor:ktor-http:3.0.3 (JVM)
+- org.jsoup:jsoup:1.17.2 (Instead of regex/ksoap)
 ```
 
-#### Kotlin Script版 (`search_system.kts`)
-Python版と同様の機能をKotlinスクリプトとして実装したものです。実行には `kscript` またはKotlinコンパイラが必要です。
-
-```bash : 系統と効果を組み合わせて検索
-kotlin gemini/search_system.kts -s 超星 -e "回復"
+- 基本I/F
 ```
-
-#### 検索ページの調査
-`inspect_search_page.py` を使用して、Wikiの検索ページの構造（フォームや入力フィールド）を解析します。スクレイパーのデバッグや更新に役立ちます。
-
-```bash
-python gemini/inspect_search_page.py
+val searchWords = args.map{it.toString}  
+typealias CardId = String  
+@Serializable data class Card(val id: String, val name: String, ...)
+suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card> {}  
+suspend fun Card.updateCache(httpClient: HttpClient) {}
 ```
-
-## ツール
-
-`tools/` ディレクトリには、データの取得や検証のための補助的なスクリプトが含まれています。
-
-### 公式サイトデータ収集用 Kotlin Script (`tools/AccessBattleSpiritsStdLib.main.kts`)
-
-バトスピ公式サイトから最新のカード情報を自動取得・保存するためのスクリプトです。外部ライブラリを使用せず、Java標準機能のみで動作するため、最も安定して実行可能です。
-
-#### 機能
-- 指定した条件（系統、属性、コスト範囲等）で公式サイトを検索。
-- 検索結果の全カードについて、詳細ページ（iframe）から以下の情報を抽出：
-    - **基本情報**: ID, 名称, カテゴリ, コスト, 属性, 軽減, 系統
-    - **詳細情報**: Lv別コスト・BP、効果テキスト（アイコン等の置換処理含む）
-- 取得したデータを `GEMINI.md` 形式のJSONファイルとして `cards/` ディレクトリに保存。
-
-#### 実行方法
-```bash
-kotlin tools/AccessBattleSpiritsStdLib.main.kts
-```
-
-## データ
-カードデータは `card/` ディレクトリにJSONファイルとして保存されています。
