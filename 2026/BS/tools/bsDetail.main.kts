@@ -14,8 +14,9 @@ import kotlinx.coroutines.runBlocking
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
+import kotlinx.serialization.Serializable
 
-// 詳細情報を保持するクラス
+@Serializable
 data class CardDetail(
     val id: String,
     val side: String, // ""(none),"A","B"
@@ -31,23 +32,18 @@ data class CardDetail(
     val imageUrl: String
 )
 
+@Serializable
 data class LvInfo(val level: Int, val core: Int, val bp: Int)
 
-val client = HttpClient(CIO) {
-    install(HttpTimeout) {
-        requestTimeoutMillis = 30000
-    }
-}
+val client = HttpClient(CIO)
 
-fun parseCardDetail(html: String): CardDetail {
-    val doc: Document = Ksoup.parse(html)
-    val root = doc.select(".detailCol").first() ?: throw Exception("Card detail container not found")
-
-    val idRarity = root.select(".cardNum").text().trim() // e.g., "BS72-084R"
-    val rarity = root.select(".cardRarity").text().trim() // e.g., "R"
-    val id = idRarity.removeSuffix(rarity).trim()
+fun parseCard(html: String): CardDetail {
+    val id = root.select(".cardNum").text().trim()
+    val side = root.select(".cardSideAB").text().trim()
+    val rarity = root.select(".cardRarity").text().trim()
     val name = root.select(".cardName").text().trim()
-    val cost = root.select(".textCost").text().trim().toIntOrNull()
+    val costText = root.select(".textCost").text().trim()
+    val cost = costText.toIntOrNull()
     val reductionSymbols = root.select(".cost img").map { it.attr("alt") }
     val category = root.select("dt:contains(カテゴリー) + dd").text().trim()
     val attributes = root.select(".attribute .attributeItem").map { it.text().trim() }
@@ -55,23 +51,23 @@ fun parseCardDetail(html: String): CardDetail {
     // Systems
     val systems = root.select("dt:contains(系統) + dd").text().split("・").filter { it.isNotBlank() }
 
-    // Lv Info (Spirit/Ultimate specific)
-    val lvInfo = root.select(".bpCoreItem").map { item ->
-        val lvImg = item.select("img.bpCoreImg").attr("alt") // e.g., "LV1"
+    // Lv Info
+    val lvInfo = root.select(".bpCoreItem").mapNotNull { item ->
+        val lvImg = item.select("img.bpCoreImg").attr("alt")
+        if (lvImg.isEmpty()) return@mapNotNull null
+
         val lv = lvImg.replace("LV", "").toIntOrNull() ?: 0
         val bp = item.select(".bpCoreVal").text().trim().toIntOrNull() ?: 0
         val core = item.select(".bpCoreLevel").text().trim().toIntOrNull() ?: 0
         LvInfo(lv, core, bp)
     }
 
-    // Effect Text
     val effectElement = root.select(".detailColListDescription.wide").first()?.clone()
-    effectElement?.select("img")?.forEach {
-        val alt = it.attr("alt")
-        it.after("[$alt]")
-        it.remove()
+    effectElement?.select("img")?.forEach { img ->
+        val alt = img.attr("alt")
+        img.after("[" + alt + "]")
+        img.remove()
     }
-    // Handle line breaks
     val effect = effectElement?.let {
         val cleanHtml = it.html().replace("<br>", "\n").replace("<br />", "\n")
         Ksoup.parse(cleanHtml).text()
@@ -81,7 +77,7 @@ fun parseCardDetail(html: String): CardDetail {
 
     return CardDetail(
         id = id,
-        side =,
+        side = side,
         name = name,
         rarity = rarity,
         cost = cost,
@@ -110,6 +106,6 @@ runBlocking {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
         )
     }
-    val detail = parseCardDetail(response.bodyAsText())
+    val detail = parseCard(response.bodyAsText())
     println(detail)
 }

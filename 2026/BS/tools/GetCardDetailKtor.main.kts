@@ -4,6 +4,8 @@
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.0")
 
+// Updated version with lambda fixes
+
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
@@ -63,7 +65,7 @@ fun parseCardSide(root: Element, sideName: String): CardSide {
     val systems = root.select("dt:contains(系統) + dd").text().split("・").filter { it.isNotBlank() }
 
     // Lv Info
-    val lvInfo = root.select(".bpCoreItem").mapNotNull {
+    val lvInfo = root.select(".bpCoreItem").mapNotNull { item ->
         val lvImg = item.select("img.bpCoreImg").attr("alt")
         if (lvImg.isEmpty()) return@mapNotNull null
         
@@ -75,7 +77,7 @@ fun parseCardSide(root: Element, sideName: String): CardSide {
 
     // Effect
     val effectElement = root.select(".detailColListDescription.wide").first()?.clone()
-    effectElement?.select("img")?.forEach {
+    effectElement?.select("img")?.forEach { img ->
         val alt = img.attr("alt")
         img.after("[" + alt + "]")
         img.remove()
@@ -129,7 +131,7 @@ fun parseCard(html: String): Card {
     return Card(id, sides)
 }
 
-val targetCardNo = args.getOrNull(0) ?: "BS58-TCP04" // Default to a known double-sided card if possible, or use BS72-084
+val targetCardNo = args.getOrNull(0) ?: "BS58-TCP04" 
 
 runBlocking {
     try {
