@@ -1,6 +1,6 @@
 @file:Repository("https://repo1.maven.org/maven2/")
-@file:DependsOn("io.ktor:ktor-client-core-jvm:3.0.3")
-@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.0.3")
+@file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.0")
 
@@ -38,7 +38,7 @@ data class Card(
 data class CardSide(
     val side: String, // "A" or "B"
     val name: String,
-    val id: String,
+    val cardNo: String,
     val rarity: String,
     val cost: Int?,
     val reductionSymbols: List<String>,
@@ -115,7 +115,7 @@ fun parseCard(html: String): Card {
     doc.select("#CardCol_B").first()?.let { sides.add(parseCardSide(it, "B")) }
 
     if (sides.isEmpty()) throw Exception("No card data found")
-    return Card(sides.first().id, sides)
+    return Card(sides.first().cardNo, sides)
 }
 
 runBlocking {

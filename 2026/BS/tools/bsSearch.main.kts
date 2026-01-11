@@ -1,8 +1,7 @@
-@file:DependsOn("io.ktor:ktor-client-core-jvm:3.0.3")
-@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.0.3")
+@file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.0")
-@file:Import("./bsSearch.main.kts")
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -16,9 +15,7 @@ import com.fleeksoft.ksoup.nodes.Document
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
-import javax.smartcardio.Card
 
 val searchClient = HttpClient(CIO) {
     install(HttpTimeout) {
@@ -30,7 +27,7 @@ val searchClient = HttpClient(CIO) {
 
 @Serializable
 data class SearchCard(
-    val id: String,
+    val cardNo: String,
     val name: String,
     val rarity: String,
     val cost: String,
@@ -78,22 +75,23 @@ suspend fun bsSearchMain(
             append("system[switch]", "OR")
             append("view_switch", "on")
             append("freewords", keywords)
-            append("category[]", category.joinToString(" "))
+            if (category.isNotEmpty()) {
+                append("category[]", category.joinToString(" "))
+            }
         }
         setBody(params.formUrlEncode())
     }
 
     val body = response.bodyAsText()
-    val results = mutableListOf<SearchCard>()
 
     if (body.isNotEmpty()) {
         val doc: Document = Ksoup.parse(body)
         val cardElements = doc.select("li.cardCol.js-detail")
 
         cardElements.forEach { element ->
-            results.add(
+            emit(
                 SearchCard(
-                    id = element.select(".number .num").text().trim(),
+                    cardNo = element.select(".number .num").text().trim(),
                     rarity = element.select(".number .rarity").text().trim(),
                     name = element.select(".name").text().trim(),
                     cost = element.select(".costVal").text().trim(),
