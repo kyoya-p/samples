@@ -45,14 +45,14 @@ typealias CardId = String
 data class Card(
     val id: String, 
     val name: String,
-    val category: String ,
-    val attr: String ,
-    val cost: Int ,
-    val symbol: String ,
-    val reduction: String ,
-    val family: List<String> ,
-    val lvCost: List<String> ,
-    val effect: String ,
+    val category: String,
+    val attr: String,
+    val cost: Int,
+    val symbol: String,
+    val reduction: String,
+    val family: List<String>,
+    val lvCost: List<String>,
+    val effect: String
 )
 
 // --- Argument Parsing ---
@@ -62,15 +62,12 @@ val help = argsList.contains("-h") || argsList.isEmpty()
 val showCount = argsList.contains("-n")
 val listOnly = argsList.contains("-l")
 
-var cacheDirStr: String = ""
 val cIndex = argsList.indexOf("-c")
-if (cIndex != -1 && cIndex + 1 < argsList.size) {
-    cacheDirStr = argsList[cIndex + 1]
+val cacheDirStr: String = if (cIndex != -1 && cIndex + 1 < argsList.size) {
+    argsList[cIndex + 1]
 } else {
-    // Default to ~/.bscards
-    // Note: Use System.getProperty for home dir, avoiding java.io.File
     val home = System.getProperty("user.home")
-    cacheDirStr = "$home/.bscards"
+    "$home/.bscards"
 }
 
 val keywords = argsList.filterIndexed { index, s -> 
@@ -100,18 +97,27 @@ suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card
     val listHtml = response.bodyAsText()
     val doc = Ksoup.parse(listHtml)
     
-    val foundCards = mutableListOf<Card>()
-    val items = doc.select("li.cardCol.js-detail")
-    
-    for (item in items) {
-        val id = item.select("span.num").text().trim()
-        if (id.isEmpty()) continue
-        
-        val name = item.select("h3.name").text().trim()
-        foundCards.add(Card(id, name))
+    // Construct Card with explicit empty/zero values since defaults are removed
+    return doc.select("li.cardCol.js-detail").mapNotNull {
+        val id = it.select("span.num").text().trim()
+        if (id.isEmpty()) {
+            null
+        } else {
+            val name = it.select("h3.name").text().trim()
+            Card(
+                id = id,
+                name = name,
+                category = "S", // Defaulting here as placeholder
+                attr = "",
+                cost = 0,
+                symbol = "",
+                reduction = "",
+                family = emptyList(),
+                lvCost = emptyList(),
+                effect = ""
+            )
+        }
     }
-    
-    return foundCards
 }
 
 suspend fun Card.updateCache(httpClient: HttpClient) {
@@ -121,75 +127,99 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
     val html = response.bodyAsText()
     val doc = Ksoup.parse(html)
     
-    // Selectors from HAR analysis
-    val fetchedName = doc.select("h2.cardName").text().trim()
+    val fetchedName = doc.select(".cardName").first()?.text()?.trim() ?: ""
     val finalName = if (fetchedName.isNotEmpty()) fetchedName else this.name
-    val cost = doc.select("dd.costVal").text().toIntOrNull() ?: 0
-    val attr = doc.select("span.attribute").text().trim()
-    val system = doc.select("span.system").text().trim()
     
-    val lvCostList = mutableListOf<String>()
-    doc.select("div.bpCoreItem").forEach { item ->
+    // Selectors based on standard Desktop layout (via UA)
+    val cost = doc.select("dt:contains(コスト) + dd").first()?.text()?.trim()?.toIntOrNull() ?: 0
+    val attr = doc.select(".attribute").first()?.text()?.trim() ?: ""
+    val system = doc.select("dt:contains(系統) + dd").first()?.text()?.trim() ?: ""
+    
+    val lvCostList = doc.select(".bpCoreItem").mapNotNull { item ->
         val lv = item.select("img[alt^=LV]").attr("alt").replace("LV", "")
-        val bp = item.select("span.bpCoreVal").text()
-        val core = item.select("span.bpCoreLevel").text()
-        if (lv.isNotEmpty()) lvCostList.add("$lv,$core,$bp")
+        val bp = item.select(".bpCoreVal").text()
+        val core = item.select(".bpCoreLevel").text()
+        if (lv.isNotEmpty()) "$lv,$core,$bp" else null
     }
     
-    var effectText = "取得失敗"
-    val effectDd = doc.select("dt.detailColListTerm:contains(能力・効果) + dd.detailColListDescription").first()
-    if (effectDd != null) {
+    val effectText = doc.select(".detailColListTerm:contains(能力・効果) + .detailColListDescription").first()?.let { effectDd ->
         effectDd.select("img").forEach { img ->
             val alt = img.attr("alt")
             img.replaceWith(TextNode(if (alt.isNotEmpty()) "[$alt]" else "[アイコン]"))
         }
         effectDd.select("br").forEach { br -> br.replaceWith(TextNode("\n")) }
-        effectText = effectDd.text().trim()
-    }
+        effectDd.text().trim()
+    } ?: "取得失敗"
     
-    val reductionMap = mutableMapOf<String, Int>()
-    doc.select("dd.alleviationVal img").forEach { img ->
-        val key = if (img.attr("alt") == "◇") "全" else img.attr("alt")
-        if (key.isNotEmpty()) reductionMap[key] = reductionMap.getOrDefault(key, 0) + 1
-    }
-    val reductionStr = reductionMap.entries.joinToString("") { "${it.key}${it.value}" }
+    // Reduction: dt contains '軽減コスト' -> next dd -> images
+    val reductionStr = doc.select("dt:contains(軽減コスト) + dd img")
+        .map { img -> if (img.attr("alt") == "◇") "全" else img.attr("alt") }
+        .filter { it.isNotEmpty() }
+        .groupingBy { it }
+        .eachCount()
+        .entries.joinToString("") { "${it.key}${it.value}" }
     
     val familyList = system.split("・").filter { it.isNotBlank() }
     
-    // Final Data for JSON
-    val category = "S" // Default
+    val categoryText = doc.select("dt:contains(カテゴリー) + dd").text().trim()
+    val category = when {
+        categoryText.contains("スピリット") -> "S"
+        categoryText.contains("アルティメット") -> "U"
+        categoryText.contains("ブレイヴ") -> "B"
+        categoryText.contains("ネクサス") -> "N"
+        categoryText.contains("マジック") -> "M"
+        else -> "S"
+    }
     val symbol = if (attr.isNotEmpty()) "${attr.take(1)}1" else ""
     
+    // Create a full Card instance for serialization
+    val fullCard = Card(
+        id = id,
+        name = finalName,
+        category = category,
+        attr = attr,
+        cost = cost,
+        symbol = symbol,
+        reduction = reductionStr,
+        family = familyList,
+        lvCost = lvCostList,
+        effect = effectText
+    )
+    
+    // We add "note" field manually via JsonObjectBuilder if needed, or if Card matches JSON exactly.
+    // Readme/GEMINI.md requirements for JSON format include "note".
+    // Since Card class doesn't have "note", we'll build JsonObject.
+    
     val jsonObject = buildJsonObject {
-        put("id", id)
-        put("cardName", finalName)
-        put("category", category)
-        put("attr", attr)
-        put("cost", cost)
-        put("symbol", symbol)
-        put("reduction", reductionStr)
-        putJsonArray("family") { familyList.forEach { add(it) } }
-        putJsonArray("lvCost") { lvCostList.forEach { add(it) } }
-        put("effect", effectText)
+        put("id", fullCard.id)
+        put("cardName", fullCard.name)
+        put("category", fullCard.category)
+        put("attr", fullCard.attr)
+        put("cost", fullCard.cost)
+        put("symbol", fullCard.symbol)
+        put("reduction", fullCard.reduction)
+        putJsonArray("family") { fullCard.family.forEach { add(it) } }
+        putJsonArray("lvCost") { fullCard.lvCost.forEach { add(it) } }
+        put("effect", fullCard.effect)
         put("note", "")
     }
     
-    // Save using kotlinx-io
     val baseDir = Path(cacheDirStr)
     if (!SystemFileSystem.exists(baseDir)) {
         SystemFileSystem.createDirectories(baseDir)
     }
     
-    val safeName = finalName.replace("/", "_")
-    val familyStr = familyList.joinToString(",")
-    val fileName = "$id.$safeName.$category.$attr.$familyStr.json"
+    // Sanitize filename: remove / \ : * ? " < > | and limit length
+    val sanitizedName = finalName.replace(Regex("[\\\\/:*?\"<>|\\s]"), "_").take(50)
+    val familyStr = familyList.joinToString(",").replace(Regex("[\\\\/:*?\"<>|]"), "_").take(50)
+    val fileName = "$id.$sanitizedName.$category.$attr.$familyStr.json"
     val filePath = Path(baseDir, fileName)
     
     val json = Json { prettyPrint = true }
     val content = json.encodeToString(JsonObject.serializer(), jsonObject)
     
-    SystemFileSystem.sink(filePath).buffered().use { sink ->
-        sink.writeString(content)
+    SystemFileSystem.sink(filePath).buffered().use {
+        it.writeString(content)
     }
 }
 
@@ -204,7 +234,6 @@ runBlocking {
         }
         
         for (card in cards) {
-            // Update cache (fetches details and saves file)
             card.updateCache(client)
             
             if (listOnly || !showCount) {
