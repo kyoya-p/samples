@@ -8,6 +8,7 @@
 @file:DependsOn("io.ktor:ktor-client-content-negotiation-jvm:3.3.3")
 @file:DependsOn("io.ktor:ktor-serialization-kotlinx-json-jvm:3.3.3")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.5")
+@file:DependsOn("com.charleskorn.kaml:kaml-jvm:0.63.0")
 @file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
 
 import com.fleeksoft.ksoup.Ksoup
@@ -20,10 +21,15 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.UserAgent
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.*
+import kotlinx.serialization.serializer
+import com.charleskorn.kaml.Yaml
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.buffered
@@ -37,13 +43,13 @@ val client = HttpClient(CIO) {
     }
 }
 
-// --- Data Structures (Per Readme) ---
+// --- Data Structures ---
 
 typealias CardId = String
 
 @Serializable
 data class Card(
-    val id: String, 
+    @Transient val id: String = "", 
     val name: String,
     val category: String,
     val attr: String,
@@ -52,13 +58,27 @@ data class Card(
     val reduction: String,
     val family: List<String>,
     val lvCost: List<String>,
-    val effect: String
+    val effect: String,
+    val note: String
 )
 
-// --- Argument Parsing ---
+@Serializable
+data class Cards(
+    val id: String,
+    val cards: List<Card>
+)
 
 val argsList = args.toList()
-val help = argsList.contains("-h") || argsList.isEmpty()
+
+if (argsList.contains("-h") || argsList.isEmpty()) {
+    println("Usage: kotlin bsq.main.kts [-h] [-n] [-l] [-c キャッシュフォルダ] [Keyword ...]")
+    println("  -h: Show help")
+    println("  -n: Show count of results")
+    println("  -l: List basic info (ID, Name) only")
+    println("  -c: Specify cache directory (Default: ~/.bscards)")
+    System.exit(0)
+}
+
 val showCount = argsList.contains("-n")
 val listOnly = argsList.contains("-l")
 
@@ -74,14 +94,6 @@ val keywords = argsList.filterIndexed { index, s ->
     !s.startsWith("-") && (index == 0 || argsList[index-1] != "-c") 
 }
 
-if (help) {
-    println("Usage: kotlin bsq.main.kts [-h] [-n] [-l] [-c キャッシュフォルダ] [Keyword ...]")
-    println("  -h: Show help")
-    println("  -n: Show count of results")
-    println("  -l: List basic info (ID, Name) only")
-    println("  -c: Specify cache directory (Default: ~/.bscards)")
-    System.exit(0)
-}
 
 // --- Functions (Per Readme I/F) ---
 
@@ -97,7 +109,6 @@ suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card
     val listHtml = response.bodyAsText()
     val doc = Ksoup.parse(listHtml)
     
-    // Construct Card with explicit empty/zero values since defaults are removed
     return doc.select("li.cardCol.js-detail").mapNotNull {
         val id = it.select("span.num").text().trim()
         if (id.isEmpty()) {
@@ -107,14 +118,15 @@ suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card
             Card(
                 id = id,
                 name = name,
-                category = "S", // Defaulting here as placeholder
+                category = "S",
                 attr = "",
                 cost = 0,
                 symbol = "",
                 reduction = "",
                 family = emptyList(),
                 lvCost = emptyList(),
-                effect = ""
+                effect = "",
+                note = ""
             )
         }
     }
@@ -130,15 +142,14 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
     val fetchedName = doc.select(".cardName").first()?.text()?.trim() ?: ""
     val finalName = if (fetchedName.isNotEmpty()) fetchedName else this.name
     
-    // Selectors based on standard Desktop layout (via UA)
-    val cost = doc.select("dt:contains(コスト) + dd").first()?.text()?.trim()?.toIntOrNull() ?: 0
-    val attr = doc.select(".attribute").first()?.text()?.trim() ?: ""
-    val system = doc.select("dt:contains(系統) + dd").first()?.text()?.trim() ?: ""
+    val costVal = doc.select("dt:contains(コスト) + dd").first()?.text()?.trim()?.toIntOrNull() ?: 0
+    val attrVal = doc.select(".attribute").first()?.text()?.trim() ?: ""
+    val systemVal = doc.select("dt:contains(系統) + dd").first()?.text()?.trim() ?: ""
     
-    val lvCostList = doc.select(".bpCoreItem").mapNotNull { item ->
-        val lv = item.select("img[alt^=LV]").attr("alt").replace("LV", "")
-        val bp = item.select(".bpCoreVal").text()
-        val core = item.select(".bpCoreLevel").text()
+    val lvCostList = doc.select(".bpCoreItem").mapNotNull {
+        val lv = it.select("img[alt^=LV]").attr("alt").replace("LV", "")
+        val bp = it.select(".bpCoreVal").text()
+        val core = it.select(".bpCoreLevel").text()
         if (lv.isNotEmpty()) "$lv,$core,$bp" else null
     }
     
@@ -151,7 +162,6 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
         effectDd.text().trim()
     } ?: "取得失敗"
     
-    // Reduction: dt contains '軽減コスト' -> next dd -> images
     val reductionStr = doc.select("dt:contains(軽減コスト) + dd img")
         .map { img -> if (img.attr("alt") == "◇") "全" else img.attr("alt") }
         .filter { it.isNotEmpty() }
@@ -159,10 +169,10 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
         .eachCount()
         .entries.joinToString("") { "${it.key}${it.value}" }
     
-    val familyList = system.split("・").filter { it.isNotBlank() }
+    val familyList = systemVal.split("・").filter { it.isNotBlank() }
     
     val categoryText = doc.select("dt:contains(カテゴリー) + dd").text().trim()
-    val category = when {
+    val categoryVal = when {
         categoryText.contains("スピリット") -> "S"
         categoryText.contains("アルティメット") -> "U"
         categoryText.contains("ブレイヴ") -> "B"
@@ -170,39 +180,25 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
         categoryText.contains("マジック") -> "M"
         else -> "S"
     }
-    val symbol = if (attr.isNotEmpty()) "${attr.take(1)}1" else ""
     
-    // Create a full Card instance for serialization
+    val symbolVal = if (attrVal.isNotEmpty()) "${attrVal.take(1)}1" else ""
+    
     val fullCard = Card(
         id = id,
         name = finalName,
-        category = category,
-        attr = attr,
-        cost = cost,
-        symbol = symbol,
+        category = categoryVal,
+        attr = attrVal,
+        cost = costVal,
+        symbol = symbolVal,
         reduction = reductionStr,
         family = familyList,
         lvCost = lvCostList,
-        effect = effectText
+        effect = effectText,
+        note = ""
     )
     
-    // We add "note" field manually via JsonObjectBuilder if needed, or if Card matches JSON exactly.
-    // Readme/GEMINI.md requirements for JSON format include "note".
-    // Since Card class doesn't have "note", we'll build JsonObject.
-    
-    val jsonObject = buildJsonObject {
-        put("id", fullCard.id)
-        put("cardName", fullCard.name)
-        put("category", fullCard.category)
-        put("attr", fullCard.attr)
-        put("cost", fullCard.cost)
-        put("symbol", fullCard.symbol)
-        put("reduction", fullCard.reduction)
-        putJsonArray("family") { fullCard.family.forEach { add(it) } }
-        putJsonArray("lvCost") { fullCard.lvCost.forEach { add(it) } }
-        put("effect", fullCard.effect)
-        put("note", "")
-    }
+    val cards = Cards(id = id, cards = listOf(fullCard))
+    val yamlContent = Yaml.default.encodeToString(serializer<Cards>(), cards)
     
     val baseDir = Path(cacheDirStr)
     if (!SystemFileSystem.exists(baseDir)) {
@@ -215,11 +211,8 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
     val fileName = "$id.$sanitizedName.$category.$attr.$familyStr.json"
     val filePath = Path(baseDir, fileName)
     
-    val json = Json { prettyPrint = true }
-    val content = json.encodeToString(JsonObject.serializer(), jsonObject)
-    
     SystemFileSystem.sink(filePath).buffered().use {
-        it.writeString(content)
+        it.writeString(yamlContent)
     }
 }
 
