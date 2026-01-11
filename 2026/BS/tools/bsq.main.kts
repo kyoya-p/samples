@@ -10,7 +10,7 @@
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.5")
 @file:DependsOn("com.charleskorn.kaml:kaml-jvm:0.63.0")
 @file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
-@file:DependsOn("./bsSearch.main.kts")
+@file:Import("./bsSearch.main.kts")
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.TextNode
@@ -35,6 +35,7 @@ import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.buffered
 import kotlinx.io.writeString
+import org.jetbrains.kotlin.mainKts.MainKtsScript
 
 // --- Global Client ---
 val client = HttpClient(CIO) {
@@ -94,7 +95,7 @@ val keywords = argsList.filterIndexed { index, s ->
 }
 
 when (args[0]) {
-    "l" -> main()
+    "l" ->
 }
 
 

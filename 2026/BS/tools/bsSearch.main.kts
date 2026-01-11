@@ -13,6 +13,10 @@ import io.ktor.client.plugins.*
 import kotlinx.coroutines.runBlocking
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectIndexed
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.yield
 import kotlinx.serialization.Serializable
 
 val client = HttpClient(CIO) {
@@ -33,7 +37,21 @@ data class Card(
     val imgUrl: String,
 )
 
+// Main
 runBlocking {
+    bsSearchMain().collectIndexed { index, card ->
+        println("$index: $card")
+    }
+}
+suspend fun bsSearchMain(
+    freeWord: String,
+    cardNo: String,
+    constMin: Int,
+    constMax: Int,
+    attr: String,
+    category: List<String>,
+    system: List<String>,
+): Flow<Card> = flow {
     println("Searching for cards...")
     val response: HttpResponse = client.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         header(
@@ -77,7 +95,7 @@ runBlocking {
                 type = element.select(".type").text(),
                 imgUrl = "https://www.battlespirits.com${element.select(".thumbnail img").attr("data-src")}",
             )
-            println("$index: $card")
+            emit(card)
         }
     }
 }
