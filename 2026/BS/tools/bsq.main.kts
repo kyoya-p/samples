@@ -10,6 +10,7 @@
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.5")
 @file:DependsOn("com.charleskorn.kaml:kaml-jvm:0.63.0")
 @file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
+@file:DependsOn("./bsSearch.main.kts")
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.TextNode
@@ -49,7 +50,7 @@ typealias CardId = String
 
 @Serializable
 data class Card(
-    @Transient val id: String = "", 
+    @Transient val id: String = "",
     val name: String,
     val category: String,
     val attr: String,
@@ -70,16 +71,14 @@ data class Cards(
 
 val argsList = args.toList()
 
-if (argsList.contains("-h") || argsList.isEmpty()) {
-    println("Usage: kotlin bsq.main.kts [-h] [-n] [-l] [-c キャッシュフォルダ] [Keyword ...]")
-    println("  -h: Show help")
-    println("  -n: Show count of results")
-    println("  -l: List basic info (ID, Name) only")
+if (argsList.isEmpty()) {
+    println("Usage: kotlin bsq.main.kts command [-c cacheDirectory] [Keyword ...]")
+    println("command:")
+    println("  l List basic info (ID, Name) only")
     println("  -c: Specify cache directory (Default: ~/.bscards)")
     System.exit(0)
 }
 
-val showCount = argsList.contains("-n")
 val listOnly = argsList.contains("-l")
 
 val cIndex = argsList.indexOf("-c")
@@ -90,8 +89,12 @@ val cacheDirStr: String = if (cIndex != -1 && cIndex + 1 < argsList.size) {
     "$home/.bscards"
 }
 
-val keywords = argsList.filterIndexed { index, s -> 
-    !s.startsWith("-") && (index == 0 || argsList[index-1] != "-c") 
+val keywords = argsList.filterIndexed { index, s ->
+    !s.startsWith("-") && (index == 0 || argsList[index - 1] != "-c")
+}
+
+when (args[0]) {
+    "l" -> main()
 }
 
 
@@ -102,13 +105,13 @@ suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card
     val response: HttpResponse = httpClient.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         setBody(FormDataContent(Parameters.build {
             append("freewords", kfreeKyword)
-            append("view_switch", "on") 
+            append("view_switch", "on")
         }))
     }
 
     val listHtml = response.bodyAsText()
     val doc = Ksoup.parse(listHtml)
-    
+
     return doc.select("li.cardCol.js-detail").mapNotNull {
         val id = it.select("span.num").text().trim()
         if (id.isEmpty()) {
@@ -134,43 +137,44 @@ suspend fun listCards(keywords: List<String>, httpClient: HttpClient): List<Card
 
 suspend fun Card.updateCache(httpClient: HttpClient) {
     val detailUrl = "https://www.battlespirits.com/cardlist/detail_iframe.php?card_no=${this.id}&card_no2=${this.id}"
-    
+
     val response = httpClient.get(detailUrl)
     val html = response.bodyAsText()
     val doc = Ksoup.parse(html)
-    
+
     val fetchedName = doc.select(".cardName").first()?.text()?.trim() ?: ""
     val finalName = if (fetchedName.isNotEmpty()) fetchedName else this.name
-    
+
     val costVal = doc.select("dt:contains(コスト) + dd").first()?.text()?.trim()?.toIntOrNull() ?: 0
     val attrVal = doc.select(".attribute").first()?.text()?.trim() ?: ""
     val systemVal = doc.select("dt:contains(系統) + dd").first()?.text()?.trim() ?: ""
-    
+
     val lvCostList = doc.select(".bpCoreItem").mapNotNull {
         val lv = it.select("img[alt^=LV]").attr("alt").replace("LV", "")
         val bp = it.select(".bpCoreVal").text()
         val core = it.select(".bpCoreLevel").text()
         if (lv.isNotEmpty()) "$lv,$core,$bp" else null
     }
-    
-    val effectText = doc.select(".detailColListTerm:contains(能力・効果) + .detailColListDescription").first()?.let { effectDd ->
-        effectDd.select("img").forEach { img ->
-            val alt = img.attr("alt")
-            img.replaceWith(TextNode(if (alt.isNotEmpty()) "[$alt]" else "[アイコン]"))
-        }
-        effectDd.select("br").forEach { br -> br.replaceWith(TextNode("\n")) }
-        effectDd.text().trim()
-    } ?: "取得失敗"
-    
+
+    val effectText =
+        doc.select(".detailColListTerm:contains(能力・効果) + .detailColListDescription").first()?.let { effectDd ->
+            effectDd.select("img").forEach { img ->
+                val alt = img.attr("alt")
+                img.replaceWith(TextNode(if (alt.isNotEmpty()) "[$alt]" else "[アイコン]"))
+            }
+            effectDd.select("br").forEach { br -> br.replaceWith(TextNode("\n")) }
+            effectDd.text().trim()
+        } ?: "取得失敗"
+
     val reductionStr = doc.select("dt:contains(軽減コスト) + dd img")
         .map { img -> if (img.attr("alt") == "◇") "全" else img.attr("alt") }
         .filter { it.isNotEmpty() }
         .groupingBy { it }
         .eachCount()
         .entries.joinToString("") { "${it.key}${it.value}" }
-    
+
     val familyList = systemVal.split("・").filter { it.isNotBlank() }
-    
+
     val categoryText = doc.select("dt:contains(カテゴリー) + dd").text().trim()
     val categoryVal = when {
         categoryText.contains("スピリット") -> "S"
@@ -180,9 +184,9 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
         categoryText.contains("マジック") -> "M"
         else -> "S"
     }
-    
+
     val symbolVal = if (attrVal.isNotEmpty()) "${attrVal.take(1)}1" else ""
-    
+
     val fullCard = Card(
         id = id,
         name = finalName,
@@ -196,21 +200,21 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
         effect = effectText,
         note = ""
     )
-    
+
     val cards = Cards(id = id, cards = listOf(fullCard))
     val yamlContent = Yaml.default.encodeToString(serializer<Cards>(), cards)
-    
+
     val baseDir = Path(cacheDirStr)
     if (!SystemFileSystem.exists(baseDir)) {
         SystemFileSystem.createDirectories(baseDir)
     }
-    
+
     // Sanitize filename: remove / \ : * ? " < > | and limit length
     val sanitizedName = finalName.replace(Regex("[\\\\/:*?\"<>|\\s]"), "_").take(50)
     val familyStr = familyList.joinToString(",").replace(Regex("[\\\\/:*?\"<>|]"), "_").take(50)
     val fileName = "$id.$sanitizedName.$category.$attr.$familyStr.json"
     val filePath = Path(baseDir, fileName)
-    
+
     SystemFileSystem.sink(filePath).buffered().use {
         it.writeString(yamlContent)
     }
@@ -218,27 +222,22 @@ suspend fun Card.updateCache(httpClient: HttpClient) {
 
 // --- Main Execution ---
 
-runBlocking {
-    try {
-        val cards = listCards(keywords, client)
-        
-        if (showCount) {
-            println("Found ${cards.size} cards.")
+main(args)
+fun main(args: Array<String>) = runBlocking {
+
+    val cards = listCards(keywords, client)
+
+    if (showCount) {
+        println("Found ${cards.size} cards.")
+    }
+
+    for (card in cards) {
+        card.updateCache(client)
+
+        if (listOnly || !showCount) {
+            println("${card.id} ${card.name}")
         }
-        
-        for (card in cards) {
-            card.updateCache(client)
-            
-            if (listOnly || !showCount) {
-                println("${card.id} ${card.name}")
-            }
-            
-            delay(200)
-        }
-        
-    } catch (e: Exception) {
-        e.printStackTrace()
-    } finally {
-        client.close()
+
+        delay(200)
     }
 }
