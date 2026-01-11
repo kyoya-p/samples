@@ -95,13 +95,16 @@ fun parseCardDetail(html: String): CardDetail {
     )
 }
 
-val targetCardNo = args.getOrNull(0) ?: "BS72-084"
+val targetCardNo = args.getOrElse(0) {
+}
+val targetCardSide = args.getOrNull(1) ?: ""
 
 runBlocking {
     println("Fetching details for: $targetCardNo")
     val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
         parameter("card_no", targetCardNo)
         parameter("card_no2", targetCardNo)
+        parameter("card_side", targetCardSide)
         header(
             "User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
