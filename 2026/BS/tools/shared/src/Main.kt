@@ -30,7 +30,7 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
                 val seen = mutableSetOf<E>()
                 collect { value -> if (seen.add(op(value))) emit(value) }
             }
-    println("Freewords: $keywords")
+            println("Freewords: $keywords")
 
             bsSearchMain(
                 keywords = keywordStr,

@@ -168,3 +168,22 @@
 - `tools/bsq.main.kts`: コマンドライン実行用スクリプト（検証・実用済み）
 - `cards_list.txt`: 構築済みデッキリスト
 - `~/.bscards/*.yaml`: カード詳細情報のキャッシュ群
+
+# 作業ログ: KMPツールのバグ修正と機能改善 (2026-01-12 追加)
+
+## 実施内容
+
+### 1. 検索機能の改善 (`SearchCards.kt`)
+- **検索件数制限への対応**: 公式サイトの検索結果が制限（上限超え）された場合のエラーメッセージ（`.errorCol.is-show`）を検知し、適切にユーザーへ通知して処理を中断するよう修正。
+- **検索結果件数の表示**: 検索ヒット件数（`.js-countContents`）を取得し、コンソールに表示する機能を追加。
+- **コード整理**: 不要なインポート（`flowOf`）を削除。
+
+### 2. Windows環境におけるTLSエラーの修正
+- **プラットフォーム固有HttpClientの適用**:
+    - `bsSearchMain` (`SearchCards.kt`) および `bsDetail` (`GetDetail.kt`) において、ハードコードされた `HttpClient(CIO)` の使用を廃止。
+    - 代わりに `Funcs.kt` で定義されたプラットフォーム固有の `client` (Windowsでは `WinHttp`、Linuxでは `Curl`、JVMでは `CIO`) を使用するように変更。
+    - これにより、Windows Native環境 (`mingwX64`) ビルド時に発生していた `Uncaught Kotlin exception: kotlin.IllegalStateException: TLS sessions are not supported on Native platform.` エラーを解消。
+
+## 成果物更新
+- `tools/shared/src/SearchCards.kt`: 検索ロジックの改善とHttpClientの修正
+- `tools/shared/src/GetDetail.kt`: HttpClientの修正

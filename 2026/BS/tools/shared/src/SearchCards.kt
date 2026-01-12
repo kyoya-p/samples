@@ -1,14 +1,13 @@
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-fun bsSearchMain(
+suspend fun bsSearchMain(
     keywords: String,
     cardNo: String,
     costMin: Int,
@@ -17,8 +16,7 @@ fun bsSearchMain(
     category: List<String>,
     system: List<String>,
 ): Flow<SearchCard> = flow {
-    val searchClient = HttpClient(CIO)
-    val response: HttpResponse = searchClient.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
+    val response: HttpResponse = client.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         header(
             "User-Agent",
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"

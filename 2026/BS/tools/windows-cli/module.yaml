@@ -1,8 +1,6 @@
-#file: noinspection AmperEmptyModuleInspection
 product:
   type: windows/app
   platforms: [ mingwX64 ]
-
 settings:
   ktor: enabled
 dependencies:

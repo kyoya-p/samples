@@ -11,3 +11,20 @@ Keyword: Keywordで指示され検出したカードの詳細情報をキャッ�
 
 # Note
 kotlin Script Cache (Windows): `%LOCALAPPDATA%\main.kts.compiled.cache\` 
+
+# テスト実行
+```shell
+./amper run -m jvm-cli      # Jvm
+./amper run -m linux-cli    # Linux
+./amper run -m windows-cli  # Windows
+```
+
+# ビルド
+```shell
+./amper task :jvm-cli:executableJarJvm
+./amper task :linux-cli:linkLinuxX64Release
+./amper task :windows-cli:linkMingwX64Release
+```
+
+# TODO
+- windows版動作しない

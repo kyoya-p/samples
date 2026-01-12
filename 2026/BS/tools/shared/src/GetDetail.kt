@@ -106,12 +106,10 @@ fun parseCard(html: String): Card {
 }
 
 suspend fun bsDetail(cardId: String): Card {
-    val client = HttpClient()
     val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
         parameter("card_no", cardId)
         header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     }
     val body = response.bodyAsText()
-    client.close()
     return parseCard(body)
 }

@@ -5,4 +5,4 @@ import platform.posix.getenv
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun getEnv(key: String): String = getenv(key)?.toKString() ?: ""
-actual val client = HttpClient ()
+actual val client = HttpClient()
