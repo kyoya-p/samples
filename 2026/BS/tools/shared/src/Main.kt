@@ -3,6 +3,8 @@ import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.charleskorn.kaml.Yaml
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
@@ -13,27 +15,29 @@ import kotlinx.io.buffered
 
 class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
     private val keywords by argument(help = "Search keywords").multiple(required = false)
+    private val force by option("-f", "--force", help = "Force rewrite cache").flag()
 
     override fun run() {
         runBlocking {
-            try {
-                val cacheDirStr = getEnv("BSCARD_CACHE_DIR").ifEmpty {
-                    val home = getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }
-                    "$home/.bscards"
-                }
+            val cacheDirStr = getEnv("BSCARD_CACHE_DIR").ifEmpty {
+                val home = getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }
+                "$home/.bscards"
+            }
 
-                val cacheDirPath = Path(cacheDirStr)
-                if (!SystemFileSystem.exists(cacheDirPath)) SystemFileSystem.createDirectories(cacheDirPath)
+            val cacheDirPath = Path(cacheDirStr)
+            if (!SystemFileSystem.exists(cacheDirPath)) SystemFileSystem.createDirectories(cacheDirPath)
 
-                val keywordStr = keywords.joinToString(" ")
+            val keywordStr = keywords.joinToString(" ")
 
-                fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
-                    val seen = mutableSetOf<E>()
-                    collect { value -> if (seen.add(op(value))) emit(value) }
-                }
-                println("Freewords: $keywords")
+            fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
+                val seen = mutableSetOf<E>()
+                collect { value -> if (seen.add(op(value))) emit(value) }
+            }
+            println("Freewords: $keywords")
 
+            createClient().use { client ->
                 bsSearchMain(
+                    client = client,
                     keywords = keywordStr,
                     cardNo = "",
                     costMin = 0,
@@ -45,14 +49,12 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
                     val fn = Path(cacheDirPath, "${searched.cardNo}.yaml")
                     print("target: $fn : ")
                     if (!SystemFileSystem.exists(fn)) {
-                        val card = bsDetail(searched.cardNo)
+                        val card = bsDetail(client, searched.cardNo)
                         SystemFileSystem.sink(fn).buffered()
                             .use { it.writeString(Yaml.default.encodeToString(card)) }
                         println("collected.")
                     } else println("already exists.")
                 }
-            } finally {
-                client.close()
             }
         }
     }
