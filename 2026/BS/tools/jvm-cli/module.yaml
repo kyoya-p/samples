@@ -1,0 +1,8 @@
+product:
+  type: jvm/app
+dependencies:
+  - ../shared
+  - ch.qos.logback:logback-classic:1.5.24
+settings:
+  jvm:
+    mainClass: MainKt

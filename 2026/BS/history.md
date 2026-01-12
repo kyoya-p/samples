@@ -121,3 +121,35 @@
 ## 備考
 - `kotlin-main-kts` における KMP ライブラリの依存関係解決問題を、`-jvm` アーティファクトの明示指定により解決。
 - 転醒カード、契約カードなどの複雑な両面データも、単一のコマンドで一括取得・構造化表示が可能となった。
+
+# 作業ログ: Amper KMP移行とクロスプラットフォーム対応 (2026-01-12)
+
+## 実施内容
+
+### 1. Amperプロジェクトの構築
+- `tools/` 配下に Amper を用いた KMP プロジェクト構造を定義。
+- **構成**:
+    - `project.yaml`: `shared`, `jvm-cli`, `linux-cli`, `windows-cli` モジュールを定義。
+    - `shared`: 共通ロジック（検索、詳細取得、モデル）。
+    - `*-cli`: 各プラットフォーム向けのエントリポイント。
+
+### 2. 既存スクリプトのKotlinソースコード化
+- `tools/*.main.kts` のロジックを `tools/shared/src/` 配下の Kotlin ソースファイルへ移植。
+    - `bsModel.main.kts` -> `bsModel.main.kt`
+    - `bsSearch.main.kts` -> `bsSearch.main.kt`
+    - `bsDetail.main.kts` -> `bsDetail.main.kt`
+- **プラットフォーム固有実装 (`Funcs.kt`)**:
+    - 環境変数取得 (`getEnv`) と `HttpClient` 生成ロジックを `expect`/`actual` で分離。
+    - **JVM**: `System.getenv`, `CIO` エンジン。
+    - **Linux**: `libcurl` (`curl_getenv`), `Curl` エンジン。
+    - **Windows**: `getenv`, `WinHttp` エンジン。
+
+### 3. CLIエントリポイントの実装
+- `tools/shared/src/Main.kt`: 共通の `main` 関数を実装。
+    - 現状はキーワードによる検索と詳細表示を行う基本フローのみ。
+    - キャッシュ機構の統合は次のステップ。
+
+## 成果物一覧
+- `tools/project.yaml`, `tools/**/module.yaml`: Amper設定
+- `tools/shared/src/`: 共通ロジック
+- `tools/jvm-cli/`, `tools/linux-cli/`, `tools/windows-cli/`: 各PF用エントリポイント

@@ -1,0 +1,10 @@
+#file: noinspection AmperEmptyModuleInspection
+product:
+  type: windows/app
+  platforms: [ mingwX64 ]
+
+settings:
+  ktor: enabled
+dependencies:
+  - ../shared
+  - $ktor.client.winhttp
