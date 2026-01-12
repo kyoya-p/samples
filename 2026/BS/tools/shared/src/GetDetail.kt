@@ -1,14 +1,9 @@
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kotlinx.coroutines.runBlocking
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flow
 
 fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
     val rarity = root.select(".cardRarity").text().trim()
@@ -107,9 +102,7 @@ fun parseCard(html: String): Card {
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardFace(it, id, "B") }
     val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardFace(it, id, "") }
 
-    return if (sideA != null) Card(id, sideA, sideB)
-    else Card(id, sideNo!!, null)
-
+    return Card(id, sideA!!, sideB)
 }
 
 suspend fun bsDetail(cardId: String): Card {

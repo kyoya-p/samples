@@ -5,7 +5,7 @@
 
 # 使用  
 ```shell  
-java -jar Main.jar [Keyword Keyword ...]  
+java -jar Main.jar [-k Keyword -k keywod ...]  
 ```
 Keyword: Keywordで指示され検出したカードの詳細情報をキャッシュファイル(~/.bscards/$cardNo.yaml)として保存
 

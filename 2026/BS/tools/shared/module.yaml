@@ -11,12 +11,10 @@ dependencies:
   - org.jetbrains.kotlinx:kotlinx-io-core:0.7.0
   - com.fleeksoft.ksoup:ksoup:0.2.5
   - com.charleskorn.kaml:kaml:0.63.0
+  - com.github.ajalt.clikt:clikt:5.0.3
 
 settings:
   ktor:
     enabled: true
   kotlin:
     serialization: enabled
-
-
-

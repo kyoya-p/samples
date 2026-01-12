@@ -23,7 +23,7 @@ fun main(args: Array<String>) = runBlocking {
 
     val keywords = args.joinToString(" ")
     if (keywords.isEmpty()) {
-        println("Usage: <Keywords>")
+        println("Usage: [-k <Keywords>]...")
         return@runBlocking
     }
 
@@ -45,6 +45,7 @@ fun main(args: Array<String>) = runBlocking {
         if (!SystemFileSystem.exists(fn)) {
             val card = bsDetail(searched.cardNo)
             SystemFileSystem.sink(fn).buffered().use { it.writeString(Yaml.default.encodeToString(card)) }
+            println("collection: $fn")
         } else println("exist cache: $fn")
     }
 }
