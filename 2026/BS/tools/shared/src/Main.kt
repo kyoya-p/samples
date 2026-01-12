@@ -43,13 +43,9 @@ fun main(args: Array<String>) = runBlocking {
     ).distinctBy { it.cardNo }.collect { searched ->
         val fn = Path(cacheDirPath, "${searched.cardNo}.yaml")
         if (!SystemFileSystem.exists(fn)) {
-            bsDetail(searched.cardNo).collect { card ->
-                SystemFileSystem.sink(fn).buffered().use { it.writeString(Yaml.default.encodeToString(face)) }
-                println(fn)
-            }
-        } else {
-            println("exist cache: $fn")
-        }
+            val card = bsDetail(searched.cardNo)
+            SystemFileSystem.sink(fn).buffered().use { it.writeString(Yaml.default.encodeToString(card)) }
+        } else println("exist cache: $fn")
     }
 }
 

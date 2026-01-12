@@ -27,7 +27,7 @@ data class CardFace(
     val rarity: String,
     val cost: Int,
     val symbols: String, // 紫シンボル1個と緑シンボル1個なら "紫1緑1", 赤神シンボル1個なら "赤神1"
-    val reductionSymbols: String, // 赤軽減１個、青軽減2個なら "赤1青2"
+    val reductionSymbols: String, // 赤軽減１個、青軽減2個なら "赤1青2"、全色軽減2個なら"全2"
     val category: String, // S:スピリット、U:アルティメット, B:ブラヴ、N:ネクサス、M:マジック
     val attributes: String, // 全色なら"赤紫緑白黄青"
     val systems: List<String>,

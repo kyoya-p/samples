@@ -15,7 +15,20 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
     val name = root.select(".cardName").text().trim()
     val costText = root.select(".textCost").text().trim()
     val cost = costText.toIntOrNull() ?: 0
-    val reductionImgs = root.select(".cost img").map { it.attr("alt") }
+    val reductionImgs = root.select(".cost img").map { img ->
+        val src = img.attr("src")
+        when {
+            src.contains("cost_ruby") -> "赤"
+            src.contains("cost_amethyst") -> "紫"
+            src.contains("cost_emerald") -> "緑"
+            src.contains("cost_diamond") -> "白"
+            src.contains("cost_topaz") -> "黄"
+            src.contains("cost_sapphire") -> "青"
+            src.contains("cost_all") -> "全"
+            src.contains("cost_god") -> "神"
+            else -> img.attr("alt")
+        }
+    }
     val reductionSymbols =
         reductionImgs.groupingBy { it }.eachCount().entries.joinToString("") { "${it.key}${it.value}" }
     val symbolImgs = root.select("dt:contains(シンボル) + dd img").map { it.attr("alt") } //todo
@@ -94,17 +107,12 @@ fun parseCard(html: String): Card {
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardFace(it, id, "B") }
     val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardFace(it, id, "") }
 
-    val cards = mutableListOf<CardFace>()
-    if (sideA != null) {
-        cards.add(Card(id, sideA, sideB))
-    } else if (sideNo != null) {
-        cards.add(Card(id, sideNo, null))
-    }
+    return if (sideA != null) Card(id, sideA, sideB)
+    else Card(id, sideNo!!, null)
 
-    return card
 }
 
-suspend fun bsDetail(cardId: String): Flow<Card> = flow {
+suspend fun bsDetail(cardId: String): Card {
     val client = HttpClient()
     val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
         parameter("card_no", cardId)
@@ -112,5 +120,5 @@ suspend fun bsDetail(cardId: String): Flow<Card> = flow {
     }
     val body = response.bodyAsText()
     client.close()
-    parseCard(body).forEach { emit(it) }
+    return parseCard(body)
 }
