@@ -8,7 +8,7 @@ test-dependencies@jvm:
 dependencies:
   - $ktor.client.cio
   - $ktor.serialization.kotlinx.json
-  #  - $ktor.client.contentNegotiation
+  - org.jetbrains.kotlinx:kotlinx-io-core:0.7.0
   - com.fleeksoft.ksoup:ksoup:0.2.5
   - com.charleskorn.kaml:kaml:0.63.0
 
@@ -17,5 +17,6 @@ settings:
     enabled: true
   kotlin:
     serialization: enabled
+
 
 

@@ -12,6 +12,7 @@ data class SearchCard(
     val imgUrl: String,
 )
 
+@Serializable
 data class Card(
     val cardNo: String,
     val side: String, // "" or "A" or "B"

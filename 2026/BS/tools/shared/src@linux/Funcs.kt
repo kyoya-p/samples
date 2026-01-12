@@ -8,4 +8,4 @@ import libcurl.curl_getenv
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun getEnv(key: String): String = curl_getenv(key)?.toKString() ?: ""
-actual val client = HttpClient(Curl) {install(ContentNegotiation){json()}  }
+actual val client = HttpClient(Curl) { install(ContentNegotiation) { json() } }
