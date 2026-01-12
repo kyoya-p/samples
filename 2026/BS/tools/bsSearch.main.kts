@@ -18,25 +18,7 @@ import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 
-val searchClient = HttpClient(CIO) {
-    install(HttpTimeout) {
-        requestTimeoutMillis = 60000
-        connectTimeoutMillis = 60000
-        socketTimeoutMillis = 60000
-    }
-}
 
-//@Serializable
-//data class SearchCard(
-//    val cardNo: String,
-//    val name: String,
-//    val rarity: String,
-//    val cost: String,
-//    val type: String,
-//    val imgUrl: String,
-//)
-
-// Main
 runBlocking {
     bsSearchMain(
         keywords = args.joinToString(" "),
@@ -46,10 +28,9 @@ runBlocking {
         attr = "", // 全色の場合 "赤紫緑白黄青"
         category = listOf(),
         system = listOf(),
-    ).collectIndexed { index, card ->
-        println("$index: $card")
-    }
+    ).collectIndexed { index, card -> println("$index: $card") }
 }
+
 suspend fun bsSearchMain(
     keywords: String,
     cardNo: String,
@@ -59,6 +40,7 @@ suspend fun bsSearchMain(
     category: List<String>,
     system: List<String>,
 ): Flow<SearchCard> = flow {
+    val searchClient = HttpClient(CIO)
     val response: HttpResponse = searchClient.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         header(
             "User-Agent",
@@ -90,13 +72,25 @@ suspend fun bsSearchMain(
         val cardElements = doc.select("li.cardCol.js-detail")
 
         cardElements.forEach { element ->
+            val rawType = element.select(".type").text().trim()
+            // Example: "赤 | スピリット 星竜・勇傑"
+            val parts = rawType.split("|").map { it.trim() }
+            val attribute = if (parts.size > 1) parts[0].split("・").joinToString("") else ""
+            val typeAndSystem = if (parts.size > 1) parts[1] else parts[0]
+
+            val typeParts = typeAndSystem.split(" ", limit = 2)
+            val type = typeParts[0]
+            val systems = if (typeParts.size > 1) typeParts[1].split("・").map { it.trim() } else emptyList()
+
             emit(
                 SearchCard(
                     cardNo = element.select(".number .num").text().trim(),
                     rarity = element.select(".number .rarity").text().trim(),
                     name = element.select(".name").text().trim(),
                     cost = element.select(".costVal").text().trim(),
-                    type = element.select(".type").text().trim(),
+                    type = type,
+                    attribute = attribute,
+                    systems = systems,
                     imgUrl = "https://www.battlespirits.com${element.select(".thumbnail img").attr("data-src")}",
                 )
             )

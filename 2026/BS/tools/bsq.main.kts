@@ -11,11 +11,12 @@
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.collectIndexed
+import kotlin.collections.listOf
 
 runBlocking { bsqMain(args) }
 suspend fun bsqMain(args: Array<String>) {
     bsSearchMain(
-        "世界",
+        keywords = "世界",
         cardNo = "",
         costMin = 0,
         costMax = 30,
