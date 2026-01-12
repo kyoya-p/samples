@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flow
 
-fun parseCardSide(root: Element, cardNo: String, sideName: String): Card {
+fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
     val rarity = root.select(".cardRarity").text().trim()
     val name = root.select(".cardName").text().trim()
     val costText = root.select(".textCost").text().trim()
@@ -69,7 +69,7 @@ fun parseCardSide(root: Element, cardNo: String, sideName: String): Card {
 
     val imageUrl = "https://www.battlespirits.com" + root.select(".cardImg img").attr("src")
 
-    return Card(
+    return CardFace(
         cardNo = cardNo,
         side = sideName,
         name = name,
@@ -90,11 +90,18 @@ fun parseCard(html: String): List<Card> {
     val doc: Document = Ksoup.parse(html)
     val id = doc.select(".cardNum").first()?.ownText()?.trim() ?: ""
 
-    val sideA = doc.select("#CardCol_A").firstOrNull()?.let { parseCardSide(it, id, "A") }
-    val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardSide(it, id, "B") }
-    val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardSide(it, id, "") }
+    val sideA = doc.select("#CardCol_A").firstOrNull()?.let { parseCardFace(it, id, "A") }
+    val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardFace(it, id, "B") }
+    val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardFace(it, id, "") }
 
-    return listOfNotNull(sideA, sideB, sideNo)
+    val cards = mutableListOf<Card>()
+    if (sideA != null) {
+        cards.add(Card(id, sideA, sideB))
+    } else if (sideNo != null) {
+        cards.add(Card(id, sideNo, null))
+    }
+
+    return cards
 }
 
 suspend fun bsDetail(cardId: String): Flow<Card> = flow {

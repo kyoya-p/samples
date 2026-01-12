@@ -27,6 +27,11 @@ fun main(args: Array<String>) = runBlocking {
         return@runBlocking
     }
 
+    fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
+        val seen = mutableSetOf<E>()
+        collect { value -> if (seen.add(op(value))) emit(value) }
+    }
+
     bsSearchMain(
         keywords = keywords,
         cardNo = "",
@@ -35,5 +40,10 @@ fun main(args: Array<String>) = runBlocking {
         attr = "",
         category = emptyList(),
         system = emptyList()
-    ). //todo
+    ).distinctBy { it.cardNo }.collect { searched ->
+        val fn = "${searched.cardNo}.yaml"
+//todo
+        println(bsDetail(searched.cardNo))
+    }
 }
+
