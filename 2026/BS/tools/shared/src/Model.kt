@@ -15,6 +15,13 @@ data class SearchCard(
 @Serializable
 data class Card(
     val cardNo: String,
+    val sideA: CardFace,
+    val sideB: CardFace?,
+)
+
+@Serializable
+data class CardFace(
+    val cardNo: String,
     val side: String, // "" or "A" or "B"
     val name: String,
     val rarity: String,
