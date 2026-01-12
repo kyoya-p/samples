@@ -86,7 +86,7 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
     )
 }
 
-fun parseCard(html: String): List<Card> {
+fun parseCard(html: String): Card {
     val doc: Document = Ksoup.parse(html)
     val id = doc.select(".cardNum").first()?.ownText()?.trim() ?: ""
 
@@ -94,14 +94,14 @@ fun parseCard(html: String): List<Card> {
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardFace(it, id, "B") }
     val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardFace(it, id, "") }
 
-    val cards = mutableListOf<Card>()
+    val cards = mutableListOf<CardFace>()
     if (sideA != null) {
         cards.add(Card(id, sideA, sideB))
     } else if (sideNo != null) {
         cards.add(Card(id, sideNo, null))
     }
 
-    return cards
+    return card
 }
 
 suspend fun bsDetail(cardId: String): Flow<Card> = flow {
