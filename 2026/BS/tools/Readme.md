@@ -5,6 +5,6 @@
 
 # 使用  
 ```shell  
-kotlin tools/bsq.main.kts [Keyword Keyword ...]  
+kotlin tools/bsq.main.kts query [Keyword Keyword ...]  
 ```
-Keyword: Keywordで指示され検出したカードの情報をキャッシュファイル(.bscards/*.yaml)として保存
+Keyword: Keywordで指示され検出したカードの詳細情報をキャッシュファイル(~/.bscards/*.yaml)として保存

@@ -16,23 +16,47 @@ import com.fleeksoft.ksoup.nodes.Element
 fun parseCardSide(root: Element, cardNo: String, sideName: String): Card {
     val rarity = root.select(".cardRarity").text().trim()
     val name = root.select(".cardName").text().trim()
-
     val costText = root.select(".textCost").text().trim()
     val cost = costText.toIntOrNull() ?: 0
-    val reductionSymbols = root.select(".cost img").map { it.attr("alt") }
-
+    val reductionImgs = root.select(".cost img").map { it.attr("alt") }
+    val reductionSymbols =
+        reductionImgs.groupingBy { it }.eachCount().entries.joinToString("") { "${it.key}${it.value}" }
+    val symbolImgs = root.select("dt:contains(シンボル) + dd img").map { it.attr("alt") } //todo
+    val symbols = symbolImgs.groupingBy { it }.eachCount().entries.joinToString("") { "${it.key}${it.value}" } //todo
     val category = root.select("dt:contains(カテゴリー) + dd").text().trim()
-    val attributes = root.select(".attribute .attributeItem").map { it.text().trim() }
-    val systems = root.select("dt:contains(系統) + dd").text().split("・").map { it.trim() }.filter { it.isNotBlank() }
+    val attributes = root.select(".attribute .attributeItem").joinToString("") { it.text().trim() }
 
-    val lvInfo = root.select(".bpCoreItem").mapNotNull { item ->
-        val lvImg = item.select("img.bpCoreImg").attr("alt")
-        if (lvImg.isEmpty()) return@mapNotNull null
+    val systems = root.select("dt:contains(系統) + dd").first()?.ownText()?.trim()
+        ?.split("・")?.map { it.trim() }?.filter { it.isNotBlank() } ?: emptyList()
 
-        val lv = lvImg.replace("LV", "").toIntOrNull() ?: 0
-        val bp = item.select(".bpCoreVal").text().trim().toIntOrNull()
-        val core = item.select(".bpCoreLevel").text().trim().toIntOrNull() ?: 0
-        LvInfo(lv, core, bp)
+    val lvInfoList = mutableListOf<String>()
+    val bpCoreItems = root.select(".bpCoreItem")
+
+    if (bpCoreItems.isNotEmpty()) {
+        bpCoreItems.forEach { item ->
+            val lvImg = item.select("img.bpCoreImg").attr("alt")
+            if (lvImg.isNotEmpty()) {
+                val lv = lvImg.replace("LV", "").toIntOrNull() ?: 0
+                val bp = item.select(".bpCoreVal").text().trim().toIntOrNull()
+                val core = item.select(".bpCoreLevel").text().trim().toIntOrNull() ?: 0
+                if (bp != null) lvInfoList.add("$lv,$core,$bp")
+                else lvInfoList.add("$lv,$core")
+            }
+        }
+    } else {
+        // Fallback for Nexuses if they don't use .bpCoreItem
+        val dts = root.select("dt")
+        dts.forEach { dt ->
+            val dtText = dt.text().trim()
+            if (dtText.startsWith("Lv")) {
+                val lv = dtText.replace("Lv", "").toIntOrNull() ?: 0
+                val dd = dt.nextElementSibling()
+                if (dd != null && dd.tagName() == "dd") {
+                    val core = dd.text().replace("コア", "").trim().toIntOrNull() ?: 0
+                    lvInfoList.add("$lv,$core")
+                }
+            }
+        }
     }
 
     val effectElement = root.select(".detailColListDescription.wide").first()?.clone()
@@ -54,11 +78,12 @@ fun parseCardSide(root: Element, cardNo: String, sideName: String): Card {
         name = name,
         rarity = rarity,
         cost = cost,
+        symbols = symbols,
         reductionSymbols = reductionSymbols,
-        attributes = attributes,
         category = category,
+        attributes = attributes,
         systems = systems,
-        lvInfo = lvInfo,
+        lvInfo = lvInfoList,
         effect = effect,
         imageUrl = imageUrl
     )
@@ -70,18 +95,7 @@ fun parseCard(html: String): List<Card> {
 
     val sideA = doc.select("#CardCol_A").firstOrNull()?.let { parseCardSide(it, id, "A") }
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardSide(it, id, "B") }
-    val sideNo = doc.select(".detailBox").firstOrNull()?.let {parseCardSide(it, id, "") }
-
-//    if (sideA != null) {
-//        sides.add(parseCardSide(sideA, id, "A"))
-//        if (sideB != null) {
-//            sides.add(parseCardSide(sideB, id, "B"))
-//        }
-//    } else {
-//        doc.select(".detailBox").first()?.let {
-//            sides.add(parseCardSide(it, id, ""))
-//        }
-//    }
+    val sideNo = sideA ?: sideB ?: doc.select(".detailBox").firstOrNull()?.let { parseCardSide(it, id, "") }
 
     return listOfNotNull(sideA, sideB, sideNo)
 }

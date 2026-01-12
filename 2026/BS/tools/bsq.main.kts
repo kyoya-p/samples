@@ -26,3 +26,4 @@ suspend fun bsqMain(args: Array<String>) {
         println("$index: $value")
     }
 }
+
