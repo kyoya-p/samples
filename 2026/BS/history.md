@@ -144,12 +144,27 @@
     - **Linux**: `libcurl` (`curl_getenv`), `Curl` エンジン。
     - **Windows**: `getenv`, `WinHttp` エンジン。
 
-### 3. CLIエントリポイントの実装
-- `tools/shared/src/Main.kt`: 共通の `main` 関数を実装。
-    - 現状はキーワードによる検索と詳細表示を行う基本フローのみ。
-    - キャッシュ機構の統合は次のステップ。
+### 3. CLIエントリポイントの実装とキャッシュ機構
+- `tools/shared/src/Main.kt`: 共通の `main` 関数を実装し、以下のキャッシュフローを確立。
+    1.  `BSCARD_CACHE_DIR` または `~/.bscards` を参照。
+    2.  キャッシュがあれば YAML からデコードして使用。
+    3.  なければ Web から取得し、YAML エンコードして保存。
+- **クロスプラットフォームファイル操作**: `kotlinx-io` (`SystemFileSystem`, `Path`) を採用し、`Funcs.kt` のプラットフォーム固有実装を排除して共通化。
+
+### 4. データモデルとパース精度の向上
+- `bsModel.main.kt`: `Card` データクラスを最新仕様（`lvInfo`や`symbols`のString化など）に更新し、`@Serializable` を付与。
+- `bsDetail.main.kt`:
+    - **シンボル取得**: `dt:contains(シンボル)` から画像またはテキストを抽出するロジックを追加・修正。
+    - **系統パース**: 余計な説明文を除外し、純粋な系統名のみをリスト化。
+    - **Lv情報**: ネクサスのコア数など、BPを持たないケースにも対応。
+
+### 5. デッキ構築とツール検証
+- 「超神星龍ジークヴルム・ノヴァXV」契約デッキ（超星・滅神軸）を構築。
+- `tools/bsq.main.kts` (スクリプト版) を改修し、デッキ内カード全40枚の詳細情報取得・キャッシュ保存に成功。
 
 ## 成果物一覧
 - `tools/project.yaml`, `tools/**/module.yaml`: Amper設定
-- `tools/shared/src/`: 共通ロジック
-- `tools/jvm-cli/`, `tools/linux-cli/`, `tools/windows-cli/`: 各PF用エントリポイント
+- `tools/shared/src/`: 共通ロジック (Main.kt, Search.kt, Detail.kt, Model.kt)
+- `tools/bsq.main.kts`: コマンドライン実行用スクリプト（検証・実用済み）
+- `cards_list.txt`: 構築済みデッキリスト
+- `~/.bscards/*.yaml`: カード詳細情報のキャッシュ群
