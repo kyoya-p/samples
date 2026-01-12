@@ -1,4 +1,3 @@
-@file:Repository("https://repo1.maven.org/maven2/")
 @file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
 @file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
@@ -29,28 +28,6 @@ if (targetCardId == "-h" || targetCardId == "--help") {
     println("Usage: kotlin tools/bsDetail.main.kts <CARD_ID>")
     java.lang.System.exit(0)
 }
-
-data class Card(
-    val id: String,
-    val sides: List<CardSide>
-)
-
-data class CardSide(
-    val side: String, // "A" or "B"
-    val name: String,
-    val cardNo: String,
-    val rarity: String,
-    val cost: Int?,
-    val reductionSymbols: List<String>,
-    val attributes: List<String>,
-    val category: String,
-    val systems: List<String>,
-    val lvInfo: List<LvInfo>,
-    val effect: String,
-    val imageUrl: String
-)
-
-data class LvInfo(val level: Int, val core: Int, val bp: Int)
 
 val client = HttpClient(CIO) {
     install(HttpTimeout) {

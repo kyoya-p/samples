@@ -1,6 +1,3 @@
-#!/usr/bin/env kotlin
-
-@file:Repository("https://repo.maven.apache.org/maven2")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-io-core:0.8.1")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 @file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
