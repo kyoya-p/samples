@@ -78,7 +78,7 @@ suspend fun bsSearchMain(
 
             val typeParts = typeAndSystem.split(" ", limit = 2)
             val type = typeParts[0]
-            val systems = if (typeParts.size > 1) typeParts[1].split("・").map { it.trim() } else emptyList()
+            val systems = if (typeParts.size > 1) typeParts[1].split("・").map { it.trim() }.filter { it.isNotBlank() } else emptyList()
 
             emit(
                 SearchCard(
@@ -86,7 +86,7 @@ suspend fun bsSearchMain(
                     rarity = element.select(".number .rarity").text().trim(),
                     name = element.select(".name").text().trim(),
                     cost = element.select(".costVal").text().trim(),
-                    type = type,
+                    category = type,
                     attribute = attribute,
                     systems = systems,
                     imgUrl = "https://www.battlespirits.com${element.select(".thumbnail img").attr("data-src")}",
