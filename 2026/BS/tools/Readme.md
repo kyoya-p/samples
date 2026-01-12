@@ -5,9 +5,15 @@
 
 # 使用  
 ```shell  
-java -jar Main.jar [-k Keyword -k keywod ...]  
+java -jar Main.jar [options]... [Keyword...] 
 ```
 Keyword: Keywordで指示され検出したカードの詳細情報をキャッシュファイル(~/.bscards/$cardNo.yaml)として保存
+
+Options:
+-f, --force              Force rewrite cache
+-c, --cache-dir=<value>  Cache Directory (default: C:\Users\kyoya\.bscards)
+--cost                   "3-5"ならコスト3以上5以下のカード。 "7"ならコスト7以上7以下のカード
+
 
 # Note
 kotlin Script Cache (Windows): `%LOCALAPPDATA%\main.kts.compiled.cache\` 

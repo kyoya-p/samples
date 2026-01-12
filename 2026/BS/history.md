@@ -188,19 +188,35 @@
 - `tools/shared/src/SearchCards.kt`: 検索ロジックの改善とHttpClientの修正
 - `tools/shared/src/GetDetail.kt`: HttpClientの修正
 
-# 作業ログ: 配布用実行ファイルの作成 (2026-01-13)
+# 作業ログ: 機能拡張とリソース管理の最適化 (2026-01-13)
 
 ## 実施内容
 
-### 1. JVM版実行可能Jarのビルド
-- `amper task :jvm-cli:executableJarJvm` を実行し、JVM版の単体実行可能Jar (`jvm-cli-jvm-executable.jar`) を生成。
+### 1. 枚数制限情報の取得実装 (`GetDetail.kt`)
+- カード詳細パースロジックを拡張し、公式サイトの「枚数制限」情報（禁止、制限1等）を取得できるよう修正。
+- `Model.kt` の `CardFace.restriction` フィールドに格納し、YAMLキャッシュへ保存するようにした。
+- 「イビルオーラ」（禁止）および「タルボス」（制限1）での正常動作を検証済み。
 
-### 2. インストーラ作成の試行と代替案
-- `jpackage` を使用したMSIインストーラ作成を試みたが、環境に **WiX Toolset** がインストールされていないため失敗。
-- 代替案として、`jpackage --type app-image` を使用し、JREを同梱した実行可能イメージ（アプリケーションフォルダ）を作成。
-- 生成されたフォルダをZIPアーカイブ化し、**`tools/build/installer/BS-CLI.zip`** として出力。これにより、JavaランタイムがインストールされていないWindows環境でも実行可能なCLIツールを配布可能とした。
+### 2. 検索CLIの機能拡張 (`Main.kt`)
+- **強制更新オプション**: `--force` (`-f`) オプションを追加し、既存のキャッシュを無視して最新データを取得・上書きする機能を実装。
+- **キャッシュディレクトリ指定**: `--cache-dir` (`-c`) オプションを追加し、キャッシュ保存先を任意に変更可能とした。`BSCARD_CACHE_DIR` 環境変数にも対応。
+- **ヘルプ表示の改善**: `Clikt` の設定を調整し、`-h` オプションのサポートおよびデフォルト値のヘルプ表示 (`showDefaultValues = true`) を有効化。
+
+### 3. HttpClientのリソース管理最適化
+- **問題**: Windows Native版で処理完了後にプロセスが終了しない不具合が発生。
+- **対応**: 
+    - `Funcs.kt` の `expect val client` を `expect fun createClient()` に変更し、シングルトンからファクトリ方式へ移行。
+    - `Main.kt` において `createClient().use { ... }` を使用し、スコープ終了時に確実にクライアントを `close()` するよう修正。
+    - `bsSearchMain`, `bsDetail` 等の通信を行う関数に `client` インスタンスを明示的に渡す構造へリファクタリング。
+- **JVM依存関係の修正**: `shared` モジュールのJVMターゲットにおいて `ktor-client-cio` が不足していたため、`module.yaml` に追加。
+
+### 4. 配布用実行ファイルの作成
+- `amper task :jvm-cli:executableJarJvm` を実行し、JVM版の単体実行可能Jar (`jvm-cli-jvm-executable.jar`) を生成。
+- `jpackage --type app-image` を使用し、JREを同梱した実行可能イメージ（アプリケーションフォルダ）を作成し、ZIPアーカイブ化（**`tools/build/installer/BS-CLI.zip`**）。
 
 ## 成果物
-- `tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar`: 実行可能Jar
-- `tools/build/installer/BS-CLI/`: 配布用アプリケーションフォルダ（JRE同梱）
-- `tools/build/installer/BS-CLI.zip`: 配布用ZIPアーカイブ
+- `tools/shared/src/Funcs.kt`, `tools/shared/src@*/Funcs.kt`: クライアント生成方式の変更
+- `tools/shared/src/Main.kt`: `use` によるリソース管理と `--force`、`--cache-dir` オプションの実装
+- `tools/shared/src/GetDetail.kt`: 制限情報のパースロジック追加
+- `tools/shared/module.yaml`: JVMターゲットへのCIOエンジンの追加
+- `tools/build/installer/BS-CLI.zip`: 配布用パッケージ

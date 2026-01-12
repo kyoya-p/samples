@@ -1,8 +1,12 @@
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.context
 import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.output.MordantHelpFormatter
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.multiple
 import com.charleskorn.kaml.Yaml
+import com.github.ajalt.clikt.parameters.options.convert
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
@@ -13,21 +17,27 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 import kotlinx.io.buffered
 
+val defaultCachePath = Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }, ".bscards")
+
 class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
-    private val keywords by argument(help = "Search keywords").multiple(required = false)
-    private val force by option("-f", "--force", help = "Force rewrite cache").flag()
+    init {
+        context {
+            helpOptionNames = setOf("-h", "--help")
+            helpFormatter = { context ->
+                MordantHelpFormatter(context, showDefaultValues = true)
+            }
+        }
+    }
+
+    override val printHelpOnEmptyArgs = true
+    val keywords by argument(help = "Search keywords").multiple(required = false)
+    val force by option("-f", "--force", help = "Force rewrite cache").flag()
+    val cacheDir by option("-c", "--cache-dir", help = "Cache Directory", envvar = "BSCARD_CACHE_DIR")
+        .convert { Path(it) }.default(defaultCachePath)
 
     override fun run() {
         runBlocking {
-            val cacheDirStr = getEnv("BSCARD_CACHE_DIR").ifEmpty {
-                val home = getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }
-                "$home/.bscards"
-            }
-
-            val cacheDirPath = Path(cacheDirStr)
-            if (!SystemFileSystem.exists(cacheDirPath)) SystemFileSystem.createDirectories(cacheDirPath)
-
-            val keywordStr = keywords.joinToString(" ")
+            if (!SystemFileSystem.exists(cacheDir)) SystemFileSystem.createDirectories(cacheDir)
 
             fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
                 val seen = mutableSetOf<E>()
@@ -38,7 +48,7 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
             createClient().use { client ->
                 bsSearchMain(
                     client = client,
-                    keywords = keywordStr,
+                    keywords = keywords.joinToString(" "),
                     cardNo = "",
                     costMin = 0,
                     costMax = 30,
@@ -46,7 +56,7 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
                     category = emptyList(),
                     system = emptyList()
                 ).distinctBy { it.cardNo }.collect { searched ->
-                    val fn = Path(cacheDirPath, "${searched.cardNo}.yaml")
+                    val fn = Path(cacheDir, "${searched.cardNo}.yaml")
                     print("target: ${searched.cardNo} : ")
                     if (force || !SystemFileSystem.exists(fn)) {
                         val card = bsDetail(client, searched.cardNo)
