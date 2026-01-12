@@ -200,7 +200,8 @@
 ### 2. 検索CLIの機能拡張 (`Main.kt`)
 - **強制更新オプション**: `--force` (`-f`) オプションを追加し、既存のキャッシュを無視して最新データを取得・上書きする機能を実装。
 - **キャッシュディレクトリ指定**: `--cache-dir` (`-c`) オプションを追加し、キャッシュ保存先を任意に変更可能とした。`BSCARD_CACHE_DIR` 環境変数にも対応。
-- **ヘルプ表示の改善**: `Clikt` の設定を調整し、`-h` オプションのサポートおよびデフォルト値のヘルプ表示 (`showDefaultValues = true`) を有効化。
+- **ヘルプ表示の改善**: `Clikt` の設定を調整し、`-h` オプションのサポート、デフォルト値の表示、および引数なし時の自動ヘルプ表示を有効化。
+- **コスト範囲指定**: `--cost` オプションを追加し、"3-5" のような範囲検索を可能にした。
 
 ### 3. HttpClientのリソース管理最適化
 - **問題**: Windows Native版で処理完了後にプロセスが終了しない不具合が発生。
@@ -216,7 +217,7 @@
 
 ## 成果物
 - `tools/shared/src/Funcs.kt`, `tools/shared/src@*/Funcs.kt`: クライアント生成方式の変更
-- `tools/shared/src/Main.kt`: `use` によるリソース管理と `--force`、`--cache-dir` オプションの実装
+- `tools/shared/src/Main.kt`: `use` によるリソース管理と `--force`、`--cache-dir`、`--cost` オプションの実装
 - `tools/shared/src/GetDetail.kt`: 制限情報のパースロジック追加
 - `tools/shared/module.yaml`: JVMターゲットへのCIOエンジンの追加
 - `tools/build/installer/BS-CLI.zip`: 配布用パッケージ

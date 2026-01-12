@@ -23,13 +23,11 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
     init {
         context {
             helpOptionNames = setOf("-h", "--help")
-            helpFormatter = { context ->
-                MordantHelpFormatter(context, showDefaultValues = true)
-            }
+            helpFormatter = { context -> MordantHelpFormatter(context, showDefaultValues = true) }
         }
     }
 
-    override val printHelpOnEmptyArgs = true
+    //    override val printHelpOnEmptyArgs = true
     val keywords by argument(help = "Search keywords").multiple(required = false)
     val force by option("-f", "--force", help = "Force rewrite cache").flag()
     val cacheDir by option("-c", "--cache-dir", help = "Cache Directory", envvar = "BSCARD_CACHE_DIR")
