@@ -1,0 +1,7 @@
+/.idea/
+/build/
+/tmp/
+/node_modules/
+/cards/
+/.bscache/
+/samples/

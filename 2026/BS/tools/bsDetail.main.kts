@@ -95,7 +95,7 @@ fun parseCard(html: String): List<Card> {
 
     val sideA = doc.select("#CardCol_A").firstOrNull()?.let { parseCardSide(it, id, "A") }
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardSide(it, id, "B") }
-    val sideNo = sideA ?: sideB ?: doc.select(".detailBox").firstOrNull()?.let { parseCardSide(it, id, "") }
+    val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardSide(it, id, "") }
 
     return listOfNotNull(sideA, sideB, sideNo)
 }

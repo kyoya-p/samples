@@ -18,16 +18,20 @@ import kotlinx.coroutines.flow.flow
 
 
 if (args.getOrNull(0) == "search") runBlocking {
-    bsSearchMain(
-        keywords = args.drop(1).joinToString(" "),
-        cardNo = "",
-        costMin = 0,
-        costMax = 10,
-        attr = "", // 全色の場合 "赤紫緑白黄青"
-        category = listOf(),
-        system = listOf(),
+    bsSearch(
+        keywords = args.drop(1).joinToString(" ")
     ).collectIndexed { index, card -> println("$index: $card") }
 }
+
+suspend fun bsSearch(
+    keywords: String,
+    cardNo: String = "",
+    costMin: Int = 0,
+    costMax: Int = 99,
+    attr: String = "", // 全色の場合 "赤紫緑白黄青"
+    category: List<String> = emptyList(),
+    system: List<String> = emptyList(),
+): Flow<SearchCard> = bsSearchMain(keywords, cardNo, costMin, costMax, attr, category, system)
 
 suspend fun bsSearchMain(
     keywords: String,
