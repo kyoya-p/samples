@@ -7,7 +7,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 
 fun bsSearchMain(
     keywords: String,
@@ -47,9 +46,10 @@ fun bsSearchMain(
 
     if (body.isNotEmpty()) {
         val doc: Document = Ksoup.parse(body)
-
+        val count = doc.selectFirst(".js-countContents")?.text()?.trim() ?: ""
         val errorElement = doc.selectFirst(".errorCol.is-show .errorColheading")
-        if (errorElement != null) return@flow println("Error: ${errorElement.text().trim()}")
+        if (errorElement != null) return@flow println("Error: ${errorElement.text().trim()} (Count: $count)")
+        if (count.isNotEmpty()) println("Found $count cards.")
 
         val cardElements = doc.select("li.cardCol.js-detail")
 
