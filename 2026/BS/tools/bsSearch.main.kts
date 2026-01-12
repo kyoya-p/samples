@@ -9,19 +9,17 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.client.plugins.*
 import kotlinx.coroutines.runBlocking
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectIndexed
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
 
 
-runBlocking {
+if (args.getOrNull(0) == "search") runBlocking {
     bsSearchMain(
-        keywords = args.joinToString(" "),
+        keywords = args.drop(1).joinToString(" "),
         cardNo = "",
         costMin = 0,
         costMax = 10,

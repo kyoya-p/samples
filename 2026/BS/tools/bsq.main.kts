@@ -2,8 +2,8 @@
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 @file:DependsOn("io.ktor:ktor-client-core-jvm:3.3.3")
 @file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
-@file:DependsOn("io.ktor:ktor-client-content-negotiation-jvm:3.3.3")
-@file:DependsOn("io.ktor:ktor-serialization-kotlinx-json-jvm:3.3.3")
+@file:DependsOn("io.ktor:ktor-client-content-negotiation:3.3.3")
+@file:DependsOn("io.ktor:ktor-serialization-kotlinx-json:3.3.3")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.5")
 @file:DependsOn("com.charleskorn.kaml:kaml-jvm:0.63.0")
 @file:DependsOn("org.slf4j:slf4j-simple:2.0.16")
@@ -11,7 +11,6 @@
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.collectIndexed
-import kotlin.collections.listOf
 
 runBlocking { bsqMain(args) }
 suspend fun bsqMain(args: Array<String>) {

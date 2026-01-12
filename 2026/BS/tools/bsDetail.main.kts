@@ -2,133 +2,107 @@
 @file:DependsOn("io.ktor:ktor-client-cio-jvm:3.3.3")
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0")
 @file:DependsOn("com.fleeksoft.ksoup:ksoup-jvm:0.2.0")
+@file:Import("./bsModel.main.kts")
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.client.plugins.*
 import kotlinx.coroutines.runBlocking
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
 
-// 引数の取得。無い場合はヘルプを表示して終了。
-val targetCardId = args.getOrElse(0) {
-    println("Battle Spirits Card Detail Fetcher (Ktor/Ksoup)")
-    println("Usage: kotlin tools/bsDetail.main.kts <CARD_ID>")
-    println("Example: kotlin tools/bsDetail.main.kts BS58-TCP04")
-    java.lang.System.exit(0)
-    ""
-}
-
-// ヘルプフラグのチェック
-if (targetCardId == "-h" || targetCardId == "--help") {
-    println("Usage: kotlin tools/bsDetail.main.kts <CARD_ID>")
-    java.lang.System.exit(0)
-}
-
-val client = HttpClient(CIO) {
-    install(HttpTimeout) {
-        requestTimeoutMillis = 30000
-    }
-}
-
-fun parseCardSide(root: Element, sideName: String): CardSide {
-    // Basic Info
-    // Use ownText() to get only the ID, excluding the rarity/side spans
-    val id = root.select(".cardNum").first()?.ownText()?.trim() ?: ""
+fun parseCardSide(root: Element, cardNo: String, sideName: String): Card {
     val rarity = root.select(".cardRarity").text().trim()
     val name = root.select(".cardName").text().trim()
-    
-    // Cost
+
     val costText = root.select(".textCost").text().trim()
-    val cost = costText.toIntOrNull()
+    val cost = costText.toIntOrNull() ?: 0
     val reductionSymbols = root.select(".cost img").map { it.attr("alt") }
 
-    // Category
     val category = root.select("dt:contains(カテゴリー) + dd").text().trim()
-    
-    // Attributes
     val attributes = root.select(".attribute .attributeItem").map { it.text().trim() }
-    
-    // Systems
-    val systems = root.select("dt:contains(系統) + dd").text().split("・").filter { it.isNotBlank() }
+    val systems = root.select("dt:contains(系統) + dd").text().split("・").map { it.trim() }.filter { it.isNotBlank() }
 
-    // Lv Info
     val lvInfo = root.select(".bpCoreItem").mapNotNull { item ->
         val lvImg = item.select("img.bpCoreImg").attr("alt")
         if (lvImg.isEmpty()) return@mapNotNull null
-        
+
         val lv = lvImg.replace("LV", "").toIntOrNull() ?: 0
-        val bp = item.select(".bpCoreVal").text().trim().toIntOrNull() ?: 0
+        val bp = item.select(".bpCoreVal").text().trim().toIntOrNull()
         val core = item.select(".bpCoreLevel").text().trim().toIntOrNull() ?: 0
         LvInfo(lv, core, bp)
     }
 
-    // Effect
     val effectElement = root.select(".detailColListDescription.wide").first()?.clone()
     effectElement?.select("img")?.forEach { img ->
         val alt = img.attr("alt")
         img.after("[" + alt + "]")
         img.remove()
     }
-    val effect = effectElement?.let { 
+    val effect = effectElement?.let {
         val cleanHtml = it.html().replace("<br>", "\n").replace("<br />", "\n")
-        Ksoup.parse(cleanHtml).text() 
+        Ksoup.parse(cleanHtml).text()
     }?.trim() ?: ""
 
     val imageUrl = "https://www.battlespirits.com" + root.select(".cardImg img").attr("src")
 
-    return CardSide(sideName, name, id, rarity, cost, reductionSymbols, attributes, category, systems, lvInfo, effect, imageUrl)
+    return Card(
+        cardNo = cardNo,
+        side = sideName,
+        name = name,
+        rarity = rarity,
+        cost = cost,
+        reductionSymbols = reductionSymbols,
+        attributes = attributes,
+        category = category,
+        systems = systems,
+        lvInfo = lvInfo,
+        effect = effect,
+        imageUrl = imageUrl
+    )
 }
 
-fun parseCard(html: String): Card {
+fun parseCard(html: String): List<Card> {
     val doc: Document = Ksoup.parse(html)
-    val sides = mutableListOf<CardSide>()
+    val id = doc.select(".cardNum").first()?.ownText()?.trim() ?: ""
 
-    doc.select("#CardCol_A").first()?.let { sides.add(parseCardSide(it, "A")) }
-    doc.select("#CardCol_B").first()?.let { sides.add(parseCardSide(it, "B")) }
+    val sideA = doc.select("#CardCol_A").firstOrNull()?.let { parseCardSide(it, id, "A") }
+    val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardSide(it, id, "B") }
+    val sideNo = doc.select(".detailBox").firstOrNull()?.let {parseCardSide(it, id, "") }
 
-    if (sides.isEmpty()) throw Exception("No card data found")
-    return Card(sides.first().cardNo, sides)
+//    if (sideA != null) {
+//        sides.add(parseCardSide(sideA, id, "A"))
+//        if (sideB != null) {
+//            sides.add(parseCardSide(sideB, id, "B"))
+//        }
+//    } else {
+//        doc.select(".detailBox").first()?.let {
+//            sides.add(parseCardSide(it, id, ""))
+//        }
+//    }
+
+    return listOfNotNull(sideA, sideB, sideNo)
 }
 
-runBlocking {
-    try {
-        println("Fetching details for: $targetCardId")
-        val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
-            parameter("card_no", targetCardId)
-            parameter("card_no2", targetCardId)
-            header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-        }
+suspend fun bsDetail(cardId: String): List<Card> {
+    val client = HttpClient(CIO)
+    val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
+        parameter("card_no", cardId)
+        header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    }
+    val body = response.bodyAsText()
+    client.close()
+    return parseCard(body)
+}
 
-        if (response.status == HttpStatusCode.OK) {
-            val card = parseCard(response.bodyAsText())
-            println("\n=== Card ID: ${card.id} ===")
-            
-            card.sides.forEach { side ->
-                println("\n--- Side ${side.side} ---")
-                println("Name: ${side.name}")
-                println("Rarity: ${side.rarity}")
-                println("Cost: ${side.cost} (Reduction: ${side.reductionSymbols.joinToString("")})")
-                println("Category: ${side.category}")
-                println("Attributes: ${side.attributes.joinToString("/")}")
-                println("Systems: ${side.systems.joinToString("/")}")
-                if (side.lvInfo.isNotEmpty()) {
-                    println("\n[Stats]")
-                    side.lvInfo.forEach { println("Lv${it.level} (${it.core} core): ${it.bp} BP") }
-                }
-                println("\n[Effect]\n${side.effect}")
-                println("\n[Image]\n${side.imageUrl}")
-            }
-        } else {
-            println("Failed to fetch: ${response.status}")
-        }
-    } catch (e: Exception) {
-        println("Error: ${e.message}")
-    } finally {
-        client.close()
+// スクリプトテスト用実行コード
+if (args.getOrNull(0) == "detail") runBlocking {
+    val id = args.getOrNull(1) ?: ""
+    if (id.isEmpty()) {
+        println("Usage: kotlin bsDetail.main.kts detail <CardID>")
+    } else {
+        bsDetail(id).forEach { println(it) }
     }
 }
