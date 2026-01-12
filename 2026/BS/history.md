@@ -187,3 +187,20 @@
 ## 成果物更新
 - `tools/shared/src/SearchCards.kt`: 検索ロジックの改善とHttpClientの修正
 - `tools/shared/src/GetDetail.kt`: HttpClientの修正
+
+# 作業ログ: 配布用実行ファイルの作成 (2026-01-13)
+
+## 実施内容
+
+### 1. JVM版実行可能Jarのビルド
+- `amper task :jvm-cli:executableJarJvm` を実行し、JVM版の単体実行可能Jar (`jvm-cli-jvm-executable.jar`) を生成。
+
+### 2. インストーラ作成の試行と代替案
+- `jpackage` を使用したMSIインストーラ作成を試みたが、環境に **WiX Toolset** がインストールされていないため失敗。
+- 代替案として、`jpackage --type app-image` を使用し、JREを同梱した実行可能イメージ（アプリケーションフォルダ）を作成。
+- 生成されたフォルダをZIPアーカイブ化し、**`tools/build/installer/BS-CLI.zip`** として出力。これにより、JavaランタイムがインストールされていないWindows環境でも実行可能なCLIツールを配布可能とした。
+
+## 成果物
+- `tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar`: 実行可能Jar
+- `tools/build/installer/BS-CLI/`: 配布用アプリケーションフォルダ（JRE同梱）
+- `tools/build/installer/BS-CLI.zip`: 配布用ZIPアーカイブ

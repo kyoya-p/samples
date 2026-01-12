@@ -33,6 +33,7 @@ data class CardFace(
     val systems: List<String>,
     val lvInfo: List<String>, // Lv1維持コア2個でBP1000の場合、 "1,2,1000"。ネクサスの場合でLv2維持コア1個の場合、"2,1"
     val effect: String,
+    val restriction: String, // "制限1"(最大デッキに1枚しか入れられない)、"禁止"(デッキには入れられない)、 null(デッキに最大3枚・通常ルール)
     val imageUrl: String
 )
 
