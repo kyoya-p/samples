@@ -47,12 +47,12 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
                     system = emptyList()
                 ).distinctBy { it.cardNo }.collect { searched ->
                     val fn = Path(cacheDirPath, "${searched.cardNo}.yaml")
-                    print("target: $fn : ")
-                    if (!SystemFileSystem.exists(fn)) {
+                    print("target: ${searched.cardNo} : ")
+                    if (force || !SystemFileSystem.exists(fn)) {
                         val card = bsDetail(client, searched.cardNo)
                         SystemFileSystem.sink(fn).buffered()
                             .use { it.writeString(Yaml.default.encodeToString(card)) }
-                        println("collected.")
+                        println("collected $fn .")
                     } else println("already exists.")
                 }
             }
