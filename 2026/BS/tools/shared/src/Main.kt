@@ -34,30 +34,32 @@ class SearchCards : CliktCommand("Battle Spirits Cards Search CLI") {
     val force by option("-f", "--force", help = "Force rewrite cache").flag()
     val cacheDir by option("-c", "--cache-dir", help = "Cache Directory", envvar = "BSCARD_CACHE_DIR")
         .convert { Path(it) }.default(defaultCachePath)
+    val cost by option("--cost", help = "Cost range (e.g. '3-5' or '7')").default("0-30")
 
     override fun run() {
         runBlocking {
+            val (costMin, costMax) = cost.split("-").map { it.trim().toInt() }.let { if (it.size == 1) it + it else it }
             if (!SystemFileSystem.exists(cacheDir)) SystemFileSystem.createDirectories(cacheDir)
 
             fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
                 val seen = mutableSetOf<E>()
                 collect { value -> if (seen.add(op(value))) emit(value) }
             }
-            println("Freewords: $keywords")
+            println("Freewords: $keywords & Cost: $costMin-$costMax ")
 
             createClient().use { client ->
                 bsSearchMain(
                     client = client,
                     keywords = keywords.joinToString(" "),
-                    cardNo = "",
-                    costMin = 0,
-                    costMax = 30,
-                    attr = "",
-                    category = emptyList(),
-                    system = emptyList()
-                ).distinctBy { it.cardNo }.collect { searched ->
+                    cardNo = "", // todo
+                    costMin = costMin,
+                    costMax = costMax,
+                    attr = "", // todo
+                    category = emptyList(),  // todo
+                    system = emptyList(),    // todo
+                ).distinctBy { it.cardNo }.collectIndexed { ix, searched ->
                     val fn = Path(cacheDir, "${searched.cardNo}.yaml")
-                    print("target: ${searched.cardNo} : ")
+                    print("$ix: target: ${searched.cardNo} : ")
                     if (force || !SystemFileSystem.exists(fn)) {
                         val card = bsDetail(client, searched.cardNo)
                         SystemFileSystem.sink(fn).buffered()
