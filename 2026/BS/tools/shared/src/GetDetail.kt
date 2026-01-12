@@ -75,6 +75,14 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
         Ksoup.parse(cleanHtml).text()
     }?.trim() ?: ""
 
+    val restrictionRaw = root.select(".detailColLimit .detailColLimitInner").text().trim()
+    val restriction = when {
+        restrictionRaw.contains("デッキに入れられません") -> "禁止"
+        restrictionRaw.contains("1枚まで") -> "制限1"
+        restrictionRaw.isNotEmpty() -> restrictionRaw
+        else -> ""
+    }
+
     val imageUrl = "https://www.battlespirits.com" + root.select(".cardImg img").attr("src")
 
     return CardFace(
@@ -90,6 +98,7 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
         systems = systems,
         lvInfo = lvInfoList,
         effect = effect,
+        restriction = restriction,
         imageUrl = imageUrl
     )
 }
