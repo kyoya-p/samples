@@ -7,8 +7,9 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 
-suspend fun bsSearchMain(
+fun bsSearchMain(
     keywords: String,
     cardNo: String,
     costMin: Int,
@@ -46,6 +47,10 @@ suspend fun bsSearchMain(
 
     if (body.isNotEmpty()) {
         val doc: Document = Ksoup.parse(body)
+
+        val errorElement = doc.selectFirst(".errorCol.is-show .errorColheading")
+        if (errorElement != null) return@flow println("Error: ${errorElement.text().trim()}")
+
         val cardElements = doc.select("li.cardCol.js-detail")
 
         cardElements.forEach { element ->
@@ -57,7 +62,8 @@ suspend fun bsSearchMain(
 
             val typeParts = typeAndSystem.split(" ", limit = 2)
             val type = typeParts[0]
-            val systems = if (typeParts.size > 1) typeParts[1].split("・").map { it.trim() }.filter { it.isNotBlank() } else emptyList()
+            val systems = if (typeParts.size > 1) typeParts[1].split("・").map { it.trim() }
+                .filter { it.isNotBlank() } else emptyList()
 
             emit(
                 SearchCard(
