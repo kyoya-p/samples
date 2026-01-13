@@ -26,7 +26,11 @@ class ScreenTest {
         try {
             val bitmap = onRoot().captureToImage()
             val image = bitmap.toAwtImage()
-            val file = File("screen_capture.png")
+            val tempDir = File("../build/temp")
+            if (!tempDir.exists()) {
+                tempDir.mkdirs()
+            }
+            val file = File(tempDir, "screen_capture.png")
             ImageIO.write(image, "png", file)
             println("Screenshot saved to: ${file.absolutePath}")
         } catch (e: Exception) {

@@ -6,6 +6,10 @@ dependencies:
   - $compose.foundation: exported
   - $compose.material3: exported
 
+test-dependencies:
+  - $compose.uiTest
+  - $compose.desktop.currentOs
+
 settings:
   compose:
     enabled: true

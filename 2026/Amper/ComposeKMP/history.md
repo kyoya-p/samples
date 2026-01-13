@@ -7,7 +7,7 @@
 - **テスト実装**:
     - `shared/module.yaml` に Compose UI テスト用の依存関係を追加。
     - JVM環境での画面確認用テスト `shared/test@jvm/ScreenTest.kt` を作成。
-    - テスト実行時に自動的にスクリーンショット (`shared/screen_capture.png`) を撮影する機能を実装。
+    - テスト実行時に自動的にスクリーンショット (`build/temp/screen_capture.png`) を撮影する機能を実装。
 - **検証結果**:
     - `amper.bat test` を実行し、JVMおよびAndroidの両プラットフォームでテストをパス。
     - JVM側: 3件（GUIテスト含む）、Android側: 2件のテストに成功。
