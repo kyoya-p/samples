@@ -7,7 +7,7 @@ import io.ktor.http.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
-suspend fun bsSearchMain(
+fun bsSearchMain(
     client: HttpClient,
     keywords: String,
     cardNo: String,

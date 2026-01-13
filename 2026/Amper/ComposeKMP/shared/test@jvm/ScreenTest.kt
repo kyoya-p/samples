@@ -1,0 +1,37 @@
+import androidx.compose.ui.graphics.toAwtImage
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.runComposeUiTest
+import java.io.File
+import javax.imageio.ImageIO
+import kotlin.test.Test
+
+class ScreenTest {
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun testListIsDisplayedAndCapture() = runComposeUiTest {
+        setContent {
+            Screen()
+        }
+
+        onNodeWithText("List").assertIsDisplayed()
+        onNodeWithText("Item 1").assertIsDisplayed()
+        onNodeWithText("Item 2").assertIsDisplayed()
+        onNodeWithText("Item 3").assertIsDisplayed()
+
+        // Capture screenshot
+        try {
+            val bitmap = onRoot().captureToImage()
+            val image = bitmap.toAwtImage()
+            val file = File("screen_capture.png")
+            ImageIO.write(image, "png", file)
+            println("Screenshot saved to: ${file.absolutePath}")
+        } catch (e: Exception) {
+            println("Failed to capture screenshot: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+}
