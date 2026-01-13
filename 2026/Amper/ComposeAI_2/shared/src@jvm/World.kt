@@ -29,7 +29,7 @@ class InMemoryAddressRepository : AddressRepository {
     }
 }
 
-private val repository: AddressRepository by lazy {
+private val _repository: AddressRepository by lazy {
     val serviceAccountPath = "service-account.json"
     val file = File(serviceAccountPath)
     if (file.exists()) {
@@ -54,4 +54,4 @@ private val repository: AddressRepository by lazy {
 }
 
 actual fun getWorld() = "JVM World"
-actual fun getRepository(): AddressRepository = repository
+actual fun getRepository(): AddressRepository = _repository
