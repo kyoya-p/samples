@@ -19,7 +19,7 @@ class ScreenTest {
             Screen()
         }
 
-        onNodeWithText("Assets").assertIsDisplayed()
+        onNodeWithText("Address Book Management").assertIsDisplayed()
         
         // "Name" appears in Header and Input Label
         onAllNodesWithText("Name").assertCountEquals(2)
