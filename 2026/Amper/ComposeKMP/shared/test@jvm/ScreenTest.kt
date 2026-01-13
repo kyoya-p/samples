@@ -1,7 +1,9 @@
 import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.runComposeUiTest
@@ -17,10 +19,15 @@ class ScreenTest {
             Screen()
         }
 
-        onNodeWithText("List").assertIsDisplayed()
-        onNodeWithText("Item 1").assertIsDisplayed()
-        onNodeWithText("Item 2").assertIsDisplayed()
-        onNodeWithText("Item 3").assertIsDisplayed()
+        onNodeWithText("Assets").assertIsDisplayed()
+        
+        // "Name" appears in Header and Input Label
+        onAllNodesWithText("Name").assertCountEquals(2)
+        
+        // "Mail" appears in Header and Input Label
+        onAllNodesWithText("Mail").assertCountEquals(2)
+
+        onNodeWithText("Value 1").assertIsDisplayed()
 
         // Capture screenshot
         try {
