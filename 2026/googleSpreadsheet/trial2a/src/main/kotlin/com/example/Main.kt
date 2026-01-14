@@ -12,7 +12,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+
 fun main(args: Array<String>) {
+    // Debug Logging for Protocol Handler
+    try {
+        val debugPath = Paths.get(System.getProperty("java.io.tmpdir"), "sheetmaster_debug.txt")
+        val timestamp = java.time.LocalDateTime.now().toString()
+        val argsStr = args.joinToString(", ")
+        val log = "[$timestamp] Launched with args: $argsStr\n"
+        Files.writeString(debugPath, log, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+    } catch (e: Exception) {
+        // ignore debug logging errors
+    }
+
     if (args.isNotEmpty()) {
         val link = args[0]
         if (link.contains("code=")) {
@@ -58,7 +73,16 @@ fun App() {
                                 GoogleSheetsService.getService()
                             }
                             isAuthenticated = true
-                            status = "Authenticated ✅"
+                            status = "Authenticated. Opening browser..."
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    GoogleSheetsService.openUrl("https://docs.google.com/spreadsheets/")
+                                }
+                                status = "Authenticated & Opened ✅"
+                            } catch (e: Exception) {
+                                status = "Auth OK, but Open failed: ${e.message}"
+                                e.printStackTrace()
+                            }
                         } catch (e: Exception) {
                             status = "Error: ${e.message}"
                             println("Authentication failed: ${e.message}")
@@ -68,6 +92,14 @@ fun App() {
                     Text("Login with Google")
                 }
             } else {
+                Spacer(Modifier.height(10.dp))
+                Button(onClick = {
+                    scope.launch(Dispatchers.IO) {
+                        GoogleSheetsService.openUrl("https://docs.google.com/spreadsheets/")
+                    }
+                }) {
+                    Text("Open Google Sheets List ↗")
+                }
                 Spacer(Modifier.height(20.dp))
                 
                 Card(elevation = 4.dp, modifier = Modifier.fillMaxWidth()) {

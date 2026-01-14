@@ -28,16 +28,15 @@ import java.util.concurrent.TimeUnit
 object GoogleSheetsService {
     private const val APPLICATION_NAME = "SheetMaster Desktop"
     private val JSON_FACTORY = GsonFactory.getDefaultInstance()
-    private val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
+    private val HTTP_TRANSPORT: com.google.api.client.http.HttpTransport
     private val SCOPES = listOf(SheetsScopes.SPREADSHEETS, SheetsScopes.DRIVE_FILE)
-    
-    // Token Management
-    private data class TokenData(
-        val accessToken: String,
-        val refreshToken: String?,
-        val expirationTimeMillis: Long
-    )
 
+    private val PROXY_HOST: String?
+    private val PROXY_PORT: Int?
+    private val PROXY_USER: String?
+    private val PROXY_PASS: String?
+
+    // Token Management
     private var accessToken: String? = null
     private var refreshToken: String? = null
     private var expirationTimeMillis: Long = 0
@@ -47,6 +46,51 @@ object GoogleSheetsService {
     private val signalFilePath = Paths.get(System.getProperty("java.io.tmpdir"), "sheetmaster_auth_signal")
 
     init {
+        // Parse Proxy from environment variable
+        val proxyUrl = System.getenv("https_proxy") ?: System.getenv("http_proxy")
+        if (proxyUrl != null) {
+            println("Detected proxy configuration: $proxyUrl")
+            val uri = URI(proxyUrl)
+            PROXY_HOST = uri.host
+            PROXY_PORT = if (uri.port != -1) uri.port else 8080
+            val userInfo = uri.userInfo
+            if (userInfo != null && userInfo.contains(":")) {
+                val parts = userInfo.split(":")
+                PROXY_USER = parts[0]
+                PROXY_PASS = parts[1]
+            } else {
+                PROXY_USER = null
+                PROXY_PASS = null
+            }
+            
+            // Set System Properties for other libraries that might depend on them
+            System.setProperty("https.proxyHost", PROXY_HOST)
+            System.setProperty("https.proxyPort", PROXY_PORT.toString())
+            System.setProperty("http.proxyHost", PROXY_HOST)
+            System.setProperty("http.proxyPort", PROXY_PORT.toString())
+            
+            if (PROXY_USER != null && PROXY_PASS != null) {
+                java.net.Authenticator.setDefault(object : java.net.Authenticator() {
+                    override fun getPasswordAuthentication(): java.net.PasswordAuthentication {
+                        return java.net.PasswordAuthentication(PROXY_USER, PROXY_PASS!!.toCharArray())
+                    }
+                })
+                System.setProperty("jdk.http.auth.tunneling.disabledSchemes", "")
+            }
+
+            // Configure Google API Transport with Proxy
+            val proxy = java.net.Proxy(java.net.Proxy.Type.HTTP, java.net.InetSocketAddress(PROXY_HOST, PROXY_PORT!!))
+            HTTP_TRANSPORT = com.google.api.client.http.javanet.NetHttpTransport.Builder()
+                .setProxy(proxy)
+                .build() // Note: TrustedTransport doesn't easily allow manual proxy setting in older versions, using NetHttpTransport
+        } else {
+            PROXY_HOST = null
+            PROXY_PORT = null
+            PROXY_USER = null
+            PROXY_PASS = null
+            HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
+        }
+        
         loadTokens()
     }
 
@@ -180,7 +224,7 @@ object GoogleSheetsService {
         }
 
         println("Waiting for authorization code from browser (custom scheme redirect)...")
-        println("If the browser fails to redirect, you can manually paste the 'code' parameter here:")
+        println("If the browser fails to redirect, you can manually paste the 'code' parameter (or the FULL URL) here:")
         
         // Concurrent manual input and signal file polling
         var authCode: String? = null
@@ -193,7 +237,13 @@ object GoogleSheetsService {
             if (sc.hasNextLine()) {
                 val line = sc.nextLine()
                 if (line.isNotBlank()) {
-                    val code = if (line.contains("code=")) line.substringAfter("code=").substringBefore("&") else line.trim()
+                    // Extract code from full URL if present
+                    val input = line.trim()
+                    val code = if (input.contains("code=")) {
+                        input.substringAfter("code=").substringBefore("&")
+                    } else {
+                        input
+                    }
                     onAuthCodeReceived(code)
                 }
             }
@@ -219,7 +269,12 @@ object GoogleSheetsService {
         }
         
         // Token Exchange (Secret-less PKCE)
-        val client = HttpClient.newHttpClient()
+        val clientBuilder = HttpClient.newBuilder()
+        if (PROXY_HOST != null && PROXY_PORT != null) {
+            clientBuilder.proxy(java.net.ProxySelector.of(java.net.InetSocketAddress(PROXY_HOST, PROXY_PORT)))
+        }
+        val client = clientBuilder.build()
+        
         val requestBody = "code=$authCode&" +
                 "client_id=$clientId&" +
                 "redirect_uri=${URLEncoder.encode(redirectUri, "UTF-8")}&" +
@@ -250,7 +305,13 @@ object GoogleSheetsService {
     private fun refreshAccessToken(): String {
         println("Refreshing access token...")
         val clientId = getClientId()
-        val client = HttpClient.newHttpClient()
+        
+        val clientBuilder = HttpClient.newBuilder()
+        if (PROXY_HOST != null && PROXY_PORT != null) {
+            clientBuilder.proxy(java.net.ProxySelector.of(java.net.InetSocketAddress(PROXY_HOST, PROXY_PORT)))
+        }
+        val client = clientBuilder.build()
+
         val requestBody = "client_id=$clientId&" +
                 "refresh_token=$refreshToken&" +
                 "grant_type=refresh_token"
@@ -327,37 +388,61 @@ object GoogleSheetsService {
         saveTokens()
     }
 
-    fun openInBrowser(spreadsheetId: String) {
-        val url = "https://docs.google.com/spreadsheets/d/$spreadsheetId"
-        println("Opening spreadsheet in browser: $url")
+    fun openUrl(url: String) {
+        println("Attempting to open URL: $url")
         val os = System.getProperty("os.name").lowercase()
         
-        // On Windows, 'cmd /c start' is often more reliable than Desktop.browse
-        if (os.contains("win")) {
-            try {
-                Runtime.getRuntime().exec(arrayOf("cmd", "/c", "start", url))
-                println("Triggered 'cmd /c start' for Windows (Primary)")
-                return 
-            } catch (e: Exception) {
-                println("Windows 'cmd /c start' failed, falling back to Desktop.browse: ${e.message}")
-            }
-        }
-
+        // Method 1: Desktop.browse (Standard Java)
+        // This is usually the best way if supported.
         try {
             if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
                 Desktop.getDesktop().browse(URI(url))
-                println("Successfully called Desktop.browse")
-            } else {
-                println("Desktop.browse not supported, trying fallback...")
-                if (os.contains("mac")) {
-                    Runtime.getRuntime().exec(arrayOf("open", url))
-                    println("Triggered 'open' fallback for macOS")
-                } else {
-                    println("No fallback available for $os")
-                }
+                println("Opened via Desktop.browse")
+                return
             }
         } catch (e: Exception) {
-            println("Error opening browser: ${e.message}")
+            println("Desktop.browse failed: ${e.message}, attempting fallbacks...")
         }
+
+        // Method 2: Windows 'start' command
+        // Note: 'start "" "url"' is used to prevent the url from being interpreted as a window title
+        if (os.contains("win")) {
+            try {
+                ProcessBuilder("cmd", "/c", "start", "", url).start()
+                println("Opened via cmd /c start")
+                return
+            } catch (e: Exception) {
+                println("cmd /c start failed: ${e.message}")
+            }
+        }
+        
+        // Method 3: macOS 'open'
+        if (os.contains("mac")) {
+            try {
+                ProcessBuilder("open", url).start()
+                println("Opened via open (macOS)")
+                return
+            } catch (e: Exception) {
+                 println("mac open failed: ${e.message}")
+            }
+        }
+        
+        // Method 4: Linux 'xdg-open'
+        if (os.contains("nix") || os.contains("nux")) {
+             try {
+                ProcessBuilder("xdg-open", url).start()
+                println("Opened via xdg-open")
+                return
+            } catch (e: Exception) {
+                 println("xdg-open failed: ${e.message}")
+            }
+        }
+        
+        println("ERROR: Could not open URL. No supported method found.")
+    }
+
+    fun openInBrowser(spreadsheetId: String) {
+        val url = "https://docs.google.com/spreadsheets/d/$spreadsheetId"
+        openUrl(url)
     }
 }
