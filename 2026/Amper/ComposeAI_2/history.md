@@ -41,4 +41,10 @@
         - **解決**: `androidx.compose.ui.test.ExperimentalTestApi` の `runComposeUiTest` を使用する形式に切り替え、`kotlin.test.Test` と組み合わせることで解決。
     - **Composable コンテキストの不備**: `setContent` の呼び出し位置により、Composable 関数外からの呼び出しエラーが発生。
         - **解決**: `runComposeUiTest` のラムダ内で `setContent` を実行する正しい構造に修正。
+    - **Material Icons Extended の依存関係**: Split Button 実装時に `Icons.Filled.ArrowDropDown` を使用するため `compose.materialIconsExtended` を追加しようとしたが、Amper/Compose Multiplatform 環境での依存関係解決（チェックサム検証エラー等）に難航。
+        - **対応**: 複雑さを避け、標準的なボタン実装とテキストアイコン（あるいは不要化）の方針に切り替え、ビルド安定性を優先した。
+- **UI調整**:
+    - `dialog.drawio.svg` のデザイン意図により忠実に従うため、`TopAppBar` や入力エリアの `ElevatedCard` 枠、タイトルテキストを削除し、シンプルな構成へ変更。
+- **UX改善**:
+    - 入力フォーム（Name, Mail）に初期値としてランダムなテスト用データを自動入力する機能を実装。追加後も自動的に新しい値がセットされるため、連続したデータ登録テストが容易に。
 
