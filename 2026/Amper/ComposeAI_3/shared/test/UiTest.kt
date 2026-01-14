@@ -16,7 +16,9 @@ class UiTest {
         onNodeWithTag("InputName").assertExists()
         
         // Add new address
+        onNodeWithTag("InputName").performTextClearance()
         onNodeWithTag("InputName").performTextInput("Test User")
+        onNodeWithTag("InputMail").performTextClearance()
         onNodeWithTag("InputMail").performTextInput("test@example.com")
         onNodeWithTag("AddButton").performClick()
 
