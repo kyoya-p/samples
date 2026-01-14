@@ -5,9 +5,9 @@ product:
 dependencies:
   - $compose.foundation: exported
   - $compose.material3: exported
-  - androidx.lifecycle:lifecycle-runtime:2.8.7
-  - androidx.lifecycle:lifecycle-runtime-compose:2.8.7
-  - androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7
+  - androidx.lifecycle:lifecycle-runtime:2.8.5: exported
+  - androidx.lifecycle:lifecycle-runtime-compose:2.8.5: exported
+  - androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5: exported
   - dev.gitlive:firebase-firestore:1.10.4
   - com.google.firebase:firebase-admin:9.2.0
   - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0
