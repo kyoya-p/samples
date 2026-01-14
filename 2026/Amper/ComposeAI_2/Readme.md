@@ -18,27 +18,29 @@
 デスクトップアプリケーションをデバッグ用に起動します。
 
 ```shell
-./amper.bat run jvm-app
+./amper run jvm-app
 ```
 
 # テスト
 UIテストを含む全ての自動テストを実行します。
 
 ```shell
-./amper.bat test
+./amper test
 ```
 
 # ビルド
-プロジェクトをビルドし、クラスファイルやJARを生成します。
+実行可能jar生成
 
 ```shell
-./amper.bat build
+./amper task :jvm-app:executableJarJvm
 ```
-成果物: `build/tasks/` 内に生成されます。
+成果物: `build/tasks/_jvm-app_executableJarJvm`
 
 # ターゲットファイル実行
-ビルドされた成果物を直接実行する場合（依存関係の解決が必要です）：
+生成された実行可能JAR（依存ライブラリ同梱）を直接実行する場合：
 
 ```shell
-java -jar 
+java -jar build/tasks/_jvm-app_executableJarJvm/jvm-app-jvm-executable.jar
 ```
+※ JARファイルの生成には `./amper.bat task :jvm-app:executableJarJvm` の実行が必要です。
+

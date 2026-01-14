@@ -47,4 +47,8 @@
     - `dialog.drawio.svg` のデザイン意図により忠実に従うため、`TopAppBar` や入力エリアの `ElevatedCard` 枠、タイトルテキストを削除し、シンプルな構成へ変更。
 - **UX改善**:
     - 入力フォーム（Name, Mail）に初期値としてランダムなテスト用データを自動入力する機能を実装。追加後も自動的に新しい値がセットされるため、連続したデータ登録テストが容易に。
+- **配布用パッケージングの検証（NGケース）**:
+    - **実行可能 JAR (Fat JAR) のランタイムエラー**: `.\amper.bat task :jvm-app:executableJarJvm` による単体実行可能 JAR の生成は成功するが、実行時に `java.lang.NoSuchMethodError (androidx.lifecycle)` が発生。
+        - **原因**: Amper 0.9.2 のパッケージング処理において、Compose Multiplatform が要求する特定の `androidx.lifecycle` バージョンと、他の依存関係が競合または適切に同梱されない問題がある。
+        - **対応**: 現時点では `./amper.bat run jvm-app` による実行を標準とし、実行可能 JAR の単体配布については今後の Amper のアップデートまたは依存関係管理の改善を待つこととした。
 
