@@ -23,6 +23,7 @@ kotlin {
         // Amper directory mapping
         jvmMain {
             kotlin.srcDir("src")
+            resources.srcDir("resources")
         }
     }
 }

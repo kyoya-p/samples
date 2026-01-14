@@ -34,21 +34,21 @@
     - UI テストでの要素特定を確実にするため、入力フィールドやボタンに `testTag` を付与。
 - **ドキュメント更新**:
     - `usage.md` を日本語で更新し、アプリケーションの起動方法とテストの実行方法を明文化。
+- **ビルドシステムの移行**: Amper から Gradle (Kotlin DSL) へ完全に移行。
+    - `settings.gradle.kts` および各モジュールの `build.gradle.kts` を作成。
+    - Amper 関連ファイル (`amper.bat`, `project.yaml`, `module.yaml` 等) を削除。
+    - Gradle Wrapper `9.0.0` を導入。
+- **Kotlin アップグレード**: Kotlin バージョンを `2.2.20` に更新。
+- **配布パッケージの構築 (MSI)**:
+    - `compose.desktop` プラグインの設定を行い、Windows 用 MSI インストーラーのビルド環境を整備。
+    - ブランドカラー (#A7C942) を基調としたカスタムアイコン (`icon.ico`) を PowerShell で自動生成し、パッケージに同梱。
+    - `./gradlew.bat :jvm-app:packageMsi` によりインストーラーの生成に成功。
+- **テストの安定化**:
+    - `shared/test/UiTest.kt` を修正。入力フォームの自動初期値によるテスト失敗を避けるため、テキスト入力前に `performTextClearance()` を実行する処理を追加。
 - **検証結果**:
-    - `.\amper.bat test` を実行し、新規実装した UI テストを含む全テストが正常にパスすることを確認。
-- **実装中に判明した課題（NGケースとその解決）**:
-    - **JUnit 4 依存関係のエラー**: 当初 JUnit 4 の `createComposeRule` を使用しようとしたが、マルチプラットフォーム環境での依存関係不足により `Unresolved reference: junit4` が発生。
-        - **解決**: `androidx.compose.ui.test.ExperimentalTestApi` の `runComposeUiTest` を使用する形式に切り替え、`kotlin.test.Test` と組み合わせることで解決。
-    - **Composable コンテキストの不備**: `setContent` の呼び出し位置により、Composable 関数外からの呼び出しエラーが発生。
-        - **解決**: `runComposeUiTest` のラムダ内で `setContent` を実行する正しい構造に修正。
-    - **Material Icons Extended の依存関係**: Split Button 実装時に `Icons.Filled.ArrowDropDown` を使用するため `compose.materialIconsExtended` を追加しようとしたが、Amper/Compose Multiplatform 環境での依存関係解決（チェックサム検証エラー等）に難航。
-        - **対応**: 複雑さを避け、標準的なボタン実装とテキストアイコン（あるいは不要化）の方針に切り替え、ビルド安定性を優先した。
-- **UI調整**:
-    - `dialog.drawio.svg` のデザイン意図により忠実に従うため、`TopAppBar` や入力エリアの `ElevatedCard` 枠、タイトルテキストを削除し、シンプルな構成へ変更。
-- **UX改善**:
-    - 入力フォーム（Name, Mail）に初期値としてランダムなテスト用データを自動入力する機能を実装。追加後も自動的に新しい値がセットされるため、連続したデータ登録テストが容易に。
-- **配布用パッケージングの検証（NGケース）**:
-    - **実行可能 JAR (Fat JAR) のランタイムエラー**: `.\amper.bat task :jvm-app:executableJarJvm` による単体実行可能 JAR の生成は成功するが、実行時に `java.lang.NoSuchMethodError (androidx.lifecycle)` が発生。
-        - **原因**: Amper 0.9.2 のパッケージング処理において、Compose Multiplatform が要求する特定の `androidx.lifecycle` バージョンと、他の依存関係が競合または適切に同梱されない問題がある。
-        - **対応**: 現時点では `./amper.bat run jvm-app` による実行を標準とし、実行可能 JAR の単体配布については今後の Amper のアップデートまたは依存関係管理の改善を待つこととした。
+    - Java 21 環境下での `./gradlew.bat build` および UI テストの全件パスを確認。
+- **課題と解決**:
+    - **Java 25 互換性**: デフォルトの Java 25 では Compose (Skiko) のネイティブライブラリロードでエラーが発生。
+        - **解決**: ビルドおよびテスト実行時に Java 21 を指定することで回避。
+
 

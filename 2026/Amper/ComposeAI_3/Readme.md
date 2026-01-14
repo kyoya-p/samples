@@ -1,46 +1,46 @@
 # ComposeAI Sample Project
 
-このプロジェクトは、Amper と Compose Multiplatform を使用したデスクトップアプリケーションのサンプルです。
+このプロジェクトは、Gradle (Kotlin DSL) と Compose Multiplatform を使用したデスクトップアプリケーションのサンプルです。
 住所録（Address Book）の管理機能を、モダンなUIと自動テスト環境で提供します。
 
 # 主な機能
 - **住所録管理**: 名前とメールアドレスの一覧表示、追加、削除。
-- **UI**: Material Design 3 に準拠し、SVGデザインに基づいたカスタムテーマを採用。
+- **UI**: Material Design 3 に準拠し、カスタムアイコンをウィンドウとインストーラーに採用。
 - **自動テスト**: `runComposeUiTest` を用いた UI ロジックの自動検証。
 - **開発支援**: ランダムデータの自動入力機能による迅速な動作確認。
 
 # 開発環境
-- **ビルドツール**: Amper
-- **言語**: Kotlin (Compose Multiplatform)
+- **ビルドツール**: Gradle 9.0 (Kotlin DSL)
+- **言語**: Kotlin 2.2.20 (Compose Multiplatform)
 - **プラットフォーム**: JVM (Desktop)
+- **推奨Java**: Java 21 (LTS) ※Java 25環境では実行時に互換性エラーが発生する場合があります。
 
 # デバッグ実行
-デスクトップアプリケーションをデバッグ用に起動します。
+デスクトップアプリケーションを起動します。
 
 ```shell
-./amper run jvm-app
+./gradlew :jvm-app:run
 ```
 
 # テスト
 UIテストを含む全ての自動テストを実行します。
 
 ```shell
-./amper test
+./gradlew test
 ```
 
-# ビルド
-実行可能jar生成
+# ビルド (MSIパッケージ)
+Windows 用のインストーラー（MSI）を生成します。
 
 ```shell
-./amper task :jvm-app:executableJarJvm
+./gradlew :jvm-app:packageMsi
 ```
-成果物: `build/tasks/_jvm-app_executableJarJvm`
+成果物: `jvm-app/build/compose/binaries/main/msi/ComposeAI_3-1.0.0.msi`
 
-# ターゲットファイル実行
-生成された実行可能JAR（依存ライブラリ同梱）を直接実行する場合：
+# ビルド (実行可能JAR)
+依存ライブラリを同梱したJARファイルを生成します。
 
 ```shell
-java -jar build/tasks/_jvm-app_executableJarJvm/jvm-app-jvm-executable.jar
+./gradlew :jvm-app:packageUberJar-debug
 ```
-※ JARファイルの生成には `./amper.bat task :jvm-app:executableJarJvm` の実行が必要です。
-
+成果物: `jvm-app/build/compose/binaries/main/uberjar/`
