@@ -17,5 +17,4 @@ test-dependencies:
   - $compose.desktop.currentOs
 
 settings:
-  compose:
-    enabled: true
+  compose: enabled

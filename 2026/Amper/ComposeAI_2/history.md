@@ -24,3 +24,21 @@
     - `shared/src@jvm/World.kt` を更新し、`service-account.json` が存在する場合に Firebase を初期化して `FirestoreAddressRepository` を使用するロジックを実装。
     - セキュリティのため、`service-account.json` を `.gitignore` に追加。
 
+## 2026-01-15
+- **自動テスト環境の構築**: Compose Multiplatform のデスクトップアプリに対する UI 自動テストを実装。
+    - `shared/test/UiTest.kt` を作成し、`runComposeUiTest` を用いた UI テストを導入。
+    - アドレスの「追加」および「削除」操作が正しく画面に反映されることを検証するテストケースを実装。
+    - テスト用の `FakeAddressRepository` を作成し、外部サービスに依存しない高速かつ安定したテスト実行を可能に。
+- **テスタビリティの向上**:
+    - `shared/src/Screen.kt` を修正し、`AddressRepository` を外部から注入（依存性注入）できるよう変更。
+    - UI テストでの要素特定を確実にするため、入力フィールドやボタンに `testTag` を付与。
+- **ドキュメント更新**:
+    - `usage.md` を日本語で更新し、アプリケーションの起動方法とテストの実行方法を明文化。
+- **検証結果**:
+    - `.\amper.bat test` を実行し、新規実装した UI テストを含む全テストが正常にパスすることを確認。
+- **実装中に判明した課題（NGケースとその解決）**:
+    - **JUnit 4 依存関係のエラー**: 当初 JUnit 4 の `createComposeRule` を使用しようとしたが、マルチプラットフォーム環境での依存関係不足により `Unresolved reference: junit4` が発生。
+        - **解決**: `androidx.compose.ui.test.ExperimentalTestApi` の `runComposeUiTest` を使用する形式に切り替え、`kotlin.test.Test` と組み合わせることで解決。
+    - **Composable コンテキストの不備**: `setContent` の呼び出し位置により、Composable 関数外からの呼び出しエラーが発生。
+        - **解決**: `runComposeUiTest` のラムダ内で `setContent` を実行する正しい構造に修正。
+
