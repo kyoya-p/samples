@@ -221,3 +221,36 @@
 - `tools/shared/src/GetDetail.kt`: 制限情報のパースロジック追加
 - `tools/shared/module.yaml`: JVMターゲットへのCIOエンジンの追加
 - `tools/build/installer/BS-CLI.zip`: 配布用パッケージ
+
+# 作業ログ: 高度な検索フィルタの実装と複数条件対応 (2026-01-16)
+
+## 実施内容
+
+### 1. 検索パラメータの網羅的実装 (`SearchCards.kt`)
+- 公式サイトの検索フォームを再解析し、未実装だったパラメータを `bsSearchMain` に追加。
+- **属性 (`attribute[]`)**: 属性（色）による絞り込み。
+- **系統 (`system[]`)**: 系統（ファミリー）による絞り込み。
+- **カテゴリ (`category[]`)**: カード種別（スピリット、ネクサス等）による絞り込み。
+- **ブロックアイコン (`block_icon[]`)**: ブロックアイコン番号による絞り込み。
+
+### 2. 複数指定およびAND/ORモードへの対応
+- **PHP配列形式の送信**: 配列型パラメータを `key[]=value1&key[]=value2` 形式で正しく送信するように `Parameters.build` の構築ロジックを修正。
+- **論理演算の切り替え**: 属性と系統について、複数指定時の挙動を制御する `attribute[switch]` および `system[switch]` パラメータを実装（デフォルト "OR"）。
+
+### 3. CLIインターフェースの拡張 (`Main.kt`)
+- `Clikt` を使用して、追加した検索パラメータを制御するオプションを実装。
+- **複数回指定**: `--color`, `--system`, `--type`, `--block` オプションを `multiple()` として定義し、同一オプションの繰り返し入力を可能にした。
+- **モード指定**: `--attr-mode`, `--system-mode` オプションを追加し、"AND" または "OR" をユーザーが指定可能にした。
+- **インポートの整理**: 欠落していた `multiple` 拡張関数のインポートを追加。
+
+### 4. ビルドと動作検証
+- `amper task :jvm-cli:executableJarJvm` によるビルドの成功を確認。
+- **検証シナリオ**:
+    - `--attr 赤 --attr 紫` (OR検索): 202件ヒット。
+    - `--attr 赤 --attr 紫 --attr-mode AND` (AND検索/混色): 98件ヒット。件数の減少により論理演算が正しく機能していることを確認。
+    - `--system 星竜 --system 勇傑 --system-mode AND`: 両方の系統を持つカード（11件）の抽出を確認。
+
+## 成果物更新
+- `tools/shared/src/SearchCards.kt`: 配列パラメータとAND/ORスイッチの送信ロジック追加
+- `tools/shared/src/Main.kt`: 多重指定オプションとモード切り替えオプションの実装
+- `tools/history.md`: 本作業ログの追加

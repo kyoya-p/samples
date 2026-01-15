@@ -13,9 +13,12 @@ fun bsSearchMain(
     cardNo: String,
     costMin: Int,
     costMax: Int,
-    attr: String,
-    category: List<String>,
-    system: List<String>,
+    attributes: List<String>,
+    categories: List<String>,
+    systems: List<String>,
+    blockIcons: List<String>,
+    attributeSwitch: String = "OR",
+    systemSwitch: String = "OR",
 ): Flow<SearchCard> = flow {
     val response: HttpResponse = client.post("https://www.battlespirits.com/cardlist/index.php?search=true") {
         header(
@@ -30,13 +33,15 @@ fun bsSearchMain(
             append("prodid", cardNo)
             append("cost[min]", costMin.toString())
             append("cost[max]", costMax.toString())
-            append("attribute[switch]", "OR")
-            append("system[switch]", "OR")
+            append("attribute[switch]", attributeSwitch)
+            append("system[switch]", systemSwitch)
             append("view_switch", "on")
             append("freewords", keywords)
-            if (category.isNotEmpty()) {
-                append("category[]", category.joinToString(" "))
-            }
+
+            categories.forEach { append("category[]", it) }
+            attributes.forEach { append("attribute[]", it) }
+            systems.forEach { append("system[]", it) }
+            blockIcons.forEach { append("block_icon[]", it) }
         }
         setBody(params.formUrlEncode())
     }
