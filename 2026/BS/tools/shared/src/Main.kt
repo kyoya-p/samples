@@ -30,16 +30,16 @@ class SearchCards : CliktCommand("バトルスピリッツ カード検索 CLI")
 
     //    override val printHelpOnEmptyArgs = true
     val keywords by argument(help = "検索キーワード（フリーワード）").multiple(required = false)
-    val force by option("-f", "--force", help = "キャッシュが存在する場合でも強制的に再取得して上書きします。").flag()
-    val cacheDir by option("-d", "--cache-dir", help = "カードデータのキャッシュ先ディレクトリを指定します。", envvar = "BSCARD_CACHE_DIR")
+    val force by option("-f", "--force", help = "キャッシュが存在する場合でも強制的に再取得して上書き").flag()
+    val cacheDir by option("-d", "--cache-dir", help = "カードデータのキャッシュ先ディレクトリを指定", envvar = "BSCARD_CACHE_DIR")
         .convert { Path(it) }.default(defaultCachePath)
-    val cost by option("-c", "--cost", help = "コスト範囲を指定します（例: '3-5'、'7'）。").default("0-30")
-    val attributes by option("-a", "--color", "--attr", help = "属性（色）を指定します（例: 赤, 紫）。複数回指定でOR検索。").multiple()
-    val attributeMode by option("-m", "--color-mode", "--attr-mode", help = "属性指定時の検索モード（AND/OR）を指定します。").default("OR")
-    val categories by option("-t", "--type", "--category", help = "カードカテゴリを指定します（例: スピリット, アルティメット）。").multiple()
-    val systems by option("-s", "--system", "--family", help = "系統を指定します（例: 星竜, 勇傑）。複数回指定でモードに従い検索。").multiple()
-    val systemMode by option("-n", "--system-mode", "--family-mode", help = "系統指定時の検索モード（AND/OR）を指定します。").default("OR")
-    val blockIcons by option("-b", "--block", help = "ブロックアイコンの番号を指定します（例: 7）。複数指定可。").multiple()
+    val cost by option("-c", "--cost", help = "コスト範囲を指定（例: '3-5'、'7'）。").default("0-30")
+    val attributes by option("-a", "--color", "--attr", help = "属性（色）を指定（例: 赤, 紫）。複数回指定でOR検索").multiple()
+    val attributeMode by option("-m", "--color-mode", "--attr-mode", help = "属性指定時の検索モード（AND/OR）を指定").default("OR")
+    val categories by option("-t", "--type", "--category", help = "カードカテゴリを指定（例: スピリット, アルティメット）").multiple()
+    val systems by option("-s", "--system", "--family", help = "系統を指定します（例: 星竜, 勇傑）。複数回指定でモードに従い検索").multiple()
+    val systemMode by option("-n", "--system-mode", "--family-mode", help = "系統指定時の検索モード（AND/OR）を指定").default("OR")
+    val blockIcons by option("-b", "--block", help = "ブロックアイコンの番号を指定（例: 7）。複数指定可。").multiple()
 
     override fun run() {
         runBlocking {
