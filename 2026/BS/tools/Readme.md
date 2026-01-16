@@ -16,12 +16,13 @@ Options:
 -f, --force               キャッシュが存在する場合でも強制的に再取得して上書き
 -d, --cache-dir=<value>   カードデータのキャッシュ先ディレクトリを指定 (default: C:\Users\kyoya\.bscards)
 -c, --cost <range>        コスト範囲を指定（例: "3-5"、"7"）
--a, --color <attr>        属性（色）を指定 (例: 赤, 紫)。複数指定可
--m, --attr-mode <AND/OR>  属性検索モード (デフォルト: OR)
--s, --system <family>     系統 (例: 星竜)。複数指定可
--n, --system-mode <AND/OR> 系統検索モード (デフォルト: OR)
--t, --type <category>     カテゴリ (例: スピリット)。複数指定可
--b, --block <icon>        ブロックアイコン (例: 7)。複数指定可
+-a, --color <attr>...     属性（色）を指定 (例: 赤, 紫)。複数指定可(OR検索)
+-A, --color-and <attr>... 属性（色）を指定 (例: 赤, 紫)。複数指定可(AND検索)
+-s, --system <family>...  系統を指定 (例: 星竜)。複数指定可(OR検索)
+-S, --system-and <family>... 系統を指定 (例: 星竜)。複数指定可(AND検索)
+-t, --type <category>...  カテゴリを指定 (例: スピリット)。複数指定可
+-b, --block <icon>...     ブロックアイコンを指定 (例: 7)。複数指定可
+※属性・系統のAND/ORは、引数リストの最後に指定されたオプション（-a/-A, -s/-S）で決定。
 
 # テスト実行
 ```shell
