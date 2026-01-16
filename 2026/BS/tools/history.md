@@ -237,20 +237,25 @@
 - **PHP配列形式の送信**: 配列型パラメータを `key[]=value1&key[]=value2` 形式で正しく送信するように `Parameters.build` の構築ロジックを修正。
 - **論理演算の切り替え**: 属性と系統について、複数指定時の挙動を制御する `attribute[switch]` および `system[switch]` パラメータを実装（デフォルト "OR"）。
 
-### 3. CLIインターフェースの拡張 (`Main.kt`)
+### 3. CLIインターフェースの拡張とローカライズ (`Main.kt`)
 - `Clikt` を使用して、追加した検索パラメータを制御するオプションを実装。
 - **複数回指定**: `--color`, `--system`, `--type`, `--block` オプションを `multiple()` として定義し、同一オプションの繰り返し入力を可能にした。
 - **モード指定**: `--attr-mode`, `--system-mode` オプションを追加し、"AND" または "OR" をユーザーが指定可能にした。
+- **ヘルプの日本語化**: CLIのヘルプメッセージ（オプション説明、引数、コマンド概要）をすべて日本語化。
 - **インポートの整理**: 欠落していた `multiple` 拡張関数のインポートを追加。
 
-### 4. ビルドと動作検証
-- `amper task :jvm-cli:executableJarJvm` によるビルドの成功を確認。
-- **検証シナリオ**:
-    - `--attr 赤 --attr 紫` (OR検索): 202件ヒット。
-    - `--attr 赤 --attr 紫 --attr-mode AND` (AND検索/混色): 98件ヒット。件数の減少により論理演算が正しく機能していることを確認。
-    - `--system 星竜 --system 勇傑 --system-mode AND`: 両方の系統を持つカード（11件）の抽出を確認。
+### 4. 配布用パッケージの改善と検証
+- `jpackage` による配布用パッケージ生成手順を確立。
+- **コンソール出力の修正**: `--win-console` オプションを追加し、Windows上での実行時に標準出力（ヘルプメッセージ等）が正しく表示されるように修正。
+- **クラスロード問題の解消**: `--main-class` 指定を省略し JAR のマニフェストから自動取得させることで、実行時の `ClassNotFoundException` を解消。
+- **ビルドと動作検証**:
+    - `amper task :jvm-cli:executableJarJvm` によるビルドの成功を確認。
+    - 生成された `BS-CLI.exe -h` で日本語ヘルプが表示されることを検証。
+    - 検証シナリオ（属性OR/AND検索、系統AND検索）が正常に機能することを確認。
 
 ## 成果物更新
 - `tools/shared/src/SearchCards.kt`: 配列パラメータとAND/ORスイッチの送信ロジック追加
-- `tools/shared/src/Main.kt`: 多重指定オプションとモード切り替えオプションの実装
+- `tools/shared/src/Main.kt`: 多重指定オプションの実装とヘルプメッセージの日本語化
+- `tools/Readme.md`: 日本語でのオプション説明と短縮オプション（-a, -s等）の記載
+- `tools/build/installer/BS-CLI.zip`: コンソール出力に対応した最新の配布パッケージ
 - `tools/history.md`: 本作業ログの追加
