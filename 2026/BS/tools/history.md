@@ -251,53 +251,28 @@
 - **インポートの整理**: 欠落していた `multiple` 拡張関数のインポートを追加。
 
 ### 4. 配布用パッケージの改善と検証
-
 - `jpackage` による配布用パッケージ生成手順を確立。
-
 - **コンソール出力の修正**: `--win-console` オプションを追加し、Windows上での実行時に標準出力（ヘルプメッセージ等）が正しく表示されるように修正。
-
 - **クラスロード問題の解消**: `--main-class` 指定を省略し JAR のマニフェストから自動取得させることで、実行時の `ClassNotFoundException` を解消。
-
 - **パッケージ内容の拡充**: `package.ps1` を更新し、配布用 ZIP 内に `Readme.md` が自動的に含まれるように修正。
-
 - **ビルドと動作検証**:
-
     - `amper task :jvm-cli:executableJarJvm` によるビルドの成功を確認。
-
     - 生成された `BS-CLI.exe -h` で日本語ヘルプが表示されることを検証。
-
     - 検証シナリオ（属性OR/AND検索、系統AND検索）が正常に機能することを確認。
 
-
-
 ### 5. 単体テストの導入とコードのリファクタリング
-
 - **テスタビリティの向上**: `Main.kt` 内のパースロジック（`parseAttributes`, `parseCategories`）をトップレベル関数へ抽出し、外部からのテストを可能にした。
-
 - **テストスイートの構築**: `tools/shared/test/test.kt` を作成。
-
     - ショートコード（R, P, S, U 等）の正変換。
-
     - 複数文字のショートコード（RP, RWB 等）の展開。
-
     - 日本語入力との混在、不正な入力値のハンドリング。
-
 - **自動テストの実行**: `amper task :shared:testJvm` により、すべてのパースロジックが期待通り動作することを検証済み。
 
-
-
 ## 成果物更新
-
 - `tools/shared/src/SearchCards.kt`: 配列パラメータとAND/ORスイッチの送信ロジック追加
-
 - `tools/shared/src/Main.kt`: 多重指定オプションの実装、ショートコード変換ロジックの抽出
-
 - `tools/shared/test/test.kt`: ショートコードパースの単体テスト
-
 - `tools/package.ps1`: Readme.md の同梱を含む配布パッケージ作成スクリプト
-
 - `tools/Readme.md`: 日本語でのオプション説明と短縮オプション（-a, -s等）の記載
-
 - `tools/build/installer/BS-CLI.zip`: コンソール出力とReadme同梱に対応した最新の配布パッケージ
-
 - `tools/history.md`: 本作業ログの追加
