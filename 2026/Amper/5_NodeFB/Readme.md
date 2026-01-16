@@ -12,14 +12,14 @@ Kotlin Multiplatform (Gradle) プロジェクトで、Node.js 環境から Fireb
 
 ## 実行方法
 
-実行には Firebase の設定（API Key, Project ID）が必要です。
-これらは環境変数を通してアプリケーションに渡されます。
+実行には Firebase API Key (`FB_API_KEY`) の設定が必須です。
+Project ID (`FB_PROJECT_ID`) はデフォルトで `riot26-70125` が使用されますが、必要に応じて環境変数で上書き可能です。
 
 ### 1. Gradle を使用して実行 (推奨)
 最も簡単な方法です。ビルドと実行を一括で行います。
 ```powershell
 # 環境変数を設定して実行
-$env:FB_API_KEY="your-api-key"; $env:FB_PROJECT_ID="riot26-70125"; ./gradlew :js-app:jsNodeProductionRun
+$env:FB_API_KEY="your-api-key"; ./gradlew :js-app:jsNodeProductionRun
 ```
 
 ### 2. 環境変数で設定を上書きして実行
@@ -35,7 +35,6 @@ Gradle を介さず、ビルドされた JS ファイルを直接 `node` コマ�
 
 # 2. 環境変数を設定 (PowerShell)
 $env:FB_API_KEY="your-api-key"
-$env:FB_PROJECT_ID="riot26-70125"
 
 # 3. 実行ディレクトリへ移動して node コマンド実行
 cd build/js/packages/5_NodeFB-js-app
@@ -44,7 +43,7 @@ node kotlin/5_NodeFB-js-app.js
 
 **ワンライナーでの実行例 (プロジェクトルートから):**
 ```powershell
-$env:FB_API_KEY="your-api-key"; $env:FB_PROJECT_ID="your-project-id"; cd 5_NodeFB/build/js/packages/5_NodeFB-js-app; node kotlin/5_NodeFB-js-app.js
+$env:FB_API_KEY="your-api-key"; cd 5_NodeFB/build/js/packages/5_NodeFB-js-app; node kotlin/5_NodeFB-js-app.js
 ```
 
 ## 動作検証 (E2E)

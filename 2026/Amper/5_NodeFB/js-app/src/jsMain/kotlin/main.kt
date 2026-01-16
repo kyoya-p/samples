@@ -22,7 +22,7 @@ fun main() {
 
     firebaseConfig.apiKey = apiKey
     firebaseConfig.authDomain = env.FB_AUTH_DOMAIN ?: ""
-    firebaseConfig.projectId = env.FB_PROJECT_ID ?: ""
+    firebaseConfig.projectId = env.FB_PROJECT_ID ?: "riot26-70125"
     firebaseConfig.storageBucket = env.FB_STORAGE_BUCKET ?: ""
     firebaseConfig.messagingSenderId = env.FB_MESSAGING_SENDER_ID ?: ""
     firebaseConfig.appId = env.FB_APP_ID ?: ""
