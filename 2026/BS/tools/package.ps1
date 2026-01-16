@@ -32,12 +32,14 @@ jpackage --type app-image `
     --java-options "-Dfile.encoding=UTF-8" `
     --win-console
 
-if ($LASTEXITCODE -ne 0) {
+if ($LASTEXITCODE -ne 0) { 
     Write-Error "jpackage failed."
-    exit $LASTEXITCODE
+    exit $LASTEXITCODE 
 }
+
+Write-Host "Copying Readme.md to application directory..."
+Copy-Item "Readme.md" $appDir
 
 Write-Host "Compressing application to ZIP..."
 Compress-Archive -Path $appDir -DestinationPath $zipPath
-
 Write-Host "Package created successfully: $zipPath"

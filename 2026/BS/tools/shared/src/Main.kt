@@ -28,17 +28,31 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
         }
     }
 
-    //    override val printHelpOnEmptyArgs = true
     val keywords by argument(help = "検索キーワード（フリーワード）").multiple(required = false)
     val force by option("-f", "--force", help = "キャッシュが存在する場合でも強制的に再取得して上書き").flag()
-    val cacheDir by option("-d", "--cache-dir", help = "カードデータのキャッシュ先ディレクトリを指定", envvar = "BSCARD_CACHE_DIR")
+    val cacheDir by option(
+        "-d",
+        "--cache-dir",
+        help = "カードデータのキャッシュ先ディレクトリを指定",
+        envvar = "BSCARD_CACHE_DIR"
+    )
         .convert { Path(it) }.default(defaultCachePath)
     val cost by option("-c", "--cost", help = "コスト範囲（例: '3-5'、'7'）").default("0-30")
     val attributes by option("-a", "--color", "--attr", help = "属性/色 (例: -a 赤 -a 紫)。OR検索").multiple()
-    val attributesAnd by option("-A", "--color-and", "--attr-and", help = "属性/色 (例: -A 赤 -A 白)。AND検索").multiple()
+    val attributesAnd by option(
+        "-A",
+        "--color-and",
+        "--attr-and",
+        help = "属性/色 (例: -A 赤 -A 白)。AND検索"
+    ).multiple()
     val categories by option("-t", "--type", "--category", help = "カテゴリ (例: -t スピリット)").multiple()
     val systems by option("-s", "--system", "--family", help = "系統 (例: -s 星竜 -s 勇傑)。OR検索").multiple()
-    val systemsAnd by option("-S", "--system-and", "--family-and", help = "系統 (例: -S 星竜 -S 勇傑)。AND検索").multiple()
+    val systemsAnd by option(
+        "-S",
+        "--system-and",
+        "--family-and",
+        help = "系統 (例: -S 星竜 -S 勇傑)。AND検索"
+    ).multiple()
     val blockIcons by option("-b", "--block", help = "ブロックアイコン (例: -b 7)").multiple()
 
     override fun run() {
@@ -61,36 +75,9 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
                 val lastSysOrIdx = argv.indexOfLast { it == "-s" || it == "--system" || it == "--family" }
                 val sysMode = if (lastSysAndIdx > lastSysOrIdx) "AND" else "OR"
 
-                fun parseAttributes(inputs: List<String>): List<String> {
-                    val colorMap = mapOf(
-                        'R' to "赤", 'P' to "紫", 'G' to "緑", 'W' to "白", 'Y' to "黄", 'B' to "青"
-                    )
-                    return inputs.flatMap { input ->
-                        if (input.all { it.uppercase().first() in colorMap.keys }) {
-                            input.map { colorMap[it.uppercase().first()]!! }
-                        } else {
-                            listOf(input)
-                        }
-                    }
-                }
-
-                fun parseCategories(inputs: List<String>): List<String> {
-                    val categoryMap = mapOf(
-                        'S' to "スピリット", 'U' to "アルティメット", 'B' to "ブレイヴ", 'N' to "ネクサス", 'M' to "マジック"
-                    )
-                    return inputs.flatMap { input ->
-                        if (input.length == 1 && input.uppercase().first() in categoryMap.keys) {
-                            listOf(categoryMap[input.uppercase().first()]!!)
-                        } else {
-                            listOf(input)
-                        }
-                    }
-                }
-
                 bsSearchMain(
                     client = client,
                     keywords = keywords.joinToString(" "),
-                    cardNo = "", // todo
                     costMin = costMin,
                     costMax = costMax,
                     attributes = parseAttributes(attributes + attributesAnd),
@@ -111,6 +98,32 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
                 }
             }
         }
+    }
+}
+
+fun parseAttributes(inputs: List<String>): List<String> {
+    val colorMap = mapOf('R' to "赤", 'P' to "紫", 'G' to "緑", 'W' to "白", 'Y' to "黄", 'B' to "青")
+    return inputs.flatMap { input ->
+        if (input.all { it.uppercase().first() in colorMap.keys }) {
+            input.map { colorMap[it.uppercase().first()]!! }
+        }
+        else listOf(input)
+    }
+}
+
+fun parseCategories(inputs: List<String>): List<String> {
+    val categoryMap = mapOf(
+        'S' to "スピリット",
+        'U' to "アルティメット",
+        'B' to "ブレイヴ",
+        'N' to "ネクサス",
+        'M' to "マジック"
+    )
+    return inputs.flatMap { input ->
+        if (input.length == 1 && input.uppercase().first() in categoryMap.keys) {
+            listOf(categoryMap[input.uppercase().first()]!!)
+        }
+        else listOf(input)
     }
 }
 

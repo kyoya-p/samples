@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.flow
 fun bsSearchMain(
     client: HttpClient,
     keywords: String,
-    cardNo: String,
     costMin: Int,
     costMax: Int,
     attributes: List<String>,
@@ -30,7 +29,7 @@ fun bsSearchMain(
         contentType(ContentType.Application.FormUrlEncoded)
 
         val params = Parameters.build {
-            append("prodid", cardNo)
+//            append("prodid", cardNo)
             append("cost[min]", costMin.toString())
             append("cost[max]", costMax.toString())
             append("attribute[switch]", attributeSwitch)
