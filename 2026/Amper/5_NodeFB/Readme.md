@@ -20,12 +20,12 @@ Kotlin Multiplatform (Gradle) プロジェクトで、Node.js 環境から Fireb
 
 ### PowerShell
 ```powershell
-${'$'}env:FB_API_KEY="your-api-key"; `
-${'$'}env:FB_AUTH_DOMAIN="your-project-id.firebaseapp.com"; `
-${'$'}env:FB_PROJECT_ID="your-project-id"; `
-${'$'}env:FB_STORAGE_BUCKET="your-project-id.firebasestorage.app"; `
-${'$'}env:FB_MESSAGING_SENDER_ID="your-messaging-sender-id"; `
-${'$'}env:FB_APP_ID="your-app-id"; `
+$env:FB_API_KEY="your-api-key"; `
+$env:FB_AUTH_DOMAIN="your-project-id.firebaseapp.com"; `
+$env:FB_PROJECT_ID="your-project-id"; `
+$env:FB_STORAGE_BUCKET="your-project-id.firebasestorage.app"; `
+$env:FB_MESSAGING_SENDER_ID="your-messaging-sender-id"; `
+$env:FB_APP_ID="your-app-id"; `
 ./gradlew jsNodeRun
 ```
 
