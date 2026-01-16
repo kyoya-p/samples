@@ -42,10 +42,17 @@ cd build/js/packages/5_NodeFB-js-app
 node kotlin/5_NodeFB-js-app.js
 ```
 
+**ワンライナーでの実行例 (プロジェクトルートから):**
+```powershell
+$env:FB_API_KEY="AIzaSyDpE5hkTVWMt8iYPPm30yNL6KJ-YivAwJ4"; $env:FB_PROJECT_ID="riot26-70125"; cd 5_NodeFB/build/js/packages/5_NodeFB-js-app; node kotlin/5_NodeFB-js-app.js
+```
+
 ## 動作検証 (E2E)
 
 `jsNodeProductionRun` を実行すると、Firestore への書き込みと読み出し検証が行われます。
 検証完了後、プロセスは自動的に終了します。
+
+※ ネットワークエラーや設定不備によるハングアップを防ぐため、15秒のタイムアウトが設定されています。タイムアウト時はエラーコード 1 で終了します。
 
 ## プロジェクト構造
 - `shared/src/commonMain/kotlin/SampleItem.kt`: 共通データモデル
