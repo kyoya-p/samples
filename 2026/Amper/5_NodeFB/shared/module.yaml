@@ -1,0 +1,7 @@
+product:
+  type: lib
+  platforms: [js]
+
+settings:
+  kotlin:
+    languageVersion: 2.1
