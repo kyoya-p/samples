@@ -1,6 +1,6 @@
-# Project History - 5_NodeFB (Kotlin KMP Firebase Node.js)
+# Project History - 7_FBSDK_Win (Firebase C++ SDK)
 
-## 2026-01-16: プロジェクト初期化と Firebase 連携の実装
+## 2026-01-16: プロジェクト初期化と Firebase 連携の実装 (Kotlin/JS)
 
 ### 実施事項
 1. **プロジェクト基盤の構築**
@@ -49,9 +49,37 @@
    - **互換性の確保**: Node.js 環境でのモジュール解決のため `require('firebase/firestore')` の追加、および SDK バージョンの微調整を実施。
    - **動作確認**: GitLive SDK を用いた Firestore への E2E 検証が正常に完了することを確認。
 
+## 2026-01-16 (Update): C++ SDK への移行と WSL 対応
+
+### 実施事項
+1. **プロジェクト構造の刷新**
+   - 既存の Kotlin/JS プロジェクトを `_kotlin_backup/` へ退避。
+   - Google 公式の Firebase C++ SDK を使用するネイティブ C++ プロジェクトへ転換。
+
+2. **C++ 実装 (`src/main.cpp`)**
+   - **環境変数**: クロスプラットフォームな `GetEnv` ヘルパーを実装し、API Key 等を環境変数から安全に取得。
+   - **Future パターン**: 非同期処理 (SignIn, Add, Get) の完了を待機する `WaitForFuture` テンプレート関数を実装。
+   - **機能実装**:
+     - `App::Create`: Firebase App の初期化。
+     - `Auth::SignInAnonymously`: 匿名認証によるログイン。
+     - `Firestore::Add/Get`: データ（Map）の書き込みとクエリによる読み込み検証。
+
+3. **ビルド環境 (CMake)**
+   - `CMakeLists.txt` を作成し、`firebase_app`, `firebase_auth`, `firebase_firestore` へのリンクを設定。
+   - Windows (MSVC) および Linux (WSL/g++) の両対応設定を追加（Linux での `pthread` リンク等）。
+
+4. **SDK 自動セットアップ**
+   - **WSL/Linux 用**: `setup_sdk.sh` (curl/wget + unzip) を作成し、Linux 版 SDK を自動配置。
+   - **Windows 用**: `setup_sdk.ps1` (PowerShell) を作成し、Windows 版 SDK を自動配置。
+
+5. **ドキュメント整備**
+   - `Readme.md` を全面的に書き換え、C++ プロジェクトとしてのビルド・実行手順（WSL 推奨）を記載。
+
 ### 現在のステータス
-- Kotlin/JS (Node.js) から `firebase-kotlin-sdk` を用いて、現代的な Kotlin の記述（`suspend main`, `runCatching`, `Serializable`）で Firebase Firestore を操作可能な Gradle プロジェクト。
+- **C++ (CMake)** プロジェクトとして再構成済み。
+- **WSL (Ubuntu)** 上の `g++` 環境で、Linux 版 Firebase C++ SDK を用いたビルドと実行が可能。
+- Windows (MSVC) 環境でもビルド可能な構成を維持。
 
 ### 次のステップ
-- Firebase Auth などの追加機能の実装。
-- 共通ロジックの他プラットフォーム（Android/JVM等）への展開。
+- 実機（WSL）での動作確認。
+- さらなる Firebase 機能（Storage, Functions 等）の追加検証。
