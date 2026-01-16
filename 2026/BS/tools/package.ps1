@@ -12,7 +12,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $installerDir = "build\installer"
-$appName = "BS-CLI"
+$appName = "bscard"
 $appDir = Join-Path $installerDir $appName
 $zipPath = Join-Path $installerDir "$appName.zip"
 $inputJarDir = "build\tasks\_jvm-cli_executableJarJvm"

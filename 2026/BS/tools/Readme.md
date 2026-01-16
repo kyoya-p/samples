@@ -4,10 +4,10 @@
 **AIはこのファイルの変更禁止**
 
 # 使用
-配布パッケージ (`BS-CLI.zip`) を解凍し、中の `BS-CLI.exe` を使用。
+配布パッケージ (`bscard.zip`) を解凍し、中の `bscard.exe` を使用。
 
 ```shell
-.\BS-CLI.exe [options]... [Keyword...]
+.\bscard.exe [options]... [Keyword...]
 ```
 
 Keyword: 指定したキーワードで検出したカードの詳細情報をキャッシュファイル(~/.bscards/$cardNo.yaml)として保存。
@@ -16,14 +16,14 @@ Options:
 -f, --force               キャッシュが存在する場合でも強制的に再取得して上書き
 -d, --cache-dir=<value>   カードデータのキャッシュ先ディレクトリを指定 (default: C:\Users\kyoya\.bscards)
 -c, --cost <range>        コスト範囲を指定（例: "3-5"、"7"）
--a, --color <attr>        属性（色）を指定。OR検索 (例: 赤="R", 全色="RPGWYB")。
--A, --color-and <attr>    属性（色）を指定。AND検索 (例: 赤緑="RG")。
+-a, --color <attr>        属性（色）を指定。OR検索 (例: 赤の場合"R", 赤緑の場合"RG",)。
+-A, --color-and <attr>    属性（色）を指定。AND検索 (例: 全色の場合"RPGWYB")。
 -s, --system <family>     系統を指定 (例: 星竜)。複数指定可(OR検索) (*1)
 -S, --system-and <family> 系統を指定 (例: 星竜)。複数指定可(AND検索) (*1)
--t, --type <category>     カテゴリを指定 (例: スピリット="S", すべて="SUBNM")
+-t, --type <category>     カテゴリを指定 (例: スピリットの場合"S", すべての場合"SUBNM")
 -b, --block <icon>        ブロックアイコンを指定 (例: 7)。複数指定可
 
-*1: 属性・系統のAND/ORは、引数リストの最後に指定されたオプション（-a/-A, -s/-S）で決定。
+*1: 属性・系統のAND/ORは、引数リストの最後に指定されたオプションで決定。
 
 # テスト実行
 ```shell
@@ -46,5 +46,5 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 ```powershell
 ./package.ps1
 ```
-`tools/build/installer/BS-CLI.zip` を生成。
+`tools/build/installer/bscard.zip` を生成。
 

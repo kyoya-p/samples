@@ -21,6 +21,8 @@ import kotlinx.io.buffered
 val defaultCachePath = Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }, ".bscards")
 
 class SearchCards(private val argv: List<String>) : CliktCommand("バトルスピリッツ カード検索 CLI") {
+    override val printHelpOnEmptyArgs = true
+
     init {
         context {
             helpOptionNames = setOf("-h", "--help")
@@ -29,30 +31,17 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
     }
 
     val keywords by argument(help = "検索キーワード（フリーワード）").multiple(required = false)
-    val force by option("-f", "--force", help = "キャッシュが存在する場合でも強制的に再取得して上書き").flag()
-    val cacheDir by option(
-        "-d",
-        "--cache-dir",
-        help = "カードデータのキャッシュ先ディレクトリを指定",
-        envvar = "BSCARD_CACHE_DIR"
-    )
+    val force by option("-f", "--force", help = "キャッシュを無視しデータ取得").flag()
+    val cacheDir by option("-d", "--cache-dir", help = "キャッシュ先ディレクトリ指定", envvar = "BSCARD_CACHE_DIR")
         .convert { Path(it) }.default(defaultCachePath)
     val cost by option("-c", "--cost", help = "コスト範囲（例: '3-5'、'7'）").default("0-30")
     val attributes by option("-a", "--color", "--attr", help = "属性/色 (例: -a 赤 -a 紫)。OR検索").multiple()
-    val attributesAnd by option(
-        "-A",
-        "--color-and",
-        "--attr-and",
-        help = "属性/色 (例: -A 赤 -A 白)。AND検索"
-    ).multiple()
+    val attributesAnd by option("-A", "--color-and", "--attr-and", help = "属性/色 (例: -A 赤 -A 白)。AND検索")
+        .multiple()
     val categories by option("-t", "--type", "--category", help = "カテゴリ (例: -t スピリット)").multiple()
     val systems by option("-s", "--system", "--family", help = "系統 (例: -s 星竜 -s 勇傑)。OR検索").multiple()
-    val systemsAnd by option(
-        "-S",
-        "--system-and",
-        "--family-and",
-        help = "系統 (例: -S 星竜 -S 勇傑)。AND検索"
-    ).multiple()
+    val systemsAnd by option("-S", "--system-and", "--family-and", help = "系統 (例: -S 星竜 -S 勇傑)。AND検索")
+        .multiple()
     val blockIcons by option("-b", "--block", help = "ブロックアイコン (例: -b 7)").multiple()
 
     override fun run() {
@@ -106,8 +95,7 @@ fun parseAttributes(inputs: List<String>): List<String> {
     return inputs.flatMap { input ->
         if (input.all { it.uppercase().first() in colorMap.keys }) {
             input.map { colorMap[it.uppercase().first()]!! }
-        }
-        else listOf(input)
+        } else listOf(input)
     }
 }
 
@@ -122,8 +110,7 @@ fun parseCategories(inputs: List<String>): List<String> {
     return inputs.flatMap { input ->
         if (input.length == 1 && input.uppercase().first() in categoryMap.keys) {
             listOf(categoryMap[input.uppercase().first()]!!)
-        }
-        else listOf(input)
+        } else listOf(input)
     }
 }
 

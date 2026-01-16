@@ -248,6 +248,7 @@
     - カテゴリ: `S`(スピリット), `U`(アルティメット), `B`(ブレイヴ), `N`(ネクサス), `M`(マジック) の1文字コードに対応。
     - 日本語入力との併用も可能。
 - **ヘルプの日本語化**: CLIのヘルプメッセージ（オプション説明、引数、コマンド概要）をすべて日本語化。
+- **UXの改善**: 引数なしで実行された場合に自動的にヘルプを表示するように設定 (`printHelpOnEmptyArgs`)。
 - **インポートの整理**: 欠落していた `multiple` 拡張関数のインポートを追加。
 
 ### 4. 配布用パッケージの改善と検証
@@ -257,7 +258,7 @@
 - **パッケージ内容の拡充**: `package.ps1` を更新し、配布用 ZIP 内に `Readme.md` が自動的に含まれるように修正。
 - **ビルドと動作検証**:
     - `amper task :jvm-cli:executableJarJvm` によるビルドの成功を確認。
-    - 生成された `BS-CLI.exe -h` で日本語ヘルプが表示されることを検証。
+    - 生成された `bscard.exe -h` で日本語ヘルプが表示されることを検証。
     - 検証シナリオ（属性OR/AND検索、系統AND検索）が正常に機能することを確認。
 
 ### 5. 単体テストの導入とコードのリファクタリング
@@ -272,7 +273,7 @@
 - `tools/shared/src/SearchCards.kt`: 配列パラメータとAND/ORスイッチの送信ロジック追加
 - `tools/shared/src/Main.kt`: 多重指定オプションの実装、ショートコード変換ロジックの抽出
 - `tools/shared/test/test.kt`: ショートコードパースの単体テスト
-- `tools/package.ps1`: Readme.md の同梱を含む配布パッケージ作成スクリプト
+- `tools/package.ps1`: アプリケーション名を `bscard` に統一し、Readme.md を同梱
 - `tools/Readme.md`: 日本語でのオプション説明と短縮オプション（-a, -s等）の記載
-- `tools/build/installer/BS-CLI.zip`: コンソール出力とReadme同梱に対応した最新の配布パッケージ
+- `tools/build/installer/bscard.zip`: コンソール出力とReadme同梱に対応した最新の配布パッケージ
 - `tools/history.md`: 本作業ログの追加
