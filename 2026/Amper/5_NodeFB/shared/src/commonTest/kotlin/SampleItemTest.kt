@@ -1,13 +1,12 @@
-package com.example.model
-
+import com.example.model.SampleItem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SampleItemTest {
     @Test
     fun testSampleItemCreation() {
-        val item = SampleItem(name = "Test Item", createdAt = "2026-01-01")
-        assertEquals("Test Item", item.name)
-        assertEquals("2026-01-01", item.createdAt)
+        val item = SampleItem(null, "Test Name", "2026-01-16T00:00:00Z")
+        assertEquals("Test Name", item.name)
+        assertEquals("2026-01-16T00:00:00Z", item.createdAt)
     }
 }

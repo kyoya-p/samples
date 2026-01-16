@@ -7,7 +7,7 @@ import node.api.process
 import com.example.model.SampleItem
 
 fun main() {
-    println("Initializing Firebase with environment variables...")
+    println("Initializing Firebase with provided config...")
     
     val env = process.env
     val firebaseConfig = js("{}")
@@ -71,6 +71,7 @@ fun main() {
                 }
                 
                 println("--- VERIFICATION COMPLETE ---")
+                process.exit(0)
                 
             } catch (e: dynamic) {
                 println("Error during Firestore operation: $e")

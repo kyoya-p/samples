@@ -35,15 +35,18 @@
 
 
 
-7. **テスト環境構築と動作検証の実装**
-   - `kotlin-test` ライブラリを導入し、`commonTest` および `jsTest` でのユニットテスト環境を構築。
-   - `shared` モジュールのデータモデルに対するユニットテストを作成。
-   - Firestore への実際の書き込み・読み出しを行い、データの整合性を自動判定する E2E 検証ロジックを `main.kt` に実装。
+8. **Gradle 構成への完全移行とセキュリティ強化**
+   - Amper 構成を完全に廃止し、標準的な Gradle (Kotlin Multiplatform) 構成へ移行。
+   - ソースコード配置を KMP 標準構造 (`src/commonMain/kotlin`, `src/jsMain/kotlin`) に再編。
+   - ソースコード内のシークレット（Firebase API Key等）を排除し、環境変数経由での設定に統一。
+   - `amper` および `amper.bat` ツールを削除し、`./gradlew` によるビルド・実行フローに統一。
+   - `shared` モジュールに `kotlin.test` を導入し、データモデルのユニットテストを追加。
+   - 最終的な E2E テスト（環境変数経由での Firestore 読み書き）およびユニットテストの合格を確認。
 
 ### 現在のステータス
-- Kotlin/JS (Node.js) から Firebase Firestore への読み書きが可能なプロトタイプが完成。
-- Gradle ベースのビルドシステムで、コード共有、依存関係管理、テスト実行が可能。
-- アプリ実行時に自動的な動作検証が行われ、Firebase 接続とデータ操作の健全性を確認できる状態。
+- Kotlin/JS (Node.js) から Firebase Firestore への読み書きが可能な Gradle プロジェクト。
+- 環境変数を設定することで `./gradlew :js-app:jsNodeProductionRun` による検証実行が可能。
+- セキュリティスキャンにより、ソースコード内にシークレットが含まれていないことを確認済み。
 
 ### 次のステップ（案）
 - Firebase Auth などの追加機能の定義と実装。
