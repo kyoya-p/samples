@@ -1,10 +1,10 @@
 # Kotlin KMP Firebase Client Sample (Node.js)
 
-Kotlin Multiplatform (Gradle) プロジェクトで、Node.js 環境から Firebase Firestore への読み書きを行うサンプルです。
+Kotlin Multiplatform (Gradle) プロジェクトで、Node.js 環境から Firebase Firestore への読み書きを行うサンプル
 
 ### テスト実行
-実行には Firebase API Key (`FB_API_KEY`) の設定が必須です。
-Project ID (`FB_PROJECT_ID`) はデフォルトで `riot26-70125` が使用されますが、必要に応じて環境変数で上書き可能です。
+実行には Firebase API Key (`FB_API_KEY`) の設定が必須。
+Project ID (`FB_PROJECT_ID`) はデフォルトで `riot26-70125` が使用されますが、必要に応じて環境変数で上書き可能
 
 ### ビルド
 
