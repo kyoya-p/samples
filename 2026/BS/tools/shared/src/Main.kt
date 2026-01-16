@@ -61,14 +61,40 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
                 val lastSysOrIdx = argv.indexOfLast { it == "-s" || it == "--system" || it == "--family" }
                 val sysMode = if (lastSysAndIdx > lastSysOrIdx) "AND" else "OR"
 
+                fun parseAttributes(inputs: List<String>): List<String> {
+                    val colorMap = mapOf(
+                        'R' to "赤", 'P' to "紫", 'G' to "緑", 'W' to "白", 'Y' to "黄", 'B' to "青"
+                    )
+                    return inputs.flatMap { input ->
+                        if (input.all { it.uppercase().first() in colorMap.keys }) {
+                            input.map { colorMap[it.uppercase().first()]!! }
+                        } else {
+                            listOf(input)
+                        }
+                    }
+                }
+
+                fun parseCategories(inputs: List<String>): List<String> {
+                    val categoryMap = mapOf(
+                        'S' to "スピリット", 'U' to "アルティメット", 'B' to "ブレイヴ", 'N' to "ネクサス", 'M' to "マジック"
+                    )
+                    return inputs.flatMap { input ->
+                        if (input.length == 1 && input.uppercase().first() in categoryMap.keys) {
+                            listOf(categoryMap[input.uppercase().first()]!!)
+                        } else {
+                            listOf(input)
+                        }
+                    }
+                }
+
                 bsSearchMain(
                     client = client,
                     keywords = keywords.joinToString(" "),
                     cardNo = "", // todo
                     costMin = costMin,
                     costMax = costMax,
-                    attributes = attributes + attributesAnd,
-                    categories = categories,
+                    attributes = parseAttributes(attributes + attributesAnd),
+                    categories = parseCategories(categories),
                     systems = systems + systemsAnd,
                     blockIcons = blockIcons,
                     attributeSwitch = attrMode,
