@@ -44,7 +44,7 @@ node kotlin/5_NodeFB-js-app.js
 
 **ワンライナーでの実行例 (プロジェクトルートから):**
 ```powershell
-$env:FB_API_KEY="AIzaSyDpE5hkTVWMt8iYPPm30yNL6KJ-YivAwJ4"; $env:FB_PROJECT_ID="riot26-70125"; cd 5_NodeFB/build/js/packages/5_NodeFB-js-app; node kotlin/5_NodeFB-js-app.js
+$env:FB_API_KEY="your-api-key"; $env:FB_PROJECT_ID="your-project-id"; cd 5_NodeFB/build/js/packages/5_NodeFB-js-app; node kotlin/5_NodeFB-js-app.js
 ```
 
 ## 動作検証 (E2E)
