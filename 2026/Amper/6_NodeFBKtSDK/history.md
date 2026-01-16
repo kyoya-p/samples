@@ -33,8 +33,6 @@
    - ソースコード配置を KMP 標準構造 (`src/commonMain/kotlin`, `src/jsMain/kotlin`) に変更。
    - npm 依存関係の管理を `build.gradle.kts` の `implementation(npm(...))` に集約。
 
-
-
 8. **Gradle 構成への完全移行とセキュリティ強化**
    - Amper 構成を完全に廃止し、標準的な Gradle (Kotlin Multiplatform) 構成へ移行。
    - ソースコード配置を KMP 標準構造 (`src/commonMain/kotlin`, `src/jsMain/kotlin`) に再編。
@@ -43,12 +41,16 @@
    - `shared` モジュールに `kotlin.test` を導入し、データモデルのユニットテストを追加。
    - 最終的な E2E テスト（環境変数経由での Firestore 読み書き）およびユニットテストの合格を確認。
 
+9. **GitLiveApp/firebase-kotlin-sdk への移行**
+   - 自作の `external` 宣言を廃止し、マルチプラットフォーム対応の `GitLiveApp/firebase-kotlin-sdk` を導入。
+   - `SampleItem` に `kotlinx.serialization.Serializable` を適用。
+   - Node.js 環境でのモジュール登録問題を解決するため、`main.kt` にて `firebase/firestore` の明示的な `require` を追加。
+   - GitLive SDK を用いた Firestore への書き込みと取得の正常動作を確認。
+
 ### 現在のステータス
-- Kotlin/JS (Node.js) から Firebase Firestore への読み書きが可能な Gradle プロジェクト。
+- Kotlin/JS (Node.js) から `firebase-kotlin-sdk` を用いて Firebase Firestore への読み書きが可能な Gradle プロジェクト。
 - 環境変数を設定することで `./gradlew :js-app:jsNodeProductionRun` による検証実行が可能。
-- セキュリティスキャンにより、ソースコード内にシークレットが含まれていないことを確認済み。
 
-### 次のステップ（案）
-- Firebase Auth などの追加機能の定義と実装。
+### 次のステップ
+- Firebase Auth などの追加機能の GitLive SDK ベースでの実装。
 - CI への組み込み（GitHub Actions など）。
-

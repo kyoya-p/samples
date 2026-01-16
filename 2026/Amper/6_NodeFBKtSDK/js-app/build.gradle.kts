@@ -16,7 +16,7 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                implementation(npm("firebase", "10.7.1"))
+                implementation(npm("firebase", "10.12.2"))
             }
         }
     }
