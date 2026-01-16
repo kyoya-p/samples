@@ -12,22 +12,35 @@ Kotlin Multiplatform (Gradle) プロジェクトで、Node.js 環境から Fireb
 
 ## 実行方法
 
-提供された Firebase 設定が `main.kt` に埋め込まれているため、追加設定なしで実行可能です。
-環境変数で上書きすることもできます。
+実行には Firebase の設定（API Key, Project ID）が必要です。
+これらは環境変数を通してアプリケーションに渡されます。
 
 ### 1. Gradle を使用して実行 (推奨)
 最も簡単な方法です。ビルドと実行を一括で行います。
 ```powershell
-./gradlew :js-app:jsNodeProductionRun
+# 環境変数を設定して実行
+$env:FB_API_KEY="your-api-key"; $env:FB_PROJECT_ID="riot26-70125"; ./gradlew :js-app:jsNodeProductionRun
 ```
 
 ### 2. 環境変数で設定を上書きして実行
-```powershell
-$env:FB_API_KEY="your-api-key"; `./gradlew :js-app:jsNodeProductionRun
-```
+（上記「1. Gradle を使用して実行」に統合されました）
 
-### 3. ビルド済みファイルを実行
-ビルド済みの JS ファイルを `node` で直接実行する場合、Gradle が管理する `node_modules` へのパス解決が必要なため、通常は `jsNodeProductionRun` タスクの使用を推奨します。
+### 3. ビルド済みファイルを実行 (Node.js 直接実行)
+Gradle を介さず、ビルドされた JS ファイルを直接 `node` コマンドで実行する方法です。
+`node_modules` の依存関係解決のため、パッケージディレクトリに移動して実行します。
+
+```powershell
+# 1. ビルド
+./gradlew assemble
+
+# 2. 環境変数を設定 (PowerShell)
+$env:FB_API_KEY="your-api-key"
+$env:FB_PROJECT_ID="riot26-70125"
+
+# 3. 実行ディレクトリへ移動して node コマンド実行
+cd build/js/packages/5_NodeFB-js-app
+node kotlin/5_NodeFB-js-app.js
+```
 
 ## 動作検証 (E2E)
 
