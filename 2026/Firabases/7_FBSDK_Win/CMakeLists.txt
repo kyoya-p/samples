@@ -14,13 +14,29 @@ add_executable(FirebaseApp src/main.cpp)
 # 必要なライブラリをリンク
 # Windowsでは firebase_app, firebase_auth, firebase_firestore を使用
 target_link_libraries(FirebaseApp
-  firebase_app
   firebase_auth
   firebase_firestore
+  firebase_app
 )
 
 if(UNIX AND NOT APPLE)
-  target_link_libraries(FirebaseApp pthread)
+  # Linux (WSL) では追加のシステムライブラリが必要
+  find_package(CURL REQUIRED)
+  find_package(ZLIB REQUIRED)
+  find_package(OpenSSL REQUIRED)
+  target_link_libraries(FirebaseApp 
+    pthread 
+    atomic 
+    dl 
+    ${CURL_LIBRARIES}
+    ${ZLIB_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
+  )
+  # uuid が必要な場合がある
+  find_library(UUID_LIB uuid)
+  if(UUID_LIB)
+    target_link_libraries(FirebaseApp ${UUID_LIB})
+  endif()
 endif()
 
 # C++17標準を使用

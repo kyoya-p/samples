@@ -46,7 +46,6 @@
    - **シリアライズ**: `SampleItem` に `kotlinx.serialization.Serializable` を適用し、型安全なデータ操作を実現。
    - **イディオマティックな例外処理**: `try-catch` ブロックを Kotlin の `runCatching` に置き換え。
    - **コルーチンの改善**: 警告対象となっていた `GlobalScope.launch` を廃止し、`suspend fun main()` によるエントリーポイントへ移行。構造化並行性を意識したコードへ改善。
-   - **互換性の確保**: Node.js 環境でのモジュール解決のため `require('firebase/firestore')` の追加、および SDK バージョンの微調整を実施。
    - **動作確認**: GitLive SDK を用いた Firestore への E2E 検証が正常に完了することを確認。
 
 ## 2026-01-16 (Update): C++ SDK への移行と WSL 対応
@@ -75,11 +74,42 @@
 5. **ドキュメント整備**
    - `Readme.md` を全面的に書き換え、C++ プロジェクトとしてのビルド・実行手順（WSL 推奨）を記載。
 
+## 2026-01-17: WSL (Linux) 環境でのビルド成功と E2E 検証完了
+
+### 実施事項
+1. **WSL 依存パッケージの特定と解決**
+   - ビルドに必須となるパッケージ群 (`build-essential`, `cmake`, `unzip`, `curl`, `pkg-config`, `libsecret-1-dev`, `libcurl4-openssl-dev`, `libssl-dev`, `zlib1g-dev`) を特定し、インストール手順を確立。
+
+2. **C++ コードの修正**
+   - Firebase C++ SDK の Firestore API において `MapFieldValue` 型 (`std::unordered_map`) が要求される箇所で `std::map` を使用していたため、`std::unordered_map` への移行を実施。
+
+3. **ビルド設定の高度化 (CMake)**
+   - **リンク順序の最適化**: Linux における静的ライブラリの依存関係を考慮し、`firebase_app` を最後に配置するリンク順序へ調整。
+   - **システムライブラリの自動検出**: `find_package` を用いて `CURL`, `ZLIB`, `OpenSSL` を確実にリンクするよう強化。
+   - **パス解決の改善**: ビルド時の相対パス問題を回避するため、絶対パスによる SDK 指定を推奨化。
+
+4. **E2E 検証の成功**
+   - 提供された実際の Firebase 認証情報 (API Key, App ID) を用いて検証を実施。
+   - **匿名認証**, **Firestore への新規書き込み**, **データのクエリ取得** の一連のフローが正常に動作することを確認済み。
+
 ### 現在のステータス
-- **C++ (CMake)** プロジェクトとして再構成済み。
-- **WSL (Ubuntu)** 上の `g++` 環境で、Linux 版 Firebase C++ SDK を用いたビルドと実行が可能。
-- Windows (MSVC) 環境でもビルド可能な構成を維持。
+- WSL (Ubuntu 24.04) 環境において、Firebase C++ SDK を用いたネイティブアプリケーションのビルド・実行基盤が完全に確立。
+- Firestore への実接続による読み書き検証をパス。
 
 ### 次のステップ
-- 実機（WSL）での動作確認。
-- さらなる Firebase 機能（Storage, Functions 等）の追加検証。
+- データの構造化や、さらなる Firebase 機能（Storage, Functions 等）の追加。
+- Windows (MSVC) 環境でのビルド互換性の再確認。
+
+## 動作確認済み環境バージョン (2026-01-17 時点)
+
+| コンポーネント | バージョン | 備考 |
+| :--- | :--- | :--- |
+| **OS** | Ubuntu 24.04.3 LTS | WSL2 (Kernel 6.6.87.2) |
+| **Firebase C++ SDK** | 13.3.0 | Linux版 (公式バイナリ) |
+| **Compiler** | g++ 13.3.0 | build-essential |
+| **CMake** | 3.28.3 | |
+| **cURL** | 8.5.0 | libcurl4-openssl-dev |
+| **OpenSSL** | 3.0.13 | libssl-dev |
+| **ZLib** | 1.3 | zlib1g-dev |
+| **Libsecret** | 0.21.4 | libsecret-1-dev |
+| **Pkg-Config** | 1.8.1 | |

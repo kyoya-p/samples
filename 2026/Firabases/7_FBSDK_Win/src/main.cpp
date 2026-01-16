@@ -4,7 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 #include "firebase/app.h"
 #include "firebase/auth.h"
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     std::cout << "--- START VERIFICATION ---" << std::endl;
     
     // データ作成
-    std::map<std::string, firebase::firestore::FieldValue> data;
+    std::unordered_map<std::string, firebase::firestore::FieldValue> data;
     auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::string name_val = "Verify Item C++ " + std::to_string(now_ms);
     data["name"] = firebase::firestore::FieldValue::String(name_val);

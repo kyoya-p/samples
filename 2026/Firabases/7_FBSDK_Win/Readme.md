@@ -5,14 +5,15 @@ Firebase C++ SDK を使用して Firestore への読み書きを行うサンプ�
 
 ## 前提条件 (WSL / Linux)
 
-1.  **WSL / Linux**: Ubuntu 20.04+ 推奨
-2.  **ビルドツール**: `build-essential` (`g++`, `make`), `cmake`, `unzip`, `curl`
-3.  **Firebase C++ SDK (Linux)**: 付属のスクリプトで自動セットアップします。
+1.  **WSL / Linux**: Ubuntu 24.04 LTS 等
+2.  **ビルドツール**: `build-essential` (`g++`, `make`), `cmake`, `unzip`, `curl`, `pkg-config`, `libsecret-1-dev`
+3.  **Firebase C++ SDK**: 付属のスクリプトで自動セットアップします。
+    - **注意**: SDK のサイズは約 1.2GB あり、展開後は 5GB 以上になります。ディスク容量と通信環境に注意してください。
 
 ### ツールのインストール (Ubuntu/Debian)
 ```bash
 sudo apt update
-sudo apt install build-essential cmake unzip curl
+sudo apt install build-essential cmake unzip curl pkg-config libsecret-1-dev libcurl4-openssl-dev libssl-dev zlib1g-dev
 ```
 
 ## セットアップ手順
@@ -23,11 +24,12 @@ WSL ターミナルでプロジェクトルートに移動し、セットアッ�
 # 実行権限の付与
 chmod +x setup_sdk.sh
 
-# SDK のダウンロードと展開
+# SDK のダウンロードと展開 (時間がかかります)
 ./setup_sdk.sh
 ```
 
-これにより `./build/sdk/firebase_cpp_sdk` に Linux 版 SDK が配置されます。
+これにより `./build/sdk/firebase_cpp_sdk` に SDK が配置されます。
+※内部的に `dl.google.com` から統合パッケージをダウンロードします。
 
 ## ビルド手順
 
@@ -69,7 +71,20 @@ Visual Studio (MSVC) を使用する場合は、以下の PowerShell スクリ�
 ## プロジェクト構造
 
 - `src/main.cpp`: メインロジック (Auth, Firestore)
-- `setup_sdk.sh`: Linux/WSL 用セットアップスクリプト
+- `setup_sdk.sh`: Linux/WSL 用セットアップスクリプト (Python3/unzip両対応)
 - `setup_sdk.ps1`: Windows 用セットアップスクリプト
 - `CMakeLists.txt`: CMake ビルド設定
 - `_kotlin_backup/`: 以前の Kotlin プロジェクトのバックアップ
+
+## 動作確認済み環境 (2026-01-17)
+
+以下の環境にてビルドおよび Firebase 連携（Auth/Firestore）の動作を確認済みです。
+
+| コンポーネント | バージョン | 備考 |
+| :--- | :--- | :--- |
+| **OS** | Ubuntu 24.04.3 LTS | WSL2 |
+| **Firebase C++ SDK** | 13.3.0 | Linux版 |
+| **Compiler** | g++ 13.3.0 | |
+| **CMake** | 3.28.3 | |
+| **OpenSSL** | 3.0.13 | |
+
