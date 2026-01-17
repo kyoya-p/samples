@@ -44,6 +44,7 @@ struct Contact {
 };
 
 // Helper to define consistent column widths across ALL rows
+// Name: 30 chars fixed, Address: flexible, Operation: 14 chars fixed
 Element MakeTableRow(Element name, Element email, Element op) {
     return hbox({
         std::move(name)  | size(WIDTH, EQUAL, 30),
@@ -149,7 +150,7 @@ class FirestoreService {
          return false;
     }
 
-    Log("Firebase initialized. Initial Limit: " + std::to_string(initial_limit));
+    Log("Firebase initialized. Limit: " + std::to_string(initial_limit));
     StartListening(initial_limit);
     return true;
   }
@@ -168,7 +169,7 @@ class FirestoreService {
   
   void LoadMore() {
       if (!is_loading_ && has_more_) {
-          int step = 20; 
+          int step = 10; 
           UpdateLimit(current_limit_ + step);
       }
   }
@@ -287,10 +288,9 @@ int main(int argc, char** argv) {
   auto on_update = [&screen]() { screen.Post(Event::Custom); };
   FirestoreService service(on_update);
 
+  // Initial limit is 10
   auto calculate_limit = []() {
-      auto size = Terminal::Size();
-      int limit = size.dimy - 10; 
-      return (limit > 0) ? limit : 5; 
+      return 10;
   };
 
   bool show_config = false;
@@ -355,10 +355,10 @@ int main(int argc, char** argv) {
       }
     }
     
-    // Loading indicator (Displayed while fetching more data)
+    // Loading indicator
     if (service.IsLoading()) {
          auto loading_label = Renderer([&] {
-            return hbox({ filler(), text("Loading next 20 items...") | color(Color::Yellow) | bold, filler() });
+            return hbox({ filler(), text("Loading next 10 items...") | color(Color::Yellow) | bold, filler() });
         });
         rows_container->Add(loading_label);
     } else if (!service.HasMore() && !contacts.empty()) {
@@ -394,9 +394,11 @@ int main(int argc, char** argv) {
     auto error_msg = service.GetError();
     bool connected = service.IsConnected();
     
-    int min_limit = calculate_limit();
-    if (connected && service.GetCurrentLimit() < min_limit) {
-        service.UpdateLimit(min_limit);
+    // Auto-update limit on connect
+    static bool initial_check_done = false;
+    if (connected && !initial_check_done) {
+        service.UpdateLimit(10);
+        initial_check_done = true;
     }
 
     Elements rows;
