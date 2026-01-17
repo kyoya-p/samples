@@ -1,24 +1,2 @@
-# Build directories
-build/
-out/
-cmake-build-*/
-.vs/
-*.exe
-*.obj
-*.pdb
-*.ilk
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.user
-
-# Backup
-_kotlin_backup/
-
-# IDEs
-.idea/
-.vscode/
-
-# Temp
-tmp/
-*.log
+/.idea/
+/build/

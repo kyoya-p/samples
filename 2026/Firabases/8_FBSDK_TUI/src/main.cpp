@@ -1,17 +1,37 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include <memory>
 #include <thread>
 #include <chrono>
+#include <mutex>
+#include <algorithm>
 #include <cstdlib>
-#include <vector>
 #include <unordered_map>
+#include <functional>
 
+// Firebase
 #include "firebase/app.h"
 #include "firebase/auth.h"
 #include "firebase/firestore.h"
 #include "firebase/util.h"
 
-// 環境変数を取得するクロスプラットフォームヘルパー
+// FTXUI
+#include "ftxui/component/component.hpp"
+#include "ftxui/component/screen_interactive.hpp"
+#include "ftxui/dom/elements.hpp"
+#include "ftxui/component/component_options.hpp" 
+
+using namespace ftxui;
+
+// --- Data Model ---
+struct User {
+    std::string id;
+    std::string name;
+    std::string email;
+};
+
+// --- Firebase Helper ---
 std::string GetEnv(const char* name, const char* default_value = "") {
 #ifdef _WIN32
     char* buf = nullptr;
@@ -28,136 +48,276 @@ std::string GetEnv(const char* name, const char* default_value = "") {
     return std::string(default_value);
 }
 
-// Futureの完了を待つヘルパー
-template <typename T>
-const T* WaitForFuture(const firebase::Future<T>& future, const char* operation_name) {
-    std::cout << "Waiting for " << operation_name << "..." << std::endl;
-    while (future.status() == firebase::kFutureStatusPending) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (future.status() != firebase::kFutureStatusComplete) {
-        std::cerr << "ERROR: " << operation_name << " failed or invalid. Status: " << future.status() << std::endl;
-        return nullptr;
-    }
-
-    if (future.error() != 0) {
-        std::cerr << "ERROR: " << operation_name << " failed. Code: " << future.error() << ", Message: " << future.error_message() << std::endl;
-        return nullptr;
-    }
-
-    return future.result();
-}
-
-// Void Future用
-bool WaitForFutureVoid(const firebase::Future<void>& future, const char* operation_name) {
-    std::cout << "Waiting for " << operation_name << "..." << std::endl;
-    while (future.status() == firebase::kFutureStatusPending) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (future.status() != firebase::kFutureStatusComplete) {
-        std::cerr << "ERROR: " << operation_name << " failed or invalid. Status: " << future.status() << std::endl;
-        return false;
-    }
-
-    if (future.error() != 0) {
-        std::cerr << "ERROR: " << operation_name << " failed. Code: " << future.error() << ", Message: " << future.error_message() << std::endl;
-        return false;
-    }
-
-    return true;
-}
-
-int main(int argc, char* argv[]) {
-    // 1. 設定の読み込み
-    std::string api_key = GetEnv("FB_API_KEY");
-    std::string project_id = GetEnv("FB_PROJECT_ID", "riot26-70125");
-    std::string app_id = GetEnv("FB_APP_ID");
-
-    if (api_key.empty()) {
-        std::cerr << "Error: FB_API_KEY environment variable is not set." << std::endl;
-        return 1;
-    }
-
-    // 2. Firebase App 初期化
-    std::cout << "Initializing Firebase..." << std::endl;
-    firebase::AppOptions options;
-    options.set_api_key(api_key.c_str());
-    options.set_project_id(project_id.c_str());
-    options.set_app_id(app_id.c_str());
-
-    firebase::App* app = firebase::App::Create(options);
-    if (!app) {
-        std::cerr << "Failed to create Firebase App." << std::endl;
-        return 1;
-    }
-    std::cout << "Firebase initialized successfully!" << std::endl;
-
-    // 3. Auth (匿名認証)
-    std::cout << "Initializing Auth..." << std::endl;
-    firebase::auth::Auth* auth = firebase::auth::Auth::GetAuth(app);
+// --- Firebase Logic Class ---
+class FirebaseManager {
+public:
+    FirebaseManager() : app_(nullptr), auth_(nullptr), db_(nullptr) {}
     
-    std::cout << "Signing in anonymously..." << std::endl;
-    auto sign_in_future = auth->SignInAnonymously();
-    const auto* user_result = WaitForFuture(sign_in_future, "SignInAnonymously");
-    
-    if (user_result) {
-        std::cout << "Auth SUCCESS: Signed in as UID: " << user_result->user.uid() << std::endl;
-    } else {
-        return 1;
+    ~FirebaseManager() {
+        if (app_) delete app_;
     }
 
-    // 4. Firestore
-    std::cout << "Initializing Firestore..." << std::endl;
-    firebase::firestore::Firestore* db = firebase::firestore::Firestore::GetInstance(app);
+    bool Initialize() {
+        std::string api_key = GetEnv("FB_API_KEY");
+        std::string project_id = GetEnv("FB_PROJECT_ID");
+        std::string app_id = GetEnv("FB_APP_ID");
 
-    std::cout << "--- START VERIFICATION ---" << std::endl;
-    
-    // データ作成
-    std::unordered_map<std::string, firebase::firestore::FieldValue> data;
-    auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    std::string name_val = "Verify Item C++ " + std::to_string(now_ms);
-    data["name"] = firebase::firestore::FieldValue::String(name_val);
-    data["createdAt"] = firebase::firestore::FieldValue::Integer(now_ms); // Date型は少し複雑なので簡易的にTimestamp(Int)で
+        if (api_key.empty()) {
+            last_error_ = "FB_API_KEY is not set.";
+            return false;
+        }
 
-    // 書き込み
-    std::cout << "1. Writing data: " << name_val << std::endl;
-    firebase::firestore::CollectionReference collection = db->Collection("samples");
-    auto add_future = collection.Add(data);
-    const auto* doc_ref_result = WaitForFuture(add_future, "Firestore Add");
+        firebase::AppOptions options;
+        options.set_api_key(api_key.c_str());
+        options.set_project_id(project_id.c_str());
+        options.set_app_id(app_id.c_str());
 
-    if (!doc_ref_result) return 1;
-    std::cout << "   -> Written ID: " << doc_ref_result->id() << std::endl;
+        app_ = firebase::App::Create(options);
+        if (!app_) {
+            last_error_ = "Failed to create Firebase App.";
+            return false;
+        }
 
-    // 読み込み
-    std::cout << "2. Reading data..." << std::endl;
-    auto get_future = collection.Get();
-    const auto* query_snapshot = WaitForFuture(get_future, "Firestore Get");
+        auth_ = firebase::auth::Auth::GetAuth(app_);
+        db_ = firebase::firestore::Firestore::GetInstance(app_);
+        
+        return true;
+    }
 
-    if (!query_snapshot) return 1;
-    std::cout << "   -> Fetched " << query_snapshot->documents().size() << " documents." << std::endl;
+    bool SignIn() {
+        if (!auth_) return false;
+        auto future = auth_->SignInAnonymously();
+        WaitForFuture(future);
+        if (future.error() != 0) {
+            last_error_ = future.error_message();
+            return false;
+        }
+        return true;
+    }
 
-    bool found = false;
-    for (const auto& doc : query_snapshot->documents()) {
-        if (doc.Get("name").string_value() == name_val) {
-             found = true;
-             std::cout << "3. Verification SUCCESS: Data match found! [ID: " << doc.id() << "]" << std::endl;
-             break;
+    void FetchUsers(std::function<void(std::vector<User>)> callback) {
+        if (!db_) return;
+        
+        std::thread([this, callback]() {
+            firebase::firestore::CollectionReference collection = db_->Collection("samples");
+            auto future = collection.Get();
+            WaitForFuture(future);
+
+            std::vector<User> users;
+            if (future.error() == 0) {
+                const firebase::firestore::QuerySnapshot* snapshot = future.result();
+                for (const auto& doc : snapshot->documents()) {
+                    User user;
+                    user.id = doc.id();
+                    if (doc.Get("name").is_string()) {
+                        user.name = doc.Get("name").string_value();
+                    }
+                    if (doc.Get("email").is_string()) {
+                        user.email = doc.Get("email").string_value();
+                    }
+                    users.push_back(user);
+                }
+            }
+            callback(users);
+        }).detach();
+    }
+
+    void AddUser(const std::string& name, const std::string& email, std::function<void(bool)> callback) {
+        if (!db_) return;
+
+        std::thread([this, name, email, callback]() {
+            firebase::firestore::CollectionReference collection = db_->Collection("samples");
+            std::unordered_map<std::string, firebase::firestore::FieldValue> data;
+            data["name"] = firebase::firestore::FieldValue::String(name);
+            data["email"] = firebase::firestore::FieldValue::String(email);
+            data["createdAt"] = firebase::firestore::FieldValue::ServerTimestamp();
+
+            auto future = collection.Add(data);
+            WaitForFuture(future);
+            
+            callback(future.error() == 0);
+        }).detach();
+    }
+
+    void DeleteUser(const std::string& id, std::function<void(bool)> callback) {
+        if (!db_) return;
+
+        std::thread([this, id, callback]() {
+             firebase::firestore::DocumentReference doc = db_->Collection("samples").Document(id);
+             auto future = doc.Delete();
+             WaitForFuture(future);
+             
+             callback(future.error() == 0);
+        }).detach();
+    }
+
+    std::string GetLastError() const { return last_error_; }
+
+private:
+    firebase::App* app_;
+    firebase::auth::Auth* auth_;
+    firebase::firestore::Firestore* db_;
+    std::string last_error_;
+
+    template <typename T>
+    void WaitForFuture(const firebase::Future<T>& future) {
+        while (future.status() == firebase::kFutureStatusPending) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
+    
+    void WaitForFuture(const firebase::Future<void>& future) {
+        while (future.status() == firebase::kFutureStatusPending) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+    }
+};
 
-    if (!found) {
-        std::cerr << "Verification FAILED: The written data was not found." << std::endl;
-        // return 1; // 失敗してもクリーンアップへ
+// --- UI Components ---
+
+int main(int argc, char* argv[]) {
+    // 1. Init Firebase
+    static FirebaseManager fb;
+    if (!fb.Initialize()) {
+        std::cerr << "Init Error: " << fb.GetLastError() << std::endl;
+        return 1;
+    }
+    if (!fb.SignIn()) {
+        std::cerr << "Auth Error: " << fb.GetLastError() << std::endl;
+        return 1;
     }
 
-    std::cout << "--- VERIFICATION COMPLETE ---" << std::endl;
+    auto screen = ScreenInteractive::Fullscreen();
 
-    // クリーンアップ (Appの削除等はOSに任せても良いが、明示的に行うなら)
-    delete auth;
-    delete db;
-    delete app;
+    // State
+    std::string input_name_val;
+    std::string input_email_val;
+    std::string status_msg = "Ready";
+    bool is_loading = false;
+
+    // Components
+    InputOption option;
+    auto name_input = Input(&input_name_val, "Name", option);
+    auto email_input = Input(&input_email_val, "Email", option);
+
+    // List Container (Dynamic)
+    auto list_container = Container::Vertical({});
+
+    // Actions
+    std::function<void()> reload_data;
+
+    auto btn_add = Button("[Add]", [&] {
+        if (input_name_val.empty() || input_email_val.empty()) {
+            status_msg = "Error: Empty fields";
+            return;
+        }
+        is_loading = true;
+        status_msg = "Adding...";
+        
+        std::string n = input_name_val;
+        std::string e = input_email_val;
+        input_name_val.clear();
+        input_email_val.clear();
+
+        fb.AddUser(n, e, [&](bool success) {
+            if (success) {
+                status_msg = "Added successfully";
+                screen.Post([&]{ reload_data(); });
+            } else {
+                status_msg = "Add Failed";
+                is_loading = false;
+                screen.Post(Event::Custom);
+            }
+        });
+    }, ButtonOption::Ascii());
+
+    reload_data = [&] {
+        is_loading = true;
+        status_msg = "Fetching...";
+        screen.Post(Event::Custom);
+
+        fb.FetchUsers([&](std::vector<User> users) {
+            screen.Post([&, users] {
+                list_container->DetachAllChildren();
+                
+                // Add Header
+                list_container->Add(Renderer([&]{
+                    return hbox({
+                        text("Name") | bold | size(WIDTH, EQUAL, 20),
+                        text("Email") | bold | size(WIDTH, EQUAL, 30),
+                        text("Operation") | bold
+                    }) | border;
+                }));
+
+                // Add Rows
+                for (const auto& user : users) {
+                    auto delete_btn = Button("[Remove]", [&, user] {
+                        is_loading = true;
+                        status_msg = "Deleting " + user.name + "...";
+                        
+                        fb.DeleteUser(user.id, [&](bool success) {
+                            if (success) {
+                                status_msg = "Deleted.";
+                                screen.Post([&]{ reload_data(); });
+                            } else {
+                                status_msg = "Delete Failed.";
+                                is_loading = false;
+                                screen.Post(Event::Custom);
+                            }
+                        });
+                    }, ButtonOption::Ascii());
+
+                    auto row_renderer = Renderer(delete_btn, [user, delete_btn] {
+                        return hbox({
+                            text(user.name) | size(WIDTH, EQUAL, 20),
+                            text(user.email) | size(WIDTH, EQUAL, 30),
+                            delete_btn->Render() | color(Color::Red)
+                        });
+                    });
+                    
+                    list_container->Add(row_renderer);
+                }
+                
+                is_loading = false;
+                status_msg = "Updated: " + std::to_string(users.size()) + " users found.";
+            });
+        });
+    };
+
+    // Initial Load
+    reload_data();
+
+    auto add_area = Container::Horizontal({
+        name_input,
+        email_input,
+        btn_add
+    });
+
+    auto main_container = Container::Vertical({
+        list_container,
+        add_area
+    });
+
+    auto renderer = Renderer(main_container, [&] {
+        return vbox({
+            text("Firebase C++ SDK - Firestore Manager") | bold | hcenter | bgcolor(Color::Blue),
+            separator(),
+            list_container->Render() | flex,
+            separator(),
+            hbox({
+                text(" Name: "),
+                name_input->Render() | size(WIDTH, GREATER_THAN, 15) | border,
+                text(" Email: "),
+                email_input->Render() | size(WIDTH, GREATER_THAN, 25) | border,
+                text(" "),
+                btn_add->Render() | color(Color::Green)
+            }),
+            separator(),
+            text(status_msg) | color(is_loading ? Color::Yellow : Color::GrayDark)
+        }) | border;
+    });
+
+    screen.Loop(renderer);
 
     return 0;
 }
