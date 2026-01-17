@@ -4,7 +4,7 @@
 本アプリケーションは、**Firebase C++ SDK** と **FTXUI** を使用し、Linuxターミナル上で動作するアドレス帳アプリケーションである。Google Cloud Firestore とリアルタイムに通信し、データの閲覧、追加、削除を行うことができる。
 
 ## 2. システム要件
-- **OS**: Linux (x86_64)
+- **OS**: Ubuntu 24.04(x86_64)
 - **依存ライブラリ**:
     - Firebase C++ SDK (v13.3.0)
     - FTXUI (v5.0.0)

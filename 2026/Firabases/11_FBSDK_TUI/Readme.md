@@ -3,19 +3,34 @@
 **[FTXUI](https://github.com/ArthurSonzogni/FTXUI)** と **Firebase C++ SDK** を使用した、ターミナルベースのGUIアプリケーション。
 Firestore上のデータをリアルタイムにリスト表示し、追加・削除の操作を行う。
 
-詳細な仕様については [specification.md](specification.md) を参照のこと。
+# 参照
+
+- [詳細仕様](specification.md)
+- [履歴](History.md)
 
 # 環境
 
-- OS: Linux
+- OS: Ubuntu
 
 ### ツール/ライブラリ追加
+
 ```
-sudo apt install -y build-essential cmake unzip curl pkg-config libsecret-1-dev libcurl4-openssl-dev libssl-dev zlib1g-dev
+sudo apt install -y \
+build-essential \
+cmake \
+unzip \
+curl \
+pkg-config \
+libsecret-1-dev \
+libcurl4-openssl-dev \
+libssl-dev \
+zlib1g-dev
 ```
+
 ### SDKのセットアップ
 
 # ビルド
+
 ```bash
 cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
 cmake --build build -j 4   # 実行ファイル作成

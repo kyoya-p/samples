@@ -1,13 +1,29 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14) # FetchContent MakeAvailable needs 3.14+
 project(FirebaseTuiSample LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Firebase C++ SDK paths
-set(FIREBASE_SDK_DIR "${CMAKE_SOURCE_DIR}/build/sdk/firebase_cpp_sdk")
+include(FetchContent)
+
+# --- Firebase C++ SDK Setup ---
+set(FIREBASE_SDK_VERSION "13.3.0")
+set(FIREBASE_SDK_URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip")
+
+FetchContent_Declare(
+  firebase_sdk
+  URL ${FIREBASE_SDK_URL}
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(firebase_sdk)
+
+# Define paths based on FetchContent extraction
+# Note: The zip extracts into a folder named firebase_cpp_sdk
+set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}/firebase_cpp_sdk")
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
 set(FIREBASE_LIB_DIR "${FIREBASE_SDK_DIR}/libs/linux/x86_64/cxx11")
+
+message(STATUS "Firebase SDK Dir: ${FIREBASE_SDK_DIR}")
 
 # Required System Libraries
 find_package(Threads REQUIRED)
@@ -20,7 +36,6 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(SECRET REQUIRED libsecret-1)
 
 # FTXUI Configuration
-include(FetchContent)
 FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI
   GIT_TAG v5.0.0
