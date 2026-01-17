@@ -1,4 +1,4 @@
-# Project History - 7_FBSDK_Win (Firebase C++ SDK)
+# Project History - 8_FBSDK_TUI (Firebase C++ SDK + FTXUI)
 
 ## 2026-01-16: プロジェクト初期化と Firebase 連携の実装 (Kotlin/JS)
 
@@ -95,6 +95,25 @@
 ### 現在のステータス
 - WSL (Ubuntu 24.04) 環境において、Firebase C++ SDK を用いたネイティブアプリケーションのビルド・実行基盤が完全に確立。
 - Firestore への実接続による読み書き検証をパス。
+
+## 2026-01-17 (Update): TUI 操作の安定化とバグ修正
+
+### 実施事項
+1. **二重操作の防止 (Debounce)**
+   - `Add` および `Remove` ボタンにおいて、処理中を示す `is_loading` フラグによるガード処理を追加。
+   - ボタン連打によるデータの二重登録や重複削除リクエストを防止。
+
+2. **スレッド安全性の確保**
+   - Firebase SDK の非同期コールバック（バックグラウンドスレッド）から直接 UI 状態を変更していた箇所を修正。
+   - すべての UI 更新処理を `screen.Post` 内に集約し、メインスレッド（UIスレッド）で実行することでデータレースを解消。
+
+3. **UX の改善**
+   - 新規ユーザー追加時、入力フィールドのクリアタイミングを「リクエスト送信直後」から「登録成功時」に変更。
+   - ネットワークエラー等で失敗した場合に、ユーザーが再入力する手間を省くよう改善。
+
+4. **TUI 表示崩れの防止**
+   - Firebase SDK の内部ログレベルを `kLogLevelError` に設定。
+   - WSL 環境等で発生しやすい `libsecret` 関連の警告や `USE_AUTH_EMULATOR` 等の INFO ログが stderr に出力され、TUI の画面表示が乱れる問題を抑制。
 
 ### 次のステップ
 - データの構造化や、さらなる Firebase 機能（Storage, Functions 等）の追加。
