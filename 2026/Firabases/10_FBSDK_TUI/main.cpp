@@ -48,11 +48,28 @@ Element MakeTableRow(Element name, Element email, Element op) {
     return hbox({
         std::move(name)  | size(WIDTH, EQUAL, 30),
         separator(),
-        std::move(email) | flex,
+        std::move(email) | flex, 
         separator(),
         std::move(op)    | size(WIDTH, EQUAL, 14) | hcenter,
     });
 }
+
+// Custom Component to trigger callback when Render is called (i.e. visible)
+class VisibilityObserver : public ComponentBase {
+public:
+    VisibilityObserver(Component child, std::function<void()> on_visible)
+        : child_(child), on_visible_(on_visible) {
+        Add(child_);
+    }
+
+    Element Render() override {
+        on_visible_();
+        return child_->Render();
+    }
+private:
+    Component child_;
+    std::function<void()> on_visible_;
+};
 
 std::string GenerateRandomName() {
   static const std::vector<std::string> first_names = {
@@ -63,7 +80,8 @@ std::string GenerateRandomName() {
   static std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis_first(0, first_names.size() - 1);
   std::uniform_int_distribution<> dis_last(0, last_names.size() - 1);
-  return first_names[dis_first(gen)] + " " + last_names[dis_last(gen)];
+  std::uniform_int_distribution<> dis_middle(100, 999);
+  return first_names[dis_first(gen)] + " " + std::to_string(dis_middle(gen)) + " " + last_names[dis_last(gen)];
 }
 
 std::string GenerateRandomEmail(const std::string& name) {
@@ -104,6 +122,7 @@ class FirestoreService {
     Cleanup(); 
     current_api_key_ = api_key;
     current_limit_ = initial_limit;
+    has_more_ = true; 
 
     if (api_key.empty()) {
         SetError("Error: API Key is empty.");
@@ -130,26 +149,41 @@ class FirestoreService {
          return false;
     }
 
-    Log("Firebase initialized successfully. Initial Limit: " + std::to_string(initial_limit));
+    Log("Firebase initialized. Initial Limit: " + std::to_string(initial_limit));
     StartListening(initial_limit);
     return true;
   }
 
   void UpdateLimit(int new_limit) {
-      if (!firestore_ || new_limit == current_limit_ || new_limit <= 0) return;
+      if (!firestore_ || new_limit <= 0) return;
+      if (is_loading_) return; 
+
       Log("Updating Limit to: " + std::to_string(new_limit));
+      is_loading_ = true; 
+      
       current_limit_ = new_limit;
       StopListener();
       StartListening(new_limit);
   }
+  
+  void LoadMore() {
+      if (!is_loading_ && has_more_) {
+          int step = 20; 
+          UpdateLimit(current_limit_ + step);
+      }
+  }
 
   void StartListening(int limit) {
       if (!firestore_) return;
+      
       registration_ = firestore_->Collection("addressbook")
           .Limit(limit)
           .AddSnapshotListener(
-              [this](const firebase::firestore::QuerySnapshot& snapshot,
+              [this, limit](const firebase::firestore::QuerySnapshot& snapshot,
                      firebase::firestore::Error error, const std::string& error_msg) {
+                
+                is_loading_ = false;
+
                 if (error != firebase::firestore::Error::kErrorOk) {
                   Log("Firestore Error: " + error_msg);
                   SetError("Firestore Error: " + error_msg);
@@ -172,8 +206,10 @@ class FirestoreService {
                 {
                   std::lock_guard<std::mutex> lock(mutex_);
                   contacts_ = new_contacts;
+                  has_more_ = (new_contacts.size() >= (size_t)limit);
                   error_message_.clear();
                 }
+                Log("Received " + std::to_string(new_contacts.size()) + " items. HasMore: " + (has_more_ ? "Yes" : "No"));
                 on_update_();
               });
   }
@@ -188,13 +224,8 @@ class FirestoreService {
     data["name"] = firebase::firestore::FieldValue::String(name);
     data["email"] = firebase::firestore::FieldValue::String(email);
     
-    Log("Adding contact: " + name + " <" + email + ">");
-    firestore_->Collection("addressbook").Document(name).Set(data).OnCompletion(
-        [name](const firebase::Future<void>& result) {
-            if (result.error() != firebase::firestore::Error::kErrorOk) {
-                Log("Add Error: " + std::string(result.error_message()));
-            }
-        });
+    Log("Adding contact: " + name);
+    firestore_->Collection("addressbook").Document(name).Set(data);
   }
 
   void RemoveContact(const std::string& id) {
@@ -211,9 +242,21 @@ class FirestoreService {
       std::lock_guard<std::mutex> lock(mutex_);
       return error_message_;
   }
+  
+  int GetCurrentLimit() const {
+      return current_limit_;
+  }
 
   bool IsConnected() const {
       return firestore_ != nullptr;
+  }
+  
+  bool IsLoading() const {
+      return is_loading_;
+  }
+
+  bool HasMore() const {
+      return has_more_;
   }
 
  private:
@@ -230,6 +273,8 @@ class FirestoreService {
   std::string error_message_;
   std::string current_api_key_;
   int current_limit_ = 0;
+  bool is_loading_ = false;
+  bool has_more_ = true;
   std::mutex mutex_;
   std::function<void()> on_update_;
 };
@@ -242,12 +287,10 @@ int main(int argc, char** argv) {
   auto on_update = [&screen]() { screen.Post(Event::Custom); };
   FirestoreService service(on_update);
 
-  // Helper to calculate required limit based on screen height
   auto calculate_limit = []() {
       auto size = Terminal::Size();
-      // overhead: border(2), status(1), error(1?), header(2), add_row(3), footer(1) -> approx 10
-      int limit = size.dimy - 10;
-      return (limit > 0) ? limit : 1;
+      int limit = size.dimy - 10; 
+      return (limit > 0) ? limit : 5; 
   };
 
   bool show_config = false;
@@ -287,9 +330,12 @@ int main(int argc, char** argv) {
   });
 
   auto rows_container = Container::Vertical({});
+  
   auto refresh_ui = [&](const std::vector<Contact>& contacts) {
     rows_container->DetachAllChildren();
-    for (const auto& contact : contacts) {
+    
+    for (size_t i = 0; i < contacts.size(); ++i) {
+      const auto& contact = contacts[i];
       auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
       auto row = Renderer(remove_btn, [contact, remove_btn] {
         return MakeTableRow(
@@ -298,7 +344,28 @@ int main(int argc, char** argv) {
             remove_btn->Render()
         );
       });
-      rows_container->Add(row);
+
+      if (i == contacts.size() - 1 && service.HasMore()) {
+          auto observer = std::make_shared<VisibilityObserver>(row, [&service] {
+              service.LoadMore();
+          });
+          rows_container->Add(observer);
+      } else {
+          rows_container->Add(row);
+      }
+    }
+    
+    // Loading indicator (Displayed while fetching more data)
+    if (service.IsLoading()) {
+         auto loading_label = Renderer([&] {
+            return hbox({ filler(), text("Loading next 20 items...") | color(Color::Yellow) | bold, filler() });
+        });
+        rows_container->Add(loading_label);
+    } else if (!service.HasMore() && !contacts.empty()) {
+        auto end_data_label = Renderer([&] {
+            return hbox({ filler(), text("[End Data]") | color(Color::GrayDark) | dim, filler() });
+        });
+        rows_container->Add(end_data_label);
     }
   };
 
@@ -315,15 +382,7 @@ int main(int argc, char** argv) {
   }, ButtonOption::Ascii());
 
   auto add_row = Renderer(Container::Horizontal({name_input, email_input, add_btn}), [&] {
-      return vbox({
-          separator(),
-          MakeTableRow(
-              name_input->Render(),
-              email_input->Render(),
-              add_btn->Render()
-          ),
-          separator()
-      });
+      return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), add_btn->Render()), separator() });
   });
 
   auto exit_btn = Button("[Exit]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
@@ -335,24 +394,19 @@ int main(int argc, char** argv) {
     auto error_msg = service.GetError();
     bool connected = service.IsConnected();
     
-    // Auto-update limit on render if size changed
-    service.UpdateLimit(calculate_limit());
+    int min_limit = calculate_limit();
+    if (connected && service.GetCurrentLimit() < min_limit) {
+        service.UpdateLimit(min_limit);
+    }
 
     Elements rows;
     if (connected) rows.push_back(text("Status: Connected") | color(Color::Green) | bold);
     else rows.push_back(text("Status: Disconnected (Press Activate to connect)") | color(Color::Red) | bold);
     if (!error_msg.empty()) rows.push_back(text(error_msg) | color(Color::Red) | center);
     rows.push_back(separator());
-    
-    rows.push_back(vbox({
-        MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Operation") | bold),
-        separator()
-    }));
-    
-    // リスト部分（スクロールバーなし、高さ固定）
-    rows.push_back(rows_container->Render() | flex);
+    rows.push_back(vbox({ MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Operation") | bold), separator() }));
+    rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
     rows.push_back(add_row->Render());
-    
     rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));
     return vbox(std::move(rows)) | border;
   });
