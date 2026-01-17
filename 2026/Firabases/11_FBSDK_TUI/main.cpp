@@ -89,13 +89,10 @@ struct Contact {
 // Helper to define consistent column widths
 Element MakeTableRow(Element name, Element email, Element time, Element op) {
     return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 20),
-//        separator(),
-        std::move(email) | flex, 
-//        separator(),
-        std::move(time)  | size(WIDTH, EQUAL, 20),
-//        separator(),
-        std::move(op)    | size(WIDTH, EQUAL, 14) | hcenter,
+        std::move(name)  | size(WIDTH, EQUAL, 28),
+        std::move(email) | flex,
+        std::move(time)  | size(WIDTH, EQUAL, 16),
+        std::move(op)    | size(WIDTH, EQUAL, 10) | hcenter,
     });
 }
 
@@ -400,9 +397,9 @@ int main(int argc, char** argv) {
           return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), text("(Now)"), add_btn->Render()), separator() });
       });
 
-      auto exit_btn = Button("[Exit]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
+      auto close_btn = Button("[Close]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
       auto activate_btn = Button("[Activate]", [&] { show_config = true; }, ButtonOption::Ascii());
-      auto main_container = Container::Vertical({ rows_container, add_row, Container::Horizontal({ activate_btn, exit_btn }) });
+      auto main_container = Container::Vertical({ rows_container, add_row, Container::Horizontal({ activate_btn, close_btn }) });
       
       auto app_renderer = Renderer(main_container, [&] {
         bool connected = service.IsConnected();
@@ -422,7 +419,7 @@ int main(int argc, char** argv) {
         
         rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
         rows.push_back(add_row->Render());
-        rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));
+        rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), close_btn->Render() }));
         return vbox(std::move(rows)) | border;
       });
 
