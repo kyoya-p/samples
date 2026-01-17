@@ -24,6 +24,11 @@
 
 using namespace ftxui;
 
+// --- Configuration ---
+// FB_API_KEY is fetched from environment variable for security.
+const char* kProjectId = "riot26-70125";
+const char* kAppId = "1:646759465365:web:fc72f377308486d6e8769c";
+
 // --- Data Model ---
 struct User {
     std::string id;
@@ -31,8 +36,20 @@ struct User {
     std::string email;
 };
 
-// --- Firebase Helper ---
-std::string GetEnv(const char* name, const char* default_value = "") {
+// --- Helper ---
+std::string GenerateRandomId(size_t length) {
+    const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    const size_t max_index = sizeof(charset) - 1;
+    std::string id;
+    id.reserve(length);
+    // Note: For simplicity using rand(), consider std::mt19937 for better randomness
+    for (size_t i = 0; i < length; ++i) {
+        id += charset[std::rand() % max_index];
+    }
+    return id;
+}
+
+std::string GetEnv(const char* name) {
 #ifdef _WIN32
     char* buf = nullptr;
     size_t sz = 0;
@@ -45,13 +62,15 @@ std::string GetEnv(const char* name, const char* default_value = "") {
     const char* val = std::getenv(name);
     if (val) return std::string(val);
 #endif
-    return std::string(default_value);
+    return "";
 }
 
 // --- Firebase Logic Class ---
 class FirebaseManager {
 public:
-    FirebaseManager() : app_(nullptr), auth_(nullptr), db_(nullptr) {}
+    FirebaseManager() : app_(nullptr), auth_(nullptr), db_(nullptr) {
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+    }
     
     ~FirebaseManager() {
         if (app_) delete app_;
@@ -59,18 +78,20 @@ public:
 
     bool Initialize() {
         std::string api_key = GetEnv("FB_API_KEY");
-        std::string project_id = GetEnv("FB_PROJECT_ID");
-        std::string app_id = GetEnv("FB_APP_ID");
 
         if (api_key.empty()) {
-            last_error_ = "FB_API_KEY is not set.";
+            last_error_ = "Error: Environment variable FB_API_KEY is not set.";
+            return false;
+        }
+        if (std::string(kAppId) == "your-app-id") {
+            last_error_ = "Error: Please set kAppId in src/main.cpp";
             return false;
         }
 
         firebase::AppOptions options;
         options.set_api_key(api_key.c_str());
-        options.set_project_id(project_id.c_str());
-        options.set_app_id(app_id.c_str());
+        options.set_project_id(kProjectId);
+        options.set_app_id(kAppId);
 
         app_ = firebase::App::Create(options);
         if (!app_) {
@@ -128,6 +149,11 @@ public:
         std::thread([this, name, email, callback]() {
             firebase::firestore::CollectionReference collection = db_->Collection("samples");
             std::unordered_map<std::string, firebase::firestore::FieldValue> data;
+            
+            // Add ID field explicitly
+            std::string random_id = GenerateRandomId(20);
+            data["id"] = firebase::firestore::FieldValue::String(random_id);
+            
             data["name"] = firebase::firestore::FieldValue::String(name);
             data["email"] = firebase::firestore::FieldValue::String(email);
             data["createdAt"] = firebase::firestore::FieldValue::ServerTimestamp();
@@ -190,15 +216,15 @@ int main(int argc, char* argv[]) {
     auto screen = ScreenInteractive::Fullscreen();
 
     // State
-    std::string input_name_val;
-    std::string input_email_val;
+    std::string input_name_val = "User_" + GenerateRandomId(4);
+    std::string input_email_val = GenerateRandomId(8) + "@example.com";
     std::string status_msg = "Ready";
     bool is_loading = false;
 
     // Components
     InputOption option;
-    auto name_input = Input(&input_name_val, "Name", option);
-    auto email_input = Input(&input_email_val, "Email", option);
+    auto name_input = Input(&input_name_val, "new user", option);
+    auto email_input = Input(&input_email_val, "new-user@xxxx.co.jp", option);
 
     // List Container (Dynamic)
     auto list_container = Container::Vertical({});
@@ -216,8 +242,10 @@ int main(int argc, char* argv[]) {
         
         std::string n = input_name_val;
         std::string e = input_email_val;
-        input_name_val.clear();
-        input_email_val.clear();
+        
+        // Prepare next random values for demo
+        input_name_val = "User_" + GenerateRandomId(4);
+        input_email_val = GenerateRandomId(8) + "@example.com";
 
         fb.AddUser(n, e, [&](bool success) {
             if (success) {
@@ -229,7 +257,7 @@ int main(int argc, char* argv[]) {
                 screen.Post(Event::Custom);
             }
         });
-    }, ButtonOption::Ascii());
+    }, ButtonOption::Animated());
 
     reload_data = [&] {
         is_loading = true;
@@ -243,10 +271,12 @@ int main(int argc, char* argv[]) {
                 // Add Header
                 list_container->Add(Renderer([&]{
                     return hbox({
-                        text("Name") | bold | size(WIDTH, EQUAL, 20),
-                        text("Email") | bold | size(WIDTH, EQUAL, 30),
-                        text("Operation") | bold
-                    }) | border;
+                        text("Name") | center | size(WIDTH, EQUAL, 20) | color(Color::Black),
+                        separator(),
+                        text("Mail Address") | center | size(WIDTH, EQUAL, 30) | color(Color::Black),
+                        separator(),
+                        text("Operation") | center | flex | color(Color::Black)
+                    }) | bgcolor(Color::RGB(225, 213, 231));
                 }));
 
                 // Add Rows
@@ -269,9 +299,11 @@ int main(int argc, char* argv[]) {
 
                     auto row_renderer = Renderer(delete_btn, [user, delete_btn] {
                         return hbox({
-                            text(user.name) | size(WIDTH, EQUAL, 20),
-                            text(user.email) | size(WIDTH, EQUAL, 30),
-                            delete_btn->Render() | color(Color::Red)
+                            text(user.name) | center | size(WIDTH, EQUAL, 20),
+                            separator(),
+                            text(user.email) | center | size(WIDTH, EQUAL, 30),
+                            separator(),
+                            delete_btn->Render() | center | flex | color(Color::Red)
                         });
                     });
                     
@@ -287,33 +319,44 @@ int main(int argc, char* argv[]) {
     // Initial Load
     reload_data();
 
+    auto btn_close = Button("[Close]", [&] {
+        screen.ExitLoopClosure()();
+    }, ButtonOption::Animated());
+
     auto add_area = Container::Horizontal({
         name_input,
         email_input,
         btn_add
     });
 
+    auto add_area_renderer = Renderer(add_area, [&] {
+        return hbox({
+            name_input->Render() | size(WIDTH, EQUAL, 20),
+            separator(),
+            email_input->Render() | size(WIDTH, EQUAL, 30),
+            separator(),
+            btn_add->Render() | center | flex | color(Color::Green)
+        });
+    });
+
     auto main_container = Container::Vertical({
         list_container,
-        add_area
+        add_area,
+        btn_close
     });
 
     auto renderer = Renderer(main_container, [&] {
         return vbox({
-            text("Firebase C++ SDK - Firestore Manager") | bold | hcenter | bgcolor(Color::Blue),
+            text("Address Dialog") | bold | hcenter | bgcolor(Color::Blue),
             separator(),
             list_container->Render() | flex,
+            // separator(), // Separator is handled by borders of rows
+            add_area_renderer->Render(),
             separator(),
             hbox({
-                text(" Name: "),
-                name_input->Render() | size(WIDTH, GREATER_THAN, 15) | border,
-                text(" Email: "),
-                email_input->Render() | size(WIDTH, GREATER_THAN, 25) | border,
-                text(" "),
-                btn_add->Render() | color(Color::Green)
-            }),
-            separator(),
-            text(status_msg) | color(is_loading ? Color::Yellow : Color::GrayDark)
+                text(status_msg) | color(is_loading ? Color::Yellow : Color::GrayDark) | flex,
+                btn_close->Render() | align_right | color(Color::Cyan)
+            })
         }) | border;
     });
 

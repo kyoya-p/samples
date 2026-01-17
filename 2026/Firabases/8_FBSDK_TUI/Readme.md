@@ -47,8 +47,6 @@ Firebaseプロジェクトの認証情報を環境変数に設定して実行し
 ```bash
 # 環境変数の設定 (自身のプロジェクト情報に置き換えてください)
 export FB_API_KEY="your-api-key"
-export FB_PROJECT_ID="riot26-70125"
-export FB_APP_ID="your-app-id"
 
 # アプリケーションの起動
 ./build/FirebaseApp
