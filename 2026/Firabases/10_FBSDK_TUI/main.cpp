@@ -90,11 +90,11 @@ struct Contact {
 Element MakeTableRow(Element name, Element email, Element time, Element op) {
     return hbox({
         std::move(name)  | size(WIDTH, EQUAL, 20),
-        separator(),
+//        separator(),
         std::move(email) | flex, 
-        separator(),
+//        separator(),
         std::move(time)  | size(WIDTH, EQUAL, 20),
-        separator(),
+//        separator(),
         std::move(op)    | size(WIDTH, EQUAL, 14) | hcenter,
     });
 }
@@ -220,17 +220,15 @@ class FirestoreService {
 
       Log("Updating Limit to: " + std::to_string(new_limit));
       is_loading_ = true; 
-      
       current_limit_ = new_limit;
       StopListener();
       StartListening(new_limit);
   }
-  
+
   void LoadMore() {
-      if (!is_loading_ && has_more_) {
-          int step = 10; 
-          UpdateLimit(current_limit_ + step);
-      }
+      if (!firestore_ || is_loading_ || !has_more_) return;
+      int step = 10;
+      UpdateLimit(current_limit_ + step);
   }
 
   void StartListening(int limit) {
@@ -283,7 +281,6 @@ class FirestoreService {
               has_more_ = (new_contacts.size() >= (size_t)limit);
               error_message_.clear();
             }
-            Log("Loaded " + std::to_string(new_contacts.size()) + " items. HasMore=" + (has_more_ ? "Yes" : "No"));
             on_update_();
           });
   }
@@ -307,6 +304,7 @@ class FirestoreService {
   bool IsConnected() const { return firestore_ != nullptr; }
   bool IsLoading() const { return is_loading_; }
   bool HasMore() const { return has_more_; }
+  int GetCurrentLimit() const { return current_limit_; }
 
  private:
   void SetError(const std::string& msg) { Log(msg); std::lock_guard<std::mutex> lock(mutex_); error_message_ = msg; }
@@ -338,19 +336,18 @@ int main(int argc, char** argv) {
       auto on_update = [&screen]() { screen.Post(Event::Custom); };
       FirestoreService service(on_update);
 
-      // Dynamic limit based on screen size
       auto calculate_limit = []() {
           auto size = Terminal::Size();
-          int limit = size.dimy - 8; 
+          int limit = size.dimy - 10; 
           return (limit > 5) ? limit : 5; 
       };
 
       bool show_config = false;
-      const char* env_key = std::getenv("API_KEY");
+      const char* env_key = std::getenv("FB_API_KEY");
+      if (!env_key) env_key = std::getenv("API_KEY");
       std::string current_api_key = (env_key != nullptr) ? env_key : "";
       std::string api_key_input = current_api_key;
       
-      // Initialize with dynamic limit
       if (!current_api_key.empty()) service.Initialize(current_api_key, calculate_limit());
 
       auto key_input = Input(&api_key_input, "API Key");
@@ -364,29 +361,33 @@ int main(int argc, char** argv) {
       auto rows_container = Container::Vertical({});
       auto refresh_ui = [&](const std::vector<Contact>& contacts) {
         rows_container->DetachAllChildren();
-        
         for (const auto& contact : contacts) {
           auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
-          auto row = Renderer(remove_btn, [contact, remove_btn] {
+          auto row = Renderer(remove_btn, [contact, remove_btn, contacts, &service] {
+            // Find index for stripe effect
+            int i = 0;
+            for(size_t j=0; j<contacts.size(); ++j) if(contacts[j].id == contact.id) { i = j; break; }
+
             auto element = MakeTableRow(text(contact.name), text(contact.email), text(contact.timestamp), remove_btn->Render());
+            if (i % 2 != 0) element = element | bgcolor(Color::RGB(60, 60, 60));
             if (remove_btn->Focused()) return element | inverted;
             return element;
           });
           rows_container->Add(row);
         }
         
-        // Loader/Status row at the bottom with VisibilityObserver
+        // Footer Indicator: Show Loading or [No data] (Last of data)
         if (service.HasMore()) {
             auto loader = Renderer([&] {
-                return hbox({ filler(), text("Loading more...") | color(Color::Yellow) | bold, filler() });
+                return hbox({ filler(), text("Loading...") | color(Color::Yellow) | bold, filler() });
             });
-            // When this row is rendered, it triggers LoadMore
             auto observed_loader = std::make_shared<VisibilityObserver>(loader, [&service] {
                 service.LoadMore();
             });
             rows_container->Add(observed_loader);
-        } else if (!contacts.empty()) {
-            rows_container->Add(Renderer([]{ return hbox({ filler(), text("[End Data]") | color(Color::GrayDark), filler() }); }));
+        } else {
+            // This is "last of data"
+            rows_container->Add(Renderer([]{ return hbox({ filler(), text("[No data]") | color(Color::GrayDark), filler() }); }));
         }
       };
 
@@ -406,19 +407,19 @@ int main(int argc, char** argv) {
       auto app_renderer = Renderer(main_container, [&] {
         bool connected = service.IsConnected();
         
-        // Auto-update limit on resize (if needed, but might be jarring. Let's just update on connect)
-        // If we want dynamic resize, we check current limit vs screen height.
-        // For infinite scroll, maybe we don't reduce limit, only increase initial?
-        // Let's stick to initial set.
+        static bool initial_check_done = false;
+        if (connected && !initial_check_done) {
+            service.UpdateLimit(calculate_limit());
+            initial_check_done = true;
+        }
 
         Elements rows;
-        if (connected) rows.push_back(text("Status: Connected (Infinite Scroll)") | color(Color::Green) | bold);
+        if (connected) rows.push_back(text("Status: Connected") | color(Color::Green) | bold);
         else rows.push_back(text("Status: Disconnected") | color(Color::Red) | bold);
         if (!service.GetError().empty()) rows.push_back(text(service.GetError()) | color(Color::Red) | center);
         rows.push_back(separator());
         rows.push_back(vbox({ MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Created At") | bold, text("Operation") | bold), separator() }));
         
-        // Enable scroll indicators and frame
         rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
         rows.push_back(add_row->Render());
         rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));

@@ -33,19 +33,17 @@ Firestore上のデータをリアルタイムにリスト表示し、追加・�
 sudo apt install -y build-essential cmake unzip curl pkg-config libsecret-1-dev libcurl4-openssl-dev libssl-dev zlib1g-dev
 ```
 ### SDKのセットアップ
-- Firebase C++ SDK (Linux版)
-```bash
-sh setup_sdk.sh
-```
 
 # ビルド
 ```bash
+cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
+cmake --build build -j 4   # 実行ファイル作成
 ```
 
 # 実行
 
 ```bash
-export FB_API_KEY="your-api-key"
+export API_KEY="your-api-key"
 ./build/FirebaseApp
 ```
 
