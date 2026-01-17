@@ -10,6 +10,9 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
+#include <exception>
+#include <execinfo.h>
+#include <unistd.h>
 
 #include "ftxui/component/captured_mouse.hpp"
 #include "ftxui/component/component.hpp"
@@ -26,15 +29,43 @@
 
 using namespace ftxui;
 
+// Helper to access the log filename safely
+std::string& GetLogFilename() {
+    static std::string filename = "app.log";
+    return filename;
+}
+
 // Simple logger to file
 void Log(const std::string& message) {
-    std::ofstream log_file("app.log", std::ios_base::app);
+    std::ofstream log_file(GetLogFilename(), std::ios_base::app);
     if (log_file.is_open()) {
         auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::string t = std::ctime(&now);
-        if (!t.empty()) t.pop_back(); // Remove \n from ctime
-        log_file << "[" << t << "] " << message << std::endl;
+        std::tm tm = *std::localtime(&now);
+        char buffer[32];
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
+        log_file << "[" << buffer << "] " << message << std::endl;
+        log_file.flush();
     }
+}
+
+// Helper to capture stack trace
+std::string GetStackTrace() {
+    void* array[20];
+    size_t size;
+    char** strings;
+    std::string trace;
+
+    size = backtrace(array, 20);
+    strings = backtrace_symbols(array, size);
+
+    if (strings) {
+        for (size_t i = 0; i < size; i++) {
+            trace += strings[i];
+            trace += "\n";
+        }
+        free(strings);
+    }
+    return trace;
 }
 
 struct Contact {
@@ -43,34 +74,16 @@ struct Contact {
   std::string email;
 };
 
-// Helper to define consistent column widths across ALL rows
-// Name: 30 chars fixed, Address: flexible, Operation: 14 chars fixed
+// Helper to define consistent column widths
 Element MakeTableRow(Element name, Element email, Element op) {
     return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 30),
+        std::move(name)  | flex,
         separator(),
         std::move(email) | flex, 
         separator(),
-        std::move(op)    | size(WIDTH, EQUAL, 14) | hcenter,
+        std::move(op)    | size(WIDTH, EQUAL, 16) | hcenter,
     });
 }
-
-// Custom Component to trigger callback when Render is called (i.e. visible)
-class VisibilityObserver : public ComponentBase {
-public:
-    VisibilityObserver(Component child, std::function<void()> on_visible)
-        : child_(child), on_visible_(on_visible) {
-        Add(child_);
-    }
-
-    Element Render() override {
-        on_visible_();
-        return child_->Render();
-    }
-private:
-    Component child_;
-    std::function<void()> on_visible_;
-};
 
 std::string GenerateRandomName() {
   static const std::vector<std::string> first_names = {
@@ -119,11 +132,12 @@ class FirestoreService {
       }
   }
 
-  bool Initialize(const std::string& api_key, int initial_limit) {
+  bool Initialize(const std::string& api_key) {
     Cleanup(); 
     current_api_key_ = api_key;
-    current_limit_ = initial_limit;
-    has_more_ = true; 
+    
+    // Default limit
+    page_size_ = 10;
 
     if (api_key.empty()) {
         SetError("Error: API Key is empty.");
@@ -137,7 +151,7 @@ class FirestoreService {
     options.set_messaging_sender_id("646759465365");
     options.set_storage_bucket("riot26-70125.firebasestorage.app");
 
-    app_ = firebase::App::Create(options);
+    app_ = firebase::App::Create(options); 
     
     if (!app_) {
         SetError("Failed to create Firebase App. Check Key.");
@@ -150,69 +164,101 @@ class FirestoreService {
          return false;
     }
 
-    Log("Firebase initialized. Limit: " + std::to_string(initial_limit));
-    StartListening(initial_limit);
+    // Disable persistence
+    firebase::firestore::Settings settings;
+    settings.set_persistence_enabled(false);
+    firestore_->set_settings(settings);
+
+    Log("Firebase initialized. Loading first page...");
+    LoadFirstPage();
     return true;
   }
 
-  void UpdateLimit(int new_limit) {
-      if (!firestore_ || new_limit <= 0) return;
-      if (is_loading_) return; 
+  // --- Pagination Logic ---
 
-      Log("Updating Limit to: " + std::to_string(new_limit));
-      is_loading_ = true; 
+  void LoadFirstPage() {
+      if (!firestore_ || is_loading_) return;
+      is_loading_ = true;
+      Log("Loading First Page");
       
-      current_limit_ = new_limit;
       StopListener();
-      StartListening(new_limit);
-  }
-  
-  void LoadMore() {
-      if (!is_loading_ && has_more_) {
-          int step = 10; 
-          UpdateLimit(current_limit_ + step);
-      }
-  }
-
-  void StartListening(int limit) {
-      if (!firestore_) return;
       
-      registration_ = firestore_->Collection("addressbook")
-          .Limit(limit)
-          .AddSnapshotListener(
-              [this, limit](const firebase::firestore::QuerySnapshot& snapshot,
-                     firebase::firestore::Error error, const std::string& error_msg) {
-                
-                is_loading_ = false;
+      firebase::firestore::Query query = firestore_->Collection("addressbook").Limit(page_size_);
+      ApplyListener(query);
+  }
 
-                if (error != firebase::firestore::Error::kErrorOk) {
-                  Log("Firestore Error: " + error_msg);
-                  SetError("Firestore Error: " + error_msg);
-                  on_update_();
-                  return;
-                }
+  void LoadNextPage() {
+      if (!firestore_ || is_loading_ || !last_doc_.is_valid()) return;
+      is_loading_ = true;
+      Log("Loading Next Page");
 
-                std::vector<Contact> new_contacts;
-                for (const auto& doc : snapshot.documents()) {
-                  Contact c;
-                  c.id = doc.id();
-                  auto fields = doc.GetData();
-                  if (fields.find("name") != fields.end())
-                    c.name = fields["name"].string_value();
-                  if (fields.find("email") != fields.end())
-                    c.email = fields["email"].string_value();
-                  new_contacts.push_back(c);
-                }
+      StopListener();
+      
+      firebase::firestore::Query query = firestore_->Collection("addressbook")
+                                            .StartAfter(last_doc_)
+                                            .Limit(page_size_);
+      ApplyListener(query);
+  }
 
-                {
-                  std::lock_guard<std::mutex> lock(mutex_);
-                  contacts_ = new_contacts;
-                  has_more_ = (new_contacts.size() >= (size_t)limit);
-                  error_message_.clear();
-                }
-                Log("Received " + std::to_string(new_contacts.size()) + " items. HasMore: " + (has_more_ ? "Yes" : "No"));
-                on_update_();
-              });
+  void LoadPrevPage() {
+      if (!firestore_ || is_loading_ || !first_doc_.is_valid()) return;
+      
+      // Prevent going back if we are likely at start? 
+      // Firestore doesn't tell us absolute index. 
+      // We rely on EndBefore the current first doc.
+      
+      is_loading_ = true;
+      Log("Loading Previous Page");
+
+      StopListener();
+
+      firebase::firestore::Query query = firestore_->Collection("addressbook")
+                                            .EndBefore(first_doc_)
+                                            .LimitToLast(page_size_);
+      ApplyListener(query);
+  }
+
+  void ApplyListener(firebase::firestore::Query& query) {
+      registration_ = query.AddSnapshotListener(
+          [this](const firebase::firestore::QuerySnapshot& snapshot,
+                 firebase::firestore::Error error, const std::string& error_msg) {
+            
+            is_loading_ = false;
+
+            if (error != firebase::firestore::Error::kErrorOk) {
+              Log("Firestore Error: " + error_msg);
+              SetError("Firestore Error: " + error_msg);
+              on_update_();
+              return;
+            }
+
+            std::vector<Contact> new_contacts;
+            auto docs = snapshot.documents();
+            
+            if (!docs.empty()) {
+                first_doc_ = docs.front();
+                last_doc_ = docs.back();
+            }
+
+            for (const auto& doc : docs) {
+              Contact c;
+              c.id = doc.id();
+              auto fields = doc.GetData();
+              if (fields.find("name") != fields.end())
+                c.name = fields["name"].string_value();
+              if (fields.find("email") != fields.end())
+                c.email = fields["email"].string_value();
+              new_contacts.push_back(c);
+            }
+
+            {
+              std::lock_guard<std::mutex> lock(mutex_);
+              contacts_ = new_contacts;
+              error_message_.clear();
+            }
+            Log("Loaded " + std::to_string(new_contacts.size()) + " items.");
+            on_update_();
+          });
   }
 
   void AddContact(const std::string& name, const std::string& email) {
@@ -244,21 +290,8 @@ class FirestoreService {
       return error_message_;
   }
   
-  int GetCurrentLimit() const {
-      return current_limit_;
-  }
-
-  bool IsConnected() const {
-      return firestore_ != nullptr;
-  }
-  
-  bool IsLoading() const {
-      return is_loading_;
-  }
-
-  bool HasMore() const {
-      return has_more_;
-  }
+  bool IsConnected() const { return firestore_ != nullptr; }
+  bool IsLoading() const { return is_loading_; }
 
  private:
   void SetError(const std::string& msg) {
@@ -270,169 +303,201 @@ class FirestoreService {
   firebase::App* app_ = nullptr;
   firebase::firestore::Firestore* firestore_ = nullptr;
   firebase::firestore::ListenerRegistration registration_; 
+  
+  // Paging state
+  firebase::firestore::DocumentSnapshot first_doc_;
+  firebase::firestore::DocumentSnapshot last_doc_;
+  int page_size_ = 10;
+
   std::vector<Contact> contacts_;
   std::string error_message_;
   std::string current_api_key_;
-  int current_limit_ = 0;
   bool is_loading_ = false;
-  bool has_more_ = true;
   std::mutex mutex_;
   std::function<void()> on_update_;
 };
 
 int main(int argc, char** argv) {
-  std::ofstream("app.log", std::ios::trunc);
-  Log("Starting application...");
+  try {
+      // Generate log filename with timestamp: app.YYMMDD-HHMM.log
+      auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+      std::tm tm = *std::localtime(&now);
+      char buffer[64];
+      std::strftime(buffer, sizeof(buffer), "app.%y%m%d-%H%M.log", &tm);
+      GetLogFilename() = buffer; // Set the static filename
 
-  auto screen = ScreenInteractive::Fullscreen();
-  auto on_update = [&screen]() { screen.Post(Event::Custom); };
-  FirestoreService service(on_update);
+      std::ofstream(GetLogFilename(), std::ios::trunc);
+      Log("Starting application... Log file: " + GetLogFilename());
 
-  // Initial limit is 10
-  auto calculate_limit = []() {
-      return 10;
-  };
+      auto screen = ScreenInteractive::Fullscreen();
+      auto on_update = [&screen]() { screen.Post(Event::Custom); };
+      FirestoreService service(on_update);
 
-  bool show_config = false;
-  const char* env_key = std::getenv("API_KEY");
-  std::string current_api_key = (env_key != nullptr) ? env_key : "";
-  std::string api_key_input = current_api_key;
-  
-  if (!current_api_key.empty()) {
-      service.Initialize(current_api_key, calculate_limit());
-  }
-
-  // --- Components ---
-  auto key_input = Input(&api_key_input, "API Key");
-  auto connect_btn = Button("[Connect]", [&] {
-      if (service.Initialize(api_key_input, calculate_limit())) {
-          current_api_key = api_key_input; 
-          show_config = false;
+      bool show_config = false;
+      const char* env_key = std::getenv("API_KEY");
+      std::string current_api_key = (env_key != nullptr) ? env_key : "";
+      std::string api_key_input = current_api_key;
+      
+      if (!current_api_key.empty()) {
+          service.Initialize(current_api_key);
       }
-  }, ButtonOption::Ascii());
-  
-  auto cancel_btn = Button("[Cancel]", [&] { 
-      api_key_input = current_api_key; 
-      show_config = false; 
-  }, ButtonOption::Ascii());
-  
-  auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
-  auto config_renderer = Renderer(config_container, [&] {
-      return vbox({
-          text("Configuration") | bold | center,
-          separator(),
-          hbox(text("API Key: "), key_input->Render()) | border,
-          separator(),
-          hbox(connect_btn->Render(), cancel_btn->Render()) | center,
-          text(""),
-          text(service.GetError()) | color(Color::Red) | center
+
+      // --- Components ---
+      auto key_input = Input(&api_key_input, "API Key");
+      auto connect_btn = Button("[Connect]", [&] {
+          if (service.Initialize(api_key_input)) {
+              current_api_key = api_key_input; 
+              show_config = false;
+          }
+      }, ButtonOption::Ascii());
+      
+      auto cancel_btn = Button("[Cancel]", [&] { 
+          api_key_input = current_api_key; 
+          show_config = false; 
+      }, ButtonOption::Ascii());
+      
+      auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
+      auto config_renderer = Renderer(config_container, [&] {
+          return vbox({
+              text("Configuration") | bold | center,
+              separator(),
+              hbox(text("API Key: "), key_input->Render()) | border,
+              separator(),
+              hbox(connect_btn->Render(), cancel_btn->Render()) | center,
+              text(""),
+              text(service.GetError()) | color(Color::Red) | center
       }) | center | border | size(WIDTH, GREATER_THAN, 60);
   });
 
-  auto rows_container = Container::Vertical({});
-  
-  auto refresh_ui = [&](const std::vector<Contact>& contacts) {
-    rows_container->DetachAllChildren();
-    
-    for (size_t i = 0; i < contacts.size(); ++i) {
-      const auto& contact = contacts[i];
-      auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
-      auto row = Renderer(remove_btn, [contact, remove_btn] {
-        return MakeTableRow(
-            text(contact.name),
-            text(contact.email),
-            remove_btn->Render()
-        );
+      auto rows_container = Container::Vertical({});
+      
+      auto refresh_ui = [&](const std::vector<Contact>& contacts) {
+        rows_container->DetachAllChildren();
+        
+        for (size_t i = 0; i < contacts.size(); ++i) {
+          const auto& contact = contacts[i];
+          auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
+          auto row = Renderer(remove_btn, [contact, remove_btn] {
+            auto element = MakeTableRow(
+                text(contact.name),
+                text(contact.email),
+                remove_btn->Render()
+            );
+            if (remove_btn->Focused()) {
+                return element | inverted;
+            }
+            return element;
+          });
+          rows_container->Add(row);
+        }
+        
+        if (service.IsLoading()) {
+             auto loading_label = Renderer([&] {
+                return hbox({ filler(), text("Loading...") | color(Color::Yellow) | bold, filler() });
+            });
+            rows_container->Add(loading_label);
+        } else if (contacts.empty() && service.IsConnected()) {
+             auto empty_label = Renderer([&] {
+                return hbox({ filler(), text("No Data") | color(Color::GrayDark), filler() });
+            });
+            rows_container->Add(empty_label);
+        }
+      };
+
+      // Custom Event Handler for Paging
+      auto list_handler = CatchEvent(rows_container, [&](Event event) {
+          if (!service.IsConnected()) return false;
+          
+          bool handled = rows_container->OnEvent(event);
+          
+          // Detect paging triggers
+          if (!handled) {
+              if (event == Event::ArrowDown || (event.is_mouse() && event.mouse().button == Mouse::WheelDown) || event == Event::Character('j')) {
+                  service.LoadNextPage();
+                  return true;
+              }
+              if (event == Event::ArrowUp || (event.is_mouse() && event.mouse().button == Mouse::WheelUp) || event == Event::Character('k')) {
+                  service.LoadPrevPage();
+                  return true;
+              }
+          }
+          return handled;
       });
 
-      if (i == contacts.size() - 1 && service.HasMore()) {
-          auto observer = std::make_shared<VisibilityObserver>(row, [&service] {
-              service.LoadMore();
-          });
-          rows_container->Add(observer);
-      } else {
-          rows_container->Add(row);
-      }
-    }
-    
-    // Loading indicator
-    if (service.IsLoading()) {
-         auto loading_label = Renderer([&] {
-            return hbox({ filler(), text("Loading next 10 items...") | color(Color::Yellow) | bold, filler() });
-        });
-        rows_container->Add(loading_label);
-    } else if (!service.HasMore() && !contacts.empty()) {
-        auto end_data_label = Renderer([&] {
-            return hbox({ filler(), text("[End Data]") | color(Color::GrayDark) | dim, filler() });
-        });
-        rows_container->Add(end_data_label);
-    }
-  };
+      std::string next_name = GenerateRandomName();
+      std::string next_email = GenerateRandomEmail(next_name);
+      auto name_input = Input(&next_name, "Name");
+      auto email_input = Input(&next_email, "Email");
+      auto add_btn = Button("[Add]", [&] {
+        if (!next_name.empty() && !next_email.empty()) {
+            service.AddContact(next_name, next_email);
+            next_name = GenerateRandomName();
+            next_email = GenerateRandomEmail(next_name);
+        }
+      }, ButtonOption::Ascii());
 
-  std::string next_name = GenerateRandomName();
-  std::string next_email = GenerateRandomEmail(next_name);
-  auto name_input = Input(&next_name, "Name");
-  auto email_input = Input(&next_email, "Email");
-  auto add_btn = Button("[Add]", [&] {
-    if (!next_name.empty() && !next_email.empty()) {
-        service.AddContact(next_name, next_email);
-        next_name = GenerateRandomName();
-        next_email = GenerateRandomEmail(next_name);
-    }
-  }, ButtonOption::Ascii());
+      auto add_row = Renderer(Container::Horizontal({name_input, email_input, add_btn}), [&] {
+          return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), add_btn->Render()), separator() });
+      });
 
-  auto add_row = Renderer(Container::Horizontal({name_input, email_input, add_btn}), [&] {
-      return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), add_btn->Render()), separator() });
-  });
+      auto exit_btn = Button("[Exit]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
+      auto activate_btn = Button("[Activate]", [&] { show_config = true; }, ButtonOption::Ascii());
 
-  auto exit_btn = Button("[Exit]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
-  auto activate_btn = Button("[Activate]", [&] { show_config = true; }, ButtonOption::Ascii());
+      auto main_container = Container::Vertical({ list_handler, add_row, Container::Horizontal({ activate_btn, exit_btn }) });
+      auto app_renderer = Renderer(main_container, [&] {
+        auto contacts = service.GetContacts();
+        auto error_msg = service.GetError();
+        bool connected = service.IsConnected();
+        
+        Elements rows;
+        if (connected) rows.push_back(text("Status: Connected (Page Size: 10)") | color(Color::Green) | bold);
+        else rows.push_back(text("Status: Disconnected") | color(Color::Red) | bold);
+        if (!error_msg.empty()) rows.push_back(text(error_msg) | color(Color::Red) | center);
+        rows.push_back(separator());
+        
+        rows.push_back(vbox({
+            MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Operation") | bold),
+            separator()
+        }));
+        
+        rows.push_back(list_handler->Render() | flex);
+        rows.push_back(add_row->Render());
+        
+        rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));
+        return vbox(std::move(rows)) | border;
+      });
 
-  auto main_container = Container::Vertical({ rows_container, add_row, Container::Horizontal({ activate_btn, exit_btn }) });
-  auto app_renderer = Renderer(main_container, [&] {
-    auto contacts = service.GetContacts();
-    auto error_msg = service.GetError();
-    bool connected = service.IsConnected();
-    
-    // Auto-update limit on connect
-    static bool initial_check_done = false;
-    if (connected && !initial_check_done) {
-        service.UpdateLimit(10);
-        initial_check_done = true;
-    }
+      auto root_renderer = Renderer([&] {
+          if (show_config) return dbox({ app_renderer->Render() | color(Color::GrayDark), config_renderer->Render() | center });
+          return app_renderer->Render();
+      });
 
-    Elements rows;
-    if (connected) rows.push_back(text("Status: Connected") | color(Color::Green) | bold);
-    else rows.push_back(text("Status: Disconnected (Press Activate to connect)") | color(Color::Red) | bold);
-    if (!error_msg.empty()) rows.push_back(text(error_msg) | color(Color::Red) | center);
-    rows.push_back(separator());
-    rows.push_back(vbox({ MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Operation") | bold), separator() }));
-    rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
-    rows.push_back(add_row->Render());
-    rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));
-    return vbox(std::move(rows)) | border;
-  });
+      auto root_component = CatchEvent(root_renderer, [&](Event event) {
+          if (event == Event::Custom) {
+              refresh_ui(service.GetContacts());
+              return true;
+          }
+          if (event == Event::Character('q')) {
+              screen.ExitLoopClosure()();
+              return true;
+          }
+          if (show_config) return config_container->OnEvent(event);
+          return main_container->OnEvent(event);
+      });
 
-  auto root_renderer = Renderer([&] {
-      if (show_config) return dbox({ app_renderer->Render() | color(Color::GrayDark), config_renderer->Render() | center });
-      return app_renderer->Render();
-  });
-
-  auto root_component = CatchEvent(root_renderer, [&](Event event) {
-      if (event == Event::Custom) {
-          refresh_ui(service.GetContacts());
-          return true;
-      }
-      if (event == Event::Character('q')) {
-          screen.ExitLoopClosure()();
-          return true;
-      }
-      if (show_config) return config_container->OnEvent(event);
-      return main_container->OnEvent(event);
-  });
-
-  refresh_ui(service.GetContacts());
-  screen.Loop(root_component);
-  Log("Application closed.");
+      refresh_ui(service.GetContacts());
+      screen.Loop(root_component);
+      Log("Application closed.");
+  } catch (const std::exception& e) {
+      Log("FATAL EXCEPTION: " + std::string(e.what()));
+      Log("Stack Trace:\n" + GetStackTrace());
+      std::cerr << "FATAL EXCEPTION: " << e.what() << std::endl;
+      return 1;
+  } catch (...) {
+      Log("FATAL UNKNOWN EXCEPTION");
+      Log("Stack Trace:\n" + GetStackTrace());
+      std::cerr << "FATAL UNKNOWN EXCEPTION" << std::endl;
+      return 1;
+  }
   return 0;
 }
