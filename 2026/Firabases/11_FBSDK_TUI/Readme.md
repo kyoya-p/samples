@@ -1,5 +1,4 @@
 # Firebase C++ SDK TUI Sample
-**[AI編集禁止]**
 
 **[FTXUI](https://github.com/ArthurSonzogni/FTXUI)** と **Firebase C++ SDK** を使用した、ターミナルベースのGUIアプリケーション。
 Firestore上のデータをリアルタイムにリスト表示し、追加・削除の操作を行う。
