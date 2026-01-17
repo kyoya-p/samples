@@ -99,6 +99,9 @@ public:
             return false;
         }
 
+        // Suppress internal Firebase logs to keep TUI clean
+        firebase::SetLogLevel(firebase::kLogLevelError);
+
         auth_ = firebase::auth::Auth::GetAuth(app_);
         db_ = firebase::firestore::Firestore::GetInstance(app_);
         
@@ -233,6 +236,8 @@ int main(int argc, char* argv[]) {
     std::function<void()> reload_data;
 
     auto btn_add = Button("[Add]", [&] {
+        if (is_loading) return;
+
         if (input_name_val.empty() || input_email_val.empty()) {
             status_msg = "Error: Empty fields";
             return;
@@ -243,19 +248,19 @@ int main(int argc, char* argv[]) {
         std::string n = input_name_val;
         std::string e = input_email_val;
         
-        // Prepare next random values for demo
-        input_name_val = "User_" + GenerateRandomId(4);
-        input_email_val = GenerateRandomId(8) + "@example.com";
-
         fb.AddUser(n, e, [&](bool success) {
-            if (success) {
-                status_msg = "Added successfully";
-                screen.Post([&]{ reload_data(); });
-            } else {
-                status_msg = "Add Failed";
-                is_loading = false;
-                screen.Post(Event::Custom);
-            }
+            screen.Post([&, success] {
+                if (success) {
+                    status_msg = "Added successfully";
+                    // Clear inputs only on success
+                    input_name_val = "User_" + GenerateRandomId(4);
+                    input_email_val = GenerateRandomId(8) + "@example.com";
+                    reload_data();
+                } else {
+                    status_msg = "Add Failed";
+                    is_loading = false;
+                }
+            });
         });
     }, ButtonOption::Animated());
 
@@ -282,18 +287,21 @@ int main(int argc, char* argv[]) {
                 // Add Rows
                 for (const auto& user : users) {
                     auto delete_btn = Button("[Remove]", [&, user] {
+                        if (is_loading) return;
+
                         is_loading = true;
                         status_msg = "Deleting " + user.name + "...";
                         
                         fb.DeleteUser(user.id, [&](bool success) {
-                            if (success) {
-                                status_msg = "Deleted.";
-                                screen.Post([&]{ reload_data(); });
-                            } else {
-                                status_msg = "Delete Failed.";
-                                is_loading = false;
-                                screen.Post(Event::Custom);
-                            }
+                            screen.Post([&, success] {
+                                if (success) {
+                                    status_msg = "Deleted.";
+                                    reload_data();
+                                } else {
+                                    status_msg = "Delete Failed.";
+                                    is_loading = false;
+                                }
+                            });
                         });
                     }, ButtonOption::Ascii());
 
