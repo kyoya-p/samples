@@ -181,9 +181,10 @@ class FirestoreService {
       contacts_.clear();
   }
 
-  bool Initialize(const std::string& api_key) {
+  bool Initialize(const std::string& api_key, int page_size) {
     Cleanup(); 
     current_api_key_ = api_key;
+    page_size_ = page_size;
     has_more_ = true;
 
     if (api_key.empty()) {
@@ -215,7 +216,7 @@ class FirestoreService {
     settings.set_persistence_enabled(false);
     firestore_->set_settings(settings);
 
-    Log("Firebase initialized with Paging Listener.");
+    Log("Firebase initialized with Paging Listener. Page Size: " + std::to_string(page_size_));
     StartListeningNextPage();
     return true;
   }
@@ -250,7 +251,7 @@ class FirestoreService {
           }
       }
 
-      int limit = 10;
+      int limit = page_size_;
       query = query.Limit(limit);
       
       Log("Starting listener for Page " + std::to_string(page_index) + " (Limit: " + std::to_string(limit) + ", Cursor: " + cursor_id + ")");
@@ -301,7 +302,7 @@ class FirestoreService {
             {
               std::lock_guard<std::mutex> lock(mutex_);
               page_ptr->contacts = new_contacts;
-              page_ptr->has_more = (new_contacts.size() >= 10);
+              page_ptr->has_more = (new_contacts.size() >= (size_t)page_size_);
               page_ptr->has_pending_writes = snapshot.metadata().has_pending_writes();
               if (!new_contacts.empty()) {
                   page_ptr->last_doc = snapshot.documents().back();
@@ -365,6 +366,7 @@ class FirestoreService {
   std::vector<Contact> contacts_;
   std::string error_message_;
   std::string current_api_key_;
+  int page_size_ = 10;
   bool has_more_ = true;
   bool is_loading_ = false;
   std::mutex mutex_;
@@ -381,9 +383,12 @@ int main(int argc, char** argv) {
       FirestoreService service(on_update);
 
       // Calculate displayable rows based on terminal size
+      // Add a buffer (+5) to ensure the list overflows the visible area.
+      // This prevents the "Loading..." indicator from being visible initially,
+      // ensuring LoadMore is only triggered when the user actually scrolls to the bottom.
       auto terminal_size = Terminal::Size();
-      int nAddress = terminal_size.dimy - 10; // Reserve space for header/footer
-      if (nAddress < 1) nAddress = 1;
+      int nAddress = terminal_size.dimy + 5; 
+      if (nAddress < 10) nAddress = 10;
       Log("Terminal size: " + std::to_string(terminal_size.dimx) + "x" + std::to_string(terminal_size.dimy));
       Log("Calculated displayable rows (nAddress): " + std::to_string(nAddress));
 
@@ -393,10 +398,10 @@ int main(int argc, char** argv) {
       std::string current_api_key = (env_key != nullptr) ? env_key : "";
       std::string api_key_input = current_api_key;
       
-      if (!current_api_key.empty()) service.Initialize(current_api_key);
+      if (!current_api_key.empty()) service.Initialize(current_api_key, nAddress);
 
       auto key_input = Input(&api_key_input, "API Key");
-      auto connect_btn = Button("[Connect]", [&] { if (service.Initialize(api_key_input)) { current_api_key = api_key_input; show_config = false; } }, ButtonOption::Ascii());
+      auto connect_btn = Button("[Connect]", [&] { if (service.Initialize(api_key_input, nAddress)) { current_api_key = api_key_input; show_config = false; } }, ButtonOption::Ascii());
       auto cancel_btn = Button("[Cancel]", [&] { api_key_input = current_api_key; show_config = false; }, ButtonOption::Ascii());
       auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
       auto config_renderer = Renderer(config_container, [&] {
