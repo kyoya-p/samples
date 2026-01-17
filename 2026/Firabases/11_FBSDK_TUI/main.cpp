@@ -44,7 +44,7 @@ void Log(const std::string& message) {
         std::tm tm = *std::localtime(&now);
         char buffer[32];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        log_file << "[" << buffer << "] " << message << std::endl;
+        log_file << "[" << buffer << "] [" << getpid() << "] " << message << std::endl;
         log_file.flush();
     }
 }
@@ -151,30 +151,39 @@ class FirestoreService {
   }
 
   void Cleanup() {
-      StopListener();
+      StopAllListeners();
       if (app_) {
           Log("Cleaning up Firebase resources...");
           if (firestore_) {
+              Log("Deleting Firestore instance...");
               delete firestore_;
               firestore_ = nullptr;
           }
+          // Give some time for gRPC to shutdown safely as per Phase 7
+          std::this_thread::sleep_for(std::chrono::milliseconds(200));
+          Log("Deleting Firebase App...");
           delete app_; 
           app_ = nullptr;
       }
   }
 
-  void StopListener() {
-      if (registration_.is_valid()) {
-          Log("Removing Firestore listener...");
-          registration_.Remove();
-          registration_ = firebase::firestore::ListenerRegistration();
+  void StopAllListeners() {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (!pages_.empty()) {
+          Log("Removing all Firestore listeners (" + std::to_string(pages_.size()) + " pages)...");
+          for (auto& page : pages_) {
+              if (page->registration.is_valid()) {
+                  page->registration.Remove();
+              }
+          }
+          pages_.clear();
       }
+      contacts_.clear();
   }
 
-  bool Initialize(const std::string& api_key, int initial_limit) {
+  bool Initialize(const std::string& api_key) {
     Cleanup(); 
     current_api_key_ = api_key;
-    current_limit_ = initial_limit;
     has_more_ = true;
 
     if (api_key.empty()) {
@@ -206,45 +215,63 @@ class FirestoreService {
     settings.set_persistence_enabled(false);
     firestore_->set_settings(settings);
 
-    Log("Firebase initialized. Initial Limit: " + std::to_string(current_limit_));
-    StartListening(current_limit_);
+    Log("Firebase initialized with Paging Listener.");
+    StartListeningNextPage();
     return true;
-  }
-
-  void UpdateLimit(int new_limit) {
-      if (!firestore_ || new_limit <= 0) return;
-      if (is_loading_) return; 
-
-      Log("Updating Limit to: " + std::to_string(new_limit));
-      is_loading_ = true; 
-      current_limit_ = new_limit;
-      StopListener();
-      StartListening(new_limit);
   }
 
   void LoadMore() {
       if (!firestore_ || is_loading_ || !has_more_) return;
-      int step = 10;
-      UpdateLimit(current_limit_ + step);
+      StartListeningNextPage();
   }
 
-  void StartListening(int limit) {
+  void StartListeningNextPage() {
       if (!firestore_) return;
+      
+      size_t page_index;
+      std::string cursor_id = "None";
+      firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy("timestamp");
+
+      {
+          std::lock_guard<std::mutex> lock(mutex_);
+          page_index = pages_.size();
+          if (page_index > 0) {
+              auto& last_page = pages_.back();
+              if (!last_page->last_doc.is_valid()) {
+                  Log("Cannot load next page: Last document of previous page is invalid.");
+                  return;
+              }
+              if (last_page->has_pending_writes) {
+                  Log("Waiting for pending writes on Page " + std::to_string(page_index-1) + " (DocID: " + last_page->last_doc.id() + ") before loading more...");
+                  return;
+              }
+              query = query.StartAfter(last_page->last_doc);
+              cursor_id = last_page->last_doc.id();
+          }
+      }
+
+      int limit = 10;
+      query = query.Limit(limit);
+      
+      Log("Starting listener for Page " + std::to_string(page_index) + " (Limit: " + std::to_string(limit) + ", Cursor: " + cursor_id + ")");
+
       is_loading_ = true;
       
-      firebase::firestore::Query query = firestore_->Collection("addressbook")
-                                            .OrderBy("timestamp")
-                                            .Limit(limit);
+      auto page = std::make_unique<Page>();
+      Page* page_ptr = page.get();
+      {
+          std::lock_guard<std::mutex> lock(mutex_);
+          pages_.push_back(std::move(page));
+      }
 
-      registration_ = query.AddSnapshotListener(
-          [this, limit](const firebase::firestore::QuerySnapshot& snapshot,
-                 firebase::firestore::Error error, const std::string& error_msg) {
+      page_ptr->registration = query.AddSnapshotListener(
+          [this, page_index, page_ptr](const firebase::firestore::QuerySnapshot& snapshot,
+                                     firebase::firestore::Error error, const std::string& error_msg) {
             
-            is_loading_ = false;
-
             if (error != firebase::firestore::Error::kErrorOk) {
-              Log("Firestore Error: " + error_msg);
+              Log("Firestore Page " + std::to_string(page_index) + " Error: " + error_msg);
               SetError("Firestore Error: " + error_msg);
+              is_loading_ = false;
               on_update_();
               return;
             }
@@ -273,13 +300,32 @@ class FirestoreService {
 
             {
               std::lock_guard<std::mutex> lock(mutex_);
-              contacts_ = new_contacts;
-              // If we got fewer than requested, no more data
-              has_more_ = (new_contacts.size() >= (size_t)limit);
+              page_ptr->contacts = new_contacts;
+              page_ptr->has_more = (new_contacts.size() >= 10);
+              page_ptr->has_pending_writes = snapshot.metadata().has_pending_writes();
+              if (!new_contacts.empty()) {
+                  page_ptr->last_doc = snapshot.documents().back();
+              }
+              
+              // Update global has_more based on the last page
+              if (page_index == pages_.size() - 1) {
+                  has_more_ = page_ptr->has_more;
+              }
+              
+              RebuildContacts();
               error_message_.clear();
             }
+            is_loading_ = false;
             on_update_();
           });
+  }
+
+  void RebuildContacts() {
+      // Assumes mutex is already locked
+      contacts_.clear();
+      for (const auto& page : pages_) {
+          contacts_.insert(contacts_.end(), page->contacts.begin(), page->contacts.end());
+      }
   }
 
   void AddContact(const std::string& name, const std::string& email) {
@@ -301,19 +347,25 @@ class FirestoreService {
   bool IsConnected() const { return firestore_ != nullptr; }
   bool IsLoading() const { return is_loading_; }
   bool HasMore() const { return has_more_; }
-  int GetCurrentLimit() const { return current_limit_; }
 
  private:
+  struct Page {
+      firebase::firestore::ListenerRegistration registration;
+      std::vector<Contact> contacts;
+      firebase::firestore::DocumentSnapshot last_doc;
+      bool has_more = true;
+      bool has_pending_writes = false;
+  };
+
   void SetError(const std::string& msg) { Log(msg); std::lock_guard<std::mutex> lock(mutex_); error_message_ = msg; }
   firebase::App* app_ = nullptr;
   firebase::firestore::Firestore* firestore_ = nullptr;
-  firebase::firestore::ListenerRegistration registration_; 
   
-  int current_limit_ = 10;
-  bool has_more_ = true;
+  std::vector<std::unique_ptr<Page>> pages_;
   std::vector<Contact> contacts_;
   std::string error_message_;
   std::string current_api_key_;
+  bool has_more_ = true;
   bool is_loading_ = false;
   std::mutex mutex_;
   std::function<void()> on_update_;
@@ -321,11 +373,6 @@ class FirestoreService {
 
 int main(int argc, char** argv) {
   try {
-      auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-      std::tm tm = *std::localtime(&now);
-      char buffer[64];
-      std::strftime(buffer, sizeof(buffer), "app.%y%m%d-%H%M.log", &tm);
-      GetLogFilename() = buffer;
       std::ofstream(GetLogFilename(), std::ios::trunc);
       Log("Starting application... Log file: " + GetLogFilename());
 
@@ -333,11 +380,12 @@ int main(int argc, char** argv) {
       auto on_update = [&screen]() { screen.Post(Event::Custom); };
       FirestoreService service(on_update);
 
-      auto calculate_limit = []() {
-          auto size = Terminal::Size();
-          int limit = size.dimy - 10; 
-          return (limit > 5) ? limit : 5; 
-      };
+      // Calculate displayable rows based on terminal size
+      auto terminal_size = Terminal::Size();
+      int nAddress = terminal_size.dimy - 10; // Reserve space for header/footer
+      if (nAddress < 1) nAddress = 1;
+      Log("Terminal size: " + std::to_string(terminal_size.dimx) + "x" + std::to_string(terminal_size.dimy));
+      Log("Calculated displayable rows (nAddress): " + std::to_string(nAddress));
 
       bool show_config = false;
       const char* env_key = std::getenv("FB_API_KEY");
@@ -345,10 +393,10 @@ int main(int argc, char** argv) {
       std::string current_api_key = (env_key != nullptr) ? env_key : "";
       std::string api_key_input = current_api_key;
       
-      if (!current_api_key.empty()) service.Initialize(current_api_key, calculate_limit());
+      if (!current_api_key.empty()) service.Initialize(current_api_key);
 
       auto key_input = Input(&api_key_input, "API Key");
-      auto connect_btn = Button("[Connect]", [&] { if (service.Initialize(api_key_input, calculate_limit())) { current_api_key = api_key_input; show_config = false; } }, ButtonOption::Ascii());
+      auto connect_btn = Button("[Connect]", [&] { if (service.Initialize(api_key_input)) { current_api_key = api_key_input; show_config = false; } }, ButtonOption::Ascii());
       auto cancel_btn = Button("[Cancel]", [&] { api_key_input = current_api_key; show_config = false; }, ButtonOption::Ascii());
       auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
       auto config_renderer = Renderer(config_container, [&] {
@@ -384,7 +432,7 @@ int main(int argc, char** argv) {
             rows_container->Add(observed_loader);
         } else {
             // This is "last of data"
-            rows_container->Add(Renderer([]{ return hbox({ filler(), text("[No data]") | color(Color::GrayDark), filler() }); }));
+            rows_container->Add(Renderer([]{ return hbox({ filler(), text("--- last of data ---") | color(Color::GrayDark), filler() }); }));
         }
       };
 
@@ -404,12 +452,6 @@ int main(int argc, char** argv) {
       auto app_renderer = Renderer(main_container, [&] {
         bool connected = service.IsConnected();
         
-        static bool initial_check_done = false;
-        if (connected && !initial_check_done) {
-            service.UpdateLimit(calculate_limit());
-            initial_check_done = true;
-        }
-
         Elements rows;
         if (connected) rows.push_back(text("Status: Connected") | color(Color::Green) | bold);
         else rows.push_back(text("Status: Disconnected") | color(Color::Red) | bold);

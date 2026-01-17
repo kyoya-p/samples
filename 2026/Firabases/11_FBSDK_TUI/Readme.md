@@ -5,14 +5,15 @@ Firestore上のデータをリアルタイムにリスト表示し、追加・�
 
 # 参照
 
-- [詳細仕様](specification.md)
+- [UI仕様](UI_Specification.md)
+- [設計](SoftwareDesign.md)
 - [履歴](History.md)
 
 # 環境
 
 - OS: Ubuntu
 
-### ツール/ライブラリ追加
+# ツール/ライブラリ追加
 
 ```
 sudo apt install -y \
@@ -26,8 +27,6 @@ libcurl4-openssl-dev \
 libssl-dev \
 zlib1g-dev
 ```
-
-### SDKのセットアップ
 
 # ビルド
 
