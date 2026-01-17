@@ -19,8 +19,7 @@ sudo apt install -y build-essential cmake unzip curl pkg-config libsecret-1-dev 
 ### SDKのセットアップ
 - Firebase C++ SDK (Linux版)
 ```bash
-chmod +x setup_sdk.sh
-./setup_sdk.sh
+sh setup_sdk.sh
 ```
 
 # ビルド
