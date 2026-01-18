@@ -71,8 +71,18 @@
     - 例外発生時のスタックトレース出力を実装。
     - `THROW_LOG` マクロの導入。
 
+### フェーズ 6: Windows MSVC対応
+- **ビルドシステムの刷新**:
+    - Linux依存(`setup_sdk.sh`など)を排除し、CMakeの `FetchContent` で Firebase C++ SDK (Windows版) を自動ダウンロード・配置する構成に変更。
+    - `CMakeLists.txt` で必要なWindowsシステムライブラリ (`ws2_32`, `crypt32`, `bcrypt`, `dbghelp`, `iphlpapi`) をリンク。
+    - 実行ファイル名を `FBTest` に変更。
+- **コードの移植**:
+    - `main.cpp` から Linux特有のヘッダ (`unistd.h`, `execinfo.h`) を削除。
+    - MSVC向けの警告抑制 (`_CRT_SECURE_NO_WARNINGS`) を追加。
+    - スタックトレース取得処理をWindowsでは無効化(スタブ化)。
+
 ## 現在の状態
-- **アプリケーション**: 堅牢なTUIアドレス帳アプリケーション。
+- **アプリケーション**: Windows (MSVC) および Linux で動作可能なTUIアドレス帳アプリケーション。
 - **機能**: Firestoreリアルタイム同期、無限スクロール、動的なAPI Key設定、複数プロセス実行対応、詳細ログ記録。
-- **ビルドシステム**: CMakeベース。Linux環境で正常にビルド可能。
-- **実行ファイル**: `./build/FirebaseApp`。
+- **ビルドシステム**: CMakeベース。Windows環境ではSDKを自動取得。
+- **実行ファイル**: `./build/Release/FBTest.exe` (Windows) / `./build/FBTest` (Linux)。

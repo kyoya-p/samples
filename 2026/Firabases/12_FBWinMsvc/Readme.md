@@ -1,37 +1,56 @@
 # Firebase C++ SDK Sample
 **[AI編集禁止]**
 
-
- **Firebase C++ SDK** を使用した、Firestore上のデータをリアルタイムに参照・操作する関数。
-Linux/Ubuntuで使用可能なC++ライブラリとする。
+**Firebase C++ SDK** を使用した、Firestore上のデータを参照・操作するコマンドライン(CLI)アプリケーション。
+Windows (MSVC) および Linux (g++) 環境で動作可能。
 
 機能:
-- アドレス帳一覧取得: Firestoreの `addressbook` コレクションからデータを取得して表示。
-- アドレス帳追加: Name(id) / Email /現在日時を指定
-- アドレス帳削除: アドレスを削除。
+- **一覧表示**: `addressbook` コレクションのデータを取得して表示。
+- **データ追加**: 名前(ID) と メールアドレスを指定して追加（サーバータイムスタンプ付与）。
+- **データ削除**: 指定したIDのドキュメントを削除。
 
 # 環境
 
-- OS: Windows および Linux
+- OS: Windows 10/11, Linux (Ubuntu等)
 
-### ツール/ライブラリ追加
-- msvc / g++
+### ツール/ライブラリ
+- **Windows**: Visual Studio 2022 Build Tools (C++ Workload), CMake
+- **Linux**: g++, CMake, libcurl, openssl, zlib, uuid
 
- 
-- ```powershell
+#### Windows でのツールインストール例:
+```powershell
+# CMakeのインストール
+winget install --id Kitware.CMake
+# MSVC Build Toolsのインストール (C++ワークロードとSDKを含む)
 winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--passive --config https://aka.ms --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
 ```
 
 # ビルド
 ```bash
-cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
-cmake --build build -j 4   # 実行ファイル作成
+cmake -S . -B build
+cmake --build build --config Release
+```
+※ 初回ビルド時は Firebase SDK (約600MB) のダウンロードが行われるため、ネットワーク環境により時間がかかります。
+
+# 実行方法
+
+API Key は環境変数 `API_KEY` または引数 `--api_key` で指定します。
+
+### Windows (コマンドプロンプト / Releaseビルド)
+```cmd
+.\build\Release\FBTest.exe --api_key "your-api-key" --list
 ```
 
-# テストコード実行
+### 各種操作例
+*   **一覧取得**:
+    `FBTest.exe --api_key "..." --list`
+*   **データ追加**:
+    `FBTest.exe --api_key "..." --add "User Name" "user@example.com"`
+*   **データ削除**:
+    `FBTest.exe --api_key "..." --remove "User Name"`
 
-```bash
-export API_KEY="your-api-key"
-./build/FBTest
+### 環境変数を使用する場合 (Windows)
+```cmd
+set API_KEY=your-api-key
+.\build\Release\FBTest.exe --list
 ```
-

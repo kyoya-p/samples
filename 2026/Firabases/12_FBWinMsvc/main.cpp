@@ -1,437 +1,98 @@
-#include <algorithm>
-#include <chrono>
-#include <cstdlib>
-#include <fstream>
+#include "service.h"
 #include <iostream>
-#include <memory>
-#include <random>
 #include <string>
 #include <vector>
 #include <thread>
-#include <mutex>
-#include <unordered_map>
-#include <exception>
-#include <ctime>
+#include <chrono>
 
-#include "ftxui/component/captured_mouse.hpp"
-#include "ftxui/component/component.hpp"
-#include "ftxui/component/component_base.hpp"
-#include "ftxui/component/component_options.hpp"
-#include "ftxui/component/screen_interactive.hpp"
-#include "ftxui/dom/elements.hpp"
-#include "ftxui/util/ref.hpp"
-#include "ftxui/screen/terminal.hpp"
-
-#include "firebase/app.h"
-#include "firebase/auth.h"
-#include "firebase/firestore.h"
-#include "firebase/util.h"
-
-// Avoid conflict with Windows RGB macro - MUST BE AFTER ALL INCLUDES
-#ifdef RGB
-#undef RGB
-#endif
-
-using namespace ftxui;
-using namespace firebase;
-using namespace firebase::firestore;
-
-// Helper to access the log filename safely
-std::string& GetLogFilename() {
-    static std::string filename = "app.log";
-    return filename;
+void PrintUsage() {
+    std::cout << "Usage: FBTest [options]" << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --api_key <KEY>  Set Firebase API Key" << std::endl;
+    std::cout << "  --list           List all contacts" << std::endl;
+    std::cout << "  --add <N> <E>    Add a contact (Name Email)" << std::endl;
+    std::cout << "  --remove <ID>    Remove a contact by ID" << std::endl;
 }
-
-// Simple logger to file
-void Log(const std::string& message) {
-    std::ofstream log_file(GetLogFilename(), std::ios_base::app);
-    if (log_file.is_open()) {
-        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::tm tm = *std::localtime(&now);
-        char buffer[32];
-        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        log_file << "[" << buffer << "] " << message << std::endl;
-        log_file.flush();
-    }
-}
-
-// Helper to capture stack trace (Stub for Windows)
-std::string GetStackTrace() {
-    return "Stack trace not available on Windows (requires specialized libraries).";
-}
-
-// Macro to log and throw exception
-#define THROW_LOG(msg) \
-    do { \
-        std::string full_msg = std::string("EXCEPTION THROWN at ") + __FILE__ + ":" + std::to_string(__LINE__) + "\n"; \
-        full_msg += "Reason: " + std::string(msg) + "\n"; \
-        full_msg += "[Stack Trace]\n" + GetStackTrace(); \
-        Log(full_msg); \
-        throw std::runtime_error(msg); \
-    } while (0)
-
-struct Contact {
-  std::string id;
-  std::string name;
-  std::string email;
-  std::string timestamp;
-};
-
-// Helper to define consistent column widths
-Element MakeTableRow(Element name, Element email, Element time, Element op) {
-    return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 20),
-//        separator(),
-        std::move(email) | flex, 
-//        separator(),
-        std::move(time)  | size(WIDTH, EQUAL, 20),
-//        separator(),
-        std::move(op)    | size(WIDTH, EQUAL, 14) | hcenter,
-    });
-}
-
-// Custom Component to trigger callback when Render is called (i.e. visible)
-class VisibilityObserver : public ComponentBase {
-public:
-    VisibilityObserver(Component child, std::function<void()> on_visible)
-        : child_(child), on_visible_(on_visible) {
-        Add(child_);
-    }
-
-    Element Render() override {
-        on_visible_();
-        return child_->Render();
-    }
-
-    bool OnEvent(Event event) override {
-        return child_->OnEvent(event);
-    }
-
-    bool Focusable() const override {
-        return child_->Focusable();
-    }
-private:
-    Component child_;
-    std::function<void()> on_visible_;
-};
-
-std::string GenerateRandomName() {
-  static const std::vector<std::string> first_names = {
-      "Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi"};
-  static const std::vector<std::string> last_names = {
-      "Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller"};
-  static std::random_device rd;
-  static std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis_first(0, first_names.size() - 1);
-  std::uniform_int_distribution<> dis_last(0, last_names.size() - 1);
-  std::uniform_int_distribution<> dis_middle(100, 999);
-  return first_names[dis_first(gen)] + " " + std::to_string(dis_middle(gen)) + " " + last_names[dis_last(gen)];
-}
-
-std::string GenerateRandomEmail(const std::string& name) {
-  std::string email = name;
-  std::transform(email.begin(), email.end(), email.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-  std::replace(email.begin(), email.end(), ' ', '.');
-  return email + "@example.com";
-}
-
-class FirestoreService {
- public:
-  FirestoreService(std::function<void()> on_update) : on_update_(on_update) {}
-  
-  ~FirestoreService() {
-      Cleanup();
-  }
-
-  void Cleanup() {
-      StopListener();
-      if (app_) {
-          Log("Cleaning up Firebase resources...");
-          if (firestore_) {
-              delete firestore_;
-              firestore_ = nullptr;
-          }
-          delete app_; 
-          app_ = nullptr;
-      }
-  }
-
-  void StopListener() {
-      if (registration_.is_valid()) {
-          Log("Removing Firestore listener...");
-          registration_.Remove();
-          registration_ = firebase::firestore::ListenerRegistration();
-      }
-  }
-
-  bool Initialize(const std::string& api_key, int initial_limit) {
-    Cleanup(); 
-    current_api_key_ = api_key;
-    current_limit_ = initial_limit;
-    has_more_ = true;
-
-    if (api_key.empty()) {
-        SetError("Error: API Key is empty.");
-        return false;
-    }
-
-    firebase::AppOptions options;
-    options.set_api_key(api_key.c_str());
-    options.set_app_id("1:646759465365:web:fc72f377308486d6e8769c");
-    options.set_project_id("riot26-70125");
-    options.set_messaging_sender_id("646759465365");
-    options.set_storage_bucket("riot26-70125.firebasestorage.app");
-
-    app_ = firebase::App::Create(options); 
-    
-    if (!app_) {
-        SetError("Failed to create Firebase App. Check Key.");
-        return false;
-    }
-
-    firestore_ = firebase::firestore::Firestore::GetInstance(app_);
-    if (!firestore_) {
-         SetError("Failed to get Firestore instance.");
-         return false;
-    }
-
-    firebase::firestore::Settings settings;
-    settings.set_persistence_enabled(false);
-    firestore_->set_settings(settings);
-
-    Log("Firebase initialized. Initial Limit: " + std::to_string(current_limit_));
-    StartListening(current_limit_);
-    return true;
-  }
-
-  void UpdateLimit(int new_limit) {
-      if (!firestore_ || new_limit <= 0) return;
-      if (is_loading_) return; 
-
-      Log("Updating Limit to: " + std::to_string(new_limit));
-      is_loading_ = true; 
-      current_limit_ = new_limit;
-      StopListener();
-      StartListening(new_limit);
-  }
-
-  void LoadMore() {
-      if (!firestore_ || is_loading_ || !has_more_) return;
-      int step = 10;
-      UpdateLimit(current_limit_ + step);
-  }
-
-  void StartListening(int limit) {
-      if (!firestore_) return;
-      is_loading_ = true;
-      
-      firebase::firestore::Query query = firestore_->Collection("addressbook")
-                                            .OrderBy("timestamp")
-                                            .Limit(limit);
-
-      registration_ = query.AddSnapshotListener(
-          [this, limit](const firebase::firestore::QuerySnapshot& snapshot,
-                 firebase::firestore::Error error, const std::string& error_msg) {
-            
-            is_loading_ = false;
-
-            if (error != firebase::firestore::Error::kErrorOk) {
-              Log("Firestore Error: " + error_msg);
-              SetError("Firestore Error: " + error_msg);
-              on_update_();
-              return;
-            }
-
-            std::vector<Contact> new_contacts;
-            auto docs = snapshot.documents();
-            
-            for (const auto& doc : docs) {
-              Contact c;
-              c.id = doc.id();
-              auto fields = doc.GetData();
-              if (fields.count("name")) c.name = fields["name"].string_value();
-              if (fields.count("email")) c.email = fields["email"].string_value();
-              if (fields.count("timestamp") && fields["timestamp"].is_timestamp()) {
-                  auto ts = fields["timestamp"].timestamp_value();
-                  std::time_t t = ts.seconds();
-                  std::tm* tm_ptr = std::localtime(&t);
-                  char buf[32];
-                  std::strftime(buf, sizeof(buf), "%m/%d %H:%M", tm_ptr);
-                  c.timestamp = buf;
-              } else {
-                  c.timestamp = "N/A";
-              }
-              new_contacts.push_back(c);
-            }
-
-            {
-              std::lock_guard<std::mutex> lock(mutex_);
-              contacts_ = new_contacts;
-              // If we got fewer than requested, no more data
-              has_more_ = (new_contacts.size() >= (size_t)limit);
-              error_message_.clear();
-            }
-            on_update_();
-          });
-  }
-
-  void AddContact(const std::string& name, const std::string& email) {
-    if (!firestore_) return;
-    std::unordered_map<std::string, firebase::firestore::FieldValue> data;
-    data["name"] = firebase::firestore::FieldValue::String(name);
-    data["email"] = firebase::firestore::FieldValue::String(email);
-    data["timestamp"] = firebase::firestore::FieldValue::ServerTimestamp();
-    firestore_->Collection("addressbook").Document(name).Set(data);
-  }
-
-  void RemoveContact(const std::string& id) {
-    if (!firestore_) return;
-    firestore_->Collection("addressbook").Document(id).Delete();
-  }
-
-  std::vector<Contact> GetContacts() { std::lock_guard<std::mutex> lock(mutex_); return contacts_; }
-  std::string GetError() { std::lock_guard<std::mutex> lock(mutex_); return error_message_; }
-  bool IsConnected() const { return firestore_ != nullptr; }
-  bool IsLoading() const { return is_loading_; }
-  bool HasMore() const { return has_more_; }
-  int GetCurrentLimit() const { return current_limit_; }
-
- private:
-  void SetError(const std::string& msg) { Log(msg); std::lock_guard<std::mutex> lock(mutex_); error_message_ = msg; }
-  firebase::App* app_ = nullptr;
-  firebase::firestore::Firestore* firestore_ = nullptr;
-  firebase::firestore::ListenerRegistration registration_; 
-  
-  int current_limit_ = 10;
-  bool has_more_ = true;
-  std::vector<Contact> contacts_;
-  std::string error_message_;
-  std::string current_api_key_;
-  bool is_loading_ = false;
-  std::mutex mutex_;
-  std::function<void()> on_update_;
-};
 
 int main(int argc, char** argv) {
-  try {
-      auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-      std::tm tm = *std::localtime(&now);
-      char buffer[64];
-      std::strftime(buffer, sizeof(buffer), "app.%y%m%d-%H%M.log", &tm);
-      GetLogFilename() = buffer;
-      std::ofstream(GetLogFilename(), std::ios::trunc);
-      Log("Starting application... Log file: " + GetLogFilename());
+    std::string api_key;
+    const char* env_key = std::getenv("API_KEY");
+    if (!env_key) env_key = std::getenv("FB_API_KEY");
+    if (env_key) api_key = env_key;
 
-      auto screen = ScreenInteractive::Fullscreen();
-      auto on_update = [&screen]() { screen.Post(Event::Custom); };
-      FirestoreService service(on_update);
+    std::string command;
+    std::vector<std::string> args;
 
-      auto calculate_limit = []() {
-          auto size = Terminal::Size();
-          int limit = size.dimy - 10; 
-          return (limit > 5) ? limit : 5; 
-      };
-
-      bool show_config = false;
-      const char* env_key = std::getenv("FB_API_KEY");
-      if (!env_key) env_key = std::getenv("API_KEY");
-      std::string current_api_key = (env_key != nullptr) ? env_key : "";
-      std::string api_key_input = current_api_key;
-      
-      if (!current_api_key.empty()) service.Initialize(current_api_key, calculate_limit());
-
-      auto key_input = Input(&api_key_input, "API Key");
-      auto connect_btn = Button("[Connect]", [&] { if (service.Initialize(api_key_input, calculate_limit())) { current_api_key = api_key_input; show_config = false; } }, ButtonOption::Ascii());
-      auto cancel_btn = Button("[Cancel]", [&] { api_key_input = current_api_key; show_config = false; }, ButtonOption::Ascii());
-      auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
-      auto config_renderer = Renderer(config_container, [&] {
-          return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
-      });
-
-      auto rows_container = Container::Vertical({});
-      auto refresh_ui = [&](const std::vector<Contact>& contacts) {
-        rows_container->DetachAllChildren();
-        for (const auto& contact : contacts) {
-          auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
-          auto row = Renderer(remove_btn, [contact, remove_btn, contacts, &service] {
-            // Find index for stripe effect
-            int i = 0;
-            for(size_t j=0; j<contacts.size(); ++j) if(contacts[j].id == contact.id) { i = j; break; }
-
-            auto element = MakeTableRow(text(contact.name), text(contact.email), text(contact.timestamp), remove_btn->Render());
-            if (i % 2 != 0) element = element | bgcolor(Color::RGB(60, 60, 60));
-            if (remove_btn->Focused()) return element | inverted;
-            return element;
-          });
-          rows_container->Add(row);
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--api_key" && i + 1 < argc) {
+            api_key = argv[++i];
+        } else if (arg == "--list") {
+            command = "list";
+        } else if (arg == "--add" && i + 2 < argc) {
+            command = "add";
+            args.push_back(argv[++i]);
+            args.push_back(argv[++i]);
+        } else if (arg == "--remove" && i + 1 < argc) {
+            command = "remove";
+            args.push_back(argv[++i]);
+        } else if (arg == "--help") {
+            PrintUsage();
+            return 0;
         }
-        
-        // Footer Indicator: Show Loading or [No data] (Last of data)
-        if (service.HasMore()) {
-            auto loader = Renderer([&] {
-                return hbox({ filler(), text("Loading...") | color(Color::Yellow) | bold, filler() });
-            });
-            auto observed_loader = std::make_shared<VisibilityObserver>(loader, [&service] {
-                service.LoadMore();
-            });
-            rows_container->Add(observed_loader);
-        } else {
-            // This is "last of data"
-            rows_container->Add(Renderer([]{ return hbox({ filler(), text("[No data]") | color(Color::GrayDark), filler() }); }));
+    }
+
+    if (api_key.empty()) {
+        std::cerr << "Error: API Key not provided (use --api_key or API_KEY env var)" << std::endl;
+        return 1;
+    }
+
+    if (command.empty()) {
+        PrintUsage();
+        return 1;
+    }
+
+    bool done = false;
+    FirestoreService service([&done]() {
+        // We might use this to signal data ready for 'list'
+    });
+
+    if (!service.Initialize(api_key, 100)) {
+        std::cerr << "Failed to initialize: " << service.GetError() << std::endl;
+        return 1;
+    }
+
+    // Wait for connection/initial load (Firebase is async)
+    int retry = 0;
+    while (!service.IsConnected() && retry < 50) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        retry++;
+    }
+
+    if (!service.IsConnected()) {
+        std::cerr << "Timeout waiting for connection." << std::endl;
+        return 1;
+    }
+
+    if (command == "list") {
+        // Wait for contacts to be populated
+        std::this_thread::sleep_for(std::chrono::seconds(2)); 
+        auto contacts = service.GetContacts();
+        std::cout << "Contacts (" << contacts.size() << "):" << std::endl;
+        for (const auto& c : contacts) {
+            std::cout << "ID: " << c.id << " | Name: " << c.name << " | Email: " << c.email << " | Time: " << c.timestamp << std::endl;
         }
-      };
+    } else if (command == "add") {
+        std::cout << "Adding: " << args[0] << " (" << args[1] << ")..." << std::endl;
+        service.AddContact(args[0], args[1]);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "Done." << std::endl;
+    } else if (command == "remove") {
+        std::cout << "Removing: " << args[0] << "..." << std::endl;
+        service.RemoveContact(args[0]);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "Done." << std::endl;
+    }
 
-      std::string next_name = GenerateRandomName();
-      std::string next_email = GenerateRandomEmail(next_name);
-      auto name_input = Input(&next_name, "Name");
-      auto email_input = Input(&next_email, "Email");
-      auto add_btn = Button("[Add]", [&] { if (!next_name.empty() && !next_email.empty()) { service.AddContact(next_name, next_email); next_name = GenerateRandomName(); next_email = GenerateRandomEmail(next_name); } }, ButtonOption::Ascii());
-      auto add_row = Renderer(Container::Horizontal({name_input, email_input, add_btn}), [&] {
-          return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), text("(Now)"), add_btn->Render()), separator() });
-      });
-
-      auto exit_btn = Button("[Exit]", [&screen] { screen.ExitLoopClosure()(); }, ButtonOption::Ascii());
-      auto activate_btn = Button("[Activate]", [&] { show_config = true; }, ButtonOption::Ascii());
-      auto main_container = Container::Vertical({ rows_container, add_row, Container::Horizontal({ activate_btn, exit_btn }) });
-      
-      auto app_renderer = Renderer(main_container, [&] {
-        bool connected = service.IsConnected();
-        
-        static bool initial_check_done = false;
-        if (connected && !initial_check_done) {
-            service.UpdateLimit(calculate_limit());
-            initial_check_done = true;
-        }
-
-        Elements rows;
-        if (connected) rows.push_back(text("Status: Connected") | color(Color::Green) | bold);
-        else rows.push_back(text("Status: Disconnected") | color(Color::Red) | bold);
-        if (!service.GetError().empty()) rows.push_back(text(service.GetError()) | color(Color::Red) | center);
-        rows.push_back(separator());
-        rows.push_back(vbox({ MakeTableRow(text("Name") | bold, text("Mail Address") | bold, text("Created At") | bold, text("Operation") | bold), separator() }));
-        
-        rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
-        rows.push_back(add_row->Render());
-        rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), exit_btn->Render() }));
-        return vbox(std::move(rows)) | border;
-      });
-
-      auto root_renderer = Renderer([&] {
-          if (show_config) return dbox({ app_renderer->Render() | color(Color::GrayDark), config_renderer->Render() | center });
-          return app_renderer->Render();
-      });
-
-      auto root_component = CatchEvent(root_renderer, [&](Event event) {
-          if (event == Event::Custom) { refresh_ui(service.GetContacts()); return true; }
-          if (event == Event::Character('q')) { screen.ExitLoopClosure()(); return true; }
-          if (show_config) return config_container->OnEvent(event);
-          return main_container->OnEvent(event);
-      });
-
-      refresh_ui(service.GetContacts());
-      screen.Loop(root_component);
-      Log("Application closed.");
-  } catch (const std::exception& e) { std::cerr << "FATAL ERROR: " << e.what() << std::endl; return 1; }
-  return 0;
+    return 0;
 }
