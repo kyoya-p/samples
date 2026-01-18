@@ -221,8 +221,9 @@ class FirestoreService {
     return true;
   }
 
-  void LoadMore() {
+  void LoadMore(int page_size) {
       if (!firestore_ || is_loading_ || !has_more_) return;
+      page_size_ = page_size;
       StartListeningNextPage();
   }
 
@@ -432,7 +433,11 @@ int main(int argc, char** argv) {
                 return hbox({ filler(), text("Loading...") | color(Color::Yellow) | bold, filler() });
             });
             auto observed_loader = std::make_shared<VisibilityObserver>(loader, [&service] {
-                service.LoadMore();
+                // Recalculate page size based on current terminal size
+                auto size = Terminal::Size();
+                int pageSize = size.dimy + 5;
+                if (pageSize < 10) pageSize = 10;
+                service.LoadMore(pageSize);
             });
             rows_container->Add(observed_loader);
         } else {
