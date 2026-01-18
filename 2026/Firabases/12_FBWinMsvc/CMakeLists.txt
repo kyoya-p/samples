@@ -12,6 +12,7 @@ message(STATUS "Configuring Firebase C++ SDK v${FIREBASE_SDK_VERSION}...")
 
 FetchContent_Declare(firebase_cpp_sdk
   URL https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip
+  DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/.cache/downloads
 )
 FetchContent_MakeAvailable(firebase_cpp_sdk)
 
