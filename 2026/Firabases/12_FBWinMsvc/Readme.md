@@ -26,9 +26,13 @@ winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--passive
 ```
 
 # ビルド
+
+- Windows向け: `build/msvc`
+- Linux向け: `build/linux`
+
 ```bash
-cmake -S . -B build
-cmake --build build --config Release
+cmake -S . -B build/msvc
+cmake --build build/msvc --config Release
 ```
 ※ 初回ビルド時は Firebase SDK (約600MB) のダウンロードが行われるため、ネットワーク環境により時間がかかります。
 
@@ -43,7 +47,7 @@ API Key は環境変数 `API_KEY` または引数 `--api_key` で指定します
 
 ### 各種操作例
 *   **一覧取得**:
-    `FBTest.exe --api_key "..." --list`
+    `FBTest.exe --api_key "..." --list <nItem>`
 *   **データ追加**:
     `FBTest.exe --api_key "..." --add "User Name" "user@example.com"`
 *   **データ削除**:
@@ -52,5 +56,5 @@ API Key は環境変数 `API_KEY` または引数 `--api_key` で指定します
 ### 環境変数を使用する場合 (Windows)
 ```cmd
 set API_KEY=your-api-key
-.\build\Release\FBTest.exe --list
+.\build\msvc\Release\FBTest.exe --list
 ```
