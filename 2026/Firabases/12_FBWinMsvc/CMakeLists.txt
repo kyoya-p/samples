@@ -1,57 +1,54 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 project(FirebaseTuiSample LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Firebase C++ SDK paths
-set(FIREBASE_SDK_DIR "${CMAKE_SOURCE_DIR}/build/sdk/firebase_cpp_sdk")
-set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
-set(FIREBASE_LIB_DIR "${FIREBASE_SDK_DIR}/libs/linux/x86_64/cxx11")
-
-# Required System Libraries
-find_package(Threads REQUIRED)
-find_package(CURL REQUIRED)
-find_package(OpenSSL REQUIRED)
-find_package(ZLIB REQUIRED)
-
-# libsecret-1 via PkgConfig
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SECRET REQUIRED libsecret-1)
-
-# FTXUI Configuration
 include(FetchContent)
+
+# --- FTXUI Setup ---
 FetchContent_Declare(ftxui
   GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI
   GIT_TAG v5.0.0
 )
 FetchContent_MakeAvailable(ftxui)
 
+# --- Firebase C++ SDK Setup (Download Binaries) ---
+set(FIREBASE_SDK_VERSION "13.3.0")
+message(STATUS "Configuring Firebase C++ SDK v${FIREBASE_SDK_VERSION}...")
+
+FetchContent_Declare(firebase_cpp_sdk
+  URL https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip
+)
+FetchContent_MakeAvailable(firebase_cpp_sdk)
+
+# --- Application Setup ---
 add_executable(FirebaseApp main.cpp)
 
-# Link Firebase libraries manually
+# Link Libraries
 target_link_libraries(FirebaseApp
   PRIVATE
     ftxui::screen
     ftxui::dom
     ftxui::component
-    "${FIREBASE_LIB_DIR}/libfirebase_firestore.a"
-    "${FIREBASE_LIB_DIR}/libfirebase_auth.a"
-    "${FIREBASE_LIB_DIR}/libfirebase_app.a"
-    ${CURL_LIBRARIES}
-    OpenSSL::SSL
-    OpenSSL::Crypto
-    ZLIB::ZLIB
-    Threads::Threads
-    ${SECRET_LIBRARIES}
-    dl
+    firebase_app
+    firebase_auth
+    firebase_firestore
 )
 
-target_include_directories(FirebaseApp
-  PRIVATE
-    ${FIREBASE_INCLUDE_DIR}
-    ${SECRET_INCLUDE_DIRS}
-)
+# Windows specific system libraries for Firebase
+if(WIN32)
+  target_link_libraries(FirebaseApp
+    PRIVATE
+      ws2_32
+      crypt32
+      bcrypt
+      dbghelp
+      iphlpapi
+  )
+endif()
 
-# Firestore on Linux needs these definitions often
-target_compile_definitions(FirebaseApp PRIVATE _GLIBCXX_USE_CXX11_ABI=1)
+# MSVC specific options
+if(MSVC)
+  target_compile_options(FirebaseApp PRIVATE /W3 /EHsc /D_CRT_SECURE_NO_WARNINGS)
+endif()

@@ -11,8 +11,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <exception>
-#include <execinfo.h>
-#include <unistd.h>
 #include <ctime>
 
 #include "ftxui/component/captured_mouse.hpp"
@@ -25,10 +23,18 @@
 #include "ftxui/screen/terminal.hpp"
 
 #include "firebase/app.h"
+#include "firebase/auth.h"
 #include "firebase/firestore.h"
 #include "firebase/util.h"
 
+// Avoid conflict with Windows RGB macro - MUST BE AFTER ALL INCLUDES
+#ifdef RGB
+#undef RGB
+#endif
+
 using namespace ftxui;
+using namespace firebase;
+using namespace firebase::firestore;
 
 // Helper to access the log filename safely
 std::string& GetLogFilename() {
@@ -49,24 +55,9 @@ void Log(const std::string& message) {
     }
 }
 
-// Helper to capture stack trace
+// Helper to capture stack trace (Stub for Windows)
 std::string GetStackTrace() {
-    void* array[20];
-    size_t size;
-    char** strings;
-    std::string trace;
-
-    size = backtrace(array, 20);
-    strings = backtrace_symbols(array, size);
-
-    if (strings) {
-        for (size_t i = 0; i < size; i++) {
-            trace += strings[i];
-            trace += "\n";
-        }
-        free(strings);
-    }
-    return trace;
+    return "Stack trace not available on Windows (requires specialized libraries).";
 }
 
 // Macro to log and throw exception
