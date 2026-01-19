@@ -130,59 +130,76 @@ void FirestoreService::StartListeningNextPage() {
         pages_.push_back(std::move(page));
     }
 
+    Log("Invoking query.AddSnapshotListener...");
     page_ptr->registration = query.AddSnapshotListener(
         [this, page_index, page_ptr](const firebase::firestore::QuerySnapshot& snapshot,
                                     firebase::firestore::Error error, const std::string& error_msg) {
-        
-        if (error != firebase::firestore::Error::kErrorOk) {
-            Log("Firestore Page " + std::to_string(page_index) + " Error: " + error_msg);
-            SetError("Firestore Error: " + error_msg);
+        try {
+            if (error != firebase::firestore::Error::kErrorOk) {
+                Log("Firestore Page " + std::to_string(page_index) + " Error: " + error_msg);
+                SetError("Firestore Error: " + error_msg);
+                is_loading_ = false;
+                on_update_();
+                return;
+            }
+
+            std::vector<Contact> new_contacts;
+            auto docs = snapshot.documents();
+            
+            for (const auto& doc : docs) {
+                Contact c;
+                c.id = doc.id();
+                auto fields = doc.GetData();
+                if (fields.count("name")) c.name = fields["name"].string_value();
+                if (fields.count("email")) c.email = fields["email"].string_value();
+                if (fields.count("timestamp") && fields["timestamp"].is_timestamp()) {
+                    auto ts = fields["timestamp"].timestamp_value();
+                    std::time_t t = ts.seconds();
+                    char buf[32];
+                    std::tm tm_struct;
+#ifdef _WIN32
+                    localtime_s(&tm_struct, &t);
+#else
+                    localtime_r(&t, &tm_struct);
+#endif
+                    std::strftime(buf, sizeof(buf), "%m/%d %H:%M", &tm_struct);
+                    c.timestamp = buf;
+                } else {
+                    c.timestamp = "N/A";
+                }
+                new_contacts.push_back(c);
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                page_ptr->contacts = new_contacts;
+                page_ptr->has_more = (new_contacts.size() >= (size_t)page_size_);
+                page_ptr->has_pending_writes = snapshot.metadata().has_pending_writes();
+                if (!new_contacts.empty()) {
+                    page_ptr->last_doc = snapshot.documents().back();
+                }
+                
+                // Update global has_more based on the last page
+                if (page_index == pages_.size() - 1) {
+                    has_more_ = page_ptr->has_more;
+                }
+                
+                RebuildContacts();
+                error_message_.clear();
+            }
             is_loading_ = false;
             on_update_();
-            return;
+        } catch (const std::exception& e) {
+            Log("Exception in SnapshotListener: " + std::string(e.what()));
+            SetError("Exception: " + std::string(e.what()));
+            is_loading_ = false;
+            on_update_(); 
+        } catch (...) {
+            Log("Unknown exception in SnapshotListener");
+            SetError("Unknown Exception in Listener");
+            is_loading_ = false;
+            on_update_();
         }
-
-        std::vector<Contact> new_contacts;
-        auto docs = snapshot.documents();
-        
-        for (const auto& doc : docs) {
-            Contact c;
-            c.id = doc.id();
-            auto fields = doc.GetData();
-            if (fields.count("name")) c.name = fields["name"].string_value();
-            if (fields.count("email")) c.email = fields["email"].string_value();
-            if (fields.count("timestamp") && fields["timestamp"].is_timestamp()) {
-                auto ts = fields["timestamp"].timestamp_value();
-                std::time_t t = ts.seconds();
-                std::tm* tm_ptr = std::localtime(&t);
-                char buf[32];
-                std::strftime(buf, sizeof(buf), "%m/%d %H:%M", tm_ptr);
-                c.timestamp = buf;
-            } else {
-                c.timestamp = "N/A";
-            }
-            new_contacts.push_back(c);
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            page_ptr->contacts = new_contacts;
-            page_ptr->has_more = (new_contacts.size() >= (size_t)page_size_);
-            page_ptr->has_pending_writes = snapshot.metadata().has_pending_writes();
-            if (!new_contacts.empty()) {
-                page_ptr->last_doc = snapshot.documents().back();
-            }
-            
-            // Update global has_more based on the last page
-            if (page_index == pages_.size() - 1) {
-                has_more_ = page_ptr->has_more;
-            }
-            
-            RebuildContacts();
-            error_message_.clear();
-        }
-        is_loading_ = false;
-        on_update_();
         });
 }
 

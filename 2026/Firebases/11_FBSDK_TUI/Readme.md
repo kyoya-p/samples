@@ -11,11 +11,20 @@ Firestore上のデータをリアルタイムにリスト表示し、追加・�
 
 # 環境
 
-- OS: Ubuntu
+- Linux
+  - OS: Ubuntu
+  - Compiler: g++
+  
+- Windwos
+  - OS: Windows 11
+  - Compiler: MSVC 2022
 
 # ツール/ライブラリ追加
-
+```powershell:windows
+# Visual Studio 2022 (C++ Desktop Development) が必要です。
+# CMakeはVisual Studioに含まれるものを使用します。
 ```
+```shell:ubuntu
 sudo apt install -y \
 build-essential \
 cmake \
@@ -30,17 +39,29 @@ zlib1g-dev
 
 # ビルド
 
+Windows (MSVC):
+Visual Studio の "Developer Command Prompt for VS 2022" (または x64 Native Tools Command Prompt) を開き、以下のコマンドを実行してください。
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Release -j 4
+```
+
+Ubuntu:
 ```bash
 cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
 cmake --build build -j 4   # 実行ファイル作成
 ```
-```powershell: wsl
-wsl cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
-wsl cmake --build build -j 4   # 実行ファイル作成
-```
 
 # 実行
 
+Windows:
+```powershell
+$env:API_KEY="your-api-key"
+.\build\Release\FirebaseApp.exe
+```
+
+Ubuntu:
 ```bash
 export API_KEY="your-api-key"
 ./build/FirebaseApp

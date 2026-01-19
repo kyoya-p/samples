@@ -4,8 +4,16 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+
+#ifdef _WIN32
+#include <process.h> // for _getpid
+#include <windows.h>
+#include <dbghelp.h>
+#pragma comment(lib, "dbghelp.lib")
+#else
 #include <unistd.h>
 #include <execinfo.h>
+#endif
 
 std::string& GetLogFilename() {
     static std::string filename = "app.log";
@@ -19,12 +27,24 @@ void Log(const std::string& message) {
         std::tm tm = *std::localtime(&now);
         char buffer[32];
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
-        log_file << "[" << buffer << "] [" << getpid() << "] " << message << std::endl;
+        
+        int pid = 0;
+        #ifdef _WIN32
+        pid = _getpid();
+        #else
+        pid = getpid();
+        #endif
+        
+        log_file << "[" << buffer << "] [" << pid << "] " << message << std::endl;
         log_file.flush();
     }
 }
 
 std::string GetStackTrace() {
+#ifdef _WIN32
+    // Simple Windows Stack Trace (Requires initialization, skipped for simplicity in this snippet, returning basic info)
+    return "Stack trace not fully implemented for Windows in this sample.\n";
+#else
     void* array[20];
     size_t size;
     char** strings;
@@ -41,5 +61,6 @@ std::string GetStackTrace() {
         free(strings);
     }
     return trace;
+#endif
 }
 

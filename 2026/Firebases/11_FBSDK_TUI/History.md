@@ -89,7 +89,6 @@
     - 実行された Firestore クエリの詳細（コレクション、リミット、カーソルID）をログに出力。
     - ログの第2フィールドにプロセスID (PID) を追加し、複数インスタンス実行時のログ追跡を容易にした。
 
-<<<<<<< HEAD:2026/Firebases/11_FBSDK_TUI/History.md
 ### フェーズ 8: 画面適応型ページングとUX最適化
 - **動的ページサイズ計算**:
     - 初回データ取得数 (`nAddress`) を「ターミナル高さ + 5行」で算出するように変更。
@@ -100,9 +99,6 @@
 - **ログ仕様の変更**:
     - ログファイル名を固定の `app.log` に変更し、ファイル管理を簡素化。
 
-## 現在の状態
-最新の機能仕様、UIデザイン、システム要件については [UI_Specification.md](UI_Specification.md) および [SoftwareDesign.md](SoftwareDesign.md) を参照してください。
-=======
 ### フェーズ 8: CI/CD向け検証機能とビルド修正
 - **ビルド構成の修正**:
     - `CMakeLists.txt` の Firebase SDK パス設定を修正し、ダウンロードされたディレクトリ構造に正しく追従するように変更。これによりビルドエラーを解消。
@@ -110,10 +106,25 @@
     - `--check` フラグ: TUIを起動せず、バイナリが正常に初期化できるかを検証して即座に終了するモードを追加。CI環境でのスモークテスト用。
     - `--snapshot` フラグ: UIコンポーネントを構築し、現在の画面状態をテキストとして標準出力（ログ）にダンプして終了するモードを追加。
 - **スナップショットモードの実装**:
-    - `main.cpp` をリファクタリングし、UI構築ロジックを `ScreenInteractive` のイベントループから分離。
-    - インタラクティブなコンポーネント（`Input`, `Button`）が非対話モードでレンダリングされる際のクラッシュを回避するため、スナップショットモード時はテキストプレースホルダーに置換するロジックを実装。
-    - これにより、ヘッドレス環境でもTUIのレイアウト崩れがないかを自動検証可能にした。
->>>>>>> c49d17d8359e2a9dacc6dd2f357848eb7cc475a3:2026/Firabases/11_FBSDK_TUI/History.md
+    - `main.cpp` をリファクタリングし、UI構築ロジックを `ScreenInteractive` のイベントループから分離.
+    - インタラクティブなコンポーネント（`Input`, `Button`）が非対話モードでレンダリングされる際のクラッシュを回避するため、スナップショットモード時はテキストプレースホルダーに置換するロジックを実装.
+    - これにより、ヘッドレス環境でもTUIのレイアウト崩れがないかを自動検証可能にした.
+
+### フェーズ 9: Windows (MSVC) 移植とマルチプラットフォーム対応
+- **MSVC ビルド対応**:
+    - `CMakeLists.txt` を大幅に修正し、Windows環境 (Visual Studio 2022 / BuildTools) でのコンパイルをサポート。
+    - Windows版 Firebase C++ SDK のディレクトリ構造 (`libs/windows/VS2019/MD/x64/Release`) に合わせたライブラリパス設定を追加。
+- **依存ライブラリのWindows対応**:
+    - Windows特有のシステムライブラリ (`bcrypt`, `crypt32`, `ws2_32`, `advapi32`, `shlwapi` 等) をリンク対象に追加。
+    - Windowsでは不要な `libsecret-1` や `dl` を条件分岐により除外。
+- **コードのポータビリティ向上**:
+    - `main.cpp` および `utils.cpp` から POSIX 固有の依存関係 (`unistd.h`, `execinfo.h`) を排除または `#ifdef _WIN32` で分岐。
+    - Windows環境でのプロセスID取得に `_getpid()` を使用。
+    - スタックトレース取得機能を Windows (プレースホルダー) と Linux で切り替え。
+- **名前衝突の解決**:
+    - `windows.h` (GDI) の `RGB` マクロと FTXUI の `Color::RGB` の競合を `#undef RGB` により解消。
+- **配布・ビルド手順の刷新**:
+    - `Readme.md` を更新し、`mise` 依存から MSVC の標準的な CMake ビルド手順に変更。
 
 ## 現在の状態
-最新の機能仕様、UIデザイン、システム要件については [specification.md](specification.md) を参照してください。
+最新の機能仕様、UIデザイン、システム要件については [UI_Specification.md](UI_Specification.md) を参照してください。
