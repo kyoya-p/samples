@@ -1,0 +1,4 @@
+/.idea/
+/build/
+app*.log
+.cache/

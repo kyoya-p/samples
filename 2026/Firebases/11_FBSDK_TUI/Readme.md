@@ -34,6 +34,10 @@ zlib1g-dev
 cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
 cmake --build build -j 4   # 実行ファイル作成
 ```
+```powershell: wsl
+wsl cmake -S . -B build        # [CMakeLixt.txt修正後]Makefile作成
+wsl cmake --build build -j 4   # 実行ファイル作成
+```
 
 # 実行
 

@@ -18,8 +18,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(firebase_sdk)
 
 # Define paths based on FetchContent extraction
-# Note: The zip extracts into a folder named firebase_cpp_sdk
-set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}/firebase_cpp_sdk")
+# Note: The zip extracts into the root of the source dir in recent versions or FetchContent behavior
+set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}")
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
 set(FIREBASE_LIB_DIR "${FIREBASE_SDK_DIR}/libs/linux/x86_64/cxx11")
 
@@ -42,7 +42,7 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(FirebaseApp main.cpp)
+add_executable(FirebaseApp main.cpp dataaccess.cpp utils.cpp)
 
 # Link Firebase libraries manually
 target_link_libraries(FirebaseApp
