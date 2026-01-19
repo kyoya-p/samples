@@ -95,7 +95,7 @@ void FirestoreService::StartListeningNextPage() {
     
     size_t page_index;
     std::string cursor_id = "None";
-    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy("timestamp");
+    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy("timestamp", firebase::firestore::Query::Direction::kDescending);
 
     {
         std::lock_guard<std::mutex> lock(mutex_);

@@ -19,7 +19,7 @@ private:
 // Main function to build the application UI
 ftxui::Component CreateAppUI(FirestoreService& service, std::function<void()> on_exit, bool is_snapshot = false);
 
-// UI Helpers (Moved from helpers.hpp)
+// UI Helpers
 std::string GenerateRandomName();
 std::string GenerateRandomEmail(const std::string& name);
 ftxui::Element MakeTableRow(ftxui::Element name, ftxui::Element email, ftxui::Element time, ftxui::Element op);

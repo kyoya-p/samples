@@ -1,4 +1,5 @@
 #include "ui.hpp"
+#include "utils.hpp"
 #include "ftxui/dom/elements.hpp"
 #include "ftxui/component/component.hpp"
 #include <memory>
@@ -48,7 +49,6 @@ Component CreateAppUI(FirestoreService& service, std::function<void()> on_exit, 
     auto show_config = std::make_shared<bool>(false);
     static std::string api_key_input_val = "";
     
-    // API key resolution logic (simplified for UI builder)
     const char* env = std::getenv("FB_API_KEY");
     if (!env) env = std::getenv("API_KEY");
     if (api_key_input_val.empty() && env) api_key_input_val = env;
@@ -63,6 +63,9 @@ Component CreateAppUI(FirestoreService& service, std::function<void()> on_exit, 
         return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
     });
 
+    auto n_name = std::make_shared<std::string>(GenerateRandomName());
+    auto n_email = std::make_shared<std::string>(GenerateRandomEmail(*n_name));
+    
     auto rows_container = Container::Vertical({});
     auto refresh_ui = [=, &service](const std::vector<Contact>& contacts) {
         rows_container->DetachAllChildren();
@@ -74,15 +77,49 @@ Component CreateAppUI(FirestoreService& service, std::function<void()> on_exit, 
             auto contact_time = contact.timestamp;
             int idx = (int)i;
 
-            auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
-            auto row = Renderer(remove_btn, [=, &service] {
+            auto on_click = [=] {
+                *n_name = contact_name;
+                *n_email = contact_email;
+            };
+
+            auto remove_btn = Button("[Remove]", [=, &service] { 
+                Log("Remove button clicked for Contact ID: " + contact_id);
+                service.RemoveContact(contact_id); 
+            }, ButtonOption::Ascii());
+            
+            // Define the row rendering logic
+            auto row_renderer = Renderer(remove_btn, [=, &service] {
                 Element op = is_snapshot ? text("[Remove]") : remove_btn->Render();
                 auto el = MakeTableRow(text(contact_name), text(contact_email), text(contact_time), op);
                 if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
                 if (!is_snapshot && remove_btn->Focused()) return el | inverted;
                 return el;
             });
-            rows_container->Add(row);
+
+            // Make the whole row clickable without blocking child buttons.
+            // We use CatchEvent to handle clicks only if the child (remove button) didn't handle it.
+            auto row_clickable = CatchEvent(row_renderer, [=](Event event) {
+                // If it's a mouse click
+                if (event.is_mouse() && event.mouse().button == Mouse::Left && event.mouse().motion == Mouse::Pressed) {
+                    // Check if the click is within the row component's area.
+                    // Since CatchEvent doesn't expose the box easily, we rely on the fact that
+                    // FTXUI containers only pass mouse events to children if they are within bounds.
+                    // To be safe and fix the "blocking" issue, we only trigger on_click if the event
+                    // WAS NOT handled by the remove button (child).
+                    // BUT, CatchEvent is called BEFORE the child.
+                    // This is why we need to call child->OnEvent manually or use a different approach.
+                    
+                    // The standard way: if child didn't handle it, we do.
+                    if (row_renderer->OnEvent(event)) {
+                        return true;
+                    }
+                    on_click();
+                    return true;
+                }
+                return false;
+            });
+
+            rows_container->Add(row_clickable);
         }
         if (service.HasMore()) {
             auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
@@ -90,12 +127,16 @@ Component CreateAppUI(FirestoreService& service, std::function<void()> on_exit, 
         }
     };
 
-    static std::string n_name = GenerateRandomName();
-    static std::string n_email = GenerateRandomEmail(n_name);
-    auto name_input = Input(&n_name, "Name");
-    auto email_input = Input(&n_email, "Email");
-    auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
-    
+    auto name_input = Input(n_name.get(), "Name");
+    auto email_input = Input(n_email.get(), "Email");
+    auto add_btn = Button("[Add]", [=, &service] { 
+        if (!n_name->empty()) { 
+            service.AddContact(*n_name, *n_email); 
+            *n_name = GenerateRandomName(); 
+            *n_email = GenerateRandomEmail(*n_name); 
+        } 
+    }, ButtonOption::Ascii());
+
     auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
     auto add_row = Renderer(add_row_c, [=] {
         return vbox({ separator(), MakeTableRow(is_snapshot ? text("Name") : name_input->Render(), is_snapshot ? text("Mail") : email_input->Render(), text("(Now)"), is_snapshot ? text("[Add]") : add_btn->Render()), separator() });
