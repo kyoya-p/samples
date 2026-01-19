@@ -8,12 +8,9 @@ include(FetchContent)
 
 # --- Firebase C++ SDK Setup ---
 set(FIREBASE_SDK_VERSION "13.3.0")
-set(FIREBASE_SDK_URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip")
-
 FetchContent_Declare(
   firebase_sdk
-  URL ${FIREBASE_SDK_URL}
-  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.3.0.zip"
 )
 FetchContent_MakeAvailable(firebase_sdk)
 
