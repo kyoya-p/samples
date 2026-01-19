@@ -99,6 +99,7 @@ FetchContent_MakeAvailable(ftxui)
 
 # --- Google Test Setup ---
 enable_testing()
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/refs/heads/main.zip
@@ -109,6 +110,8 @@ add_executable(FirebaseApp
     src/main/main.cpp 
     src/main/dataaccess.cpp 
     src/main/utils.cpp
+    
+    src/main/ui.cpp
 )
 
 # Link Libraries

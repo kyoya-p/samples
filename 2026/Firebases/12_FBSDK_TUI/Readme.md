@@ -40,9 +40,11 @@ zlib1g-dev
 # ビルド
 
 Windows (MSVC):
-Visual Studio の "Developer Command Prompt for VS 2022" (または x64 Native Tools Command Prompt) を開き、以下のコマンドを実行してください。
 
 ```powershell
+$env:CMAKEDIR="C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\"
+$env:PATH="$env:CMAKEDIR;"+$env:PATH
+
 cmake -S . -B build
 cmake --build build --config Release -j 4
 ```

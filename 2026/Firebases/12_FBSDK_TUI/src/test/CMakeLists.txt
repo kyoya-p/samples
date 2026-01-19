@@ -1,7 +1,9 @@
 add_executable(app_tests 
     app_test.cpp 
-    ../main/dataaccess.cpp 
+    ../main/dataaccess.cpp
     ../main/utils.cpp
+    
+    ../main/ui.cpp
 )
 
 target_link_libraries(app_tests
