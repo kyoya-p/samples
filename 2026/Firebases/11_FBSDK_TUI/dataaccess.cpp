@@ -23,7 +23,6 @@ void FirestoreService::Cleanup() {
             delete firestore_;
             firestore_ = nullptr;
         }
-        // Give some time for gRPC to shutdown safely as per Phase 7
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         Log("Deleting Firebase App...");
         delete app_; 
@@ -150,6 +149,12 @@ void FirestoreService::StartListeningNextPage() {
                 Contact c;
                 c.id = doc.id();
                 auto fields = doc.GetData();
+                
+                // Debug logging
+                std::string keys = "";
+                for (auto const& [k, v] : fields) { keys += k + ","; }
+                Log("Doc: " + c.id + " Fields: " + keys);
+
                 if (fields.count("name")) c.name = fields["name"].string_value();
                 if (fields.count("email")) c.email = fields["email"].string_value();
                 if (fields.count("timestamp") && fields["timestamp"].is_timestamp()) {
@@ -179,11 +184,9 @@ void FirestoreService::StartListeningNextPage() {
                     page_ptr->last_doc = snapshot.documents().back();
                 }
                 
-                // Update global has_more based on the last page
                 if (page_index == pages_.size() - 1) {
                     has_more_ = page_ptr->has_more;
                 }
-                
                 RebuildContacts();
                 error_message_.clear();
             }
@@ -204,7 +207,6 @@ void FirestoreService::StartListeningNextPage() {
 }
 
 void FirestoreService::RebuildContacts() {
-    // Assumes mutex is already locked
     contacts_.clear();
     for (const auto& page : pages_) {
         contacts_.insert(contacts_.end(), page->contacts.begin(), page->contacts.end());

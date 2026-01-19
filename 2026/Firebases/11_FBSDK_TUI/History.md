@@ -110,21 +110,21 @@
     - インタラクティブなコンポーネント（`Input`, `Button`）が非対話モードでレンダリングされる際のクラッシュを回避するため、スナップショットモード時はテキストプレースホルダーに置換するロジックを実装.
     - これにより、ヘッドレス環境でもTUIのレイアウト崩れがないかを自動検証可能にした.
 
-### フェーズ 9: Windows (MSVC) 移植とマルチプラットフォーム対応
-- **MSVC ビルド対応**:
+### フェーズ 9: Windows (MSVC) 移植と安定性の向上
+- **MSVC ビルド対応**: 
     - `CMakeLists.txt` を大幅に修正し、Windows環境 (Visual Studio 2022 / BuildTools) でのコンパイルをサポート。
     - Windows版 Firebase C++ SDK のディレクトリ構造 (`libs/windows/VS2019/MD/x64/Release`) に合わせたライブラリパス設定を追加。
-- **依存ライブラリのWindows対応**:
-    - Windows特有のシステムライブラリ (`bcrypt`, `crypt32`, `ws2_32`, `advapi32`, `shlwapi` 等) をリンク対象に追加。
-    - Windowsでは不要な `libsecret-1` や `dl` を条件分岐により除外。
-- **コードのポータビリティ向上**:
-    - `main.cpp` および `utils.cpp` から POSIX 固有の依存関係 (`unistd.h`, `execinfo.h`) を排除または `#ifdef _WIN32` で分岐。
-    - Windows環境でのプロセスID取得に `_getpid()` を使用。
-    - スタックトレース取得機能を Windows (プレースホルダー) と Linux で切り替え。
-- **名前衝突の解決**:
-    - `windows.h` (GDI) の `RGB` マクロと FTXUI の `Color::RGB` の競合を `#undef RGB` により解消。
-- **配布・ビルド手順の刷新**:
-    - `Readme.md` を更新し、`mise` 依存から MSVC の標準的な CMake ビルド手順に変更。
+- **依存ライブラリの完備**:
+    - Windows特有のシステムライブラリ (`bcrypt`, `crypt32`, `ws2_32`, `advapi32`, `shlwapi`, `rpcrt4`, `ole32` 等) をリンク対象に追加し、実行時エラーを解消。
+- **メモリ安全性の確保 (重要)**:
+    - FTXUIのコールバックにおいて、ローカル変数の「参照キャプチャ (`[&]`)」が原因で発生していたアクセス違反 (Access Violation) を、安全な「値キャプチャ (`[=]`)」に修正。
+- **スレッド安全性の向上**:
+    - 共有データアクセス用の `mutex` 保護に加え、非スレッドセーフな `std::localtime` を `localtime_s` (Windows) / `localtime_r` (POSIX) に置換。
+    - UIループ開始前にバックグラウンドから `screen.Post` が呼ばれることによるクラッシュを防ぐため、`std::atomic<bool> started` フラグによるガードを導入。
+- **デバッグ機能の強化**:
+    - `--snapshot` モードを拡張し、Firestoreからのデータ受信を最大6秒間待機するロジックを実装。これにより、ヘッドレス環境でも実際の通信成功を検証可能にした。
+- **非対話環境の特定**: 
+    - 自動実行ツール内でのクラッシュが、アプリケーションの不具合ではなく、FTXUIが要求する「対話型TTY」の不在によるものであることを特定・分離。
 
 ## 現在の状態
 最新の機能仕様、UIデザイン、システム要件については [UI_Specification.md](UI_Specification.md) を参照してください。
