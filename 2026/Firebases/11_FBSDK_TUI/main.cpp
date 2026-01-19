@@ -17,14 +17,6 @@
 #ifdef _WIN32
 #include <process.h>
 #include <windows.h>
-LONG WINAPI CrashHandler(EXCEPTION_POINTERS* info) {
-    (void)info;
-    const char* seq = "\x1b[?1049l\x1b[?25h";
-    DWORD w;
-    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-    WriteFile(h, seq, (DWORD)strlen(seq), &w, NULL);
-    return EXCEPTION_EXECUTE_HANDLER;
-}
 #else
 #include <unistd.h>
 #endif
@@ -86,9 +78,6 @@ std::string GenerateRandomEmail(const std::string& name) {
 }
 
 int main(int argc, char** argv) {
-#ifdef _WIN32
-  SetUnhandledExceptionFilter(CrashHandler);
-#endif
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
       if (argc > 1 && std::string(argv[1]) == "--check") {
@@ -114,13 +103,18 @@ int main(int argc, char** argv) {
           auto rows_container = Container::Vertical({});
           auto refresh_ui = [=, &service](const std::vector<Contact>& contacts) {
             rows_container->DetachAllChildren();
-            for (const auto& contact : contacts) {
-              auto remove_btn = Button("[Remove]", [&service, contact] { service.RemoveContact(contact.id); }, ButtonOption::Ascii());
-              auto row = Renderer(remove_btn, [=, &service, contact] {
-                int idx = 0;
-                for(size_t j=0; j<contacts.size(); ++j) if(contacts[j].id == contact.id) { idx = (int)j; break; }
+            for (size_t i = 0; i < contacts.size(); ++i) {
+              const auto& contact = contacts[i];
+              auto contact_id = contact.id;
+              auto contact_name = contact.name;
+              auto contact_email = contact.email;
+              auto contact_time = contact.timestamp;
+              int idx = (int)i;
+
+              auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
+              auto row = Renderer(remove_btn, [=, &service] {
                 Element op = is_snapshot ? text("[Remove]") : remove_btn->Render();
-                auto el = MakeTableRow(text(contact.name), text(contact.email), text(contact.timestamp), op);
+                auto el = MakeTableRow(text(contact_name), text(contact_email), text(contact_time), op);
                 if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
                 if (!is_snapshot && remove_btn->Focused()) return el | inverted;
                 return el;
