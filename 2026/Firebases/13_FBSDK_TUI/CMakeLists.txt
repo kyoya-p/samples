@@ -97,7 +97,7 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(FirebaseApp main.cpp dataaccess.cpp utils.cpp)
+add_executable(FirebaseApp src/main.cpp src/dataaccess.cpp src/utils.cpp)
 
 # Link Libraries
 if(MSVC)
