@@ -40,10 +40,10 @@ zlib1g-dev
 # ビルド
 
 Windows (MSVC):
-Visual Studio の "Developer Command Prompt for VS 2022" (または x64 Native Tools Command Prompt) を開き、以下のコマンドを実行してください。
+Visual Studio の "Developer Command Prompt"を開き、以下のコマンドを実行。
 
 ```powershell
-cmake -S . -B build
+cmake -S . -B build        # firebase sdkのダウンロードに時間がかかる
 cmake --build build --config Release -j 4
 ```
 
