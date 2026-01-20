@@ -70,12 +70,7 @@ std::string GenerateRandomEmail(const std::string& name) {
 int main(int argc, char** argv) {
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
-      if (argc > 1 && std::string(argv[1]) == "--check") {
-          std::cout << "Verification: OK" << std::endl;
-          return 0;
-      }
-      bool snapshot_mode = (argc > 1 && std::string(argv[1]) == "--snapshot");
-      auto build_ui = [&](FirestoreService& service, std::function<void()> on_exit, bool is_snapshot) -> Component {
+      auto build_ui = [&](FirestoreService& service, std::function<void()> on_exit) -> Component {
           auto show_config = std::make_shared<bool>(false);
           static std::string api_key_input_val = "";
           const char* env = std::getenv("FB_API_KEY");
@@ -87,7 +82,6 @@ int main(int argc, char** argv) {
           auto cancel_btn = Button("[Cancel]", [=] { *show_config = false; }, ButtonOption::Ascii());
           auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
           auto config_renderer = Renderer(config_container, [=, &service] {
-              if (is_snapshot) return vbox({ text("Configuration Placeholder") | border }) | center;
               return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
           });
           auto rows_container = Container::Vertical({});
@@ -157,7 +151,7 @@ int main(int argc, char** argv) {
               auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
               
               auto row_renderer = Renderer(remove_btn, [=, &service] {
-                Element op = is_snapshot ? text("[Remove]") : remove_btn->Render();
+                Element op = remove_btn->Render();
                 auto el = hbox({
                     text(contact_name) | size(WIDTH, EQUAL, 28),
                     text(" "),
@@ -174,7 +168,7 @@ int main(int argc, char** argv) {
                      el = el | bgcolor(Color::RGB(40, 40, 40));
                 }
                 
-                if (!is_snapshot && remove_btn->Focused()) return el | inverted;
+                if (remove_btn->Focused()) return el | inverted;
                 return el;
               });
 
@@ -218,7 +212,7 @@ int main(int argc, char** argv) {
                       text(" "),
                       text("(Now)") | size(WIDTH, EQUAL, 16),
                       text(" "),
-                      (is_snapshot ? text("[Add]") : add_btn->Render()) | size(WIDTH, EQUAL, 10) | center
+                      add_btn->Render() | size(WIDTH, EQUAL, 10) | center
                   }), 
                   separator() 
               });
@@ -244,17 +238,8 @@ int main(int argc, char** argv) {
             rows.push_back(separator());
 
             auto rendered_rows = rows_container->Render();
-            if (is_snapshot) rows.push_back(rendered_rows);
-            else rows.push_back(rendered_rows | vscroll_indicator | frame | flex);
+            rows.push_back(rendered_rows | vscroll_indicator | frame | flex);
             
-            // add_row is rendered by main_container layout usually, but here we are doing manual layout in Renderer.
-            // Wait, if we use Container::Vertical({header, rows, add_row}), then main_container->Render() would render them stacked.
-            // But we are overriding Render() of main_container via app_renderer.
-            // So we must manually call Render() on children or use layout provided by children.
-            // Since we added header/rows/add_row to main_container, we should use them here.
-            
-            // rows.push_back(add_row->Render()); // add_row is already in the components list, but we need to render it here manually since we replaced the default render.
-            // Actually, `add_row` renderer above adds separators.
             rows.push_back(add_row->Render());
             rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), close_btn->Render() }));
             return vbox(std::move(rows)) | border;
@@ -272,18 +257,7 @@ int main(int argc, char** argv) {
               return main_container->OnEvent(event);
           });
       };
-      if (snapshot_mode) {
-          FirestoreService service([]{});
-          const char* k = std::getenv("FB_API_KEY");
-          if (!k) k = std::getenv("API_KEY");
-          if (k) service.Initialize(k, 20);
-          for(int i=0; i<20; ++i) { if(!service.GetContacts().empty()) break; std::this_thread::sleep_for(std::chrono::milliseconds(200)); }
-          auto root = build_ui(service, []{}, true);
-          auto screen = Screen::Create(Dimension::Fixed(100), Dimension::Fixed(30));
-          Render(screen, root->Render());
-          std::cout << screen.ToString() << std::endl;
-          return 0;
-      }
+
       auto screen = ScreenInteractive::Fullscreen();
       std::atomic<bool> started{false};
       FirestoreService service([&screen, &started] { if (started) screen.Post(Event::Custom); });
@@ -291,7 +265,7 @@ int main(int argc, char** argv) {
       const char* key = std::getenv("FB_API_KEY");
       if (!key) key = std::getenv("API_KEY");
       if (key) service.Initialize(key, nAddr);
-      auto root = build_ui(service, screen.ExitLoopClosure(), false);
+      auto root = build_ui(service, screen.ExitLoopClosure());
       started = true;
       screen.Loop(root);
   } catch (...) { return 1; }
