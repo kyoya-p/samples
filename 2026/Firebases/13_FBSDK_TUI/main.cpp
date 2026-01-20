@@ -35,6 +35,8 @@
 #include "dataaccess.hpp"
 #include "utils.hpp"
 
+using namespace ftxui;
+
 class VisibilityObserver : public ComponentBase {
 public:
     VisibilityObserver(Component child, std::function<void()> on_v) : child_(child), on_v_(on_v) { Add(child_); }
@@ -159,7 +161,6 @@ int main(int argc, char** argv) {
             rows.push_back(table.Render());
             rows.push_back(separator());
             auto rendered_rows = rows_container->Render();
-            *table_box = rendered_rows->box();
             if (is_snapshot) rows.push_back(rendered_rows);
             else rows.push_back(rendered_rows | vscroll_indicator | frame | flex);
             rows.push_back(add_row->Render());
@@ -174,16 +175,6 @@ int main(int argc, char** argv) {
           return CatchEvent(root, [=, &service](Event event) {
               if (event == Event::Custom) { refresh_ui(service.GetContacts()); return true; }
               if (event == Event::Character('q')) { on_exit(); return true; }
-
-              if (event.is_mouse()) {
-                  if (table_box->Contain(event.mouse().x, event.mouse().y)) {
-                      if(event.mouse().button == Mouse::Left && event.mouse().motion == Mouse::Pressed) {
-                          int row = event.mouse().y - table_box->y_min;
-                          *selected_row = row;
-                          return true;
-                      }
-                  }
-              }
 
               if (*show_config) return config_container->OnEvent(event);
               return main_container->OnEvent(event);
