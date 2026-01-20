@@ -17,6 +17,7 @@
 #ifdef _WIN32
 #include <process.h>
 #include <windows.h>
+#undef RGB
 #else
 #include <unistd.h>
 #endif
