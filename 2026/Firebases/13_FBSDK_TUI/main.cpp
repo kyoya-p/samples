@@ -30,23 +30,10 @@
 #include "ftxui/util/ref.hpp"
 #include "ftxui/screen/terminal.hpp"
 
+#include "ftxui/dom/table.hpp"
+
 #include "dataaccess.hpp"
 #include "utils.hpp"
-
-#ifdef RGB
-#undef RGB
-#endif
-
-using namespace ftxui;
-
-Element MakeTableRow(Element name, Element email, Element time, Element op) {
-    return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 28),
-        std::move(email) | flex,
-        std::move(time)  | size(WIDTH, EQUAL, 16),
-        std::move(op)    | size(WIDTH, EQUAL, 10) | center,
-    });
-}
 
 class VisibilityObserver : public ComponentBase {
 public:
@@ -114,7 +101,14 @@ int main(int argc, char** argv) {
               auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
               auto row = Renderer(remove_btn, [=, &service] {
                 Element op = is_snapshot ? text("[Remove]") : remove_btn->Render();
-                auto el = MakeTableRow(text(contact_name), text(contact_email), text(contact_time), op);
+                auto table = Table({
+                  {contact_name, contact_email, contact_time},
+                });
+                table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
+                table.SelectColumn(1).DecorateCells(flex);
+                table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
+                auto el = hbox({table.Render(), op | size(WIDTH, EQUAL, 10) | center});
+
                 if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
                 if (!is_snapshot && remove_btn->Focused()) return el | inverted;
                 return el;
@@ -133,7 +127,13 @@ int main(int argc, char** argv) {
           auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
           auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
           auto add_row = Renderer(add_row_c, [=] {
-              return vbox({ separator(), MakeTableRow(is_snapshot ? text("Name") : name_input->Render(), is_snapshot ? text("Mail") : email_input->Render(), text("(Now)"), is_snapshot ? text("[Add]") : add_btn->Render()), separator() });
+              auto table = Table({
+                {is_snapshot ? "Name" : n_name, is_snapshot ? "Mail" : n_email, "(Now)"},
+              });
+              table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
+              table.SelectColumn(1).DecorateCells(flex);
+              table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
+              return vbox({ separator(), hbox({table.Render(), (is_snapshot ? text("[Add]") : add_btn->Render()) | size(WIDTH, EQUAL, 10) | center}), separator() });
           });
           auto close_btn = Button("[Close]", on_exit, ButtonOption::Ascii());
           auto activate_btn = Button("[Activate]", [=] { *show_config = true; }, ButtonOption::Ascii());
@@ -142,7 +142,16 @@ int main(int argc, char** argv) {
             Elements rows;
             rows.push_back(text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold);
             rows.push_back(separator());
-            rows.push_back(vbox({ MakeTableRow(text("Name") | bold, text("Mail") | bold, text("Time") | bold, text("Op") | bold), separator() }));
+            auto table = Table({
+                {"Name", "Mail", "Time", "Op"},
+            });
+            table.SelectRow(0).Decorate(bold);
+            table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
+            table.SelectColumn(1).DecorateCells(flex);
+            table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
+            table.SelectColumn(3).DecorateCells(size(WIDTH, EQUAL, 10) | center);
+            rows.push_back(table.Render());
+            rows.push_back(separator());
             if (is_snapshot) rows.push_back(rows_container->Render());
             else rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
             rows.push_back(add_row->Render());
