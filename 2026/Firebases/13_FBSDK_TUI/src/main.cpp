@@ -70,6 +70,7 @@ std::string GenerateRandomEmail(const std::string& name) {
 int main(int argc, char** argv) {
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
+      Log("Application starting...");
       auto build_ui = [&](FirestoreService& service, std::function<void()> on_exit) -> Component {
           auto show_config = std::make_shared<bool>(false);
           static std::string api_key_input_val = "";
@@ -78,7 +79,14 @@ int main(int argc, char** argv) {
           static std::string cur_key = (env != nullptr) ? env : "";
           api_key_input_val = cur_key;
           auto key_input = Input(&api_key_input_val, "API Key");
-          auto connect_btn = Button("[Connect]", [=, &service] { if (service.Initialize(api_key_input_val, 20)) { *show_config = false; } }, ButtonOption::Ascii());
+          auto connect_btn = Button("[Connect]", [=, &service] { 
+            if (api_key_input_val.empty()) {
+                service.Cleanup();
+                *show_config = false;
+            } else if (service.Initialize(api_key_input_val, 20)) { 
+                *show_config = false; 
+            } 
+          }, ButtonOption::Ascii());
           auto cancel_btn = Button("[Cancel]", [=] { *show_config = false; }, ButtonOption::Ascii());
           auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
           auto config_renderer = Renderer(config_container, [=, &service] {
@@ -189,11 +197,13 @@ int main(int argc, char** argv) {
               
               rows_container->Add(row_component);
             }
-            if (service.HasMore()) {
-                auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
-                rows_container->Add(std::make_shared<VisibilityObserver>(loader, [&service] { service.LoadMore(20); }));
-            } else {
-                 rows_container->Add(Renderer([] { return hbox({ filler(), text("last of data") | color(Color::GrayDark), filler() }); }));
+            if (service.IsConnected()) {
+                if (service.HasMore()) {
+                    auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
+                    rows_container->Add(std::make_shared<VisibilityObserver>(loader, [&service] { service.LoadMore(20); }));
+                } else {
+                    rows_container->Add(Renderer([] { return hbox({ filler(), text("last of data") | color(Color::GrayDark), filler() }); }));
+                }
             }
           };
 
@@ -258,16 +268,26 @@ int main(int argc, char** argv) {
           });
       };
 
-      auto screen = ScreenInteractive::Fullscreen();
+      auto screen = ScreenInteractive::FixedSize(120, 40);
       std::atomic<bool> started{false};
       FirestoreService service([&screen, &started] { if (started) screen.Post(Event::Custom); });
       int nAddr = Terminal::Size().dimy + 5;
+      Log("Terminal size obtained.");
       const char* key = std::getenv("FB_API_KEY");
       if (!key) key = std::getenv("API_KEY");
       if (key) service.Initialize(key, nAddr);
       auto root = build_ui(service, screen.ExitLoopClosure());
       started = true;
+      Log("UI built, starting loop...");
       screen.Loop(root);
-  } catch (...) { return 1; }
+  } catch (const std::exception& e) {
+      Log(std::string("Caught exception: ") + e.what());
+      Log(GetStackTrace());
+      return 1;
+  } catch (...) {
+      Log("Caught unknown exception.");
+      Log(GetStackTrace());
+      return 1;
+  }
   return 0;
 }

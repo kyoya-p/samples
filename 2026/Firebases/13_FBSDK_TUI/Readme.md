@@ -37,6 +37,20 @@ libssl-dev \
 zlib1g-dev
 ```
 
+```shell
+cd build
+git clone https://github.com/GeorgePearse/mcp-tui-test.git
+cd mcp-tui-test/
+pip install -r requirements.txt
+
+//todo
+  "mcpServers": {
+    "tui-test": {
+      "command": "python",
+      "args": ["/home/kyoya/works/samples/2026/Firebases/13_FBSDK_TUI/build/mcp-tui-test/server.py"]
+    },
+```
+
 # ビルド
 
 Windows (MSVC):
