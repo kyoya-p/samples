@@ -84,6 +84,14 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     return true;
 }
 
+void FirestoreService::SetSort(SortField field, SortDirection direction) {
+    if (sort_field_ == field && sort_direction_ == direction) return;
+    sort_field_ = field;
+    sort_direction_ = direction;
+    StopAllListeners();
+    StartListeningNextPage();
+}
+
 void FirestoreService::LoadMore(int page_size) {
     if (!firestore_ || is_loading_ || !has_more_) return;
     page_size_ = page_size;
@@ -95,7 +103,18 @@ void FirestoreService::StartListeningNextPage() {
     
     size_t page_index;
     std::string cursor_id = "None";
-    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy("timestamp");
+    
+    std::string field_name;
+    switch(sort_field_) {
+        case SortField::Name: field_name = "name"; break;
+        case SortField::Email: field_name = "email"; break;
+        case SortField::Timestamp: default: field_name = "timestamp"; break;
+    }
+    auto direction = (sort_direction_ == SortDirection::Ascending) 
+        ? firebase::firestore::Query::Direction::kAscending 
+        : firebase::firestore::Query::Direction::kDescending;
+
+    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy(field_name, direction);
 
     {
         std::lock_guard<std::mutex> lock(mutex_);

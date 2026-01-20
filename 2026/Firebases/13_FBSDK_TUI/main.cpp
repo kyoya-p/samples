@@ -91,7 +91,57 @@ int main(int argc, char** argv) {
           });
           auto rows_container = Container::Vertical({});
           auto selected_row = std::make_shared<int>(-1);
-          auto table_box = std::make_shared<Box>();
+
+          static std::string n_name = GenerateRandomName();
+          static std::string n_email = GenerateRandomEmail(n_name);
+
+          auto current_sort_field = std::make_shared<FirestoreService::SortField>(FirestoreService::SortField::Timestamp);
+          auto current_sort_dir = std::make_shared<FirestoreService::SortDirection>(FirestoreService::SortDirection::Descending);
+
+          auto header_btn = [&](std::string title, FirestoreService::SortField field) {
+              return Button(title, [=, &service] {
+                  if (*current_sort_field == field) {
+                      *current_sort_dir = (*current_sort_dir == FirestoreService::SortDirection::Ascending) 
+                                          ? FirestoreService::SortDirection::Descending 
+                                          : FirestoreService::SortDirection::Ascending;
+                  } else {
+                      *current_sort_field = field;
+                      *current_sort_dir = FirestoreService::SortDirection::Descending;
+                  }
+                  service.SetSort(*current_sort_field, *current_sort_dir);
+              }, ButtonOption::Ascii());
+          };
+
+          auto name_h_btn = header_btn("Name", FirestoreService::SortField::Name);
+          auto mail_h_btn = header_btn("Mail Address", FirestoreService::SortField::Email);
+          auto time_h_btn = header_btn("Created At", FirestoreService::SortField::Timestamp);
+          auto dummy_op = Renderer([]{ return text("Operation"); });
+
+          auto header_container = Container::Horizontal({
+              name_h_btn | size(WIDTH, EQUAL, 28),
+              mail_h_btn | flex,
+              time_h_btn | size(WIDTH, EQUAL, 16),
+              dummy_op   | size(WIDTH, EQUAL, 10)
+          });
+
+          auto header_final_renderer = Renderer(header_container, [=] {
+               auto get_label = [&](std::string base, FirestoreService::SortField f) {
+                  std::string arrow = "";
+                  if (*current_sort_field == f) {
+                      arrow = (*current_sort_dir == FirestoreService::SortDirection::Ascending) ? "▲" : "▼";
+                  }
+                  return base + arrow;
+               };
+               return hbox({
+                   name_h_btn->Render() | size(WIDTH, EQUAL, 28) | bold,
+                   text(" "),
+                   mail_h_btn->Render() | flex | bold,
+                   text(" "),
+                   time_h_btn->Render() | size(WIDTH, EQUAL, 16) | bold,
+                   text(" "),
+                   dummy_op->Render() | size(WIDTH, EQUAL, 10) | center | bold
+               });
+          });
 
           auto refresh_ui = [=, &service](const std::vector<Contact>& contacts) {
             rows_container->DetachAllChildren();
@@ -104,65 +154,106 @@ int main(int argc, char** argv) {
               int idx = (int)i;
 
               auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
-              auto row = Renderer(remove_btn, [=, &service] {
+              
+              auto row_renderer = Renderer(remove_btn, [=, &service] {
                 Element op = is_snapshot ? text("[Remove]") : remove_btn->Render();
-                auto table = Table({
-                  {contact_name, contact_email, contact_time},
+                auto el = hbox({
+                    text(contact_name) | size(WIDTH, EQUAL, 28),
+                    text(" "),
+                    text(contact_email) | flex,
+                    text(" "),
+                    text(contact_time) | size(WIDTH, EQUAL, 16),
+                    text(" "),
+                    op | size(WIDTH, EQUAL, 10) | center
                 });
-                table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
-                table.SelectColumn(1).DecorateCells(flex);
-                table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
-                auto el = hbox({table.Render(), op | size(WIDTH, EQUAL, 10) | center});
 
                 if (idx == *selected_row) {
-                    return el | inverted;
+                    el = el | inverted;
+                } else if (idx % 2 != 0) {
+                     el = el | bgcolor(Color::RGB(40, 40, 40));
                 }
-                if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
+                
                 if (!is_snapshot && remove_btn->Focused()) return el | inverted;
                 return el;
               });
-              rows_container->Add(row);
+
+              auto row_component = CatchEvent(row_renderer, [=, &service](Event event) {
+                  if (event.is_mouse() && event.mouse().button == Mouse::Left && event.mouse().motion == Mouse::Pressed) {
+                       *selected_row = idx;
+                       // Copy data to input fields
+                       n_name = contact_name;
+                       n_email = contact_email;
+                       return true; 
+                  }
+                  if (idx == *selected_row && (event == Event::Delete || event == Event::Character((char)127))) {
+                      service.RemoveContact(contact_id);
+                      return true;
+                  }
+                  return false;
+              });
+              
+              rows_container->Add(row_component);
             }
             if (service.HasMore()) {
                 auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
                 rows_container->Add(std::make_shared<VisibilityObserver>(loader, [&service] { service.LoadMore(20); }));
+            } else {
+                 rows_container->Add(Renderer([] { return hbox({ filler(), text("last of data") | color(Color::GrayDark), filler() }); }));
             }
           };
-          static std::string n_name = GenerateRandomName();
-          static std::string n_email = GenerateRandomEmail(n_name);
+
           auto name_input = Input(&n_name, "Name");
           auto email_input = Input(&n_email, "Email");
           auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
           auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
           auto add_row = Renderer(add_row_c, [=] {
-              auto table = Table({
-                {is_snapshot ? "Name" : n_name, is_snapshot ? "Mail" : n_email, "(Now)"},
+              // Align with columns
+              return vbox({ 
+                  separator(), 
+                  hbox({
+                      name_input->Render() | size(WIDTH, EQUAL, 28),
+                      text(" "),
+                      email_input->Render() | flex,
+                      text(" "),
+                      text("(Now)") | size(WIDTH, EQUAL, 16),
+                      text(" "),
+                      (is_snapshot ? text("[Add]") : add_btn->Render()) | size(WIDTH, EQUAL, 10) | center
+                  }), 
+                  separator() 
               });
-              table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
-              table.SelectColumn(1).DecorateCells(flex);
-              table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
-              return vbox({ separator(), hbox({table.Render(), (is_snapshot ? text("[Add]") : add_btn->Render()) | size(WIDTH, EQUAL, 10) | center}), separator() });
           });
           auto close_btn = Button("[Close]", on_exit, ButtonOption::Ascii());
           auto activate_btn = Button("[Activate]", [=] { *show_config = true; }, ButtonOption::Ascii());
-          auto main_container = Container::Vertical({ rows_container, add_row, Container::Horizontal({ activate_btn, close_btn }) });
+          
+          // Layout structure: Header -> Body -> Footer
+          auto main_container = Container::Vertical({ 
+              header_final_renderer,
+              rows_container, 
+              add_row, 
+              Container::Horizontal({ activate_btn, close_btn }) 
+          });
+          
           auto app_renderer = Renderer(main_container, [=, &service] { 
             Elements rows;
             rows.push_back(text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold);
             rows.push_back(separator());
-            auto table = Table({
-                {"Name", "Mail", "Time", "Op"},
-            });
-            table.SelectRow(0).Decorate(bold);
-            table.SelectColumn(0).DecorateCells(size(WIDTH, EQUAL, 28));
-            table.SelectColumn(1).DecorateCells(flex);
-            table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
-            table.SelectColumn(3).DecorateCells(size(WIDTH, EQUAL, 10) | center);
-            rows.push_back(table.Render());
+            
+            // Header is now part of main_container
+            rows.push_back(header_final_renderer->Render());
             rows.push_back(separator());
+
             auto rendered_rows = rows_container->Render();
             if (is_snapshot) rows.push_back(rendered_rows);
             else rows.push_back(rendered_rows | vscroll_indicator | frame | flex);
+            
+            // add_row is rendered by main_container layout usually, but here we are doing manual layout in Renderer.
+            // Wait, if we use Container::Vertical({header, rows, add_row}), then main_container->Render() would render them stacked.
+            // But we are overriding Render() of main_container via app_renderer.
+            // So we must manually call Render() on children or use layout provided by children.
+            // Since we added header/rows/add_row to main_container, we should use them here.
+            
+            // rows.push_back(add_row->Render()); // add_row is already in the components list, but we need to render it here manually since we replaced the default render.
+            // Actually, `add_row` renderer above adds separators.
             rows.push_back(add_row->Render());
             rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), close_btn->Render() }));
             return vbox(std::move(rows)) | border;

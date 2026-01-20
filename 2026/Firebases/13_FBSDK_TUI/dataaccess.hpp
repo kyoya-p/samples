@@ -25,6 +25,11 @@ class FirestoreService {
   void Cleanup();
   void StopAllListeners();
   bool Initialize(const std::string& api_key, int page_size);
+  
+  enum class SortField { Name, Email, Timestamp };
+  enum class SortDirection { Ascending, Descending };
+  void SetSort(SortField field, SortDirection direction);
+
   void LoadMore(int page_size);
   void StartListeningNextPage();
   void RebuildContacts();
@@ -56,6 +61,8 @@ class FirestoreService {
   std::string error_message_;
   std::string current_api_key_;
   int page_size_ = 10;
+  SortField sort_field_ = SortField::Timestamp;
+  SortDirection sort_direction_ = SortDirection::Descending;
   bool has_more_ = true;
   bool is_loading_ = false;
   std::mutex mutex_;
