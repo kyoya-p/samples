@@ -43,7 +43,7 @@ Windows (MSVC):
 Visual Studio の "Developer Command Prompt"を開き、以下のコマンドを実行。
 
 ```powershell
-cmake -S . -B build        # firebase sdkのダウンロードに時間がかかる
+cmake -S . -B build        # firebase sdkのダウンロードに時間がかかる。ファイルサイズ確認しながら待つ
 cmake --build build --config Release -j 4
 ```
 
