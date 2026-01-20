@@ -88,6 +88,9 @@ int main(int argc, char** argv) {
               return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
           });
           auto rows_container = Container::Vertical({});
+          auto selected_row = std::make_shared<int>(-1);
+          auto table_box = std::make_shared<Box>();
+
           auto refresh_ui = [=, &service](const std::vector<Contact>& contacts) {
             rows_container->DetachAllChildren();
             for (size_t i = 0; i < contacts.size(); ++i) {
@@ -109,6 +112,9 @@ int main(int argc, char** argv) {
                 table.SelectColumn(2).DecorateCells(size(WIDTH, EQUAL, 16));
                 auto el = hbox({table.Render(), op | size(WIDTH, EQUAL, 10) | center});
 
+                if (idx == *selected_row) {
+                    return el | inverted;
+                }
                 if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
                 if (!is_snapshot && remove_btn->Focused()) return el | inverted;
                 return el;
@@ -152,8 +158,10 @@ int main(int argc, char** argv) {
             table.SelectColumn(3).DecorateCells(size(WIDTH, EQUAL, 10) | center);
             rows.push_back(table.Render());
             rows.push_back(separator());
-            if (is_snapshot) rows.push_back(rows_container->Render());
-            else rows.push_back(rows_container->Render() | vscroll_indicator | frame | flex);
+            auto rendered_rows = rows_container->Render();
+            *table_box = rendered_rows->box();
+            if (is_snapshot) rows.push_back(rendered_rows);
+            else rows.push_back(rendered_rows | vscroll_indicator | frame | flex);
             rows.push_back(add_row->Render());
             rows.push_back(hbox({ filler(), activate_btn->Render(), text(" "), close_btn->Render() }));
             return vbox(std::move(rows)) | border;
@@ -166,6 +174,17 @@ int main(int argc, char** argv) {
           return CatchEvent(root, [=, &service](Event event) {
               if (event == Event::Custom) { refresh_ui(service.GetContacts()); return true; }
               if (event == Event::Character('q')) { on_exit(); return true; }
+
+              if (event.is_mouse()) {
+                  if (table_box->Contain(event.mouse().x, event.mouse().y)) {
+                      if(event.mouse().button == Mouse::Left && event.mouse().motion == Mouse::Pressed) {
+                          int row = event.mouse().y - table_box->y_min;
+                          *selected_row = row;
+                          return true;
+                      }
+                  }
+              }
+
               if (*show_config) return config_container->OnEvent(event);
               return main_container->OnEvent(event);
           });
