@@ -67,3 +67,11 @@ export API_KEY="your-api-key"
 ./build/FirebaseApp
 ```
 
+# ディレクトリ構成
+- {Root}
+  - src
+    - main
+    - test
+  - build: ビルド用一時ファイル
+    - win.msvc: Windows環境
+    - linux: linux環境

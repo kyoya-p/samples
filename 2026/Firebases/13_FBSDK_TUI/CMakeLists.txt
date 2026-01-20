@@ -7,14 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # --- Firebase C++ SDK Setup ---
-set(FIREBASE_SDK_VERSION "13.3.0")
+# set(FIREBASE_SDK_VERSION "13.3.0")
+message(STATUS "Downloading Firebase C++ SDK version ${FIREBASE_SDK_VERSION}. This may take some time...")
 FetchContent_Declare(
   firebase_sdk
   URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.3.0.zip"
 )
-FetchContent_MakeAvailable(firebase_sdk)
-
-set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}")
+# FetchContent_MakeAvailable(firebase_sdk)
+set(FIREBASE_SDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/firebase_cpp_sdk")
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
 
 if(MSVC)
