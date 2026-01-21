@@ -186,7 +186,7 @@ void FirestoreService::StartListeningNextPage() {
 #else
                     localtime_r(&t, &tm_struct);
 #endif
-                    std::strftime(buf, sizeof(buf), "%m/%d %H:%M", &tm_struct);
+                    std::strftime(buf, sizeof(buf), "%y/%m/%d %H:%M", &tm_struct);
                     c.timestamp = buf;
                 } else {
                     c.timestamp = "N/A";
