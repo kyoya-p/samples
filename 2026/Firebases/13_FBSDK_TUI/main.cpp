@@ -76,9 +76,13 @@ int main(int argc, char** argv) {
           if (!env) env = std::getenv("API_KEY");
           static std::string cur_key = (env != nullptr) ? env : "";
           api_key_input_val = cur_key;
+
+          auto on_connect = [=, &service] { if (service.Initialize(api_key_input_val, 20)) { *show_config = false; } };
+          auto on_cancel_config = [=] { *show_config = false; };
+
           auto key_input = Input(&api_key_input_val, "API Key");
-          auto connect_btn = Button("[Connect]", [=, &service] { if (service.Initialize(api_key_input_val, 20)) { *show_config = false; } }, ButtonOption::Ascii());
-          auto cancel_btn = Button("[Cancel]", [=] { *show_config = false; }, ButtonOption::Ascii());
+          auto connect_btn = Button("[Connect]", on_connect, ButtonOption::Ascii());
+          auto cancel_btn = Button("[Cancel]", on_cancel_config, ButtonOption::Ascii());
           auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
           auto config_renderer = Renderer(config_container, [=, &service] {
               return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
@@ -93,6 +97,16 @@ int main(int argc, char** argv) {
           auto current_sort_dir = std::make_shared<FirestoreService::SortDirection>(FirestoreService::SortDirection::Descending);
 
           auto header_btn = [&](std::string title, FirestoreService::SortField field) {
+              auto option = ButtonOption::Ascii();
+              option.transform = [=](const EntryState& s) {
+                  std::string arrow = "";
+                  if (*current_sort_field == field) {
+                      arrow = (*current_sort_dir == FirestoreService::SortDirection::Ascending) ? "▲" : "▼";
+                  }
+                  auto element = text(title + arrow);
+                  if (s.focused) return element | inverted;
+                  return element;
+              };
               return Button(title, [=, &service] {
                   if (*current_sort_field == field) {
                       *current_sort_dir = (*current_sort_dir == FirestoreService::SortDirection::Ascending) 
@@ -103,7 +117,7 @@ int main(int argc, char** argv) {
                       *current_sort_dir = FirestoreService::SortDirection::Descending;
                   }
                   service.SetSort(*current_sort_field, *current_sort_dir);
-              }, ButtonOption::Ascii());
+              }, option);
           };
 
           auto name_h_btn = header_btn("Name", FirestoreService::SortField::Name);
@@ -119,13 +133,6 @@ int main(int argc, char** argv) {
           });
 
           auto header_final_renderer = Renderer(header_container, [=] {
-               auto get_label = [&](std::string base, FirestoreService::SortField f) {
-                  std::string arrow = "";
-                  if (*current_sort_field == f) {
-                      arrow = (*current_sort_dir == FirestoreService::SortDirection::Ascending) ? "▲" : "▼";
-                  }
-                  return base + arrow;
-               };
                return hbox({
                    name_h_btn->Render() | size(WIDTH, EQUAL, 28) | bold,
                    text(" "),
@@ -196,9 +203,17 @@ int main(int argc, char** argv) {
             }
           };
 
+          auto on_add = [&service] { 
+            if (!n_name.empty()) { 
+                service.AddContact(n_name, n_email); 
+                n_name = GenerateRandomName(); 
+                n_email = GenerateRandomEmail(n_name); 
+            } 
+          };
+
           auto name_input = Input(&n_name, "Name");
           auto email_input = Input(&n_email, "Email");
-          auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
+          auto add_btn = Button("[Add]", on_add, ButtonOption::Ascii());
           auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
           auto add_row = Renderer(add_row_c, [=] {
               // Align with columns
@@ -216,8 +231,18 @@ int main(int argc, char** argv) {
                   separator() 
               });
           });
+
+          auto on_activate = [=] { *show_config = true; };
           auto close_btn = Button("[Close]", on_exit, ButtonOption::Ascii());
-          auto activate_btn = Button("[Activate]", [=] { *show_config = true; }, ButtonOption::Ascii());
+          
+          auto btn_base = Button("", on_activate, ButtonOption::Ascii());
+          auto activate_btn = Renderer(btn_base, [=] {
+              return hbox({
+                  text("["),
+                  text("A") | underlined,
+                  text("ctivate]")
+              }) | (btn_base->Focused() ? inverted : nothing);
+          });
           
           // Layout structure: Header -> Body -> Footer
           auto main_container = Container::Vertical({ 
@@ -248,9 +273,21 @@ int main(int argc, char** argv) {
               return app_renderer->Render();
           });
           refresh_ui(service.GetContacts());
-          return CatchEvent(root, [=, &service](Event event) {
+          return CatchEvent(root, [=, &service, on_add, on_connect, on_cancel_config, on_activate](Event event) {
               if (event == Event::Custom) { refresh_ui(service.GetContacts()); return true; }
-              if (event == Event::Character('q')) { on_exit(); return true; }
+              
+              // Shortcuts
+              if (event == Event::Character('q') || event == Event::Escape) { 
+                  if (*show_config) { on_cancel_config(); return true; }
+                  on_exit(); return true; 
+              }
+              if (event == Event::Character('a')) { // 'a' to Activate
+                  on_activate(); return true;
+              }
+              if (event == Event::Return) {
+                  if (*show_config) { on_connect(); return true; }
+                  on_add(); return true;
+              }
 
               if (*show_config) return config_container->OnEvent(event);
               return main_container->OnEvent(event);

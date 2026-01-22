@@ -6,13 +6,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
 
+# --- Policies ---
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
 # --- Firebase C++ SDK Setup ---
 set(FIREBASE_SDK_VERSION "13.3.0")
 FetchContent_Declare(
   firebase_sdk
   URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.3.0.zip"
 )
-FetchContent_MakeAvailable(firebase_sdk)
+FetchContent_GetProperties(firebase_sdk)
+if(NOT firebase_sdk_POPULATED)
+  FetchContent_Populate(firebase_sdk)
+endif()
 
 set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}")
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
