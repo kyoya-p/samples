@@ -68,6 +68,7 @@ std::string GenerateRandomEmail(const std::string& name) {
 }
 
 int main(int argc, char** argv) {
+  SetupCrashHandler();
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
       Log("Application starting...");
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
             if (api_key_input_val.empty()) {
                 service->Cleanup();
                 *show_config = false;
-            } else if (service->Initialize(api_key_input_val, 20)) { 
+            } else if (service->Initialize(api_key_input_val, 10)) { 
                 *show_config = false; 
             }
           };
@@ -185,7 +186,7 @@ int main(int argc, char** argv) {
               auto contact_time = contact.timestamp;
               int idx = (int)i;
 
-              auto remove_btn = Button("[Remove]", [=] { service->RemoveContact(contact_id); }, ButtonOption::Ascii());
+              auto remove_btn = Button("[Remove]", [=] { service->DeleteContact(contact_id); }, ButtonOption::Ascii());
               
               auto row_renderer = Renderer(remove_btn, [=] {
                 Element op = remove_btn->Render();
@@ -218,7 +219,7 @@ int main(int argc, char** argv) {
                        return true; 
                   }
                   if (idx == *selected_row && (event == Event::Delete || event == Event::Character((char)127))) {
-                      service->RemoveContact(contact_id);
+                      service->DeleteContact(contact_id);
                       return true;
                   }
                   return false;
@@ -239,7 +240,7 @@ int main(int argc, char** argv) {
 
           auto name_input = Input(&n_name, "Name");
           auto email_input = Input(&n_email, "Email");
-          auto add_btn = Button("[Add]", [=] { if (!n_name.empty()) { service->AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
+          auto add_btn = Button("[Add]", [=] { if (!n_name.empty()) { service->AddOrUpdateContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
           auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
           auto add_row = Renderer(add_row_c, [=] {
               // Align with columns
@@ -310,7 +311,7 @@ int main(int argc, char** argv) {
       // However, to match design strictly:
       service = std::make_shared<FirestoreService>([&screen, &started] { if (started) screen.Post(Event::Custom); });
 
-      int nAddr = Terminal::Size().dimy + 5;
+      int nAddr = 10;
       Log("Terminal size obtained.");
       const char* key = std::getenv("FB_API_KEY");
       if (!key) key = std::getenv("API_KEY");

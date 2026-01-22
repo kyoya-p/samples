@@ -13,6 +13,9 @@ void Log(const std::string& message);
 // Helper to capture stack trace
 std::string GetStackTrace();
 
+// Setup crash handler (Windows)
+void SetupCrashHandler();
+
 // Macro to log and throw exception
 #define THROW_LOG(msg) \
     do { \

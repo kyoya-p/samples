@@ -28,13 +28,22 @@ class FirestoreService {
   
   enum class SortField { Name, Email, Timestamp };
   enum class SortDirection { Ascending, Descending };
+  enum class PaginationDirection { Before, After };
+
   void SetSort(SortField field, SortDirection direction);
+
+  void FetchAddressBookList(
+      const firebase::firestore::DocumentSnapshot* start_position,
+      PaginationDirection direction,
+      int limit,
+      SortField sort_key,
+      SortDirection sort_order);
 
   void LoadMore(int page_size);
   void StartListeningNextPage();
   void RebuildContacts();
-  void AddContact(const std::string& name, const std::string& email);
-  void RemoveContact(const std::string& id);
+  void AddOrUpdateContact(const std::string& name, const std::string& email);
+  void DeleteContact(const std::string& id);
 
   std::vector<Contact> GetContacts();
   std::string GetError();

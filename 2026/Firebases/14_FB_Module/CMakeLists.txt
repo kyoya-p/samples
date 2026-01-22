@@ -8,14 +8,14 @@ cmake_policy(SET CMP0135 NEW)
 include(FetchContent)
 
 # --- Firebase C++ SDK Setup ---
-# set(FIREBASE_SDK_VERSION "13.3.0")
+set(FIREBASE_SDK_VERSION "13.3.0")
 message(STATUS "Downloading Firebase C++ SDK version ${FIREBASE_SDK_VERSION}. This may take some time...")
 FetchContent_Declare(
   firebase_sdk
-  URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.3.0.zip"
+  URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip"
 )
-# FetchContent_MakeAvailable(firebase_sdk)
-set(FIREBASE_SDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/firebase_cpp_sdk")
+FetchContent_MakeAvailable(firebase_sdk)
+set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}")
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
 
 if(MSVC)
@@ -99,6 +99,7 @@ FetchContent_Declare(ftxui
 FetchContent_MakeAvailable(ftxui)
 
 add_executable(FirebaseApp src/main.cpp src/dataaccess.cpp src/utils.cpp)
+add_executable(test_dataaccess src/test_dataaccess.cpp src/dataaccess.cpp src/utils.cpp)
 
 # Link Libraries
 if(MSVC)
@@ -107,6 +108,11 @@ if(MSVC)
         ftxui::screen
         ftxui::dom
         ftxui::component
+        ${FIREBASE_LIBS}
+        ${SYSTEM_LIBS}
+    )
+    target_link_libraries(test_dataaccess
+      PRIVATE
         ${FIREBASE_LIBS}
         ${SYSTEM_LIBS}
     )
@@ -124,9 +130,23 @@ else()
         Threads::Threads
         ${SYSTEM_LIBS}
     )
+    target_link_libraries(test_dataaccess
+      PRIVATE
+        ${FIREBASE_LIBS}
+        ${CURL_LIBRARIES}
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ZLIB::ZLIB
+        Threads::Threads
+        ${SYSTEM_LIBS}
+    )
 endif()
 
 target_include_directories(FirebaseApp
+  PRIVATE
+    ${FIREBASE_INCLUDE_DIR}
+)
+target_include_directories(test_dataaccess
   PRIVATE
     ${FIREBASE_INCLUDE_DIR}
 )

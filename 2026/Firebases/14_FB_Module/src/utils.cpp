@@ -24,9 +24,14 @@ void Log(const std::string& message) {
     std::ofstream log_file(GetLogFilename(), std::ios_base::app);
     if (log_file.is_open()) {
         auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::tm tm = *std::localtime(&now);
         char buffer[32];
-        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm);
+        std::tm tm_struct;
+#ifdef _WIN32
+        localtime_s(&tm_struct, &now);
+#else
+        localtime_r(&now, &tm_struct);
+#endif
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_struct);
         
         int pid = 0;
         #ifdef _WIN32
@@ -64,3 +69,19 @@ std::string GetStackTrace() {
 #endif
 }
 
+
+#ifdef _WIN32
+LONG WINAPI CrashHandler(EXCEPTION_POINTERS* /*exceptionInfo*/) {
+    // Force restore console state
+    std::cout << "\x1b[?1049l" << std::flush; // Restore main buffer
+    std::cout << "\x1b[?25h" << std::flush;   // Show cursor
+    std::cerr << "\n[CRASH] Application crashed unexpectedly. Console state restored.\n";
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
+void SetupCrashHandler() {
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(CrashHandler);
+#endif
+}
