@@ -47,7 +47,7 @@ pip install -r requirements.txt
   "mcpServers": {
     "tui-test": {
       "command": "python",
-      "args": ["/home/kyoya/works/samples/2026/Firebases/13_FBSDK_TUI/build/mcp-tui-test/server.py"]
+      "args": ["C:/Users/sharp/works/samples/2026/Firebases/14_FB_Module/build/mcp-tui-test/server.py"]
     },
 ```
 

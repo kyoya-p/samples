@@ -100,44 +100,73 @@ void FirestoreService::LoadMore(int page_size) {
 
 void FirestoreService::StartListeningNextPage() {
     if (!firestore_) return;
+
+    // Determine start position
+    const firebase::firestore::DocumentSnapshot* last_doc_ptr = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!pages_.empty()) {
+            auto& last_page = pages_.back();
+            if (last_page->last_doc.is_valid()) {
+                 last_doc_ptr = &last_page->last_doc;
+            }
+        }
+    }
+
+    FetchAddressBookList(last_doc_ptr, PaginationDirection::After, page_size_, sort_field_, sort_direction_);
+}
+
+void FirestoreService::FetchAddressBookList(
+      const firebase::firestore::DocumentSnapshot* start_position,
+      PaginationDirection direction,
+      int limit,
+      SortField sort_key,
+      SortDirection sort_order) {
     
+    if (!firestore_) return;
+
     size_t page_index;
-    std::string cursor_id = "None";
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        page_index = pages_.size();
+        
+        // Validation for LoadMore scenario
+        if (start_position && pages_.size() > 0) {
+             auto& last_page = pages_.back();
+             if (last_page->has_pending_writes) {
+                Log("Waiting for pending writes before loading more...");
+                return;
+             }
+        }
+    }
     
     std::string field_name;
-    switch(sort_field_) {
+    switch(sort_key) {
         case SortField::Name: field_name = "name"; break;
         case SortField::Email: field_name = "email"; break;
         case SortField::Timestamp: default: field_name = "timestamp"; break;
     }
-    auto direction = (sort_direction_ == SortDirection::Ascending) 
+    
+    // Logic for Before/After direction combined with SortOrder
+    // If we want "After" (Next Page) of Ascending Sort -> Ascending
+    // If we want "After" (Next Page) of Descending Sort -> Descending
+    // If we want "Before" (Prev Page) of Ascending Sort -> Descending (then reverse results) - Not fully implemented here as UI is append-only
+    
+    auto fs_direction = (sort_order == SortDirection::Ascending) 
         ? firebase::firestore::Query::Direction::kAscending 
         : firebase::firestore::Query::Direction::kDescending;
 
-    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy(field_name, direction);
+    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy(field_name, fs_direction);
 
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        page_index = pages_.size();
-        if (page_index > 0) {
-            auto& last_page = pages_.back();
-            if (!last_page->last_doc.is_valid()) {
-                Log("Cannot load next page: Last document of previous page is invalid.");
-                return;
-            }
-            if (last_page->has_pending_writes) {
-                Log("Waiting for pending writes on Page " + std::to_string(page_index-1) + " (DocID: " + last_page->last_doc.id() + ") before loading more...");
-                return;
-            }
-            query = query.StartAfter(last_page->last_doc);
-            cursor_id = last_page->last_doc.id();
-        }
+    std::string cursor_log = "None";
+    if (start_position && start_position->is_valid()) {
+        query = query.StartAfter(*start_position);
+        cursor_log = start_position->id();
     }
 
-    int limit = page_size_;
     query = query.Limit(limit);
     
-    Log("Starting listener for Page " + std::to_string(page_index) + " (Limit: " + std::to_string(limit) + ", Cursor: " + cursor_id + ")");
+    Log("Starting listener for Page " + std::to_string(page_index) + " (Limit: " + std::to_string(limit) + ", Cursor: " + cursor_log + ")");
 
     is_loading_ = true;
     
@@ -150,7 +179,7 @@ void FirestoreService::StartListeningNextPage() {
 
     Log("Invoking query.AddSnapshotListener...");
     page_ptr->registration = query.AddSnapshotListener(
-        [this, page_index, page_ptr](const firebase::firestore::QuerySnapshot& snapshot,
+        [this, page_index, page_ptr, limit](const firebase::firestore::QuerySnapshot& snapshot,
                                     firebase::firestore::Error error, const std::string& error_msg) {
         try {
             if (error != firebase::firestore::Error::kErrorOk) {
@@ -186,7 +215,7 @@ void FirestoreService::StartListeningNextPage() {
 #else
                     localtime_r(&t, &tm_struct);
 #endif
-                    std::strftime(buf, sizeof(buf), "%m/%d %H:%M", &tm_struct);
+                    std::strftime(buf, sizeof(buf), "%y/%m/%d %H:%M", &tm_struct);
                     c.timestamp = buf;
                 } else {
                     c.timestamp = "N/A";
@@ -197,7 +226,7 @@ void FirestoreService::StartListeningNextPage() {
             {
                 std::lock_guard<std::mutex> lock(mutex_);
                 page_ptr->contacts = new_contacts;
-                page_ptr->has_more = (new_contacts.size() >= (size_t)page_size_);
+                page_ptr->has_more = (new_contacts.size() >= (size_t)limit);
                 page_ptr->has_pending_writes = snapshot.metadata().has_pending_writes();
                 if (!new_contacts.empty()) {
                     page_ptr->last_doc = snapshot.documents().back();
@@ -232,7 +261,7 @@ void FirestoreService::RebuildContacts() {
     }
 }
 
-void FirestoreService::AddContact(const std::string& name, const std::string& email) {
+void FirestoreService::AddOrUpdateContact(const std::string& name, const std::string& email) {
     if (!firestore_) return;
     std::unordered_map<std::string, firebase::firestore::FieldValue> data;
     data["name"] = firebase::firestore::FieldValue::String(name);
@@ -241,7 +270,7 @@ void FirestoreService::AddContact(const std::string& name, const std::string& em
     firestore_->Collection("addressbook").Document(name).Set(data);
 }
 
-void FirestoreService::RemoveContact(const std::string& id) {
+void FirestoreService::DeleteContact(const std::string& id) {
     if (!firestore_) return;
     firestore_->Collection("addressbook").Document(id).Delete();
 }

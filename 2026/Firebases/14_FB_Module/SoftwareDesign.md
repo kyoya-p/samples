@@ -10,6 +10,20 @@
       "timestamp": "ServerTimestamp"
     }
     ```
+  
+# モジュール設計
+- アドレス帳リスト取得関数(
+  startPosition, beforeOrAfter, limit, sortKey, sortOrder,
+)
+  - beforeOrAfter: AFTERならstartPositionから昇順に、BEFOREなら逆順に列挙
+  - sortKeyは TIMESTAMP, NAME, EMAIL
+  - 応答: 取得できた時点でスナップショットを返す。非同期(コールバック)
+ 
+- アドレス情報追加更新関数(
+  name, email,
+)
+- アドレス情報削除関数(name)
+
 # 5.2. データ転送
 - **アドレス取得データ単位**
   - Firestoreからのアドレス情報取得は最大10件を上限とする。例えば画面のサイズが25行の場合、3回に分けて取得し、そのうち25件を一画面に表示する。

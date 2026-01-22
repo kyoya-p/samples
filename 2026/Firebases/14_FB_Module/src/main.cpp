@@ -17,6 +17,7 @@
 #ifdef _WIN32
 #include <process.h>
 #include <windows.h>
+#undef RGB
 #else
 #include <unistd.h>
 #endif
@@ -67,9 +68,15 @@ std::string GenerateRandomEmail(const std::string& name) {
 }
 
 int main(int argc, char** argv) {
+  SetupCrashHandler();
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
-      auto build_ui = [&](FirestoreService& service, std::function<void()> on_exit) -> Component {
+      Log("Application starting...");
+      
+      // Use shared_ptr for FirestoreService to ensure safe memory management in lambdas
+      auto service = std::make_shared<FirestoreService>([] {}); // Placeholder callback, will be set later or handled via Event::Custom
+      
+      auto build_ui = [&](std::shared_ptr<FirestoreService> service, std::function<void()> on_exit) -> Component {
           auto show_config = std::make_shared<bool>(false);
           static std::string api_key_input_val = "";
           const char* env = std::getenv("FB_API_KEY");
@@ -77,15 +84,31 @@ int main(int argc, char** argv) {
           static std::string cur_key = (env != nullptr) ? env : "";
           api_key_input_val = cur_key;
 
-          auto on_connect = [=, &service] { if (service.Initialize(api_key_input_val, 20)) { *show_config = false; } };
-          auto on_cancel_config = [=] { *show_config = false; };
+          // Define connect action
+          auto connect_action = [=] {
+            if (api_key_input_val.empty()) {
+                service->Cleanup();
+                *show_config = false;
+            } else if (service->Initialize(api_key_input_val, 10)) { 
+                *show_config = false; 
+            }
+          };
 
-          auto key_input = Input(&api_key_input_val, "API Key");
-          auto connect_btn = Button("[Connect]", on_connect, ButtonOption::Ascii());
-          auto cancel_btn = Button("[Cancel]", on_cancel_config, ButtonOption::Ascii());
+          auto key_input_raw = Input(&api_key_input_val, "API Key");
+          auto key_input = CatchEvent(key_input_raw, [=](Event event) {
+               if (event == Event::Return) {
+                   connect_action();
+                   return true;
+               }
+               return false;
+          });
+
+          auto connect_btn = Button("[Connect]", connect_action, ButtonOption::Ascii());
+          auto cancel_btn = Button("[Cancel]", [=] { *show_config = false; }, ButtonOption::Ascii());
+          
           auto config_container = Container::Vertical({ key_input, Container::Horizontal({ connect_btn, cancel_btn }) | center });
-          auto config_renderer = Renderer(config_container, [=, &service] {
-              return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service.GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
+          auto config_renderer = Renderer(config_container, [=] {
+              return vbox({ text("Configuration") | bold | center, separator(), hbox(text("API Key: "), key_input->Render()) | border, separator(), hbox(connect_btn->Render(), cancel_btn->Render()) | center, text(""), text(service->GetError()) | color(Color::Red) | center }) | center | border | size(WIDTH, GREATER_THAN, 60);
           });
           auto rows_container = Container::Vertical({});
           auto selected_row = std::make_shared<int>(-1);
@@ -96,18 +119,26 @@ int main(int argc, char** argv) {
           auto current_sort_field = std::make_shared<FirestoreService::SortField>(FirestoreService::SortField::Timestamp);
           auto current_sort_dir = std::make_shared<FirestoreService::SortDirection>(FirestoreService::SortDirection::Descending);
 
-          auto header_btn = [&](std::string title, FirestoreService::SortField field) {
-              auto option = ButtonOption::Ascii();
-              option.transform = [=](const EntryState& s) {
-                  std::string arrow = "";
-                  if (*current_sort_field == field) {
-                      arrow = (*current_sort_dir == FirestoreService::SortDirection::Ascending) ? "▲" : "▼";
-                  }
-                  auto element = text(title + arrow);
-                  if (s.focused) return element | inverted;
-                  return element;
-              };
-              return Button(title, [=, &service] {
+          // Header labels managed via shared_ptr to update dynamically
+          auto name_label = std::make_shared<std::string>("Name");
+          auto mail_label = std::make_shared<std::string>("Mail Address");
+          auto time_label = std::make_shared<std::string>("Created At▼"); // Default sort
+
+          auto update_header_labels = [=] {
+              *name_label = "Name";
+              *mail_label = "Mail Address";
+              *time_label = "Created At";
+              
+              std::string arrow = (*current_sort_dir == FirestoreService::SortDirection::Ascending) ? "▲" : "▼";
+              switch (*current_sort_field) {
+                  case FirestoreService::SortField::Name: *name_label += arrow; break;
+                  case FirestoreService::SortField::Email: *mail_label += arrow; break;
+                  case FirestoreService::SortField::Timestamp: *time_label += arrow; break;
+              }
+          };
+
+          auto header_btn = [&](std::shared_ptr<std::string> label, FirestoreService::SortField field) {
+              return Button(label.get(), [=] {
                   if (*current_sort_field == field) {
                       *current_sort_dir = (*current_sort_dir == FirestoreService::SortDirection::Ascending) 
                                           ? FirestoreService::SortDirection::Descending 
@@ -116,20 +147,21 @@ int main(int argc, char** argv) {
                       *current_sort_field = field;
                       *current_sort_dir = FirestoreService::SortDirection::Descending;
                   }
-                  service.SetSort(*current_sort_field, *current_sort_dir);
-              }, option);
+                  service->SetSort(*current_sort_field, *current_sort_dir);
+                  update_header_labels();
+              }, ButtonOption::Ascii());
           };
 
-          auto name_h_btn = header_btn("Name", FirestoreService::SortField::Name);
-          auto mail_h_btn = header_btn("Mail Address", FirestoreService::SortField::Email);
-          auto time_h_btn = header_btn("Created At", FirestoreService::SortField::Timestamp);
+          auto name_h_btn = header_btn(name_label, FirestoreService::SortField::Name);
+          auto mail_h_btn = header_btn(mail_label, FirestoreService::SortField::Email);
+          auto time_h_btn = header_btn(time_label, FirestoreService::SortField::Timestamp);
           auto dummy_op = Renderer([]{ return text("Operation"); });
 
           auto header_container = Container::Horizontal({
-              name_h_btn | size(WIDTH, EQUAL, 28),
-              mail_h_btn | flex,
-              time_h_btn | size(WIDTH, EQUAL, 16),
-              dummy_op   | size(WIDTH, EQUAL, 10)
+              name_h_btn,
+              mail_h_btn,
+              time_h_btn,
+              dummy_op
           });
 
           auto header_final_renderer = Renderer(header_container, [=] {
@@ -144,7 +176,7 @@ int main(int argc, char** argv) {
                });
           });
 
-          auto refresh_ui = [=, &service](const std::vector<Contact>& contacts) {
+          auto refresh_ui = [=](const std::vector<Contact>& contacts) {
             rows_container->DetachAllChildren();
             for (size_t i = 0; i < contacts.size(); ++i) {
               const auto& contact = contacts[i];
@@ -154,9 +186,9 @@ int main(int argc, char** argv) {
               auto contact_time = contact.timestamp;
               int idx = (int)i;
 
-              auto remove_btn = Button("[Remove]", [=, &service] { service.RemoveContact(contact_id); }, ButtonOption::Ascii());
+              auto remove_btn = Button("[Remove]", [=] { service->DeleteContact(contact_id); }, ButtonOption::Ascii());
               
-              auto row_renderer = Renderer(remove_btn, [=, &service] {
+              auto row_renderer = Renderer(remove_btn, [=] {
                 Element op = remove_btn->Render();
                 auto el = hbox({
                     text(contact_name) | size(WIDTH, EQUAL, 28),
@@ -178,7 +210,7 @@ int main(int argc, char** argv) {
                 return el;
               });
 
-              auto row_component = CatchEvent(row_renderer, [=, &service](Event event) {
+              auto row_component = CatchEvent(row_renderer, [=](Event event) {
                   if (event.is_mouse() && event.mouse().button == Mouse::Left && event.mouse().motion == Mouse::Pressed) {
                        *selected_row = idx;
                        // Copy data to input fields
@@ -187,7 +219,7 @@ int main(int argc, char** argv) {
                        return true; 
                   }
                   if (idx == *selected_row && (event == Event::Delete || event == Event::Character((char)127))) {
-                      service.RemoveContact(contact_id);
+                      service->DeleteContact(contact_id);
                       return true;
                   }
                   return false;
@@ -195,25 +227,20 @@ int main(int argc, char** argv) {
               
               rows_container->Add(row_component);
             }
-            if (service.HasMore()) {
-                auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
-                rows_container->Add(std::make_shared<VisibilityObserver>(loader, [&service] { service.LoadMore(20); }));
-            } else {
-                 rows_container->Add(Renderer([] { return hbox({ filler(), text("last of data") | color(Color::GrayDark), filler() }); }));
+            if (service->IsConnected()) {
+                if (service->HasMore()) {
+                    auto loader = Renderer([] { return hbox({ filler(), text("Loading...") | color(Color::Yellow), filler() }); });
+                    // Load more items (10 items per fetch as per UI spec)
+                    rows_container->Add(std::make_shared<VisibilityObserver>(loader, [=] { service->LoadMore(10); }));
+                } else {
+                    rows_container->Add(Renderer([] { return hbox({ filler(), text("last of data") | color(Color::GrayDark), filler() }); }));
+                }
             }
-          };
-
-          auto on_add = [&service] { 
-            if (!n_name.empty()) { 
-                service.AddContact(n_name, n_email); 
-                n_name = GenerateRandomName(); 
-                n_email = GenerateRandomEmail(n_name); 
-            } 
           };
 
           auto name_input = Input(&n_name, "Name");
           auto email_input = Input(&n_email, "Email");
-          auto add_btn = Button("[Add]", on_add, ButtonOption::Ascii());
+          auto add_btn = Button("[Add]", [=] { if (!n_name.empty()) { service->AddOrUpdateContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
           auto add_row_c = Container::Horizontal({name_input, email_input, add_btn});
           auto add_row = Renderer(add_row_c, [=] {
               // Align with columns
@@ -231,18 +258,8 @@ int main(int argc, char** argv) {
                   separator() 
               });
           });
-
-          auto on_activate = [=] { *show_config = true; };
           auto close_btn = Button("[Close]", on_exit, ButtonOption::Ascii());
-          
-          auto btn_base = Button("", on_activate, ButtonOption::Ascii());
-          auto activate_btn = Renderer(btn_base, [=] {
-              return hbox({
-                  text("["),
-                  text("A") | underlined,
-                  text("ctivate]")
-              }) | (btn_base->Focused() ? inverted : nothing);
-          });
+          auto activate_btn = Button("[Activate]", [=] { *show_config = true; }, ButtonOption::Ascii());
           
           // Layout structure: Header -> Body -> Footer
           auto main_container = Container::Vertical({ 
@@ -252,9 +269,9 @@ int main(int argc, char** argv) {
               Container::Horizontal({ activate_btn, close_btn }) 
           });
           
-          auto app_renderer = Renderer(main_container, [=, &service] { 
+          auto app_renderer = Renderer(main_container, [=] { 
             Elements rows;
-            rows.push_back(text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold);
+            rows.push_back(text(service->IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold);
             rows.push_back(separator());
             
             // Header is now part of main_container
@@ -272,38 +289,46 @@ int main(int argc, char** argv) {
               if (*show_config) return dbox({ app_renderer->Render() | color(Color::GrayDark), config_renderer->Render() | center });
               return app_renderer->Render();
           });
-          refresh_ui(service.GetContacts());
-          return CatchEvent(root, [=, &service, on_add, on_connect, on_cancel_config, on_activate](Event event) {
-              if (event == Event::Custom) { refresh_ui(service.GetContacts()); return true; }
-              
-              // Shortcuts
-              if (event == Event::Character('q') || event == Event::Escape) { 
-                  if (*show_config) { on_cancel_config(); return true; }
-                  on_exit(); return true; 
-              }
-              if (event == Event::Character('a')) { // 'a' to Activate
-                  on_activate(); return true;
-              }
-              if (event == Event::Return) {
-                  if (*show_config) { on_connect(); return true; }
-                  on_add(); return true;
-              }
+          
+          refresh_ui(service->GetContacts());
+          
+          return CatchEvent(root, [=](Event event) {
+              if (event == Event::Custom) { refresh_ui(service->GetContacts()); return true; }
+              if (event == Event::Character('q')) { on_exit(); return true; }
+              if (!*show_config && event == Event::Character('a')) { *show_config = true; return true; }
 
               if (*show_config) return config_container->OnEvent(event);
               return main_container->OnEvent(event);
           });
       };
 
-      auto screen = ScreenInteractive::Fullscreen();
+      auto screen = ScreenInteractive::FixedSize(120, 40);
       std::atomic<bool> started{false};
-      FirestoreService service([&screen, &started] { if (started) screen.Post(Event::Custom); });
-      int nAddr = Terminal::Size().dimy + 5;
+      
+      // Update service callback to post event to screen
+      // We need to use a weak_ptr or raw pointer to screen/started here carefully, 
+      // but since main scope outlives service (in this structure), reference capture is acceptable for the main scope variables.
+      // However, to match design strictly:
+      service = std::make_shared<FirestoreService>([&screen, &started] { if (started) screen.Post(Event::Custom); });
+
+      int nAddr = 10;
+      Log("Terminal size obtained.");
       const char* key = std::getenv("FB_API_KEY");
       if (!key) key = std::getenv("API_KEY");
-      if (key) service.Initialize(key, nAddr);
+      if (key) service->Initialize(key, nAddr);
+      
       auto root = build_ui(service, screen.ExitLoopClosure());
       started = true;
+      Log("UI built, starting loop...");
       screen.Loop(root);
-  } catch (...) { return 1; }
+  } catch (const std::exception& e) {
+      Log(std::string("Caught exception: ") + e.what());
+      Log(GetStackTrace());
+      return 1;
+  } catch (...) {
+      Log("Caught unknown exception.");
+      Log(GetStackTrace());
+      return 1;
+  }
   return 0;
 }
