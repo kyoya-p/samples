@@ -84,6 +84,22 @@
             width: 200px;
             outline: none;
         }
+        select {
+            background-color: #3c4043;
+            color: white;
+            border: none;
+            border-bottom: 1px solid #8ab4f8;
+            font-family: inherit;
+            font-size: 14px;
+            width: 200px;
+            padding: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+        select option {
+            background-color: #202124;
+            color: white;
+        }
         .click-effect {
             position: absolute;
             width: 20px;
@@ -107,7 +123,11 @@
         <div id="infoOverlay"></div>
         <div id="titleContainer">
             <span class="material-icons" style="font-size: 18px; color: #8ab4f8;">title</span>
-            <input type="text" id="titleInput" placeholder="Target Window Title Filter">
+            <select id="windowSelect">
+                <option value="">Select Target Window...</option>
+            </select>
+            <button id="refreshBtn" title="ウィンドウ一覧を更新" style="background: none; border: none; color: #8ab4f8; cursor: pointer; padding: 0; display: flex; align-items: center;"><span class="material-icons" style="font-size: 18px;">refresh</span></button>
+            <input type="text" id="titleInput" placeholder="Manual Filter" style="display:none;"> 
         </div>
         <button id="startBtn" title="画面キャプチャを開始" style="position: absolute; top: 20px; right: 20px; z-index: 10;"><span class="material-icons">screen_share</span></button>
         <video id="video" autoplay playsinline></video>
@@ -115,26 +135,65 @@
 
     <script>
         const startBtn = document.getElementById('startBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
         const videoElement = document.getElementById('video');
         const videoContainer = document.getElementById('videoContainer');
         const infoOverlay = document.getElementById('infoOverlay');
         const titleInput = document.getElementById('titleInput');
+        const windowSelect = document.getElementById('windowSelect');
         let ws;
 
         function initWS() {
             ws = new WebSocket(`ws://${window.location.host}`);
-            ws.onopen = () => console.log('Connected to server');
+            ws.onopen = () => {
+                console.log('Connected to server');
+                requestWindowList();
+            };
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'windowInfo') {
                     infoOverlay.style.display = 'block';
                     infoOverlay.innerText = `Pos: ${data.left}, ${data.top}\nSize: ${data.width} x ${data.height}`;
+                } else if (data.type === 'windowList') {
+                    updateWindowList(data.list);
                 }
             };
             ws.onclose = () => setTimeout(initWS, 1000);
         }
         initWS();
 
+        function requestWindowList() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'getWindowList' }));
+            }
+        }
+
+        function updateWindowList(titles) {
+            const current = windowSelect.value;
+            windowSelect.innerHTML = '<option value="">Select Target Window...</option>';
+            titles.forEach(title => {
+                const option = document.createElement('option');
+                option.value = title;
+                option.text = title;
+                if (title.length > 30) {
+                    option.text = title.substring(0, 30) + '...';
+                }
+                windowSelect.appendChild(option);
+            });
+            if (current) windowSelect.value = current;
+        }
+
+        // Dropdown selection updates the internal filter value used by click events
+        windowSelect.addEventListener('change', () => {
+            titleInput.value = windowSelect.value;
+        });
+        
+        refreshBtn.addEventListener('click', requestWindowList);
+        
+        // Use titleInput.value (which is set by select) for sending messages
+        // But we need to ensure titleInput is defined in the click handlers logic below? 
+        // The original code used titleInput.value directly.
+        
         startBtn.addEventListener('click', async () => {
             try {
                 const captureStream = await navigator.mediaDevices.getDisplayMedia({
@@ -142,14 +201,7 @@
                     audio: false
                 });
                 videoElement.srcObject = captureStream;
-                const videoTrack = captureStream.getVideoTracks()[0];
-                if (videoTrack.getSettings().displaySurface === 'window') {
-                    // Extract title from label (Browser-dependent, so make it robust/editable)
-                    // Common formats: "Window: Title", "Window (Title)", "Title"
-                    let label = videoTrack.label;
-                    let title = label.replace(/^Window: /, '').replace(/^Window \((.*)\)$/, '$1');
-                    titleInput.value = title;
-                }
+                // Auto-title extraction removed to favor manual selection via dropdown
             } catch (err) {
                 console.error(err);
             }

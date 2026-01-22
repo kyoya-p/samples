@@ -121,9 +121,9 @@ function Set-MouseAndClick([float]$relX, [float]$relY, [string]$title, [string]$
                 [User32]::PostMessage($targetHandle, 0x0202, [IntPtr]0, $lParam) | Out-Null
                 
                 # Debug: Physical click fallback
-                [User32]::mouse_event(0x8001, ($targetScreenX * 65535 / 2560), ($targetScreenY * 65535 / 1440), 0, 0)
-                [User32]::mouse_event(0x0002, 0, 0, 0, 0)
-                [User32]::mouse_event(0x0004, 0, 0, 0, 0)
+                #[User32]::mouse_event(0x8001, ($targetScreenX * 65535 / 2560), ($targetScreenY * 65535 / 1440), 0, 0)
+                #[User32]::mouse_event(0x0002, 0, 0, 0, 0)
+                #[User32]::mouse_event(0x0004, 0, 0, 0, 0)
             } elseif ($type -eq 'move') {
                 [User32]::PostMessage($targetHandle, 0x0200, [IntPtr]0, $lParam) | Out-Null
             }
@@ -146,43 +146,53 @@ function Set-MouseAndClick([float]$relX, [float]$relY, [string]$title, [string]$
             msg = "Window not found, ignoring action"
             title = $title
         }
-        Write-Output (ConvertTo-Json $debug -Compress)
-    }
-}
-`;
-
-ps.stdin.write(initScript + "\n");
-
-const wss = new WebSocketServer({ server });
-
-ps.stdout.on('data', (data) => {
-    const output = data.toString();
-    console.log('PS Output:', output);
-    const lines = output.split('\n');
-    lines.forEach(line => {
-        if (line.trim().startsWith('{')) {
-            wss.clients.forEach(client => {
-                if (client.readyState === 1) {
-                    client.send(line.trim());
+                    Write-Output (ConvertTo-Json $debug -Compress)
+            }
+        }
+        
+        function Get-WindowList {
+            $windows = Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object -ExpandProperty MainWindowTitle | Sort-Object -Unique
+            $response = @{
+                type = "windowList"
+                list = $windows
+            }
+            Write-Output (ConvertTo-Json $response -Compress)
+        }
+        `;
+        
+        ps.stdin.write(initScript + "\n");
+        
+        const wss = new WebSocketServer({ server });
+        
+        ps.stdout.on('data', (data) => {
+            const output = data.toString();
+            console.log('PS Output:', output);
+            const lines = output.split('\n');
+            lines.forEach(line => {
+                if (line.trim().startsWith('{')) {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === 1) {
+                            client.send(line.trim());
+                        }
+                    });
                 }
             });
-        }
-    });
-});
-
-wss.on('connection', (ws) => {
-    console.log('Client connected');
-    ws.on('message', (message) => {
-        try {
-            const data = JSON.parse(message);
-            if (data.type === 'click' || data.type === 'move') {
-                const title = data.title ? `'${data.title.replace(/'/g, "''")}'` : '$null';
-                ps.stdin.write(`Set-MouseAndClick -relX ${data.x} -relY ${data.y} -title ${title} -type '${data.type}'\n`);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    });
-});
-
+        });
+        
+        wss.on('connection', (ws) => {
+            console.log('Client connected');
+            ws.on('message', (message) => {
+                try {
+                    const data = JSON.parse(message);
+                    if (data.type === 'click' || data.type === 'move') {
+                        const title = data.title ? `'${data.title.replace(/'/g, "''")}'` : '$null';
+                        ps.stdin.write(`Set-MouseAndClick -relX ${data.x} -relY ${data.y} -title ${title} -type '${data.type}'\n`);
+                    } else if (data.type === 'getWindowList') {
+                        ps.stdin.write("Get-WindowList\n");
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+        });
 process.on('exit', () => ps.kill());
