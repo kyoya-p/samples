@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.14) # FetchContent MakeAvailable needs 3.14+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(FirebaseTuiSample LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -15,7 +16,7 @@ FetchContent_Declare(
   URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_${FIREBASE_SDK_VERSION}.zip"
 )
 FetchContent_MakeAvailable(firebase_sdk)
-set(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}")
+get_filename_component(FIREBASE_SDK_DIR "${firebase_sdk_SOURCE_DIR}" ABSOLUTE)
 set(FIREBASE_INCLUDE_DIR "${FIREBASE_SDK_DIR}/include")
 
 if(MSVC)
@@ -99,7 +100,6 @@ FetchContent_Declare(ftxui
 FetchContent_MakeAvailable(ftxui)
 
 add_executable(FirebaseApp src/main.cpp src/dataaccess.cpp src/utils.cpp)
-add_executable(test_dataaccess src/test_dataaccess.cpp src/dataaccess.cpp src/utils.cpp)
 
 # Link Libraries
 if(MSVC)
@@ -108,11 +108,6 @@ if(MSVC)
         ftxui::screen
         ftxui::dom
         ftxui::component
-        ${FIREBASE_LIBS}
-        ${SYSTEM_LIBS}
-    )
-    target_link_libraries(test_dataaccess
-      PRIVATE
         ${FIREBASE_LIBS}
         ${SYSTEM_LIBS}
     )
@@ -130,23 +125,9 @@ else()
         Threads::Threads
         ${SYSTEM_LIBS}
     )
-    target_link_libraries(test_dataaccess
-      PRIVATE
-        ${FIREBASE_LIBS}
-        ${CURL_LIBRARIES}
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ZLIB::ZLIB
-        Threads::Threads
-        ${SYSTEM_LIBS}
-    )
 endif()
 
 target_include_directories(FirebaseApp
-  PRIVATE
-    ${FIREBASE_INCLUDE_DIR}
-)
-target_include_directories(test_dataaccess
   PRIVATE
     ${FIREBASE_INCLUDE_DIR}
 )
