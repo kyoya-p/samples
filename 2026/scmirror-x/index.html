@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Capture Mirror</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #202124;
+            color: white;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #000;
+        }
+        button {
+            padding: 12px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: rgba(138, 180, 248, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #202124;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        button:hover {
+            background-color: rgba(174, 203, 250, 0.9);
+            transform: scale(1.1);
+        }
+        #infoOverlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        #titleContainer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+        #titleInput {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #8ab4f8;
+            color: white;
+            font-family: inherit;
+            font-size: 14px;
+            width: 200px;
+            outline: none;
+        }
+        .click-effect {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #8ab4f8;
+            border-radius: 50%;
+            background-color: rgba(138, 180, 248, 0.3);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: click-ripple 0.4s ease-out forwards;
+            z-index: 20;
+        }
+        @keyframes click-ripple {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="videoContainer">
+        <div id="infoOverlay"></div>
+        <div id="titleContainer">
+            <span class="material-icons" style="font-size: 18px; color: #8ab4f8;">title</span>
+            <input type="text" id="titleInput" placeholder="Target Window Title Filter">
+        </div>
+        <button id="startBtn" title="画面キャプチャを開始" style="position: absolute; top: 20px; right: 20px; z-index: 10;"><span class="material-icons">screen_share</span></button>
+        <video id="video" autoplay playsinline></video>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const videoElement = document.getElementById('video');
+        const videoContainer = document.getElementById('videoContainer');
+        const infoOverlay = document.getElementById('infoOverlay');
+        const titleInput = document.getElementById('titleInput');
+        let ws;
+
+        function initWS() {
+            ws = new WebSocket(`ws://${window.location.host}`);
+            ws.onopen = () => console.log('Connected to server');
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'windowInfo') {
+                    infoOverlay.style.display = 'block';
+                    infoOverlay.innerText = `Pos: ${data.left}, ${data.top}\nSize: ${data.width} x ${data.height}`;
+                }
+            };
+            ws.onclose = () => setTimeout(initWS, 1000);
+        }
+        initWS();
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                const captureStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { displaySurface: "window" },
+                    audio: false
+                });
+                videoElement.srcObject = captureStream;
+                const videoTrack = captureStream.getVideoTracks()[0];
+                if (videoTrack.getSettings().displaySurface === 'window') {
+                    // Extract title from label (Browser-dependent, so make it robust/editable)
+                    // Common formats: "Window: Title", "Window (Title)", "Title"
+                    let label = videoTrack.label;
+                    let title = label.replace(/^Window: /, '').replace(/^Window \((.*)\)$/, '$1');
+                    titleInput.value = title;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function showClickEffect(x, y) {
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.style.left = `${x}px`;
+            effect.style.top = `${y}px`;
+            videoContainer.appendChild(effect);
+            setTimeout(() => effect.remove(), 400);
+        }
+
+        videoElement.addEventListener('click', (e) => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            showClickEffect(e.clientX, e.clientY);
+
+            const rect = videoElement.getBoundingClientRect();
+            const videoRatio = videoElement.videoWidth / videoElement.videoHeight;
+            const elementRatio = rect.width / rect.height;
+
+            let actualWidth, actualHeight, offsetX, offsetY;
+            if (elementRatio > videoRatio) {
+                actualHeight = rect.height;
+                actualWidth = rect.height * videoRatio;
+                offsetX = (rect.width - actualWidth) / 2;
+                offsetY = 0;
+            } else {
+                actualWidth = rect.width;
+                actualHeight = rect.width / videoRatio;
+                offsetX = 0;
+                offsetY = (rect.height - actualHeight) / 2;
+            }
+
+            const relX = (e.clientX - rect.left - offsetX) / actualWidth;
+            const relY = (e.clientY - rect.top - offsetY) / actualHeight;
+
+            console.log(`Click: client(${e.clientX}, ${e.clientY}) -> rel(${relX}, ${relY})`);
+
+            if (Number.isFinite(relX) && Number.isFinite(relY) && relX >= 0 && relX <= 1 && relY >= 0 && relY <= 1) {
+                ws.send(JSON.stringify({ type: 'click', x: relX, y: relY, title: titleInput.value }));
+            }
+        });
+
+        videoElement.addEventListener('mousemove', (e) => {
+            const rect = videoElement.getBoundingClientRect();
+            const videoRatio = videoElement.videoWidth / videoElement.videoHeight;
+            const elementRatio = rect.width / rect.height;
+
+            let actualWidth, actualHeight, offsetX, offsetY;
+            if (elementRatio > videoRatio) {
+                actualHeight = rect.height;
+                actualWidth = rect.height * videoRatio;
+                offsetX = (rect.width - actualWidth) / 2;
+                offsetY = 0;
+            } else {
+                actualWidth = rect.width;
+                actualHeight = rect.width / videoRatio;
+                offsetX = 0;
+                offsetY = (rect.height - actualHeight) / 2;
+            }
+
+            const relX = (e.clientX - rect.left - offsetX) / actualWidth;
+            const relY = (e.clientY - rect.top - offsetY) / actualHeight;
+
+            if (Number.isFinite(relX) && Number.isFinite(relY) && relX >= 0 && relX <= 1 && relY >= 0 && relY <= 1) {
+                const pxX = Math.round(relX * videoElement.videoWidth);
+                const pxY = Math.round(relY * videoElement.videoHeight);
+                document.title = `${pxX} x ${pxY} px (${videoElement.videoWidth}x${videoElement.videoHeight})`;
+                
+                // マウス移動イベントを送信
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'move', x: relX, y: relY, title: titleInput.value }));
+                }
+            } else {
+                document.title = 'Screen Capture Mirror';
+            }
+        });
+
+        videoElement.addEventListener('mouseleave', () => {
+            document.title = 'Screen Capture Mirror';
+        });
+    </script>
+</body>
+</html>
