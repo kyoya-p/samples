@@ -1,0 +1,14 @@
+{
+  "name": "scmirror3",
+  "version": "1.0.0",
+  "description": "Screen Capture Mirror v3",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "ws": "^8.19.0"
+  }
+}

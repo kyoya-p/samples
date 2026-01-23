@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Precision Tester</title>
+    <style>
+        body {
+            margin: 0; padding: 0; background: #1a1a1a; color: #0f0;
+            font-family: 'Courier New', monospace; overflow: hidden; display: flex; height: 100vh;
+        }
+        #canvas-container {
+            flex-grow: 1; position: relative; cursor: crosshair;
+            background-image: linear-gradient(rgba(0,255,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,0,0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        canvas { display: block; outline: none; }
+        #sidebar {
+            width: 300px; background: #222; border-left: 2px solid #0f0;
+            padding: 10px; overflow-y: auto; font-size: 12px; z-index: 10;
+        }
+        .log-entry { border-bottom: 1px solid #444; padding: 5px 0; word-break: break-all; }
+        button { background: #0f0; color: #000; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; }
+        .kb-info { color: #ff0; margin-top: 10px; border: 1px dashed #444; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="mainCanvas" tabindex="0"></canvas>
+    </div>
+    <div id="sidebar">
+        <h2>Event Log</h2>
+        <button onclick="clearLogs()">Clear All</button>
+        <div id="live-coord" style="font-size: 18px; margin: 10px 0; color: #ff0;">X: 0, Y: 0</div>
+        <div class="kb-info" id="kbStatus">Click canvas or input to focus</div>
+        <input type="text" id="textInput" placeholder="Input 1..." style="width: 90%; background: #333; color: #fff; border: 1px solid #0f0; margin-top: 10px; padding: 5px;">
+        <input type="text" id="textInput2" placeholder="Input 2..." style="width: 90%; background: #333; color: #fff; border: 1px solid #0f0; margin-top: 10px; padding: 5px;">
+        <div id="logList"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const container = document.getElementById('canvas-container');
+        const ctx = canvas.getContext('2d');
+        const logList = document.getElementById('logList');
+        const liveCoord = document.getElementById('live-coord');
+        const kbStatus = document.getElementById('kbStatus');
+        const inputs = [
+            document.getElementById('textInput'),
+            document.getElementById('textInput2')
+        ];
+
+        let markers = [];
+        let currentMouse = { x: 0, y: 0, active: false };
+
+        function resize() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function addLog(msg, type) {
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `[${time}] <b>${type.toUpperCase()}</b><br>${msg}`;
+            logList.insertBefore(entry, logList.firstChild);
+        }
+
+        function drawMarker(x, y, color, label) {
+            ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = color; ctx.fill();
+            ctx.beginPath(); ctx.moveTo(x - 15, y); ctx.lineTo(x + 15, y); ctx.moveTo(x, y - 15); ctx.lineTo(x, y + 15);
+            ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke();
+            if (label) { ctx.fillStyle = color; ctx.fillText(`(${x}, ${y})`, x + 8, y - 8); }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            markers.forEach(m => drawMarker(m.x, m.y, '#f0f', true));
+            if (currentMouse.active) {
+                drawMarker(currentMouse.x, currentMouse.y, '#ff0', true);
+                liveCoord.innerText = `X: ${currentMouse.x}, Y: ${currentMouse.y}`;
+            }
+            if (document.activeElement === canvas) {
+                ctx.strokeStyle = '#0f0'; ctx.lineWidth = 2; ctx.strokeRect(2, 2, canvas.width-4, canvas.height-4);
+            }
+            requestAnimationFrame(render);
+        }
+        render();
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            currentMouse.x = Math.round(e.clientX - rect.left);
+            currentMouse.y = Math.round(e.clientY - rect.top);
+            currentMouse.active = true;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const coords = { x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) };
+            markers.push(coords);
+            addLog(`X: ${coords.x}, Y: ${coords.y}`, 'click');
+            canvas.focus();
+        });
+
+        canvas.addEventListener('mouseleave', () => currentMouse.active = false);
+        
+        canvas.addEventListener('keydown', (e) => {
+            addLog(`Key: ${e.key} (Code: ${e.keyCode})`, 'keydown');
+            kbStatus.innerText = `Last Key: ${e.key}`;
+        });
+
+        canvas.addEventListener('focus', () => kbStatus.innerText = 'Canvas Focused (KB Active)');
+        canvas.addEventListener('blur', () => kbStatus.innerText = 'Click canvas or input to focus');
+
+        textInput.addEventListener('keydown', (e) => {
+            addLog(`Input Key: ${e.key}`, 'input-keydown');
+            kbStatus.innerText = `Input Last Key: ${e.key}`;
+        });
+        textInput.addEventListener('input', (e) => {
+            addLog(`Val: ${e.target.value}`, 'input-change');
+        });
+        textInput.addEventListener('focus', () => kbStatus.innerText = 'Input Focused');
+
+        function clearLogs() { logList.innerHTML = ''; markers = []; }
+    </script>
+</body>
+</html>

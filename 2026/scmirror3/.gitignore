@@ -1,0 +1,4 @@
+/.idea/
+/.playwright-mcp/
+/node_modules/
+/*.log
