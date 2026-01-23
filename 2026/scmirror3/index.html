@@ -224,14 +224,13 @@
                 const absX = Math.round(rel.x * (screenWidth || videoElement.videoWidth));
                 const absY = Math.round(rel.y * (screenHeight || videoElement.videoHeight));
                 
-                infoOverlay.innerText = `${absX}, ${absY}`;
                 document.title = `${absX}, ${absY}`;
                 
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'move', x: rel.x, y: rel.y, title: titleInput.value }));
                 }
             } else {
-                infoOverlay.innerText = '';
+                document.title = 'Screen Capture Mirror v3';
             }
         });
 

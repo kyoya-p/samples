@@ -92,16 +92,14 @@ $r = Get-ScreenRect;
 $w = $r.Right; $hT = $r.Bottom;
 $sx = [int]($w*${data.x});
 $sy = [int]($hT*${data.y});
-$t = Get-TargetGlobal $sx $sy;
-if($t.h){
-  ${data.type === 'click' ? 
-    `Post-Msg $t.h 0x0201 1 $t.l; Post-Msg $t.h 0x0202 0 $t.l;` : 
-    `Post-Msg $t.h 0x0200 0 $t.l;`
+  $t = Get-TargetGlobal $sx $sy;
+  if($t.h){
+    ${data.type === 'click' ? 
+      `Post-Msg $t.h 0x0201 1 $t.l; Post-Msg $t.h 0x0202 0 $t.l; Write-Output (ConvertTo-Json @{type="windowInfo";left=0;top=0;width=$w;height=$hT} -Compress)` : 
+      `Post-Msg $t.h 0x0200 0 $t.l;`
+    }
   }
-}
-Write-Output (ConvertTo-Json @{type="windowInfo";left=0;top=0;width=$w;height=$hT} -Compress)
-`;
-                }
+`;                }
                 ps.stdin.write(cmd.replace(/\n/g, ' ') + "\n");
             } else if (data.type === 'key') {
                 const key = data.key.replace(/'/g, "''");
