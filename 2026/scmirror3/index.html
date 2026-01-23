@@ -184,6 +184,7 @@
         }
 
         let screenWidth = 0, screenHeight = 0;
+        let lastTargetInfo = "";
 
         function initWS() {
             ws = new WebSocket(`ws://${window.location.host}`);
@@ -197,6 +198,13 @@
                     screenHeight = data.height;
                     infoOverlay.style.display = 'block';
                     infoOverlay.innerText = `Pos: ${data.left}, ${data.top}\nSize: ${data.width} x ${data.height}`;
+                    if (data.info) {
+                        const infoStr = `${data.info.title || '(No Title)'} [${data.info.class || ''}]`;
+                        if (infoStr !== lastTargetInfo) {
+                            addEventLog(`Target: ${infoStr}`);
+                            lastTargetInfo = infoStr;
+                        }
+                    }
                 }
             };
             ws.onclose = () => setTimeout(initWS, 1000);
@@ -263,6 +271,8 @@
                 const absX = Math.round(rel.x * (screenWidth || videoElement.videoWidth));
                 const absY = Math.round(rel.y * (screenHeight || videoElement.videoHeight));
                 addEventLog(`Click: ${absX}, ${absY}`);
+                // Clear lastTargetInfo to ensure the next windowInfo message from this click is logged
+                lastTargetInfo = "";
                 ws.send(JSON.stringify({ type: 'click', x: rel.x, y: rel.y, title: titleInput.value }));
             }
         });

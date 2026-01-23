@@ -45,7 +45,7 @@ const wss = new WebSocketServer({ server });
 
 ps.stdout.on('data', (data) => {
     const output = data.toString();
-    console.log('PS Output:', output.trim());
+    console.log('PS Raw Output:', output);
     const lines = output.split('\n');
     lines.forEach(line => {
         if (line.trim().startsWith('{')) {
@@ -64,11 +64,13 @@ wss.on('connection', (ws) => {
         try {
             const data = JSON.parse(message);
             const titleRaw = data.title;
-            const title = titleRaw ? `'${titleRaw.replace(/'/g, "''")}'` : '$null';
+            // Treat "screen:..." labels as full screen mode
+            const isFullScreen = !titleRaw || titleRaw.startsWith('screen:');
+            const title = !isFullScreen ? `'${titleRaw.replace(/'/g, "''")}'` : '$null';
 
             if (data.type === 'click' || data.type === 'move') {
                 let cmd;
-                if (titleRaw) {
+                if (!isFullScreen) {
                     // Specific Window Mode
                     cmd = `
 $h = Get-Hwnd ${title};
@@ -82,7 +84,7 @@ if($h){
     `Post-Msg $t.h 0x0201 1 $t.l; Post-Msg $t.h 0x0202 0 $t.l;` : 
     `Post-Msg $t.h 0x0200 0 $t.l;`
   }
-  Write-Output (ConvertTo-Json @{type="windowInfo";left=$r.Left;top=$r.Top;width=$w;height=$hT} -Compress)
+  Write-Output (ConvertTo-Json @{type="windowInfo";left=$r.Left;top=$r.Top;width=$w;height=$hT;info=$t.info} -Compress)
 }
 `;
                 } else {
@@ -95,9 +97,10 @@ $sy = [int]($hT*${data.y});
   $t = Get-TargetGlobal $sx $sy;
   if($t.h){
     ${data.type === 'click' ? 
-      `Post-Msg $t.h 0x0201 1 $t.l; Post-Msg $t.h 0x0202 0 $t.l; Write-Output (ConvertTo-Json @{type="windowInfo";left=0;top=0;width=$w;height=$hT} -Compress)` : 
+      `Post-Msg $t.h 0x0201 1 $t.l; Post-Msg $t.h 0x0202 0 $t.l;` : 
       `Post-Msg $t.h 0x0200 0 $t.l;`
     }
+    Write-Output (ConvertTo-Json @{type="windowInfo";left=0;top=0;width=$w;height=$hT;info=$t.info} -Compress)
   }
 `;                }
                 ps.stdin.write(cmd.replace(/\n/g, ' ') + "\n");
