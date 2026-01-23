@@ -2,3 +2,5 @@
 /.playwright-mcp/
 /node_modules/
 /*.log
+/*.out
+/*.err
