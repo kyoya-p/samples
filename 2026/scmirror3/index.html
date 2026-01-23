@@ -160,7 +160,7 @@
         startBtn.addEventListener('click', async () => {
             try {
                 const captureStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { displaySurface: "window" },
+                    video: { displaySurface: "monitor" },
                     audio: false
                 });
                 videoElement.srcObject = captureStream;
