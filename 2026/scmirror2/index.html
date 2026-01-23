@@ -127,7 +127,7 @@
                 <option value="">Select Target Window...</option>
             </select>
             <button id="refreshBtn" title="ウィンドウ一覧を更新" style="background: none; border: none; color: #8ab4f8; cursor: pointer; padding: 0; display: flex; align-items: center;"><span class="material-icons" style="font-size: 18px;">refresh</span></button>
-            <input type="text" id="titleInput" placeholder="Manual Filter" style="display:none;"> 
+            <input type="text" id="titleInput" placeholder="Manual Filter" style="display:none;">
         </div>
         <button id="startBtn" title="画面キャプチャを開始" style="position: absolute; top: 20px; right: 20px; z-index: 10;"><span class="material-icons">screen_share</span></button>
         <video id="video" autoplay playsinline></video>
@@ -183,16 +183,11 @@
             if (current) windowSelect.value = current;
         }
 
-        // Dropdown selection updates the internal filter value used by click events
         windowSelect.addEventListener('change', () => {
             titleInput.value = windowSelect.value;
         });
         
         refreshBtn.addEventListener('click', requestWindowList);
-        
-        // Use titleInput.value (which is set by select) for sending messages
-        // But we need to ensure titleInput is defined in the click handlers logic below? 
-        // The original code used titleInput.value directly.
         
         startBtn.addEventListener('click', async () => {
             try {
@@ -201,7 +196,6 @@
                     audio: false
                 });
                 videoElement.srcObject = captureStream;
-                // Auto-title extraction removed to favor manual selection via dropdown
             } catch (err) {
                 console.error(err);
             }
@@ -274,7 +268,6 @@
                 const pxY = Math.round(relY * videoElement.videoHeight);
                 document.title = `${pxX} x ${pxY} px (${videoElement.videoWidth}x${videoElement.videoHeight})`;
                 
-                // マウス移動イベントを送信
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'move', x: relX, y: relY, title: titleInput.value }));
                 }
@@ -285,6 +278,20 @@
 
         videoElement.addEventListener('mouseleave', () => {
             document.title = 'Screen Capture Mirror';
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!titleInput.value) return;
+            
+            if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+            
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            
+            if (e.key.length === 1 || e.key === "Enter" || e.key === "Backspace") {
+                console.log(`Sending key: ${e.key} to title: ${titleInput.value}`);
+                ws.send(JSON.stringify({ type: 'key', key: e.key, title: titleInput.value }));
+            }
         });
     </script>
 </body>

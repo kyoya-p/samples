@@ -39,7 +39,7 @@ ps.stderr.on('data', (data) => {
 });
 
 const initScript = `
-Add-Type -TypeDefinition @"
+Add-Type -TypeDefinition @" 
 using System;
 using System.Runtime.InteropServices;
 public struct RECT { public int Left, Top, Right, Bottom; }
@@ -104,34 +104,17 @@ function Set-MouseAndClick([float]$relX, [float]$relY, [string]$title, [string]$
             $clientX = $ptClient.x
             $clientY = $ptClient.y
 
-            # Debug output
-            $debug = @{
-                msg = "Debug Coords (WindowFromPoint)"
-                mainHandle = $handle
-                targetHandle = $targetHandle
-                screen = "$targetScreenX, $targetScreenY"
-                client = "$clientX, $clientY"
-            }
-            Write-Output (ConvertTo-Json $debug -Compress)
-
             $lParam = [IntPtr]($clientY -shl 16 -bor ($clientX -band 0xFFFF))
             
             if ($type -eq 'click') {
                 [User32]::PostMessage($targetHandle, 0x0201, [IntPtr]1, $lParam) | Out-Null
                 [User32]::PostMessage($targetHandle, 0x0202, [IntPtr]0, $lParam) | Out-Null
-                
-                # Debug: Physical click fallback
-                #[User32]::mouse_event(0x8001, ($targetScreenX * 65535 / 2560), ($targetScreenY * 65535 / 1440), 0, 0)
-                #[User32]::mouse_event(0x0002, 0, 0, 0, 0)
-                #[User32]::mouse_event(0x0004, 0, 0, 0, 0)
             } elseif ($type -eq 'move') {
                 [User32]::PostMessage($targetHandle, 0x0200, [IntPtr]0, $lParam) | Out-Null
             }
             
             $found = $true 
             $info = @{
-
-
                 type = "windowInfo"
                 left = $rect.Left
                 top = $rect.Top
@@ -141,58 +124,79 @@ function Set-MouseAndClick([float]$relX, [float]$relY, [string]$title, [string]$
             Write-Output (ConvertTo-Json $info -Compress)
         }
     }
-    if (-not $found) {
-        $debug = @{
-            msg = "Window not found, ignoring action"
-            title = $title
-        }
-                    Write-Output (ConvertTo-Json $debug -Compress)
+}
+
+function Send-Key([string]$title, [string]$key) {
+    if ($title) {
+         $proc = Get-Process | Where-Object { $_.MainWindowTitle.Contains($title) } | Select-Object -First 1
+         if ($proc -and $proc.MainWindowHandle -ne [IntPtr]::Zero) {
+            $handle = $proc.MainWindowHandle
+            
+            if ($key.Length -eq 1) {
+                $charCode = [int][char]$key
+                [User32]::PostMessage($handle, 0x0102, [IntPtr]$charCode, [IntPtr]1) | Out-Null
+            } elseif ($key -eq "Enter") {
+                [User32]::PostMessage($handle, 0x0100, [IntPtr]13, [IntPtr]0) | Out-Null
+                [User32]::PostMessage($handle, 0x0102, [IntPtr]13, [IntPtr]0) | Out-Null
+                [User32]::PostMessage($handle, 0x0101, [IntPtr]13, [IntPtr]0) | Out-Null
+            } elseif ($key -eq "Backspace") {
+                 [User32]::PostMessage($handle, 0x0100, [IntPtr]8, [IntPtr]0) | Out-Null
+                 [User32]::PostMessage($handle, 0x0102, [IntPtr]8, [IntPtr]0) | Out-Null
+                 [User32]::PostMessage($handle, 0x0101, [IntPtr]8, [IntPtr]0) | Out-Null
             }
-        }
-        
-        function Get-WindowList {
-            $windows = Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object -ExpandProperty MainWindowTitle | Sort-Object -Unique
-            $response = @{
-                type = "windowList"
-                list = $windows
-            }
-            Write-Output (ConvertTo-Json $response -Compress)
-        }
-        `;
-        
-        ps.stdin.write(initScript + "\n");
-        
-        const wss = new WebSocketServer({ server });
-        
-        ps.stdout.on('data', (data) => {
-            const output = data.toString();
-            console.log('PS Output:', output);
-            const lines = output.split('\n');
-            lines.forEach(line => {
-                if (line.trim().startsWith('{')) {
-                    wss.clients.forEach(client => {
-                        if (client.readyState === 1) {
-                            client.send(line.trim());
-                        }
-                    });
+         }
+    }
+}
+
+function Get-WindowList {
+    $windows = Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object -ExpandProperty MainWindowTitle | Sort-Object -Unique
+    $response = @{
+        type = "windowList"
+        list = $windows
+    }
+    Write-Output (ConvertTo-Json $response -Compress)
+}
+`;
+
+ps.stdin.write(initScript + "\n");
+
+const wss = new WebSocketServer({ server });
+
+ps.stdout.on('data', (data) => {
+    const output = data.toString();
+    console.log('PS Output:', output.trim());
+    const lines = output.split('\n');
+    lines.forEach(line => {
+        if (line.trim().startsWith('{')) {
+            wss.clients.forEach(client => {
+                if (client.readyState === 1) {
+                    client.send(line.trim());
                 }
             });
-        });
-        
-        wss.on('connection', (ws) => {
-            console.log('Client connected');
-            ws.on('message', (message) => {
-                try {
-                    const data = JSON.parse(message);
-                    if (data.type === 'click' || data.type === 'move') {
-                        const title = data.title ? `'${data.title.replace(/'/g, "''")}'` : '$null';
-                        ps.stdin.write(`Set-MouseAndClick -relX ${data.x} -relY ${data.y} -title ${title} -type '${data.type}'\n`);
-                    } else if (data.type === 'getWindowList') {
-                        ps.stdin.write("Get-WindowList\n");
-                    }
-                } catch (e) {
-                    console.error(e);
-                }
-            });
-        });
+        }
+    });
+});
+
+wss.on('connection', (ws) => {
+    console.log('Client connected');
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            if (data.type === 'click' || data.type === 'move') {
+                const title = data.title ? `'${data.title.replace(/'/g, "''")}'` : '$null';
+                ps.stdin.write(`Set-MouseAndClick -relX ${data.x} -relY ${data.y} -title ${title} -type '${data.type}'\n`);
+            } else if (data.type === 'key') {
+                const title = data.title ? `'${data.title.replace(/'/g, "''")}'` : '$null';
+                const key = data.key.replace(/'/g, "''");
+                console.log(`Sending key: ${key} to window: ${title}`);
+                ps.stdin.write(`Send-Key -title ${title} -key '${key}'\n`);
+            } else if (data.type === 'getWindowList') {
+                ps.stdin.write("Get-WindowList\n");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    });
+});
+
 process.on('exit', () => ps.kill());
