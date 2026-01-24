@@ -5,21 +5,21 @@
 起動: wincli.ps1 -TargetPid <process-id>
 
 標準入力からコマンド受信しTargetPidで指定したWindowに対し処理を実行
+- '-h': ヘルプ表示
 - 'ss': スクリーンショット採取
-  - ファイル名は `ss.<TargetPid>.yymmdd.hhmmss.png`
+  - ファイル名は `.\.wincli\ss.<TargetPid>.yymmdd.hhmmss.png`
 - 'cl x y': マウスクリック
   - x,yはWindow内の相対座標(タスクバーを含めた左上隅を(0,0)とする)
-- 'k key' または 'key key': キー押下
+- 'k key': キー押下
   - 記法は .NET SendKeys に準拠
-  - '{ENTER}': Enterキー, '{TAB}': Tabキー
-  - '^s': Ctrl+S, '%{F4}': Alt+F4
+  - '{ENTER}': Enterキー, '{TAB}': Tabキー, '^s': Ctrl+S, '%{F4}': Alt+F4
 - 'exit': 終了
 
 ## 実行例
 
 ```powershell
-# 入力してスクリーンショットを撮る
-"key Hello{ENTER}`nss" | powershell -ExecutionPolicy Bypass -File .\wincli.ps1 -TargetPid 1234
+# Hello入力してスクリーンショットを撮る
+"k Hello{ENTER} `n ss" | powershell -ExecutionPolicy Bypass -File .\wincli.ps1 -TargetPid 1234
 ```
 
 # Konw How

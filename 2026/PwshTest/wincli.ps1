@@ -99,8 +99,15 @@ while ($true) {
                 Write-Host "Sent keys: $keys"
             }
         }
+        { $_ -eq "-h" -or $_ -eq "help" } {
+            Write-Host "Commands:"
+            Write-Host "  ss          Take screenshot"
+            Write-Host "  cl x y      Click at (x, y)"
+            Write-Host "  k keys      Send keys (alias: key)"
+            Write-Host "  exit        Exit"
+        }
         default {
-            Write-Host "Unknown command: $line"
+            Write-Host "Unknown command: $line. Type '-h' for help."
         }
     }
 }
