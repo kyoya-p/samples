@@ -1,7 +1,24 @@
 param(
-    [Parameter(Mandatory=$true)]
-    [int]$TargetPid
+    [Parameter(Mandatory=$false)]
+    [int]$TargetPid,
+    [Switch]$h
 )
+
+if ($h -or ($null -eq $TargetPid -and $args.Count -eq 0)) {
+    Write-Host "Usage: wincli.ps1 -TargetPid <process-id> [-h]"
+    Write-Host ""
+    Write-Host "Standard Input Commands:"
+    Write-Host "  ss          Take screenshot (saved to .\.wincli\)"
+    Write-Host "  cl x y      Click at (x, y)"
+    Write-Host "  k keys      Send keys (alias: key)"
+    Write-Host "  exit        Exit"
+    exit 0
+}
+
+if ($null -eq $TargetPid -or $TargetPid -eq 0) {
+    Write-Error "-TargetPid is mandatory."
+    exit 1
+}
 
 # Win32 API定義
 $definition = @'
@@ -37,6 +54,9 @@ if (-not $proc -or $proc.MainWindowHandle -eq 0) {
 }
 
 $hwnd = $proc.MainWindowHandle
+$outputDir = Join-Path $PSScriptRoot ".wincli"
+if (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir | Out-Null }
+
 Write-Host "Monitoring stdin for PID $TargetPid. Commands: ss (screenshot), cl x y (click), k key (keys), exit"
 
 while ($true) {
@@ -52,9 +72,8 @@ while ($true) {
 
     switch ($parts[0]) {
         "ss" {
-            # (既存の ss 処理)
             $date = Get-Date -Format "yyMMdd.HHmmss"
-            $filename = "ss.$TargetPid.$date.png"
+            $filename = Join-Path $outputDir "ss.$TargetPid.$date.png"
             
             [Native.Win32Utils]::ShowWindow($hwnd, 9) | Out-Null
             [Native.Win32Utils]::SetForegroundWindow($hwnd) | Out-Null
@@ -75,7 +94,7 @@ while ($true) {
                 $bitmap.Save($filename, [System.Drawing.Imaging.ImageFormat]::Png)
                 $graphics.Dispose()
                 $bitmap.Dispose()
-                Write-Host "Screenshot saved: $(Resolve-Path $filename)"
+                Write-Host "Screenshot saved: $filename"
             }
         }
         "cl" {

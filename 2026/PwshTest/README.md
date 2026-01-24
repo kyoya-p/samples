@@ -2,10 +2,11 @@
 
 # wincli.ps1
 
-起動: wincli.ps1 -TargetPid <process-id>
+起動: wincli.ps1 -TargetPid <process-id> [-h]
 
 標準入力からコマンド受信しTargetPidで指定したWindowに対し処理を実行
-- '-h': ヘルプ表示
+
+## 標準入力:
 - 'ss': スクリーンショット採取
   - ファイル名は `.\.wincli\ss.<TargetPid>.yymmdd.hhmmss.png`
 - 'cl x y': マウスクリック
@@ -22,7 +23,7 @@
 "k Hello{ENTER} `n ss" | powershell -ExecutionPolicy Bypass -File .\wincli.ps1 -TargetPid 1234
 ```
 
-# Konw How
+# Know How
 
 ## Listen 状態のアプリ列挙 (netstat 相当)
 
