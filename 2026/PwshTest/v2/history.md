@@ -27,5 +27,21 @@ Get-Process | Where-Object { $_.MainWindowTitle } | Select-Object @{N='ProcessNa
 `Get-WindowScreenshot.ps1` を使用。
 
 ```powershell
+# プロセス名で指定
 ./Get-WindowScreenshot.ps1 -ProcessName notepad -FilePath notepad.png
+
+# PID で指定
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./Get-WindowScreenshot.ps1 -ProcessId 13976 -FilePath "chrome_13976.png"
+```
+
+## ウィンドウハンドル (hWnd) の列挙
+
+`Enumerate-AllHandles.ps1` を使用して、プロセスに紐付く全ハンドル（子ウィンドウ含む）を抽出。
+
+```powershell
+# 特定の PID に関連する全ハンドルを表示
+./Enumerate-AllHandles.ps1 -TargetPid 1168
+
+# 可視 (Visible) なウィンドウのみを抽出する
+./Enumerate-AllHandles.ps1 | Where-Object { $_.Visible } | Format-Table -AutoSize
 ```
