@@ -17,7 +17,7 @@ if ($h) {
     Write-Host "  ss          Take screenshot (using PrintWindow 0x2)"
     Write-Host "  cl x y      Click at (x, y)"
     Write-Host "  k keys      Send keys (alias: key)"
-    Write-Host "  dump        Dump text content (via UI Automation)"
+    Write-Host "  dp          Dump text content (via UI Automation)"
     Write-Host "  exit        Exit"
     exit 0
 }
@@ -259,7 +259,7 @@ if ([string]::IsNullOrEmpty($OutputDir)) {
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir | Out-Null }
 
 Write-Host "Output directory: $OutputDir"
-Write-Host "Monitoring stdin. Commands: ss (screenshot), cl x y (click), k key (keys), dump, exit"
+Write-Host "Monitoring stdin. Commands: ss (screenshot), cl x y (click), k key (keys), dp, exit"
 
 while ($true) {
     $line = [Console]::In.ReadLine()
@@ -351,7 +351,7 @@ while ($true) {
                 Write-Host "Sent keys: $keys"
             }
         }
-        "dump" {
+        "dp" {
             $text = $null
             try {
                 $targetElement = if ($termControl) { $termControl } else { $automationElement }
@@ -396,7 +396,7 @@ while ($true) {
             }
         }
         { $_ -eq "-h" -or $_ -eq "help" } {
-            Write-Host "Commands: ss, cl x y, k keys, dump, exit"
+            Write-Host "Commands: ss, cl x y, k keys, dp, exit"
         }
         default {
             Write-Host "Unknown command: $line"
