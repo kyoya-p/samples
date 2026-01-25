@@ -20,13 +20,15 @@ void FirestoreService::Cleanup() {
         Log("Cleaning up Firebase resources...");
         if (firestore_) {
             Log("Deleting Firestore instance...");
-            delete firestore_;
+            // No explicit delete for Firestore as per SDK docs, use nullptr or wait for App delete
             firestore_ = nullptr;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         Log("Deleting Firebase App...");
         delete app_; 
         app_ = nullptr;
+        // Wait for OS to release network resources
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
 
@@ -44,11 +46,23 @@ void FirestoreService::StopAllListeners() {
     contacts_.clear();
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     Cleanup(); 
     current_api_key_ = api_key;
     page_size_ = page_size;
     has_more_ = true;
+
+    // Suppress gRPC logs via environment variables
+#ifdef _WIN32
+    SetEnvironmentVariableA("GRPC_VERBOSITY", "NONE");
+    SetEnvironmentVariableA("GRPC_TRACE", "");
+#else
+    setenv("GRPC_VERBOSITY", "NONE", 1);
+#endif
 
     if (api_key.empty()) {
         SetError("Error: API Key is empty.");
@@ -64,8 +78,8 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
 
     app_ = firebase::App::Create(options); 
     
-    // Suppress warnings to keep TUI clean
-    firebase::SetLogLevel(firebase::kLogLevelError);
+    // Suppress logs to keep TUI clean
+    firebase::SetLogLevel(firebase::kLogLevelAssert);
     
     if (!app_) {
         SetError("Failed to create Firebase App. Check Key.");
@@ -80,9 +94,10 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
 
     firebase::firestore::Settings settings;
     settings.set_persistence_enabled(false);
+    // Remove explicit host to let SDK handle it, but ensure SSL is default
     firestore_->set_settings(settings);
 
-    Log("Firebase initialized with Paging Listener. Page Size: " + std::to_string(page_size_));
+    Log("Firebase initialized. API Key length: " + std::to_string(api_key.length()));
 
     StartListeningNextPage();
     return true;

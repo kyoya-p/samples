@@ -73,6 +73,7 @@ Node.js (v20以上) と `@microsoft/tui-test` を使用。 `mise` を利用し�
 mise exec node@20 -- npm install
 
 # テスト実行
+$API_KEY = "*******"
 mise exec node@20 -- npx tui-test  # 全部
 mise exec node@20 -- npx tui-test .\testspec\1.1_close.spec.ts  # 個別テスト
 ```

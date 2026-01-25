@@ -1,13 +1,13 @@
 import { test, expect } from "@microsoft/tui-test";
+import path from "node:path";
 
-const appPath = String.raw`C:\Users\kyoya\works\samples\2026\Firebases\15_FB_AutoTest\build\Release\FirebaseApp.exe`;
-const apiKey = "AIzaSyDpE5hkTVWMt8iYPPm30yNL6KJ-YivAwJ4";
+const appPath = path.join(process.cwd(), "build/Release/FirebaseApp.exe");
 
 test.use({ 
     program: { file: appPath },
     rows: 40,
     columns: 100,
-    env: { API_KEY: apiKey }
+    env: { API_KEY: process.env.API_KEY }
 });
 
 async function click(terminal: any, locator: any) {
