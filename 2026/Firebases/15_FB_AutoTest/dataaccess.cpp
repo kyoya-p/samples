@@ -83,18 +83,6 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     firestore_->set_settings(settings);
 
     Log("Firebase initialized with Paging Listener. Page Size: " + std::to_string(page_size_));
-    
-    // Inject dummy data for UI testing
-    for (int i = 1; i <= 25; ++i) {
-        Contact c;
-        c.id = "dummy_" + std::to_string(i);
-        c.name = "Dummy User " + std::to_string(i);
-        c.email = "dummy" + std::to_string(i) + "@example.com";
-        c.timestamp = "01/25 12:00";
-        contacts_.push_back(c);
-    }
-    has_more_ = false; 
-    on_update_();
 
     StartListeningNextPage();
     return true;
