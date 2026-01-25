@@ -1,23 +1,24 @@
 param(
+    [Parameter(Position=0)]
+    [long]$Hwnd,
     [Parameter(Mandatory=$false)]
     [int]$TargetPid,
-    [Parameter(Mandatory=$false)]
-    [long]$TargetHandle,
     [Parameter(Mandatory=$false)]
     [string]$OutputDir,
     [Switch]$h
 )
 
 if ($h) {
-    Write-Host "Usage: wincli.ps1 [-TargetPid <pid>] [-TargetHandle <hwnd>] [-OutputDir <path>] [-h]"
-    Write-Host "  If no target is specified, a new 'pwsh' process is started."
-    Write-Host "  -OutputDir defaults to '.\.wincli' in the current directory."
+    Write-Host "Usage: wincli.ps1 [<hwnd>] [-TargetPid <pid>] [-OutputDir <path>] [-h]"
+    Write-Host "  <hwnd>      Target Window Handle (Default: current console)"
+    Write-Host "  -TargetPid <pid>  Target Process ID (Used to find hWnd if <hwnd> is missing)"
+    Write-Host "  -OutputDir  Defaults to '.\.wincli'"
     Write-Host ""
     Write-Host "Standard Input Commands:"
-    Write-Host "  ss          Take screenshot (using PrintWindow 0x2)"
+    Write-Host "  ss          Take screenshot"
     Write-Host "  cl x y      Click at (x, y)"
-    Write-Host "  k keys      Send keys (alias: key)"
-    Write-Host "  dp          Dump text content (via UI Automation)"
+    Write-Host "  k keys      Send keys (PostMessage, non-active window ok)"
+    Write-Host "  dp          Dump text content (Last 100 lines)"
     Write-Host "  exit        Exit"
     exit 0
 }
@@ -36,6 +37,9 @@ namespace Native {
     }
 
     public class Win32Utils {
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetConsoleWindow();
+
         [DllImport("user32.dll")]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
@@ -60,6 +64,12 @@ namespace Native {
         [DllImport("user32.dll")]
         public static extern bool IsWindowVisible(IntPtr hWnd);
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+
         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         public static IntPtr MakeLParam(int x, int y) {
@@ -83,9 +93,14 @@ function Get-WindowHandleForPid {
         [Native.Win32Utils]::GetWindowThreadProcessId($hwnd, [ref]$wPid) | Out-Null
         
         if ($wPid -eq $PidToFind) {
-            if ([Native.Win32Utils]::IsWindowVisible($hwnd)) {
+            $rect = New-Object Native.RECT
+            [Native.Win32Utils]::GetWindowRect($hwnd, [ref]$rect) | Out-Null
+            $width = $rect.Right - $rect.Left
+            $height = $rect.Bottom - $rect.Top
+
+            if ([Native.Win32Utils]::IsWindowVisible($hwnd) -and $width -gt 10 -and $height -gt 10) {
                 $script:foundHandle = $hwnd
-                return $false # Stop enumeration (Found visible window)
+                return $false # Stop enumeration
             } else {
                 if ($script:fallbackHandle -eq [IntPtr]::Zero) {
                     $script:fallbackHandle = $hwnd
@@ -98,11 +113,8 @@ function Get-WindowHandleForPid {
     $enumProc = [Native.Win32Utils+EnumWindowsProc]$proc
     try {
         [Native.Win32Utils]::EnumWindows($enumProc, [IntPtr]::Zero) | Out-Null
-    } catch {
-        # Ignore errors during enumeration
-    }
+    } catch { }
     
-    # Garbage collect delegate to prevent premature cleanup
     [GC]::KeepAlive($enumProc)
     
     if ($script:foundHandle -ne [IntPtr]::Zero) {
@@ -111,129 +123,56 @@ function Get-WindowHandleForPid {
     return $script:fallbackHandle
 }
 
-$hwnd = [IntPtr]::Zero
-$autoSpawned = $false
+$targetHwnd = [IntPtr]::Zero
 
-if ($TargetHandle -eq 0 -and $TargetPid -eq 0) {
-    $autoSpawned = $true
-    Write-Host "No target specified. Starting new pwsh process..."
-    try {
-        # Use -NoExit to keep it open, and try to force a new window if possible
-        $p = Start-Process pwsh -ArgumentList "-NoExit" -PassThru
-    } catch {
-        Write-Warning "'pwsh' not found. Trying 'powershell'..."
-        $p = Start-Process powershell -ArgumentList "-NoExit" -PassThru
-    }
-    $TargetPid = $p.Id
-    Write-Host "Started process PID: $TargetPid. Waiting for window..."
-    
-    # Wait for window handle to become available
-    for ($i = 0; $i -lt 20; $i++) {
-        $p.Refresh()
-        # Try standard property first
-        if ($p.MainWindowHandle -ne 0) { 
-            $hwnd = $p.MainWindowHandle
-            break 
-        }
-        
-        # Try finding via EnumWindows
-        $foundHwnd = [IntPtr](Get-WindowHandleForPid $TargetPid)
-        if ($foundHwnd -ne [IntPtr]::Zero) {
-            $hwnd = $foundHwnd
-            break
-        }
-        
-        # Check children (e.g. conhost)
-        try {
-            $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($p.Id)" -ErrorAction SilentlyContinue
-            foreach ($child in $children) {
-                 $childProc = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
-                 if ($childProc -and $childProc.MainWindowHandle -ne 0) {
-                     $hwnd = $childProc.MainWindowHandle
-                     Write-Host "Found window in child process: $($child.ProcessId) ($($child.Name))"
-                     break
-                 }
-                 
-                 $childHwnd = [IntPtr](Get-WindowHandleForPid $child.ProcessId)
-                 if ($childHwnd -ne [IntPtr]::Zero) {
-                     $hwnd = $childHwnd
-                     Write-Host "Found window in child process via EnumWindows: $($child.ProcessId) ($($child.Name))"
-                     break
-                 }
-            }
-        } catch {}
-        
-        if ($hwnd -ne [IntPtr]::Zero) { break }
-
-        Start-Sleep -Milliseconds 500
-    }
-}
-
-if ($TargetHandle -ne 0) {
-    $hwnd = [IntPtr]$TargetHandle
-    Write-Host "Targeting Window Handle: $hwnd"
+if ($Hwnd -ne 0) {
+    $targetHwnd = [IntPtr]$Hwnd
+    Write-Host "Targeting Hwnd: $targetHwnd"
 } elseif ($TargetPid -ne 0) {
+    Write-Host "Resolving hWnd for PID: $TargetPid"
     $currentPid = $TargetPid
     $depth = 0
     $maxDepth = 10
-    $found = $false
-
-    Write-Host "Searching for window handle starting from PID: $TargetPid"
-
+    
     while ($depth -lt $maxDepth) {
         $proc = Get-Process -Id $currentPid -ErrorAction SilentlyContinue
-        
         if ($proc) {
-            # 1. Try standard MainWindowHandle
             if ($proc.MainWindowHandle -ne 0) {
-                $hwnd = $proc.MainWindowHandle
-                Write-Host "Found Window Owner via MainWindowHandle at depth $($depth): $($proc.ProcessName) (PID: $($proc.Id))"
-                $currentProc = $proc
-                $found = $true
+                $targetHwnd = $proc.MainWindowHandle
+                Write-Host "Found Window via MainWindowHandle: $targetHwnd ($($proc.ProcessName))"
                 break
             }
-
-            # 2. Try EnumWindows (for windows not reflected in MainWindowHandle)
             $enumHwnd = [IntPtr](Get-WindowHandleForPid $proc.Id)
             if ($enumHwnd -ne [IntPtr]::Zero) {
-                $hwnd = $enumHwnd
-                Write-Host "Found Window Owner via EnumWindows at depth $($depth): $($proc.ProcessName) (PID: $($proc.Id))"
-                $currentProc = $proc
-                $found = $true
+                $targetHwnd = $enumHwnd
+                Write-Host "Found Window via EnumWindows: $targetHwnd ($($proc.ProcessName))"
                 break
             }
-        } else {
-            Write-Warning "Process $currentPid no longer exists."
-            break
         }
-
-        # No window found, try parent
+        
+        # Parent lookup
         try {
-            $cimProc = Get-CimInstance Win32_Process -Filter "ProcessId = $currentPid" -ErrorAction Stop
-            $parentId = $cimProc.ParentProcessId
-            
-            if (-not $parentId) { 
-                Write-Warning "No parent process found for PID $currentPid."
-                break 
-            }
-            
-            # Write-Host "  -> Parent: $($cimProc.Name) (PID: $parentId)"
-            $currentPid = $parentId
-            $depth++
-        } catch {
-            break
-        }
+            $cim = Get-CimInstance Win32_Process -Filter "ProcessId = $currentPid" -ErrorAction Stop
+            if ($cim.ParentProcessId) {
+                $currentPid = $cim.ParentProcessId
+                $depth++
+            } else { break }
+        } catch { break }
     }
-
-    if (-not $found) {
-        Write-Error "Could not find any window handle in the process tree of PID $TargetPid."
-        exit 1
-    }
+} else {
+    $targetHwnd = [Native.Win32Utils]::GetConsoleWindow()
+    Write-Host "No target specified. Using current console hWnd: $targetHwnd"
 }
 
+if ($targetHwnd -eq [IntPtr]::Zero) {
+    Write-Error "Could not resolve a valid window handle."
+    exit 1
+}
 
-Write-Host "Waiting 3 seconds for window initialization..."
-Start-Sleep -Seconds 3
+$hwnd = $targetHwnd # Legacy alias for command blocks
+
+Write-Host "Waiting 2 seconds for window state check..."
+Start-Sleep -Seconds 2
 
 # Try to find specific content area (TermControl) using UI Automation
 $termControl = $null
@@ -241,25 +180,21 @@ try {
     Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes -ErrorAction Stop
     $automationElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
     
-    # Search for TermControl (Windows Terminal content area)
     $condition = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ClassNameProperty, "TermControl")
     $termControl = $automationElement.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
 
     if ($termControl) {
-        Write-Host "UI Automation: Found 'TermControl' content area. Screenshot will be cropped."
+        Write-Host "UI Automation: Found 'TermControl' content area."
     }
-} catch {
-    # UIA failed or not available
-}
+} catch { }
 
 if ([string]::IsNullOrEmpty($OutputDir)) {
     $OutputDir = Join-Path (Get-Location) ".wincli"
 }
-
 if (-not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir | Out-Null }
 
 Write-Host "Output directory: $OutputDir"
-Write-Host "Monitoring stdin. Commands: ss (screenshot), cl x y (click), k key (keys), dp, exit"
+Write-Host "Monitoring stdin. Commands: ss, cl x y, k keys, dp, sleep ms, exit"
 
 while ($true) {
     $line = [Console]::In.ReadLine()
@@ -274,17 +209,9 @@ while ($true) {
 
     switch ($parts[0]) {
         "ss" {
-            $id = if ($TargetPid) { $TargetPid } else { $hwnd }
             $date = Get-Date -Format "yyMMdd.HHmmss"
-            $filename = Join-Path $outputDir "ss.$id.$date.png"
+            $filename = Join-Path $outputDir "ss.h$($hwnd.ToInt64()).$date.png"
             
-            # Ensure window is visible/ready (optional but recommended)
-            # [Native.Win32Utils]::ShowWindow($hwnd, 9) | Out-Null
-            # [Native.Win32Utils]::SetForegroundWindow($hwnd) | Out-Null
-            # Start-Sleep -Milliseconds 200
-
-            # Get Window Rect (Screen Coordinates)
-
             $winRect = New-Object Native.RECT
             if ([Native.Win32Utils]::GetWindowRect($hwnd, [ref]$winRect)) {
                 $winWidth = $winRect.Right - $winRect.Left
@@ -294,9 +221,7 @@ while ($true) {
                     $bmp = New-Object System.Drawing.Bitmap($winWidth, $winHeight)
                     $graphics = [System.Drawing.Graphics]::FromImage($bmp)
                     $hdc = $graphics.GetHdc()
-                    
                     $success = [Native.Win32Utils]::PrintWindow($hwnd, $hdc, 0x2)
-                    
                     $graphics.ReleaseHdc($hdc)
                     $graphics.Dispose()
 
@@ -309,23 +234,16 @@ while ($true) {
                                 $cropW = [int]$uiaRect.Width
                                 $cropH = [int]$uiaRect.Height
 
-                                if ($cropW -gt 0 -and $cropH -gt 0 -and 
-                                    $cropX -ge 0 -and $cropY -ge 0 -and 
-                                    ($cropX + $cropW) -le $bmp.Width -and ($cropY + $cropH) -le $bmp.Height) {
-                                    
+                                if ($cropW -gt 0 -and $cropH -gt 0) {
                                     $cropRect = New-Object System.Drawing.Rectangle($cropX, $cropY, $cropW, $cropH)
                                     $croppedBmp = $bmp.Clone($cropRect, $bmp.PixelFormat)
                                     $bmp.Dispose()
                                     $bmp = $croppedBmp
-                                    Write-Host "Cropped to content area ($cropW x $cropH)"
                                 }
                             } catch {}
                         }
-
                         $bmp.Save($filename, [System.Drawing.Imaging.ImageFormat]::Png)
                         Write-Host "Screenshot saved: $filename"
-                    } else {
-                        Write-Error "PrintWindow failed."
                     }
                     $bmp.Dispose()
                 }
@@ -344,11 +262,19 @@ while ($true) {
         }
         { $_ -eq "k" -or $_ -eq "key" } {
             if ($parts.Count -ge 2) {
-                $keys = $parts[1..($parts.Count-1)] -join " "
-                [Native.Win32Utils]::SetForegroundWindow($hwnd) | Out-Null
-                Start-Sleep -Milliseconds 100
-                [System.Windows.Forms.SendKeys]::SendWait($keys)
-                Write-Host "Sent keys: $keys"
+                $inputStr = $parts[1..($parts.Count-1)] -join " "
+                $segments = $inputStr -split "(\{ENTER\})"
+                foreach ($seg in $segments) {
+                    if ($seg -eq "{ENTER}") {
+                        [Native.Win32Utils]::PostMessage($hwnd, 0x0100, [IntPtr]0x0D, [IntPtr]::Zero) | Out-Null
+                        [Native.Win32Utils]::PostMessage($hwnd, 0x0101, [IntPtr]0x0D, [IntPtr]::Zero) | Out-Null
+                    } elseif ($seg.Length -gt 0) {
+                        foreach ($char in $seg.ToCharArray()) {
+                            [Native.Win32Utils]::PostMessage($hwnd, 0x0102, [IntPtr][int]$char, [IntPtr]::Zero) | Out-Null
+                        }
+                    }
+                }
+                Write-Host "Sent keys: $inputStr"
             }
         }
         "dp" {
@@ -356,47 +282,38 @@ while ($true) {
             try {
                 $targetElement = if ($termControl) { $termControl } else { $automationElement }
                 $patternObj = $null
-                
-                # Try getting pattern directly
                 try {
                     $patternObj = $targetElement.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
                 } catch { }
 
-                # If failed, search for Document or Edit control types, or ANY element with TextPattern
                 if (-not $patternObj) {
                     $allDescendants = $targetElement.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
                     foreach ($desc in $allDescendants) {
                         try {
                             $patternObj = $desc.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern)
-                            if ($patternObj) {
-                                Write-Host "Found element with TextPattern: '$($desc.Current.Name)' Class: $($desc.Current.ClassName)"
-                                break
-                            }
+                            if ($patternObj) { break }
                         } catch { }
                     }
                 }
 
                 if ($patternObj) {
-                    $textPattern = [System.Windows.Automation.TextPattern]$patternObj
-                    $text = $textPattern.DocumentRange.GetText(-1)
+                    $text = ([System.Windows.Automation.TextPattern]$patternObj).DocumentRange.GetText(-1)
                 }
-            } catch {
-                Write-Warning "Text extraction failed or not supported: $_"
-            }
+            } catch { }
 
             if (-not [string]::IsNullOrEmpty($text)) {
-                $id = if ($TargetPid) { $TargetPid } else { $hwnd }
-                $date = Get-Date -Format "yyMMdd.HHmmss"
-                $dumpFile = Join-Path $outputDir "dump.$id.$date.txt"
-                $text | Set-Content -Path $dumpFile -Encoding UTF8
-                Write-Host "Text dumped: $dumpFile"
-                $text -split "`n" | Select-Object -Last 5
+                $lines = $text.TrimEnd() -split "`n"
+                if ($lines.Count -gt 100) { $lines = $lines[($lines.Count - 100)..($lines.Count - 1)] }
+                $lines | ForEach-Object { Write-Host $_ }
             } else {
-                Write-Error "No text found (TextPattern might not be supported)."
+                Write-Error "No text found."
             }
         }
+        "sleep" {
+            if ($parts.Count -ge 2) { Start-Sleep -Milliseconds ([int]$parts[1]) }
+        }
         { $_ -eq "-h" -or $_ -eq "help" } {
-            Write-Host "Commands: ss, cl x y, k keys, dp, exit"
+            Write-Host "Commands: ss, cl x y, k keys, dp, sleep ms, exit"
         }
         default {
             Write-Host "Unknown command: $line"

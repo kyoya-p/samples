@@ -1,0 +1,5 @@
+/.idea/
+/.playwright-mcp/
+/.tui-test/
+/node_modules/
+/tui-test/
