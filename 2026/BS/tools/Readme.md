@@ -48,3 +48,7 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 ```
 `tools/build/installer/bscard.zip` を生成。
 
+# フォルダ構成
+
+- temp/     : 一時データ、一時スクリプト
+- .bscards/ : カードデータダウンロードキャッシュファイル
