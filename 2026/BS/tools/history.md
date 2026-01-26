@@ -4,7 +4,7 @@
 
 ### 1. 英語用語調査
 - Google検索を使用して、Battle Spirits Saga (BSS) および海外ファンコミュニティで使用されている用語を調査。
-- 基本用語（Core, Trash, Life等）、カードタイプ（Spirit, Nexus, Magic等）、フェイズ、アクションの英語表記を特定。
+- 基本用語（Core, Trash, Life等）、カードタイプ（Spirit, Nexus, Magic等）、フェイズ、アクションの英語表記を特定.
 - 「系統」が **"Family"** と訳されることを確認。
 - 成果物: `glossary_en.md`
 
@@ -129,7 +129,7 @@
 ### 1. Amperプロジェクトの構築
 - `tools/` 配下に Amper を用いた KMP プロジェクト構造を定義。
 - **構成**:
-    - `project.yaml`: `shared`, `jvm-cli`, `linux-cli`, `windows-cli` モジュールを定義。
+    - `project.yaml`: `shared`, `jvm-cli`, `linux-cli`, `windows-cli` モジュールを定義.
     - `shared`: 共通ロジック（検索、詳細取得、モデル）。
     - `*-cli`: 各プラットフォーム向けのエントリポイント。
 
