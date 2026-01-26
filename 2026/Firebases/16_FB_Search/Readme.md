@@ -1,7 +1,7 @@
 # Firebase C++ SDK TUI Sample
 
-**[FTXUI](https://github.com/ArthurSonzogni/FTXUI)** と **Firebase C++ SDK** を使用した、ターミナルベースのGUIアプリケーション。
 Firestore上のデータをリアルタイムにリスト表示し、追加・削除の操作を行う。
+Testには microsoft/tui-test 使用。
 
 # 参照
 
@@ -20,10 +20,7 @@ Firestore上のデータをリアルタイムにリスト表示し、追加・�
   - Compiler: MSVC 2022
 
 # ツール/ライブラリ追加
-```powershell:windows
 # Visual Studio 2022 (C++ Desktop Development) が必要です。
-# CMakeはVisual Studioに含まれるものを使用します。
-```
 ```shell:ubuntu
 sudo apt install -y \
 build-essential \
@@ -65,5 +62,19 @@ Ubuntu:
 ```bash
 export API_KEY="your-api-key"
 ./build/FirebaseApp
+```
+
+# テスト
+
+Node.js (v20以上) と `@microsoft/tui-test` を使用。 `mise` を利用した実行手順は以下の通り。
+
+```powershell
+# 依存関係のインストール
+mise exec node@20 -- npm install
+
+# テスト実行
+$API_KEY = "*******"
+mise exec node@20 -- npx tui-test  # 全部
+mise exec node@20 -- npx tui-test .\testspec\1.1_close.spec.ts  # 個別テスト
 ```
 

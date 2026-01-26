@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.14) # FetchContent MakeAvailable needs 3.14+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(FirebaseTuiSample LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -7,10 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # --- Firebase C++ SDK Setup ---
-set(FIREBASE_SDK_VERSION "13.3.0")
+set(FIREBASE_SDK_VERSION "13.4.0")
 FetchContent_Declare(
   firebase_sdk
-  URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.3.0.zip"
+  URL "https://dl.google.com/firebase/sdk/cpp/firebase_cpp_sdk_13.4.0.zip"
 )
 FetchContent_MakeAvailable(firebase_sdk)
 
@@ -97,7 +98,7 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(FirebaseApp main.cpp dataaccess.cpp utils.cpp)
+add_executable(FirebaseApp src/main.cpp src/dataaccess.cpp src/utils.cpp)
 
 # Link Libraries
 if(MSVC)
@@ -128,4 +129,5 @@ endif()
 target_include_directories(FirebaseApp
   PRIVATE
     ${FIREBASE_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
