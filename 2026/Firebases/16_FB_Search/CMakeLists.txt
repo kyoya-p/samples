@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.14) # FetchContent MakeAvailable needs 3.14+
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(FirebaseTuiSample LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -98,7 +97,7 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(FirebaseApp src/main.cpp src/dataaccess.cpp src/utils.cpp)
+add_executable(FirebaseApp src/main/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
 
 # Link Libraries
 if(MSVC)
@@ -129,5 +128,4 @@ endif()
 target_include_directories(FirebaseApp
   PRIVATE
     ${FIREBASE_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
