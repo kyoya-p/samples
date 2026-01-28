@@ -16,7 +16,7 @@
 #endif
 
 std::string& GetLogFilename() {
-    static std::string filename = "app.log";
+    static std::string filename = "addrapp.log";
     return filename;
 }
 

@@ -88,6 +88,13 @@ int main(int argc, char** argv) {
       auto p_input_name = Input(&p_filter_name, "Name Search");
       auto p_input_email = Input(&p_filter_email, "Mail Search");
       auto p_list_container = Container::Vertical({});
+      auto p_list_container_c = CatchEvent(p_list_container, [&](Event e) {
+          if (e.is_mouse() && (e.mouse().button == Mouse::WheelUp || e.mouse().button == Mouse::WheelDown)) {
+              if (e.mouse().button == Mouse::WheelUp) return p_list_container->OnEvent(Event::ArrowUp);
+              if (e.mouse().button == Mouse::WheelDown) return p_list_container->OnEvent(Event::ArrowDown);
+          }
+          return false;
+      });
       
       size_t last_rendered_count = 0;
       auto update_picker_list = [&, service_ptr=&service]() {
@@ -151,7 +158,7 @@ int main(int argc, char** argv) {
 
       auto p_main_container = Container::Vertical({
           Container::Horizontal({ p_btn_name, p_btn_mail, p_btn_time, p_input_name_c, p_input_email_c }),
-          p_list_container,
+          p_list_container_c,
           p_close_btn
       });
 
@@ -165,7 +172,7 @@ int main(int argc, char** argv) {
               text("Select Address") | bold | center, separator(),
               hbox({ hbox({ p_btn_name->Render(), sort_indicator(0), render_input(0, p_input_name) }), text("  "), hbox({ p_btn_mail->Render(), sort_indicator(1), render_input(1, p_input_email) }), text("  "), filler(), hbox({ p_btn_time->Render(), sort_indicator(2) }) }),
               separator(),
-              p_list_container->Render() | vscroll_indicator | frame | size(HEIGHT, EQUAL, 10),
+              p_list_container_c->Render() | vscroll_indicator | frame | size(HEIGHT, EQUAL, 10),
               separator(),
               hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), p_close_btn->Render() })
           }) | border | bgcolor(Color::Blue) | size(WIDTH, GREATER_THAN, 80) | clear_under;
@@ -179,6 +186,14 @@ int main(int argc, char** argv) {
 
       // --- Send Screen ---
       auto scan_list_container = Container::Vertical({});
+      auto scan_list_container_c = CatchEvent(scan_list_container, [&](Event e) {
+          if (e.is_mouse() && (e.mouse().button == Mouse::WheelUp || e.mouse().button == Mouse::WheelDown)) {
+              if (e.mouse().button == Mouse::WheelUp) return scan_list_container->OnEvent(Event::ArrowUp);
+              if (e.mouse().button == Mouse::WheelDown) return scan_list_container->OnEvent(Event::ArrowDown);
+          }
+          return false;
+      });
+      
       auto new_email_input = Input(&scan_new_email, "Address");
       auto new_enter_btn = Button("[Enter]", [&] { if (!scan_new_email.empty()) { scan_confirmed_emails.push_back(scan_new_email); scan_new_email = ""; screen.Post(Event::Custom); } }, ButtonOption::Ascii());
       auto new_addr_btn = Button("[Address Book]", [&] { p_filter_name = ""; p_filter_email = ""; update_picker_list(); *show_picker = true; }, ButtonOption::Ascii());
@@ -195,8 +210,8 @@ int main(int argc, char** argv) {
       auto send_btn = Button("[Send]", [&] { if (scan_confirmed_emails.empty()) return; sent_msg_content = "Sent to " + std::to_string(scan_confirmed_emails.size()) + " recipients."; *show_sent_dialog = true; scan_confirmed_emails.clear(); screen.Post(Event::Custom); }, ButtonOption::Ascii());
       auto close_app_btn = Button("[Close]", screen.ExitLoopClosure(), ButtonOption::Ascii());
       auto scan_footer_renderer = Renderer(Container::Horizontal({ send_btn, close_app_btn }), [&] { return hbox({ filler(), send_btn->Render(), text(" "), close_app_btn->Render() }); });
-      auto scan_renderer = Renderer(Container::Vertical({ new_row_renderer, scan_list_container, scan_footer_renderer }), [&] {
-          return vbox({ text("Send") | bold, separator(), text("To:"), new_row_renderer->Render(), scan_list_container->Render() | vscroll_indicator | frame | flex, separator(), scan_footer_renderer->Render() }) | border;
+      auto scan_renderer = Renderer(Container::Vertical({ new_row_renderer, scan_list_container_c, scan_footer_renderer }), [&] {
+          return vbox({ text("Send") | bold, separator(), text("To:"), new_row_renderer->Render(), scan_list_container_c->Render() | vscroll_indicator | frame | flex, separator(), scan_footer_renderer->Render() }) | border;
       });
 
       auto root_renderer = Renderer(scan_renderer, [&] {
