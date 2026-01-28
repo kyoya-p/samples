@@ -367,7 +367,7 @@ int main(int argc, char** argv) {
               SaveSnapshot("addrapp", screen_capture.ToString());
               return true;
           }
-          if (event == Event::Character('q') && !*show_picker && !*show_api_dialog) { screen.Exit(); return true; }
+          if ((event == Event::Character('q') || event == Event::Escape) && !*show_picker && !*show_api_dialog) { screen.Exit(); return true; }
           if (*show_picker) return p_main_container_gen->OnEvent(event);
           if (*show_api_dialog) return api_dialog_container->OnEvent(event);
           return addr_renderer->OnEvent(event);
