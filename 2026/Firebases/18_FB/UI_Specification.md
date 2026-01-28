@@ -21,11 +21,6 @@ Google Cloud Firestore とリアルタイムに通信し、アドレス帳の管
         2. 環境変数 `API_KEY`
         3. 設定ファイル `app.conf` (キー名: `API_KEY`)
     - 接続確立成功時、有効な API Key を `app.conf` に保存する。
-- **設定ダイアログ ([Activate])**:
-    - メイン画面またはアドレス帳画面から呼び出し可能なモーダルダイアログ(ダイアログ背景は透過しない)
-    - **API Key 入力欄**: 現在のキーが表示され、編集可能。フォーカス時文字列全選択
-    - **[Connect] ボタン**: 設定をapp.confに保存して閉じる。以後Firebase接続はここで指定したKeyを使用
-    - **[Cancel] ボタン**: 変更を破棄して閉じる。
 
 ## 3.2 メインメニュー (Main Screen)
 アプリケーション起動直後に表示されるハブ画面。
@@ -34,7 +29,6 @@ Google Cloud Firestore とリアルタイムに通信し、アドレス帳の管
     - **Address Book Edit**: アドレス帳編集画面へ遷移。
 - **フッター情報**:
     - **Status**: 現在のFirebase接続状況 (Connected / Disconnected) を表示。
-    - **[Activate]**: 設定ダイアログを開く。
     - **[Exit]**: アプリケーションを終了する。
 
 ## 3.3 スキャン送信 (Scan & Send)
@@ -73,7 +67,6 @@ Firestore上の `addressbook` コレクションを管理する画面。
     - リスト各行の `[Remove]` ボタンで即時削除。
 - **フッター操作**:
     - **Status**: 接続状況および詳細なエラーメッセージを表示。
-    - **[Activate]**: 設定ダイアログを開く。
     - **[Close]**: メインメニューへ戻る。
 
 # 4. UI/UX デザイン

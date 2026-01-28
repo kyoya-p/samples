@@ -121,7 +121,6 @@ int main(int argc, char** argv) {
       }
 
       auto active_screen = AppMain;
-      auto show_config = std::make_shared<bool>(false);
       auto show_picker = std::make_shared<bool>(false);
       auto picking_index = std::make_shared<int>(-1);
 
@@ -176,11 +175,7 @@ int main(int argc, char** argv) {
       });
 
       auto close_addr_btn = Button("[Close]", [&] { active_screen = AppMain; }, ButtonOption::Ascii());
-      auto activate_btn = Button("[Activate]", [&] { 
-          api_key_input_val = api_key_str; 
-          *show_config = true; 
-      }, ButtonOption::Ascii());
-      auto addr_nav_container = Container::Horizontal({ activate_btn, close_addr_btn });
+      auto addr_nav_container = Container::Horizontal({ close_addr_btn });
       auto addr_main_container = Container::Vertical({ rows_container, add_row, addr_nav_container });
 
       auto addr_renderer = Renderer(addr_main_container, [=, &service] {
@@ -194,7 +189,7 @@ int main(int argc, char** argv) {
           auto status_txt = text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold;
           if (!err.empty()) status_txt = hbox({ status_txt, text(" " + err) | color(Color::Red) });
 
-          rows.push_back(hbox({ status_txt, filler(), activate_btn->Render(), text(" "), close_addr_btn->Render() }));
+          rows.push_back(hbox({ status_txt, filler(), close_addr_btn->Render() }));
           return vbox(std::move(rows)) | border;
       });
 
@@ -405,14 +400,8 @@ int main(int argc, char** argv) {
       auto btn_addr = Button("Address Book Edit", [&] { active_screen = AppAddressBook; }, ButtonOption::Ascii());
       auto btn_exit = Button("[Exit]", screen.ExitLoopClosure(), ButtonOption::Ascii());
       
-      static std::string api_key_input_val = api_key_str;
-      auto main_activate_btn = Button("[Activate]", [&] { 
-          api_key_input_val = api_key_str; // Sync with current key on open
-          *show_config = true; 
-      }, ButtonOption::Ascii());
-      
-      auto menu_container = Container::Vertical({ btn_scan, btn_addr, main_activate_btn, btn_exit });
-      auto main_menu_renderer = Renderer(menu_container, [&, main_activate_btn] {
+      auto menu_container = Container::Vertical({ btn_scan, btn_addr, btn_exit });
+      auto main_menu_renderer = Renderer(menu_container, [&] {
           auto make_box = [&](Component c, std::string label) {
               auto element = c->Render() | center | size(WIDTH, EQUAL, 31) | size(HEIGHT, EQUAL, 3);
               if (c->Focused()) element = element | inverted;
@@ -428,71 +417,8 @@ int main(int argc, char** argv) {
               make_box(btn_addr, "Address Book Edit") | center,
               filler(),
               separator(),
-              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), main_activate_btn->Render(), text(" "), btn_exit->Render() }),
+              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), btn_exit->Render() }),
           }) | border;
-      });
-
-      // --- Configuration Dialog ---
-      static std::string api_key_input_val = api_key_str;
-      auto key_input_base = Input(&api_key_input_val, "API Key");
-      
-      // Component to handle "Select all on focus"
-      class FocusSelectInput : public ComponentBase {
-      public:
-          FocusSelectInput(Component child, std::string* val) : child_(child), val_(val) { Add(child_); }
-          bool OnEvent(Event event) override {
-              bool was_focused = Focused();
-              bool ret = child_->OnEvent(event);
-              if (!was_focused && Focused()) {
-                  // Gain focus: Select all (FTXUI Input doesn't have SelectAll, 
-                  // but we can simulate by moving cursor to end or handling character events.
-                  // For "Select all", it usually means next char replaces everything.
-                  // Here we just ensure cursor is at the end for convenience if SelectAll is hard.
-                  // Actually, we can use a flag to clear on next keypress if just gained focus.
-                  just_focused_ = true;
-              }
-              if (just_focused_ && event.is_character()) {
-                  *val_ = "";
-                  just_focused_ = false;
-                  return child_->OnEvent(event); // Re-process with empty string
-              }
-              if (event == Event::Tab || event == Event::TabReverse || event == Event::ArrowDown || event == Event::ArrowUp) {
-                  // Focus moving away or internal navigation
-              } else if (just_focused_ && (event == Event::ArrowLeft || event == Event::ArrowRight)) {
-                  just_focused_ = false;
-              }
-              return ret;
-          }
-          Element Render() override {
-              auto el = child_->Render();
-              if (just_focused_) el = el | inverted; // Visual hint
-              return el;
-          }
-      private:
-          Component child_;
-          std::string* val_;
-          bool just_focused_ = false;
-      };
-
-      auto key_input = std::make_shared<FocusSelectInput>(key_input_base, &api_key_input_val);
-      auto config_connect_btn = Button("[Connect]", [&] { 
-          service.Initialize(api_key_input_val, 20);
-          api_key_str = api_key_input_val; // Update current key
-          // Save to app.conf
-          std::ofstream conf_out("app.conf");
-          conf_out << "API_KEY=" << api_key_input_val << std::endl;
-          *show_config = false;
-      }, ButtonOption::Ascii());
-      auto config_cancel_btn = Button("[Cancel]", [=] { *show_config = false; }, ButtonOption::Ascii());
-      auto config_container = Container::Vertical({ key_input, Container::Horizontal({ config_connect_btn, config_cancel_btn }) | center });
-      auto config_renderer = Renderer(config_container, [=, &service] {
-          return vbox({ 
-              text("Configuration") | bold | center, 
-              separator(), 
-              hbox(text("API Key: "), key_input->Render()) | border, 
-              hbox(config_connect_btn->Render(), config_cancel_btn->Render()) | center, 
-              text(service.GetError()) | color(Color::Red) | center 
-          }) | size(WIDTH, GREATER_THAN, 60) | border | bgcolor(Color::Blue) | clear_under;
       });
 
       // --- Root Router ---
@@ -508,7 +434,6 @@ int main(int argc, char** argv) {
           else if (active_screen == AppAddressBook) content = addr_renderer->Render();
           else if (active_screen == AppScanSend) content = scan_renderer->Render();
 
-          if (*show_config) return dbox({ content | color(Color::GrayDark), config_renderer->Render() | center });
           if (*show_picker) return dbox({ content | color(Color::GrayDark), picker_renderer->Render() | center });
           return content;
       });
@@ -523,12 +448,11 @@ int main(int argc, char** argv) {
               refresh_scan_ui();
               return true;
           }
-          if (event == Event::Character('q') && !*show_config && !*show_picker) {
+          if (event == Event::Character('q') && !*show_picker) {
               if (active_screen == AppMain) screen.Exit();
               else active_screen = AppMain;
               return true;
           }
-          if (*show_config) return config_container->OnEvent(event);
           if (*show_picker) return picker_renderer->OnEvent(event);
           return root_container->OnEvent(event);
       });
