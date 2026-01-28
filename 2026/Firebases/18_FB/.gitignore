@@ -1,0 +1,8 @@
+/.idea/
+/build/
+image_application.md
+/node_modules/
+/testspec/__snapshots__/
+/.tui-test/
+/app.log
+/app.conf
