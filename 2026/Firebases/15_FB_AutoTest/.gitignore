@@ -1,6 +1,0 @@
-/.idea/
-/build/
-app*.log
-/node_modules/
-/testspec/__snapshots__/
-/.tui-test/
