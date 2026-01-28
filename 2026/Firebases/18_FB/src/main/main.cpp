@@ -145,11 +145,10 @@ int main(int argc, char** argv) {
         }
 
         if (service.HasMore()) {
-            // Automatically fill screen if list is short
-            if (contacts.size() < (size_t)Terminal::Size().dimy) {
+            rows_container->Add(Renderer([&service] { 
                 service.LoadMore(10);
-            }
-            rows_container->Add(Renderer([] { return hbox({ filler(), text("(More items available)") | dim, filler() }); }));
+                return hbox({ filler(), text("Loading...") | dim, filler() }); 
+            }));
         }
       };
 
@@ -234,10 +233,10 @@ int main(int argc, char** argv) {
           }
 
           if (service_ptr->HasMore()) {
-              if (contacts.size() < (size_t)Terminal::Size().dimy) {
+              p_list_container->Add(Renderer([service_ptr] {
                   service_ptr->LoadMore(10);
-              }
-              p_list_container->Add(Renderer([] { return hbox({ filler(), text("(More items available)") | dim, filler() }); }));
+                  return hbox({ filler(), text("Loading...") | dim, filler() });
+              }));
           }
       };
 

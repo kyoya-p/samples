@@ -55,13 +55,13 @@ cmake --build build -j 4   # 実行ファイル作成
 Windows:
 ```powershell
 $env:API_KEY="your-api-key"
-.\build\Release\FirebaseApp.exe
+.\build\Release\AddrApp.exe
 ```
 
 Ubuntu:
 ```bash
 export API_KEY="your-api-key"
-./build/FirebaseApp
+./build/AddrApp
 ```
 
 # テスト

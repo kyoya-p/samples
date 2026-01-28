@@ -102,12 +102,11 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(FirebaseApp src/main/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
+add_executable(AddrApp src/main/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
 
-# Link Libraries
 if(MSVC)
-    target_link_libraries(FirebaseApp
-      PRIVATE
+    target_link_libraries(AddrApp
+        PRIVATE
         ftxui::screen
         ftxui::dom
         ftxui::component
@@ -115,8 +114,8 @@ if(MSVC)
         ${SYSTEM_LIBS}
     )
 else()
-    target_link_libraries(FirebaseApp
-      PRIVATE
+    target_link_libraries(AddrApp
+        PRIVATE
         ftxui::screen
         ftxui::dom
         ftxui::component
@@ -130,9 +129,11 @@ else()
     )
 endif()
 
-target_include_directories(FirebaseApp
-  PRIVATE
+# インクルードディレクトリの設定
+target_include_directories(AddrApp
+    PRIVATE
     ${FIREBASE_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main
 )
 
 # --- SendApp ---
