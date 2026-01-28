@@ -13,6 +13,9 @@ void Log(const std::string& message);
 // Helper to capture stack trace
 std::string GetStackTrace();
 
+// Save a string content to a timestamped file: prefix.HHMMSS.log
+void SaveSnapshot(const std::string& prefix, const std::string& content);
+
 // Macro to log and throw exception
 #define THROW_LOG(msg) \
     do { \

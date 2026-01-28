@@ -64,3 +64,20 @@ std::string GetStackTrace() {
 #endif
 }
 
+void SaveSnapshot(const std::string& prefix, const std::string& content) {
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm tm_struct;
+#ifdef _WIN32
+    localtime_s(&tm_struct, &now);
+#else
+    localtime_r(&now, &tm_struct);
+#endif
+    char time_buf[16];
+    std::strftime(time_buf, sizeof(time_buf), "%H%M%S", &tm_struct);
+    std::string filename = prefix + "." + time_buf + ".log";
+    std::ofstream out(filename);
+    if (out.is_open()) {
+        out << content;
+    }
+}
+

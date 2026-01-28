@@ -10,13 +10,6 @@
 #include "firebase/app.h"
 #include "firebase/firestore.h"
 
-struct Contact {
-  std::string id;
-  std::string name;
-  std::string email;
-  std::string timestamp;
-};
-
 class FirestoreService {
  public:
   FirestoreService(std::function<void()> on_update);
@@ -27,16 +20,19 @@ class FirestoreService {
   bool Initialize(const std::string& api_key, int page_size);
   void LoadMore(int page_size);
   
-  // New methods for query modification
   void SetSortOrder(const std::string& field, bool descending);
   void SetFilter(const std::string& name_prefix, const std::string& email_prefix);
   
-  void StartListeningNextPage();
-  void RebuildContacts();
+  void StartQuery(); 
+  void FetchNextPage(); // Fetch only the next 10 items
   void AddContact(const std::string& name, const std::string& email);
   void RemoveContact(const std::string& id);
 
-  std::vector<Contact> GetContacts();
+  // Buffer-less direct access to SDK snapshots
+  size_t GetLoadedCount();
+  std::string GetData(size_t index, const std::string& field);
+  std::string GetId(size_t index);
+  
   std::string GetError();
   bool IsConnected() const;
   bool IsLoading() const;
@@ -44,11 +40,8 @@ class FirestoreService {
 
  private:
   struct Page {
-      firebase::firestore::ListenerRegistration registration;
-      std::vector<Contact> contacts;
+      std::unique_ptr<firebase::firestore::QuerySnapshot> snapshot;
       firebase::firestore::DocumentSnapshot last_doc;
-      bool has_more = true;
-      bool has_pending_writes = false;
   };
 
   void SetError(const std::string& msg);
@@ -56,18 +49,18 @@ class FirestoreService {
   firebase::App* app_ = nullptr;
   firebase::firestore::Firestore* firestore_ = nullptr;
   
+  // Storage of snapshots per page (Limit 10 each)
   std::vector<std::unique_ptr<Page>> pages_;
-  std::vector<Contact> contacts_;
+  
   std::string error_message_;
   std::string current_api_key_;
   
   // Query state
   std::string sort_field_ = "timestamp";
-  bool sort_descending_ = false;
+  bool sort_descending_ = true;
   std::string filter_name_ = "";
   std::string filter_email_ = "";
 
-  int page_size_ = 10;
   bool has_more_ = true;
   bool is_loading_ = false;
   std::mutex mutex_;

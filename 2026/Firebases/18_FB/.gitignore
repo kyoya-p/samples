@@ -4,7 +4,6 @@ image_application.md
 /node_modules/
 /testspec/__snapshots__/
 /.tui-test/
-/addrapp.log
+/*.log
 /app.conf
-/sendapp.log
 
