@@ -93,7 +93,7 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     }
 
     firebase::firestore::Settings settings;
-    settings.set_persistence_enabled(false);
+    settings.set_persistence_enabled(true);
     // Remove explicit host to let SDK handle it, but ensure SSL is default
     firestore_->set_settings(settings);
 
