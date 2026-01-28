@@ -26,6 +26,11 @@ class FirestoreService {
   void StopAllListeners();
   bool Initialize(const std::string& api_key, int page_size);
   void LoadMore(int page_size);
+  
+  // New methods for query modification
+  void SetSortOrder(const std::string& field, bool descending);
+  void SetFilter(const std::string& name_prefix, const std::string& email_prefix);
+  
   void StartListeningNextPage();
   void RebuildContacts();
   void AddContact(const std::string& name, const std::string& email);
@@ -55,6 +60,13 @@ class FirestoreService {
   std::vector<Contact> contacts_;
   std::string error_message_;
   std::string current_api_key_;
+  
+  // Query state
+  std::string sort_field_ = "timestamp";
+  bool sort_descending_ = false;
+  std::string filter_name_ = "";
+  std::string filter_email_ = "";
+
   int page_size_ = 10;
   bool has_more_ = true;
   bool is_loading_ = false;

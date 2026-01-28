@@ -103,6 +103,30 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     return true;
 }
 
+void FirestoreService::SetSortOrder(const std::string& field, bool descending) {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (sort_field_ == field && sort_descending_ == descending) return;
+        sort_field_ = field;
+        sort_descending_ = descending;
+    }
+    // Reset pagination
+    StopAllListeners();
+    StartListeningNextPage();
+}
+
+void FirestoreService::SetFilter(const std::string& name_prefix, const std::string& email_prefix) {
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (filter_name_ == name_prefix && filter_email_ == email_prefix) return;
+        filter_name_ = name_prefix;
+        filter_email_ = email_prefix;
+    }
+    // Reset pagination
+    StopAllListeners();
+    StartListeningNextPage();
+}
+
 void FirestoreService::LoadMore(int page_size) {
     if (!firestore_ || is_loading_ || !has_more_) return;
     page_size_ = page_size;
@@ -114,7 +138,28 @@ void FirestoreService::StartListeningNextPage() {
     
     size_t page_index;
     std::string cursor_id = "None";
-    firebase::firestore::Query query = firestore_->Collection("addressbook").OrderBy("timestamp");
+    firebase::firestore::Query query = firestore_->Collection("addressbook");
+
+    // Apply Sorting and Filtering logic compatible with Firestore
+    // Note: To filter by a field with inequality (prefix search), we must sort by it first.
+    // The UI logic ensures we mostly search on the sorted column.
+    
+    if (sort_field_ == "name") {
+        query = query.OrderBy("name", sort_descending_ ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending);
+        if (!filter_name_.empty()) {
+            query = query.WhereGreaterThanOrEqualTo("name", firebase::firestore::FieldValue::String(filter_name_))
+                         .WhereLessThanOrEqualTo("name", firebase::firestore::FieldValue::String(filter_name_ + "\uf8ff"));
+        }
+    } else if (sort_field_ == "email") {
+        query = query.OrderBy("email", sort_descending_ ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending);
+        if (!filter_email_.empty()) {
+            query = query.WhereGreaterThanOrEqualTo("email", firebase::firestore::FieldValue::String(filter_email_))
+                         .WhereLessThanOrEqualTo("email", firebase::firestore::FieldValue::String(filter_email_ + "\uf8ff"));
+        }
+    } else {
+        // Default / Timestamp
+        query = query.OrderBy("timestamp", sort_descending_ ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending);
+    }
 
     {
         std::lock_guard<std::mutex> lock(mutex_);
