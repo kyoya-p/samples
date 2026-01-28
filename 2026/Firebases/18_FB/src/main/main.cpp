@@ -124,14 +124,8 @@ int main(int argc, char** argv) {
       auto show_picker = std::make_shared<bool>(false);
       auto picking_index = std::make_shared<int>(-1);
 
-      struct DestRow {
-          std::string email;
-          Component input;
-          Component select_btn;
-          Component remove_btn;
-          Component container;
-      };
-      static std::vector<std::shared_ptr<DestRow>> scan_rows;
+      static std::string scan_new_email = "";
+      static std::vector<std::string> scan_confirmed_emails;
 
       // --- Address Book Screen Components ---
       auto rows_container = Container::Vertical({});
@@ -239,9 +233,7 @@ int main(int argc, char** argv) {
               else label_email.resize(30, ' ');
 
               p_list_container->Add(Button(label_name + " " + label_email + " " + contact.timestamp, [&, email] { 
-                  if (*picking_index >= 0 && *picking_index < (int)scan_rows.size()) {
-                      scan_rows[*picking_index]->email = email;
-                  }
+                  scan_new_email = email;
                   *show_picker = false;
                   // Reset filters
                   p_filter_name = ""; p_filter_email = "";
@@ -326,74 +318,88 @@ int main(int argc, char** argv) {
       // --- Scan & Send Screen Components ---
       auto scan_list_container = Container::Vertical({});
 
-      auto add_scan_row = [&](std::string initial_email = "") {
-          auto row = std::make_shared<DestRow>();
-          row->email = initial_email;
-          row->input = Input(&row->email, "Address");
-          
-          int idx = (int)scan_rows.size();
-          row->select_btn = Button("[Select]", [=] { 
-              *picking_index = idx;
-              p_filter_name = "";
-              p_filter_email = "";
-              update_picker_list();
-              *show_picker = true;
-          }, ButtonOption::Ascii());
+      // New Entry Row Components
+      auto new_email_input = Input(&scan_new_email, "Address");
+      auto new_addr_btn = Button("[Address Book]", [&] { 
+          p_filter_name = "";
+          p_filter_email = "";
+          update_picker_list();
+          *show_picker = true;
+      }, ButtonOption::Ascii());
+      
+      // Forward declaration for refresh
+      std::function<void()> refresh_scan_ui;
 
-          row->remove_btn = Button("[Remove]", [=, &screen] () mutable {
-              auto it = std::find_if(scan_rows.begin(), scan_rows.end(), [&](const std::shared_ptr<DestRow>& r) { return r.get() == row.get(); });
-              if (it != scan_rows.end()) {
-                  scan_rows.erase(it);
-                  screen.Post([] {});
-              }
-          }, ButtonOption::Ascii());
+      auto new_enter_btn = Button("[Enter]", [&] {
+          if (!scan_new_email.empty()) {
+              scan_confirmed_emails.push_back(scan_new_email);
+              scan_new_email = "";
+              refresh_scan_ui();
+          }
+      }, ButtonOption::Ascii());
 
-          row->container = Container::Horizontal({ row->input, row->select_btn, row->remove_btn });
-          scan_rows.push_back(row);
-          return row;
-      };
+      auto new_row_container = Container::Horizontal({
+          Renderer([]{ return text("- "); }),
+          Renderer(new_email_input, [&] { return new_email_input->Render() | border | flex; }) | flex,
+          Renderer([]{ return text(" "); }),
+          new_addr_btn,
+          Renderer([]{ return text(" "); }),
+          new_enter_btn
+      });
 
-      auto refresh_scan_ui = [&]() {
+      refresh_scan_ui = [&]() {
           scan_list_container->DetachAllChildren();
-          for (auto& row : scan_rows) {
-              auto renderer = Renderer(row->container, [row] {
-                  return hbox({
-                      text("- "),
-                      row->input->Render() | flex,
-                      row->select_btn->Render(),
-                      row->remove_btn->Render()
-                  });
+          for (int i = 0; i < (int)scan_confirmed_emails.size(); ++i) {
+              std::string email = scan_confirmed_emails[i];
+              auto remove_btn = Button("[Remove]", [=, &refresh_scan_ui] {
+                   // Capture by value/copy index is tricky if list changes, but here we redraw on every change.
+                   // Finding by value is safer or just rebuilding properly.
+                   auto it = std::find(scan_confirmed_emails.begin(), scan_confirmed_emails.end(), email);
+                   if (it != scan_confirmed_emails.end()) {
+                       scan_confirmed_emails.erase(it);
+                       refresh_scan_ui();
+                   }
+              }, ButtonOption::Ascii());
+
+              auto row = Container::Horizontal({
+                  Renderer([email]{ return text("- " + email) | flex; }),
+                  remove_btn
               });
-              scan_list_container->Add(renderer);
+              scan_list_container->Add(row);
           }
       };
+      
+      // Initial refresh
+      refresh_scan_ui();
 
-      if (scan_rows.empty()) add_scan_row();
-
-      auto add_row_btn = Button("(+)", [&] { add_scan_row(); refresh_scan_ui(); }, ButtonOption::Ascii());
+      // Hook to auto-refresh if new email input needs it? 
+      // Actually, if we pick from address book, scan_new_email updates, but Input component refers to it by pointer, so it renders new value automatically.
+      // But we might want to focus it?
+      
       auto send_btn = Button("[Send]", [&] {
           std::string log_msg = "Scan & Send: Sending to ";
-          for (auto& r : scan_rows) if (!r->email.empty()) log_msg += r->email + ", ";
+          for (const auto& email : scan_confirmed_emails) log_msg += email + ", ";
           Log(log_msg);
-          scan_rows.clear();
-          add_scan_row();
+          scan_confirmed_emails.clear();
           refresh_scan_ui();
       }, ButtonOption::Ascii());
       auto back_btn = Button("[Back]", [&] { active_screen = AppMain; }, ButtonOption::Ascii());
 
-      auto scan_main_container = Container::Vertical({ scan_list_container, add_row_btn, Container::Horizontal({send_btn, back_btn}) });
+      auto scan_main_container = Container::Vertical({
+          Renderer([]{ return text("To:"); }),
+          new_row_container,
+          scan_list_container | flex, 
+          Container::Horizontal({ Renderer([]{ return filler(); }), send_btn, Renderer([]{ return text("      "); }), back_btn }) 
+      });
+
       auto scan_renderer = Renderer(scan_main_container, [&] {
           return vbox({
-              text("Scan & Send") | bold | center,
+              text("Scan & Send") | bold,
               separator(),
-              text("To:"),
-              scan_list_container->Render() | vscroll_indicator | frame | flex,
-              add_row_btn->Render(),
-              filler(),
-              separator(),
-              hbox({ filler(), send_btn->Render(), text(" "), back_btn->Render() })
+              scan_main_container->Render() | flex
           }) | border;
       });
+
 
       // --- Main Menu Screen ---
       auto btn_scan = Button("Scan & Send", [&] { active_screen = AppScanSend; }, ButtonOption::Ascii());

@@ -134,3 +134,37 @@ target_include_directories(FirebaseApp
   PRIVATE
     ${FIREBASE_INCLUDE_DIR}
 )
+
+# --- SendApp ---
+add_executable(SendApp src/send/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
+
+if(MSVC)
+    target_link_libraries(SendApp
+      PRIVATE
+        ftxui::screen
+        ftxui::dom
+        ftxui::component
+        ${FIREBASE_LIBS}
+        ${SYSTEM_LIBS}
+    )
+else()
+    target_link_libraries(SendApp
+      PRIVATE
+        ftxui::screen
+        ftxui::dom
+        ftxui::component
+        ${FIREBASE_LIBS}
+        ${CURL_LIBRARIES}
+        OpenSSL::SSL
+        OpenSSL::Crypto
+        ZLIB::ZLIB
+        Threads::Threads
+        ${SYSTEM_LIBS}
+    )
+endif()
+
+target_include_directories(SendApp
+  PRIVATE
+    ${FIREBASE_INCLUDE_DIR}
+    src/main
+)
