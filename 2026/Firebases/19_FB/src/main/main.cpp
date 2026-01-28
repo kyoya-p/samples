@@ -65,7 +65,26 @@ std::string GenerateRandomName() {
   std::uniform_int_distribution<> d1(0, 7);
   std::uniform_int_distribution<> d2(0, 6);
   std::uniform_int_distribution<> d3(100, 999);
-  return f[d1(gen)] + " " + std::to_string(d3(gen)) + " " + l[d2(gen)];
+  std::uniform_int_distribution<> d_type(0, 2); // 0: None, 1: Single, 2: Double
+  std::uniform_int_distribution<> d_char(0, 51); // a-z, A-Z
+
+  auto get_char = [&](int v) -> char {
+      if (v < 26) return 'a' + v;
+      return 'A' + (v - 26);
+  };
+
+  std::string prefix = "";
+  int type = d_type(gen);
+  if (type == 1) {
+      prefix += get_char(d_char(gen));
+      prefix += ". ";
+  } else if (type == 2) {
+      prefix += get_char(d_char(gen));
+      prefix += get_char(d_char(gen));
+      prefix += ". ";
+  }
+
+  return prefix + f[d1(gen)] + " " + std::to_string(d3(gen)) + " " + l[d2(gen)];
 }
 
 std::string GenerateRandomEmail(const std::string& name) {
@@ -84,7 +103,10 @@ int main(int argc, char** argv) {
       std::atomic<bool> started{false};
       FirestoreService service([&screen, &started]() mutable { if (started) screen.Post(Event::Custom); });
       
-      int nAddr = 10;
+      // 画面の高さに合わせて初期取得件数を決定 (高さ + バッファ5行)
+      int nAddr = Terminal::Size().dimy + 5;
+      if (nAddr < 10) nAddr = 10; 
+
       std::string api_key_str;
       const char* key = std::getenv("FB_API_KEY");
       if (!key) key = std::getenv("API_KEY");
@@ -131,13 +153,17 @@ int main(int argc, char** argv) {
             });
             size_t last_addr_rendered_count = 0;
             auto refresh_address_list = [&]() {
+              // フィルタ/ソート条件が変更された可能性があるため、最新の状態をサービスに同期
+              // 注意: サービス内部で条件が変わっていれば自動的に再取得(Reset)が走る
               std::string sort_key = (addr_sort_col == 0) ? "name" : (addr_sort_col == 1) ? "email" : "timestamp";
               service.SetSortOrder(sort_key, addr_sort_desc);
               service.SetFilter(addr_filter_name, addr_filter_email);
 
               size_t total = service.GetLoadedCount();
+              // データ件数に変更がない場合は、コンポーネントツリーを再構築しない（クエリ爆発防止）
               if (total == last_addr_rendered_count && rows_container->ChildCount() > 0) return;
-                    rows_container->DetachAllChildren();
+              
+              rows_container->DetachAllChildren();
               last_addr_rendered_count = total;
               
               for (size_t i = 0; i < total; ++i) {
@@ -148,7 +174,7 @@ int main(int argc, char** argv) {
                 }, ButtonOption::Ascii());
       
                 auto row = Renderer(remove_btn, [=, &service] {
-                  // "表示するときにクエリ" - SDKのスナップショットから直接取得
+                  // 完全バッファレス・レンダリング: 描画の瞬間にスナップショットからデータを抽出
                   auto el = MakeTableRow(
                       text(service.GetData(idx, "name")), 
                       text(service.GetData(idx, "email")), 
@@ -157,7 +183,10 @@ int main(int argc, char** argv) {
                   );
                   if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
                   if (remove_btn->Focused()) {
-                      if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2) service.LoadMore(10);
+                      // スクロールによる追加読み込み
+                      if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) {
+                          service.LoadMore(10);
+                      }
                       return el | inverted;
                   }
                   return el;
@@ -165,25 +194,17 @@ int main(int argc, char** argv) {
                 rows_container->Add(row);
               }
       
-                              if (service.HasMore()) {
-      
-                                  rows_container->Add(Renderer([&service] { 
-      
-                                      // 画面表示が10数件なので、20件（2ページ分）までは自動取得を許可
-      
-                                      if (!service.IsLoading() && service.GetLoadedCount() < 20) {
-      
-                                          service.LoadMore(10);
-      
-                                      }
-      
-                                      return hbox({ filler(), text("Loading...") | dim, filler() }); 
-      
-                                  }));
-      
-                              }
-      
-                            };      static std::string n_name = GenerateRandomName();
+              // 次のページがある場合、または初回読み込み中
+              if (service.HasMore() || service.IsLoading()) {
+                  rows_container->Add(Renderer([&service, nAddr] { 
+                      // 起動直後またはフィルタ変更直後は、画面を埋めるのに必要な件数(nAddr)までは自動取得を許可
+                      if (!service.IsLoading() && (int)service.GetLoadedCount() < nAddr && service.HasMore()) {
+                          service.LoadMore(10);
+                      }
+                      return hbox({ filler(), text(service.IsLoading() ? "Loading..." : "") | dim, filler() }); 
+                  }));
+              }
+            };      static std::string n_name = GenerateRandomName();
       static std::string n_email = GenerateRandomEmail(n_name);
       auto name_input = Input(&n_name, "Name");
       auto email_input = Input(&n_email, "Email");
@@ -219,12 +240,12 @@ int main(int argc, char** argv) {
           }) | border | bgcolor(Color::Blue) | size(WIDTH, GREATER_THAN, 60) | clear_under;
       });
 
-      auto addr_btn_name = Button("Name", [&]{ if(addr_sort_col==0) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=0; addr_sort_desc=false; addr_filter_email="";} refresh_address_list(); }, ButtonOption::Ascii());
-      auto addr_btn_mail = Button("Mail", [&]{ if(addr_sort_col==1) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=1; addr_sort_desc=false; addr_filter_name="";} refresh_address_list(); }, ButtonOption::Ascii());
-      auto addr_btn_time = Button("Time", [&]{ if(addr_sort_col==2) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=2; addr_sort_desc=true; addr_filter_name=""; addr_filter_email="";} refresh_address_list(); }, ButtonOption::Ascii());
+      auto addr_btn_name = Button("Name", [&]{ if(addr_sort_col==0) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=0; addr_sort_desc=false; addr_filter_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
+      auto addr_btn_mail = Button("Mail", [&]{ if(addr_sort_col==1) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=1; addr_sort_desc=false; addr_filter_name="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
+      auto addr_btn_time = Button("Time", [&]{ if(addr_sort_col==2) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=2; addr_sort_desc=true; addr_filter_name=""; addr_filter_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
 
-      auto addr_input_name_c = CatchEvent(addr_input_name, [&](Event e){ if(addr_sort_col != 0) return false; bool ret = addr_input_name->OnEvent(e); if(ret) refresh_address_list(); return ret; });
-      auto addr_input_email_c = CatchEvent(addr_input_email, [&](Event e){ if(addr_sort_col != 1) return false; bool ret = addr_input_email->OnEvent(e); if(ret) refresh_address_list(); return ret; });
+      auto addr_input_name_c = CatchEvent(addr_input_name, [&](Event e){ if(addr_sort_col != 0) return false; bool ret = addr_input_name->OnEvent(e); if(ret) screen.Post(Event::Custom); return ret; });
+      auto addr_input_email_c = CatchEvent(addr_input_email, [&](Event e){ if(addr_sort_col != 1) return false; bool ret = addr_input_email->OnEvent(e); if(ret) screen.Post(Event::Custom); return ret; });
 
       auto close_addr_btn = Button("[Close]", screen.ExitLoopClosure(), ButtonOption::Ascii());
       auto activate_btn = Button("[Activate]", [&] { temp_api_key = api_key_str; *show_api_dialog = true; }, ButtonOption::Ascii());
@@ -374,6 +395,7 @@ int main(int argc, char** argv) {
       });
 
       started = true;
+      refresh_address_list();
       screen.Loop(final_component);
   } catch (const std::exception& e) {
       std::cerr << "EXCEPTION: " << e.what() << std::endl;
