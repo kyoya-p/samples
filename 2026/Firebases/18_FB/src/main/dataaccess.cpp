@@ -17,17 +17,12 @@ FirestoreService::~FirestoreService() {
 void FirestoreService::Cleanup() {
     StopAllListeners();
     if (app_) {
-        Log("Cleaning up Firebase resources...");
         if (firestore_) {
-            Log("Deleting Firestore instance...");
-            // No explicit delete for Firestore as per SDK docs, use nullptr or wait for App delete
             firestore_ = nullptr;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        Log("Deleting Firebase App...");
         delete app_; 
         app_ = nullptr;
-        // Wait for OS to release network resources
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
@@ -35,7 +30,6 @@ void FirestoreService::Cleanup() {
 void FirestoreService::StopAllListeners() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!pages_.empty()) {
-        Log("Removing all Firestore listeners (" + std::to_string(pages_.size()) + " pages)...");
         for (auto& page : pages_) {
             if (page->registration.is_valid()) {
                 page->registration.Remove();
@@ -96,8 +90,6 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     settings.set_persistence_enabled(true);
     // Remove explicit host to let SDK handle it, but ensure SSL is default
     firestore_->set_settings(settings);
-
-    Log("Firebase initialized. API Key length: " + std::to_string(api_key.length()));
 
     StartListeningNextPage();
     return true;
@@ -182,7 +174,12 @@ void FirestoreService::StartListeningNextPage() {
     int limit = page_size_;
     query = query.Limit(limit);
     
-    Log("Starting listener for Page " + std::to_string(page_index) + " (Limit: " + std::to_string(limit) + ", Cursor: " + cursor_id + ")");
+    std::string query_info = "Firestore Query: Page=" + std::to_string(page_index) + " Limit=" + std::to_string(limit);
+    query_info += " OrderBy=" + sort_field_ + (sort_descending_ ? " DESC" : " ASC");
+    if (!filter_name_.empty()) query_info += " FilterName=\"" + filter_name_ + "\"";
+    if (!filter_email_.empty()) query_info += " FilterEmail=\"" + filter_email_ + "\"";
+    if (cursor_id != "None") query_info += " StartAfter=" + cursor_id;
+    Log(query_info);
 
     is_loading_ = true;
     
@@ -193,7 +190,6 @@ void FirestoreService::StartListeningNextPage() {
         pages_.push_back(std::move(page));
     }
 
-    Log("Invoking query.AddSnapshotListener...");
     page_ptr->registration = query.AddSnapshotListener(
         [this, page_index, page_ptr](const firebase::firestore::QuerySnapshot& snapshot,
                                     firebase::firestore::Error error, const std::string& error_msg) {
@@ -214,11 +210,6 @@ void FirestoreService::StartListeningNextPage() {
                 c.id = doc.id();
                 auto fields = doc.GetData();
                 
-                // Debug logging
-                std::string keys = "";
-                for (auto const& [k, v] : fields) { keys += k + ","; }
-                Log("Doc: " + c.id + " Fields: " + keys);
-
                 if (fields.count("name")) c.name = fields["name"].string_value();
                 if (fields.count("email")) c.email = fields["email"].string_value();
                 if (fields.count("timestamp") && fields["timestamp"].is_timestamp()) {

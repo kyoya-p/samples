@@ -44,6 +44,7 @@ using namespace ftxui;
 
 int main(int argc, char** argv) {
   try {
+      GetLogFilename() = "sendapp.log";
       std::ofstream(GetLogFilename(), std::ios::trunc);
       firebase::SetLogLevel(firebase::kLogLevelError);
 
@@ -278,16 +279,23 @@ int main(int argc, char** argv) {
       };
       refresh_scan_ui();
 
-      auto send_btn = Button("[Send]", [&] {
-          if (scan_confirmed_emails.empty()) return;
-          std::string log_msg = "Sending to: ";
-          for (const auto& email : scan_confirmed_emails) log_msg += email + ", ";
-          Log(log_msg);
-          sent_msg_content = "Sent to " + std::to_string(scan_confirmed_emails.size()) + " recipients.";
-          *show_sent_dialog = true;
-          scan_confirmed_emails.clear();
-          refresh_scan_ui();
-      }, ButtonOption::Ascii());
+            auto send_btn = Button("[Send]", [&] {
+
+                if (scan_confirmed_emails.empty()) return;
+
+                
+
+                sent_msg_content = "Sent to " + std::to_string(scan_confirmed_emails.size()) + " recipients.";
+
+                *show_sent_dialog = true;
+
+      
+
+                scan_confirmed_emails.clear();
+
+                refresh_scan_ui();
+
+            }, ButtonOption::Ascii());
 
       auto close_app_btn = Button("[Close]", screen.ExitLoopClosure(), ButtonOption::Ascii());
 

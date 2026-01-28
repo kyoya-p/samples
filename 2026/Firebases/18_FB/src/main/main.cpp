@@ -377,9 +377,6 @@ int main(int argc, char** argv) {
       // But we might want to focus it?
       
       auto send_btn = Button("[Send]", [&] {
-          std::string log_msg = "Scan & Send: Sending to ";
-          for (const auto& email : scan_confirmed_emails) log_msg += email + ", ";
-          Log(log_msg);
           scan_confirmed_emails.clear();
           refresh_scan_ui();
       }, ButtonOption::Ascii());

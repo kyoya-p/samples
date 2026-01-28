@@ -6,3 +6,5 @@ image_application.md
 /.tui-test/
 /app.log
 /app.conf
+/sendapp.log
+
