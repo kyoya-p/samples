@@ -42,6 +42,7 @@ class FirestoreService {
   struct Page {
       std::unique_ptr<firebase::firestore::QuerySnapshot> snapshot;
       firebase::firestore::DocumentSnapshot last_doc;
+      firebase::firestore::ListenerRegistration listener_registration;
   };
 
   void SetError(const std::string& msg);
@@ -63,6 +64,7 @@ class FirestoreService {
 
   bool has_more_ = true;
   bool is_loading_ = false;
+  int initial_page_size_ = 10;
   std::mutex mutex_;
   std::function<void()> on_update_;
 };

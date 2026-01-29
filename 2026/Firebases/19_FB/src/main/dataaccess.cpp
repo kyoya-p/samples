@@ -30,16 +30,24 @@ void FirestoreService::Cleanup() {
 
 void FirestoreService::StopAllListeners() {
     std::lock_guard<std::mutex> lock(mutex_);
+    for (auto& page : pages_) {
+        page->listener_registration.Remove();
+    }
     pages_.clear();
 }
 
 #ifdef _WIN32
 #include <windows.h>
+#include <process.h>
+#define getpid _getpid
+#else
+#include <unistd.h>
 #endif
 
 bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     Cleanup(); 
     current_api_key_ = api_key;
+    initial_page_size_ = page_size;
     has_more_ = true;
 
 #ifdef _WIN32
@@ -56,7 +64,9 @@ bool FirestoreService::Initialize(const std::string& api_key, int page_size) {
     options.set_messaging_sender_id("646759465365");
     options.set_storage_bucket("riot26-70125.firebasestorage.app");
 
-    app_ = firebase::App::Create(options); 
+    // Use a unique app name based on PID to avoid LevelDB lock contention
+    std::string app_name = "firestore_app_" + std::to_string(getpid());
+    app_ = firebase::App::Create(options, app_name.c_str()); 
     firebase::SetLogLevel(firebase::kLogLevelAssert);
     
     if (!app_) {
@@ -116,11 +126,25 @@ void FirestoreService::FetchNextPage() {
     if (!firestore_) return;
 
     size_t page_index;
+    firebase::firestore::DocumentSnapshot start_after_doc;
+    bool use_start_after = false;
+
     {
         std::lock_guard<std::mutex> lock(mutex_);
         if (is_loading_) return;
+        
+        if (!pages_.empty()) {
+             if (pages_.back()->last_doc.is_valid()) {
+                 start_after_doc = pages_.back()->last_doc;
+                 use_start_after = true;
+             } else {
+                 return;
+             }
+        }
+
         is_loading_ = true;
         page_index = pages_.size();
+        pages_.push_back(std::make_unique<Page>());
     }
 
     firebase::firestore::Query query = firestore_->Collection("addressbook");
@@ -145,63 +169,79 @@ void FirestoreService::FetchNextPage() {
         query = query.OrderBy("timestamp", sort_descending_ ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending);
     }
 
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (page_index > 0) {
-            auto& last_page = pages_.back();
-            if (last_page->last_doc.is_valid()) {
-                query = query.StartAfter(last_page->last_doc);
-            }
-        }
+    if (use_start_after) {
+        query = query.StartAfter(start_after_doc);
     }
 
-    // Always use Limit(10) explicitly before Get()
-    firebase::firestore::Query limited_query = query.Limit(10);
+    // Use initial_page_size_ for the first page, then 10 for subsequent pages
+    int32_t limit_size = (page_index == 0) ? initial_page_size_ : 10;
+    firebase::firestore::Query limited_query = query.Limit(limit_size);
     
-    std::string q_log = "Firestore Query: Page=";
+    std::string q_log = "Firestore Listen: Page=";
     q_log += std::to_string(page_index);
-    q_log += " Limit=10 OrderBy=";
+    q_log += " Limit=" + std::to_string(limit_size) + " OrderBy=";
     q_log += sort_field_;
     Log(q_log);
 
-    limited_query.Get().OnCompletion([this, page_index](const firebase::Future<firebase::firestore::QuerySnapshot>& completed_future) {
-        if (completed_future.error() != firebase::firestore::Error::kErrorOk) {
+    firebase::firestore::ListenerRegistration registration = limited_query.AddSnapshotListener(
+        [this, page_index, limit_size](const firebase::firestore::QuerySnapshot& snapshot,
+                           firebase::firestore::Error error,
+                           const std::string& error_message) {
+        
+        if (error != firebase::firestore::Error::kErrorOk) {
             std::string err = "Firestore Error (Page=" + std::to_string(page_index) + "): ";
-            err += completed_future.error_message();
+            err += error_message;
             SetError(err);
-            is_loading_ = false;
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (page_index == pages_.size() - 1) {
+                     is_loading_ = false;
+                }
+            }
             on_update_();
             return;
         }
 
-        const firebase::firestore::QuerySnapshot* snapshot = completed_future.result();
-        if (snapshot) {
+        {
             std::lock_guard<std::mutex> lock(mutex_);
-            auto page = std::make_unique<Page>();
-            page->snapshot = std::make_unique<firebase::firestore::QuerySnapshot>(*snapshot);
-            auto docs = snapshot->documents();
-            
-            size_t actual_count = docs.size();
-            if (actual_count > 10) actual_count = 10; 
+            if (page_index < pages_.size()) {
+                auto& page = pages_[page_index];
+                page->snapshot = std::make_unique<firebase::firestore::QuerySnapshot>(snapshot);
+                
+                auto docs = snapshot.documents();
+                size_t actual_count = docs.size();
+                
+                std::string res_log = "Firestore Update: Page=" + std::to_string(page_index);
+                res_log += " Count=" + std::to_string(actual_count);
+                if (actual_count > 0) {
+                    res_log += " First=" + docs[0].id();
+                }
+                Log(res_log);
 
-            std::string res_log = "Firestore Query Result: Page=" + std::to_string(page_index);
-            res_log += " Count=" + std::to_string(actual_count);
-            res_log += " (Raw=" + std::to_string(docs.size()) + ")";
-            if (actual_count > 0) {
-                res_log += " First=" + docs[0].id();
-            }
-            Log(res_log);
+                if (actual_count > 0) {
+                    page->last_doc = docs[actual_count - 1];
+                } else {
+                    page->last_doc = firebase::firestore::DocumentSnapshot();
+                }
 
-            if (actual_count > 0) {
-                page->last_doc = docs[actual_count - 1];
+                if (page_index == pages_.size() - 1) {
+                    has_more_ = (actual_count >= (size_t)limit_size);
+                    is_loading_ = false;
+                }
+                error_message_.clear();
             }
-            has_more_ = (docs.size() >= 10);
-            pages_.push_back(std::move(page));
-            error_message_.clear();
         }
-        is_loading_ = false;
         on_update_();
     });
+
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (page_index < pages_.size()) {
+            pages_[page_index]->listener_registration = registration;
+        } else {
+            registration.Remove();
+        }
+    }
 }
 
 size_t FirestoreService::GetLoadedCount() {
@@ -210,7 +250,7 @@ size_t FirestoreService::GetLoadedCount() {
     for (const auto& page : pages_) {
         if (page->snapshot) {
             size_t count = page->snapshot->documents().size();
-            total += (count > 10) ? 10 : count;
+            total += count;
         }
     }
     return total;
@@ -223,7 +263,6 @@ std::string FirestoreService::GetData(size_t index, const std::string& field) {
         if (!page->snapshot) continue;
         auto docs = page->snapshot->documents();
         size_t count = docs.size();
-        if (count > 10) count = 10;
 
         if (index < current_base + count) {
             auto doc = docs[index - current_base];
@@ -260,7 +299,6 @@ std::string FirestoreService::GetId(size_t index) {
         if (!page->snapshot) continue;
         auto docs = page->snapshot->documents();
         size_t count = docs.size();
-        if (count > 10) count = 10;
         
         if (index < current_base + count) {
             return docs[index - current_base].id();
