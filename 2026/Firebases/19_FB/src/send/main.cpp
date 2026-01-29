@@ -59,7 +59,8 @@ int main(int argc, char** argv) {
       if (key) {
           api_key_str = key;
       } else {
-          std::ifstream conf_file("app.conf");
+          std::string conf_path = GetExecutableDir() + "app.conf";
+          std::ifstream conf_file(conf_path);
           std::string line;
           while (std::getline(conf_file, line)) {
               if (line.find("API_KEY=") == 0) {

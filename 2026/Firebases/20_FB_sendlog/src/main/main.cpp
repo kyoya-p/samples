@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
               }
           }
       }
-      if (!api_key_str.empty()) service.Initialize(api_key_str, nAddr);
+      if (!api_key_str.empty()) service.Initialize(api_key_str, "addressbook", nAddr);
 
       auto active_screen = AppAddressBook;
       auto show_picker = std::make_shared<bool>(false);
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
       auto api_input = Input(&temp_api_key, "Enter Firebase API Key");
       auto api_ok_btn = Button("[OK]", [&] {
           if (!temp_api_key.empty()) {
-              service.Initialize(temp_api_key, nAddr);
+              service.Initialize(temp_api_key, "addressbook", nAddr);
               api_key_str = temp_api_key;
           }
           *show_api_dialog = false;
