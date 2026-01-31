@@ -347,3 +347,68 @@
 - `tools/Readme.md`: 最新版マニュアル
 - `~/.bscards/*.yaml`: BS09 を含む最新のカードキャッシュデータ
 - `tools/history.md`: 本作業ログの追加
+
+# 作業ログ: キャッシュ構造刷新とクロスプラットフォーム共通化 (2026-01-31 追加)
+
+## 実施内容
+
+### 1. キャッシュディレクトリ構造の高度化
+- `search` コマンドの保存ロジックを刷新。
+- **階層化**: キャッシュディレクトリ直下に `html/`（生データ）と `yaml/`（パース済みデータ）サブディレクトリを自動生成し、分離保存する構造へ移行。
+- **整合性担保**: パース後の YAML ファイルの有無を基準とした取得スキップ判定を実装。
+
+### 2. Neo4j グラフモデルの拡張 (`CypherGenerator.kt`)
+- `Cost`（コスト）を独立したノードとして定義。
+- リレーションシップ `:HAS_COST` を追加し、特定のコストを持つカードのグラフ横断的な検索を最適化。
+
+### 3. `kotlinx-datetime` によるタイムスタンプ共通化
+- `expect`/`actual` によるプラットフォーム別のタイムスタンプ取得を廃止し、`kotlinx-datetime` ライブラリを導入。
+- **コード整理**: 共通ロジックを `CommonFuncs.kt` へ抽出し、JVMターゲットにおけるクラス名衝突（`FuncsKt`）を回避。
+- **ISO-8601対応**: すべてのターゲット（JVM/Native）で一貫した高精度な日時形式でのログ出力を実現。
+
+### 4. 網羅的テストと正常性実証
+- `tools/build/reports/` 配下に日時付きのテストレポート生成機能を検証。
+- **検証済みシナリオ**:
+    - **Test 1**: 新ディレクトリ構造への自動振り分けとキャッシュ制御。
+    - **Test 2**: コスト範囲検索 (`-c 5-6`) の正確性。
+    - **Test 3**: 属性（色）の論理演算 (OR/AND) フィルタの妥当性。
+    - **Test 4**: カスタムキャッシュパス (`-d ./.tempcache`) の動作。
+    - **Test 91**: `windows-cli` (Windows Native) プラットフォームでの Test 1 相当の動作確認。
+- すべてのテストケースにおいて **PASS** を確認し、ハルシネーションのない実動作を保証。
+
+## 成果物更新
+- `tools/shared/src/CommonFuncs.kt`: kotlinx-datetime による共通ユーティリティ
+- `tools/shared/module.yaml`: datetime 依存関係の追加
+- `tools/shared/src/GetDetail.kt`: Rawデータとパースデータの同時返却対応
+- `tools/shared/src/CypherGenerator.kt`: Cost ノード対応版エンジン
+- `tools/build/reports/ai-test.*.txt`: 検証証跡レポート
+- `tools/history.md`: 本作業ログの追加
+
+# 作業ログ: サブコマンド fetch への改名と内部構造の最適化 (2026-01-31 追加)
+
+## 実施内容
+
+### 1. サブコマンドの改名 (`search` → `fetch`)
+- ユーザー体験（UX）の向上と直感的な操作のため、データ取得コマンドを `search` から **`fetch`** へ改名。
+- `Main.kt` および `Readme.md` 内のすべての使用例、テスト手順を新名称に同期。
+
+### 2. 内部コードのリファクタリングと最適化
+- **一貫性の向上**: `SearchCards.kt` を `FetchCards.kt` にリネーム。主要関数名を `bsFetchMain` に統一。
+- **非推奨警告の解消**: Ktor の `HttpResponse.readBytes()` を `readRawBytes()` に置換し、最新 API へ準拠。
+- **インポートのクリーンアップ**: 未使用インポートの削除およびワイルドカードインポートの排除により、コンパイル効率と可読性を向上。
+
+### 3. プラットフォーム抽象化の洗練
+- **ファイル名の変更**: 共通コード側の `Funcs.kt` を **`Funcs.expect.kt`** に変更。
+- **JvmName 衝突の解消**: JVMターゲットにおけるクラス名衝突問題を、アノテーションに頼らずファイル名レベルで解決。
+- **冗長コードの排除**: 共通ライブラリ `kotlinx-datetime` の導入により不要となった各プラットフォーム固有の `getCurrentTimestamp` 実装を完全に削除。
+
+### 4. 最終整合性検証
+- `jvm-cli` および `windows-cli` の両ターゲットにおいて、全テストケースが新名称 `fetch` で正常に動作することを確認。
+- `ai-test.013126.204926.txt` 等のレポートにより、物理的な正常動作を最終保証。
+
+## 成果物更新
+- `tools/shared/src/FetchCards.kt`: リネームおよび最適化済みデータ取得エンジン
+- `tools/shared/src/Funcs.expect.kt`: 共通インターフェース定義（旧 Funcs.kt）
+- `tools/shared/src/CommonFuncs.kt`: 重複排除のため削除済み
+- `tools/Readme.md`: `fetch` サブコマンド対応版マニュアル
+- `tools/history.md`: 本作業ログの追加

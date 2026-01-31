@@ -7,11 +7,4 @@ import platform.posix.getenv
 @OptIn(ExperimentalForeignApi::class)
 actual fun getEnv(key: String): String = getenv(key)?.toKString() ?: ""
 
-actual fun createClient() = HttpClient(Curl) {
-    engine {
-        sslVerify = false
-    }
-}
-
-@OptIn(ExperimentalForeignApi::class)
-actual fun getCurrentTimestamp(): String = platform.posix.time(null).toString()
+actual fun createClient() = HttpClient(Curl) { engine { sslVerify = false } }

@@ -12,11 +12,11 @@
 
 ## サブコマンド
 
-### search
+### fetch
 指定した条件でカードを検索し、詳細情報をキャッシュファイル(html,yaml)として保存。
 
 ```shell
-.\bscard.exe search [options] [Keyword...]
+.\bscard.exe fetch [options] [Keyword...]
 ```
 
 Options:
@@ -59,7 +59,7 @@ Options:
 ```
 # 開発用 (Jar直接実行)
 ```shell  
-java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar search [options]... [Keyword...] 
+java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar fetch [options]... [Keyword...] 
 ```
 # 配布用パッケージ作成 (Windows)
 ```powershell
@@ -87,12 +87,14 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 
 # テスト
 
-# 共通指定:
+## 共通指定:
   - プラットフォーム: jvm-cli
-  - オプション: -d=./.bscards
+  - キャッシュディレクトリ: ./.bscards-test
+  - test-report: ./build/reports/ai-test.mmyydd.hhmmss.txt
+    - ハルシネーション対策のため、検証可能であること
 
 ## Test 1
-- キャッシュファイルからcardId=BS71-001に関するファイルを削除
+- キャッシュディレクトリからcardId=BS71-001に関するファイルを削除
 - cardId=BS71-001 で search
 - [確認] .bscards/html/BS71-001.html, .bscards/html/BS71-001.yaml, を確認、正しく生成されていること
 - cardId=BS71-001 をsearch
@@ -118,4 +120,4 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 - ./.tempcache ディレクトリを削除
 
 ## Test 91 (その他のプラットフォーム)
-- windows-cliプラットフォームで Test 1を実施
+- [実行環境がWindowsプラットフォームの場合] windows-cliプラットフォームで Test 1を実施

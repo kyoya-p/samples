@@ -12,17 +12,13 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
-import kotlinx.io.writeString
 import kotlinx.io.buffered
 
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
-import kotlinx.io.readByteArray
 
 val defaultCachePath = Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }, ".bscards")
 
@@ -30,8 +26,8 @@ class BsCli : CliktCommand(name = "bs-cli") {
     override fun run() = Unit
 }
 
-class SearchCards(private val argv: List<String>) : CliktCommand(name = "search") {
-    override fun help(context: Context) = "バトルスピリッツ カード検索 CLI"
+class FetchCards(private val argv: List<String>) : CliktCommand(name = "fetch") {
+    override fun help(context: Context) = "バトルスピリッツ カードデータ取得・キャッシュ CLI"
     override val printHelpOnEmptyArgs = true
 
     init {
@@ -79,7 +75,7 @@ class SearchCards(private val argv: List<String>) : CliktCommand(name = "search"
                     val lastSysOrIdx = argv.indexOfLast { it == "-s" || it == "--system" || it == "--family" }
                     val sysMode = if (lastSysAndIdx > lastSysOrIdx) "AND" else "OR"
 
-                    bsSearchMain(
+                    bsFetchMain(
                         client = client,
                         keywords = keywords.joinToString(" "),
                         costMin = costMin,
@@ -139,4 +135,4 @@ fun parseCategories(inputs: List<String>): List<String> {
     }
 }
 
-fun main(args: Array<String>) = BsCli().subcommands(SearchCards(args.toList()), GenerateCypher()).main(args)
+fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), GenerateCypher()).main(args)

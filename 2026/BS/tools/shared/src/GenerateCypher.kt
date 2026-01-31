@@ -1,21 +1,18 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.context
-import com.github.ajalt.clikt.core.main
 import com.github.ajalt.clikt.output.MordantHelpFormatter
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.jsonObject
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
+import kotlinx.datetime.Clock
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
-import kotlinx.io.readString
 import kotlinx.io.buffered
 import kotlinx.io.readByteArray
-import kotlinx.serialization.decodeFromString
 
 import com.github.ajalt.clikt.core.Context
 
@@ -51,7 +48,7 @@ class GenerateCypher : CliktCommand(name = "generate-cypher") {
         
         // Header for the Cypher script
         sb.append("// Generated Cypher Query for Battle Spirits Cards\n")
-        sb.append("// Generated at: ").append(getCurrentTimestamp()).append("\n\n")
+        sb.append("// Generated at: ").append(Clock.System.now().toString()).append("\n\n")
 
         val targetDir = if (SystemFileSystem.exists(Path(cacheDir, "yaml"))) Path(cacheDir, "yaml") else cacheDir
         val files = SystemFileSystem.list(targetDir)
