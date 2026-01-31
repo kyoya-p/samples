@@ -59,7 +59,10 @@ class SearchCards(private val argv: List<String>) : CliktCommand(name = "search"
         runBlocking {
             try {
                 val (costMin, costMax) = cost.split("-").map { it.trim().toInt() }.let { if (it.size == 1) it + it else it }
-                if (!SystemFileSystem.exists(cacheDir)) SystemFileSystem.createDirectories(cacheDir)
+                val htmlDir = Path(cacheDir, "html")
+                val yamlDir = Path(cacheDir, "yaml")
+                if (!SystemFileSystem.exists(htmlDir)) SystemFileSystem.createDirectories(htmlDir)
+                if (!SystemFileSystem.exists(yamlDir)) SystemFileSystem.createDirectories(yamlDir)
 
                 fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
                     val seen = mutableSetOf<E>()
@@ -88,14 +91,16 @@ class SearchCards(private val argv: List<String>) : CliktCommand(name = "search"
                         attributeSwitch = attrMode,
                         systemSwitch = sysMode,
                     ).distinctBy { it.cardNo }.collectIndexed { ix, searched ->
-                        val fn = Path(cacheDir, "${searched.cardNo}.yaml")
+                        val htmlFn = Path(htmlDir, "${searched.cardNo}.html")
+                        val yamlFn = Path(yamlDir, "${searched.cardNo}.yaml")
                         print("$ix: target: ${searched.cardNo} : ")
-                        if (force || !SystemFileSystem.exists(fn)) {
+                        if (force || !SystemFileSystem.exists(yamlFn)) {
                             try {
-                                val card = bsDetail(client, searched.cardNo)
-                                SystemFileSystem.sink(fn).buffered()
+                                val (card, html) = bsDetail(client, searched.cardNo)
+                                SystemFileSystem.sink(htmlFn).buffered().use { it.write(html.encodeToByteArray()) }
+                                SystemFileSystem.sink(yamlFn).buffered()
                                     .use { it.write(Yaml.default.encodeToString(Card.serializer(), card).encodeToByteArray()) }
-                                println("collected $fn .")
+                                println("collected $yamlFn .")
                             } catch (e: Exception) {
                                 println("failed to collect detail for ${searched.cardNo}: ${e.message}")
                             }

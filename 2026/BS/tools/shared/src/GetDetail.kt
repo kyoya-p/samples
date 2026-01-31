@@ -116,11 +116,11 @@ fun parseCard(html: String): Card {
     return Card(id, finalSideA, sideB)
 }
 
-suspend fun bsDetail(client: HttpClient, cardId: String): Card {
+suspend fun bsDetail(client: HttpClient, cardId: String): Pair<Card, String> {
     val response = client.get("https://www.battlespirits.com/cardlist/detail_iframe.php") {
         parameter("card_no", cardId)
         header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     }
     val body = response.bodyAsText()
-    return parseCard(body)
+    return parseCard(body) to body
 }

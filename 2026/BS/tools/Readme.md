@@ -13,7 +13,7 @@
 ## サブコマンド
 
 ### search
-指定した条件でカードを検索し、詳細情報をキャッシュファイル (`~/.bscards/$cardNo.yaml`) として保存。
+指定した条件でカードを検索し、詳細情報をキャッシュファイル(html,yaml)として保存。
 
 ```shell
 .\bscard.exe search [options] [Keyword...]
@@ -68,6 +68,54 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 `tools/build/installer/bscard.zip` を生成。
 
 # フォルダ構成
+- .bscards/ : カードデータダウンロードキャッシュファイル
+- .bscards/html/$cardNo.html : 受信したカードデータそのものをHTMLテキストの形で保存される。
+- .bscards/yaml/$cardNo.yaml : 受信したカードデータがYAMLの形で保存される。
+- ./temp/     : 一時データ、一時スクリプト
 
-- temp/     : 一時データ、一時スクリプト
-- .bscards/ : カードデータダウンロードキャッシュファイル (.yaml)
+## Neo4j グラフモデル
+`generate-cypher` サブコマンドにより、以下の構造でインポートされる。
+- **ノード**: `Card`, `CardFace`, `Category`, `Rarity`, `Color`,`Cost`, `System`, `Keyword`, (【...】), `Timing` (『...』)
+- **リレーションシップ**:
+  - `(Card)-[:HAS_FACE]->(CardFace)`
+  - `(CardFace)-[:IS_CATEGORY]->(Category)`
+  - `(CardFace)-[:HAS_COLOR]->(Color)`
+  - `(CardFace)-[:HAS_COST]->(Cost)`
+  - `(CardFace)-[:HAS_SYSTEM]->(System)`
+  - `(CardFace)-[:HAS_KEYWORD]->(Keyword)`
+  - `(CardFace)-[:TRIGGERS_AT]->(Timing)`
+
+# テスト
+
+# 共通指定:
+  - プラットフォーム: jvm-cli
+  - オプション: -d=./.bscards
+
+## Test 1
+- キャッシュファイルからcardId=BS71-001に関するファイルを削除
+- cardId=BS71-001 で search
+- [確認] .bscards/html/BS71-001.html, .bscards/html/BS71-001.yaml, を確認、正しく生成されていること
+- cardId=BS71-001 をsearch
+- [確認] 標準出力を確認。すでにキャッシュにカード情報がある場合、採取はスキップ(通信しない)。
+- -f オプションとともにcardId=BS71-001 をsearch
+- [確認] 標準出力を確認。通信し取得したことを確認。
+
+## Test 2
+- cardId=BS71, -c 5-6 で search
+- [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のコストが5または6であること。
+
+## Test 3
+- cardId=BS70, -a RB で search
+- [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のattributesは"赤"または"青"を含む。
+- cardId=BS70, -A RB で search
+- [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のattributesは"赤"と"青"を両方含む。
+
+## Test 4
+- -d=./.tempcache, BS70-001 でsearch
+- [確認] ./.tempcache/html/BS70-001.html が存在すること
+- [確認] ./.tempcache/yaml/BS70-001.yaml が存在すること
+- [確認] 上記ふたつの内容に齟齬ないこと
+- ./.tempcache ディレクトリを削除
+
+## Test 91 (その他のプラットフォーム)
+- windows-cliプラットフォームで Test 1を実施

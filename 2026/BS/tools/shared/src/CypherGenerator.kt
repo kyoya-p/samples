@@ -65,6 +65,11 @@ class CypherGenerator {
             sb.append("MERGE (").append(rarVar).append(":Rarity {name: \"").append(sanitize(rarity)).append("\"})\n")
             sb.append("MERGE (").append(faceVar).append(")-[:HAS_RARITY]->(").append(rarVar).append(")\n")
 
+            // Cost Node
+            val costNodeVar = "cost_${safeId}_${side}"
+            sb.append("MERGE (").append(costNodeVar).append(":Cost {value: ").append(cost).append("})\n")
+            sb.append("MERGE (").append(faceVar).append(")-[:HAS_COST]->(").append(costNodeVar).append(")\n")
+
             // Colors
             attributes.forEachIndexed { i, col ->
                 val colVar = "col_${safeId}_${side}_${i}"
@@ -153,6 +158,10 @@ class CypherGenerator {
             // Rarity
             MERGE (r:Rarity {name: faceData.rarity})
             MERGE (cf)-[:HAS_RARITY]->(r)
+            
+            // Cost
+            MERGE (costNode:Cost {value: faceData.cost})
+            MERGE (cf)-[:HAS_COST]->(costNode)
             
             // Colors (Attributes)
             FOREACH (colorName IN faceData.attributes |

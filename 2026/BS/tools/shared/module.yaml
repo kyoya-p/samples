@@ -12,6 +12,7 @@ dependencies:
   - com.fleeksoft.ksoup:ksoup:0.2.5
   - com.charleskorn.kaml:kaml:0.63.0
   - com.github.ajalt.clikt:clikt:5.0.3
+  - org.jetbrains.kotlinx:kotlinx-datetime:0.6.1
 
 dependencies@mingwX64:
   - io.ktor:ktor-client-curl:3.0.3

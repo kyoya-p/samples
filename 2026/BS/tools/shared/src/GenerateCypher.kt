@@ -53,10 +53,11 @@ class GenerateCypher : CliktCommand(name = "generate-cypher") {
         sb.append("// Generated Cypher Query for Battle Spirits Cards\n")
         sb.append("// Generated at: ").append(getCurrentTimestamp()).append("\n\n")
 
-        val files = SystemFileSystem.list(cacheDir)
+        val targetDir = if (SystemFileSystem.exists(Path(cacheDir, "yaml"))) Path(cacheDir, "yaml") else cacheDir
+        val files = SystemFileSystem.list(targetDir)
             .filter { it.name.endsWith(".json") || it.name.endsWith(".yaml") }
             .filter { idFilter == null || it.name.contains(idFilter!!) }
-        echo("Found ".plus(files.size).plus(" card files in ").plus(cacheDir), err = true)
+        echo("Found ".plus(files.size).plus(" card files in ").plus(targetDir), err = true)
 
         var successCount = 0
         for (file in files) {
