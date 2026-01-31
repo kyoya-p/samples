@@ -32,17 +32,17 @@ Options:
 
 *1: 属性・系統のAND/ORは、引数リストの最後に指定されたオプションで決定。
 
-### generate-cypher
-キャッシュされたカードデータから Neo4j 用の Cypher クエリを生成。
+### neo
+キャッシュされたカードデータから Neo4j DBに格納。
 
 ```shell
-.\bscard.exe generate-cypher [options]
+.\bscard.exe neo [options] [cardId...]
 ```
 
 Options:
 -d, --cache-dir=<value>   入力となるキャッシュディレクトリを指定
--o, --output <file>       出力先ファイルパス (省略時は標準出力)
---id <pattern>            対象とするカードIDを部分一致でフィルタ
+--url <url>               neo4jのURLと認証情報を指定 (デフォルト: neo4j://127.0.0.1:7687)
+--login <pattern>         neo4jの認証情報を指定(デフォルト: 'neo4j:00000000')
 
 # テスト実行
 ```shell
@@ -95,29 +95,42 @@ java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar
 
 ## Test 1
 - キャッシュディレクトリからcardId=BS71-001に関するファイルを削除
-- cardId=BS71-001 で search
+- cardId=BS71-001 で fetch
 - [確認] .bscards/html/BS71-001.html, .bscards/html/BS71-001.yaml, を確認、正しく生成されていること
-- cardId=BS71-001 をsearch
+- cardId=BS71-001 fetch
 - [確認] 標準出力を確認。すでにキャッシュにカード情報がある場合、採取はスキップ(通信しない)。
 - -f オプションとともにcardId=BS71-001 をsearch
 - [確認] 標準出力を確認。通信し取得したことを確認。
 
 ## Test 2
-- cardId=BS71, -c 5-6 で search
+- cardId=BS71, -c 5-6 で fetch
 - [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のコストが5または6であること。
 
 ## Test 3
-- cardId=BS70, -a RB で search
+- cardId=BS70, -a RB で fetch
 - [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のattributesは"赤"または"青"を含む。
-- cardId=BS70, -A RB で search
+- cardId=BS70, -A RB で fetch
 - [確認] 標準出力で生成ファイル確認。取得したすべてのyamlファイル内のattributesは"赤"と"青"を両方含む。
 
 ## Test 4
-- -d=./.tempcache, BS70-001 でsearch
+- -d=./.tempcache, BS70-001 fetch
 - [確認] ./.tempcache/html/BS70-001.html が存在すること
 - [確認] ./.tempcache/yaml/BS70-001.yaml が存在すること
 - [確認] 上記ふたつの内容に齟齬ないこと
 - ./.tempcache ディレクトリを削除
+
+## Test 11
+- ターゲットのカードを1つ選定
+- neo-mcpにてターゲットのカードが未登録であることを確認、登録されていれば選定から再試行
+- --url=neo4j://127.0.0.1:7687 --login=neo4j:00000000 で neo
+- [確認] neo-mcpにて投入されたことを検証
+
+## Test 12
+- ターゲットのカードを2つ選定
+- neo-mcpにてターゲットのカードが未登録であることを確認、登録されていれば選定から再試行
+- --url=neo4j://127.0.0.1:7687 --login=neo4j:00000000 で neo
+- [確認] neo-mcpにて投入されたことを検証
+
 
 ## Test 91 (その他のプラットフォーム)
 - [実行環境がWindowsプラットフォームの場合] windows-cliプラットフォームで Test 1を実施

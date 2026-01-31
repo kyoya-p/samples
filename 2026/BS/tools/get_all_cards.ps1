@@ -29,7 +29,7 @@ foreach ($range in $costRanges) {
 
         Write-Host -NoNewline "[$($range.Label)] [$key] : "
 
-        $output = .\amper.bat run -m jvm-cli -- -c $costVal -a $colorVal -d .bscards 2>&1
+        $output = .\amper.bat run -m jvm-cli -- fetch -c $costVal -a $colorVal -d .bscards 2>&1
 
         $countLine = $output | Where-Object { $_ -match "Found (\d+) cards" }
         $count = 0

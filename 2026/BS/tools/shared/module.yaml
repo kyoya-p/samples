@@ -5,6 +5,9 @@ product:
 test-dependencies@jvm:
   - $kotlin.test.junit5
 
+dependencies@jvm:
+  - org.neo4j.driver:neo4j-java-driver:5.26.0
+
 dependencies:
   - $ktor.client.core
   - $ktor.serialization.kotlinx.json

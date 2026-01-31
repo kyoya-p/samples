@@ -135,4 +135,4 @@ fun parseCategories(inputs: List<String>): List<String> {
     }
 }
 
-fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), GenerateCypher()).main(args)
+fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), Neo()).main(args)
