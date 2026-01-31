@@ -111,7 +111,9 @@ fun parseCard(html: String): Card {
     val sideB = doc.select("#CardCol_B").firstOrNull()?.let { parseCardFace(it, id, "B") }
     val sideNo = doc.select(".detailBox").firstOrNull()?.let { parseCardFace(it, id, "") }
 
-    return Card(id, sideA!!, sideB)
+    val finalSideA = sideA ?: sideNo ?: throw IllegalArgumentException("Card face not found for ID: $id")
+
+    return Card(id, finalSideA, sideB)
 }
 
 suspend fun bsDetail(client: HttpClient, cardId: String): Card {

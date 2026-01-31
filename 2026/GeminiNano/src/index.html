@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gemini Nano Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .markdown-body p { margin-bottom: 1em; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body pre { background: #f3f4f6; padding: 1em; border-radius: 0.5em; overflow-x: auto; margin-bottom: 1em; }
+        .markdown-body code { background: #f3f4f6; padding: 0.2em 0.4em; border-radius: 0.25em; font-family: monospace; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: bold; margin-top: 1.5em; margin-bottom: 0.5em; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6 text-gray-800">
+
+    <div class="w-full max-w-4xl px-4">
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-700">Gemini Nano Client</h1>
+
+        <!-- Error Message -->
+        <div id="error-message" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow"></div>
+
+        <!-- Settings & Stats -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex flex-wrap justify-between items-center mb-4 cursor-pointer" id="toggleSettings">
+                <h2 class="text-lg font-semibold text-gray-700">Settings & Stats</h2>
+                <span class="text-gray-500 text-sm">▼</span>
+            </div>
+            
+            <div id="settingsPanel" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                    <!-- Config -->
+                    <div>
+                        <h3 class="font-medium text-gray-600 mb-2">Configuration</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm text-gray-600">Temperature: <span id="tempValue">1.0</span></label>
+                                <input type="range" id="session-temperature" min="0" max="2" step="0.1" value="1.0" class="w-full accent-indigo-600">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600">Top K: <span id="topKValue">3</span></label>
+                                <input type="number" id="session-top-k" min="1" max="128" value="3" class="w-full border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-600">System Prompt</label>
+                                <textarea id="systemPrompt" rows="2" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500">You are a helpful and friendly assistant.</textarea>
+                            </div>
+                            <button id="updateSessionBtn" class="w-full bg-indigo-600 text-white py-1 rounded hover:bg-indigo-700 transition text-sm">Update Session</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div>
+                        <h3 class="font-medium text-gray-600 mb-2">Session Stats</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="block text-xs text-gray-500">Input Quota</span>
+                                <span id="max-tokens" class="font-mono font-bold">-</span>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="block text-xs text-gray-500">Input Usage</span>
+                                <span id="tokens-so-far" class="font-mono font-bold">-</span>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="block text-xs text-gray-500">Tokens Left</span>
+                                <span id="tokens-left" class="font-mono font-bold">-</span>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded">
+                                <span class="block text-xs text-gray-500">Current Temp</span>
+                                <span id="stat-temperature" class="font-mono font-bold">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="bg-white rounded-lg shadow-md p-6 min-h-[50vh] flex flex-col">
+            <div id="response-area" class="flex-grow overflow-y-auto mb-4 space-y-4 max-h-[600px] pr-2">
+                <!-- Messages will appear here -->
+                <div class="text-center text-gray-400 mt-10">AI session not initialized. Type below to start.</div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="mt-auto">
+                 <div class="flex justify-between items-center mb-1">
+                     <span id="cost" class="text-xs text-gray-500">0 tokens</span>
+                     <button id="reset-button" class="text-xs text-red-500 hover:text-red-700">Reset Chat</button>
+                 </div>
+                <div class="flex gap-2">
+                    <textarea id="prompt-input" rows="3" placeholder="Type your message here..." class="flex-grow border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                    <button id="sendBtn" class="bg-indigo-600 text-white px-6 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GeminiNano } from './neo4j.js';
+
+        const client = new GeminiNano();
+        
+        // UI Elements
+        const promptInput = document.getElementById('prompt-input');
+        const sendBtn = document.getElementById('sendBtn');
+        const responseArea = document.getElementById('response-area');
+        const errorMsg = document.getElementById('error-message');
+        const costDisplay = document.getElementById('cost');
+        
+        // Stats Elements
+        const maxTokensEl = document.getElementById('max-tokens');
+        const tokensSoFarEl = document.getElementById('tokens-so-far');
+        const tokensLeftEl = document.getElementById('tokens-left');
+        const statTempEl = document.getElementById('stat-temperature');
+        
+        // Settings Elements
+        const tempSlider = document.getElementById('session-temperature');
+        const tempValue = document.getElementById('tempValue');
+        const topKInput = document.getElementById('session-top-k');
+        const topKValue = document.getElementById('topKValue');
+        const systemPromptInput = document.getElementById('systemPrompt');
+        const updateSessionBtn = document.getElementById('updateSessionBtn');
+        const toggleSettings = document.getElementById('toggleSettings');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const resetBtn = document.getElementById('reset-button');
+
+        // State
+        let isGenerating = false;
+
+        async function init() {
+            if (!await client.isSupported()) {
+                showError("Your browser does not support the Prompt API. Please check chrome://flags and ensure you have the latest AI model downloaded.");
+                sendBtn.disabled = true;
+                promptInput.disabled = true;
+                return;
+            }
+
+            // Load initial capabilities/defaults if needed
+            // For now just init session with defaults
+            await updateSession();
+        }
+
+        async function updateSession() {
+            try {
+                const temp = parseFloat(tempSlider.value);
+                const topK = parseInt(topKInput.value);
+                client.systemPrompt = systemPromptInput.value;
+                
+                sendBtn.disabled = true;
+                sendBtn.textContent = "Initializing...";
+                
+                await client.initSession(temp, topK);
+                
+                updateStatsUI();
+                sendBtn.disabled = false;
+                sendBtn.textContent = "Send";
+                
+                // Clear chat if session reset (optional, but cleaner for new system prompt)
+                // responseArea.innerHTML = '<div class="text-center text-gray-400 mt-10">Session ready.</div>';
+                
+            } catch (e) {
+                showError("Failed to initialize session: " + e.message);
+                sendBtn.disabled = false;
+            }
+        }
+
+        function updateStatsUI() {
+            const stats = client.getStats();
+            if (stats) {
+                maxTokensEl.textContent = stats.inputQuota || 'N/A';
+                tokensSoFarEl.textContent = stats.inputUsage || 'N/A';
+                tokensLeftEl.textContent = stats.tokensLeft || 'N/A';
+                statTempEl.textContent = stats.temperature;
+            }
+        }
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.remove('hidden');
+        }
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = role === 'user' 
+                ? "bg-indigo-50 p-4 rounded-lg self-end ml-10 border border-indigo-100" 
+                : "bg-white p-4 rounded-lg mr-10 border border-gray-200 markdown-body shadow-sm";
+            
+            if (role === 'user') {
+                div.textContent = text;
+            } else {
+                div.innerHTML = client.formatMarkdown(text);
+            }
+            
+            // Clear initial message
+            if (responseArea.querySelector('.text-center')) {
+                responseArea.innerHTML = '';
+            }
+            
+            responseArea.appendChild(div);
+            responseArea.scrollTop = responseArea.scrollHeight;
+            return div;
+        }
+
+        async function handleSend() {
+            const text = promptInput.value.trim();
+            if (!text || isGenerating) return;
+
+            isGenerating = true;
+            sendBtn.disabled = true;
+            promptInput.value = '';
+            
+            // User Message
+            appendMessage('user', text);
+
+            // Model Response placeholder
+            const responseDiv = appendMessage('model', '...');
+            
+            try {
+                let fullResponse = "";
+                const stream = client.promptStreaming(text);
+                
+                let previousChunk = "";
+                for await (const chunk of stream) {
+                    const newChunk = chunk.startsWith(previousChunk) 
+                        ? chunk.slice(previousChunk.length) : chunk; // Some implementations repeat full text
+                    
+                    // Actually, sample script.js handles:
+                    // newChunk = chunk.startsWith(previousChunk) ? chunk.slice(previousChunk.length) : chunk;
+                    // result += newChunk;
+                    // This implies the stream yields the ACCUMULATED text so far in some versions, 
+                    // or just chunks in others. The safe bet is relying on what script.js did.
+                    
+                    // script.js logic:
+                    // result += newChunk; (Wait, script.js logic was: previousChunk = chunk; result += newChunk)
+                    // Let's look closely at script.js again:
+                    // for await (const chunk of stream) {
+                    //    const newChunk = chunk.startsWith(previousChunk) ? chunk.slice(previousChunk.length) : chunk;
+                    //    result += newChunk;
+                    //    previousChunk = chunk;
+                    // }
+                    // This logic is for when `chunk` is the FULL ACCUMULATED TEXT so far.
+                    // If `chunk` is just a delta, `chunk.startsWith(previousChunk)` would be false (mostly).
+                    
+                    // Let's implement robustly.
+                    fullResponse = chunk; 
+                    responseDiv.innerHTML = client.formatMarkdown(fullResponse);
+                    responseArea.scrollTop = responseArea.scrollHeight;
+                }
+                
+                updateStatsUI();
+
+            } catch (e) {
+                responseDiv.innerHTML += `<br><span class="text-red-500">Error: ${e.message}</span>`;
+            } finally {
+                isGenerating = false;
+                sendBtn.disabled = false;
+                promptInput.focus();
+            }
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', handleSend);
+        
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        promptInput.addEventListener('input', async () => {
+            const text = promptInput.value;
+            if (text) {
+                const count = await client.countTokens(text);
+                costDisplay.textContent = `${count} tokens`;
+            } else {
+                costDisplay.textContent = `0 tokens`;
+            }
+        });
+
+        updateSessionBtn.addEventListener('click', updateSession);
+        
+        resetBtn.addEventListener('click', () => {
+            responseArea.innerHTML = '<div class="text-center text-gray-400 mt-10">Chat reset.</div>';
+            client.initSession(parseFloat(tempSlider.value), parseInt(topKInput.value));
+            updateStatsUI();
+        });
+
+        tempSlider.addEventListener('input', (e) => tempValue.textContent = e.target.value);
+        topKInput.addEventListener('input', (e) => topKValue.textContent = e.target.value);
+
+        toggleSettings.addEventListener('click', () => {
+            settingsPanel.classList.toggle('hidden');
+            const arrow = toggleSettings.querySelector('span');
+            arrow.textContent = settingsPanel.classList.contains('hidden') ? '▼' : '▲';
+        });
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

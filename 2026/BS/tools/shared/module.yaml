@@ -13,6 +13,12 @@ dependencies:
   - com.charleskorn.kaml:kaml:0.63.0
   - com.github.ajalt.clikt:clikt:5.0.3
 
+dependencies@mingwX64:
+  - io.ktor:ktor-client-curl:3.0.3
+
+dependencies@linuxX64:
+  - io.ktor:ktor-client-curl:3.0.3
+
 settings:
   ktor:
     enabled: true

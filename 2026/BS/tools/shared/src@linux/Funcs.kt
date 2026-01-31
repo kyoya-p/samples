@@ -8,3 +8,5 @@ import libcurl.curl_getenv
 @OptIn(ExperimentalForeignApi::class)
 actual fun getEnv(key: String): String = curl_getenv(key)?.toKString() ?: ""
 actual fun createClient() = HttpClient(Curl)
+@OptIn(ExperimentalForeignApi::class)
+actual fun getCurrentTimestamp(): String = platform.posix.time(null).toString()

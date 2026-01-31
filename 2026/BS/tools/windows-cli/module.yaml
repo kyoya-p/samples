@@ -5,4 +5,4 @@ settings:
   ktor: enabled
 dependencies:
   - ../shared
-  - $ktor.client.winhttp
+  - io.ktor:ktor-client-curl:3.0.3

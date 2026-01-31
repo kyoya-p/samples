@@ -1,4 +1,5 @@
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class SearchCard(
@@ -16,7 +17,7 @@ data class SearchCard(
 data class Card(
     val cardNo: String,
     val sideA: CardFace,
-    val sideB: CardFace?,
+    val sideB: CardFace? = null,
 )
 
 @Serializable
@@ -34,6 +35,7 @@ data class CardFace(
     val lvInfo: List<String>, // Lv1維持コア2個でBP1000の場合、 "1,2,1000"。ネクサスの場合でLv2維持コア1個の場合、"2,1"
     val effect: String,
     val restriction: String, // "制限1":最大デッキに1枚しか入れられない。例:タルボス。 "禁止":デッキには入れられない。例:イビルオーラ。 null:デッキに最大3枚・通常ルール
-    val imageUrl: String
+    val imageUrl: String,
+    val mechanics: List<JsonElement> = emptyList(),
 )
 

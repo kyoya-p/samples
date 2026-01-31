@@ -45,7 +45,9 @@ fun bsSearchMain(
         setBody(params.formUrlEncode())
     }
 
-    val body = response.bodyAsText()
+    // Use readBytes().decodeToString() instead of bodyAsText() 
+    // to avoid hanging issues on Windows Native (Curl engine).
+    val body = response.readBytes().decodeToString()
 
     if (body.isNotEmpty()) {
         val doc: Document = Ksoup.parse(body)

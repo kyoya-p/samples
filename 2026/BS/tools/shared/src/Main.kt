@@ -12,15 +12,26 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
 import kotlinx.io.buffered
 
+import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.core.subcommands
+import kotlinx.io.readByteArray
+
 val defaultCachePath = Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }, ".bscards")
 
-class SearchCards(private val argv: List<String>) : CliktCommand("バトルスピリッツ カード検索 CLI") {
+class BsCli : CliktCommand(name = "bs-cli") {
+    override fun run() = Unit
+}
+
+class SearchCards(private val argv: List<String>) : CliktCommand(name = "search") {
+    override fun help(context: Context) = "バトルスピリッツ カード検索 CLI"
     override val printHelpOnEmptyArgs = true
 
     init {
@@ -46,45 +57,54 @@ class SearchCards(private val argv: List<String>) : CliktCommand("バトルス�
 
     override fun run() {
         runBlocking {
-            val (costMin, costMax) = cost.split("-").map { it.trim().toInt() }.let { if (it.size == 1) it + it else it }
-            if (!SystemFileSystem.exists(cacheDir)) SystemFileSystem.createDirectories(cacheDir)
+            try {
+                val (costMin, costMax) = cost.split("-").map { it.trim().toInt() }.let { if (it.size == 1) it + it else it }
+                if (!SystemFileSystem.exists(cacheDir)) SystemFileSystem.createDirectories(cacheDir)
 
-            fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
-                val seen = mutableSetOf<E>()
-                collect { value -> if (seen.add(op(value))) emit(value) }
-            }
-            println("Freewords: $keywords & Cost: $costMin-$costMax ")
-
-            createClient().use { client ->
-                val lastAttrAndIdx = argv.indexOfLast { it == "-A" || it == "--color-and" || it == "--attr-and" }
-                val lastAttrOrIdx = argv.indexOfLast { it == "-a" || it == "--color" || it == "--attr" }
-                val attrMode = if (lastAttrAndIdx > lastAttrOrIdx) "AND" else "OR"
-
-                val lastSysAndIdx = argv.indexOfLast { it == "-S" || it == "--system-and" || it == "--family-and" }
-                val lastSysOrIdx = argv.indexOfLast { it == "-s" || it == "--system" || it == "--family" }
-                val sysMode = if (lastSysAndIdx > lastSysOrIdx) "AND" else "OR"
-
-                bsSearchMain(
-                    client = client,
-                    keywords = keywords.joinToString(" "),
-                    costMin = costMin,
-                    costMax = costMax,
-                    attributes = parseAttributes(attributes + attributesAnd),
-                    categories = parseCategories(categories),
-                    systems = systems + systemsAnd,
-                    blockIcons = blockIcons,
-                    attributeSwitch = attrMode,
-                    systemSwitch = sysMode,
-                ).distinctBy { it.cardNo }.collectIndexed { ix, searched ->
-                    val fn = Path(cacheDir, "${searched.cardNo}.yaml")
-                    print("$ix: target: ${searched.cardNo} : ")
-                    if (force || !SystemFileSystem.exists(fn)) {
-                        val card = bsDetail(client, searched.cardNo)
-                        SystemFileSystem.sink(fn).buffered()
-                            .use { it.writeString(Yaml.default.encodeToString(card)) }
-                        println("collected $fn .")
-                    } else println("already exists.")
+                fun <T, E> Flow<T>.distinctBy(op: (T) -> E): Flow<T> = flow {
+                    val seen = mutableSetOf<E>()
+                    collect { value -> if (seen.add(op(value))) emit(value) }
                 }
+                println("Freewords: $keywords & Cost: $costMin-$costMax ")
+
+                createClient().use { client ->
+                    val lastAttrAndIdx = argv.indexOfLast { it == "-A" || it == "--color-and" || it == "--attr-and" }
+                    val lastAttrOrIdx = argv.indexOfLast { it == "-a" || it == "--color" || it == "--attr" }
+                    val attrMode = if (lastAttrAndIdx > lastAttrOrIdx) "AND" else "OR"
+
+                    val lastSysAndIdx = argv.indexOfLast { it == "-S" || it == "--system-and" || it == "--family-and" }
+                    val lastSysOrIdx = argv.indexOfLast { it == "-s" || it == "--system" || it == "--family" }
+                    val sysMode = if (lastSysAndIdx > lastSysOrIdx) "AND" else "OR"
+
+                    bsSearchMain(
+                        client = client,
+                        keywords = keywords.joinToString(" "),
+                        costMin = costMin,
+                        costMax = costMax,
+                        attributes = parseAttributes(attributes + attributesAnd),
+                        categories = parseCategories(categories),
+                        systems = systems + systemsAnd,
+                        blockIcons = blockIcons,
+                        attributeSwitch = attrMode,
+                        systemSwitch = sysMode,
+                    ).distinctBy { it.cardNo }.collectIndexed { ix, searched ->
+                        val fn = Path(cacheDir, "${searched.cardNo}.yaml")
+                        print("$ix: target: ${searched.cardNo} : ")
+                        if (force || !SystemFileSystem.exists(fn)) {
+                            try {
+                                val card = bsDetail(client, searched.cardNo)
+                                SystemFileSystem.sink(fn).buffered()
+                                    .use { it.write(Yaml.default.encodeToString(Card.serializer(), card).encodeToByteArray()) }
+                                println("collected $fn .")
+                            } catch (e: Exception) {
+                                println("failed to collect detail for ${searched.cardNo}: ${e.message}")
+                            }
+                        } else println("already exists.")
+                    }
+                }
+            } catch (e: Exception) {
+                echo("Error occurred: ${e.message}", err = true)
+                e.printStackTrace()
             }
         }
     }
@@ -114,4 +134,4 @@ fun parseCategories(inputs: List<String>): List<String> {
     }
 }
 
-fun main(args: Array<String>) = SearchCards(args.toList()).main(args)
+fun main(args: Array<String>) = BsCli().subcommands(SearchCards(args.toList()), GenerateCypher()).main(args)

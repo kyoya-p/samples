@@ -23,3 +23,11 @@ Chromeの組み込みAI (Gemini Nano) をテストするためのサンプルで
 
 `index.html` をChromeで開いてください。
 テキストエリアに文章を入力し、「Generate」ボタンを押すとGemini Nanoが応答します。
+
+
+## 参照
+
+- https://chrome.dev/web-ai-demos/
+- https://qiita.com/magiclib/items/91f7d32cbd766b39b293
+- https://qiita.com/molecular_pool/items/4d4b30f645eb32e4eaea
+- https://qiita.com/mitazet/items/878709ee7407df41d78c
