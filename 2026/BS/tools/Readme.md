@@ -45,10 +45,10 @@ Options:
 --login <pattern>         neo4jの認証情報を指定(デフォルト: 'neo4j:00000000')
 
 # テスト実行
-```shell
-./amper run -m jvm-cli      # Jvm
-./amper run -m linux-cli    # Linux
-./amper run -m windows-cli  # Windows
+```shell:Help
+./amper run -m jvm-cli -- -h     # Jvm
+./amper run -m linux-cli -- -h   # Linux
+./amper run -m windows-cli -- -h # Windows
 ```
 
 # ビルド
@@ -57,7 +57,7 @@ Options:
 ./amper task :linux-cli:linkLinuxX64Release
 ./amper task :windows-cli:linkMingwX64Release
 ```
-# 開発用 (Jar直接実行)
+# Jvm実行
 ```shell  
 java -jar tools/build/tasks/_jvm-cli_executableJarJvm/jvm-cli-jvm-executable.jar fetch [options]... [Keyword...] 
 ```

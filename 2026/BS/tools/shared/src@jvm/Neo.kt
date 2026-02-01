@@ -19,9 +19,9 @@ actual fun runImport(url: String, login: String, files: List<Path>, cacheDir: Pa
     try {
         GraphDatabase.driver(url, AuthTokens.basic(user, pass)).use { driver ->
             driver.session().use { session ->
-                files.forEach { file ->
+                files.forEachIndexed { index, file ->
                     try {
-                        print("Importing ${file.name}... ")
+                        print("[${index + 1}/${files.size}] Importing ${file.name}... ")
                         val content = SystemFileSystem.source(file).buffered().use { it.readByteArray().decodeToString() }
                         val jsonObject = if (file.name.endsWith(".yaml")) {
                             generator.yamlToJson(yaml.parseToYamlNode(content)).jsonObject

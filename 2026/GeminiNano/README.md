@@ -9,7 +9,7 @@ Chromeの組み込みAI (Gemini Nano) をテストするためのサンプルで
 2.  アドレスバーに `chrome://flags` と入力し、以下のフラグを **Enabled** に設定してブラウザを再起動してください。
     *   `chrome://flags/#optimization-guide-on-device-model`
         *   選択肢に "Enabled BypassPrefRequirement" がある場合は、それを選ぶとスムーズです。
-    *   `chrome://flags/#prompt-api-for-gemini-nano`
+    *   ``
 
 ## モデルのダウンロード確認
 
