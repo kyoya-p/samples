@@ -10,31 +10,25 @@ import com.jakewharton.mosaic.layout.padding
 import kotlinx.coroutines.runBlocking
 import androidx.compose.runtime.*
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
-fun main(args: Array<String>) {
-    println("Starting Mosaic TUI...")
-    runBlocking {
-        runMosaic {
-            var count by remember { mutableStateOf(0) }
+fun main(args: Array<String>) =runBlocking {
+    runMosaic {
+        var count by remember { mutableStateOf(0) }
 
-            Column(modifier = Modifier.padding(1)) {
-                Text("Mosaic + Amper Demo", color = Color.Yellow)
-                Text("-------------------")
-                Row {
-                    Text("Status: ")
-                    Text(if (count < 20) "Running" else "Done", color = if (count < 20) Color.Green else Color.Red)
-                }
-                Text("Progress: [${"#".repeat(count)}${".".repeat(20 - count)}] $count/20")
+        Column(modifier = Modifier.padding(1)) {
+            Text("Mosaic + Amper Demo", color = Color.Yellow)
+            Text("-------------------")
+            Row {
+                Text("Count: $count")
             }
+        }
 
-            LaunchedEffect(Unit) {
-                while (count < 20) {
-                    delay(150)
-                    count++
-                }
-                delay(500)
+        LaunchedEffect(Unit) {
+            repeat(20) {
+                count++
+                delay(1.seconds)
             }
         }
     }
-    println("Mosaic TUI finished.")
 }
