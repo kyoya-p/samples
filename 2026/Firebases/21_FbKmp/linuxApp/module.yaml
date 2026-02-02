@@ -1,4 +1,4 @@
-product: windows/app
+product: linux/app
 
 dependencies:
   - ../shared
