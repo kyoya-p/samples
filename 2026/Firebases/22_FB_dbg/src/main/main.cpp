@@ -50,10 +50,10 @@ enum AppScreen {
 
 Element MakeTableRow(Element name, Element email, Element time, Element op) {
     return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 28),
+        std::move(name)  | size(WIDTH, EQUAL, 30),
         std::move(email) | flex,
-        std::move(time)  | size(WIDTH, EQUAL, 16),
-        std::move(op)    | size(WIDTH, EQUAL, 10) | center,
+        std::move(time)  | size(WIDTH, EQUAL, 12),
+        std::move(op)    | size(WIDTH, EQUAL, 10),
     });
 }
 
@@ -263,14 +263,12 @@ int main(int argc, char** argv) {
           return vbox({
               text("Address Book Setting") | bold | center,
               separator(),
-              hbox({ 
-                  hbox({ addr_btn_name->Render(), sort_ind(0), render_input(0, addr_input_name) }) | size(WIDTH, EQUAL, 28),
-                  separator(),
-                  hbox({ addr_btn_mail->Render(), sort_ind(1), render_input(1, addr_input_email) }) | flex,
-                  separator(),
-                  hbox({ addr_btn_time->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
-                  text("          ")
-              }),
+              MakeTableRow(
+                  hbox({ addr_btn_name->Render(), sort_ind(0), render_input(0, addr_input_name) }),
+                  hbox({ addr_btn_mail->Render(), sort_ind(1), render_input(1, addr_input_email) }),
+                  hbox({ addr_btn_time->Render(), sort_ind(2) }),
+                  text("")
+              ),
               separator(),
               rows_container_c->Render() | vscroll_indicator | frame | flex,
               add_row->Render(),
@@ -382,11 +380,13 @@ int main(int argc, char** argv) {
       });
 
       auto final_component = CatchEvent(root_renderer, [&](Event event) {
+          Log("Event: " + event.input());
           if (event == Event::Custom) { refresh_address_list(); return true; }
-          if (event == Event::Character('S')) {
+          if (event == Event::Character("\x10")) {
               auto screen_capture = Screen::Create(Terminal::Size());
               Render(screen_capture, root_renderer->Render());
               SaveSnapshot("addrapp", screen_capture.ToString());
+              Log("Snapshot saved: addrapp");
               return true;
           }
           if ((event == Event::Character('q') || event == Event::Escape) && !*show_picker && !*show_api_dialog) { screen.Exit(); return true; }

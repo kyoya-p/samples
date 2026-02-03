@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
               refresh_log_list();
               return true; 
           }
-          if (event == Event::Character('S')) {
+          if (event == Event::Character("\x10")) {
               auto screen_capture = Screen::Create(Terminal::Size());
               Render(screen_capture, root_renderer->Render());
               SaveSnapshot("sendapp", screen_capture.ToString());

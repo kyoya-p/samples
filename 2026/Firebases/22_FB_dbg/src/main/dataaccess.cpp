@@ -322,6 +322,7 @@ std::string FirestoreService::GetId(size_t index) {
 
 void FirestoreService::AddContact(const std::string& name, const std::string& email) {
     if (!firestore_) return;
+    Log("AddContact: " + name + " (" + email + ")");
     std::unordered_map<std::string, firebase::firestore::FieldValue> data;
     data["name"] = firebase::firestore::FieldValue::String(name);
     data["email"] = firebase::firestore::FieldValue::String(email);
