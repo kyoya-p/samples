@@ -50,11 +50,23 @@ enum AppScreen {
 
 Element MakeTableRow(Element name, Element email, Element time, Element op) {
     return hbox({
-        std::move(name)  | size(WIDTH, EQUAL, 30),
-        std::move(email) | flex,
-        std::move(time)  | size(WIDTH, EQUAL, 12),
-        std::move(op)    | size(WIDTH, EQUAL, 10),
+        hbox({ std::move(name),  filler() }) | size(WIDTH, EQUAL, 30),
+        hbox({ std::move(email), filler() }) | flex,
+        hbox({ std::move(time),  filler() }) | size(WIDTH, EQUAL, 12),
+        hbox({ filler(), std::move(op), filler() }) | size(WIDTH, EQUAL, 10),
     });
+}
+
+Element RenderAddressTable(Component header, Component body, Component add_row, Component footer, bool connected) {
+    return vbox({
+        text("Address Book Setting") | bold | center,
+        separator(),
+        header->Render(),
+        separator(),
+        body->Render() | vscroll_indicator | frame | flex,
+        add_row->Render(),
+        hbox({ text(connected ? "Status: Connected" : "Status: Disconnected") | bold, filler(), footer->Render() })
+    }) | border;
 }
 
 std::string GenerateRandomName() {
@@ -177,9 +189,9 @@ int main(int argc, char** argv) {
                 auto row = Renderer(remove_btn, [=, &service] {
                   // 完全バッファレス・レンダリング: 描画の瞬間にスナップショットからデータを抽出
                   auto el = MakeTableRow(
-                      text(service.GetData(idx, "name")), 
-                      text(service.GetData(idx, "email")), 
-                      text(service.GetData(idx, "timestamp")), 
+                      text(service.GetData(idx, "name")),
+                      text(service.GetData(idx, "email")),
+                      text(service.GetData(idx, "timestamp")),
                       remove_btn->Render()
                   );
                   if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
@@ -260,20 +272,21 @@ int main(int argc, char** argv) {
               if (addr_sort_col == col) return hbox({ text(" ["), input->Render(), text("]") });
               return hbox({ text(" ["), text("          ") | dim, text("]") });
           };
-          return vbox({
-              text("Address Book Setting") | bold | center,
-              separator(),
-              MakeTableRow(
+
+          auto header = Renderer([&] {
+              return MakeTableRow(
                   hbox({ addr_btn_name->Render(), sort_ind(0), render_input(0, addr_input_name) }),
                   hbox({ addr_btn_mail->Render(), sort_ind(1), render_input(1, addr_input_email) }),
                   hbox({ addr_btn_time->Render(), sort_ind(2) }),
                   text("")
-              ),
-              separator(),
-              rows_container_c->Render() | vscroll_indicator | frame | flex,
-              add_row->Render(),
-              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), activate_btn->Render(), text(" "), close_addr_btn->Render() })
-          }) | border;
+              );
+          });
+
+          auto footer = Renderer(addr_nav_container, [&] {
+              return hbox({ activate_btn->Render(), text(" "),  close_addr_btn->Render() });
+          });
+
+          return RenderAddressTable(header, rows_container_c, add_row, footer, service.IsConnected());
       });
 
       // --- Picker Dialog ---
@@ -315,7 +328,7 @@ int main(int argc, char** argv) {
                   service_ptr->SetFilter("", "");
               }, ButtonOption::Ascii());
 
-              auto item = Renderer(btn, [=, service_ptr] {
+              auto item = Renderer(btn, [=] {
                   std::string name = service_ptr->GetData(idx, "name");
                   std::string email = service_ptr->GetData(idx, "email");
                   std::string time = service_ptr->GetData(idx, "timestamp");
