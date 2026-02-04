@@ -42,13 +42,11 @@
 
 using namespace ftxui;
 
-enum AppScreen {
-    AppMain,
-    AppAddressBook,
-    AppScanSend
+struct AppState {
+    std::string api_key;
+    int nAddr;
+    std::atomic<bool> started{false};
 };
-
-// --- Helper Functions ---
 
 Element MakeTableRow(Element name, Element email, Element time, Element op) {
     return hbox({
@@ -64,28 +62,11 @@ std::string GenerateRandomName() {
   static const std::vector<std::string> l = {"Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller"};
   static std::random_device rd;
   static std::mt19937 gen(rd());
-  std::uniform_int_distribution<> d1(0, 7);
-  std::uniform_int_distribution<> d2(0, 6);
-  std::uniform_int_distribution<> d3(100, 999);
-  std::uniform_int_distribution<> d_type(0, 2); 
-  std::uniform_int_distribution<> d_char(0, 51);
-
-  auto get_char = [&](int v) -> char {
-      if (v < 26) return 'a' + v;
-      return 'A' + (v - 26);
-  };
-
+  std::uniform_int_distribution<> d1(0, 7), d2(0, 6), d3(100, 999), d_type(0, 2), d_char(0, 51);
+  auto get_char = [&](int v) { return (char)(v < 26 ? 'a' + v : 'A' + (v - 26)); };
   std::string prefix = "";
   int type = d_type(gen);
-  if (type == 1) {
-      prefix += get_char(d_char(gen));
-      prefix += ". ";
-  } else if (type == 2) {
-      prefix += get_char(d_char(gen));
-      prefix += get_char(d_char(gen));
-      prefix += ". ";
-  }
-
+  if (type > 0) { for(int i=0; i<type; ++i) prefix += get_char(d_char(gen)); prefix += ". "; }
   return prefix + f[d1(gen)] + " " + std::to_string(d3(gen)) + " " + l[d2(gen)];
 }
 
@@ -96,148 +77,114 @@ std::string GenerateRandomEmail(const std::string& name) {
   return e + "@example.com";
 }
 
-// --- Configuration Logic ---
-
 std::string LoadApiKey() {
     const char* key = std::getenv("FB_API_KEY");
     if (!key) key = std::getenv("API_KEY");
     if (key) return std::string(key);
-
     std::string conf_path = GetExecutableDir() + "app.conf";
     std::ifstream conf_file(conf_path);
     std::string line;
     while (std::getline(conf_file, line)) {
         if (line.find("API_KEY=") == 0) {
-            std::string api_key = line.substr(8);
-            api_key.erase(0, api_key.find_first_not_of(" \t\r\n"));
-            api_key.erase(api_key.find_last_not_of(" \t\r\n") + 1);
-            return api_key;
+            std::string k = line.substr(8);
+            k.erase(0, k.find_first_not_of(" \t\r\n"));
+            k.erase(k.find_last_not_of(" \t\r\n") + 1);
+            return k;
         }
     }
     return "";
 }
 
-// --- Main Entry Point ---
+void RefreshAddressList(FirestoreService& service, Component rows, int sort_col, bool sort_desc, std::string f_name, std::string f_email, size_t& last_count, int nAddr) {
+    service.SetSortOrder((sort_col == 0) ? "name" : (sort_col == 1) ? "email" : "timestamp", sort_desc);
+    service.SetFilter(f_name, f_email);
+    size_t total = service.GetLoadedCount();
+    if (total == last_count && rows->ChildCount() > 0) return;
+    rows->DetachAllChildren(); last_count = total;
+    for (size_t i = 0; i < total; ++i) {
+        int idx = (int)i;
+        auto btn = Button("[Remove]", [=, &service] { std::string id = service.GetId(idx); if(!id.empty()) service.RemoveContact(id); }, ButtonOption::Ascii());
+        rows->Add(Renderer(btn, [=, &service, btn] {
+            auto el = MakeTableRow(text(service.GetData(idx, "name")), text(service.GetData(idx, "email")), text(service.GetData(idx, "timestamp")), btn->Render());
+            if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
+            if (btn->Focused() && !service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
+            return btn->Focused() ? el | inverted : el;
+        }));
+    }
+    if (service.HasMore() || service.IsLoading()) {
+        rows->Add(Renderer([&service, nAddr] { 
+            if (!service.IsLoading() && (int)service.GetLoadedCount() < nAddr && service.HasMore()) service.LoadMore(10);
+            return hbox({ filler(), text("Loading...") | dim, filler() });
+        }));
+    }
+}
 
 int main(int argc, char** argv) {
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
       firebase::SetLogLevel(firebase::kLogLevelError);
-
       auto screen = ScreenInteractive::Fullscreen();
-      std::atomic<bool> started{false};
-      FirestoreService service([&screen, &started]() mutable { if (started) screen.Post(Event::Custom); });
+      AppState state;
+      FirestoreService service([&screen, &state]() mutable { if (state.started) screen.Post(Event::Custom); });
+      state.nAddr = std::max(10, Terminal::Size().dimy + 5);
+      state.api_key = LoadApiKey();
+      if (!state.api_key.empty()) service.Initialize(state.api_key, "addressbook", state.nAddr);
+
+      static std::string f_name = "", f_email = "";
+      static int sort_col = 2; static bool sort_desc = true;
+      auto addr_in_name = Input(&f_name, "Filter Name"), addr_in_email = Input(&f_email, "Filter Email");
       
-      int nAddr = std::max(10, Terminal::Size().dimy + 5);
-      std::string api_key = LoadApiKey();
-      if (!api_key.empty()) service.Initialize(api_key, "addressbook", nAddr);
-
-      auto show_picker = std::make_shared<bool>(false);
-      static std::string scan_new_email = "";
-
-      // --- Address Book Components ---
-      static std::string addr_filter_name = "";
-      static std::string addr_filter_email = "";
-      static int addr_sort_col = 2;
-      static bool addr_sort_desc = true;
-
-      auto addr_input_name = Input(&addr_filter_name, "Filter Name");
-      auto addr_input_email = Input(&addr_filter_email, "Filter Email");
-
-      auto rows_container = Container::Vertical({});
-      auto rows_container_c = CatchEvent(rows_container, [&](Event e) {
+      auto rows = Container::Vertical({});
+      auto rows_c = CatchEvent(rows, [&, rows](Event e) {
           if (e.is_mouse() && (e.mouse().button == Mouse::WheelUp || e.mouse().button == Mouse::WheelDown)) {
-              return rows_container->OnEvent(e.mouse().button == Mouse::WheelUp ? Event::ArrowUp : Event::ArrowDown);
+              return rows->OnEvent(e.mouse().button == Mouse::WheelUp ? Event::ArrowUp : Event::ArrowDown);
           }
           return false;
       });
 
-      size_t last_addr_rendered_count = 0;
-      auto refresh_address_list = [&]() {
-          service.SetSortOrder((addr_sort_col == 0) ? "name" : (addr_sort_col == 1) ? "email" : "timestamp", addr_sort_desc);
-          service.SetFilter(addr_filter_name, addr_filter_email);
+      size_t last_count = 0;
+      auto refresh = [&]() { RefreshAddressList(service, rows, sort_col, sort_desc, f_name, f_email, last_count, state.nAddr); };
 
-          size_t total = service.GetLoadedCount();
-          if (total == last_addr_rendered_count && rows_container->ChildCount() > 0) return;
-          
-          rows_container->DetachAllChildren();
-          last_addr_rendered_count = total;
-          
-          for (size_t i = 0; i < total; ++i) {
-              int idx = (int)i;
-              auto remove_btn = Button("[Remove]", [=, &service] { 
-                  std::string id = service.GetId(idx);
-                  if(!id.empty()) service.RemoveContact(id); 
-              }, ButtonOption::Ascii());
-    
-              auto row = Renderer(remove_btn, [=, &service] {
-                  auto el = MakeTableRow(text(service.GetData(idx, "name")), text(service.GetData(idx, "email")), text(service.GetData(idx, "timestamp")), remove_btn->Render());
-                  if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
-                  if (remove_btn->Focused()) {
-                      if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
-                      return el | inverted;
-                  }
-                  return el;
-              });
-              rows_container->Add(row);
-          }
-          if (service.HasMore() || service.IsLoading()) {
-              rows_container->Add(Renderer([&service, nAddr] { 
-                  if (!service.IsLoading() && (int)service.GetLoadedCount() < nAddr && service.HasMore()) service.LoadMore(10);
-                  return hbox({ filler(), text("Loading...") | dim, filler() });
-              }));
-          }
-      };
+      auto btn_n = Button("Name", [&]{ if(sort_col==0) sort_desc=!sort_desc; else {sort_col=0; sort_desc=false; f_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
+      auto btn_m = Button("Mail", [&]{ if(sort_col==1) sort_desc=!sort_desc; else {sort_col=1; sort_desc=false; f_name="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
+      auto btn_t = Button("Time", [&]{ if(sort_col==2) sort_desc=!sort_desc; else {sort_col=2; sort_desc=true; f_name=f_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
 
-      static std::string n_name = GenerateRandomName();
-      static std::string n_email = GenerateRandomEmail(n_name);
-      auto name_input = Input(&n_name, "Name");
-      auto email_input = Input(&n_email, "Email");
+      static std::string n_name = GenerateRandomName(), n_email = GenerateRandomEmail(n_name);
       auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
-      auto add_row = Renderer(Container::Horizontal({name_input, email_input, add_btn}), [=] {
-          return vbox({ separator(), MakeTableRow(name_input->Render(), email_input->Render(), text("(Now)"), add_btn->Render()), separator() });
+      auto add_row = Renderer(Container::Horizontal({Input(&n_name, "Name"), Input(&n_email, "Email"), add_btn}), [=] {
+          return vbox({ separator(), MakeTableRow(text(n_name), text(n_email), text("(Now)"), add_btn->Render()), separator() });
       });
 
-      auto addr_btn_name = Button("Name", [&]{ if(addr_sort_col==0) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=0; addr_sort_desc=false; addr_filter_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
-      auto addr_btn_mail = Button("Mail", [&]{ if(addr_sort_col==1) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=1; addr_sort_desc=false; addr_filter_name="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
-      auto addr_btn_time = Button("Time", [&]{ if(addr_sort_col==2) addr_sort_desc=!addr_sort_desc; else {addr_sort_col=2; addr_sort_desc=true; addr_filter_name=""; addr_filter_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
-
-      auto addr_input_name_c = CatchEvent(addr_input_name, [&](Event e){ if(addr_sort_col != 0) return false; bool ret = addr_input_name->OnEvent(e); if(ret) screen.Post(Event::Custom); return ret; });
-      auto addr_input_email_c = CatchEvent(addr_input_email, [&](Event e){ if(addr_sort_col != 1) return false; bool ret = addr_input_email->OnEvent(e); if(ret) screen.Post(Event::Custom); return ret; });
-
-      auto close_addr_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
-      auto addr_renderer = Renderer(Container::Vertical({ Container::Horizontal({ addr_btn_name, addr_btn_mail, addr_btn_time, addr_input_name_c, addr_input_email_c }), rows_container_c, add_row, Container::Horizontal({ close_addr_btn }) }), [=, &service] {
-          auto sort_ind = [&](int col) { return (addr_sort_col != col) ? text("") : text(addr_sort_desc ? " v" : " ^"); };
-          auto render_input = [&](int col, Component input) {
-              return hbox({ text(" ["), (addr_sort_col == col ? input->Render() : text("          ") | dim), text("]") });
-          };
+      auto close_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
+      auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows_c, add_row, Container::Horizontal({ close_btn }) }), [&] {
+          auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
+          auto render_in = [&](int col, Component in) { return hbox({ text(" ["), (sort_col == col ? in->Render() : text("          ") | dim), text("]") }); };
           return vbox({
               text("Address Book Setting") | bold | center, separator(),
-              hbox({ hbox({ addr_btn_name->Render(), sort_ind(0), render_input(0, addr_input_name) }) | size(WIDTH, EQUAL, 28), separator(), hbox({ addr_btn_mail->Render(), sort_ind(1), render_input(1, addr_input_email) }) | flex, separator(), hbox({ addr_btn_time->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16), text("          ") }),
-              separator(), rows_container_c->Render() | vscroll_indicator | frame | flex, add_row->Render(),
-              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), close_addr_btn->Render() })
+              hbox({
+                hbox({ btn_n->Render(), sort_ind(0), render_in(0, addr_in_name) }) | size(WIDTH, EQUAL, 28),
+                separator(),
+                hbox({ btn_m->Render(), sort_ind(1), render_in(1, addr_in_email) }) | flex,
+                separator(),
+                hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
+                text("          ")
+                }),
+              separator(), rows_c->Render() | vscroll_indicator | frame | flex, add_row->Render(),
+              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), close_btn->Render() })
           }) | border;
       });
 
-      // --- Main Loop ---
-      auto final_component = CatchEvent(addr_renderer, [&](Event event) {
-          if (event == Event::Custom) { refresh_address_list(); return true; }
-          if (event == Event::Character("\x10")) {
-              auto screen_capture = Screen::Create(Terminal::Size());
-              Render(screen_capture, addr_renderer->Render());
-              SaveSnapshot("addrapp", screen_capture.ToString());
-              return true;
+      auto final_component = CatchEvent(main_ui, [&](Event e) {
+          if (e == Event::Custom) { refresh(); return true; }
+          if (e == Event::Character("\x10")) {
+              auto cap = Screen::Create(Terminal::Size()); Render(cap, main_ui->Render());
+              SaveSnapshot("addrapp", cap.ToString()); return true;
           }
-          if ((event == Event::Character('q') || event == Event::Escape)) { screen.Exit(); return true; }
-          return addr_renderer->OnEvent(event);
+          if (e == Event::Character('q') || e == Event::Escape) { screen.Exit(); return true; }
+          return main_ui->OnEvent(e);
       });
 
-      started = true;
-      refresh_address_list();
-      screen.Loop(final_component);
-  } catch (const std::exception& e) {
-      std::cerr << "EXCEPTION: " << e.what() << std::endl;
-      return 1;
-  }
+      state.started = true; refresh(); screen.Loop(final_component);
+  } catch (const std::exception& e) { std::cerr << "EXCEPTION: " << e.what() << std::endl; return 1; }
   return 0;
 }
