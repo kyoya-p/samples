@@ -160,12 +160,12 @@ int main(int argc, char** argv) {
           auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
           auto render_in = [&](int col, Component in) { return hbox({ text(" ["), (sort_col == col ? in->Render() : text("          ") | dim), text("]") }); };
           return vbox({
-              text("Address Book Setting") | bold | center, separator(),
+//              text("Address Book Setting") | bold | center, separator(),
               hbox({
                 hbox({ btn_n->Render(), sort_ind(0), render_in(0, addr_in_name) }) | size(WIDTH, EQUAL, 28),
-                separator(),
+//                separator(),
                 hbox({ btn_m->Render(), sort_ind(1), render_in(1, addr_in_email) }) | flex,
-                separator(),
+//                separator(),
                 hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
                 text("          ")
                 }),
