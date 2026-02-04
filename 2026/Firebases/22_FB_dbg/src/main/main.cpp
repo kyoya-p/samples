@@ -104,7 +104,7 @@ void RefreshAddressList(FirestoreService& service, Component rows, int sort_col,
     for (size_t i = 0; i < total; ++i) {
         int idx = (int)i;
         auto btn = Button("[Remove]", [=, &service] { std::string id = service.GetId(idx); if(!id.empty()) service.RemoveContact(id); }, ButtonOption::Ascii());
-        rows->Add(Renderer(btn, [=, &service, btn] {
+        rows->Add(Renderer(btn, [=, &service] {
             auto el = MakeTableRow(text(service.GetData(idx, "name")), text(service.GetData(idx, "email")), text(service.GetData(idx, "timestamp")), btn->Render());
             if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
             if (btn->Focused() && !service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
@@ -137,7 +137,8 @@ int main(int argc, char** argv) {
       auto rows = Container::Vertical({});
       auto rows_c = CatchEvent(rows, [&, rows](Event e) {
           if (e.is_mouse() && (e.mouse().button == Mouse::WheelUp || e.mouse().button == Mouse::WheelDown)) {
-              return rows->OnEvent(e.mouse().button == Mouse::WheelUp ? Event::ArrowUp : Event::ArrowDown);
+                  rows->OnEvent(e);
+              return true;
           }
           return false;
       });
