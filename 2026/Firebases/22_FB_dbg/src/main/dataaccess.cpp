@@ -174,7 +174,6 @@ void FirestoreService::FetchNextPage() {
         query = query.StartAfter(start_after_doc);
     }
 
-    // Use initial_page_size_ for the first page, then 10 for subsequent pages
     int32_t limit_size = (page_index == 0) ? initial_page_size_ : 10;
     firebase::firestore::Query limited_query = query.Limit(limit_size);
     
@@ -322,7 +321,6 @@ std::string FirestoreService::GetId(size_t index) {
 
 void FirestoreService::AddContact(const std::string& name, const std::string& email) {
     if (!firestore_) return;
-    Log("AddContact: " + name + " (" + email + ")");
     std::unordered_map<std::string, firebase::firestore::FieldValue> data;
     data["name"] = firebase::firestore::FieldValue::String(name);
     data["email"] = firebase::firestore::FieldValue::String(email);
