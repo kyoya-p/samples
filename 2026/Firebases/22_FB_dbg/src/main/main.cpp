@@ -103,12 +103,24 @@ void RefreshAddressList(FirestoreService& service, Component rows, int sort_col,
     rows->DetachAllChildren(); last_count = total;
     for (size_t i = 0; i < total; ++i) {
         int idx = (int)i;
-        auto btn = Button("[Remove]", [=, &service] { std::string id = service.GetId(idx); if(!id.empty()) service.RemoveContact(id); }, ButtonOption::Ascii());
-        rows->Add(Renderer(btn, [=, &service] {
-            auto el = MakeTableRow(text(service.GetData(idx, "name")), text(service.GetData(idx, "email")), text(service.GetData(idx, "timestamp")), btn->Render());
+        auto remove_btn = Button("[Remove]", [=, &service] { std::string id = service.GetId(idx); if(!id.empty()) service.RemoveContact(id); }, ButtonOption::Ascii());
+        std::string email_val = service.GetData(idx, "email");
+        auto email_btn = Button(email_val, []{}, ButtonOption::Ascii());
+
+        auto row = Renderer(Container::Horizontal({email_btn, remove_btn}), [=, &service, email_val] {
+            auto el = MakeTableRow(text(service.GetData(idx, "name")), text(email_val), text(service.GetData(idx, "timestamp")), remove_btn->Render());
             if (idx % 2 != 0) el = el | bgcolor(Color::RGB(60, 60, 60));
-            if (btn->Focused() && !service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
-            return btn->Focused() ? el | inverted : el;
+            if (remove_btn->Focused() || email_btn->Focused()) {
+                if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
+                return el | inverted;
+            }
+            return el;
+        });
+        rows->Add(CatchEvent(row, [email_btn](Event e) {
+            if (e.is_mouse() && e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+                email_btn->TakeFocus();
+            }
+            return false;
         }));
     }
     if (service.HasMore() || service.IsLoading()) {
@@ -122,7 +134,7 @@ void RefreshAddressList(FirestoreService& service, Component rows, int sort_col,
 int main(int argc, char** argv) {
   try {
       std::ofstream(GetLogFilename(), std::ios::trunc);
-      firebase::SetLogLevel(firebase::kLogLevelError);
+  firebase::SetLogLevel(firebase::kLogLevelError);
       auto screen = ScreenInteractive::Fullscreen();
       AppState state;
       FirestoreService service([&screen, &state]() mutable { if (state.started) screen.Post(Event::Custom); });
@@ -151,32 +163,50 @@ int main(int argc, char** argv) {
       auto btn_t = Button("Time", [&]{ if(sort_col==2) sort_desc=!sort_desc; else {sort_col=2; sort_desc=true; f_name=f_email="";} screen.Post(Event::Custom); }, ButtonOption::Ascii());
 
       static std::string n_name = GenerateRandomName(), n_email = GenerateRandomEmail(n_name);
-      auto add_btn = Button("[Add]", [&service] { if (!n_name.empty()) { service.AddContact(n_name, n_email); n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); } }, ButtonOption::Ascii());
-      auto add_row = Renderer(Container::Horizontal({Input(&n_name, "Name"), Input(&n_email, "Email"), add_btn}), [=] {
-          return vbox({ separator(), MakeTableRow(text(n_name), text(n_email), text("(Now)"), add_btn->Render()), separator() });
-      });
-
-      auto close_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
-      auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows_c, add_row, Container::Horizontal({ close_btn }) }), [&] {
-          auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
-          auto render_in = [&](int col, Component in) { return hbox({ text(" ["), (sort_col == col ? in->Render() : text("          ") | dim), text("]") }); };
-          return vbox({
-//              text("Address Book Setting") | bold | center, separator(),
-              hbox({
-                hbox({ btn_n->Render(), sort_ind(0), render_in(0, addr_in_name) }) | size(WIDTH, EQUAL, 28),
-//                separator(),
-                hbox({ btn_m->Render(), sort_ind(1), render_in(1, addr_in_email) }) | flex,
-//                separator(),
-                hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
-                text("          ")
-                }),
-              separator(),
-              rows_c->Render() | vscroll_indicator | frame | flex,
-              add_row->Render(),
-              hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), close_btn->Render() })
-          }) | border;
-      });
-
+      auto name_in = Input(&n_name, "Name");
+      auto email_in = Input(&n_email, "Email");
+      auto add_btn = Button("[Add]", [&service] { 
+          if (!n_name.empty()) { 
+              service.AddContact(n_name, n_email); 
+              n_name = GenerateRandomName(); 
+              n_email = GenerateRandomEmail(n_name); 
+          } 
+      }, ButtonOption::Ascii());
+      
+      // Keep components alive in a container
+      auto add_comps = Container::Horizontal({name_in, email_in, add_btn});
+      
+            auto add_row_container = Container::Horizontal({
+                name_in,
+                email_in,
+                add_btn
+            });
+      
+            auto close_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
+            auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows_c, add_row_container, Container::Horizontal({ close_btn }) }), [&] {
+                auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
+                auto render_in = [&](int col, Component in) { return hbox({ text(" ["), (sort_col == col ? in->Render() : text("          ") | dim), text("]") }); };
+                return vbox({
+                    hbox({
+                      hbox({ btn_n->Render(), sort_ind(0), render_in(0, addr_in_name) }) | size(WIDTH, EQUAL, 28),
+                      hbox({ btn_m->Render(), sort_ind(1), render_in(1, addr_in_email) }) | flex,
+                      hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
+                      text("          ")
+                      }),
+                    separator(),
+                    rows_c->Render() | vscroll_indicator | frame | flex,
+                    separator(),
+                    // Render Add Row manually to match table layout
+                    hbox({
+                        name_in->Render()  | size(WIDTH, EQUAL, 28),
+                        email_in->Render() | flex,
+                        text("(Now)")      | size(WIDTH, EQUAL, 16),
+                        add_btn->Render()  | size(WIDTH, EQUAL, 10) | center
+                    }),
+                    separator(),
+                    hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), close_btn->Render() })
+                }) | border;
+            });
       auto final_component = CatchEvent(main_ui, [&](Event e) {
           if (e == Event::Custom) { refresh(); return true; }
           if (e == Event::Character("\x10")) {
@@ -188,6 +218,9 @@ int main(int argc, char** argv) {
       });
 
       state.started = true; refresh(); screen.Loop(final_component);
-  } catch (const std::exception& e) { std::cerr << "EXCEPTION: " << e.what() << std::endl; return 1; }
+  } catch (const std::exception& e) {
+      std::cerr << "EXCEPTION: " << e.what() << std::endl;
+      return 1;
+  }
   return 0;
 }
