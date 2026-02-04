@@ -169,7 +169,9 @@ int main(int argc, char** argv) {
                 hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
                 text("          ")
                 }),
-              separator(), rows_c->Render() | vscroll_indicator | frame | flex, add_row->Render(),
+              separator(),
+              rows_c->Render() | vscroll_indicator | frame | flex,
+              add_row->Render(),
               hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected") | bold, filler(), close_btn->Render() })
           }) | border;
       });
