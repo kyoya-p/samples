@@ -1,10 +1,10 @@
-# Project Description
+# プロジェクト説明
 
-This repository appears to be a personal sandbox or playground containing various code snippets, experiments, and small projects organized by year.
+このリポジトリは、年ごとに整理された様々なコードスニペット、実験、小規模なプロジェクトを含む個人のサンドボックスまたはプレイグラウンドのようです。
 
-## Structure
+## 構造
 
-The repository is organized into directories representing years:
+リポジトリは年を表すディレクトリに整理されています：
 
 - `2020`
 - `2021`
@@ -13,17 +13,17 @@ The repository is organized into directories representing years:
 - `2025`
 - `2026`
 
-## Technologies
+## 技術
 
-The projects cover a wide range of technologies and languages, including but not limited to:
+プロジェクトは、以下を含む幅広い技術と言語をカバーしています：
 
-- **Kotlin**: Used extensively for Ktor, Multiplatform, Jetpack Compose, JS, and Node.js targets.
-- **Node.js**: Various server-side scripts and experiments.
-- **Flutter**: Mobile development experiments.
-- **Web Technologies**: WebRTC, GraphQL, etc.
-- **Cloud/Infrastructure**: Firebase, Azure, Docker (jib).
-- **Others**: Windows scripting (PowerShell, JNA), SNMP tools.
+- **Kotlin**: Ktor、Multiplatform、Jetpack Compose、JS、Node.jsターゲットなどで広範囲に使用されています。
+- **Node.js**: 様々なサーバーサイドスクリプトや実験。
+- **Flutter**: モバイル開発の実験。
+- **Web Technologies**: WebRTC、GraphQLなど。
+- **Cloud/Infrastructure**: Firebase、Azure、Docker (jib)。
+- **Others**: Windowsスクリプティング (PowerShell、JNA)、SNMPツール。
 
-## License
+## ライセンス
 
-This project is licensed under the Apache License 2.0.
+このプロジェクトはApache License 2.0の下でライセンスされています。
