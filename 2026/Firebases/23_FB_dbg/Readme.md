@@ -70,11 +70,12 @@ mise exec node@20 -- npx tui-test .\testspec\1.1_close.spec.ts  # 個別テス�
 
 # 評価検証手順 (Windows)
 
-Windows Terminal と PowerShell を使用して、アプリケーションの動作を自動的に検証し、証跡（スクリーンショット）を採取します。
+Windows Terminal と PowerShell を使用して、アプリケーションの動作を自動的に検証し、ターゲットウィンドウのみのスクリーンショットを採取します。
 
 ### 1. 事前準備
 - **Windows Terminal** がインストールされていること。
 - `build/Release/AddrApp.exe` がビルド済みであること。
+- **`run_app_with_screenshot.ps1`** と **`sub_capture.ps1`** がカレントディレクトリに存在すること。
 
 ### 2. 検証の実行
 以下のコマンドを実行します。
@@ -83,16 +84,17 @@ Windows Terminal と PowerShell を使用して、アプリケーションの動
 # APIキーの設定
 $env:API_KEY = "your-api-key"
 
-# 検証スクリプトの実行（アプリ起動 -> キャプチャ -> 終了）
+# 検証スクリプトの実行（アプリ起動 -> ウィンドウ限定キャプチャ -> 自動終了）
 powershell.exe -ExecutionPolicy Bypass -File run_app_with_screenshot.ps1
 ```
 
 ### 3. 結果の確認
 - カレントディレクトリに **`app_run_screenshot.png`** が生成されます。
+- 画像には **ターゲットウィンドウのみ** が切り出されて保存されます。
 - 画像を開き、以下の点を確認します：
     - `Status: Connected` と表示され、Firebaseとの通信が成功していること。
     - 連絡先リストが表示されていること。
-    - `Name`, `Time`, `Operation` カラムに反転表示（ハイライト）がないこと。
+    - `Name`, `Time`, `Operation` 各カラムに反転表示（ハイライト）がないこと。
 
 ## Windows 自動化の知見 (Tips)
 

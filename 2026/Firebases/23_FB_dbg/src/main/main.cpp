@@ -107,36 +107,50 @@ void RefreshAddressList(FirestoreService& service, Component rows, int sort_col,
     size_t total = service.GetLoadedCount();
     if (total == last_count && rows->ChildCount() > 0) return;
     rows->DetachAllChildren(); last_count = total;
+
     for (size_t i = 0; i < total; ++i) {
         int idx = (int)i;
+        std::string name_val = service.GetData(idx, "name");
         std::string email_val = service.GetData(idx, "email");
+        std::string time_val = service.GetData(idx, "timestamp");
+        std::string contact_id = service.GetId(idx); // 事前にIDを取得
 
+        // Name, Mail, Time をまとめて扱う選択用ボタン（見た目はただのテキスト）
+        auto select_opt = ButtonOption::Ascii();
+        select_opt.transform = [name_val, email_val, time_val](const EntryState& s) {
+            return hbox({
+                text(name_val)  | size(WIDTH, EQUAL, 28),
+                text(email_val) | flex,
+                text(time_val)  | size(WIDTH, EQUAL, 16),
+            });
+        };
+        auto select_btn = Button("", []{}, select_opt);
+        
         auto remove_opt = ButtonOption::Ascii();
         remove_opt.transform = [](const EntryState& s) {
-            return text(s.focused ? "[ Remove ]" : "[ Remove ]");
-        };
-        auto remove_btn = Button("[Remove]", [=, &service] { std::string id = service.GetId(idx); if(!id.empty()) service.RemoveContact(id); }, remove_opt);
-        
-        auto email_opt = ButtonOption::Ascii();
-        email_opt.transform = [email_val](const EntryState& s) { 
-            auto el = text(email_val);
-            if (s.focused) el = el | inverted;
+            auto el = text("[ Remove ]");
+            if (s.focused) el = el | bold;
             return el;
         };
-        auto email_btn = Button(email_val, []{}, email_opt);
+        auto remove_btn = Button("[Remove]", [&service, contact_id] { 
+            if(!contact_id.empty()) service.RemoveContact(contact_id); 
+        }, remove_opt);
 
-        auto row = Renderer(Container::Horizontal({email_btn, remove_btn}), [idx, &service, email_btn, remove_btn] {
-            bool is_selected = remove_btn->Focused() || email_btn->Focused();
-            auto name_el = text((is_selected ? "> " : "  ") + service.GetData(idx, "name"));
-            auto el = MakeTableRow(name_el, email_btn->Render(), text(service.GetData(idx, "timestamp")), remove_btn->Render());
+        auto row = Renderer(Container::Horizontal({select_btn, remove_btn}), [idx, &service, select_btn, remove_btn] {
+            bool is_selected = select_btn->Focused() || remove_btn->Focused();
+            auto el = hbox({
+                text(is_selected ? "> " : "  "),
+                select_btn->Render() | flex,
+                remove_btn->Render() | size(WIDTH, EQUAL, 10) | center
+            });
             if (is_selected) {
                 if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
             }
             return el;
         });
-        rows->Add(CatchEvent(row, [email_btn](Event e) {
+        rows->Add(CatchEvent(row, [select_btn](Event e) {
             if (e.is_mouse() && e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
-                email_btn->TakeFocus();
+                select_btn->TakeFocus();
             }
             return false;
         }));
@@ -179,7 +193,11 @@ int main(int argc, char** argv) {
       auto refresh = [&]() { RefreshAddressList(service, rows, sort_col, sort_desc, f_name, f_email, last_count, state.nAddr); };
 
       auto plain_btn_opt = ButtonOption::Ascii();
-      plain_btn_opt.transform = [](const EntryState& s) { return text(s.label); };
+      plain_btn_opt.transform = [](const EntryState& s) { 
+          auto el = text(s.label);
+          if (s.focused) el = el | bold;
+          return el;
+      };
 
       auto btn_n = Button("Name", [&]{ if(sort_col==0) sort_desc=!sort_desc; else {sort_col=0; sort_desc=false; f_email="";} screen.Post(Event::Custom); }, plain_btn_opt);
       auto btn_m = Button("Mail", [&]{ if(sort_col==1) sort_desc=!sort_desc; else {sort_col=1; sort_desc=false; f_name="";} screen.Post(Event::Custom); }, plain_btn_opt);
