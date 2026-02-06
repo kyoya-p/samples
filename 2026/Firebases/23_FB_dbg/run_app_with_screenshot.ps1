@@ -72,6 +72,13 @@ if ($hWnd -ne [IntPtr]::Zero) {
     Start-Sleep -Milliseconds 500
     Write-Host "Capturing app screen..."
     [FullScreenCapture]::Capture("app_run_screenshot.png")
+    
+    # 追加：'q' を送って終了させる
+    Write-Host "Closing application..."
+    $wshell = New-Object -ComObject WScript.Shell
+    if ($wshell.AppActivate($uniqueTitle)) {
+        $wshell.SendKeys("q")
+    }
 }
 
 Write-Host "App is running in a separate window. Screenshot saved to app_run_screenshot.png"
