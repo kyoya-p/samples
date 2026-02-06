@@ -2,7 +2,7 @@
 $signature = @"
 using System;
 using System.Runtime.InteropServices;
-public class WinAPI {
+public class WinAPI_Main {
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -36,27 +36,7 @@ public class WinAPI {
     }
 }
 "@
-Add-Type -TypeDefinition $signature
-Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-
-$code = @"
-using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Forms;
-public class FullScreenCapture {
-    public static void Capture(string filename) {
-        Rectangle bounds = Screen.PrimaryScreen.Bounds;
-        using (Bitmap bmp = new Bitmap(bounds.Width, bounds.Height)) {
-            using (Graphics g = Graphics.FromImage(bmp)) {
-                g.CopyFromScreen(Point.Empty, Point.Empty, bounds.Size);
-            }
-            bmp.Save(filename, ImageFormat.Png);
-        }
-    }
-}
-"@
-Add-Type -TypeDefinition $code -ReferencedAssemblies "System.Drawing", "System.Windows.Forms"
+try { Add-Type -TypeDefinition $signature -ErrorAction SilentlyContinue } catch {}
 
 $uniqueTitle = "AddrApp_Run_$(Get-Random)"
 $appPath = Resolve-Path ".\build\Release\AddrApp.exe"
@@ -64,16 +44,17 @@ $env:API_KEY = "AIzaSyDpE5hkTVWMt8iYPPm30yNL6KJ-YivAwJ4"
 
 Write-Host "Launching AddrApp in Windows Terminal..."
 Start-Process wt.exe -ArgumentList "-w new -d `"$((Get-Location).Path)`" --title $uniqueTitle `"$appPath`""
-Start-Sleep -Seconds 10 # Wait for Firebase connection
+Start-Sleep -Seconds 10 
 
-$hWnd = [WinAPI]::FindWindowByTitle($uniqueTitle)
+$hWnd = [WinAPI_Main]::FindWindowByTitle($uniqueTitle)
 if ($hWnd -ne [IntPtr]::Zero) {
-    [WinAPI]::SetForegroundWindow($hWnd)
+    [WinAPI_Main]::SetForegroundWindow($hWnd)
     Start-Sleep -Milliseconds 500
-    Write-Host "Capturing app screen..."
-    [FullScreenCapture]::Capture("app_run_screenshot.png")
+    Write-Host "Capturing target window via sub-process..."
     
-    # 追加：'q' を送って終了させる
+    # 別のPowerShellプロセスでキャプチャを実行（型競合回避）
+    powershell.exe -ExecutionPolicy Bypass -File sub_capture.ps1 -hWndStr "$hWnd" -filename "app_run_screenshot.png"
+    
     Write-Host "Closing application..."
     $wshell = New-Object -ComObject WScript.Shell
     if ($wshell.AppActivate($uniqueTitle)) {
@@ -81,4 +62,4 @@ if ($hWnd -ne [IntPtr]::Zero) {
     }
 }
 
-Write-Host "App is running in a separate window. Screenshot saved to app_run_screenshot.png"
+Write-Host "Screenshot of target window saved to app_run_screenshot.png"
