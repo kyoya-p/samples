@@ -6,4 +6,4 @@ image_application.md
 /.tui-test/
 /*.log
 /app.conf
-
+/deps/
