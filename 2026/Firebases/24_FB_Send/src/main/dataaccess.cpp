@@ -33,7 +33,6 @@ void FirestoreService::StopAllListeners() {
     for (auto& page : pages_) {
         page->listener_registration.Remove();
     }
-    pages_.clear();
 }
 
 #ifdef _WIN32
@@ -115,9 +114,11 @@ void FirestoreService::LoadMore(int page_size) {
 }
 
 void FirestoreService::StartQuery() {
+    StopAllListeners();
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        pages_.clear();
+        is_loading_ = false;
+        is_resetting_ = true;
         has_more_ = true;
     }
     FetchNextPage();
@@ -134,7 +135,7 @@ void FirestoreService::FetchNextPage() {
         std::lock_guard<std::mutex> lock(mutex_);
         if (is_loading_) return;
         
-        if (!pages_.empty()) {
+        if (!is_resetting_ && !pages_.empty()) {
              if (pages_.back()->last_doc.is_valid()) {
                  start_after_doc = pages_.back()->last_doc;
                  use_start_after = true;
@@ -144,8 +145,10 @@ void FirestoreService::FetchNextPage() {
         }
 
         is_loading_ = true;
-        page_index = pages_.size();
-        pages_.push_back(std::make_unique<Page>());
+        page_index = is_resetting_ ? 0 : pages_.size();
+        if (!is_resetting_) {
+            pages_.push_back(std::make_unique<Page>());
+        }
     }
 
     firebase::firestore::Query query = firestore_->Collection(collection_name_.c_str());
@@ -194,9 +197,8 @@ void FirestoreService::FetchNextPage() {
             SetError(err);
             {
                 std::lock_guard<std::mutex> lock(mutex_);
-                if (page_index == pages_.size() - 1) {
-                     is_loading_ = false;
-                }
+                is_loading_ = false;
+                is_resetting_ = false;
             }
             on_update_();
             return;
@@ -204,6 +206,13 @@ void FirestoreService::FetchNextPage() {
 
         {
             std::lock_guard<std::mutex> lock(mutex_);
+            
+            if (is_resetting_ && page_index == 0) {
+                pages_.clear();
+                pages_.push_back(std::make_unique<Page>());
+                is_resetting_ = false;
+            }
+
             if (page_index < pages_.size()) {
                 auto& page = pages_[page_index];
                 page->snapshot = std::make_unique<firebase::firestore::QuerySnapshot>(snapshot);
@@ -238,6 +247,8 @@ void FirestoreService::FetchNextPage() {
         std::lock_guard<std::mutex> lock(mutex_);
         if (page_index < pages_.size()) {
             pages_[page_index]->listener_registration = registration;
+        } else if (is_resetting_) {
+            // New listener for page 0 will be stored in callback
         } else {
             registration.Remove();
         }
@@ -320,20 +331,28 @@ std::string FirestoreService::GetId(size_t index) {
 }
 
 void FirestoreService::AddContact(const std::string& name, const std::string& email) {
-    if (!firestore_) return;
+    if (!firestore_ || is_loading_) return;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        is_loading_ = true;
+    }
     std::unordered_map<std::string, firebase::firestore::FieldValue> data;
     data["name"] = firebase::firestore::FieldValue::String(name);
     data["email"] = firebase::firestore::FieldValue::String(email);
     data["timestamp"] = firebase::firestore::FieldValue::ServerTimestamp();
     firestore_->Collection("addressbook").Document(name).Set(data).OnCompletion([this](const firebase::Future<void>&){
-        if (collection_name_ == "addressbook") StartQuery(); 
+        StartQuery(); 
     });
 }
 
 void FirestoreService::RemoveContact(const std::string& id) {
-    if (!firestore_) return;
+    if (!firestore_ || is_loading_) return;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        is_loading_ = true;
+    }
     firestore_->Collection("addressbook").Document(id).Delete().OnCompletion([this](const firebase::Future<void>&){
-        if (collection_name_ == "addressbook") StartQuery(); 
+        StartQuery(); 
     });
 }
 

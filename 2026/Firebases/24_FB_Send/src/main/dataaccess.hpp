@@ -60,6 +60,7 @@ private:
 
     std::vector<std::unique_ptr<Page>> pages_;
     bool is_loading_ = false;
+    bool is_resetting_ = false;
     bool has_more_ = true;
     std::string current_api_key_;
     std::string error_message_;

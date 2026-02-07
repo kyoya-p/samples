@@ -3,3 +3,4 @@ modules:
   - linux-cli
   - shared
   - windows-cli
+  - faces

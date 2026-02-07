@@ -48,6 +48,7 @@ class CypherGenerator {
             val imageUrl = face["imageUrl"]?.jsonPrimitive?.content ?: ""
             val keywords = extractKeywords(effect)
             val timings = extractTimings(effect)
+            val mentionedSystems = extractMentionedSystems(effect)
 
             val faceVar = "cf_${safeId}_${side}"
 
@@ -92,6 +93,13 @@ class CypherGenerator {
                 sb.append("MERGE (").append(faceVar).append(")-[:HAS_SYSTEM]->(").append(sysVar).append(")\n")
             }
 
+            // Mentioned Systems
+            mentionedSystems.forEachIndexed { i, sys ->
+                val sysVar = "msys_${safeId}_${side}_${i}"
+                sb.append("MERGE (").append(sysVar).append(":System {name: \"").append(sanitize(sys)).append("\"})\n")
+                sb.append("MERGE (").append(faceVar).append(")-[:REFERS_TO_SYSTEM]->(").append(sysVar).append(")\n")
+            }
+
             // Keywords
             keywords.forEachIndexed { i, kw ->
                 val kwVar = "k_${safeId}_${side}_${i}"
@@ -134,7 +142,8 @@ class CypherGenerator {
                 "restriction" to face.restriction,
                 "imageUrl" to face.imageUrl,
                 "keywords" to extractKeywords(face.effect),
-                "timings" to extractTimings(face.effect)
+                "timings" to extractTimings(face.effect),
+                "mentionedSystems" to extractMentionedSystems(face.effect)
             )
         }
 
@@ -183,6 +192,12 @@ class CypherGenerator {
                 MERGE (cf)-[:HAS_SYSTEM]->(sys)
             )
             
+            // Mentioned Systems (New Relationship)
+            FOREACH (sysName IN faceData.mentionedSystems |
+                MERGE (msys:System {name: sysName})
+                MERGE (cf)-[:REFERS_TO_SYSTEM]->(msys)
+            )
+            
             // Keywords (Extracted)
             FOREACH (keywordName IN faceData.keywords |
                 MERGE (k:Keyword {name: keywordName})
@@ -221,6 +236,15 @@ class CypherGenerator {
     private fun extractTimings(effect: String): List<String> {
         // Extract content inside 『...』
         val regex = Regex("『(.*?)』")
+        return regex.findAll(effect)
+            .map { it.groupValues[1] }
+            .distinct()
+            .toList()
+    }
+
+    private fun extractMentionedSystems(effect: String): List<String> {
+        // 「系統：「...」」の形式を抽出
+        val regex = Regex("系統：\u300c(.*?)\u300d")
         return regex.findAll(effect)
             .map { it.groupValues[1] }
             .distinct()

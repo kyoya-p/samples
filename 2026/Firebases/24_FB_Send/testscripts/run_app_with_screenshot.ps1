@@ -53,7 +53,8 @@ if ($hWnd -ne [IntPtr]::Zero) {
     Write-Host "Capturing target window via sub-process..."
     
     # 別のPowerShellプロセスでキャプチャを実行（型競合回避）
-    powershell.exe -ExecutionPolicy Bypass -File sub_capture.ps1 -hWndStr "$hWnd" -filename "app_run_screenshot.png"
+    $subCapturePath = Resolve-Path ".\testscripts\sub_capture.ps1"
+    powershell.exe -ExecutionPolicy Bypass -File "$subCapturePath" -hWndStr "$hWnd" -filename "app_run_screenshot.png"
     
     Write-Host "Closing application..."
     $wshell = New-Object -ComObject WScript.Shell

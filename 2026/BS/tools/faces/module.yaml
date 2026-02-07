@@ -1,0 +1,11 @@
+product:
+  type: jvm/app
+settings:
+  jvm:
+    mainClass: faces.MainKt
+  ktor: enabled
+dependencies:
+  - ../shared
+  - $ktor.client.cio
+  - ch.qos.logback:logback-classic:1.5.24
+  - com.twelvemonkeys.imageio:imageio-webp:3.12.0

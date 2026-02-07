@@ -44,6 +44,21 @@ Options:
 --url <url>               neo4jのURLと認証情報を指定 (デフォルト: neo4j://127.0.0.1:7687)
 --login <pattern>         neo4jの認証情報を指定(デフォルト: 'neo4j:00000000')
 
+# 画像生成ツール (faces)
+指定したカードIDの画像を3枚1組で横に連結し、縦に3回繰り返したグリッド画像を生成する。
+Amperモジュールとして直接実行する。
+
+```shell
+.\amper.bat run --module faces -- <cardId>...
+```
+
+例:
+```shell
+.\amper.bat run --module faces -- BS75-051 BS75-068 BS75-069
+```
+
+出力先: `output/`
+
 # テスト実行
 ```shell:Help
 ./amper run -m jvm-cli -- -h     # Jvm

@@ -105,8 +105,12 @@ void RefreshAddressList(FirestoreService& service, Component rows, int sort_col,
     service.SetSortOrder((sort_col == 0) ? "name" : (sort_col == 1) ? "email" : "timestamp", sort_desc);
     service.SetFilter(f_name, f_email);
     size_t total = service.GetLoadedCount();
-    if (total == last_count && rows->ChildCount() > 0) return;
-    rows->DetachAllChildren(); last_count = total;
+    
+    // 読み込み中、またはデータ件数が変わった場合、あるいはリストが空の場合は再構築する
+    if (!service.IsLoading() && total == last_count && rows->ChildCount() > 0) return;
+    
+    rows->DetachAllChildren(); 
+    last_count = total;
 
     for (size_t i = 0; i < total; ++i) {
         int idx = (int)i;
