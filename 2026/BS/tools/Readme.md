@@ -59,6 +59,14 @@ Amperモジュールとして直接実行する。
 
 出力先: `output/`
 
+# フィールドシミュレーター (gamefield)
+Compose Multiplatform (Desktop) を使用したカードゲームフィールドのシミュレーター。
+手札からフィールドへのカード配置や、コア管理などの基本操作が可能。
+
+```shell
+.\amper.bat run --module gamefield
+```
+
 # テスト実行
 ```shell:Help
 ./amper run -m jvm-cli -- -h     # Jvm

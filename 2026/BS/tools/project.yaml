@@ -4,3 +4,4 @@ modules:
   - shared
   - windows-cli
   - faces
+  - gamefield

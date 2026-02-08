@@ -218,10 +218,8 @@ class CypherGenerator {
     }
 
     private fun splitAttributes(attributes: String): List<String> {
-        // Assuming attributes are single characters like "赤紫" -> ["赤", "紫"]
-        // If "全色" exists, it might need special handling, but currently splitting works for chars.
-        // We filter out non-color-like characters if necessary, but data seems clean.
-        return attributes.toList().map { it.toString() }
+        val validColors = setOf('赤', '紫', '緑', '白', '黄', '青')
+        return attributes.filter { it in validColors }.map { it.toString() }
     }
 
     private fun extractKeywords(effect: String): List<String> {

@@ -135,4 +135,55 @@ fun parseCategories(inputs: List<String>): List<String> {
     }
 }
 
-fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), Neo()).main(args)
+class Simulate : CliktCommand(name = "simulate") {
+    override fun help(context: Context) = "バトルスピリッツ ゲームシミュレーション（初期状態表示）"
+
+    override fun run() {
+        val deck = mutableListOf(
+            "BS75-CX03" to "天雷の契約神インドラ",
+            "BS75-051" to "砲雷竜カノンヴァジュドラ",
+            "BS75-042" to "幼電竜ビリジュヴァーン",
+            "BS75-043" to "幼電竜ヴァジュドラコ",
+            "BS75-044" to "雷鬣竜メーンヴァジュラ",
+            "BS75-045" to "雷竜ライヴァジュドラ",
+            "BS75-046" to "雷竜シマヴァジュドラ",
+            "BS75-047" to "電磁竜マグジュヴァーン",
+            "BS75-048" to "雷銃竜マガンのヴァジュドラ",
+            "BS75-049" to "雷象竜アイラヴァジュドラ"
+        )
+
+        println("=== Battle Spirits CLI Simulator ===")
+        println("Rule: Life=5, Reserve=3+1(SoulCore), Hand=1(Contract)+3")
+        
+        val hand = mutableListOf<String>()
+        val contract = deck.find { it.first == "BS75-CX03" }
+        if (contract != null) {
+            hand.add(contract.second)
+            deck.remove(contract)
+        }
+        
+        deck.shuffle()
+        repeat(3) {
+            if (deck.isNotEmpty()) {
+                hand.add(deck.removeAt(0).second)
+            }
+        }
+
+        println("\n[Status]")
+        println("Life:    [O][O][O][O][O] (5)")
+        println("Reserve: [ ] [ ] [ ] (3) + [S] (Soul Core)")
+        println("Trash:   (0)")
+        
+        println("\n[Hand] (${hand.size} cards)")
+        hand.forEachIndexed { index, name ->
+            println("${index + 1}: $name")
+        }
+        
+        println("\n[Field]")
+        println("| Slot 1 | Slot 2 | Slot 3 | Slot 4 | Slot 5 |")
+        println("|  Empty |  Empty |  Empty |  Empty |  Empty |")
+        println("======================================")
+    }
+}
+
+fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), Neo(), Simulate()).main(args)
