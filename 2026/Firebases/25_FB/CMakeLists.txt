@@ -102,7 +102,7 @@ FetchContent_Declare(ftxui
 )
 FetchContent_MakeAvailable(ftxui)
 
-add_executable(AddrApp src/main/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
+add_executable(AddrApp src/main/main.cpp src/main/utils.cpp)
 
 if(MSVC)
     target_link_libraries(AddrApp
@@ -137,7 +137,7 @@ target_include_directories(AddrApp
 )
 
 # --- SendApp ---
-add_executable(SendApp src/send/main.cpp src/main/dataaccess.cpp src/main/utils.cpp)
+add_executable(SendApp src/send/main.cpp src/main/utils.cpp)
 
 if(MSVC)
     target_link_libraries(SendApp
