@@ -1,0 +1,271 @@
+#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <unordered_map>
+#include <exception>
+#include <ctime>
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <process.h>
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+#include "ftxui/component/captured_mouse.hpp"
+#include "ftxui/component/component.hpp"
+#include "ftxui/component/component_base.hpp"
+#include "ftxui/component/component_options.hpp"
+#include "ftxui/component/screen_interactive.hpp"
+#include "ftxui/dom/elements.hpp"
+#include "ftxui/util/ref.hpp"
+#include "ftxui/screen/terminal.hpp"
+
+#include "firebase/log.h" 
+#include "firebase/util.h" 
+
+#include "dataaccess.hpp"
+#include "utils.hpp"
+
+#ifdef RGB
+#undef RGB
+#endif
+
+using namespace ftxui;
+
+struct AppState {
+    std::string api_key;
+    int nAddr;
+    std::atomic<bool> started{false};
+};
+
+// テーブルの1行（名前、メール、時間、操作ボタン）を構成する
+Element MakeTableRow(Element name, Element email, Element time, Element op) {
+    return hbox({
+        std::move(name)  | size(WIDTH, EQUAL, 28),
+        std::move(email) | flex,
+        std::move(time)  | size(WIDTH, EQUAL, 16),
+        std::move(op)    | size(WIDTH, EQUAL, 10) | center,
+    });
+}
+
+// ランダムな名前（敬称、名、姓の組み合わせ）を生成する
+std::string GenerateRandomName() {
+  static const std::vector<std::string> f = {"Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi"};
+  static const std::vector<std::string> l = {"Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller"};
+  static std::random_device rd;
+  static std::mt19937 gen(rd());
+  std::uniform_int_distribution<> d1(0, 7), d2(0, 6), d3(100, 999), d_type(0, 2), d_char(0, 51);
+  auto get_char = [&](int v) { return (char)(v < 26 ? 'a' + v : 'A' + (v - 26)); };
+  std::string prefix = "";
+  int type = d_type(gen);
+  if (type > 0) { for(int i=0; i<type; ++i) prefix += get_char(d_char(gen)); prefix += ". "; }
+  return prefix + f[d1(gen)] + " " + std::to_string(d3(gen)) + " " + l[d2(gen)];
+}
+
+// 名前を元に小文字・ドット区切りのランダムなメールアドレスを生成する
+std::string GenerateRandomEmail(const std::string& name) {
+  std::string e = name;
+  std::transform(e.begin(), e.end(), e.begin(), [](unsigned char c) { return (unsigned char)::tolower(c); });
+  std::replace(e.begin(), e.end(), ' ', '.');
+  return e + "@example.com";
+}
+
+// 環境変数または設定ファイルからFirebaseのAPIキーを読み込む
+std::string LoadApiKey() {
+    const char* key = std::getenv("FB_API_KEY");
+    if (!key) key = std::getenv("API_KEY");
+    if (key) return std::string(key);
+    std::string conf_path = GetExecutableDir() + "app.conf";
+    std::ifstream conf_file(conf_path);
+    std::string line;
+    while (std::getline(conf_file, line)) {
+        if (line.find("API_KEY=") == 0) {
+            std::string k = line.substr(8);
+            k.erase(0, k.find_first_not_of(" \t\r\n"));
+            k.erase(k.find_last_not_of(" \t\r\n") + 1);
+            return k;
+        }
+    }
+    return "";
+}
+
+// サービスからデータを取得し、FTXUIのコンポーネントとして住所録一覧を再構築する
+void RefreshAddressList(FirestoreService& service, Component rows, int sort_col, bool sort_desc, std::string f_name, std::string f_email, size_t& last_count, int nAddr) {
+    service.SetSortOrder((sort_col == 0) ? "name" : (sort_col == 1) ? "email" : "timestamp", sort_desc);
+    service.SetFilter(f_name, f_email);
+    size_t total = service.GetLoadedCount();
+    
+    // 読み込み中、またはデータ件数が変わった場合、あるいはリストが空の場合は再構築する
+    if (!service.IsLoading() && total == last_count && rows->ChildCount() > 0) return;
+    
+    rows->DetachAllChildren(); 
+    last_count = total;
+
+    for (size_t i = 0; i < total; ++i) {
+        int idx = (int)i;
+        std::string name_val = service.GetData(idx, "name");
+        std::string email_val = service.GetData(idx, "email");
+        std::string time_val = service.GetData(idx, "timestamp");
+        std::string contact_id = service.GetId(idx); // 事前にIDを取得
+
+        // Name, Mail, Time をまとめて扱う選択用ボタン（見た目はただのテキスト）
+        auto select_opt = ButtonOption::Ascii();
+        select_opt.transform = [name_val, email_val, time_val](const EntryState& s) {
+            return hbox({
+                text(name_val)  | size(WIDTH, EQUAL, 28),
+                text(email_val) | flex,
+                text(time_val)  | size(WIDTH, EQUAL, 16),
+            });
+        };
+        auto select_btn = Button("", []{}, select_opt);
+        
+        auto remove_opt = ButtonOption::Ascii();
+        remove_opt.transform = [](const EntryState& s) {
+            auto el = text("[ Remove ]");
+            if (s.focused) el = el | bold;
+            return el;
+        };
+        auto remove_btn = Button("[Remove]", [&service, contact_id] { 
+            if(!contact_id.empty()) service.RemoveContact(contact_id); 
+        }, remove_opt);
+
+        auto row = Renderer(Container::Horizontal({select_btn, remove_btn}), [idx, &service, select_btn, remove_btn] {
+            bool is_selected = select_btn->Focused() || remove_btn->Focused();
+            auto el = hbox({
+                text(is_selected ? "> " : "  "),
+                select_btn->Render() | flex,
+                remove_btn->Render() | size(WIDTH, EQUAL, 10) | center
+            });
+            if (is_selected) {
+                if (!service.IsLoading() && idx >= (int)service.GetLoadedCount() - 2 && service.HasMore()) service.LoadMore(10);
+            }
+            return el;
+        });
+        rows->Add(CatchEvent(row, [select_btn](Event e) {
+            if (e.is_mouse() && e.mouse().button == Mouse::Left && e.mouse().motion == Mouse::Pressed) {
+                select_btn->TakeFocus();
+            }
+            return false;
+        }));
+    }
+    if (service.HasMore() || service.IsLoading()) {
+        rows->Add(Renderer([&service, nAddr] { 
+            if (!service.IsLoading() && (int)service.GetLoadedCount() < nAddr && service.HasMore()) service.LoadMore(10);
+            return hbox({ filler(), text("Loading..."), filler() });
+        }));
+    }
+}
+
+// アプリケーションのエントリポイント：UIの初期化とメインループを実行する
+int main(int argc, char** argv) {
+  try {
+      std::ofstream(GetLogFilename(), std::ios::trunc);
+  firebase::SetLogLevel(firebase::kLogLevelError);
+      auto screen = ScreenInteractive::Fullscreen();
+      AppState state;
+      FirestoreService service([&screen, &state]() mutable { if (state.started) screen.Post(Event::Custom); });
+      state.nAddr = (std::max)(10, Terminal::Size().dimy + 5);
+      state.api_key = LoadApiKey();
+      if (!state.api_key.empty()) service.Initialize(state.api_key, "addressbook", state.nAddr);
+
+      static std::string f_name = "", f_email = "";
+      static int sort_col = 2; static bool sort_desc = true;
+      auto addr_in_name = Input(&f_name, "Filter Name"), addr_in_email = Input(&f_email, "Filter Email");
+      
+      auto rows = Container::Vertical({});
+      auto rows_c = CatchEvent(rows, [&, rows](Event e) {
+          if (e.is_mouse() && (e.mouse().button == Mouse::WheelUp || e.mouse().button == Mouse::WheelDown)) {
+              rows->TakeFocus();
+              if (e.mouse().button == Mouse::WheelUp) return rows->OnEvent(Event::ArrowUp);
+              if (e.mouse().button == Mouse::WheelDown) return rows->OnEvent(Event::ArrowDown);
+          }
+          return false;
+      });
+
+      size_t last_count = 0;
+      auto refresh = [&]() { RefreshAddressList(service, rows, sort_col, sort_desc, f_name, f_email, last_count, state.nAddr); };
+
+      auto plain_btn_opt = ButtonOption::Ascii();
+      plain_btn_opt.transform = [](const EntryState& s) { 
+          auto el = text(s.label);
+          if (s.focused) el = el | bold;
+          return el;
+      };
+
+      auto btn_n = Button("Name", [&]{ if(sort_col==0) sort_desc=!sort_desc; else {sort_col=0; sort_desc=false; f_email="";} screen.Post(Event::Custom); }, plain_btn_opt);
+      auto btn_m = Button("Mail", [&]{ if(sort_col==1) sort_desc=!sort_desc; else {sort_col=1; sort_desc=false; f_name="";} screen.Post(Event::Custom); }, plain_btn_opt);
+      auto btn_t = Button("Time", [&]{ if(sort_col==2) sort_desc=!sort_desc; else {sort_col=2; sort_desc=true; f_name=f_email="";} screen.Post(Event::Custom); }, plain_btn_opt);
+
+      static std::string n_name = GenerateRandomName(), n_email = GenerateRandomEmail(n_name);
+      auto name_in = Input(&n_name, "Name");
+      auto email_in = Input(&n_email, "Email");
+      auto add_btn = Button("[Add]", [&service] { 
+          if (!n_name.empty()) { 
+              service.AddContact(n_name, n_email); 
+              n_name = GenerateRandomName(); 
+              n_email = GenerateRandomEmail(n_name); 
+          } 
+      }, plain_btn_opt);
+      
+      // Keep components alive in a container
+      auto add_comps = Container::Horizontal({name_in, email_in, add_btn});
+      
+            auto add_row_container = Container::Horizontal({
+                name_in,
+                email_in,
+                add_btn
+            });
+      
+            auto close_btn = Button("[Close]", [&] { screen.Exit(); }, plain_btn_opt);
+            auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows_c, add_row_container, Container::Horizontal({ close_btn }) }), [&] {
+                auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
+                auto render_in = [&](int col, Component in) { return hbox({ text(" ["), (sort_col == col ? in->Render() : text("          ")), text("]") }); };
+                return vbox({
+                    hbox({
+                      hbox({ btn_n->Render(), sort_ind(0), render_in(0, addr_in_name) }) | size(WIDTH, EQUAL, 28),
+                      hbox({ btn_m->Render(), sort_ind(1), render_in(1, addr_in_email) }) | flex,
+                      hbox({ btn_t->Render(), sort_ind(2) }) | size(WIDTH, EQUAL, 16),
+                      text("          ")
+                      }),
+                    separator(),
+                    rows_c->Render() | vscroll_indicator | frame | flex,
+                    separator(),
+                    // Render Add Row manually to match table layout
+                    hbox({
+                        name_in->Render()  | size(WIDTH, EQUAL, 28),
+                        email_in->Render() | flex,
+                        text("(Now)")      | size(WIDTH, EQUAL, 16),
+                        add_btn->Render()  | size(WIDTH, EQUAL, 10) | center
+                    }),
+                    separator(),
+                    hbox({ text(service.IsConnected() ? "Status: Connected" : "Status: Disconnected"), filler(), close_btn->Render() })
+                }) | border;
+            });
+      auto final_component = CatchEvent(main_ui, [&](Event e) {
+          if (e == Event::Custom) { refresh(); return true; }
+          if (e == Event::Character("\x10")) {
+              auto cap = Screen::Create(Terminal::Size()); Render(cap, main_ui->Render());
+              SaveSnapshot("addrapp", cap.ToString()); return true;
+          }
+          if (e == Event::Character('q') || e == Event::Escape) { screen.Exit(); return true; }
+          return main_ui->OnEvent(e);
+      });
+
+      state.started = true; refresh(); screen.Loop(final_component);
+  } catch (const std::exception& e) {
+      std::cerr << "EXCEPTION: " << e.what() << std::endl;
+      return 1;
+  }
+  return 0;
+}
