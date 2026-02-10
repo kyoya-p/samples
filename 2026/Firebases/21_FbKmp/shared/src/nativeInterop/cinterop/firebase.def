@@ -1,6 +1,0 @@
-headers = firebase_shim.h
-package = firebase.native
-staticLibraries = libfirebase_shim.a libfirebase_firestore.a libfirebase_auth.a libfirebase_app.a
-libraryPaths = ../../../../native-interop/build/ ../../../../native-interop/firebase_cpp_sdk/libs/linux/x86_64/cxx11/
-linkerOpts.linux = -L/usr/lib -lcurl -lssl -lcrypto -lpthread -ldl
-includeDirs = ../../../../native-interop/include
