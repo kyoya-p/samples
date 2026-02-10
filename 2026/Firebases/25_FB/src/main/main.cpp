@@ -165,7 +165,6 @@ void FetchNextPage(FirebaseData& fb, const std::function<void()>& on_update) {
         query = query.OrderBy("email", fb.sort_desc ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending)
             .WhereGreaterThanOrEqualTo("email", firebase::firestore::FieldValue::String(fb.filter_email))
             .WhereLessThanOrEqualTo("email", firebase::firestore::FieldValue::String(fb.filter_email + "\xEF\xA3\xBF"));
-        }
     } else {
         query = query.OrderBy("timestamp", fb.sort_desc ? firebase::firestore::Query::Direction::kDescending : firebase::firestore::Query::Direction::kAscending);
     }
