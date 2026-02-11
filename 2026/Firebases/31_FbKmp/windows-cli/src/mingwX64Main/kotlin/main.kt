@@ -1,8 +1,8 @@
+
 package com.example
 
-import getWorld
+import main as sharedMain
 
 fun main() {
-    println("Starting Windows CLI...")
-    println("World: ${getWorld()}")
+    sharedMain()
 }

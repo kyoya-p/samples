@@ -1,3 +1,4 @@
+
 plugins {
     kotlin("multiplatform")
 }
@@ -13,20 +14,20 @@ kotlin {
         val commonMain by getting {
             kotlin.srcDir("src")
         }
+        
+        // Nativeターゲット共通のソースセット
+        val nativeMain by creating {
+            dependsOn(commonMain)
+            kotlin.srcDir("src@native")
+        }
+
+        val mingwX64Main by getting { dependsOn(nativeMain) }
+        val linuxX64Main by getting { dependsOn(nativeMain) }
+        val linuxArm64Main by getting { dependsOn(nativeMain) }
+        val macosArm64Main by getting { dependsOn(nativeMain) }
+        
         val jvmMain by getting {
             kotlin.srcDir("src@jvm")
-        }
-        val mingwX64Main by getting {
-            kotlin.srcDir("src@mingw")
-        }
-        val linuxX64Main by getting {
-            kotlin.srcDir("src@linux")
-        }
-        val linuxArm64Main by getting {
-            kotlin.srcDir("src@linux")
-        }
-        val macosArm64Main by getting {
-            kotlin.srcDir("src@macos")
         }
     }
 

@@ -1,3 +1,4 @@
 headers = ftxui_wrapper.h
 package = ftxui
 headerFilter = ftxui_wrapper.h
+strictEnums = true

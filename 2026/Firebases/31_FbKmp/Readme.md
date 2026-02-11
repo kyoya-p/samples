@@ -3,6 +3,7 @@
 ## 概要
 - Kotlin Multiplatform (Native/JVM) アプリケーション
 - FTXUI (C++ TUIフレームワーク) を cinterop を介して Kotlin Native から使用する基盤構成
+[➜FTXUI](https://github.com/ArthurSonzogni/FTXUI)
 
 ## 環境構築
 このプロジェクトは `mise` を使用してツールチェーンを管理しています。
