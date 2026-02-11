@@ -216,13 +216,8 @@ void StartQuery(FirebaseData& fb, const std::function<void()>& on_update) {
 // サービスからデータを取得し、FTXUIのコンポーネントとして住所録一覧を再構築する
 void RefreshAddressList(FirebaseData& fb, Component rows, int sort_col, bool sort_desc, std::string f_name, std::string f_email, size_t& last_count, int nAddr, const std::function<void()>& on_update) {
     std::string new_field = (sort_col == 0) ? "name" : (sort_col == 1) ? "email" : "timestamp";
-    // 選択されていないカラムのフィルタ文字列は無視（空文字として扱う）
-    // 入力が空になった場合もここで空文字が設定され、後続のクエリ構築でフィルタなし（全件取得）となる
     std::string applied_f_name = (sort_col == 0) ? f_name : "";
     std::string applied_f_email = (sort_col == 1) ? f_email : "";
-
-    // Debug Log
-    // Log("Refresh: Sort=" + new_field + " FilterName='" + applied_f_name + "' CurrentFilter='" + fb.filter_name + "'");
 
     if (fb.sort_field != new_field || fb.sort_desc != sort_desc || fb.filter_name != applied_f_name || fb.filter_email != applied_f_email) {
         Log("Filter Changed: '" + fb.filter_name + "' -> '" + applied_f_name + "'");
@@ -290,91 +285,82 @@ void RefreshAddressList(FirebaseData& fb, Component rows, int sort_col, bool sor
 
 // アプリケーションのエントリポイント：UIの初期化とメインループを実行する
 int main(int argc, char** argv) {
-  try {
-      Log("--- AddrApp Starting ---");
-      std::ofstream(GetLogFilename(), std::ios::trunc);
-      Log("--- Log File Truncated ---");
-      auto screen = ScreenInteractive::Fullscreen();
-      AppState state;
-      auto on_update = [&]() { if (state.started) screen.Post(Event::Custom); };
+    Log("--- AddrApp Starting ---");
+    std::ofstream(GetLogFilename(), std::ios::trunc);
+    Log("--- Log File Truncated ---");
+    auto screen = ScreenInteractive::Fullscreen();
+    AppState state;
+    auto on_update = [&]() { if (state.started) screen.Post(Event::Custom); };
 
-      state.nAddr = (std::max)(10, Terminal::Size().dimy + 5);
-      state.api_key = LoadApiKey();
-      if (!state.api_key.empty()) {
-          firebase::AppOptions opts;
-          opts.set_api_key(state.api_key.c_str());
-          opts.set_app_id("1:646759465365:web:fc72f377308486d6e8769c");
-          opts.set_project_id("riot26-70125");
-#ifdef _WIN32
-          int pid = _getpid();
-#else
-          int pid = getpid();
-#endif
-          state.fb.app = firebase::App::Create(opts, ("AddrApp_" + std::to_string(pid)).c_str());
-          if (state.fb.app) {
-              state.fb.db = firebase::firestore::Firestore::GetInstance(state.fb.app);
-              firebase::firestore::Settings s; s.set_persistence_enabled(true);
-              state.fb.db->set_settings(s);
-              StartQuery(state.fb, on_update);
-          }
-      }
+    state.nAddr = (std::max)(10, Terminal::Size().dimy + 5);
+    state.api_key = LoadApiKey();
+    if (!state.api_key.empty()) {
+        firebase::AppOptions opts;
+        opts.set_api_key(state.api_key.c_str());
+        opts.set_app_id("1:646759465365:web:fc72f377308486d6e8769c");
+        opts.set_project_id("riot26-70125");
+    #ifdef _WIN32
+        int pid = _getpid();
+    #else
+        int pid = getpid();
+    #endif
+        state.fb.app = firebase::App::Create(opts, ("AddrApp_" + std::to_string(pid)).c_str());
+        if (state.fb.app) {
+            state.fb.db = firebase::firestore::Firestore::GetInstance(state.fb.app);
+            firebase::firestore::Settings s; s.set_persistence_enabled(true);
+            state.fb.db->set_settings(s);
+            StartQuery(state.fb, on_update);
+        }
+    }
 
-            static std::string f_name = "", f_email = "";
+    static std::string f_name = "", f_email = "";
+    static int sort_col = 2; static bool sort_desc = true;
+    InputOption in_opt;
+    in_opt.on_change = on_update;
+    auto addr_in_name = Input(&f_name, "Filter Name", in_opt);
+    auto addr_in_email = Input(&f_email, "Filter Email", in_opt);
 
-            static int sort_col = 2; static bool sort_desc = true;
+    auto rows = Container::Vertical({});
+    size_t last_count = 0;
+    auto refresh = [&]() { RefreshAddressList(state.fb, rows, sort_col, sort_desc, f_name, f_email, last_count, state.nAddr, on_update); };
 
-            
+    auto btn_n = Button("Name", [&]{ if(sort_col==0) sort_desc=!sort_desc; else {sort_col=0; sort_desc=false; f_email="";} on_update(); }, ButtonOption::Ascii());
+    auto btn_m = Button("Mail", [&]{ if(sort_col==1) sort_desc=!sort_desc; else {sort_col=1; sort_desc=false; f_name="";} on_update(); }, ButtonOption::Ascii());
+    auto btn_t = Button("Time", [&]{ if(sort_col==2) sort_desc=!sort_desc; else {sort_col=2; sort_desc=true; f_name=f_email="";} on_update(); }, ButtonOption::Ascii());
 
-            InputOption in_opt;
+    static std::string n_name = GenerateRandomName(), n_email = GenerateRandomEmail(n_name);
+    auto name_in = Input(&n_name, "Name"), email_in = Input(&n_email, "Email");
+    auto add_btn = Button("[Add]", [&] { 
+        if (!n_name.empty() && state.fb.db) { 
+            std::unordered_map<std::string, firebase::firestore::FieldValue> d;
+            d["name"] = firebase::firestore::FieldValue::String(n_name); d["email"] = firebase::firestore::FieldValue::String(n_email); d["timestamp"] = firebase::firestore::FieldValue::ServerTimestamp();
+            state.fb.db->Collection("addressbook").Document(n_name).Set(d).OnCompletion([&](const firebase::Future<void>&){ StartQuery(state.fb, on_update); });
+            n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); 
+        } 
+    }, ButtonOption::Ascii());
 
-            in_opt.on_change = on_update;
+    auto close_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
+    auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows, Container::Horizontal({name_in, email_in, add_btn}), close_btn }), [&] {
+        auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
+        return vbox({
+            hbox({ hbox({ btn_n->Render(), sort_ind(0), text(" ["), (sort_col==0?addr_in_name->Render():text("          ")), text("]") })|size(WIDTH,EQUAL,28), hbox({ btn_m->Render(), sort_ind(1), text(" ["), (sort_col==1?addr_in_email->Render():text("          ")), text("]") })|flex, hbox({ btn_t->Render(), sort_ind(2) })|size(WIDTH,EQUAL,16), text("          ") }),
+            separator(), rows->Render() | vscroll_indicator | frame | flex, separator(),
+            hbox({ name_in->Render()|size(WIDTH,EQUAL,28), email_in->Render()|flex, text("(Now)")|size(WIDTH,EQUAL,16), add_btn->Render()|size(WIDTH,EQUAL,10)|center }),
+            separator(), hbox({ text(state.fb.db ? "Status: Connected" : "Status: Disconnected"), filler(), close_btn->Render() })
+        }) | border;
+    });
 
-            auto addr_in_name = Input(&f_name, "Filter Name", in_opt);
+    auto final_component = CatchEvent(main_ui, [&](Event e) {
+        if (e == Event::Custom) { refresh(); return true; }
+        if (e == Event::Character("\x10")) { auto cap = Screen::Create(Terminal::Size()); Render(cap, main_ui->Render()); SaveSnapshot("addrapp", cap.ToString()); return true; }
+        if (e == Event::Escape) { screen.Exit(); return true; }
+        return main_ui->OnEvent(e);
+    });
 
-            auto addr_in_email = Input(&f_email, "Filter Email", in_opt);
-
-            
-
-            auto rows = Container::Vertical({});
-      size_t last_count = 0;
-      auto refresh = [&]() { RefreshAddressList(state.fb, rows, sort_col, sort_desc, f_name, f_email, last_count, state.nAddr, on_update); };
-
-      auto btn_n = Button("Name", [&]{ if(sort_col==0) sort_desc=!sort_desc; else {sort_col=0; sort_desc=false; f_email="";} on_update(); }, ButtonOption::Ascii());
-      auto btn_m = Button("Mail", [&]{ if(sort_col==1) sort_desc=!sort_desc; else {sort_col=1; sort_desc=false; f_name="";} on_update(); }, ButtonOption::Ascii());
-      auto btn_t = Button("Time", [&]{ if(sort_col==2) sort_desc=!sort_desc; else {sort_col=2; sort_desc=true; f_name=f_email="";} on_update(); }, ButtonOption::Ascii());
-
-      static std::string n_name = GenerateRandomName(), n_email = GenerateRandomEmail(n_name);
-      auto name_in = Input(&n_name, "Name"), email_in = Input(&n_email, "Email");
-      auto add_btn = Button("[Add]", [&] { 
-          if (!n_name.empty() && state.fb.db) { 
-              std::unordered_map<std::string, firebase::firestore::FieldValue> d;
-              d["name"] = firebase::firestore::FieldValue::String(n_name); d["email"] = firebase::firestore::FieldValue::String(n_email); d["timestamp"] = firebase::firestore::FieldValue::ServerTimestamp();
-              state.fb.db->Collection("addressbook").Document(n_name).Set(d).OnCompletion([&](const firebase::Future<void>&){ StartQuery(state.fb, on_update); });
-              n_name = GenerateRandomName(); n_email = GenerateRandomEmail(n_name); 
-          } 
-      }, ButtonOption::Ascii());
-      
-      auto close_btn = Button("[Close]", [&] { screen.Exit(); }, ButtonOption::Ascii());
-      auto main_ui = Renderer(Container::Vertical({ Container::Horizontal({ btn_n, btn_m, btn_t, addr_in_name, addr_in_email }), rows, Container::Horizontal({name_in, email_in, add_btn}), close_btn }), [&] {
-          auto sort_ind = [&](int col) { return (sort_col != col) ? text("") : text(sort_desc ? " v" : " ^"); };
-          return vbox({
-              hbox({ hbox({ btn_n->Render(), sort_ind(0), text(" ["), (sort_col==0?addr_in_name->Render():text("          ")), text("]") })|size(WIDTH,EQUAL,28), hbox({ btn_m->Render(), sort_ind(1), text(" ["), (sort_col==1?addr_in_email->Render():text("          ")), text("]") })|flex, hbox({ btn_t->Render(), sort_ind(2) })|size(WIDTH,EQUAL,16), text("          ") }),
-              separator(), rows->Render() | vscroll_indicator | frame | flex, separator(),
-              hbox({ name_in->Render()|size(WIDTH,EQUAL,28), email_in->Render()|flex, text("(Now)")|size(WIDTH,EQUAL,16), add_btn->Render()|size(WIDTH,EQUAL,10)|center }),
-              separator(), hbox({ text(state.fb.db ? "Status: Connected" : "Status: Disconnected"), filler(), close_btn->Render() })
-          }) | border;
-      });
-
-      auto final_component = CatchEvent(main_ui, [&](Event e) {
-          if (e == Event::Custom) { refresh(); return true; }
-          if (e == Event::Character("\x10")) { auto cap = Screen::Create(Terminal::Size()); Render(cap, main_ui->Render()); SaveSnapshot("addrapp", cap.ToString()); return true; }
-          if (e == Event::Character('q') || e == Event::Escape) { screen.Exit(); return true; }
-          return main_ui->OnEvent(e);
-      });
-
-      state.started = true; refresh(); screen.Loop(final_component);
-      for (auto& l : state.fb.listeners) l.Remove();
-      if (state.fb.app) delete state.fb.app;
-  } catch (const std::exception& e) { std::cerr << "EXCEPTION: " << e.what() << std::endl; return 1; }
-  return 0;
+    state.started = true;
+    refresh();
+    screen.Loop(final_component);
+    for (auto& l : state.fb.listeners) l.Remove();
+    if (state.fb.app) delete state.fb.app;
+    return 0;
 }
