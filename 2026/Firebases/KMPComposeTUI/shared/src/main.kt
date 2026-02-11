@@ -1,29 +1,14 @@
-import com.jakewharton.mosaic.runMosaic
-import com.jakewharton.mosaic.ui.Text
-import com.jakewharton.mosaic.ui.Color
-import com.jakewharton.mosaic.ui.Column
-import com.jakewharton.mosaic.modifier.Modifier
 import com.jakewharton.mosaic.layout.padding
+import com.jakewharton.mosaic.modifier.Modifier
+import com.jakewharton.mosaic.runMosaic
+import com.jakewharton.mosaic.ui.Box
+import com.jakewharton.mosaic.ui.Text
 import kotlinx.coroutines.runBlocking
-import androidx.compose.runtime.*
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.seconds
 
-fun main(args: Array<String>) = runBlocking {
+suspend fun main(): Unit = runBlocking {
     runMosaic {
-        var count by remember { mutableStateOf(0) }
-
-        Column(modifier = Modifier.padding(1)) {
-            Text("Mosaic + Amper Demo", color = Color.Yellow)
-            Text("-------------------")
-            Text("Count: $count")
-        }
-
-        LaunchedEffect(Unit) {
-            repeat(20) {
-                count++
-                delay(0.5.seconds)
-            }
+        Box(modifier = Modifier. padding(1)) {
+            Text("Mosaicで表示された枠線の中のテキスト")
         }
     }
 }
