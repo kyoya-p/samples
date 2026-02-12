@@ -1,14 +1,18 @@
 # Build
 
-```sh:hot reload
+```sh : hot reload
 sh gradlew hotRunJvm --auto
 ```
 
-```shell:test
+```shell : test
 sh gradlew clean kotest
 ```
-```shell:Build msi
+```shell : Build msi
 sh gradlew composeApp:packageMsi
+```
+
+```shell : Generate SBOM (Runtime dependencies only)
+sh gradlew generateSbomMd
 ```
 
 
