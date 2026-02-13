@@ -2,16 +2,38 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+const Turn = require('node-turn');
+
+// TURN サーバの起動 (Port: 3478)
+const turnServer = new Turn({
+    authMech: 'long-term',
+    credentials: {
+        'user': 'password'
+    }
+});
+turnServer.start();
+console.log('TURN Server started on port 3478');
+
+const MIME_TYPES = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css'
+};
 
 const server = http.createServer((req, res) => {
-    let filePath = path.join(__dirname, req.url === '/' ? 'index.html' : req.url);
+    let urlPath = req.url === '/' ? '/index.html' : req.url;
+    // セキュリティ: ディレクトリトラバーサル防止
+    const safePath = path.normalize(urlPath).replace(/^(\.\.[\/\\])+/, '');
+    const filePath = path.join(__dirname, safePath);
+
     fs.readFile(filePath, (err, data) => {
-        if (err) {
+        if (err || (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory())) {
             res.writeHead(404);
             res.end('Not Found');
             return;
         }
-        res.writeHead(200);
+        const ext = path.extname(filePath);
+        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'text/plain' });
         res.end(data);
     });
 });
@@ -19,22 +41,13 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ server });
 
 wss.on('connection', (ws) => {
-    console.log(`[${new Date().toLocaleTimeString()}] New signaling connection established.`);
-    
+    console.log(`[${new Date().toLocaleTimeString()}] New signaling connection.`);
     ws.on('message', (message) => {
-        const data = JSON.parse(message.toString());
-        const type = data.sdp ? data.sdp.type : (data.candidate ? 'ice-candidate' : 'unknown');
-        console.log(`[${new Date().toLocaleTimeString()}] Forwarding message: ${type}`);
-
         wss.clients.forEach((client) => {
             if (client !== ws && client.readyState === 1) {
                 client.send(message.toString());
             }
         });
-    });
-
-    ws.on('close', () => {
-        console.log(`[${new Date().toLocaleTimeString()}] Signaling connection closed.`);
     });
 });
 

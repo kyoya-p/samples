@@ -12,7 +12,7 @@
     <div id="status">Status: Idle</div>
     <textarea id="message" placeholder="Type a message"></textarea>
     <button id="send" disabled>Send</button>
-    <div id="logs" style="border: 1px solid #ccc; height: 200px; overflow-y: scroll; margin-top: 10px; padding: 5px;"></div>
+    <div id="logs" style="border: 1px solid #ccc; height: 300px; overflow-y: scroll; margin-top: 10px; padding: 5px; font-family: monospace; font-size: 12px;"></div>
 
     <script>
         let pc;
@@ -22,6 +22,7 @@
             const div = document.createElement('div');
             div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
             document.getElementById('logs').appendChild(div);
+            document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
         };
 
         document.getElementById('connect').onclick = () => {
@@ -39,17 +40,39 @@
                         ws.send(JSON.stringify({ sdp: pc.localDescription }));
                     }
                 } else if (data.candidate) {
-                    log('Received ICE candidate');
-                    await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    if (pc) {
+                        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                    }
                 }
             };
         };
 
         const setupPeerConnection = () => {
-            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    {
+                        // 接続環境に合わせて IP を修正。ローカルテストなら localhost
+                        urls: 'turn:localhost:3478',
+                        username: 'user',
+                        credential: 'password'
+                    }
+                ]
+            });
+
             pc.onicecandidate = (e) => {
-                if (e.candidate) ws.send(JSON.stringify({ candidate: e.candidate }));
+                if (e.candidate) {
+                    const parts = e.candidate.candidate.split(' ');
+                    const type = parts[7]; // host, srflx, relay
+                    log(`ICE Candidate: ${type} (${parts[4]}:${parts[5]})`);
+                    ws.send(JSON.stringify({ candidate: e.candidate }));
+                }
             };
+
+            pc.oniceconnectionstatechange = () => {
+                log(`ICE State: ${pc.iceConnectionState}`);
+            };
+
             pc.ondatachannel = (e) => {
                 log('Received data channel');
                 setupDataChannel(e.channel);
@@ -67,7 +90,7 @@
         };
 
         document.getElementById('createOffer').onclick = async () => {
-            setupPeerConnection();
+            if (!pc) setupPeerConnection();
             dc = pc.createDataChannel('test');
             setupDataChannel(dc);
             const offer = await pc.createOffer();
@@ -78,8 +101,10 @@
 
         document.getElementById('send').onclick = () => {
             const msg = document.getElementById('message').value;
-            dc.send(msg);
-            log(`Sent: ${msg}`);
+            if (dc && dc.readyState === 'open') {
+                dc.send(msg);
+                log(`Sent: ${msg}`);
+            }
         };
     </script>
 </body>
