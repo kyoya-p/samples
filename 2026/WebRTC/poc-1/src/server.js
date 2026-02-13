@@ -9,6 +9,10 @@ const turnServer = new Turn({
     authMech: 'long-term',
     credentials: {
         'user': 'password'
+    },
+    debugLevel: 'INFO',
+    debug: (level, message) => {
+        console.log(`[TURN] ${level}: ${message}`);
     }
 });
 turnServer.start();
