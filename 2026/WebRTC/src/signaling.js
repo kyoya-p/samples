@@ -1,8 +1,8 @@
 const { WebSocketServer } = require('ws');
 
-const wss = new WebSocketServer({ port: 4932 });
+const wss = new WebSocketServer({ port: 8088 });
 
-console.log('Signaling server started on ws://localhost:4932');
+console.log('Signaling server started on ws://localhost:8088');
 
 wss.on('connection', (ws) => {
   ws.on('message', (message) => {
