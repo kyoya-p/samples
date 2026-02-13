@@ -7,9 +7,7 @@ const Turn = require('node-turn');
 // TURN サーバの起動 (Port: 3478)
 const turnServer = new Turn({
     authMech: 'long-term',
-    credentials: {
-        'user': 'password'
-    },
+    credentials: {'user': 'password' },
     debugLevel: 'INFO',
     debug: (level, message) => {
         console.log(`[TURN] ${level}: ${message}`);
@@ -18,28 +16,9 @@ const turnServer = new Turn({
 turnServer.start();
 console.log('TURN Server started on port 3478');
 
-const MIME_TYPES = {
-    '.html': 'text/html',
-    '.js': 'text/javascript',
-    '.css': 'text/css'
-};
-
 const server = http.createServer((req, res) => {
-    let urlPath = req.url === '/' ? '/index.html' : req.url;
-    // セキュリティ: ディレクトリトラバーサル防止
-    const safePath = path.normalize(urlPath).replace(/^(\.\.[\/\\])+/, '');
-    const filePath = path.join(__dirname, safePath);
-
-    fs.readFile(filePath, (err, data) => {
-        if (err || (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory())) {
-            res.writeHead(404);
-            res.end('Not Found');
-            return;
-        }
-        const ext = path.extname(filePath);
-        res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] || 'text/plain' });
-        res.end(data);
-    });
+    const filePath = path.join(__dirname, 'index.html');
+    fs.readFile(filePath, (err, data) => { res.end(data);});
 });
 
 const wss = new WebSocketServer({ server });
