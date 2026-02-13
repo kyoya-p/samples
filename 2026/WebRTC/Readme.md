@@ -4,12 +4,14 @@
 WebRTC習得目的。
 
 # 内容
-- シグナリングサーバ: port 4901
-- 中継サーバ: port: 4902
+- Appサーバ: port: 8080
+- シグナリングサーバ: port 8088
 
 # 手順
 ```sh : サーバ起動
 npm i
 node server.js
 ```
-クライアント(ブラウザ)で http://localhost:4931を開く。
+1. クライアント(ブラウザ)で http://localhost:8080を開く。
+2. Connect
+3. Offer
