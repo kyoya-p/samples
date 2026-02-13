@@ -1,7 +1,9 @@
 # WebRTC POC
 
 # 概要
-WebRTC習得目的。
+WebRTC習得目的。下記挙動を確認したい。
+a. Client-AとClient-Bが同じLANにある場合、データ通信はサーバを介さない
+b. Client-AとClient-Bが異なるLANにある場合、データ通信はサーバを介す
 
 # 内容
 - Appサーバ: port: 8080
@@ -10,7 +12,8 @@ WebRTC習得目的。
 # 手順
 ```sh : サーバ起動
 npm i
-node server.js
+node server.js &
+node signaling.js &
 ```
 1. クライアント(ブラウザ)で http://localhost:8080を開く。
 2. Connect
