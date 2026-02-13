@@ -38,6 +38,6 @@ wss.on('connection', (ws) => {
     });
 });
 
-server.listen(4931, () => {
-    console.log('Server started on http://localhost:4931');
+server.listen(8080, () => {
+    console.log('Server started on http://localhost:8080');
 });
