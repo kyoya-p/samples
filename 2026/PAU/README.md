@@ -15,6 +15,10 @@ sh gradlew composeApp:packageMsi
 sh gradlew generateSbomMd
 ```
 
+```shell : Vulnerability Check
+sh gradlew dependencyCheckAggregate
+```
+
 
 # 履歴
 - ✅25/11/12 ブロードキャスト応答除外
