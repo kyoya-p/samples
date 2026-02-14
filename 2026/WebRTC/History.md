@@ -2,15 +2,9 @@
 
 ## 2026-02-14: HTTPサーバーのルーティング設計に関する検討
 
-### 現在の実装
-- サーバーはすべてのリクエストパスに対して `index.html` を返却。
-- コード:
-  ```javascript
-  const server = http.createServer((req, res) => {
-      const filePath = path.join(__dirname, 'index.html');
-      fs.readFile(filePath, (err, data) => { res.end(data); });
-  });
-  ```
+### poc.1
+
+### poc.2
 
 ### 非採用となった設計・検討事項
 
