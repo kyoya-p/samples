@@ -140,6 +140,52 @@ const setupPeerConnection = () => {
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
         log(`Added ${localStream.getTracks().length} tracks to PC`);
     }
+
+    pc.oniceconnectionstatechange = () => {
+        log(`ICE State: ${pc.iceConnectionState}`);
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            displayConnectionStats();
+        }
+    };
+};
+
+const displayConnectionStats = async () => {
+    if (!pc) return;
+    try {
+        const stats = await pc.getStats();
+        let activePair = null;
+        
+        // Find the active candidate pair
+        stats.forEach(report => {
+            if (report.type === 'transport' && report.selectedCandidatePairId) {
+                activePair = stats.get(report.selectedCandidatePairId);
+            }
+        });
+
+        // Fallback search
+        if (!activePair) {
+            stats.forEach(report => {
+                if (report.type === 'candidate-pair' && report.selected) {
+                    activePair = report;
+                }
+            });
+        }
+
+        if (activePair) {
+            const local = stats.get(activePair.localCandidateId);
+            const remote = stats.get(activePair.remoteCandidateId);
+            const localType = local.candidateType;
+            const remoteType = remote.candidateType;
+            const icon = (localType === 'relay' || remoteType === 'relay') ? '🔄 (Relay)' : '⚡ (P2P)';
+            
+            log(`[Connection Established] ${icon}`);
+            log(`Path: ${localType} <-> ${remoteType}`);
+            log(`Local: ${local.ip || local.address}:${local.port} (${local.protocol})`);
+            log(`Remote: ${remote.ip || remote.address}:${remote.port} (${remote.protocol})`);
+        }
+    } catch (e) {
+        log(`Stats error: ${e.message}`);
+    }
 };
 
 document.getElementById('call').onclick = async () => {
