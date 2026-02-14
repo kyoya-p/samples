@@ -54,10 +54,6 @@ node src/server.js
 - **TURNリレー確認**: `Force TURN` 有効時、ブラウザログに `ICE Candidate: relay (...)` のみが出現し、TURNサーバーログにパケット転送記録 (`Receiving`/`Sending`) が確認された。
 - **映像通信**: リレー経由でも遅延なく映像・音声が到達することを確認。
 
-## 技術スタック
-- **Frontend**: Vanilla JS (WebRTC API)
-- **Backend**: Node.js, `ws` (WebSocket), `node-turn` (TURN Server)
-- **Signaling**: 自作の簡易 WebSocket シグナリング (HTTPS 共有型)
 
 ## 注意事項
 - 画面共有 (`getDisplayMedia`) は、セキュアなコンテキスト (localhost または HTTPS) でのみ動作します。

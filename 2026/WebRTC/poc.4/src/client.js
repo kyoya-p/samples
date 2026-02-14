@@ -15,7 +15,6 @@ const setLocalStream = (stream) => {
     
     if (pc) {
         const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
         const senders = pc.getSenders();
 
         if (videoTrack) {
@@ -23,12 +22,7 @@ const setLocalStream = (stream) => {
             if (videoSender) videoSender.replaceTrack(videoTrack);
             else pc.addTrack(videoTrack, stream);
         }
-        if (audioTrack) {
-            const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
-            if (audioSender) audioSender.replaceTrack(audioTrack);
-            else pc.addTrack(audioTrack, stream);
-        }
-        log('Local tracks updated');
+        log('Local video track updated');
     }
 };
 
@@ -46,20 +40,14 @@ const createDummyStream = () => {
         ctx.fillText(`ID: ${clientId}`, 10, 30);
         ctx.fillText(new Date().toLocaleTimeString(), 10, 60);
     }, 50);
-    const stream = canvas.captureStream(30);
-    const ctxAudio = new AudioContext();
-    const osc = ctxAudio.createOscillator();
-    const dest = ctxAudio.createMediaStreamDestination();
-    osc.connect(dest); osc.start();
-    stream.addTrack(dest.stream.getAudioTracks()[0]);
-    return stream;
+    return canvas.captureStream(30);
 };
 
 document.getElementById('start').onclick = async () => {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         setLocalStream(stream);
-        log('Camera started');
+        log('Camera started (Video only)');
     } catch (e) {
         log(`Camera error: ${e.message}. Using dummy stream.`);
         const stream = createDummyStream();
@@ -173,7 +161,7 @@ const displayConnectionStats = async () => {
         if (!local || !remote) return;
 
         const isRelay = local.candidateType === 'relay' || remote.candidateType === 'relay';
-        log(`[Connection Established] ${isRelay ? '[Relay]' : '[P2P]'}`);
+        log(`[Connection Established] ${isRelay ? '🔄 (Relay)' : '⚡ (P2P)'}`);
         log(`Path: ${local.candidateType} <-> ${remote.candidateType}`);
         log(`Local: ${local.ip || local.address}:${local.port} (${local.protocol})`);
         log(`Remote: ${remote.ip || remote.address}:${remote.port} (${remote.protocol})`);
