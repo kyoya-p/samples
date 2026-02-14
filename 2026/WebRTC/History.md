@@ -20,5 +20,12 @@
   - 実質的に `index.html` のみを返却する現状では、動的な MIME タイプ判定は冗長である。
   - コードの簡潔性と、不必要な変更を避ける方針（「no touch」）を優先。
 
+### 技術的な留意事項
+
+#### getDisplayMedia の利用制限
+- **事象**: `Capture error: Cannot read properties of undefined (reading 'getDisplayMedia')` が発生。
+- **原因**: `getDisplayMedia` は **Secure Context**（HTTPS または localhost）でなければ `navigator.mediaDevices` 内で `undefined` となる。IPアドレス指定（http://192.168.x.x 等）でアクセスした場合にこの制限に抵触する。
+- **対策**: `localhost` でのアクセスを徹底するか、HTTPS 環境を構築する必要がある。
+
 ### 総括
 当初はサーバーの正確性向上のためにパス制限を導入したが、PoC 段階での利便性と指示に基づき、最小限かつ寛容な現在の実装を維持することとした。
