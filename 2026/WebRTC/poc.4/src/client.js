@@ -100,7 +100,8 @@ document.getElementById('connect').onclick = () => {
 };
 
 const setupPeerConnection = () => {
-    pc = new RTCPeerConnection({
+    const forceTurn = document.getElementById('forceTurn').checked;
+    const config = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             {
@@ -108,11 +109,18 @@ const setupPeerConnection = () => {
                 username: 'user',
                 credential: 'password'
             }
-        ]
-    });
+        ],
+        iceTransportPolicy: forceTurn ? 'relay' : 'all'
+    };
+    
+    log(`Setup PC (Force TURN: ${forceTurn})`);
+    pc = new RTCPeerConnection(config);
 
     pc.onicecandidate = (e) => {
-        if (e.candidate) ws.send(JSON.stringify({ candidate: e.candidate }));
+        if (e.candidate) {
+            log(`ICE Candidate: ${e.candidate.candidate.split(' ')[7] || 'unknown'} (${e.candidate.candidate.split(' ')[4]})`);
+            ws.send(JSON.stringify({ candidate: e.candidate }));
+        }
     };
 
     pc.ontrack = (e) => {
