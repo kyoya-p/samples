@@ -80,7 +80,7 @@ document.getElementById('share').onclick = async () => {
 };
 
 document.getElementById('connect').onclick = () => {
-    ws = new WebSocket('ws://' + window.location.host);
+    ws = new WebSocket('wss://' + window.location.host);
     ws.onopen = () => log('Connected to signaling');
     ws.onmessage = async (e) => {
         const data = JSON.parse(e.data);

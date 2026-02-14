@@ -1,6 +1,7 @@
-# WebRTC Stream PoC (poc-2)
+# WebRTC Stream PoC (poc-3)
 
 このプロジェクトは、WebRTC を使用したリアルタイムメディアストリーム（カメラ映像および画面共有）の相互通信を実現する概念実証（PoC）です。
+サーバーは HTTPS (TLS) で動作します。
 
 ## 機能
 - **カメラ映像の送信**: `getUserMedia` を使用してカメラとマイクを取得。
@@ -13,20 +14,27 @@
 
 ### 1. 依存関係のインストール
 ```bash
-cd poc-2
+cd poc.3
 npm install
+```
+
+### 1b. 自己署名証明書の生成
+HTTPS 通信のために証明書（`key.pem`, `cert.pem`）を `poc.3` 直下に作成します。
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj "/CN=localhost"
 ```
 
 ### 2. サーバーの起動
 ```bash
 node src/server.js
 ```
-- HTTP サーバー: `http://localhost:8080`
-- TURN サーバー: `port 3478` (認証: user/password)
-- シグナリング: WebSocket (同一ポート)
+- **HTTPS サーバー**: `https://localhost:8080`
+- **TURN サーバー**: Port `3478` (認証: user/password)
+- **シグナリング**: WebSocket Secure port:8080
 
 ### 3. クライアントの操作
-2つのブラウザタブで `http://localhost:8080` を開きます。
+2つのブラウザタブで `https://localhost:8080` を開きます。
+※自己署名証明書のため、ブラウザで警告が表示されます。「詳細設定」→「localhost にアクセスする（安全ではありません）」を選択して進めてください。
 
 #### 手順 A (送信側)
 1. **1. Start Camera** または **1b. Share Window** をクリックして配信ソースを準備。
@@ -40,7 +48,7 @@ node src/server.js
 ## 技術スタック
 - **Frontend**: Vanilla JS (WebRTC API)
 - **Backend**: Node.js, `ws` (WebSocket), `node-turn` (TURN Server)
-- **Signaling**: 自作の簡易 WebSocket シグナリング
+- **Signaling**: 自作の簡易 WebSocket シグナリング (HTTPS 共有型)
 
 ## 注意事項
 - 画面共有 (`getDisplayMedia`) は、セキュアなコンテキスト (localhost または HTTPS) でのみ動作します。

@@ -1,8 +1,14 @@
-const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 const Turn = require('node-turn');
+
+// 証明書の読み込み
+const options = {
+    key: fs.readFileSync(path.join(__dirname, '../key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, '../cert.pem'))
+};
 
 // TURN サーバの起動 (Port: 3478)
 const turnServer = new Turn({
@@ -16,7 +22,7 @@ const turnServer = new Turn({
 turnServer.start();
 console.log('TURN Server started on port 3478');
 
-const server = http.createServer((req, res) => {
+const server = https.createServer(options, (req, res) => {
     let filePath = '';
     let contentType = '';
 
@@ -56,5 +62,5 @@ wss.on('connection', (ws) => {
     });
 });
 server.listen(8080, () => {
-    console.log('Server started on http://localhost:8080');
+    console.log('Server started on https://localhost:8080');
 });
