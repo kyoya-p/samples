@@ -173,7 +173,7 @@ const displayConnectionStats = async () => {
         if (!local || !remote) return;
 
         const isRelay = local.candidateType === 'relay' || remote.candidateType === 'relay';
-        log(`[Connection Established] ${isRelay ? '🔄 (Relay)' : '⚡ (P2P)'}`);
+        log(`[Connection Established] ${isRelay ? '[Relay]' : '[P2P]'}`);
         log(`Path: ${local.candidateType} <-> ${remote.candidateType}`);
         log(`Local: ${local.ip || local.address}:${local.port} (${local.protocol})`);
         log(`Remote: ${remote.ip || remote.address}:${remote.port} (${remote.protocol})`);
