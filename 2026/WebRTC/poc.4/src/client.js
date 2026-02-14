@@ -153,36 +153,30 @@ const displayConnectionStats = async () => {
     if (!pc) return;
     try {
         const stats = await pc.getStats();
-        let activePair = null;
-        
-        // Find the active candidate pair
-        stats.forEach(report => {
+        let activePair;
+
+        for (const report of stats.values()) {
             if (report.type === 'transport' && report.selectedCandidatePairId) {
                 activePair = stats.get(report.selectedCandidatePairId);
+                break;
             }
-        });
-
-        // Fallback search
-        if (!activePair) {
-            stats.forEach(report => {
-                if (report.type === 'candidate-pair' && report.selected) {
-                    activePair = report;
-                }
-            });
+            if (report.type === 'candidate-pair' && report.selected) {
+                activePair = report;
+                break;
+            }
         }
 
-        if (activePair) {
-            const local = stats.get(activePair.localCandidateId);
-            const remote = stats.get(activePair.remoteCandidateId);
-            const localType = local.candidateType;
-            const remoteType = remote.candidateType;
-            const icon = (localType === 'relay' || remoteType === 'relay') ? '🔄 (Relay)' : '⚡ (P2P)';
-            
-            log(`[Connection Established] ${icon}`);
-            log(`Path: ${localType} <-> ${remoteType}`);
-            log(`Local: ${local.ip || local.address}:${local.port} (${local.protocol})`);
-            log(`Remote: ${remote.ip || remote.address}:${remote.port} (${remote.protocol})`);
-        }
+        if (!activePair) return;
+
+        const local = stats.get(activePair.localCandidateId);
+        const remote = stats.get(activePair.remoteCandidateId);
+        if (!local || !remote) return;
+
+        const isRelay = local.candidateType === 'relay' || remote.candidateType === 'relay';
+        log(`[Connection Established] ${isRelay ? '🔄 (Relay)' : '⚡ (P2P)'}`);
+        log(`Path: ${local.candidateType} <-> ${remote.candidateType}`);
+        log(`Local: ${local.ip || local.address}:${local.port} (${local.protocol})`);
+        log(`Remote: ${remote.ip || remote.address}:${remote.port} (${remote.protocol})`);
     } catch (e) {
         log(`Stats error: ${e.message}`);
     }
