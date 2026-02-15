@@ -1,0 +1,18 @@
+[tools]
+python = "latest"
+
+[env]
+_.python.venv = ".venv"
+
+[tasks.venv]
+run = "python -m venv .venv"
+
+[tasks.install]
+depends = ["venv"]
+run = ".\\.venv\\Scripts\\pip install azure-cli"
+
+[tasks.setup]
+depends = ["install"]
+
+[tasks.deploy]
+run = "powershell -ExecutionPolicy Bypass -File deploy.ps1"
