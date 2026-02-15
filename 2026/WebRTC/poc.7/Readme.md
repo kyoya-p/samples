@@ -23,7 +23,7 @@ mise trust
 mise run setup
 ```
 
-### 2. 再デプロイ
+### 2. デプロイ
 ソースコードを修正した場合は、以下のコマンドで Azure へ反映できます。
 ```powershell
 mise run deploy
