@@ -1,0 +1,6 @@
+node_modules/
+/.idea/
+/.playwright-mcp/
+poc.*/cert.pem
+poc.*/key.pem
+/.vent/
