@@ -1,4 +1,4 @@
-# poc.7 Azure デプロイスクリプト (poc.4 のロジックを Azure へデプロイ)
+# Azure デプロイスクリプト
 
 if (!(Get-Command az -ErrorAction SilentlyContinue)) {
     Write-Error "Azure CLI (az) が見つかりません。先に 'mise run setup' を実行してください。"
@@ -6,12 +6,12 @@ if (!(Get-Command az -ErrorAction SilentlyContinue)) {
 }
 
 # 変数設定
-$resourceGroup = "rg-webrtc7-poc"
+$resourceGroup = "rg-webrtc-poc"
 $location = "centralus"
 $suffix = Get-Random
-$appName = "app-webrtc7-$suffix"
-$planName = "plan-webrtc7-$suffix"
-$turnDnsLabel = "turn7-$suffix"
+$appName = "app-webrtc-$suffix"
+$planName = "plan-webrtc-$suffix"
+$turnDnsLabel = "turn-$suffix"
 
 Write-Host "1. リソースグループを作成中: $resourceGroup (Location: $location)..." -ForegroundColor Cyan
 az group create --name $resourceGroup --location $location
