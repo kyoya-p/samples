@@ -1,3 +1,4 @@
 /dependency-check/
 /*.zip
 /.idea/
+/dependency-check-report.html
