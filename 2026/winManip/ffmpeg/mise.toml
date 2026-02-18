@@ -1,0 +1,6 @@
+[tools]
+java = "lts"
+uv = "latest"
+
+[env]
+_.path = ["./bin"]
