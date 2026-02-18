@@ -1,6 +1,6 @@
 param($Path = ".")
 
-Invoke-WebRequest "https://github.com/jeremylong/DependencyCheck/releases/download/v12.1.0/dependency-check-12.1.0-release.zip" -OutFile "dchk.zip"
+Invoke-WebRequest "https://github.com/jeremylong/DependencyCheck/releases/download/v12.1.0/dependency-check-12.1.0-release.zip" -OutFile "dchk.zip" -Proxy "$https_proxy"
 tar -xf "dchk.zip" -C "dchk"
 
 
