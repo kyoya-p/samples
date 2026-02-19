@@ -35,7 +35,11 @@ bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 8k -crf 4 -t 60 output-8k6
 ```
 ```powershell: 全画面動画キャプチャ 監視カメラモード
 bin\ffmpeg -y -f gdigrab -i desktop -r 1/30 -c:v libx264 -b:v 1k -crf 4 -t 3600 output-1k3600q4p30.mp4
-bin\ffmpeg -y -f gdigrab -i desktop -r 1/30 -c:v libx264 -b:v 1k -t 3600 output-r1k-t1h-p30.mp4
+bin\ffmpeg -y -f gdigrab -i desktop -r 1/30 -c:v libx264 -b:v 1k -t 3600 output-r1kt3600p30.mp4
+bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 45 -t 600 output-b1k-t600-q45.mp4
+bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 50 -t 600 output-b1k-t10m-q50.mp4
+bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 60 -t 600 output-b1k-t600-q60.
+bin\ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 600 output-b1k-t600-q45-p10.mp4 
 ```
 # 情報ソース
 - [gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/)
