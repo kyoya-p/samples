@@ -10,7 +10,7 @@ $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-ma
 $zipPath = "ffmpeg.zip";
 $extractPath = "ffmpeg_extracted";
 $binPath = "bin";
-Invoke-WebRequest -Uri $url -OutFile $zipPath -Proxy "$env:https_proxy" -ProxyUseDefaultCredentials -UseBasicParsing;
+Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing;
 Add-Type -AssemblyName System.IO.Compression.FileSystem;
 [System.IO.Compression.ZipFile]::ExtractToDirectory((Convert-Path $zipPath), (New-Item -ItemType Directory -Force -Path $extractPath).FullName);
 New-Item -ItemType Directory -Force -Path $binPath | Out-Null;
@@ -40,9 +40,18 @@ bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 45 -t 600 output-b
 bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 50 -t 600 output-b1k-t10m-q50.mp4
 bin\ffmpeg -y -f gdigrab -i desktop -c:v libx264 -b:v 1k -crf 60 -t 600 output-b1k-t600-q60.mp4
 bin\ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 600 output-b1k-t600-q45-p10.mp4
-bin\ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 3600 output-b1k-t3600-q45-p10.mp4
+bin\ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 600 output-b1k-t600-q45-p10.mp4
 ```
+
+# ループ実行 (指定時刻まで)
+
+```powershell
+# 18:00まで10分おきに録画を繰り返す
+.\record_loop.ps1 "18:00"
+```
+
 # 情報ソース
+
 - [gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/)
 - [BtbN/FFmpeg-Builds (GitHub)](https://github.com/BtbN/FFmpeg-Builds)
 - [mise-en-place documentation](https://mise.jdx.dev/)
