@@ -31,8 +31,7 @@ foreach ($video in $videos) {
     $prompt = "この動画ファイル ($($video.Name)) を確認し、実施されている作業内容の詳細を時系列で列挙。画面上のテキストを可能な限り文字起こし"
     
     # 実行
-    # 注: gemini-cli が動画ファイルを直接解釈できるよう、コンテキストに含める必要がある場合があります
-    & $geminiCmd -p "$prompt" -y
+    & $geminiCmd "$filePath" -p "$prompt" -y
     
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Failed to analyze $($video.Name)"

@@ -31,7 +31,7 @@ while ($true) {
     }
 
     $timestamp = Get-Date -Format "yyyyMMdd-HHmm"
-    $outputFile = Join-Path $outputDir "output-$timestamp-b1k-t600-q45-p10.mp4"
+    $outputFile = Join-Path $outputDir "output-$timestamp-b1k-t1800-q45-p10.mp4"
     
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Recording to $outputFile ..."
     
