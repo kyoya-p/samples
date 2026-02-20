@@ -1,5 +1,4 @@
 # 指定時刻まで録画を繰り返すスクリプト
-# 使い方: .ecord_loop.ps1 "17:00"
 
 param (
     [string]$targetTime = ""
@@ -36,11 +35,10 @@ while ($true) {
     
     Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Recording to $outputFile ..."
     
-    # 10分間 (600秒) 録画
     # -r 1/10: 10秒に1フレーム (極低フレームレート)
     # -b:v 1k: 極低ビットレート
     # -crf 45: 低画質圧縮
-    & $ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 600 $outputFile
+    & $ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 1800 $outputFile
     
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "FFmpeg exited with error code $LASTEXITCODE"
