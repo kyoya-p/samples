@@ -2,7 +2,6 @@
 _.path = ["./bin"]
 
 [tasks.setup-ffmpeg]
-description = "Download and setup FFmpeg in bin directory"
 shell = "powershell -Command"
 run = """
 if (-not (Test-Path 'bin')) { New-Item -ItemType Directory -Path 'bin' | Out-Null }
@@ -16,19 +15,39 @@ Write-Host 'Downloading FFmpeg...'
 Invoke-WebRequest -Uri $url -OutFile $zipFile
 
 Write-Host 'Extracting...'
-Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
+if (Get-Command tar -ErrorAction SilentlyContinue) {
+    tar -xf $zipFile
+    # tar の場合はディレクトリ名がそのまま展開されるため、リネームして後続処理に合わせる
+    $dir = Get-ChildItem -Directory -Filter "ffmpeg-master-latest-win64-gpl" | Select-Object -First 1
+    if ($dir) { Rename-Item -Path $dir.FullName -NewName $extractDir }
+} else {
+    Import-Module Microsoft.PowerShell.Archive -ErrorAction SilentlyContinue
+    Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
+}
 
 $binSource = Get-ChildItem -Path $extractDir -Filter 'bin' -Recurse | Select-Object -First 1
 if ($binSource) {
-    Copy-Item -Path \"$($binSource.FullName)/*\" -Destination 'bin' -Force
+    Copy-Item -Path "$($binSource.FullName)/*" -Destination 'bin' -Force
+    Write-Host 'FFmpeg binaries copied to bin/'
+} else {
+    Write-Error "Failed to find bin directory in extracted files."
 }
 
 Write-Host 'Cleaning up...'
-Remove-Item -Path $zipFile -Force
-Remove-Item -Path $extractDir -Recurse -Force
+if (Test-Path $zipFile) { Remove-Item -Path $zipFile -Force }
+if (Test-Path $extractDir) { Remove-Item -Path $extractDir -Recurse -Force }
 Write-Host 'FFmpeg setup complete.'
 """
 
 [tasks.setup]
 depends = ["setup-ffmpeg"]
-description = "Setup all project dependencies"
+
+[tasks.record]
+depends = ["setup-ffmpeg"]
+shell = "powershell -ExecutionPolicy Bypass -Command"
+run = "./record_loop.ps1"
+
+[tasks.analyze]
+depends = ["setup-ffmpeg"]
+shell = "powershell -ExecutionPolicy Bypass -Command"
+run = "./analyze_videos.ps1"
