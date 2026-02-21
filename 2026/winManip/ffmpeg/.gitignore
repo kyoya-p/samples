@@ -1,3 +1,5 @@
 /bin/
 /*.mp4
 /records/
+/.playwright-mcp/
+/temp_frames/

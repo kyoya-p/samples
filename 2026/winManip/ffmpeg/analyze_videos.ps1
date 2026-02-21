@@ -1,37 +1,41 @@
-# 指定フォルダ内のMP4ファイルをGeminiで解析するスクリプト
-# 使い方: .\analyze_videos.ps1 "records"
+# 指定MP4ファイルをGeminiで解析するスクリプト
+# 使い方: .\analyze_videos.ps1 "records" or .\analyze_videos.ps1 "records/video.mp4"
 
 param (
-    [string]$targetDir = "records"
+    [string]$targetPath = "records"
 )
 
-# geminiコマンドの確認 (.ps1が動かない環境を考慮して .cmd を優先)
+# geminiコマンドの確認
 $geminiCmd = "gemini.cmd"
 if (-not (Get-Command $geminiCmd -ErrorAction SilentlyContinue)) {
     $geminiCmd = "gemini"
 }
 
-if (-not (Test-Path $targetDir)) {
-    Write-Error "Directory $targetDir not found."
+if (-not (Test-Path $targetPath)) {
+    Write-Error "Path $targetPath not found."
     exit 1
 }
 
-# MP4ファイルを列挙
-$videos = Get-ChildItem -Path $targetDir -Filter "*.mp4" | Sort-Object Name
+# ファイルかディレクトリかを判定してリスト化
+if (Test-Path $targetPath -PathType Leaf) {
+    # 単一ファイルの場合も配列として扱う
+    $videos = @(Get-Item $targetPath)
+} else {
+    $videos = Get-ChildItem -Path $targetPath -Filter "*.mp4" | Sort-Object Name
+}
 
-Write-Host "Found $($videos.Count) videos in $targetDir. Starting analysis..."
+Write-Host "Starting analysis for $($videos.Count) video(s)..."
 
 foreach ($video in $videos) {
     $filePath = $video.FullName
     Write-Host "`n--- Analyzing: $($video.Name) ---" -ForegroundColor Cyan
     
-    # Gemini CLI を呼び出し
-    # --yolo: ツール実行の確認をスキップ
-    # プロンプトで詳細な解析と文字起こしを指示
-    $prompt = "この動画ファイル ($($video.Name)) を確認し、実施されている作業内容の詳細を時系列で列挙。画面上のテキストを可能な限り文字起こし"
+    # プロンプトに絶対パスを組み込む
+    # 注意: gemini-cli はプロンプト内のパスを自動的にリソースとして認識する
+    $prompt = "ファイル `"$filePath`" を確認し、実施されている作業内容の詳細を時系列で列挙。画面上のテキストを可能な限り文字起こし"
     
     # 実行
-    & $geminiCmd "$filePath" -p "$prompt" -y
+    & $geminiCmd -p "$prompt" -y
     
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Failed to analyze $($video.Name)"

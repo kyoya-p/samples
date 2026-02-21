@@ -1,5 +1,34 @@
-[tools]
-uv = "latest"
-
 [env]
 _.path = ["./bin"]
+
+[tasks.setup-ffmpeg]
+description = "Download and setup FFmpeg in bin directory"
+shell = "powershell -Command"
+run = """
+if (-not (Test-Path 'bin')) { New-Item -ItemType Directory -Path 'bin' | Out-Null }
+if (Test-Path 'bin/ffmpeg.exe') { Write-Host 'FFmpeg already exists in bin/'; exit 0 }
+
+$url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip'
+$zipFile = 'ffmpeg_latest.zip'
+$extractDir = 'ffmpeg_temp'
+
+Write-Host 'Downloading FFmpeg...'
+Invoke-WebRequest -Uri $url -OutFile $zipFile
+
+Write-Host 'Extracting...'
+Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
+
+$binSource = Get-ChildItem -Path $extractDir -Filter 'bin' -Recurse | Select-Object -First 1
+if ($binSource) {
+    Copy-Item -Path \"$($binSource.FullName)/*\" -Destination 'bin' -Force
+}
+
+Write-Host 'Cleaning up...'
+Remove-Item -Path $zipFile -Force
+Remove-Item -Path $extractDir -Recurse -Force
+Write-Host 'FFmpeg setup complete.'
+"""
+
+[tasks.setup]
+depends = ["setup-ffmpeg"]
+description = "Setup all project dependencies"
