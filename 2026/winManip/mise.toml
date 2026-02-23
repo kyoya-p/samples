@@ -1,0 +1,10 @@
+[tools]
+node = "22"
+
+[tasks."vision:test1"]
+description = "Analyze current desktop using geminiAgenticVision"
+dir = "geminiAgenticVision"
+run = "mise run test1"
+
+[tasks.test1]
+alias = "vision:test1"
