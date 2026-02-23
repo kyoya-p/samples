@@ -49,7 +49,7 @@ class FetchCards(private val argv: List<String>) : CliktCommand(name = "fetch") 
     val systems by option("-s", "--system", "--family", help = "系統 (例: -s 星竜 -s 勇傑)。OR検索").multiple()
     val systemsAnd by option("-S", "--system-and", "--family-and", help = "系統 (例: -S 星竜 -S 勇傑)。AND検索")
         .multiple()
-    val blockIcons by option("-b", "--block", help = "ブロックアイコン (例: -b 7)").multiple()
+    val blockIcons by option("-b", "--block", help = "ブロックアイコン (例: -b 7, -b A)").multiple()
 
     override fun run() {
         runBlocking {
