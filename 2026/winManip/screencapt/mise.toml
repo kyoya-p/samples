@@ -3,13 +3,13 @@
 java = "21"
 
 [tasks.build]
-description = "Javaソースをコンパイルする"
+description = "Javaソースをコンパイルする (Java 17ターゲット)"
 run = "javac --release 17 -d bin src/Main.java"
 
 [tasks.run]
-description = "ロガーを実行する"
+description = "ロガーを実行する (引数: interval duration maxImages)"
 depends = ["build"]
-run = "java -cp bin Main"
+run = "java -cp bin Main {{arg(i=0, default='10')}} {{arg(i=1, default='60')}} {{arg(i=2, default='100')}}"
 
 [tasks.example1]
 description = "サンプル設定で実行 (2秒間隔、1分間)"

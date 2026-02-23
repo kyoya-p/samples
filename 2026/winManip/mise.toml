@@ -1,36 +1,38 @@
 [tools]
 node = "22"
 java = "21"
-kotlin = "2.2"
 
-[tasks."vision:test1"]
+[tasks.screenshot]
 description = "geminiAgenticVisionを使用して現在のデスクトップを解析する"
 dir = "geminiAgenticVision"
-run = "mise run test1"
+run = "mise run screenshot"
 
-[tasks.test1]
-alias = "vision:test1"
-
-[tasks."capt:run"]
-description = "定期的なスクリーンキャプチャを実行する (Amper使用)"
-dir = "screencapt"
-run = "mise run run"
+[tasks."analyze"]
+description = "画像をAIで解析する (引数: image_path)"
+dir = "geminiAgenticVision"
+run = "mise run analyze"
 
 [tasks.sample1]
-description = "スクリーンキャプチャの実行サンプル (10秒間)"
+description = "定期的なスクリーンキャプチャを実行する (Java版, 2秒間隔)"
 dir = "screencapt"
-run = "mise run example1"
+run = "java -cp bin Main 2 60 300"
+
+[tasks.record-1h]
+description = "定期的なスクリーンキャプチャを実行する 1h,60min,5秒間隔"
+dir = "screencapt"
+run = "java -cp bin Main 5 3600 300"
 
 [tasks.sample2]
-description = "最新のデスクトップをネイティブアプリでキャプチャしてAIで解析する"
+description = "最新のデスクトップをキャプチャしてAIで解析する (Java版)"
 shell = "powershell -Command"
 run = """
-Write-Host "--- Capturing Current Desktop (Native) ---"
+Write-Host "--- Capturing Current Desktop ---"
 cd screencapt
-mise run example1 -- 1 1 1
+# 1秒間、1枚だけ撮影
+java -cp bin Main 1 1 1
 $latest = Get-ChildItem .screenshot | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
 
 Write-Host "`n--- Analyzing with Gemini ---"
 cd ../geminiAgenticVision
-node cli.js $latest -p "Analyze the current state of this desktop. Focus on the fact that this capture was taken by a Kotlin Native Win32 API application."
+node cli.js $latest -p "Analyze the current state of this desktop in detail."
 """

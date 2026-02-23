@@ -1,7 +1,8 @@
 [tools]
 node = "22"
 
-[tasks.test1]
+[tasks.screenshot]
+description = "ffmpegを使用してデスクトップを1枚撮影し解析する"
 shell = "powershell -Command"
 run = """
 $ffmpeg = "../ffmpeg/bin/ffmpeg.exe"
@@ -9,8 +10,11 @@ $output = "current_desktop.png"
 
 Write-Host "--- Capturing Desktop ---"
 & $ffmpeg -y -f gdigrab -i desktop -frames:v 1 $output
-if ($LASTEXITCODE -ne 0) { Write-Error "Capture failed"; exit $LASTEXITCODE }
 
-Write-Host "`n--- Analyzing with Gemini ---"
-node cli.js $output -p "画像から得られる情報とテキストをすべて出力。"
+#Write-Host "`n--- Analyzing with Gemini ---"
+#node cli.js $output -p "画像の内容を詳細に分析する。またテキスト抽出"
 """
+
+[tasks.analyze]
+description = "指定された画像を解析する (デフォルト: current_desktop.png)"
+run = "node cli.js {{arg(i=0, default='current_desktop.png')}}"
