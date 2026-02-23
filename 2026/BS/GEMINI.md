@@ -8,3 +8,5 @@
 ## 環境
 - DB: Neo4j
 - LLM: Gemini-cli
+- mise
+  - mise run 引数なしは操作を待つ。禁止
