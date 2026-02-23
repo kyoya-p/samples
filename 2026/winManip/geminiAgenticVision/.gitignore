@@ -5,3 +5,4 @@
 /.playwright-mcp/
 /temp_frames/
 /.analyze/
+/*.png
