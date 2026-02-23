@@ -21,8 +21,6 @@ fun main(args: Array<String>) {
     runBlocking {
         createClient().use { client ->
             val chunks = args.toList().chunked(3)
-            val allGridRows = mutableListOf<BufferedImage>()
-            val allSuccessfulIds = mutableListOf<String>()
 
             for (chunk in chunks) {
                 val images = mutableListOf<BufferedImage>()
@@ -49,13 +47,8 @@ fun main(args: Array<String>) {
 
                 if (images.isNotEmpty()) {
                     val gridRow = create3x3Block(images)
-                    allGridRows.add(gridRow)
-                    allSuccessfulIds.addAll(successfulIds)
+                    saveFinalImage(listOf(gridRow), successfulIds)
                 }
-            }
-
-            if (allGridRows.isNotEmpty()) {
-                saveFinalImage(allGridRows, allSuccessfulIds)
             }
         }
     }
