@@ -30,18 +30,12 @@ while ($true) {
         break
     }
 
-    $timestamp = Get-Date -Format "yyyyMMdd-HHmm"
-    $outputFile = Join-Path $outputDir "output-$timestamp-b1k-t1800-q45-p10.mp4"
-    
-    Write-Host "[$(Get-Date -Format 'HH:mm:ss')] Recording to $outputFile ..."
-    
-    # -r 1/10: 10秒に1フレーム (極低フレームレート)
-    # -b:v 1k: 極低ビットレート
-    # -crf 45: 低画質圧縮
-    & $ffmpeg -y -f gdigrab -i desktop -r 1/10 -c:v libx264 -b:v 1k -crf 45 -t 1800 $outputFile
+    # record.ps1 を呼び出し (30分=1800秒)
+    # 戻り値 $LASTEXITCODE を確認
+    & .\record.ps1 -t 1800
     
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "FFmpeg exited with error code $LASTEXITCODE"
+        Write-Warning "record.ps1 exited with error code $LASTEXITCODE"
         break
     }
 }

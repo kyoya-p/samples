@@ -1,0 +1,7 @@
+/node_modules/
+/bin/
+/*.mp4
+/records/
+/.playwright-mcp/
+/temp_frames/
+/.analyze/

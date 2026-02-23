@@ -1,0 +1,8 @@
+[tasks.run]
+description = "指定したカードIDの画像を3x3のグリッド状に並べた画像を生成します"
+alias = "generate"
+run = '..\amper.bat run -m faces --'
+
+[tasks.inspect]
+description = "生成された画像を解析し、カードIDエリアを切り出します（実行にはmodule.yamlのmainClass変更が必要な場合があります）"
+run = '..\amper.bat run -m faces --'

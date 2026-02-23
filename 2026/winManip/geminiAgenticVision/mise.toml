@@ -1,0 +1,16 @@
+[tools]
+node = "22"
+
+[tasks.test1]
+shell = "powershell -Command"
+run = """
+$ffmpeg = "../ffmpeg/bin/ffmpeg.exe"
+$output = "current_desktop.png"
+
+Write-Host "--- Capturing Desktop ---"
+& $ffmpeg -y -f gdigrab -i desktop -frames:v 1 $output
+if ($LASTEXITCODE -ne 0) { Write-Error "Capture failed"; exit $LASTEXITCODE }
+
+Write-Host "`n--- Analyzing with Gemini ---"
+node cli.js $output -p "画像から得られる情報とテキストをすべて出力。"
+"""

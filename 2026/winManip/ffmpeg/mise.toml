@@ -45,9 +45,9 @@ depends = ["setup-ffmpeg"]
 [tasks.record]
 depends = ["setup-ffmpeg"]
 shell = "powershell -ExecutionPolicy Bypass -Command"
-run = "./record_loop.ps1"
+run = "./record.ps1"
 
 [tasks.analyze]
 depends = ["setup-ffmpeg"]
 shell = "powershell -ExecutionPolicy Bypass -Command"
-run = "./analyze_videos.ps1"
+run = "./analyze.ps1"

@@ -13,8 +13,8 @@ mise run setup
 
 # 録画起動
 ```powershell
-mise run record  # Ctrl-Cで停止するまで
-mise run record -- "18:00" # 18時まで
+mise run record  # Ctrl-Cで停止するまで 10秒ごとに1フレーム を録画
+mise run record -- -t 10m -r "1/10" # 10分間, 10秒ごとに1フレームを録画
 ```
 
 # 動画文書化
@@ -23,7 +23,6 @@ mise run record -- "18:00" # 18時まで
 # 18:00まで10分おきに録画を繰り返す
 .\record_loop.ps1 "18:00"
 ```
-
 # 情報ソース
 
 - [gyan.dev FFmpeg Builds](https://www.gyan.dev/ffmpeg/builds/)
