@@ -1,20 +1,17 @@
-# powershellで定期的にデスクトップ画像取得するロガー
-# 指定時間の間、指定した時間感覚でスクショ取得し、timestampをつけてjpegファイルで保存
-# 指定枚数以上の画像は削除
-# スクショ画像は .screenshots ディレクトリに保存
-
+# ScreenCapt Logger
 [tools]
-kotlin = "2.2"
-
-[tasks.run]
-description = "Run the screen capturer using Amper"
-run = "amper run"
+java = "21"
 
 [tasks.build]
-description = "Build the project using Amper"
-run = "amper build"
+description = "Javaソースをコンパイルする"
+run = "javac --release 17 -d bin src/Main.java"
+
+[tasks.run]
+description = "ロガーを実行する"
+depends = ["build"]
+run = "java -cp bin Main"
 
 [tasks.example1]
-description = "スクリーンキャプチャ実行例: 10秒間、2秒ごとにスクショし、最大300個のファイルを残す"
+description = "サンプル設定で実行 (2秒間隔、1分間)"
 depends = ["build"]
-run = "amper run -- 2 10 300"
+run = "java -cp bin Main 2 60 300"

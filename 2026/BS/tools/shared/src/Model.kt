@@ -36,6 +36,15 @@ data class CardFace(
     val effect: String,
     val restriction: String, // "制限1":最大デッキに1枚しか入れられない。例:タルボス。 "禁止":デッキには入れられない。例:イビルオーラ。 null:デッキに最大3枚・通常ルール
     val imageUrl: String,
+    val qa: List<QA> = emptyList(),
     val mechanics: List<JsonElement> = emptyList(),
+)
+
+@Serializable
+data class QA(
+    val id: String,
+    val date: String,
+    val question: String,
+    val answer: String
 )
 

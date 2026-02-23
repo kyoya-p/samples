@@ -1,5 +1,7 @@
 [tools]
 node = "22"
+java = "21"
+kotlin = "2.2"
 
 [tasks."vision:test1"]
 description = "geminiAgenticVisionを使用して現在のデスクトップを解析する"
@@ -13,3 +15,22 @@ alias = "vision:test1"
 description = "定期的なスクリーンキャプチャを実行する (Amper使用)"
 dir = "screencapt"
 run = "mise run run"
+
+[tasks.sample1]
+description = "スクリーンキャプチャの実行サンプル (10秒間)"
+dir = "screencapt"
+run = "mise run example1"
+
+[tasks.sample2]
+description = "最新のデスクトップをネイティブアプリでキャプチャしてAIで解析する"
+shell = "powershell -Command"
+run = """
+Write-Host "--- Capturing Current Desktop (Native) ---"
+cd screencapt
+mise run example1 -- 1 1 1
+$latest = Get-ChildItem .screenshot | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
+
+Write-Host "`n--- Analyzing with Gemini ---"
+cd ../geminiAgenticVision
+node cli.js $latest -p "Analyze the current state of this desktop. Focus on the fact that this capture was taken by a Kotlin Native Win32 API application."
+"""

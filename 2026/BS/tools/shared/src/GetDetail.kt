@@ -26,8 +26,6 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
     }
     val reductionSymbols =
         reductionImgs.groupingBy { it }.eachCount().entries.joinToString("") { "${it.key}${it.value}" }
-    val symbolImgs = root.select("dt:contains(シンボル) + dd img").map { it.attr("alt") } //todo
-    val symbols = symbolImgs.groupingBy { it }.eachCount().entries.joinToString("") { "${it.key}${it.value}" } //todo
     val category = root.select("dt:contains(カテゴリー) + dd").text().trim()
     val attributes = root.select(".attribute .attributeItem").joinToString("") { it.text().trim() }
 
@@ -75,6 +73,41 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
         Ksoup.parse(cleanHtml).text()
     }?.trim() ?: ""
 
+    // Q&A取得
+    val qaList = root.select(".detailColQAList").map { qaElem ->
+        val qIdFull = qaElem.select(".detailColQANum").text().trim()
+        val qId = qIdFull.split(" ").firstOrNull() ?: ""
+        val qDate = qaElem.select(".detailColQANumDate").text().trim()
+        val question = qaElem.select(".detailColQATerm").text().trim()
+        val answer = qaElem.select(".detailColQADescription").text().trim()
+        QA(id = qId, date = qDate, question = question, answer = answer)
+    }
+
+    // シンボル推定ロジック
+    var symbols = ""
+    if (category in listOf("スピリット", "アルティメット", "ネクサス", "契約スピリット", "契約アルティメット", "契約ネクサス", "創界神ネクサス", "契約創界神ネクサス")) {
+        val hasDoubleInEffect = effect.contains("このカードはシンボル2つを持つ") || effect.contains("このスピリットはシンボル2つを持つ")
+        val hasTripleInEffect = effect.contains("このカードはシンボル3つを持つ") || effect.contains("このスピリットはシンボル3つを持つ")
+        val hasDoubleInQA = qaList.any { it.question.contains("シンボルが2つ") || it.answer.contains("シンボルが2つ") }
+        val hasTripleInQA = qaList.any { it.question.contains("シンボルが3つ") || it.answer.contains("シンボルが3つ") }
+
+        val baseSymbolCount = when {
+            hasTripleInEffect || hasTripleInQA -> 3
+            hasDoubleInEffect || hasDoubleInQA -> 2
+            else -> 1
+        }
+        
+        val attrList = attributes.toCharArray().map { it.toString() }.filter { it.isNotBlank() }
+        
+        symbols = if (attrList.isEmpty()) {
+            "無$baseSymbolCount"
+        } else if (attrList.size == 1) {
+            "${attrList[0]}$baseSymbolCount"
+        } else {
+            attrList.joinToString("") { "${it}1" }
+        }
+    }
+
     val restrictionRaw = root.select(".detailColLimit .detailColLimitInner").text().trim()
     val restriction = when {
         restrictionRaw.contains("デッキに入れられません") -> "禁止"
@@ -99,7 +132,8 @@ fun parseCardFace(root: Element, cardNo: String, sideName: String): CardFace {
         lvInfo = lvInfoList,
         effect = effect,
         restriction = restriction,
-        imageUrl = imageUrl
+        imageUrl = imageUrl,
+        qa = qaList
     )
 }
 

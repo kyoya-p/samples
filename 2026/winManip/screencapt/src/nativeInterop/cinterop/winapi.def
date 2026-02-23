@@ -1,0 +1,4 @@
+package = platform.windows
+headers = windows.h
+compilerOpts = -DUNICODE
+linkerOpts = -luser32 -lgdi32

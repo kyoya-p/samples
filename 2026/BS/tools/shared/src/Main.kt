@@ -16,6 +16,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.buffered
+import kotlinx.io.*
 
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
@@ -135,6 +136,45 @@ fun parseCategories(inputs: List<String>): List<String> {
     }
 }
 
+class Reparse : CliktCommand(name = "reparse") {
+    override fun help(context: Context) = "キャッシュされたHTMLからYAMLを再生成する"
+
+    val cacheDir by option("-d", "--cache-dir", help = "キャッシュ先ディレクトリ指定", envvar = "BSCARD_CACHE_DIR")
+        .convert { Path(it) }.default(defaultCachePath)
+
+    override fun run() {
+        val htmlDir = Path(cacheDir, "html")
+        val yamlDir = Path(cacheDir, "yaml")
+        if (!SystemFileSystem.exists(htmlDir)) {
+            echo("Error: HTML directory not found: $htmlDir", err = true)
+            return
+        }
+        if (!SystemFileSystem.exists(yamlDir)) SystemFileSystem.createDirectories(yamlDir)
+
+        val files = SystemFileSystem.list(htmlDir).filter { it.name.endsWith(".html") }
+        echo("Reparsing ${files.size} files from $htmlDir...")
+
+        files.forEachIndexed { index, path ->
+            try {
+                val html = SystemFileSystem.source(path).buffered().use { it.readString() }
+                val card = parseCard(html)
+                val yamlFn = Path(yamlDir, "${card.cardNo}.yaml")
+                
+                SystemFileSystem.sink(yamlFn).buffered().use { 
+                    it.write(Yaml.default.encodeToString(Card.serializer(), card).encodeToByteArray()) 
+                }
+                
+                if (index > 0 && index % 500 == 0) {
+                    echo("[$index/${files.size}] Reparsed ${card.cardNo}...")
+                }
+            } catch (e: Exception) {
+                echo("Failed to reparse ${path.name}: ${e.message}", err = true)
+            }
+        }
+        echo("Reparse completed: ${files.size} files processed.")
+    }
+}
+
 class Simulate : CliktCommand(name = "simulate") {
     override fun help(context: Context) = "バトルスピリッツ ゲームシミュレーション（初期状態表示）"
 
@@ -186,4 +226,4 @@ class Simulate : CliktCommand(name = "simulate") {
     }
 }
 
-fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), Neo(), Simulate()).main(args)
+fun main(args: Array<String>) = BsCli().subcommands(FetchCards(args.toList()), Neo(), Simulate(), Reparse()).main(args)

@@ -1,9 +1,8 @@
 # Amper module configuration
 product:
   type: app
-  platforms: [jvm]
+  platforms: [windows_x64]
 
 dependencies:
   - org.jetbrains.kotlinx:kotlinx-datetime:0.6.1
   - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1
-  - org.jetbrains.kotlinx:kotlinx-io-core:0.6.0

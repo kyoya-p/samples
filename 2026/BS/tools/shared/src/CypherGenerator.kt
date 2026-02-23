@@ -113,6 +113,25 @@ class CypherGenerator {
                 sb.append("MERGE (").append(tVar).append(":Timing {name: \"").append(sanitize(t)).append("\"})\n")
                 sb.append("MERGE (").append(faceVar).append(")-[:TRIGGERS_AT]->(").append(tVar).append(")\n")
             }
+
+            // QA
+            val qaList = face["qa"]?.jsonArray ?: emptyList<JsonElement>()
+            qaList.forEachIndexed { i, qaElem ->
+                val qaObj = qaElem.jsonObject
+                val qId = qaObj["id"]?.jsonPrimitive?.content ?: ""
+                val qDate = qaObj["date"]?.jsonPrimitive?.content ?: ""
+                val question = qaObj["question"]?.jsonPrimitive?.content ?: ""
+                val answer = qaObj["answer"]?.jsonPrimitive?.content ?: ""
+                val qaVar = "qa_${safeId}_${side}_${i}"
+                
+                if (qId.isNotEmpty()) {
+                    sb.append("MERGE (").append(qaVar).append(":QA {id: \"").append(sanitize(qId)).append("\"})\n")
+                    sb.append("SET ").append(qaVar).append(".date = \"").append(sanitize(qDate)).append("\", ")
+                      .append(qaVar).append(".question = \"").append(sanitize(question)).append("\", ")
+                      .append(qaVar).append(".answer = \"").append(sanitize(answer)).append("\"\n")
+                    sb.append("MERGE (").append(faceVar).append(")-[:HAS_QA]->(").append(qaVar).append(")\n")
+                }
+            }
         }
 
         return sb.toString()
@@ -143,7 +162,15 @@ class CypherGenerator {
                 "imageUrl" to face.imageUrl,
                 "keywords" to extractKeywords(face.effect),
                 "timings" to extractTimings(face.effect),
-                "mentionedSystems" to extractMentionedSystems(face.effect)
+                "mentionedSystems" to extractMentionedSystems(face.effect),
+                "qa" to face.qa.map {
+                    mapOf(
+                        "id" to it.id,
+                        "date" to it.date,
+                        "question" to it.question,
+                        "answer" to it.answer
+                    )
+                }
             )
         }
 
@@ -208,6 +235,15 @@ class CypherGenerator {
             FOREACH (timingName IN faceData.timings |
                 MERGE (t:Timing {name: timingName})
                 MERGE (cf)-[:TRIGGERS_AT]->(t)
+            )
+
+            // QA (New Nodes and Relationships)
+            FOREACH (qaItem IN faceData.qa |
+                MERGE (qa:QA {id: qaItem.id})
+                SET qa.date = qaItem.date,
+                    qa.question = qaItem.question,
+                    qa.answer = qaItem.answer
+                MERGE (cf)-[:HAS_QA]->(qa)
             )
         """.trimIndent()
     }
