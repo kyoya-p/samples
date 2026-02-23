@@ -2,6 +2,9 @@ modules:
   - jvm-cli
   - linux-cli
   - shared
+  - model
   - windows-cli
   - faces
   - gamefield
+  - web-gameboard
+  - web-server

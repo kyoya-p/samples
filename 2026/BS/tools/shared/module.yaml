@@ -2,13 +2,8 @@ product:
   type: lib
   platforms: [ jvm, linuxX64, mingwX64 ]
 
-test-dependencies@jvm:
-  - $kotlin.test.junit5
-
-dependencies@jvm:
-  - org.neo4j.driver:neo4j-java-driver:5.26.0
-
 dependencies:
+  - ../model
   - $ktor.client.core
   - $ktor.serialization.kotlinx.json
   - org.jetbrains.kotlinx:kotlinx-io-core:0.8.0
@@ -16,6 +11,12 @@ dependencies:
   - com.charleskorn.kaml:kaml:0.63.0
   - com.github.ajalt.clikt:clikt:5.0.3
   - org.jetbrains.kotlinx:kotlinx-datetime:0.6.1
+
+dependencies@jvm:
+  - org.neo4j.driver:neo4j-java-driver:5.26.0
+
+test-dependencies@jvm:
+  - $kotlin.test.junit5
 
 dependencies@mingwX64:
   - io.ktor:ktor-client-curl:3.0.3
