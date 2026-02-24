@@ -20,11 +20,42 @@ import kotlinx.io.*
 
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
+import io.ktor.client.HttpClient
 
-val defaultCachePath = Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }, ".bscards")
+expect fun getEnv(key: String): String
+expect fun createClient(): HttpClient
+expect fun runImport(url: String, login: String, files: List<Path>, cacheDir: Path)
+
+val defaultCachePath = Path(Path(getEnv("USERPROFILE").ifEmpty { getEnv("HOME") }.ifEmpty { "." }), ".bscards")
 
 class BsCli : CliktCommand(name = "bs-cli") {
     override fun run() = Unit
+}
+
+class Neo : CliktCommand(name = "neo") {
+    override fun help(context: Context) = "キャッシュされたデータをNeo4jへインポート"
+    val cacheDir by option("-d", "--cache-dir", help = "入力キャッシュディレクトリ")
+        .convert { Path(it) }.default(defaultCachePath)
+    val url by option("--url", help = "Neo4j URL").default("neo4j://127.0.0.1:7687")
+    val login by option("--login", help = "Neo4j Login (user:pass)").default("neo4j:00000000")
+    val targets by argument(help = "インポート対象カードID").multiple()
+
+    override fun run() {
+        val yamlDir = Path(cacheDir, "yaml")
+        val files = if (targets.isEmpty()) {
+            if (SystemFileSystem.exists(yamlDir)) SystemFileSystem.list(yamlDir).filter { it.name.endsWith(".yaml") }
+            else emptyList()
+        } else {
+            targets.map { Path(yamlDir, "$it.yaml") }.filter { SystemFileSystem.exists(it) }
+        }
+        
+        if (files.isEmpty()) {
+            echo("No files to import.")
+            return
+        }
+
+        runImport(url, login, files, cacheDir)
+    }
 }
 
 class FetchCards(private val argv: List<String>) : CliktCommand(name = "fetch") {
