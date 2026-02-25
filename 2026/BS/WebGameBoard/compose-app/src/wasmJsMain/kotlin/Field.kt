@@ -1,5 +1,6 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -8,10 +9,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.key.*
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
@@ -59,6 +63,13 @@ class DragDropState {
             .filter { it.key != excludeCardId }
             .firstOrNull { it.value.contains(position) }?.key
     }
+}
+
+// Global JS bridge for logging
+fun log(msg: String) {
+    // In Wasm, we can't easily pass variables to js() unless they are global or we use string templates carefully.
+    // However, for debugging, println is often mapped to console.log in Wasm environments.
+    println(msg)
 }
 
 @Composable
@@ -178,8 +189,31 @@ fun App() {
 
     LaunchedEffect(Unit) { initializeGame() }
 
+    val drawCard = {
+        val deck = fieldStacks.find { it.cards.any { c -> c.isFlipped } }
+        if (deck != null && deck.cards.isNotEmpty()) {
+            val card = deck.cards.removeAt(deck.cards.size - 1)
+            card.isFlipped = false 
+            handCards.add(card)
+            log("Card drawn. Hand size: " + handCards.size)
+            if (deck.cards.isEmpty()) fieldStacks.remove(deck)
+        }
+    }
+
     MaterialTheme(colorScheme = darkColorScheme()) {
-        Surface(modifier = Modifier.fillMaxSize()) {
+        Surface(modifier = Modifier.fillMaxSize()
+            .onKeyEvent { 
+                if (it.type == KeyEventType.KeyDown && it.key == Key.D) {
+                    drawCard()
+                    true
+                } else false
+            }
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    log("Global Click at: x=" + offset.x + ", y=" + offset.y)
+                }
+            }
+        ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(modifier = Modifier.weight(0.5f).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant), 
@@ -227,26 +261,29 @@ fun App() {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("Hand (${handCards.size})", style = MaterialTheme.typography.labelMedium)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { 
-                                    val deck = fieldStacks.find { it.cards.any { c -> c.isFlipped } }
-                                    if (deck != null && deck.cards.isNotEmpty()) {
-                                        val card = deck.cards.removeAt(deck.cards.size - 1)
-                                        card.isFlipped = true // Hand shows front to player but kept as flipped logically
-                                        handCards.add(card)
-                                        if (deck.cards.isEmpty()) fieldStacks.remove(deck)
-                                    }
-                                }) { Text("Draw") }
-                                Button(onClick = { soulCoreInReserve = !soulCoreInReserve }) { Text("S-Core") }
+                                Button(
+                                    onClick = { 
+                                        log("Draw button clicked!")
+                                        drawCard()
+                                    },
+                                    modifier = Modifier.height(50.dp).padding(horizontal = 4.dp)
+                                ) { Text("Draw", fontSize = 18.sp) }
+                                Button(
+                                    onClick = { soulCoreInReserve = !soulCoreInReserve },
+                                    modifier = Modifier.height(50.dp).padding(horizontal = 4.dp)
+                                ) { Text("S-Core", fontSize = 18.sp) }
                             }
                         }
-                        Row(modifier = Modifier.height(120.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.height(130.dp).fillMaxWidth().padding(horizontal = 8.dp), 
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             handCards.forEach { instance ->
                                 DraggableCard(
                                     instance = instance, 
                                     zone = ZoneType.HAND, 
                                     dragDropState = dragDropState, 
                                     onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
-                                    isPrivate = true
+                                    isPrivate = true,
+                                    modifier = Modifier.size(110.dp)
                                 )
                             }
                         }

@@ -2,6 +2,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
@@ -58,7 +63,7 @@ fun CardStackView(
         stackExtentX = 75.dp + extra
         stackExtentY = 105.dp + extra
     }
-    val squareSize = maxOf(stackExtentX, stackExtentY, 105.dp) + 20.dp
+    val squareSize = maxOf(stackExtentX, stackExtentY, 105.dp) + 30.dp
 
     Box(modifier = Modifier
         .offset { IntOffset(stack.offset.x.toInt(), stack.offset.y.toInt()) }
@@ -69,34 +74,41 @@ fun CardStackView(
         }
         .alpha(if (isDraggingStack) 0f else 1f)
         .border(if (isHovered) 4.dp else 0.dp, Color.Yellow, MaterialTheme.shapes.small)
-        .pointerInput(stack.id) {
-            detectDragGestures(
-                onDragStart = { localOffset ->
-                    dragDropState.draggedStack = stack
-                    dragDropState.sourceZone = ZoneType.FIELD
-                    dragDropState.grabOffset = localOffset
-                    dragDropState.dragPosition = globalOffset + localOffset
-                },
-                onDrag = { change, dragAmount ->
+    ) {
+        // Content Area (Draggable with slop check)
+        Box(modifier = Modifier.fillMaxSize().pointerInput(stack.id) {
+            awaitEachGesture {
+                val down = awaitFirstDown()
+                var dragStarted = false
+                
+                drag(down.id) { change ->
+                    if (!dragStarted) {
+                        dragStarted = true
+                        dragDropState.draggedStack = stack
+                        dragDropState.sourceZone = ZoneType.FIELD
+                        dragDropState.grabOffset = down.position
+                        dragDropState.dragPosition = globalOffset + down.position
+                    }
                     change.consume()
-                    dragDropState.dragPosition += dragAmount
+                    dragDropState.dragPosition += change.positionChange()
                     dragDropState.hoverStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack.id)
                     dragDropState.hoverCardId = dragDropState.getTargetCard(dragDropState.dragPosition)
-                },
-                onDragEnd = {
+                }
+                
+                if (dragDropState.draggedStack != null) {
                     val targetStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack.id)
                     val targetCardId = dragDropState.getTargetCard(dragDropState.dragPosition)
                     onMoveStack(stack, dragDropState.dragPosition, dragDropState.grabOffset, targetStackId, targetCardId)
                     dragDropState.draggedStack = null
                     dragDropState.hoverStackId = null
                     dragDropState.hoverCardId = null
-                },
-                onDragCancel = { dragDropState.draggedStack = null; dragDropState.hoverStackId = null; dragDropState.hoverCardId = null }
-            )
+                }
+            }
+        }) {
+            CardStackContent(stack, dragDropState, onMoveCard, onMoveStack)
         }
-    ) {
-        CardStackContent(stack, dragDropState, onMoveCard, onMoveStack)
         
+        // Icons Area (Above content)
         if (stack.cards.size > 1) {
             Box(modifier = Modifier.fillMaxSize().padding(2.dp)) {
                 HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) {
@@ -121,7 +133,9 @@ fun CardStackView(
                         val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
                         val tStack = dragDropState.getTargetStack(dragDropState.dragPosition, stack.id)
                         val tCard = dragDropState.getTargetCard(dragDropState.dragPosition)
-                        onMoveCard(stack.cards.last(), ZoneType.FIELD, targetZone!!, dragDropState.dragPosition, dragDropState.grabOffset, tStack, tCard)
+                        if (targetZone != null) {
+                            onMoveCard(stack.cards.last(), ZoneType.FIELD, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, tStack, tCard)
+                        }
                         dragDropState.draggedCard = null
                     }
                 )
@@ -139,7 +153,7 @@ fun CardStackView(
                         dragDropState.draggedStack = null
                     }
                 )
-                HandlerIcon("E${stack.cards.size}", Color(0xFFE91E63), Modifier.align(Alignment.BottomEnd).size(28.dp)) {
+                HandlerIcon("E${stack.cards.size}", Color(0xFFE91E63), Modifier.align(Alignment.BottomEnd).size(30.dp)) {
                     stack.isSpread = !stack.isSpread
                 }
             }
@@ -201,7 +215,7 @@ fun DraggableCard(
     var showMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier
-        .size(105.dp)
+        .size(110.dp) 
         .onGloballyPositioned { 
             globalOffset = it.positionInWindow() 
             if (zone == ZoneType.FIELD && stack == null) {
@@ -212,42 +226,51 @@ fun DraggableCard(
         .border(if (isHovered) 4.dp else 0.dp, Color.Yellow, MaterialTheme.shapes.small),
         contentAlignment = Alignment.Center
     ) {
-        CardPlaceholder(
-            name = instance.card.name,
-            isFlipped = instance.isFlipped,
-            isPrivate = isPrivate,
-            rotation = instance.rotation,
-            elevation = elevation,
-            modifier = Modifier.pointerInput(instance.id) {
-                detectDragGestures(
-                    onDragStart = { localOffset ->
+        // Content area (Draggable with slop check)
+        Box(modifier = Modifier.size(75.dp, 105.dp).pointerInput(instance.id) {
+            awaitEachGesture {
+                val down = awaitFirstDown()
+                var dragStarted = false
+                
+                drag(down.id) { change ->
+                    if (!dragStarted) {
+                        dragStarted = true
                         dragDropState.draggedCard = instance
                         dragDropState.sourceZone = zone
-                        dragDropState.grabOffset = localOffset + Offset(15f, 0f)
-                        dragDropState.dragPosition = globalOffset + localOffset
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        dragDropState.dragPosition += dragAmount
-                        dragDropState.hoverStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
-                        dragDropState.hoverCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
-                    },
-                    onDragEnd = {
-                        val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
-                        val targetStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
-                        val targetCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
-                        if (targetZone != null) {
-                            onMove(instance, zone, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, targetStackId, targetCardId)
-                        }
-                        dragDropState.draggedCard = null
-                        dragDropState.hoverStackId = null
-                        dragDropState.hoverCardId = null
-                    },
-                    onDragCancel = { dragDropState.draggedCard = null; dragDropState.hoverStackId = null; dragDropState.hoverCardId = null }
-                )
-            }.clickable { showMenu = !showMenu }
-        )
+                        dragDropState.grabOffset = down.position
+                        dragDropState.dragPosition = globalOffset + down.position + Offset(17.5f, 2.5f)
+                    }
+                    change.consume()
+                    dragDropState.dragPosition += change.positionChange()
+                    dragDropState.hoverStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
+                    dragDropState.hoverCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
+                }
+                
+                if (dragDropState.draggedCard != null) {
+                    val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
+                    val targetStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
+                    val targetCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
+                    if (targetZone != null) {
+                        onMove(instance, zone, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, targetStackId, targetCardId)
+                    }
+                    dragDropState.draggedCard = null
+                    dragDropState.hoverStackId = null
+                    dragDropState.hoverCardId = null
+                } else if (!down.isConsumed) {
+                    showMenu = !showMenu
+                }
+            }
+        }) {
+            CardPlaceholder(
+                name = instance.card.name,
+                isFlipped = instance.isFlipped,
+                isPrivate = isPrivate,
+                rotation = instance.rotation,
+                elevation = elevation
+            )
+        }
 
+        // Handlers Area
         if ((showHandlers || (showMenu && stack == null))) {
             Box(modifier = Modifier.fillMaxSize().padding(2.dp)) {
                 HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) { instance.isFlipped = !instance.isFlipped }
@@ -273,30 +296,30 @@ fun HandlerIcon(
     var windowPos by remember { mutableStateOf(Offset.Zero) }
     Box(
         modifier = modifier
-            .size(22.dp)
+            .size(36.dp) 
             .onGloballyPositioned { windowPos = it.positionInWindow() }
             .background(color.copy(alpha = 0.9f), CircleShape)
-            .border(1.2.dp, Color.White, CircleShape)
-            .then(
+            .border(1.5.dp, Color.White, CircleShape)
+            .pointerInput(label) {
                 if (onDragStart != null) {
-                    Modifier.pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { localOffset -> onDragStart(windowPos + localOffset) },
-                            onDrag = { change, dragAmount -> 
-                                change.consume()
-                                onDrag?.invoke(dragAmount) 
-                            },
-                            onDragEnd = { onDragEnd?.invoke() },
-                            onDragCancel = { onDragEnd?.invoke() }
-                        )
-                    }
+                    detectDragGestures(
+                        onDragStart = { localOffset -> onDragStart(windowPos + localOffset) },
+                        onDrag = { change, dragAmount -> 
+                            change.consume()
+                            onDrag?.invoke(dragAmount) 
+                        },
+                        onDragEnd = { onDragEnd?.invoke() },
+                        onDragCancel = { onDragEnd?.invoke() }
+                    )
                 } else if (onClick != null) {
-                    Modifier.clickable { onClick() }
-                } else Modifier
-            ),
+                    detectTapGestures { 
+                        onClick() 
+                    }
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+        Text(label, color = Color.White, fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
     }
 }
 
