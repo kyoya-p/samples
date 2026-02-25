@@ -26,9 +26,11 @@ class DragDropState {
     var grabOffset by mutableStateOf(Offset.Zero)
     var sourceZone by mutableStateOf<ZoneType?>(null)
     var hoverStackId by mutableStateOf<Int?>(null)
+    var hoverCardId by mutableStateOf<Int?>(null)
     
     val zoneRects = mutableStateMapOf<ZoneType, Rect>()
     val stackRects = mutableStateMapOf<Int, Rect>()
+    val cardRects = mutableStateMapOf<Int, Rect>()
 
     fun updateZoneRect(zone: ZoneType, rect: Rect) {
         zoneRects[zone] = rect
@@ -36,6 +38,10 @@ class DragDropState {
     
     fun updateStackRect(stackId: Int, rect: Rect) {
         stackRects[stackId] = rect
+    }
+    
+    fun updateCardRect(cardId: Int, rect: Rect) {
+        cardRects[cardId] = rect
     }
 
     fun getTargetZone(position: Offset): ZoneType? {
@@ -45,6 +51,12 @@ class DragDropState {
     fun getTargetStack(position: Offset, excludeStackId: Int? = null): Int? {
         return stackRects.entries
             .filter { it.key != excludeStackId }
+            .firstOrNull { it.value.contains(position) }?.key
+    }
+    
+    fun getTargetCard(position: Offset, excludeCardId: Int? = null): Int? {
+        return cardRects.entries
+            .filter { it.key != excludeCardId }
             .firstOrNull { it.value.contains(position) }?.key
     }
 }
@@ -57,60 +69,97 @@ fun App() {
     var trashCores by remember { mutableStateOf(0) }
 
     val handCards = remember { mutableStateListOf<CardInstance>() }
+    val fieldCards = remember { mutableStateListOf<CardInstance>() }
     val fieldStacks = remember { mutableStateListOf<CardStack>() }
 
     var instanceIdCounter by remember { mutableStateOf(0) }
     var stackIdCounter by remember { mutableStateOf(0) }
     val dragDropState = remember { DragDropState() }
 
-    fun moveCard(instance: CardInstance, from: ZoneType, to: ZoneType, dropPos: Offset, grab: Offset, targetStackId: Int? = null) {
-        handCards.remove(instance)
-        fieldStacks.forEach { it.cards.remove(instance) }
+    fun cleanEmptyStacks() {
         fieldStacks.removeAll { it.cards.isEmpty() }
-        val activeIds = fieldStacks.map { it.id }.toSet()
-        dragDropState.stackRects.keys.retainAll(activeIds)
+        // Convert 1-card stacks to fieldCards
+        val singleStacks = fieldStacks.filter { it.cards.size == 1 }
+        singleStacks.forEach { stack ->
+            val card = stack.cards.removeAt(0)
+            card.offset = stack.offset
+            fieldCards.add(card)
+            fieldStacks.remove(stack)
+        }
+        
+        val activeStackIds = fieldStacks.map { it.id }.toSet()
+        dragDropState.stackRects.keys.retainAll(activeStackIds)
+        val activeCardIds = fieldCards.map { it.id }.toSet()
+        dragDropState.cardRects.keys.retainAll(activeCardIds)
+    }
+
+    fun moveCard(instance: CardInstance, from: ZoneType, to: ZoneType, dropPos: Offset, grab: Offset, targetStackId: Int? = null, targetCardId: Int? = null) {
+        handCards.remove(instance)
+        fieldCards.remove(instance)
+        fieldStacks.forEach { it.cards.remove(instance) }
 
         when (to) {
             ZoneType.HAND -> {
                 handCards.add(instance)
             }
             ZoneType.FIELD -> {
+                val fieldRect = dragDropState.zoneRects[ZoneType.FIELD] ?: Rect.Zero
+                val dropOffset = dropPos - fieldRect.topLeft - grab
+                
                 val targetStack = fieldStacks.find { it.id == targetStackId }
+                val targetCard = fieldCards.find { it.id == targetCardId }
+                
                 if (targetStack != null) {
                     targetStack.cards.lastOrNull()?.let { instance.rotation = it.rotation }
                     targetStack.cards.add(instance)
-                } else {
-                    val fieldRect = dragDropState.zoneRects[ZoneType.FIELD] ?: Rect.Zero
-                    val newStack = CardStack(stackIdCounter++, dropPos - fieldRect.topLeft - grab)
+                } else if (targetCard != null) {
+                    val newStack = CardStack(stackIdCounter++, targetCard.offset)
+                    instance.rotation = targetCard.rotation
+                    newStack.cards.add(targetCard)
                     newStack.cards.add(instance)
+                    fieldCards.remove(targetCard)
                     fieldStacks.add(newStack)
+                } else {
+                    instance.offset = dropOffset
+                    fieldCards.add(instance)
                 }
             }
             else -> {}
         }
+        cleanEmptyStacks()
     }
     
-    fun moveStack(stack: CardStack, dropPos: Offset, grab: Offset, targetStackId: Int? = null) {
+    fun moveStack(stack: CardStack, dropPos: Offset, grab: Offset, targetStackId: Int? = null, targetCardId: Int? = null) {
         val targetStack = fieldStacks.find { it.id == targetStackId }
+        val targetCard = fieldCards.find { it.id == targetCardId }
+        
         if (targetStack != null && targetStack != stack) {
             targetStack.cards.lastOrNull()?.let { top ->
                 stack.cards.forEach { it.rotation = top.rotation }
             }
             targetStack.cards.addAll(stack.cards)
             fieldStacks.remove(stack)
-            dragDropState.stackRects.remove(stack.id)
+        } else if (targetCard != null) {
+            val newStack = CardStack(stackIdCounter++, targetCard.offset)
+            stack.cards.forEach { it.rotation = targetCard.rotation }
+            newStack.cards.add(targetCard)
+            newStack.cards.addAll(stack.cards)
+            fieldCards.remove(targetCard)
+            fieldStacks.remove(stack)
+            fieldStacks.add(newStack)
         } else {
             val fieldRect = dragDropState.zoneRects[ZoneType.FIELD] ?: Rect.Zero
             stack.offset = dropPos - fieldRect.topLeft - grab
             fieldStacks.remove(stack)
             fieldStacks.add(stack)
         }
+        cleanEmptyStacks()
     }
 
     fun initializeGame() {
         lifeCores = 5; reserveCores = 4; soulCoreInReserve = true; trashCores = 0
         instanceIdCounter = 0; stackIdCounter = 0
-        fieldStacks.clear(); handCards.clear()
+        fieldStacks.clear(); fieldCards.clear(); handCards.clear()
         
         val phoenix = SearchCard("BS68-X01", "Phoenix Golem", "X", "8", "S", "Blue", listOf("Artificer", "Phoenix"), "")
         val seaKing = SearchCard("BS68-X02", "Sea King", "X", "7", "S", "Blue", listOf("Fighter"), "")
@@ -122,7 +171,6 @@ fun App() {
             it.rotation = 0f
         }
         
-        // Place initial deck at Top-Right of field
         val deckStack = CardStack(stackIdCounter++, Offset(650f, 20f))
         deckStack.cards.addAll(allCards)
         fieldStacks.add(deckStack)
@@ -144,7 +192,6 @@ fun App() {
                     }
 
                     Row(modifier = Modifier.weight(3f).fillMaxWidth()) {
-                        // Left Column
                         Column(modifier = Modifier.width(120.dp).fillMaxHeight().padding(8.dp), verticalArrangement = Arrangement.SpaceBetween) {
                             ZoneBox("Burst", modifier = Modifier.weight(1f).padding(bottom = 8.dp))
                             ZoneBox("Life: $lifeCores", modifier = Modifier.weight(1.5f).padding(bottom = 8.dp), color = Color(0xFF6200EE))
@@ -152,29 +199,40 @@ fun App() {
                                 modifier = Modifier.weight(2f), color = Color(0xFF2C2C2C))
                         }
 
-                        // Wide Field
                         Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(8.dp)
                             .onGloballyPositioned { dragDropState.updateZoneRect(ZoneType.FIELD, it.boundsInWindow()) }
                             .background(Color(0xFF1E1E1E), shape = MaterialTheme.shapes.medium)) {
                             Text("Field", style = MaterialTheme.typography.labelLarge, color = Color.Gray, modifier = Modifier.padding(8.dp))
                             
+                            // Render Single Cards
+                            fieldCards.forEach { card ->
+                                DraggableCard(
+                                    instance = card,
+                                    zone = ZoneType.FIELD,
+                                    dragDropState = dragDropState,
+                                    onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
+                                    modifier = Modifier.offset { IntOffset(card.offset.x.toInt(), card.offset.y.toInt()) }
+                                )
+                            }
+                            
+                            // Render Stacks
                             fieldStacks.forEach { stack ->
                                 CardStackView(stack, dragDropState, onMoveCard = ::moveCard, onMoveStack = ::moveStack)
                             }
                         }
                     }
 
-                    // Hand (Private Area)
                     Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)
                         .onGloballyPositioned { dragDropState.updateZoneRect(ZoneType.HAND, it.boundsInWindow()) }) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("Hand (${handCards.size})", style = MaterialTheme.typography.labelMedium)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = { 
-                                    // Draw from field stacks
                                     val deck = fieldStacks.find { it.cards.any { c -> c.isFlipped } }
                                     if (deck != null && deck.cards.isNotEmpty()) {
-                                        handCards.add(deck.cards.removeAt(deck.cards.size - 1))
+                                        val card = deck.cards.removeAt(deck.cards.size - 1)
+                                        card.isFlipped = true // Hand shows front to player but kept as flipped logically
+                                        handCards.add(card)
                                         if (deck.cards.isEmpty()) fieldStacks.remove(deck)
                                     }
                                 }) { Text("Draw") }
@@ -187,7 +245,7 @@ fun App() {
                                     instance = instance, 
                                     zone = ZoneType.HAND, 
                                     dragDropState = dragDropState, 
-                                    onMove = { i, f, t, p, g, ts -> moveCard(i, f, t, p, g, ts) },
+                                    onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
                                     isPrivate = true
                                 )
                             }

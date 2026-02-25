@@ -7,3 +7,4 @@
 /.cypher
 /output/
 /.playwright-mcp/
+/*.png
