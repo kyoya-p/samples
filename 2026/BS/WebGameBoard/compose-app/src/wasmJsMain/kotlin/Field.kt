@@ -19,6 +19,9 @@ import androidx.compose.ui.input.key.*
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
 
 enum class ZoneType { HAND, FIELD, TRASH, DECK, BURST, LIFE, RESERVE }
 
@@ -66,9 +69,11 @@ class DragDropState {
 }
 
 // Global JS bridge for logging
+@JsFun("(msg) => window.log(msg)")
+external fun jsLog(msg: String)
+
 fun log(msg: String) {
-    // In Wasm, we can't easily pass variables to js() unless they are global or we use string templates carefully.
-    // However, for debugging, println is often mapped to console.log in Wasm environments.
+    jsLog(msg)
     println(msg)
 }
 
@@ -86,6 +91,7 @@ fun App() {
     var instanceIdCounter by remember { mutableStateOf(0) }
     var stackIdCounter by remember { mutableStateOf(0) }
     val dragDropState = remember { DragDropState() }
+    val focusRequester = remember { FocusRequester() }
 
     fun cleanEmptyStacks() {
         fieldStacks.removeAll { it.cards.isEmpty() }
@@ -187,7 +193,10 @@ fun App() {
         fieldStacks.add(deckStack)
     }
 
-    LaunchedEffect(Unit) { initializeGame() }
+    LaunchedEffect(Unit) { 
+        initializeGame()
+        focusRequester.requestFocus()
+    }
 
     val drawCard = {
         val deck = fieldStacks.find { it.cards.any { c -> c.isFlipped } }
@@ -202,6 +211,8 @@ fun App() {
 
     MaterialTheme(colorScheme = darkColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable()
             .onKeyEvent { 
                 if (it.type == KeyEventType.KeyDown && it.key == Key.D) {
                     drawCard()
@@ -209,6 +220,7 @@ fun App() {
                 } else false
             }
             .pointerInput(Unit) {
+
                 detectTapGestures { offset ->
                     log("Global Click at: x=" + offset.x + ", y=" + offset.y)
                 }
@@ -219,7 +231,14 @@ fun App() {
                     Row(modifier = Modifier.weight(0.5f).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant), 
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Opponent Area (Life: 5)", modifier = Modifier.padding(start = 16.dp))
-                        Button(onClick = { initializeGame() }, modifier = Modifier.padding(end = 16.dp),
+                        Button(
+                            onClick = { initializeGame() }, 
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .onGloballyPositioned {
+                                    val b = it.boundsInWindow()
+                                    log("Reset Button Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
+                                },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
                             Text("Reset")
                         }
@@ -245,13 +264,32 @@ fun App() {
                                     zone = ZoneType.FIELD,
                                     dragDropState = dragDropState,
                                     onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
+                                    onDrawCard = { i ->
+                                        fieldCards.remove(i)
+                                        i.isFlipped = false
+                                        handCards.add(i)
+                                        cleanEmptyStacks()
+                                        log("Card drawn from field. Hand size: " + handCards.size)
+                                    },
                                     modifier = Modifier.offset { IntOffset(card.offset.x.toInt(), card.offset.y.toInt()) }
                                 )
                             }
                             
                             // Render Stacks
                             fieldStacks.forEach { stack ->
-                                CardStackView(stack, dragDropState, onMoveCard = ::moveCard, onMoveStack = ::moveStack)
+                                CardStackView(
+                                    stack = stack, 
+                                    dragDropState = dragDropState, 
+                                    onMoveCard = ::moveCard, 
+                                    onMoveStack = ::moveStack,
+                                    onDrawCard = { card ->
+                                        stack.cards.remove(card)
+                                        card.isFlipped = false
+                                        handCards.add(card)
+                                        cleanEmptyStacks()
+                                        log("Card drawn from stack. Hand size: " + handCards.size)
+                                    }
+                                )
                             }
                         }
                     }
@@ -266,7 +304,13 @@ fun App() {
                                         log("Draw button clicked!")
                                         drawCard()
                                     },
-                                    modifier = Modifier.height(50.dp).padding(horizontal = 4.dp)
+                                    modifier = Modifier
+                                        .height(50.dp)
+                                        .padding(horizontal = 4.dp)
+                                        .onGloballyPositioned {
+                                            val b = it.boundsInWindow()
+                                            log("Draw Button Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
+                                        }
                                 ) { Text("Draw", fontSize = 18.sp) }
                                 Button(
                                     onClick = { soulCoreInReserve = !soulCoreInReserve },
@@ -282,6 +326,7 @@ fun App() {
                                     zone = ZoneType.HAND, 
                                     dragDropState = dragDropState, 
                                     onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
+                                    onDrawCard = null,
                                     isPrivate = true,
                                     modifier = Modifier.size(110.dp)
                                 )

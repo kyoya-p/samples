@@ -46,7 +46,8 @@ fun CardStackView(
     stack: CardStack,
     dragDropState: DragDropState,
     onMoveCard: (CardInstance, ZoneType, ZoneType, Offset, Offset, Int?, Int?) -> Unit,
-    onMoveStack: (CardStack, Offset, Offset, Int?, Int?) -> Unit
+    onMoveStack: (CardStack, Offset, Offset, Int?, Int?) -> Unit,
+    onDrawCard: (CardInstance) -> Unit
 ) {
     var globalOffset by remember { mutableStateOf(Offset.Zero) }
     val isHovered = dragDropState.hoverStackId == stack.id
@@ -75,10 +76,10 @@ fun CardStackView(
         .alpha(if (isDraggingStack) 0f else 1f)
         .border(if (isHovered) 4.dp else 0.dp, Color.Yellow, MaterialTheme.shapes.small)
     ) {
-        // Content Area (Draggable with slop check)
+        // Background layer for Stack Drag (only triggers on "margin")
         Box(modifier = Modifier.fillMaxSize().pointerInput(stack.id) {
             awaitEachGesture {
-                val down = awaitFirstDown()
+                val down = awaitFirstDown(requireUnconsumed = false)
                 var dragStarted = false
                 
                 drag(down.id) { change ->
@@ -104,15 +105,19 @@ fun CardStackView(
                     dragDropState.hoverCardId = null
                 }
             }
-        }) {
-            CardStackContent(stack, dragDropState, onMoveCard, onMoveStack)
-        }
+        })
+
+        // Content Area
+        CardStackContent(stack, dragDropState, onMoveCard, onMoveStack)
         
         // Icons Area (Above content)
         if (stack.cards.size > 1) {
             Box(modifier = Modifier.fillMaxSize().padding(2.dp)) {
                 HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) {
                     stack.cards.lastOrNull()?.let { it.isFlipped = !it.isFlipped }
+                }
+                HandlerIcon("D", Color(0xFFFF9800), Modifier.align(Alignment.TopCenter)) {
+                    stack.cards.lastOrNull()?.let { onDrawCard(it) }
                 }
                 HandlerIcon("R", Color(0xFFF44336), Modifier.align(Alignment.TopEnd)) {
                     val newRot = ((stack.cards.lastOrNull()?.rotation ?: 0f) + 90f) % 360f
@@ -206,6 +211,7 @@ fun DraggableCard(
     showHandlers: Boolean = true,
     stack: CardStack? = null,
     onMoveStack: ((CardStack, Offset, Offset, Int?, Int?) -> Unit)? = null,
+    onDrawCard: ((CardInstance) -> Unit)? = null,
     elevation: Dp = 4.dp,
     isPrivate: Boolean = false
 ) {
@@ -274,10 +280,28 @@ fun DraggableCard(
         if ((showHandlers || (showMenu && stack == null))) {
             Box(modifier = Modifier.fillMaxSize().padding(2.dp)) {
                 HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) { instance.isFlipped = !instance.isFlipped }
+                HandlerIcon("D", Color(0xFFFF9800), Modifier.align(Alignment.TopCenter)) { onDrawCard?.invoke(instance) }
                 HandlerIcon("R", Color(0xFFF44336), Modifier.align(Alignment.TopEnd)) {
                     instance.rotation = (instance.rotation + 90f) % 360f
                 }
-                HandlerIcon("M", Color(0xFF2196F3), Modifier.align(Alignment.BottomStart))
+                HandlerIcon("M", Color(0xFF2196F3), Modifier.align(Alignment.BottomStart),
+                    onDragStart = { absPos ->
+                        dragDropState.draggedCard = instance
+                        dragDropState.sourceZone = zone
+                        dragDropState.grabOffset = absPos - globalOffset
+                        dragDropState.dragPosition = absPos
+                    },
+                    onDrag = { dragDropState.dragPosition += it },
+                    onDragEnd = {
+                        val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
+                        val tStack = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
+                        val tCard = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
+                        if (targetZone != null) {
+                            onMove(instance, zone, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, tStack, tCard)
+                        }
+                        dragDropState.draggedCard = null
+                    }
+                )
             }
         }
     }
