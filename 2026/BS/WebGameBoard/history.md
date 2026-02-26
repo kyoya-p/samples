@@ -1,0 +1,20 @@
+# 開発・テスト知見 (WebGameBoard)
+
+## Compose Wasm (Canvas) の自動テストに関する課題
+- Playwrightによる自動テストにおいて、Canvas内のUI要素に対するクリックやキー入力などのイベントが正しく伝播しない事象が確認された。
+- Compose Wasmは標準のDOMイベントではなく、独自のPointerEventやKeyEventのハンドリングを行っている可能性が高く、Playwrightの `mouse.click` や `keyboard.press` では内部状態が更新されないケースがある。
+- **対策:** 視覚的なレイアウトや描画結果はスクリーンショット（`browser_take_screenshot`）で検証可能。しかし、動的な操作（ドラッグ＆ドロップ、ボタンクリック）については、自動テスト環境ではなく人間によるブラウザ上での手動テスト（実機確認）を併用する必要がある。
+
+## UIコンポーネント実装の知見
+- **ドラッグとクリックの競合:** `Box` に `detectDragGestures` と `clickable` (または `detectTapGestures`) を併用すると、イベントが奪い合いになりクリックが反応しなくなる問題が発生した。
+  - **解決策:** `awaitEachGesture` と `drag` を組み合わせ、`awaitFirstDown()` の後にドラッグ判定の閾値（slop）を超えた場合のみドラッグとして処理し、超えなかった場合はタップとして処理するロジックに切り替えることで、両立が可能になる。
+- **アイコン等小さなタッチターゲット:** 22dp程度の小さなアイコンは操作性が悪いため、最低でも30dp〜36dpのサイズ（あるいはパディングによる透明なクリック領域の拡大）を確保することが望ましい。
+
+## WasmにおけるデバッグとKotlin/Wasmの制約
+- Wasm環境下では `println()` が期待通りにブラウザのコンソールに出力されない場合がある。
+- **Kotlin/Wasmの `js()` 関数の仕様:** Kotlin/WasmでJavaScriptコードを直接実行する `js("...")` 関数は、**トップレベル関数の本体が単一の式**である場合、またはプロパティの初期化子でのみ許可される。さらに、引数は**定数文字列（constant string expression）**である必要がある。変数を文字列補間で渡すことはコンパイルエラーとなる。
+- **解決策:** デバッグログを出力する場合は、トップレベルに `fun log(msg: String) { println(msg) }` のようなラッパーを定義するか、ブラウザ側（`index.html`）で `window.log = console.log` を定義し、Kotlin側から `external` 関数として呼び出す設計にするのが安全である。
+
+## キーボード・フォーカス制御の重要性
+- Compose Wasm上でキーボードイベント（`onKeyEvent`）を受け取るには、明示的にコンポーネントにフォーカスを当てる必要がある。
+- **対策:** `FocusRequester` を使用し、`LaunchedEffect(Unit)` 内で `focusRequester.requestFocus()` を呼び出すことで、起動時に自動的に入力を受け付ける状態にできる。ただし、Playwright等の外部ツールからの自動入力（`keyboard.press`）においては、これだけでは不十分な場合（ブラウザウィンドウ自体のフォーカスが必要など）がある。

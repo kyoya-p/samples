@@ -1,0 +1,9 @@
+[tasks.web-gameboard]
+description = "Compose Multiplatform (Wasm) + Ktor Server 起動"
+dir = "tools"
+run = "amper.bat build --module web-gameboard && amper.bat run --module web-server"
+
+[tasks."web-gameboard:build"]
+description = "Compose Multiplatform (Wasm) ビルド"
+dir = "tools"
+run = "amper.bat build --module web-gameboard"

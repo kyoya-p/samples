@@ -1,0 +1,15 @@
+{
+  "name": "gemini-agentic-vision",
+  "version": "1.0.0",
+  "description": "Visual analysis tool using Gemini API",
+  "main": "cli.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.7",
+    "playwright": "^1.58.2"
+  }
+}
