@@ -20,7 +20,7 @@ Azure App Service（シグナリング）と Azure Container Instances（TURN）
 `mise` を使用して Azure CLI を実行できる環境を構築します。
 ```powershell
 mise trust
-mise run setup
+mise run install
 ```
 
 ### 2. デプロイ

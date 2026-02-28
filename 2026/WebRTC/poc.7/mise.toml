@@ -3,16 +3,30 @@ python = "latest"
 
 [env]
 _.python.venv = ".venv"
+resourceGroup = "rg-webrtc7-poc"
+location = "centralus"
+turnDnsLabel = "turn-webrtc7-poc"
 
 [tasks.venv]
+description = "Azure CLI 用の Python 環境 (.venv) を作成"
 run = "python -m venv .venv"
 
 [tasks.install]
+description = "環境内に Azure CLI をインストール"
 depends = ["venv"]
 run = ".\\.venv\\Scripts\\pip install azure-cli"
 
-[tasks.setup]
-depends = ["install"]
-
 [tasks.deploy]
+description = "Azure リソース (App Service, ACI) を作成し、WebRTC アプリケーションをデプロイ"
 run = "powershell -ExecutionPolicy Bypass -File deploy.ps1"
+
+[tasks.deploy-turn-server]
+run = """
+az container create --resource-group $env:resourceGroup --name $env:turnDnsLabel `
+ --image instrumentisto/coturn `
+ --dns-name-label $env:turnDnsLabel `
+ --ports 3478 49160 49161 49162 `
+ --protocol UDP `
+ --command-line "turnserver -n --log-file=stdout --lt-cred-mech --user=user:password --realm=$($env:turnDnsLabel).$($env:location).azurecontainer.io --external-ip=\\$(detect-external-ip) --min-port=49160 --max-port=49162" `
+ --cpu 1 --memory 1.5
+"""

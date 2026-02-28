@@ -9,9 +9,9 @@ if (!(Get-Command az -ErrorAction SilentlyContinue)) {
 $resourceGroup = "rg-webrtc7-poc"
 $location = "centralus"
 $suffix = Get-Random
-$appName = "app-webrtc7-$suffix"
-$planName = "plan-webrtc7-$suffix"
-$turnDnsLabel = "turn7-$suffix"
+$appName = "app-webrtc-$suffix"
+$planName = "plan-webrtc-$suffix"
+$turnDnsLabel = "turn-$suffix"
 
 Write-Host "1. リソースグループを作成中: $resourceGroup (Location: $location)..." -ForegroundColor Cyan
 az group create --name $resourceGroup --location $location
@@ -22,7 +22,7 @@ $turnUser = "user"
 $turnPass = "password"
 # 失敗しても続行するようにするが、ログは出す
 az container create --resource-group $resourceGroup --name $turnDnsLabel --image instrumentisto/coturn `
-  --dns-name-label $turnDnsLabel --ports 3478 --protocol UDP --os-type Linux --cpu 1 --memory 1.5
+  --dns-name-label $turnDnsLabel -ports 3478 --protocol UDP --os-type Linux --cpu 1 --memory 1.5
 
 $turnUrl = "turn:$turnDnsLabel.$location.azurecontainer.io:3478"
 

@@ -1,7 +1,7 @@
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.CanvasBasedWindow
 
-// Global JS bridge for logging
+// Global JS bridge for logging to console
 @JsFun("(msg) => window.log(msg)")
 external fun jsLog(msg: String)
 
