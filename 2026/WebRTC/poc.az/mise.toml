@@ -1,0 +1,4 @@
+[tools]
+python = "latest"
+azure-cli = "latest"
+uv = "latest"
