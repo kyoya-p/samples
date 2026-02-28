@@ -1,4 +1,10 @@
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import io.ktor.client.request.get
+import io.ktor.client.call.body
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -19,6 +25,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.boundsInWindow
@@ -28,8 +35,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+val globalHttpClient = HttpClient {
+    install(ContentNegotiation) {
+        json()
+    }
+}
+
+private val imageCache = mutableMapOf<String, ImageBitmap>()
 
 class CardInstance(val id: Int, val card: SearchCard) {
+// ... (rest of the code)
     var isFlipped by mutableStateOf(false)
     var rotation by mutableStateOf(0f)
     var offset by mutableStateOf(Offset.Zero)
@@ -71,6 +89,8 @@ fun CardStackView(
         .size(squareSize)
         .onGloballyPositioned { 
             globalOffset = it.positionInWindow()
+            val b = it.boundsInWindow()
+            log("Stack Handler Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
             dragDropState.updateStackRect(stack.id, it.boundsInWindow()) 
         }
         .alpha(if (isDraggingStack) 0f else 1f)
@@ -116,34 +136,10 @@ fun CardStackView(
                 HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) {
                     stack.cards.lastOrNull()?.let { it.isFlipped = !it.isFlipped }
                 }
-                HandlerIcon("D", Color(0xFFFF9800), Modifier.align(Alignment.TopCenter)) {
-                    stack.cards.lastOrNull()?.let { onDrawCard(it) }
-                }
                 HandlerIcon("R", Color(0xFFF44336), Modifier.align(Alignment.TopEnd)) {
                     val newRot = ((stack.cards.lastOrNull()?.rotation ?: 0f) + 90f) % 360f
                     stack.cards.forEach { it.rotation = newRot }
                 }
-                HandlerIcon("M", Color(0xFF2196F3), Modifier.align(Alignment.BottomStart),
-                    onDragStart = { absPos ->
-                        val top = stack.cards.last()
-                        dragDropState.draggedCard = top
-                        dragDropState.sourceZone = ZoneType.FIELD
-                        val staggerX = if(stack.isSpread) (spreadX.value * (stack.cards.size - 1)) else (10 + (stack.cards.size - 2) * 2).toFloat()
-                        val staggerY = if(stack.isSpread) 0f else (10 + (stack.cards.size - 2) * 2).toFloat()
-                        dragDropState.grabOffset = absPos - (globalOffset + Offset(staggerX, staggerY))
-                        dragDropState.dragPosition = absPos
-                    },
-                    onDrag = { dragDropState.dragPosition += it },
-                    onDragEnd = {
-                        val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
-                        val tStack = dragDropState.getTargetStack(dragDropState.dragPosition, stack.id)
-                        val tCard = dragDropState.getTargetCard(dragDropState.dragPosition)
-                        if (targetZone != null) {
-                            onMoveCard(stack.cards.last(), ZoneType.FIELD, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, tStack, tCard)
-                        }
-                        dragDropState.draggedCard = null
-                    }
-                )
                 HandlerIcon("S", Color(0xFF9C27B0), Modifier.align(Alignment.BottomCenter),
                     onDragStart = { absPos ->
                         dragDropState.draggedStack = stack
@@ -193,7 +189,7 @@ fun CardStackContent(
                     )
                 } else {
                     Box(modifier = Modifier.size(105.dp), contentAlignment = Alignment.Center) {
-                        CardPlaceholder(instance.card.name, isFlipped = instance.isFlipped, rotation = instance.rotation, elevation = elevation)
+                        CardPlaceholder(instance.card.name, imgUrl = instance.card.imgUrl, isFlipped = instance.isFlipped, rotation = instance.rotation, elevation = elevation)
                     }
                 }
             }
@@ -221,38 +217,32 @@ fun DraggableCard(
     var showMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier
-        .size(110.dp) 
-        .onGloballyPositioned { 
+        .size(110.dp)
+        .onGloballyPositioned {
             globalOffset = it.positionInWindow() 
             if (zone == ZoneType.FIELD && stack == null) {
                 dragDropState.updateCardRect(instance.id, it.boundsInWindow())
             }
         }
         .alpha(if (isDragging) 0.5f else 1f)
-        .border(if (isHovered) 4.dp else 0.dp, Color.Yellow, MaterialTheme.shapes.small),
-        contentAlignment = Alignment.Center
-    ) {
-        // Content area (Draggable with slop check)
-        Box(modifier = Modifier.size(75.dp, 105.dp).pointerInput(instance.id) {
-            awaitEachGesture {
-                val down = awaitFirstDown()
-                var dragStarted = false
-                
-                drag(down.id) { change ->
-                    if (!dragStarted) {
-                        dragStarted = true
-                        dragDropState.draggedCard = instance
-                        dragDropState.sourceZone = zone
-                        dragDropState.grabOffset = down.position
-                        dragDropState.dragPosition = globalOffset + down.position + Offset(17.5f, 2.5f)
-                    }
+        .border(if (isHovered) 4.dp else 0.dp, Color.Yellow, MaterialTheme.shapes.small)
+        .pointerInput(instance.id) {
+            detectDragGestures(
+                onDragStart = { localOffset ->
+                    log("DRAG STARTING for card ${instance.id}")
+                    dragDropState.draggedCard = instance
+                    dragDropState.sourceZone = zone
+                    dragDropState.grabOffset = localOffset
+                    dragDropState.dragPosition = globalOffset + localOffset
+                },
+                onDrag = { change, dragAmount ->
                     change.consume()
-                    dragDropState.dragPosition += change.positionChange()
+                    dragDropState.dragPosition += dragAmount
                     dragDropState.hoverStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
                     dragDropState.hoverCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
-                }
-                
-                if (dragDropState.draggedCard != null) {
+                },
+                onDragEnd = {
+                    log("DRAG ENDED for card ${instance.id}")
                     val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
                     val targetStackId = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
                     val targetCardId = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
@@ -262,46 +252,31 @@ fun DraggableCard(
                     dragDropState.draggedCard = null
                     dragDropState.hoverStackId = null
                     dragDropState.hoverCardId = null
-                } else if (!down.isConsumed) {
-                    showMenu = !showMenu
                 }
-            }
-        }) {
-            CardPlaceholder(
-                name = instance.card.name,
-                isFlipped = instance.isFlipped,
-                isPrivate = isPrivate,
-                rotation = instance.rotation,
-                elevation = elevation
             )
         }
+        .clickable {
+            log("TAP/CLICK on card ${instance.id}")
+            showMenu = !showMenu
+        },
+        contentAlignment = Alignment.Center
+    ) {
+        CardPlaceholder(
+            name = instance.card.name,
+            imgUrl = instance.card.imgUrl,
+            isFlipped = instance.isFlipped,
+            isPrivate = isPrivate,
+            rotation = instance.rotation,
+            elevation = elevation
+        )
 
         // Handlers Area
         if ((showHandlers || (showMenu && stack == null))) {
-            Box(modifier = Modifier.fillMaxSize().padding(2.dp)) {
-                HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart)) { instance.isFlipped = !instance.isFlipped }
-                HandlerIcon("D", Color(0xFFFF9800), Modifier.align(Alignment.TopCenter)) { onDrawCard?.invoke(instance) }
-                HandlerIcon("R", Color(0xFFF44336), Modifier.align(Alignment.TopEnd)) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                key("F") { HandlerIcon("F", Color(0xFF4CAF50), Modifier.align(Alignment.TopStart).padding(2.dp)) { instance.isFlipped = !instance.isFlipped } }
+                key("R") { HandlerIcon("R", Color(0xFFF44336), Modifier.align(Alignment.TopEnd).padding(2.dp)) {
                     instance.rotation = (instance.rotation + 90f) % 360f
-                }
-                HandlerIcon("M", Color(0xFF2196F3), Modifier.align(Alignment.BottomStart),
-                    onDragStart = { absPos ->
-                        dragDropState.draggedCard = instance
-                        dragDropState.sourceZone = zone
-                        dragDropState.grabOffset = absPos - globalOffset
-                        dragDropState.dragPosition = absPos
-                    },
-                    onDrag = { dragDropState.dragPosition += it },
-                    onDragEnd = {
-                        val targetZone = dragDropState.getTargetZone(dragDropState.dragPosition)
-                        val tStack = dragDropState.getTargetStack(dragDropState.dragPosition, stack?.id)
-                        val tCard = dragDropState.getTargetCard(dragDropState.dragPosition, instance.id)
-                        if (targetZone != null) {
-                            onMove(instance, zone, targetZone, dragDropState.dragPosition, dragDropState.grabOffset, tStack, tCard)
-                        }
-                        dragDropState.draggedCard = null
-                    }
-                )
+                } }
             }
         }
     }
@@ -321,27 +296,17 @@ fun HandlerIcon(
     Box(
         modifier = modifier
             .size(36.dp) 
-            .onGloballyPositioned { windowPos = it.positionInWindow() }
+            .onGloballyPositioned { 
+                windowPos = it.positionInWindow()
+                val b = it.boundsInWindow()
+                log("HandlerIcon " + label + " Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
+            }
             .background(color.copy(alpha = 0.9f), CircleShape)
             .border(1.5.dp, Color.White, CircleShape)
-            .pointerInput(label) {
-                if (onDragStart != null) {
-                    detectDragGestures(
-                        onDragStart = { localOffset -> onDragStart(windowPos + localOffset) },
-                        onDrag = { change, dragAmount -> 
-                            change.consume()
-                            onDrag?.invoke(dragAmount) 
-                        },
-                        onDragEnd = { onDragEnd?.invoke() },
-                        onDragCancel = { onDragEnd?.invoke() }
-                    )
-                } else if (onClick != null) {
-                    detectTapGestures { 
-                        onClick() 
-                    }
-                }
-            },
-        contentAlignment = Alignment.Center
+            .clickable {
+                log("HandlerIcon " + label + " CLICKED (direct)")
+                onClick?.invoke()
+            }
     ) {
         Text(label, color = Color.White, fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
     }
@@ -350,24 +315,48 @@ fun HandlerIcon(
 @Composable
 fun CardPlaceholder(
     name: String, 
+    imgUrl: String = "",
     modifier: Modifier = Modifier, 
     isFlipped: Boolean = false, 
     isPrivate: Boolean = false,
     rotation: Float = 0f,
     elevation: Dp = 4.dp
 ) {
+    var imageBitmap by remember(imgUrl) { mutableStateOf<ImageBitmap?>(imageCache[imgUrl]) }
+    
+    LaunchedEffect(imgUrl) {
+        if (imgUrl.isNotEmpty() && imageBitmap == null) {
+            try {
+                val bytes: ByteArray = globalHttpClient.get(imgUrl).body()
+                val bitmap = org.jetbrains.skia.Image.makeFromEncoded(bytes).toComposeImageBitmap()
+                imageCache[imgUrl] = bitmap
+                imageBitmap = bitmap
+            } catch (e: Exception) {
+                log("Failed to load image: ${e.message}")
+            }
+        }
+    }
+
     Surface(
         modifier = modifier
             .size(width = 75.dp, height = 105.dp)
             .rotate(rotation),
-        color = if (isFlipped) Color(0xFF1A1A1A) else Color(0xFF3A3A3A),
+        color = if (isFlipped) Color(0xFF000080) else Color(0xFF3A3A3A),
         shape = RoundedCornerShape(4.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, if (isFlipped && isPrivate) Color.Blue else Color.Gray),
         shadowElevation = elevation
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(4.dp)) {
-            if (isFlipped && !isPrivate) {
-                Text("BS", color = Color.White, style = MaterialTheme.typography.labelLarge)
+        log("CardPlaceholder drawing: name=$name isFlipped=$isFlipped")
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(4.dp)) {
+            if (isFlipped) {
+                Text("BS", color = Color.White, fontSize = 32.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            } else if (imageBitmap != null) {
+                androidx.compose.foundation.Image(
+                    bitmap = imageBitmap!!,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
             } else {
                 Text(
                     text = name, 

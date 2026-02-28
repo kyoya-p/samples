@@ -11,9 +11,7 @@ import kotlinx.serialization.json.*
 
 fun main() {
     embeddedServer(Netty, port = 8080) {
-        install(ContentNegotiation) {
-            json()
-        }
+        install(ContentNegotiation) { json() }
         routing {
             get("/api/cards") {
                 val sampleCards = listOf(

@@ -1,6 +1,9 @@
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.zIndex
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,8 +25,9 @@ import io.ktor.serialization.kotlinx.json.*
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
+import kotlinx.coroutines.launch
 
-enum class ZoneType { HAND, FIELD, TRASH, DECK, BURST, LIFE, RESERVE }
+enum class ZoneType { HAND, FIELD }
 
 @Stable
 class DragDropState {
@@ -68,21 +72,11 @@ class DragDropState {
     }
 }
 
-// Global JS bridge for logging
-@JsFun("(msg) => window.log(msg)")
-external fun jsLog(msg: String)
-
-fun log(msg: String) {
-    jsLog(msg)
-    println(msg)
-}
+// Global JS bridge for logging is now in Main.kt
 
 @Composable
 fun App() {
-    var lifeCores by remember { mutableStateOf(5) }
-    var reserveCores by remember { mutableStateOf(4) }
-    var soulCoreInReserve by remember { mutableStateOf(true) }
-    var trashCores by remember { mutableStateOf(0) }
+    log("App Recomposed")
 
     val handCards = remember { mutableStateListOf<CardInstance>() }
     val fieldCards = remember { mutableStateListOf<CardInstance>() }
@@ -92,16 +86,20 @@ fun App() {
     var stackIdCounter by remember { mutableStateOf(0) }
     val dragDropState = remember { DragDropState() }
     val focusRequester = remember { FocusRequester() }
+    var deckYaml by remember { mutableStateOf("") }
 
     fun cleanEmptyStacks() {
+        log("cleanEmptyStacks called. fieldStacks size before: " + fieldStacks.size)
         fieldStacks.removeAll { it.cards.isEmpty() }
         // Convert 1-card stacks to fieldCards
         val singleStacks = fieldStacks.filter { it.cards.size == 1 }
+        log("Found singleStacks count: " + singleStacks.size)
         singleStacks.forEach { stack ->
             val card = stack.cards.removeAt(0)
             card.offset = stack.offset
             fieldCards.add(card)
-            fieldStacks.remove(stack)
+            val removed = fieldStacks.remove(stack)
+            log("Removed single stack ID " + stack.id + ", success: " + removed + ", new fieldCards size: " + fieldCards.size)
         }
         
         val activeStackIds = fieldStacks.map { it.id }.toSet()
@@ -111,6 +109,7 @@ fun App() {
     }
 
     fun moveCard(instance: CardInstance, from: ZoneType, to: ZoneType, dropPos: Offset, grab: Offset, targetStackId: Int? = null, targetCardId: Int? = null) {
+        log("moveCard called. Instance ID: " + instance.id + ", to: " + to + ", dropPos: " + dropPos + ", grab: " + grab)
         handCards.remove(instance)
         fieldCards.remove(instance)
         fieldStacks.forEach { it.cards.remove(instance) }
@@ -122,14 +121,17 @@ fun App() {
             ZoneType.FIELD -> {
                 val fieldRect = dragDropState.zoneRects[ZoneType.FIELD] ?: Rect.Zero
                 val dropOffset = dropPos - fieldRect.topLeft - grab
+                log("FIELD move calculation: fieldRect.topLeft=" + fieldRect.topLeft + ", result dropOffset=" + dropOffset)
                 
                 val targetStack = fieldStacks.find { it.id == targetStackId }
                 val targetCard = fieldCards.find { it.id == targetCardId }
                 
                 if (targetStack != null) {
+                    log("Targeting stack ID: " + targetStackId)
                     targetStack.cards.lastOrNull()?.let { instance.rotation = it.rotation }
                     targetStack.cards.add(instance)
                 } else if (targetCard != null) {
+                    log("Targeting card ID: " + targetCardId + " to create new stack")
                     val newStack = CardStack(stackIdCounter++, targetCard.offset)
                     instance.rotation = targetCard.rotation
                     newStack.cards.add(targetCard)
@@ -137,6 +139,7 @@ fun App() {
                     fieldCards.remove(targetCard)
                     fieldStacks.add(newStack)
                 } else {
+                    log("Placing as single card at " + dropOffset)
                     instance.offset = dropOffset
                     fieldCards.add(instance)
                 }
@@ -174,25 +177,58 @@ fun App() {
     }
 
     fun initializeGame() {
-        lifeCores = 5; reserveCores = 4; soulCoreInReserve = true; trashCores = 0
+        log("initializeGame called")
         instanceIdCounter = 0; stackIdCounter = 0
         fieldStacks.clear(); fieldCards.clear(); handCards.clear()
-        
-        val phoenix = SearchCard("BS68-X01", "Phoenix Golem", "X", "8", "S", "Blue", listOf("Artificer", "Phoenix"), "")
-        val seaKing = SearchCard("BS68-X02", "Sea King", "X", "7", "S", "Blue", listOf("Fighter"), "")
-        
-        val allCards = (0 until 20).flatMap { 
-            listOf(CardInstance(instanceIdCounter++, phoenix), CardInstance(instanceIdCounter++, seaKing))
-        }.onEach { 
-            it.isFlipped = true 
-            it.rotation = 0f
-        }
-        
-        val deckStack = CardStack(stackIdCounter++, Offset(650f, 20f))
-        deckStack.cards.addAll(allCards)
-        fieldStacks.add(deckStack)
     }
 
+        suspend fun startDeck(yaml: String) {
+            initializeGame()
+            val actualYaml = if (yaml.isBlank()) "bs01-001:1" else yaml
+            log("Starting deck from YAML: " + actualYaml)
+            val lines = actualYaml.split("\n")
+            
+            var currentOffsetX = 50f
+            val currentOffsetY = 20f
+            var totalCards = 0
+    
+            lines.forEach { line ->
+                if (line.isBlank() || !line.contains(":")) return@forEach
+                val parts = line.split(":")
+                val id = parts[0].trim().uppercase()
+                val count = parts[1].trim().toIntOrNull() ?: 1
+                
+                // Generic name generation or hardcoded fallback
+                val name = when (id) {
+                    "BS01-001" -> "ゴラドン"
+                    "BS01-002" -> "ドラグノ祈祷師"
+                    "BS68-X01" -> "鳳凰竜フェニックス・ゴレム"
+                    else -> "Card $id"
+                }
+                
+                val imgUrl = "https://www.battlespirits.com/images/cardlist/${id}.webp"
+                val card = SearchCard(id, name, "C", "0", "S", "Red", emptyList(), imgUrl)
+    
+                repeat(count) {
+                    val inst = CardInstance(instanceIdCounter++, card)
+                    inst.isFlipped = false 
+                    inst.rotation = 0f
+                    val deckStack = CardStack(stackIdCounter++, Offset(currentOffsetX, currentOffsetY))
+                    deckStack.cards.add(inst)
+                    fieldStacks.add(deckStack)
+                    currentOffsetX += 120f
+                    if (currentOffsetX > 800f) {
+                        currentOffsetX = 50f
+                        // Move down if row is full? For now just keep it simple
+                    }
+                    totalCards++
+                }
+            }
+            if (totalCards > 0) {
+                log("Deck started with " + totalCards + " cards")
+            }
+            cleanEmptyStacks()
+        }
     LaunchedEffect(Unit) { 
         initializeGame()
         focusRequester.requestFocus()
@@ -219,18 +255,40 @@ fun App() {
                     true
                 } else false
             }
-            .pointerInput(Unit) {
-
-                detectTapGestures { offset ->
-                    log("Global Click at: x=" + offset.x + ", y=" + offset.y)
-                }
-            }
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    log("BOX CLICK at $offset")
+                }
+            }) {
+                val coroutineScope = rememberCoroutineScope()
+                val onMoveCard: (CardInstance, ZoneType, ZoneType, Offset, Offset, Int?, Int?) -> Unit = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) }
+                val onMoveStack: (CardStack, Offset, Offset, Int?, Int?) -> Unit = { s, p, g, ts, tc -> moveStack(s, p, g, ts, tc) }
+
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(modifier = Modifier.weight(0.5f).fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant), 
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Opponent Area (Life: 5)", modifier = Modifier.padding(start = 16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Opponent Area (Life: 5)", modifier = Modifier.padding(start = 16.dp))
+                            Spacer(Modifier.width(20.dp))
+                            TextField(
+                                value = deckYaml,
+                                onValueChange = { deckYaml = it },
+                                placeholder = { Text("bs01-001:1") },
+                                modifier = Modifier.width(200.dp).height(50.dp).onGloballyPositioned {
+                                    val b = it.boundsInWindow()
+                                    log("Deck YAML TextField Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
+                                }
+                            )
+                            Button(onClick = { 
+                                val yaml = deckYaml
+                                log("Start Button Clicked with yaml: " + yaml)
+                                coroutineScope.launch { startDeck(yaml) } 
+                            }, modifier = Modifier.onGloballyPositioned {
+                                val b = it.boundsInWindow()
+                                log("Start Button Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
+                            }) { Text("Start") }
+                        }
                         Button(
                             onClick = { initializeGame() }, 
                             modifier = Modifier
@@ -245,55 +303,14 @@ fun App() {
                     }
 
                     Row(modifier = Modifier.weight(3f).fillMaxWidth()) {
-                        Column(modifier = Modifier.width(120.dp).fillMaxHeight().padding(8.dp), verticalArrangement = Arrangement.SpaceBetween) {
-                            ZoneBox("Burst", modifier = Modifier.weight(1f).padding(bottom = 8.dp))
-                            ZoneBox("Life: $lifeCores", modifier = Modifier.weight(1.5f).padding(bottom = 8.dp), color = Color(0xFF6200EE))
-                            ZoneBox("Reserve: $reserveCores" + if (soulCoreInReserve) "\n(+S)" else "", 
-                                modifier = Modifier.weight(2f), color = Color(0xFF2C2C2C))
-                        }
-
-                        Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(8.dp)
-                            .onGloballyPositioned { dragDropState.updateZoneRect(ZoneType.FIELD, it.boundsInWindow()) }
-                            .background(Color(0xFF1E1E1E), shape = MaterialTheme.shapes.medium)) {
+                        Box(modifier = Modifier.fillMaxSize().padding(8.dp)
+                            .onGloballyPositioned { dragDropState.updateZoneRect(ZoneType.FIELD, it.boundsInWindow()) }) {
                             Text("Field", style = MaterialTheme.typography.labelLarge, color = Color.Gray, modifier = Modifier.padding(8.dp))
-                            
-                            // Render Single Cards
-                            fieldCards.forEach { card ->
-                                DraggableCard(
-                                    instance = card,
-                                    zone = ZoneType.FIELD,
-                                    dragDropState = dragDropState,
-                                    onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
-                                    onDrawCard = { i ->
-                                        fieldCards.remove(i)
-                                        i.isFlipped = false
-                                        handCards.add(i)
-                                        cleanEmptyStacks()
-                                        log("Card drawn from field. Hand size: " + handCards.size)
-                                    },
-                                    modifier = Modifier.offset { IntOffset(card.offset.x.toInt(), card.offset.y.toInt()) }
-                                )
-                            }
-                            
-                            // Render Stacks
-                            fieldStacks.forEach { stack ->
-                                CardStackView(
-                                    stack = stack, 
-                                    dragDropState = dragDropState, 
-                                    onMoveCard = ::moveCard, 
-                                    onMoveStack = ::moveStack,
-                                    onDrawCard = { card ->
-                                        stack.cards.remove(card)
-                                        card.isFlipped = false
-                                        handCards.add(card)
-                                        cleanEmptyStacks()
-                                        log("Card drawn from stack. Hand size: " + handCards.size)
-                                    }
-                                )
-                            }
                         }
                     }
+                }
 
+                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
                     Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp)
                         .onGloballyPositioned { dragDropState.updateZoneRect(ZoneType.HAND, it.boundsInWindow()) }) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -312,10 +329,6 @@ fun App() {
                                             log("Draw Button Bounds: L=" + b.left + ", T=" + b.top + ", R=" + b.right + ", B=" + b.bottom)
                                         }
                                 ) { Text("Draw", fontSize = 18.sp) }
-                                Button(
-                                    onClick = { soulCoreInReserve = !soulCoreInReserve },
-                                    modifier = Modifier.height(50.dp).padding(horizontal = 4.dp)
-                                ) { Text("S-Core", fontSize = 18.sp) }
                             }
                         }
                         Row(modifier = Modifier.height(130.dp).fillMaxWidth().padding(horizontal = 8.dp), 
@@ -325,7 +338,7 @@ fun App() {
                                     instance = instance, 
                                     zone = ZoneType.HAND, 
                                     dragDropState = dragDropState, 
-                                    onMove = { i, f, t, p, g, ts, tc -> moveCard(i, f, t, p, g, ts, tc) },
+                                    onMove = onMoveCard,
                                     onDrawCard = null,
                                     isPrivate = true,
                                     modifier = Modifier.size(110.dp)
@@ -338,14 +351,51 @@ fun App() {
                 // Drag Overlay
                 dragDropState.draggedCard?.let { instance ->
                     val overlayPos = dragDropState.dragPosition - dragDropState.grabOffset
-                    Box(modifier = Modifier.offset { IntOffset(overlayPos.x.toInt(), overlayPos.y.toInt()) }) {
-                        CardPlaceholder(instance.card.name, isFlipped = instance.isFlipped, isPrivate = true, rotation = instance.rotation, elevation = 12.dp)
+                    Box(modifier = Modifier.offset { IntOffset(overlayPos.x.toInt(), overlayPos.y.toInt()) }.zIndex(100f)) {
+                        CardPlaceholder(instance.card.name, imgUrl = instance.card.imgUrl, isFlipped = instance.isFlipped, isPrivate = true, rotation = instance.rotation, elevation = 12.dp)
                     }
                 }
                 dragDropState.draggedStack?.let { stack ->
                     val overlayPos = dragDropState.dragPosition - dragDropState.grabOffset
-                    Box(modifier = Modifier.offset { IntOffset(overlayPos.x.toInt(), overlayPos.y.toInt()) }) {
-                        CardStackContent(stack, elevation = 8.dp)
+                    Box(modifier = Modifier.offset { IntOffset(overlayPos.x.toInt(), overlayPos.y.toInt()) }.zIndex(100f)) {
+                        CardStackContent(stack, dragDropState, onMoveCard, onMoveStack, elevation = 8.dp)
+                    }
+                }
+
+                // Render Field Cards in a non-blocking overlay (MUST BE LAST TO BE ON TOP)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    fieldCards.forEach { card ->
+                        Box(modifier = Modifier.offset { IntOffset(card.offset.x.toInt(), card.offset.y.toInt()) }) {
+                            DraggableCard(
+                                instance = card,
+                                zone = ZoneType.FIELD,
+                                dragDropState = dragDropState,
+                                onMove = onMoveCard,
+                                onDrawCard = { i ->
+                                    fieldCards.remove(i)
+                                    i.isFlipped = false
+                                    handCards.add(i)
+                                    cleanEmptyStacks()
+                                    log("Card drawn from field. Hand size: " + handCards.size)
+                                }
+                            )
+                        }
+                    }
+                    
+                    fieldStacks.forEach { stack ->
+                        CardStackView(
+                            stack = stack, 
+                            dragDropState = dragDropState, 
+                            onMoveCard = onMoveCard, 
+                            onMoveStack = onMoveStack,
+                            onDrawCard = { card ->
+                                stack.cards.remove(card)
+                                card.isFlipped = false
+                                handCards.add(card)
+                                cleanEmptyStacks()
+                                log("Card drawn from stack. Hand size: " + handCards.size)
+                            }
+                        )
                     }
                 }
             }
