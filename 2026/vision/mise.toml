@@ -1,5 +1,4 @@
 [tools]
-node = "22"
 java = "21"
 
 [tasks.screenshot]
@@ -11,11 +10,6 @@ run = "mise run screenshot"
 description = "画像をAIで解析する (引数: image_path)"
 dir = "geminiAgenticVision"
 run = "mise run analyze"
-
-[tasks.sample1]
-description = "定期的なスクリーンキャプチャを実行する (Java版, 2秒間隔)"
-dir = "screencapt"
-run = "java -cp bin Main 2 60 300"
 
 [tasks.record-1h]
 description = "定期的なスクリーンキャプチャを実行する 1h,60min,5秒間隔"
