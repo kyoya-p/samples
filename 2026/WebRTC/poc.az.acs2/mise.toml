@@ -18,9 +18,17 @@ az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
 echo "Creating ACS resource: $ACS_NAME..."
 az communication create --name "$ACS_NAME" --resource-group "$RESOURCE_GROUP" --location "Global" --data-location "United States"
 
+echo "Waiting for ACS resource to be ready (120s)..."
+sleep 120
+
 CONNECTION_STRING=$(az communication list-key --name "$ACS_NAME" --resource-group "$RESOURCE_GROUP" --query "primaryConnectionString" -o tsv)
-echo "ACS_CONNECTION_STRING=$CONNECTION_STRING"
+echo "ACS_CONNECTION_STRING=$CONNECTION_STRING" > .env
+echo "ACS_CONNECTION_STRING is saved to .env"
 """
+
+[tasks."get:turn"]
+description = "Get ACS TURN credentials"
+run = "uv run get_turn_credentials.py"
 
 [tasks."remove:acs"]
 description = "Remove Azure Communication Services resources"
