@@ -1,0 +1,11 @@
+[tools]
+azure-cli = "latest"
+java = "21"
+
+[tasks."setup:amper"]
+description = "Amper CLIをダウンロードしてセットアップ"
+run = """
+curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
+chmod +x amper
+./amper update -c
+"""
