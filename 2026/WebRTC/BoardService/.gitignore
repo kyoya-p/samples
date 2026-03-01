@@ -1,0 +1,6 @@
+/.idea/
+/.playwright-mcp/
+/amper
+/amper.bat
+/server/public/build/
+/client/build/

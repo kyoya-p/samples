@@ -30,34 +30,19 @@ Webクライアントは下記それぞれの接続方式
 
 # セットアップ
 ```bash
-# ツール類のインストール
 mise install
-
-# Amperのセットアップ
 mise run setup:amper
+az login # azureにログイン
 ```
 
-# デプロイ (Azure)
-## 1. 準備
-Azure にログイン
-```bash
-az login
-```
-
-## 2. リソース作成 & ビルド & デプロイ
+# リソース作成 & ビルド & デプロイ
 以下の手順で、Azure ACSのリソース作成、コンテナイメージのビルド(ACR)、およびACIへのデプロイを実行。
 ```bash
-# 1. クライアントのビルドと公開ディレクトリへの配置
-cd client && ../amper build && cd ..
-mkdir -p server/public/build/tasks/_client_linkJs/
-cp client/index.html server/public/
-cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_client_linkJs/
-
-# 2. Azureリソース構築とデプロイ実行
-./deploy.sh
+mise run deploy  # build/depolyを実行
 ```
 
 ## 3. 検証
 - Azure CloudとPlaywrightブラウザによる通信テスト
+- デプロイで表示されたURLを開く
 - スクショ(playwright用の一時フォルダに格納)で操作の結果を確認
 - 繰り返し修正市テストする様指示ない場合、判断結果と対応方針を表示しテスト終了
