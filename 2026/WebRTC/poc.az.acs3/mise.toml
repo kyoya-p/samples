@@ -1,0 +1,24 @@
+[tools]
+azure-cli = "latest"
+java = "21"
+
+[tasks."setup:amper"]
+description = "Amper CLIをダウンロードしてセットアップ"
+run = """
+curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
+chmod +x amper
+./amper update -c
+"""
+
+[tasks.serve]
+description = "Webクライアントをホスト"
+run = "python3 -m http.server 8081 --directory client"
+
+[tasks.test]
+description = "サーバーとクライアントのテストを実行"
+run = """
+echo "Running Server Tests..."
+cd server && npm test
+echo "Running Client Tests..."
+cd ../client && ../amper test
+"""

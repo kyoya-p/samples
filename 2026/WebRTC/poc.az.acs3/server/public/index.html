@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebRTC Chaos & Fade Sync</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #f0f2f5; }
+        .boxes { display: flex; gap: 20px; width: 100%; max-width: 1000px; margin-top: 20px; }
+        .box-container { flex: 1; text-align: center; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        canvas { width: 100%; height: 400px; border: 1px solid #ccc; border-radius: 5px; cursor: crosshair; touch-action: none; background: #fff; }
+        button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #0078d4; color: white; border: none; border-radius: 5px; margin: 5px; }
+        .hex-code { font-family: monospace; margin-top: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>WebRTC Chaos Color & Click Sync (Fade Out)</h1>
+    <div>
+        <button id="btnStart">Start Chaos Color</button>
+        <button id="btnClear" style="background:#666">Clear All</button>
+    </div>
+
+    <div class="boxes">
+        <div class="box-container">
+            <h3>Local (Drag to draw)</h3>
+            <canvas id="localCanvas"></canvas>
+            <div id="localHex" class="hex-code">#FFFFFF</div>
+        </div>
+        <div class="box-container">
+            <h3>Remote (P2P Sync)</h3>
+            <canvas id="remoteCanvas"></canvas>
+            <div id="remoteHex" class="hex-code">#FFFFFF</div>
+        </div>
+    </div>
+
+    <script type="module" src="./build/tasks/_client_linkJs/client.mjs"></script>
+    <script>
+        const socket = io();
+        const localCanvas = document.getElementById('localCanvas');
+        const remoteCanvas = document.getElementById('remoteCanvas');
+        const localCtx = localCanvas.getContext('2d');
+        const remoteCtx = remoteCanvas.getContext('2d');
+
+        let localDots = [];
+        let remoteDots = [];
+        const FADE_DURATION = 20000; // 20 seconds
+
+        function initCanvas(canvas) {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.onresize = () => { initCanvas(localCanvas); initCanvas(remoteCanvas); };
+        initCanvas(localCanvas); initCanvas(remoteCanvas);
+
+        function addDot(list, x, y, color) {
+            list.push({ x, y, color, startTime: Date.now() });
+        }
+
+        // --- アニメーションループ ---
+        function animate() {
+            const now = Date.now();
+            
+            [ {ctx: localCtx, dots: localDots, canvas: localCanvas}, 
+              {ctx: remoteCtx, dots: remoteDots, canvas: remoteCanvas} ].forEach(set => {
+                set.ctx.clearRect(0, 0, set.canvas.width, set.canvas.height);
+                
+                // フィルタリングと描画
+                set.dots = set.dots.filter(dot => {
+                    const elapsed = now - dot.startTime;
+                    if (elapsed >= FADE_DURATION) return false;
+                    
+                    const alpha = 1.0 - (elapsed / FADE_DURATION);
+                    set.ctx.globalAlpha = alpha;
+                    set.ctx.fillStyle = dot.color;
+                    set.ctx.beginPath();
+                    set.ctx.arc(dot.x, dot.y, 5, 0, Math.PI * 2);
+                    set.ctx.fill();
+                    return true;
+                });
+                // 更新されたリストを戻す（簡易的）
+                if (set.ctx === localCtx) localDots = set.dots;
+                else remoteDots = set.dots;
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- メッセージ送信 ---
+        window.emitColor = (rgb) => socket.emit('signal', { room: 'demo-room', type: 'color', value: rgb });
+        window.emitPoint = (x, y) => socket.emit('signal', { room: 'demo-room', type: 'point', x, y });
+
+        // --- メッセージ受信 ---
+        socket.on('signal', (data) => {
+            if (window.onRemoteData) window.onRemoteData(data);
+        });
+
+        window.updateRemoteColorUI = (rgb) => {
+            document.getElementById('remoteCanvas').style.borderColor = rgb;
+            document.getElementById('remoteHex').innerText = rgb;
+        };
+        window.drawRemotePoint = (x, y) => {
+            addDot(remoteDots, x * remoteCanvas.width, y * remoteCanvas.height, "#d83b01");
+        };
+
+        // --- マウス操作 (連続描画) ---
+        let isDrawing = false;
+        function handleMove(e) {
+            if (!isDrawing) return;
+            const rect = localCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            const xRel = (clientX - rect.left) / rect.width;
+            const yRel = (clientY - rect.top) / rect.height;
+            const xAbs = clientX - rect.left;
+            const yAbs = clientY - rect.top;
+
+            addDot(localDots, xAbs, yAbs, "#0078d4");
+            window.webrtcController.sendPoint(xRel, yRel);
+        }
+
+        localCanvas.onmousedown = (e) => { isDrawing = true; handleMove(e); };
+        window.onmouseup = () => { isDrawing = false; };
+        localCanvas.onmousemove = handleMove;
+        
+        // Touch対応
+        localCanvas.ontouchstart = (e) => { isDrawing = true; handleMove(e); e.preventDefault(); };
+        localCanvas.ontouchmove = (e) => { handleMove(e); e.preventDefault(); };
+        localCanvas.ontouchend = () => { isDrawing = false; };
+
+        window.onload = () => {
+            socket.emit('join', 'demo-room');
+            document.getElementById('btnStart').onclick = () => {
+                window.webrtcController.startChaosStream((rgb) => {
+                    localCanvas.style.borderColor = rgb;
+                    document.getElementById('localHex').innerText = rgb;
+                });
+            };
+            document.getElementById('btnClear').onclick = () => {
+                localDots = [];
+                remoteDots = [];
+            };
+        };
+    </script>
+</body>
+</html>
