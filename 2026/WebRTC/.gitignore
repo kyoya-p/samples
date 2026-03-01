@@ -3,3 +3,5 @@ node_modules/
 /.playwright-mcp/
 poc.*/cert.pem
 poc.*/key.pem
+/BoardService/amper
+/BoardService/amper.bat

@@ -39,7 +39,7 @@ mise run setup:amper
 
 # デプロイ (Azure)
 ## 1. 準備
-Azure CLIでログイン済みであること。
+Azure にログイン
 ```bash
 az login
 ```
