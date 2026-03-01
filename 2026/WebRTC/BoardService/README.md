@@ -5,8 +5,8 @@ Webクライアントは下記それぞれの接続方式
 - NAT/PROXY経由のグローバルIP通信
 - LAN IP接続
 
-本実装では、Azure ACSのCommunicationRelayClientを使用してICEサーバー情報を取得し、WebRTC PeerConnectionを確立します。
-データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて行われます。
+本実装では、Azure ACSのCommunicationRelayClientを使用してICEサーバー情報を取得し、WebRTC PeerConnectionを確立
+データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて実行される
 
 # 知見 (Findings)
 - **Azure ACS TURN 資格情報の取得と認証**: `CommunicationRelayClient` を使用して TURN 資格情報を取得する際は、単なる接続文字列だけでなく、`CommunicationIdentityClient` で作成した **`CommunicationUserIdentifier` (Identity)** を引数に渡す必要があります。これを行わない場合、Azure の内部ゲートウェイ（Front Door 等）から 404 Error が返され、リレー設定の取得に失敗します。
