@@ -6,7 +6,7 @@ Webクライアントは下記それぞれの接続方式
 - LAN IP接続
 
 本実装では、Azure ACSのCommunicationRelayClientを使用してICEサーバー情報を取得し、WebRTC PeerConnectionを確立します。
-データ同期（描画点やカオスカラー）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて行われます。
+データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて行われます。
 
 # 知見 (Findings)
 - **Azure ACS TURN 資格情報の取得と認証**: `CommunicationRelayClient` を使用して TURN 資格情報を取得する際は、単なる接続文字列だけでなく、`CommunicationIdentityClient` で作成した **`CommunicationUserIdentifier` (Identity)** を引数に渡す必要があります。これを行わない場合、Azure の内部ゲートウェイ（Front Door 等）から 404 Error が返され、リレー設定の取得に失敗します。
@@ -26,7 +26,7 @@ Webクライアントは下記それぞれの接続方式
 - mise: 2026.2.11
 - azure-cli (miseを使用し導入)
 - java (miseを使用し導入)
-- Amper (mise taskを使用し導入)
+- amper (mise taskを使用し導入)
 
 # セットアップ
 ```bash
@@ -58,6 +58,6 @@ cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_clien
 ```
 
 ## 3. 検証
-- Playwrightによるブラウザテスト
+- Azure CloudとPlaywrightブラウザによる通信テスト
 - スクショ(playwright用の一時フォルダに格納)で操作の結果を確認
 - 繰り返し修正市テストする様指示ない場合、判断結果と対応方針を表示しテスト終了

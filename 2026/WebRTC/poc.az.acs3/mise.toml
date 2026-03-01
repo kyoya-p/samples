@@ -9,7 +9,3 @@ curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
 chmod +x amper
 ./amper update -c
 """
-
-[tasks.serve]
-description = "Webクライアントをホスト"
-run = "python3 -m http.server 8081 --directory client"
