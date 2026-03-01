@@ -17,6 +17,7 @@
     <h1>WebRTC Chaos Color & Click Sync (Fade Out)</h1>
     <div>
         <button id="btnStart">Start Chaos Color</button>
+        <button id="btnConnect" style="background:#28a745">Connect P2P (WebRTC)</button>
         <button id="btnClear" style="background:#666">Clear All</button>
     </div>
 
@@ -36,6 +37,13 @@
     <script type="module" src="./build/tasks/_client_linkJs/client.mjs"></script>
     <script>
         const socket = io();
+
+        // --- Bridge for Kotlin Controller ---
+        window.emitSignal = (data) => socket.emit('signal', data);
+        socket.on('signal', (data) => {
+            if (window.onRemoteSignal) window.onRemoteSignal(data);
+        });
+
         const localCanvas = document.getElementById('localCanvas');
         const remoteCanvas = document.getElementById('remoteCanvas');
         const localCtx = localCanvas.getContext('2d');
@@ -43,15 +51,17 @@
 
         let localDots = [];
         let remoteDots = [];
+        window.localDots = localDots;
+        window.remoteDots = remoteDots;
         const FADE_DURATION = 20000; // 20 seconds
 
         function initCanvas(canvas) {
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            canvas.width = rect.width || 400;
+            canvas.height = rect.height || 400;
+            console.log(`Canvas initialized: ${canvas.id} ${canvas.width}x${canvas.height}`);
         }
         window.onresize = () => { initCanvas(localCanvas); initCanvas(remoteCanvas); };
-        initCanvas(localCanvas); initCanvas(remoteCanvas);
 
         function addDot(list, x, y, color) {
             list.push({ x, y, color, startTime: Date.now() });
@@ -60,13 +70,15 @@
         // --- アニメーションループ ---
         function animate() {
             const now = Date.now();
+            const FADE_DURATION = 60000; // Increase to 60s for easier testing
             
             [ {ctx: localCtx, dots: localDots, canvas: localCanvas}, 
               {ctx: remoteCtx, dots: remoteDots, canvas: remoteCanvas} ].forEach(set => {
+                if (set.canvas.width === 0) initCanvas(set.canvas);
                 set.ctx.clearRect(0, 0, set.canvas.width, set.canvas.height);
                 
                 // フィルタリングと描画
-                set.dots = set.dots.filter(dot => {
+                const updatedDots = set.dots.filter(dot => {
                     const elapsed = now - dot.startTime;
                     if (elapsed >= FADE_DURATION) return false;
                     
@@ -74,33 +86,32 @@
                     set.ctx.globalAlpha = alpha;
                     set.ctx.fillStyle = dot.color;
                     set.ctx.beginPath();
-                    set.ctx.arc(dot.x, dot.y, 5, 0, Math.PI * 2);
+                    set.ctx.arc(dot.x, dot.y, 10, 0, Math.PI * 2); // Bigger dots (10px)
                     set.ctx.fill();
                     return true;
                 });
-                // 更新されたリストを戻す（簡易的）
-                if (set.ctx === localCtx) localDots = set.dots;
-                else remoteDots = set.dots;
+
+                if (set.ctx === localCtx) {
+                    localDots = updatedDots;
+                    window.localDots = localDots;
+                } else {
+                    remoteDots = updatedDots;
+                    window.remoteDots = remoteDots;
+                }
             });
 
             requestAnimationFrame(animate);
         }
         animate();
 
-        // --- メッセージ送信 ---
-        window.emitColor = (rgb) => socket.emit('signal', { room: 'demo-room', type: 'color', value: rgb });
-        window.emitPoint = (x, y) => socket.emit('signal', { room: 'demo-room', type: 'point', x, y });
-
         // --- メッセージ受信 ---
-        socket.on('signal', (data) => {
-            if (window.onRemoteData) window.onRemoteData(data);
-        });
-
         window.updateRemoteColorUI = (rgb) => {
+            console.log("Remote color update:", rgb);
             document.getElementById('remoteCanvas').style.borderColor = rgb;
             document.getElementById('remoteHex').innerText = rgb;
         };
         window.drawRemotePoint = (x, y) => {
+            console.log("Remote point received:", x, y);
             addDot(remoteDots, x * remoteCanvas.width, y * remoteCanvas.height, "#d83b01");
         };
 
@@ -131,12 +142,17 @@
         localCanvas.ontouchend = () => { isDrawing = false; };
 
         window.onload = () => {
+            initCanvas(localCanvas);
+            initCanvas(remoteCanvas);
             socket.emit('join', 'demo-room');
             document.getElementById('btnStart').onclick = () => {
                 window.webrtcController.startChaosStream((rgb) => {
                     localCanvas.style.borderColor = rgb;
                     document.getElementById('localHex').innerText = rgb;
                 });
+            };
+            document.getElementById('btnConnect').onclick = () => {
+                window.webrtcController.connectP2P();
             };
             document.getElementById('btnClear').onclick = () => {
                 localDots = [];
