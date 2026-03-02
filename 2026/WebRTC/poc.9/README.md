@@ -38,10 +38,10 @@ az login  # or # az login --use-device-cod
 # az account set --subscription "サブスクリプション名またはID"
 ```
 
-# リソース作成 & ビルド & デプロイ
-以下の手順で、Azure ACSのリソース作成、コンテナイメージのビルド(ACR)、およびACIへのデプロイを実行。
+# デプロイ
+Azure にサービスを配備
 ```bash
-mise run deploy  # build/depolyを実行
+mise run deploy
 ```
 
 ## 3. 検証

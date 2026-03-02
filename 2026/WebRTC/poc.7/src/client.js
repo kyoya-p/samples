@@ -3,11 +3,33 @@ let ws;
 let localStream;
 let iceServers = [];
 
+// UIの調整: ボード（ビデオコンテナ）を縦並びにし、ログを TextArea に置換
+window.addEventListener('DOMContentLoaded', () => {
+    const container = document.querySelector('.container');
+    if (container) {
+        container.style.flexDirection = 'column';
+    }
+
+    const oldLogs = document.getElementById('logs');
+    if (oldLogs && oldLogs.tagName !== 'TEXTAREA') {
+        const textArea = document.createElement('textarea');
+        textArea.id = 'logs';
+        textArea.style.width = '100%';
+        textArea.style.height = '200px';
+        textArea.style.marginTop = '10px';
+        textArea.style.display = 'block';
+        textArea.readOnly = true;
+        oldLogs.parentNode.replaceChild(textArea, oldLogs);
+    }
+});
+
 const log = (msg) => {
-    const div = document.createElement('div');
-    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    document.getElementById('logs').appendChild(div);
-    document.getElementById('logs').scrollTop = document.getElementById('logs').scrollHeight;
+    const textArea = document.getElementById('logs');
+    if (textArea) {
+        const timestamp = new Date().toLocaleTimeString();
+        textArea.value += `[${timestamp}] ${msg}\n`;
+        textArea.scrollTop = textArea.scrollHeight;
+    }
 };
 
 // サーバーから ICE サーバー設定を取得
