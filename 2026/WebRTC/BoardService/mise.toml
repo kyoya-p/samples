@@ -1,4 +1,6 @@
 [tools]
+python = "latest"
+pipx = "latest"
 azure-cli = "latest"
 java = "21"
 
@@ -24,5 +26,5 @@ cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_clien
 description = "Deploy to Azure"
 depends = ["build"]
 run = """
-./deploy.sh
+bash ./deploy.sh
 """

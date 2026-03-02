@@ -13,7 +13,7 @@ Webクライアントは下記それぞれの接続方式
 - **Kotlin/JS のブラウザテスト手法**: Amper でビルドされた Kotlin/JS アプリケーション (`.mjs`) をブラウザで自動テストする場合、**Playwright** 等のツールを用いてブラウザを起動し、グローバルに `suite` や `test` (QUnit/Jasmine 互換) のモックインターフェースを注入することで、`kotlin-test` の実行結果をホスト側の Node.js でキャプチャ可能です。
 - **WebRTC DataChannel による同期の実証**: Azure ACI 上にデプロイされた環境において、複数クライアント（ブラウザタブ）間で **DataChannel が正常にオープン（"DataChannel opened"）** されることをコンソールログおよび Playwright テストで確認しました。Socket.io をシグナリングに使用し、DataChannel を介したリアルタイムな描画同期が可能な状態であることを実証済みです。
 
-- **Azure ACS Network Traversal のステータス**: 一時的にサービス廃止の懸念がありましたが、Identity 連携を正しく行うことで現在も TURN サービスが利用可能であることを実証しました。
+- **Azure ACS Network Traversal のステータス**: 一時的にサービス廃止の懸念あり、Identity 連携を正しく行うことで現在も TURN サービスが利用可能であることを実証。
 
 # 実装のポイント
 - **Server**: `@azure/communication-identity` と `@azure/communication-network-traversal` を使用して、認証済みの ICE サーバー設定を `/ice-servers` エンドポイントで提供。
@@ -30,9 +30,12 @@ Webクライアントは下記それぞれの接続方式
 
 # セットアップ
 ```bash
+mise trust
 mise install
 mise run setup:amper
-az login # azureにログイン
+az login  # or # az login --use-device-cod 
+# az account list --output table
+# az account set --subscription "サブスクリプション名またはID"
 ```
 
 # リソース作成 & ビルド & デプロイ

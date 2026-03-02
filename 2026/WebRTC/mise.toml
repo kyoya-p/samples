@@ -1,5 +1,0 @@
-[tools]
-azure-cli = "latest"
-node = "latest"
-python = "latest"
-uv = "latest"
