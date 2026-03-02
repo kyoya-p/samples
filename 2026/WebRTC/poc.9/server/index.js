@@ -21,14 +21,29 @@ app.get('/ice-servers', async (req, res) => {
     const staticStun = [{ urls: 'stun:stun.l.google.com:19302' }];
     if (!relayClient) return res.json(staticStun);
 
-    try {
-        const user = await identityClient.createUser();
-        const config = await relayClient.getRelayConfiguration(user);
-        res.json([...config.iceServers, ...staticStun]);
-    } catch (error) {
-        console.error("ACS Relay Error:", error.message);
-        res.json(staticStun);
+    let lastError = null;
+    // Azure 側の構成伝播待ちを考慮し、最大3回リトライ
+    for (let i = 0; i < 3; i++) {
+        try {
+            const user = await identityClient.createUser();
+            // 一部の SDK バージョンやリージョンでの挙動を考慮し、user を直接渡す
+            const config = await relayClient.getRelayConfiguration(user);
+            console.log("ACS Relay Configuration fetched successfully on attempt", i + 1);
+            return res.json([...config.iceServers, ...staticStun]);
+        } catch (error) {
+            lastError = error;
+            console.warn(`ACS Relay Attempt ${i + 1} failed:`, error.message);
+            if (error.message.includes("404")) {
+                // 404 の場合は構成待ちの可能性があるため、少し待機してリトライ
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                continue;
+            }
+            break; 
+        }
     }
+
+    console.error("ACS Relay Final Error:", lastError ? lastError.message : "Unknown error");
+    res.json(staticStun);
 });
 
 const server = http.createServer(app);
