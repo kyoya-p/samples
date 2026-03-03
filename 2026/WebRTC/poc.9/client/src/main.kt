@@ -72,7 +72,25 @@ class WebRTCController(val signalingUrl: String) {
         }
 
         peerConnection.onconnectionstatechange = { _: dynamic ->
-            println("WebRTC ConnectionState: ${peerConnection.connectionState}")
+            val state = peerConnection.connectionState.toString()
+            println("WebRTC ConnectionState: $state")
+            if (state == "connected") {
+                peerConnection.getStats().then { stats: dynamic ->
+                    var selectedPairId = ""
+                    stats.forEach { report: dynamic ->
+                        if (report.type == "transport" && report.selectedCandidatePairId != null) {
+                            selectedPairId = report.selectedCandidatePairId as String
+                        }
+                    }
+                    stats.forEach { report: dynamic ->
+                        if (report.id == selectedPairId) {
+                            val local = stats.get(report.localCandidateId)
+                            val remote = stats.get(report.remoteCandidateId)
+                            println("Selected Path: Local[${local.candidateType}] <-> Remote[${remote.candidateType}]")
+                        }
+                    }
+                }
+            }
         }
 
         peerConnection.oniceconnectionstatechange = { _: dynamic ->
