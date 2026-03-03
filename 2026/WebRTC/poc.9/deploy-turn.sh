@@ -10,6 +10,7 @@ DNS_LABEL="webrtc-turn-${RANDOM}"
 echo "Ensuring Resource Group: $RESOURCE_GROUP..."
 az group create --name $RESOURCE_GROUP --location $LOCATION || true
 
+# ACR Resource Check or Create
 ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[0].name" -o tsv)
 if [ -z "$ACR_NAME" ]; then
     ACR_NAME="${ACR_NAME_PREFIX}$RANDOM"
@@ -17,13 +18,16 @@ if [ -z "$ACR_NAME" ]; then
     az acr create --resource-group $RESOURCE_GROUP --name $ACR_NAME --sku Basic --admin-enabled true
 fi
 
+# Delete existing container if any to avoid update issues
+echo "Removing existing container if any..."
+az container delete --resource-group $RESOURCE_GROUP --name $ACI_NAME --yes || true
+
 echo "Building Coturn image in ACR: $ACR_NAME..."
 az acr build --registry $ACR_NAME --image webrtc-turn:latest turn/
 
-echo "Deploying initial Coturn to ACI to get IP..."
+echo "Deploying Coturn to ACI..."
 ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
 
-# 引数の順序を整理
 az container create \
   --resource-group $RESOURCE_GROUP \
   --name $ACI_NAME \
@@ -41,22 +45,8 @@ az container create \
 PUBLIC_IP=$(az container show --resource-group $RESOURCE_GROUP --name $ACI_NAME --query ipAddress.ip -o tsv)
 FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $ACI_NAME --query ipAddress.fqdn -o tsv)
 
-echo "Updating Coturn with --external-ip: $PUBLIC_IP..."
-az container create \
-  --resource-group $RESOURCE_GROUP \
-  --name $ACI_NAME \
-  --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
-  --dns-name-label $DNS_LABEL \
-  --ports 3478 \
-  --protocol UDP \
-  --os-type linux \
-  --cpu 1 \
-  --memory 1.0 \
-  --registry-login-server ${ACR_NAME}.azurecr.io \
-  --registry-username $ACR_NAME \
-  --registry-password "$ACR_PASS" \
-  --command-line "turnserver --listening-port=3478 --fingerprint --lt-cred-mech --user=user:password123 --realm=webrtc.poc --log-file=stdout --external-ip=$PUBLIC_IP"
-
 echo "------------------------------------------------"
 echo "Coturn Server: turn:$FQDN:3478"
+echo "Public IP: $PUBLIC_IP"
+echo "Note: The container resolves its own external-ip at startup."
 echo "------------------------------------------------"

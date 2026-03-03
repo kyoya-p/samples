@@ -28,3 +28,7 @@ depends = ["build"]
 run = """
 bash ./deploy.sh
 """
+
+[tasks.destroy]
+description = "Delete Azure Resource Group"
+run = "az group delete --name rg-webrtc-poc --yes"
