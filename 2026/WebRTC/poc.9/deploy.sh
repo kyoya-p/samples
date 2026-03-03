@@ -33,6 +33,17 @@ fi
 echo "Building container image in ACR..."
 az acr build --registry $ACR_NAME --image webrtc-server:latest server/
 
+# Get TURN Server Info if exists
+echo "Fetching TURN server info..."
+TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name "webrtc-turn-server" --query ipAddress.fqdn -o tsv || echo "")
+if [ -n "$TURN_FQDN" ]; then
+    TURN_ENV="TURN_URL=turn:$TURN_FQDN:3478 TURN_USER=user TURN_PASSWORD=password123"
+    echo "Found TURN server: $TURN_FQDN"
+else
+    TURN_ENV=""
+    echo "TURN server not found, skipping environment variables."
+fi
+
 # Deploy to ACI
 echo "Deploying to Azure Container Instance..."
 ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
@@ -47,7 +58,7 @@ az container create --resource-group $RESOURCE_GROUP --name $ACI_NAME \
   --image ${ACR_NAME}.azurecr.io/webrtc-server:latest \
   --dns-name-label $DNS_LABEL \
   --ports 3000 --os-type Linux --cpu 1 --memory 1.5 \
-  --environment-variables COMMUNICATION_SERVICES_CONNECTION_STRING="$CONNECTION_STRING" \
+  --environment-variables COMMUNICATION_SERVICES_CONNECTION_STRING="$CONNECTION_STRING" $TURN_ENV \
   --registry-login-server ${ACR_NAME}.azurecr.io --registry-username $ACR_NAME --registry-password "$ACR_PASS"
 
 FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $ACI_NAME --query ipAddress.fqdn -o tsv)

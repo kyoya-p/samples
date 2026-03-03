@@ -1,25 +1,17 @@
 # 概要
 Azure ACS を使用したWebRTC のサーバとそれ用のWebクライアント(KMP)を作成
 Webクライアントは下記それぞれの接続方式
-- インターネット間(TURN経由)通信 (Azure ACS Network Traversalを使用)
+- インターネット間(TURN経由)通信 (Coturn サーバーを使用)
 - NAT/PROXY経由のグローバルIP通信
 - LAN IP接続
 
-本実装では、Azure ACSのCommunicationRelayClientを使用してICEサーバー情報を取得し、WebRTC PeerConnectionを確立
-データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて実行される
-
-# 知見 (Findings)
-- **Azure ACS TURN 資格情報の取得と認証**: `CommunicationRelayClient` を使用して TURN 資格情報を取得する際は、単なる接続文字列だけでなく、`CommunicationIdentityClient` で作成した **`CommunicationUserIdentifier` (Identity)** を引数に渡す必要があります。これを行わない場合、Azure の内部ゲートウェイ（Front Door 等）から 404 Error が返され、リレー設定の取得に失敗します。
-- **Kotlin/JS のブラウザテスト手法**: Amper でビルドされた Kotlin/JS アプリケーション (`.mjs`) をブラウザで自動テストする場合、**Playwright** 等のツールを用いてブラウザを起動し、グローバルに `suite` や `test` (QUnit/Jasmine 互換) のモックインターフェースを注入することで、`kotlin-test` の実行結果をホスト側の Node.js でキャプチャ可能です。
-- **WebRTC DataChannel による同期の実証**: Azure ACI 上にデプロイされた環境において、複数クライアント（ブラウザタブ）間で **DataChannel が正常にオープン（"DataChannel opened"）** されることをコンソールログおよび Playwright テストで確認しました。Socket.io をシグナリングに使用し、DataChannel を介したリアルタイムな描画同期が可能な状態であることを実証済みです。
-
-- **Azure ACS Network Traversal のステータス**: 一時的にサービス廃止の懸念あり、Identity 連携を正しく行うことで現在も TURN サービスが利用可能であることを実証。
+本実装では、Azure ACS のシグナリング機能を維持しつつ、廃止された ACS リレーサービスの代わりに ACI 上に構築した **Coturn サーバー** を使用して WebRTC PeerConnection を確立。
+データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて実行される。
 
 # 実装のポイント
-- **Server**: `@azure/communication-identity` と `@azure/communication-network-traversal` を使用して、認証済みの ICE サーバー設定を `/ice-servers` エンドポイントで提供。
-- **Client (Kotlin/JS)**: `RTCPeerConnection` と `RTCDataChannel` を実装。シグナリングには既存のSocket.ioを使用。
-- **UI**: 「Connect P2P (WebRTC)」ボタンでP2P接続を手動開始可能。
-
+- **Server**: Express サーバーにて、ACS の Identity トークン発行と同時に、構築した Coturn サーバーの認証情報を `/ice-servers` で提供。
+- **Client (Kotlin/JS)**: `RTCPeerConnection` と `RTCDataChannel` を実装。接続確立時にアクティブな ICE 候補ペアを表示するデバッグ機能を搭載。
+- **TURN Server**: `coturn/coturn` イメージをベースに、UDP 3478 ポートおよび長期認証 (lt-cred-mech) を有効化して ACI に配備。
 
 # 環境
 - OS: Ubuntu 24.04
@@ -33,19 +25,23 @@ Webクライアントは下記それぞれの接続方式
 mise trust
 mise install
 mise run setup:amper
-az login  # or # az login --use-device-cod 
-# az account list --output table
-# az account set --subscription "サブスクリプション名またはID"
+az login
 ```
 
 # デプロイ
-Azure にサービスを配備
+Azure にサービス（App Server & TURN Server）を配備
 ```bash
 mise run deploy
 ```
 
 ## 3. 検証
-- Azure CloudとPlaywrightブラウザによる通信テスト
-- デプロイで表示されたURLを開く
-- スクショ(playwright用の一時フォルダに格納)で操作の結果を確認
-- 繰り返し修正市テストする様指示ない場合、判断結果と対応方針を表示しテスト終了
+- **TURN 強制接続テスト**: 「Force TURN (Relay only)」を有効にし、ログに `Selected Path: Local[relay] <-> Remote[relay]` が表示されることを確認。
+- **DataChannel 同期**: 複数ブラウザタブ間でのリアルタイム描画同期を確認。
+- **スクリーンショット**: `.playwright-mcp/` 内の画像で操作結果と接続ログの状態をエビデンスとして保持。
+
+
+# 知見 (Findings)
+- **Azure ACS Network Traversal の廃止**: 2024年3月31日をもって Azure ACS の TURN サービスは完全に終了しており、現在は 404 (Front Door Error) が返されるため利用不能。本 POC では ACI 上に Coturn を構築することで代替。
+- **Coturn on ACI の構成**: ACI で Coturn を動かす際は、`--external-ip` に ACI のパブリック IP を明示的に指定する必要がある。これを怠ると内部 IP (`192.168.x.x`) で応答してしまい、外部からのリレー候補生成に失敗する。
+- **WebRTC 接続経路の検証**: `peerConnection.getStats()` を解析し、`Selected Path: Local[relay] <-> Remote[relay]` というログを出力することで、収集した候補（Candidate）の中から実際に TURN 経路が選択されたことを厳密に実証済み。
+- **Kotlin/JS のブラウザテスト手法**: Amper でビルドされた Kotlin/JS アプリケーションを Playwright で自動テストし、`connected` 状態や統計情報をキャプチャ可能。

@@ -16,16 +16,18 @@ if (connectionString) {
     identityClient = new CommunicationIdentityClient(connectionString);
     relayClient = new CommunicationRelayClient(connectionString);
 }
-
 app.get('/ice-servers', async (req, res) => {
-    const staticServers = [
-        { urls: 'stun:stun.l.google.com:19302' },
-        {
-            urls: 'turn:webrtc-turn-15538.japaneast.azurecontainer.io:3478',
-            username: 'user',
-            credential: 'password123'
-        }
-    ];
+    const staticServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+    // 環境変数から TURN 情報を取得
+    if (process.env.TURN_URL) {
+        staticServers.push({
+            urls: process.env.TURN_URL,
+            username: process.env.TURN_USER || 'user',
+            credential: process.env.TURN_PASSWORD || 'password123'
+        });
+    }
+
     if (!relayClient) return res.json(staticServers);
 
     try {
@@ -33,7 +35,7 @@ app.get('/ice-servers', async (req, res) => {
         const config = await relayClient.getRelayConfiguration({ communicationUserIdentifier: user });
         return res.json([...config.iceServers, ...staticServers]);
     } catch (error) {
-        console.warn("ACS Relay failed, using fallback Coturn:", error.message);
+        console.warn("ACS Relay failed, using fallback static servers:", error.message);
         res.json(staticServers);
     }
 });
