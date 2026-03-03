@@ -23,11 +23,9 @@ cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_clien
 """
 
 [tasks.deploy]
-description = "Deploy to Azure"
+description = "Deploy to Azure (TURN + App)"
 depends = ["build"]
-run = """
-bash ./deploy.sh
-"""
+run = "bash ./deploy.sh"
 
 [tasks.destroy]
 description = "Delete Azure Resource Group"
