@@ -74,6 +74,14 @@ class WebRTCController(val signalingUrl: String) {
         peerConnection.onconnectionstatechange = { _: dynamic ->
             val state = peerConnection.connectionState.toString()
             println("WebRTC ConnectionState: $state")
+            
+            // Notify UI
+            if (state == "connected") {
+                window.asDynamic().setCanvasEnabled(true)
+            } else if (state == "failed" || state == "closed" || state == "disconnected") {
+                window.asDynamic().setCanvasEnabled(false)
+            }
+
             if (state == "connected") {
                 peerConnection.getStats().then { stats: dynamic ->
                     var selectedPairId = ""
