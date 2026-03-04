@@ -39,7 +39,7 @@ az acr build --registry $ACR_NAME --image webrtc-turn:latest turn/
 echo "Removing existing TURN container if any..."
 az container delete --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --yes || true
 
-echo "Deploying Coturn to ACI..."
+echo "Deploying Coturn to ACI (Initial)..."
 TURN_DNS_LABEL="webrtc-turn-${RANDOM}"
 az container create \
   --resource-group $RESOURCE_GROUP \
@@ -55,9 +55,29 @@ az container create \
   --registry-username $ACR_NAME \
   --registry-password "$ACR_PASS"
 
+# ACI assignes a Public IP that is often different from the host's egress IP.
+# We must fetch it and update Coturn's external-ip explicitly.
+TURN_IP=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.ip -o tsv)
 TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.fqdn -o tsv)
+
+echo "Updating TURN server with its assigned Public IP: $TURN_IP..."
+az container create \
+  --resource-group $RESOURCE_GROUP \
+  --name $TURN_ACI_NAME \
+  --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
+  --dns-name-label $TURN_DNS_LABEL \
+  --ports 3478 \
+  --protocol UDP \
+  --os-type linux \
+  --cpu 1 \
+  --memory 1.0 \
+  --registry-login-server ${ACR_NAME}.azurecr.io \
+  --registry-username $ACR_NAME \
+  --registry-password "$ACR_PASS" \
+  --environment-variables EXTERNAL_IP="$TURN_IP"
+
 TURN_ENV="TURN_URL=turn:$TURN_FQDN:3478 TURN_USER=user TURN_PASSWORD=password123"
-echo "TURN server deployed at: $TURN_FQDN"
+echo "TURN server stabilized at: $TURN_FQDN ($TURN_IP)"
 
 # --- App Server Build & Deploy ---
 echo "Building App server image in ACR..."
