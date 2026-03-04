@@ -29,6 +29,7 @@ mise trust
 mise install
 mise run setup:amper
 az login  # ブラウザが開きlogin、その後、使用subscriptionを指定
+# az account list --output table # subscriptionのリスト
 ```
 
 # デプロイ

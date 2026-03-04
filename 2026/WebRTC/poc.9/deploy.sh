@@ -25,33 +25,51 @@ CONNECTION_STRING=$(az communication list-key --name $ACS_NAME --resource-group 
 ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[0].name" -o tsv)
 if [ -z "$ACR_NAME" ]; then
     ACR_NAME="${ACR_NAME_PREFIX}$RANDOM"
-    echo "Creating Azure Container Registry: $ACR_NAME..."
+    echo "Creating Azure Communication Service: $ACR_NAME..."
     az acr create --resource-group $RESOURCE_GROUP --name $ACR_NAME --sku Basic --admin-enabled true
 fi
 
-# Build and Push
-echo "Building container image in ACR..."
+ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
+
+# --- TURN Server Deployment ---
+TURN_ACI_NAME="webrtc-turn-server"
+echo "Building Coturn image in ACR..."
+az acr build --registry $ACR_NAME --image webrtc-turn:latest turn/
+
+echo "Removing existing TURN container if any..."
+az container delete --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --yes || true
+
+echo "Deploying Coturn to ACI..."
+TURN_DNS_LABEL="webrtc-turn-${RANDOM}"
+az container create \
+  --resource-group $RESOURCE_GROUP \
+  --name $TURN_ACI_NAME \
+  --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
+  --dns-name-label $TURN_DNS_LABEL \
+  --ports 3478 \
+  --protocol UDP \
+  --os-type linux \
+  --cpu 1 \
+  --memory 1.0 \
+  --registry-login-server ${ACR_NAME}.azurecr.io \
+  --registry-username $ACR_NAME \
+  --registry-password "$ACR_PASS"
+
+TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.fqdn -o tsv)
+TURN_ENV="TURN_URL=turn:$TURN_FQDN:3478 TURN_USER=user TURN_PASSWORD=password123"
+echo "TURN server deployed at: $TURN_FQDN"
+
+# --- App Server Build & Deploy ---
+echo "Building App server image in ACR..."
 az acr build --registry $ACR_NAME --image webrtc-server:latest server/
 
-# Get TURN Server Info if exists
-echo "Fetching TURN server info..."
-TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name "webrtc-turn-server" --query ipAddress.fqdn -o tsv || echo "")
-if [ -n "$TURN_FQDN" ]; then
-    TURN_ENV="TURN_URL=turn:$TURN_FQDN:3478 TURN_USER=user TURN_PASSWORD=password123"
-    echo "Found TURN server: $TURN_FQDN"
-else
-    TURN_ENV=""
-    echo "TURN server not found, skipping environment variables."
-fi
-
 # Deploy to ACI
-echo "Deploying to Azure Container Instance..."
-ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
+echo "Deploying App Server to Azure Container Instance..."
 ACI_NAME="webrtc-full-stack"
 DNS_LABEL="webrtc-full-stack-${ACS_NAME#*-*-*-}" # Semi-stable DNS
 
 # 強制再作成
-echo "Removing existing container if any..."
+echo "Removing existing App container if any..."
 az container delete --resource-group $RESOURCE_GROUP --name $ACI_NAME --yes || true
 
 az container create --resource-group $RESOURCE_GROUP --name $ACI_NAME \
@@ -63,3 +81,4 @@ az container create --resource-group $RESOURCE_GROUP --name $ACI_NAME \
 
 FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $ACI_NAME --query ipAddress.fqdn -o tsv)
 echo "Deployment complete! Access at: http://$FQDN:3000/index.html"
+
