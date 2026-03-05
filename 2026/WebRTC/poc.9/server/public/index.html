@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>WebRTC Click Sync</title>
+    <!-- シグナリングサーバー(signaling:3000)からライブラリをロード -->
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #f0f2f5; }
@@ -35,7 +36,8 @@
     
     <textarea id="logArea" readonly placeholder="Logs will appear here..."></textarea>
 
-    <script type="module" src="./build/tasks/_client_linkJs/client.mjs"></script>
+    <!-- シグナリングサーバーから自身のアセットをロード -->
+    <script type="module" src="http://signaling:3000/build/tasks/_client_linkJs/client.mjs"></script>
     <script>
         const logArea = document.getElementById('logArea');
         const originalLog = console.log;
@@ -56,9 +58,10 @@
             appendLog('ERROR', arguments);
         };
 
-        const socket = io();
+        // シグナリングサーバー(signaling:3000)へ明示的に接続
+        const socket = io('http://signaling:3000');
+        window.socket = socket;
 
-        // --- Bridge for Kotlin Controller ---
         window.emitSignal = (data) => socket.emit('signal', data);
         socket.on('signal', (data) => {
             if (window.onRemoteSignal) window.onRemoteSignal(data);
@@ -97,79 +100,57 @@
             list.push({ x, y, color, startTime: Date.now() });
         }
 
-        // --- アニメーションループ ---
         function animate() {
             const now = Date.now();
-            const FADE_DURATION = 60000; // 60s
-            
+            const FADE_DURATION = 60000;
             [ {ctx: localCtx, dots: localDots, canvas: localCanvas}, 
               {ctx: remoteCtx, dots: remoteDots, canvas: remoteCanvas} ].forEach(set => {
                 if (set.canvas.width === 0) initCanvas(set.canvas);
                 set.ctx.clearRect(0, 0, set.canvas.width, set.canvas.height);
-                
-                // フィルタリングと描画
                 const updatedDots = set.dots.filter(dot => {
                     const elapsed = now - dot.startTime;
                     if (elapsed >= FADE_DURATION) return false;
-                    
                     const alpha = 1.0 - (elapsed / FADE_DURATION);
                     set.ctx.globalAlpha = alpha;
                     set.ctx.fillStyle = dot.color;
                     set.ctx.beginPath();
-                    set.ctx.arc(dot.x, dot.y, 10, 0, Math.PI * 2); // Bigger dots (10px)
+                    set.ctx.arc(dot.x, dot.y, 10, 0, Math.PI * 2);
                     set.ctx.fill();
                     return true;
                 });
-
-                if (set.ctx === localCtx) {
-                    localDots = updatedDots;
-                    window.localDots = localDots;
-                } else {
-                    remoteDots = updatedDots;
-                    window.remoteDots = remoteDots;
-                }
+                if (set.ctx === localCtx) { localDots = updatedDots; window.localDots = localDots; }
+                else { remoteDots = updatedDots; window.remoteDots = remoteDots; }
             });
-
             requestAnimationFrame(animate);
         }
         animate();
 
-        // --- メッセージ受信 ---
         window.drawRemotePoint = (x, y) => {
-            // console.log("Remote point received:", x, y); // Too noisy
             addDot(remoteDots, x * remoteCanvas.width, y * remoteCanvas.height, "#d83b01");
         };
 
-        // --- マウス操作 (連続描画) ---
         let isDrawing = false;
         function handleMove(e) {
             if (!isDrawing) return;
             const rect = localCanvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
             const xRel = (clientX - rect.left) / rect.width;
             const yRel = (clientY - rect.top) / rect.height;
             const xAbs = clientX - rect.left;
             const yAbs = clientY - rect.top;
-
             addDot(localDots, xAbs, yAbs, "#0078d4");
-            window.webrtcController.sendPoint(xRel, yRel);
+            if (window.webrtcController) window.webrtcController.sendPoint(xRel, yRel);
         }
 
         localCanvas.onmousedown = (e) => { isDrawing = true; handleMove(e); };
         window.onmouseup = () => { isDrawing = false; };
         localCanvas.onmousemove = handleMove;
-        
-        // Touch対応
-        localCanvas.ontouchstart = (e) => { isDrawing = true; handleMove(e); e.preventDefault(); };
-        localCanvas.ontouchmove = (e) => { handleMove(e); e.preventDefault(); };
-        localCanvas.ontouchend = () => { isDrawing = false; };
 
         window.onload = () => {
             initCanvas(localCanvas);
             initCanvas(remoteCanvas);
-            setCanvasEnabled(false); // Initial state: disabled
+            setCanvasEnabled(false);
             socket.emit('join', 'demo-room');
             document.getElementById('btnConnect').onclick = () => {
                 window.webrtcController.connectP2P();

@@ -33,7 +33,8 @@ Webクライアントは下記それぞれの接続方式
 mise trust
 mise install
 mise run setup:amper
-az login  # or # az login --use-device-cod 
+mise run setup:python
+az login  # or # az login --use-device-cod
 # az account list --output table
 # az account set --subscription "サブスクリプション名またはID"
 ```

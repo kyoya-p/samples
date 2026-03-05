@@ -1,5 +1,5 @@
 [tools]
-python = "latest"
+python = "3.10.11"
 pipx = "latest"
 azure-cli = "latest"
 java = "21"
@@ -11,6 +11,10 @@ curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
 chmod +x amper
 ./amper update -c
 """
+
+[tasks."setup:python"]
+description = "Python仮想環境のセットアップ"
+run = "python -m venv .venv && .venv/bin/pip install --upgrade pip"
 
 [tasks.build]
 description = "Build client/server modeules"

@@ -156,6 +156,7 @@ class WebRTCController(val signalingUrl: String) {
             dataChannel.send(JSON.stringify(data))
         } else {
             // Fallback to signaling if P2P not ready
+            data.room = room
             window.asDynamic().emitSignal(data)
         }
     }

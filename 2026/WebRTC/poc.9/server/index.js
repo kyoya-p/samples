@@ -18,18 +18,19 @@ if (connectionString) {
 }
 app.get('/ice-servers', async (req, res) => {
     const staticServers = [{ urls: 'stun:stun.l.google.com:19302' }];
-
-    // 環境変数から TURN 情報を取得
     if (process.env.TURN_URL) {
         staticServers.push({
             urls: process.env.TURN_URL,
             username: process.env.TURN_USER || 'user',
             credential: process.env.TURN_PASSWORD || 'password123'
         });
+        staticServers.push({
+            urls: process.env.TURN_URL.replace(/172\.\d+\.\d+\.\d+/, 'localhost'),
+            username: process.env.TURN_USER || 'user',
+            credential: process.env.TURN_PASSWORD || 'password123'
+        });
     }
-
     if (!relayClient) return res.json(staticServers);
-
     try {
         const user = await identityClient.createUser();
         const config = await relayClient.getRelayConfiguration({ communicationUserIdentifier: user });
@@ -40,12 +41,17 @@ app.get('/ice-servers', async (req, res) => {
     }
 });
 
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+function setupServer(port) {
+    const server = http.createServer(app);
+    const io = new Server(server, { cors: { origin: "*" } });
+    io.on('connection', (socket) => {
+        socket.on('join', (room) => socket.join(room));
+        socket.on('signal', (data) => {
+            if (data.room) socket.to(data.room).emit('signal', data);
+        });
+    });
+    server.listen(port, '0.0.0.0', () => console.log(`Server running on port ${port}`));
+}
 
-io.on('connection', (socket) => {
-    socket.on('join', (room) => socket.join(room));
-    socket.on('signal', (data) => socket.to(data.room).emit('signal', data));
-});
-
-server.listen(3000, () => console.log('Server running on port 3000'));
+// 指示通り、独立したポート 8081, 8082, 3000 で起動
+[3000, 8081, 8082].forEach(p => setupServer(p));

@@ -4,3 +4,4 @@
 /amper.bat
 /server/public/build/
 /client/build/
+.venv/
