@@ -5,9 +5,10 @@ const cors = require('cors');
 const { CommunicationIdentityClient } = require('@azure/communication-identity');
 const { CommunicationRelayClient } = require('@azure/communication-network-traversal');
 
+const path = require('path');
 const app = express();
 app.use(cors());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const connectionString = process.env.COMMUNICATION_SERVICES_CONNECTION_STRING;
 let identityClient, relayClient;
@@ -39,4 +40,4 @@ io.on('connection', (socket) => {
     socket.on('signal', (data) => socket.to(data.room).emit('signal', data));
 });
 
-server.listen(3000, () => console.log('Server running on port 3000'));
+server.listen(3000, '0.0.0.0', () => console.log('Server running on 0.0.0.0:3000'));
