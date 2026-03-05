@@ -12,7 +12,7 @@ chmod +x amper
 ./amper update -c
 """
 
-[tasks."setup:python"]
+[tasks.setup_az]
 description = "Python仮想環境のセットアップ"
 run = "python -m venv .venv && .venv/bin/pip install --upgrade pip"
 
@@ -28,11 +28,17 @@ cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_clien
 
 [tasks.deploy]
 description = "Deploy to Azure"
-depends = ["build"]
+depends = ["build", "setup_az"]
 run = """
 bash ./deploy.sh
 """
 
 [tasks.destroy]
 description = "Delete Azure Resource Group"
+depends = ["setup_az"]
 run = "az group delete --name rg-webrtc-poc --yes"
+
+[tasks."service:list"]
+description = "List Azure Resource"
+depends = ["setup_az"]
+run = "az resource list --resource-group rg-webrtc-poc --output table"

@@ -39,6 +39,10 @@ ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o
 ACI_NAME="webrtc-full-stack"
 DNS_LABEL="webrtc-full-stack-${ACS_NAME#*-*-*-}" # Semi-stable DNS
 
+# 強制再作成
+echo "Removing existing container if any..."
+az container delete --resource-group $RESOURCE_GROUP --name $ACI_NAME --yes || true
+
 az container create --resource-group $RESOURCE_GROUP --name $ACI_NAME \
   --image ${ACR_NAME}.azurecr.io/webrtc-server:latest \
   --dns-name-label $DNS_LABEL \

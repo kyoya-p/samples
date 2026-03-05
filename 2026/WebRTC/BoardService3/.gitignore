@@ -5,3 +5,4 @@
 /server/public/build/
 /client/build/
 .venv/
+/tmp/
