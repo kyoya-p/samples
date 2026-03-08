@@ -3,42 +3,37 @@ python = "3.10.11"
 pipx = "latest"
 azure-cli = "latest"
 java = "21"
+gradle = "8.7"
 
-[tasks."setup:amper"]
-description = "Amper CLIをダウンロードしてセットアップ"
-run = """
-curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
-chmod +x amper
-./amper update -c
-"""
-
-[tasks.setup_az]
+[tasks.setup-az]
 description = "Python仮想環境のセットアップ"
 run = "python -m venv .venv && .venv/bin/pip install --upgrade pip"
 
 [tasks.build]
 description = "Build client/server modeules"
-depends = ["setup:amper"]
 run = """
-cd client && ../amper build && cd ..
+./gradlew :client:jsBrowserDistribution
 mkdir -p server/public/build/tasks/_client_linkJs/
 cp client/index.html server/public/
 cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_client_linkJs/
+# Skia/Web needs skiko files
+cp client/build/dist/js/productionExecutable/skiko.mjs server/public/build/tasks/_client_linkJs/
+cp client/build/dist/js/productionExecutable/skiko.wasm server/public/build/tasks/_client_linkJs/
 """
 
-[tasks.deploy]
+[tasks.sv-deploy]
 description = "Deploy to Azure"
-depends = ["build", "setup_az"]
+depends = ["build", "setup-az"]
 run = """
 bash ./deploy.sh
 """
 
-[tasks.destroy]
+[tasks.sv-destroy]
 description = "Delete Azure Resource Group"
-depends = ["setup_az"]
+depends = ["setup-az"]
 run = "az group delete --name rg-webrtc-poc --yes"
 
-[tasks."service:list"]
+[tasks.sv-list]
 description = "List Azure Resource"
-depends = ["setup_az"]
+depends = ["setup-az"]
 run = "az resource list --resource-group rg-webrtc-poc --output table"

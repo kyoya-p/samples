@@ -1,128 +1,49 @@
 package webrtc
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.CanvasBasedWindow
 import kotlinx.coroutines.*
 import kotlinx.browser.window
-import kotlinx.browser.document
 import org.w3c.dom.*
-import org.w3c.dom.events.MouseEvent
 import kotlin.js.Date
 import kotlin.math.*
 
-class Dot(val x: Double, val y: Double, val color: String, val startTime: Double)
+class Dot(val xRel: Float, val yRel: Float, val color: Color, val startTime: Double)
 
-class WebRTCController(val signalingUrl: String) {
+class WebRTCController {
     private val scope = MainScope()
     private var peerConnection: dynamic = null
     private var dataChannel: dynamic = null
     private val room = "demo-room"
     private var socket: dynamic = null
 
-    private lateinit var localCanvas: HTMLCanvasElement
-    private lateinit var remoteCanvas: HTMLCanvasElement
-    private lateinit var localCtx: CanvasRenderingContext2D
-    private lateinit var remoteCtx: CanvasRenderingContext2D
-    private lateinit var logArea: HTMLTextAreaElement
-
-    private var localDots = mutableListOf<Dot>()
-    private var remoteDots = mutableListOf<Dot>()
-    private var isDrawing = false
+    // State
+    val localDots = mutableStateListOf<Dot>()
+    val remoteDots = mutableStateListOf<Dot>()
+    var isP2PConnected by mutableStateOf(false)
+    var logs by mutableStateOf("")
 
     init {
-        buildUI()
-
-        localCanvas = document.getElementById("localCanvas") as HTMLCanvasElement
-        remoteCanvas = document.getElementById("remoteCanvas") as HTMLCanvasElement
-        localCtx = localCanvas.getContext("2d") as CanvasRenderingContext2D
-        remoteCtx = remoteCanvas.getContext("2d") as CanvasRenderingContext2D
-        logArea = document.getElementById("logArea") as HTMLTextAreaElement
-
         setupConsoleProxy()
-        initCanvases()
-        setupEventListeners()
-        
-        // socket.ioの初期化
         try {
             socket = js("io()")
             setupSocket()
         } catch (e: Exception) {
             println("Socket.io not found or failed to init")
         }
-
-        scope.launch {
-            setupP2P()
-        }
-        animate()
-        println("WebRTCController initialized with Kotlin logic and Dynamic UI")
-    }
-
-    private fun buildUI() {
-        val app = document.getElementById("app") ?: document.body!!
-        
-        val container = document.createElement("div") as HTMLDivElement
-        container.className = "container"
-        
-        // Controls
-        val controls = document.createElement("div") as HTMLDivElement
-        controls.className = "box-container controls"
-        
-        val label = document.createElement("label") as HTMLLabelElement
-        val chkForceTurn = document.createElement("input") as HTMLInputElement
-        chkForceTurn.type = "checkbox"
-        chkForceTurn.id = "chkForceTurn"
-        label.appendChild(chkForceTurn)
-        label.appendChild(document.createTextNode(" Force TURN (Relay only)"))
-        
-        val btnConnect = document.createElement("button") as HTMLButtonElement
-        btnConnect.id = "btnConnect"
-        btnConnect.style.background = "#28a745"
-        btnConnect.textContent = "Connect P2P (WebRTC)"
-        
-        val btnClear = document.createElement("button") as HTMLButtonElement
-        btnClear.id = "btnClear"
-        btnClear.style.background = "#666"
-        btnClear.textContent = "Clear All"
-        
-        controls.appendChild(label)
-        controls.appendChild(btnConnect)
-        controls.appendChild(btnClear)
-        container.appendChild(controls)
-        
-        // Local Canvas
-        val localBox = document.createElement("div") as HTMLDivElement
-        localBox.className = "box-container"
-        val localH3 = document.createElement("h3") as HTMLElement
-        localH3.textContent = "Local (Drag to draw)"
-        val lc = document.createElement("canvas") as HTMLCanvasElement
-        lc.id = "localCanvas"
-        localBox.appendChild(localH3)
-        localBox.appendChild(lc)
-        container.appendChild(localBox)
-        
-        // Remote Canvas
-        val remoteBox = document.createElement("div") as HTMLDivElement
-        remoteBox.className = "box-container"
-        val remoteH3 = document.createElement("h3") as HTMLElement
-        remoteH3.textContent = "Remote (P2P Sync)"
-        val rc = document.createElement("canvas") as HTMLCanvasElement
-        rc.id = "remoteCanvas"
-        remoteBox.appendChild(remoteH3)
-        remoteBox.appendChild(rc)
-        container.appendChild(remoteBox)
-        
-        // Log Area
-        val logBox = document.createElement("div") as HTMLDivElement
-        logBox.className = "box-container"
-        val logH3 = document.createElement("h3") as HTMLElement
-        logH3.textContent = "Diagnostics Log"
-        val txtLog = document.createElement("textarea") as HTMLTextAreaElement
-        txtLog.id = "logArea"
-        txtLog.readOnly = true
-        txtLog.placeholder = "Logs will appear here..."
-        logBox.appendChild(logH3)
-        logBox.appendChild(txtLog)
-        container.appendChild(logBox)
-        
-        app.appendChild(container)
     }
 
     private fun setupConsoleProxy() {
@@ -148,74 +69,7 @@ class WebRTCController(val signalingUrl: String) {
         val msg = args.map { arg ->
             if (js("typeof arg === 'object'")) JSON.stringify(arg) else arg.toString()
         }.joinToString(" ")
-        logArea.value += "[$type] $msg\n"
-        logArea.scrollTop = logArea.scrollHeight.toDouble()
-    }
-
-    private fun initCanvases() {
-        fun resize(canvas: HTMLCanvasElement) {
-            val rect = canvas.getBoundingClientRect()
-            canvas.width = rect.width.toInt()
-            if (canvas.width == 0) canvas.width = 400
-            canvas.height = 350
-        }
-        resize(localCanvas)
-        resize(remoteCanvas)
-        window.addEventListener("resize", {
-            resize(localCanvas)
-            resize(remoteCanvas)
-        })
-    }
-
-    private fun setupEventListeners() {
-        document.getElementById("btnConnect")?.addEventListener("click", { connectP2P() })
-        document.getElementById("btnClear")?.addEventListener("click", {
-            localDots.clear()
-            remoteDots.clear()
-        })
-
-        val handleMove = { x: Double, y: Double ->
-            if (isDrawing) {
-                val rect = localCanvas.getBoundingClientRect()
-                val xAbs = x - rect.left
-                val yAbs = y - rect.top
-                val xRel = xAbs / rect.width
-                val yRel = yAbs / rect.height
-
-                localDots.add(Dot(xAbs, yAbs, "#0078d4", Date.now()))
-                sendPoint(xRel, yRel)
-            }
-        }
-
-        localCanvas.addEventListener("mousedown", { e ->
-            val me = e as MouseEvent
-            isDrawing = true
-            handleMove(me.clientX.toDouble(), me.clientY.toDouble())
-        })
-        window.addEventListener("mouseup", { isDrawing = false })
-        localCanvas.addEventListener("mousemove", { e ->
-            val me = e as MouseEvent
-            handleMove(me.clientX.toDouble(), me.clientY.toDouble())
-        })
-
-        localCanvas.addEventListener("touchstart", { e ->
-            val te = e.asDynamic()
-            if (te.touches.length > 0) {
-                isDrawing = true
-                val t = te.touches[0]
-                handleMove(t.clientX as Double, t.clientY as Double)
-            }
-            e.preventDefault()
-        })
-        localCanvas.addEventListener("touchmove", { e ->
-            val te = e.asDynamic()
-            if (isDrawing && te.touches.length > 0) {
-                val t = te.touches[0]
-                handleMove(t.clientX as Double, t.clientY as Double)
-            }
-            e.preventDefault()
-        })
-        localCanvas.addEventListener("touchend", { isDrawing = false })
+        logs += "[$type] $msg\n"
     }
 
     private fun setupSocket() {
@@ -249,16 +103,22 @@ class WebRTCController(val signalingUrl: String) {
 
     private fun setDataChannel(channel: dynamic) {
         dataChannel = channel
-        dataChannel.onopen = { println("DataChannel opened") }
+        dataChannel.onopen = { 
+            println("DataChannel opened")
+            isP2PConnected = true
+        }
         dataChannel.onmessage = { event: dynamic ->
             val data = JSON.parse<dynamic>(event.data as String)
             if (data.type == "point") {
-                drawRemotePoint(data.x as Double, data.y as Double)
+                drawRemotePoint(data.x.unsafeCast<Double>().toFloat(), data.y.unsafeCast<Double>().toFloat())
             }
+        }
+        dataChannel.onclose = {
+            isP2PConnected = false
         }
     }
 
-    private fun connectP2P() {
+    fun connectP2P() {
         if (peerConnection == null) return
         dataChannel = peerConnection.createDataChannel("chaos-sync")
         setDataChannel(dataChannel)
@@ -295,19 +155,17 @@ class WebRTCController(val signalingUrl: String) {
                     peerConnection.addIceCandidate(js("new RTCIceCandidate(data.candidate)"))
                 }
                 "point" -> {
-                    drawRemotePoint(data.x as Double, data.y as Double)
+                    drawRemotePoint(data.x.unsafeCast<Double>().toFloat(), data.y.unsafeCast<Double>().toFloat())
                 }
             }
         }
     }
 
-    private fun drawRemotePoint(xRel: Double, yRel: Double) {
-        val xAbs = xRel * remoteCanvas.width
-        val yAbs = yRel * remoteCanvas.height
-        remoteDots.add(Dot(xAbs, yAbs, "#d83b01", Date.now()))
+    private fun drawRemotePoint(xRel: Float, yRel: Float) {
+        remoteDots.add(Dot(xRel, yRel, Color(0xFFD83B01), Date.now()))
     }
 
-    private fun sendPoint(xRel: Double, yRel: Double) {
+    fun sendPoint(xRel: Float, yRel: Float) {
         val data = js("{type: 'point', x: xRel, y: yRel}")
         if (dataChannel != null && dataChannel.readyState == "open") {
             dataChannel.send(JSON.stringify(data))
@@ -316,38 +174,135 @@ class WebRTCController(val signalingUrl: String) {
         }
     }
 
-    private fun animate() {
-        val now = Date.now()
+    fun cleanupOldDots(now: Double) {
         val FADE_DURATION = 60000.0
-
-        fun drawSet(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, dots: MutableList<Dot>) {
-            ctx.clearRect(0.0, 0.0, canvas.width.toDouble(), canvas.height.toDouble())
-            val iterator = dots.iterator()
-            while (iterator.hasNext()) {
-                val dot = iterator.next()
-                val elapsed = now - dot.startTime
-                if (elapsed >= FADE_DURATION) {
-                    iterator.remove()
-                    continue
-                }
-                val alpha = 1.0 - (elapsed / FADE_DURATION)
-                ctx.globalAlpha = alpha
-                ctx.fillStyle = dot.color
-                ctx.beginPath()
-                ctx.arc(dot.x, dot.y, 10.0, 0.0, PI * 2)
-                ctx.fill()
-            }
-        }
-
-        drawSet(localCtx, localCanvas, localDots)
-        drawSet(remoteCtx, remoteCanvas, remoteDots)
-
-        window.requestAnimationFrame { animate() }
+        localDots.removeAll { now - it.startTime >= FADE_DURATION }
+        remoteDots.removeAll { now - it.startTime >= FADE_DURATION }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainApp(controller: WebRTCController) {
+    val scrollState = rememberScrollState()
+    
+    // Animation/Cleanup loop
+    LaunchedEffect(Unit) {
+        while(true) {
+            controller.cleanupOldDots(Date.now())
+            delay(100)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(title = { Text("WebRTC Click Sync (Compose UI)") })
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Controls Card
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Checkbox(checked = false, onCheckedChange = {})
+                        Text(" Force TURN")
+                    }
+                    Button(
+                        onClick = { controller.connectP2P() },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (controller.isP2PConnected) Color(0xFF28a745) else MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text(if (controller.isP2PConnected) "P2P Connected" else "Connect P2P")
+                    }
+                    OutlinedButton(onClick = {
+                        controller.localDots.clear()
+                        controller.remoteDots.clear()
+                    }) {
+                        Text("Clear All")
+                    }
+                }
+            }
+
+            // Local Draw Card
+            DrawCard("Local (Drag to draw)", controller.localDots, Color(0xFF0078D4)) { x, y ->
+                controller.localDots.add(Dot(x, y, Color(0xFF0078D4), Date.now()))
+                controller.sendPoint(x, y)
+            }
+
+            // Remote Sync Card
+            DrawCard("Remote (P2P Sync)", controller.remoteDots, Color(0xFFD83B01))
+
+            // Logs Card
+            Card(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+                Column(modifier = Modifier.padding(8.dp)) {
+                    Text("Diagnostics Log", style = MaterialTheme.typography.titleSmall)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        text = controller.logs,
+                        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DrawCard(title: String, dots: List<Dot>, defaultColor: Color, onDraw: ((Float, Float) -> Unit)? = null) {
+    Card(modifier = Modifier.fillMaxWidth().height(350.dp)) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .pointerInput(Unit) {
+                        if (onDraw != null) {
+                            detectDragGestures { change, _ ->
+                                val x = change.position.x / size.width
+                                val y = change.position.y / size.height
+                                onDraw(x, y)
+                            }
+                        }
+                    }
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val now = Date.now()
+                    val FADE_DURATION = 60000.0
+                    dots.forEach { dot ->
+                        val alpha = 1.0f - ((now - dot.startTime) / FADE_DURATION).toFloat()
+                        if (alpha > 0) {
+                            drawCircle(
+                                color = dot.color.copy(alpha = alpha),
+                                radius = 10.dp.toPx(),
+                                center = Offset(dot.xRel * size.width, dot.yRel * size.height)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    window.onload = {
-        WebRTCController(window.location.origin)
+    val controller = WebRTCController()
+    CanvasBasedWindow(title = "WebRTC Click Sync", canvasElementId = "app-canvas") {
+        MaterialTheme {
+            MainApp(controller)
+        }
     }
 }
