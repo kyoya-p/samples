@@ -1,0 +1,4 @@
+modules:
+  - faces
+  - tools/shared
+  - tools/model

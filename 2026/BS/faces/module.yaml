@@ -1,0 +1,17 @@
+product:
+  type: jvm/app
+settings:
+  jvm:
+    mainClass: faces.MainKt
+  ktor: enabled
+
+repositories:
+  - https://repo1.maven.org/maven2
+
+dependencies:
+  - ../tools/shared
+  - ../tools/model
+  - $ktor.client.cio
+  - ch.qos.logback:logback-classic:1.5.24
+  - com.twelvemonkeys.imageio:imageio-webp:3.12.0
+  - com.twelvemonkeys.imageio:imageio-core:3.12.0
