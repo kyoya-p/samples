@@ -1,0 +1,64 @@
+[tools]
+python = "latest"
+pipx = "latest"
+azure-cli = "latest"
+java = "21"
+
+[tasks."setup:amper"]
+description = "Amper CLIをダウンロードしてセットアップ"
+run = """
+curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
+chmod +x amper
+./amper update -c
+"""
+
+[tasks.build]
+description = "Build client/server modeules"
+depends = ["setup:amper"]
+run = """
+cd client && ../amper build && cd ..
+mkdir -p server/public/build/tasks/_client_linkJs/
+cp client/index.html server/public/
+cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_client_linkJs/
+"""
+
+[tasks.deploy]
+description = "Deploy to Azure (TURN + App)"
+depends = ["build"]
+run = "bash ./deploy.sh"
+
+[tasks.test]
+description = "Run Playwright tests"
+depends = ["build"]
+run = """
+# ポートの掃除
+lsof -t -i:3001 | xargs -r kill -9
+lsof -t -i:8081 | xargs -r kill -9
+lsof -t -i:8082 | xargs -r kill -9
+
+cd server && npm install && cd ..
+# バックグラウンドでサーバーを起動 (ログを server_output.log に保存)
+cd server && node index.js > server_output.log 2>&1 &
+SERVER_PID=$!
+echo "Server started with PID $SERVER_PID"
+
+# サーバー起動待ち (ポート3001がリッスンされるまで最大15秒待機)
+for i in {1..15}; do
+  if lsof -i:3001 > /dev/null; then
+    echo "Server is listening on port 3001."
+    break
+  fi
+  sleep 1
+done
+
+# テスト実行
+npx playwright test tests/sync_test.spec.js
+
+# サーバーを停止
+kill -9 $SERVER_PID
+lsof -t -i:3001 | xargs -r kill -9
+"""
+
+[tasks.destroy]
+description = "Delete Azure Resource Group"
+run = "az group delete --name rg-webrtc-poc --yes"
