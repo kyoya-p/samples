@@ -15,12 +15,15 @@ let identityClient, relayClient;
 
 if (connectionString) {
     try {
+        console.log("Initializing ACS clients with connection string (length: " + connectionString.length + ")");
         identityClient = new CommunicationIdentityClient(connectionString);
         relayClient = new CommunicationRelayClient(connectionString);
-        console.log("Azure Communication Services initialized.");
+        console.log("Azure Communication Services initialized successfully.");
     } catch (e) {
-        console.warn("Failed to initialize ACS clients:", e.message);
+        console.error("CRITICAL: Failed to initialize ACS clients:", e.message);
     }
+} else {
+    console.warn("WARNING: COMMUNICATION_SERVICES_CONNECTION_STRING is missing.");
 }
 
 app.get('/ice-servers', async (req, res) => {

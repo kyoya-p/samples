@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>WebRTC Click Sync</title>
-    <!-- シグナリングサーバーからライブラリをロード (相対パスで現在のサーバーから取得) -->
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #f0f2f5; }
         .boxes { display: flex; gap: 20px; width: 100%; max-width: 1000px; margin-top: 20px; }
         .box-container { flex: 1; text-align: center; background: white; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        canvas { width: 100%; height: 400px; border: 1px solid #ccc; border-radius: 5px; cursor: crosshair; touch-action: none; background: #fff; }
+        canvas { width: 100%; height: 400px; border: 1px solid #ccc; border-radius: 5px; cursor: crosshair; touch-action: none; background: #fff; box-sizing: border-box; }
         canvas.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
         button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #0078d4; color: white; border: none; border-radius: 5px; margin: 5px; }
         #logArea { width: 100%; max-width: 1000px; height: 150px; margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-family: monospace; resize: vertical; box-sizing: border-box; }
@@ -36,41 +35,22 @@
     
     <textarea id="logArea" readonly placeholder="Logs will appear here..."></textarea>
 
-    <!-- 自身のアセットをロード (ビルド済みのJSを相対パスで取得) -->
     <script type="module" src="./build/tasks/_client_linkJs/client.mjs"></script>
     <script>
         const logArea = document.getElementById('logArea');
-        const originalLog = console.log;
-        const originalError = console.error;
-
         function appendLog(type, args) {
             const msg = Array.from(args).map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
             logArea.value += `[${type}] ${msg}\n`;
             logArea.scrollTop = logArea.scrollHeight;
         }
+        console.log = (...args) => appendLog('INFO', args);
+        console.error = (...args) => appendLog('ERROR', args);
 
-        console.log = function() {
-            originalLog.apply(console, arguments);
-            appendLog('INFO', arguments);
-        };
-        console.error = function() {
-            originalError.apply(console, arguments);
-            appendLog('ERROR', arguments);
-        };
-
-        // シグナリングサーバーへの接続
-        // 開発環境(localhost)やDocker環境(signaling)に対応するため、
-        // 明示的なURL指定を避け、可能なら現在のホストを使用する。
-        // ただし、ポート 8081, 8082 から 3000 へ接続する必要がある場合は
-        // ホスト名を動的に解決する。
         const signalingHost = window.location.hostname === 'localhost' ? 'localhost' : (window.location.hostname || 'signaling');
         const socket = io(`http://${signalingHost}:3000`);
-        window.socket = socket;
 
         window.emitSignal = (data) => socket.emit('signal', data);
-        socket.on('signal', (data) => {
-            if (window.onRemoteSignal) window.onRemoteSignal(data);
-        });
+        socket.on('signal', (data) => { if (window.onRemoteSignal) window.onRemoteSignal(data); });
 
         const localCanvas = document.getElementById('localCanvas');
         const remoteCanvas = document.getElementById('remoteCanvas');
@@ -83,21 +63,15 @@
         window.remoteDots = remoteDots;
 
         function setCanvasEnabled(enabled) {
-            const canvas = document.getElementById('localCanvas');
-            if (enabled) {
-                canvas.classList.remove('disabled');
-                console.log("Drawing enabled (P2P connected)");
-            } else {
-                canvas.classList.add('disabled');
-                console.log("Drawing disabled (P2P disconnected)");
-            }
+            localCanvas.classList.toggle('disabled', !enabled);
+            console.log(enabled ? "Drawing enabled" : "Drawing disabled");
         }
         window.setCanvasEnabled = setCanvasEnabled;
 
         function initCanvas(canvas) {
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width || 400;
-            canvas.height = rect.height || 400;
+            // clientWidth/Height はボーダーを含まない純粋なコンテンツ領域のサイズを返す
+            canvas.width = canvas.clientWidth || 400;
+            canvas.height = canvas.clientHeight || 400;
         }
         window.onresize = () => { initCanvas(localCanvas); initCanvas(remoteCanvas); };
 
@@ -112,38 +86,53 @@
               {ctx: remoteCtx, dots: remoteDots, canvas: remoteCanvas} ].forEach(set => {
                 if (set.canvas.width === 0) initCanvas(set.canvas);
                 set.ctx.clearRect(0, 0, set.canvas.width, set.canvas.height);
-                const updatedDots = set.dots.filter(dot => {
+                set.dots = set.dots.filter(dot => {
                     const elapsed = now - dot.startTime;
                     if (elapsed >= FADE_DURATION) return false;
-                    const alpha = 1.0 - (elapsed / FADE_DURATION);
-                    set.ctx.globalAlpha = alpha;
+                    set.ctx.globalAlpha = 1.0 - (elapsed / FADE_DURATION);
                     set.ctx.fillStyle = dot.color;
                     set.ctx.beginPath();
                     set.ctx.arc(dot.x, dot.y, 10, 0, Math.PI * 2);
                     set.ctx.fill();
                     return true;
                 });
-                if (set.ctx === localCtx) { localDots = updatedDots; window.localDots = localDots; }
-                else { remoteDots = updatedDots; window.remoteDots = remoteDots; }
+                if (set.ctx === localCtx) localDots = set.dots; else remoteDots = set.dots;
             });
+            window.localDots = localDots; window.remoteDots = remoteDots;
             requestAnimationFrame(animate);
         }
         animate();
 
-        window.drawRemotePoint = (x, y) => {
-            addDot(remoteDots, x * remoteCanvas.width, y * remoteCanvas.height, "#d83b01");
+        window.drawRemotePoint = (xRel, yRel) => {
+            addDot(remoteDots, xRel * remoteCanvas.width, yRel * remoteCanvas.height, "#d83b01");
         };
 
         let isDrawing = false;
         function handleMove(e) {
             if (!isDrawing) return;
-            const rect = localCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientY || e.clientX; // Simplified for brevity
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const xRel = (clientX - rect.left) / rect.width;
-            const yRel = (clientY - rect.top) / rect.height;
-            const xAbs = clientX - rect.left;
-            const yAbs = clientY - rect.top;
+            
+            let xAbs, yAbs;
+            if (e.touches && e.touches.length > 0) {
+                const rect = localCanvas.getBoundingClientRect();
+                // clientLeft/Top はボーダーの幅。これを引くことでコンテンツ領域の左上を (0,0) にする
+                xAbs = (e.touches[0].clientX - rect.left - localCanvas.clientLeft);
+                yAbs = (e.touches[0].clientY - rect.top - localCanvas.clientTop);
+            } else {
+                // マウスイベントの場合は offsetX/Y が最も正確（要素内座標）
+                xAbs = e.offsetX;
+                yAbs = e.offsetY;
+            }
+            
+            // 内部解像度へのスケーリング
+            // initCanvasで canvas.width = clientWidth としているため、通常は 1.0 倍
+            const scaleX = localCanvas.width / localCanvas.clientWidth;
+            const scaleY = localCanvas.height / localCanvas.clientHeight;
+            xAbs *= scaleX;
+            yAbs *= scaleY;
+
+            const xRel = xAbs / localCanvas.width;
+            const yRel = yAbs / localCanvas.height;
+            
             addDot(localDots, xAbs, yAbs, "#0078d4");
             if (window.webrtcController) window.webrtcController.sendPoint(xRel, yRel);
         }
@@ -151,19 +140,16 @@
         localCanvas.onmousedown = (e) => { isDrawing = true; handleMove(e); };
         window.onmouseup = () => { isDrawing = false; };
         localCanvas.onmousemove = handleMove;
+        localCanvas.ontouchstart = (e) => { isDrawing = true; handleMove(e); if(e.cancelable) e.preventDefault(); };
+        localCanvas.ontouchmove = (e) => { handleMove(e); if(e.cancelable) e.preventDefault(); };
+        localCanvas.ontouchend = () => { isDrawing = false; };
 
         window.onload = () => {
-            initCanvas(localCanvas);
-            initCanvas(remoteCanvas);
+            initCanvas(localCanvas); initCanvas(remoteCanvas);
             setCanvasEnabled(false);
             socket.emit('join', 'demo-room');
-            document.getElementById('btnConnect').onclick = () => {
-                window.webrtcController.connectP2P();
-            };
-            document.getElementById('btnClear').onclick = () => {
-                localDots = [];
-                remoteDots = [];
-            };
+            document.getElementById('btnConnect').onclick = () => window.webrtcController.connectP2P();
+            document.getElementById('btnClear').onclick = () => { localDots = []; remoteDots = []; };
         };
     </script>
 </body>

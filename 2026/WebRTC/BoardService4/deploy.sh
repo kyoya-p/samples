@@ -41,15 +41,15 @@ az container delete --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --yes
 
 echo "Deploying Coturn to ACI (Initial)..."
 TURN_DNS_LABEL="webrtc-turn-${RANDOM}"
-# Open 3478 and relay range 49152-49154 (Total 4 ports, under ACI limit of 5)
-TURN_PORTS="3478 $(seq 49152 49154)"
+# Open 3478 (UDP/TCP) and relay range 49152-49154 (Total 5 ports, ACI limit)
+TURN_PORTS="3478 49152 49153 49154"
 
 az container create \
   --resource-group $RESOURCE_GROUP \
   --name $TURN_ACI_NAME \
   --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
   --dns-name-label $TURN_DNS_LABEL \
-  --ports $TURN_PORTS \
+  --ports 3478 49152 49153 49154 \
   --protocol UDP \
   --os-type linux \
   --cpu 1 \
@@ -69,7 +69,7 @@ az container create \
   --name $TURN_ACI_NAME \
   --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
   --dns-name-label $TURN_DNS_LABEL \
-  --ports $TURN_PORTS \
+  --ports 3478 49152 49153 49154 \
   --protocol UDP \
   --os-type linux \
   --cpu 1 \
@@ -108,7 +108,7 @@ echo "Deployment complete! Validating access at: $URL"
 
 # --- Wait for URL accessibility (Max 5 minutes) ---
 echo "Waiting for service to become accessible..."
-TIMEOUT=300
+TIMEOUT=420
 ELAPSED=0
 while [ $ELAPSED -lt $TIMEOUT ]; do
     if curl -s --head --fail "$URL" > /dev/null; then
