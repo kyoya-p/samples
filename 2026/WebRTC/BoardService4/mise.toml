@@ -27,37 +27,9 @@ description = "Deploy to Azure (TURN + App)"
 depends = ["build"]
 run = "bash ./deploy.sh"
 
-[tasks.test]
-description = "Run Playwright tests"
-depends = ["build"]
-run = """
-# ポートの掃除
-lsof -t -i:3001 | xargs -r kill -9
-lsof -t -i:8081 | xargs -r kill -9
-lsof -t -i:8082 | xargs -r kill -9
-
-cd server && npm install && cd ..
-# バックグラウンドでサーバーを起動 (ログを server_output.log に保存)
-cd server && node index.js > server_output.log 2>&1 &
-SERVER_PID=$!
-echo "Server started with PID $SERVER_PID"
-
-# サーバー起動待ち (ポート3001がリッスンされるまで最大15秒待機)
-for i in {1..15}; do
-  if lsof -i:3001 > /dev/null; then
-    echo "Server is listening on port 3001."
-    break
-  fi
-  sleep 1
-done
-
-# テスト実行
-npx playwright test tests/sync_test.spec.js
-
-# サーバーを停止
-kill -9 $SERVER_PID
-lsof -t -i:3001 | xargs -r kill -9
-"""
+[tasks.list]
+description = "List all resources in the resource group"
+run = "az resource list --resource-group rg-webrtc-poc -o table"
 
 [tasks.destroy]
 description = "Delete Azure Resource Group"
