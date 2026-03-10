@@ -18,13 +18,12 @@ CONNECTION_STRING=$(az communication list-key --name $ACS_NAME --resource-group 
 echo "Creating Azure Communication Service: $ACR_NAME..."
 az acr create --resource-group $RESOURCE_GROUP --name $ACR_NAME --sku Basic --admin-enabled true
 ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
-
 # --- TURN Server Deployment ---
 TURN_ACI_NAME="webrtc-turn-server"
 echo "Building Coturn image in ACR..."
 az acr build --registry $ACR_NAME --image webrtc-turn:latest turn/
 
-echo "Deploying Coturn to ACI (Initial)..."
+echo "Deploying Coturn to ACI..."
 TURN_DNS_LABEL="webrtc-turn-${RANDOM}"
 TURN_PORTS="3478 49152 49153 49154"
 
@@ -42,25 +41,9 @@ az container create \
   --registry-username $ACR_NAME \
   --registry-password "$ACR_PASS"
 
-# コンテナ自身のPublic IP(動的に決定される)を再設定するため2回目デプロイ。設定のみ更新される。
-TURN_IP=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.ip -o tsv)
+# FQDN remains useful for the App server configuration
 TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.fqdn -o tsv)
-
-echo "Updating TURN server with its assigned Public IP: $TURN_IP..."
-az container create \
-  --resource-group $RESOURCE_GROUP \
-  --name $TURN_ACI_NAME \
-  --image ${ACR_NAME}.azurecr.io/webrtc-turn:latest \
-  --dns-name-label $TURN_DNS_LABEL \
-  --ports 3478 49152 49153 49154 \
-  --protocol UDP \
-  --os-type linux \
-  --cpu 1 \
-  --memory 1.0 \
-  --registry-login-server ${ACR_NAME}.azurecr.io \
-  --registry-username $ACR_NAME \
-  --registry-password "$ACR_PASS" \
-  --environment-variables EXTERNAL_IP="$TURN_IP"
+TURN_IP=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.ip -o tsv)
 
 TURN_ENV="TURN_URL=turn:$TURN_FQDN:3478 TURN_USER=user TURN_PASSWORD=password123"
 echo "TURN server stabilized at: $TURN_FQDN ($TURN_IP)"
@@ -73,10 +56,6 @@ az acr build --registry $ACR_NAME --image webrtc-server:latest server/
 echo "Deploying App Server to Azure Container Instance..."
 ACI_NAME="webrtc-full-stack"
 DNS_LABEL="webrtc-full-stack"
-
-# 強制再作成
-echo "Removing existing App container if any..."
-az container delete --resource-group $RESOURCE_GROUP --name $ACI_NAME --yes || true
 
 az container create --resource-group $RESOURCE_GROUP --name $ACI_NAME \
   --image ${ACR_NAME}.azurecr.io/webrtc-server:latest \
