@@ -36,10 +36,29 @@ sequenceDiagram
     end
 ```
 
-# POC概要
-- poc.1: WebSocket を使用した基本的なシグナリングによる P2P メッセージ送受信の基礎。
-- poc.2: カメラ映像（getUserMedia）のリアルタイムストリーミング。
-- poc.3: P2P が失敗する場合に備えた、内蔵 TURN サーバーによるリレー通信の実装。
-- poc.4: カメラ/画面共有の切り替えおよび、TURN 強制モード（iceTransportPolicy: relay）の検証機能。
-- poc.5: `mise` を利用した Azure CLI (az) 実行環境のセットアップ自動化。
-- poc.7: Azure App Service (Node.js) と Azure Container Instances (coturn) への完全デプロイ。
+# 開発履歴とディレクトリ構成 (POC Index)
+本プロジェクトは、WebRTCの基礎習得から、ネットワーク制約の克服、Azure ACS 統合、そして最終的な独自リレーサーバー構築へと段階的に進化してきました。
+
+### 1. ローカル開発・基礎フェーズ (Basic WebRTC)
+- **[poc.1](./poc.1/)**: WebRTCの基本挙動確認。`node-turn` を使用し、ローカル環境での `host` / `relay` 候補の差分を検証。
+- **[poc.2](./poc.2/)**: メディアストリーム基礎。カメラ映像および `getDisplayMedia` による画面共有、Canvasフォールバックを実装。
+- **[poc.3](./poc.3/)**: セキュアコンテキスト対応。自己署名証明書によるHTTPSサーバー化を行い、ブラウザのWebRTC制限を回避。
+- **[poc.4](./poc.4/)**: リレー通信の厳密検証。`iceTransportPolicy: 'relay'` を強制し、TURNサーバー経由のパケット転送をデバッグ。
+
+### 2. Azure Cloud デプロイ・リレー構築フェーズ (Cloud Infrastructure)
+- **[poc.5](./poc.5/)**: Azure CLI 開発環境の整備 (`mise` を利用)。
+- **[poc.7](./poc.7/)**: Azure App Service (Signaling) と Azure Container Instances (Coturn) の組み合わせによる初のクラウド実証。
+- **[poc.8_ACS](./poc.8_ACS/)**: Azure Communication Services (ACS) の TURN サービス利用に向けた初期調査。
+
+### 3. ACS 認証・SDK 調査フェーズ (ACS Deep Dive)
+- **[poc.az.acs1](./poc.az.acs1/) / [acs2](./poc.az.acs2/)**: ACS リソース管理。Python SDK を用いた TURN 資格情報の動的取得と Identity 連携の検証。
+- **[poc.az.acs3](./poc.az.acs3/)**: Kotlin/JS (Amper) クライアントと ACS Signaling の統合プロトタイプ。
+
+### 4. Kotlin/JS & ACS 統合フェーズ (Advanced Integration)
+- **[poc.9](./poc.9/)**: Kotlin/JS への完全移行。ACS TURN サービスの 404 エラー（Identity未連携による Front Door 拒否）を特定。
+- **[poc.10](./poc.10/)**: `CommunicationIdentityClient` による Identity 連携を実装し、ACS 提供の TURN サービスが利用可能であることを最終実証。
+
+### 5. アプリケーション実装フェーズ (Product Prototypes)
+- **[BoardService](./BoardService/)**: ホワイトボード同期の初期実装。
+- **[BoardService4](./BoardService4/)**: ホワイトボード機能に ACI 上の Coturn リレーを統合。プロダクトに近い構成へ。
+- **[WhiteBoard5](./WhiteBoard5/)**: **(最新安定版)** 2024年3月の ACS TURN サービス終了に伴い、ACI 上に最適化された Coturn を構築。WebRTC DataChannel による高速な描画同期を実現。

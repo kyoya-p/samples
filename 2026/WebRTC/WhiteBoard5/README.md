@@ -49,3 +49,6 @@ mise run deploy
 - **Coturn on ACI の構成**: ACI で Coturn を動かす際は、`--external-ip` に ACI のパブリック IP を明示的に指定する必要がある。これを怠ると内部 IP (`192.168.x.x`) で応答してしまい、外部からのリレー候補生成に失敗する。
 - **WebRTC 接続経路の検証**: `peerConnection.getStats()` を解析し、`Selected Path: Local[relay] <-> Remote[relay]` というログを出力することで、収集した候補（Candidate）の中から実際に TURN 経路が選択されたことを厳密に実証済み。
 - **Kotlin/JS のブラウザテスト手法**: Amper でビルドされた Kotlin/JS アプリケーションを Playwright で自動テストし、`connected` 状態や統計情報をキャプチャ可能。
+
+
+
