@@ -42,8 +42,7 @@ az container create \
   --registry-username $ACR_NAME \
   --registry-password "$ACR_PASS"
 
-# ACI assignes a Public IP that is often different from the host's egress IP.
-# We must fetch it and update Coturn's external-ip explicitly.
+# コンテナ自身のPublic IP(動的に決定される)を再設定するため2回目デプロイ。設定のみ更新される。
 TURN_IP=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.ip -o tsv)
 TURN_FQDN=$(az container show --resource-group $RESOURCE_GROUP --name $TURN_ACI_NAME --query ipAddress.fqdn -o tsv)
 
