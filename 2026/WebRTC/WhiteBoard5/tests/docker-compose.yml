@@ -1,8 +1,8 @@
 services:
   client1:
     build:
-      context: .
-      dockerfile: Dockerfile.client
+      context: ..
+      dockerfile: ../Dockerfile.client
     ports:
       - "8081:6080"
     environment:
@@ -12,8 +12,8 @@ services:
 
   client2:
     build:
-      context: .
-      dockerfile: Dockerfile.client
+      context: ..
+      dockerfile: ../Dockerfile.client
     ports:
       - "8082:6080"
     environment:
