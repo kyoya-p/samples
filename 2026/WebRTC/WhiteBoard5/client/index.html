@@ -18,7 +18,6 @@
     <div>
         <label><input type="checkbox" id="chkForceTurn"> Force TURN (Relay only)</label>
         <button id="btnConnect" style="background:#28a745">Connect P2P (WebRTC)</button>
-        <button id="btnClear" style="background:#666">Clear All</button>
     </div>
 
     <div class="boxes">
@@ -140,7 +139,6 @@
             setCanvasEnabled(false);
             socket.emit('join', 'demo-room');
             document.getElementById('btnConnect').onclick = () => window.webrtcController.connectP2P();
-            document.getElementById('btnClear').onclick = () => { localDots = []; remoteDots = []; };
         };
     </script>
 </body>
