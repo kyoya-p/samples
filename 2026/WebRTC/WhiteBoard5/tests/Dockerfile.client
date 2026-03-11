@@ -12,16 +12,14 @@ RUN apt-get update && apt-get install -y \
     fluxbox \
     curl \
     x11-xserver-utils \
+    iproute2 iputils-ping net-tools \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# package.json のコピー
-COPY package*.json ./
-RUN npm install
+RUN npm install -g @playwright/test
 
-# エントリーポイントのコピーと権限付与
-COPY tests/entrypoint-client.sh /entrypoint.sh
+COPY entrypoint-client.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # noVNC のポート

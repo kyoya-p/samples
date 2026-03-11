@@ -30,62 +30,13 @@ echo "Starting x11vnc..."
 x11vnc -display :99 -forever -nopw -shared -rfbport 5900 > /tmp/x11vnc.log 2>&1 &
 sleep 2
 
-# Websockify起動 (6081番ポートへ)
-echo "Starting websockify on :6081..."
-websockify --web /usr/share/novnc/ 6081 localhost:5900 > /tmp/websockify.log 2>&1 &
+# Websockify起動
+echo "Starting websockify on :6080..."
+websockify --web /usr/share/novnc/ 6080 localhost:5900 > /tmp/websockify.log 2>&1 &
 sleep 2
 
-# URLトリガー付きランチャー & プロキシ
-cat <<'EOF' > /app/url-launcher.js
-const express = require('express');
-const httpProxy = require('http-proxy');
-const { chromium } = require('playwright');
-const app = express();
-const proxy = httpProxy.createProxyServer({ ws: true });
-const PORT = 6080;
-const WEBSOCKIFY_PORT = 6081;
-
-let browser;
-let page;
-
-async function launchBrowser() {
-    console.log('Launching Playwright browser...');
-    browser = await chromium.launch({ 
-        headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized']
-    });
-    const context = await browser.newContext({ viewport: null });
-    page = await context.newPage();
-    const defaultUrl = process.env.TARGET_URL || 'http://server:3000/index.html';
-    await page.goto(defaultUrl, { waitUntil: 'networkidle' });
-}
-
-app.all('*', async (req, res) => {
-    // ?target=... が指定されている場合、ブラウザを遷移させる
-    const targetUrl = req.query.target;
-    if (targetUrl && page) {
-        console.log(`URL Trigger detected: Navigating to ${targetUrl}`);
-        await page.goto(targetUrl).catch(e => console.error('Goto failed:', e));
-    }
-
-    //  WebSocketアップグレードでなければ、通常の静的ファイルとしてWebsockifyへプロキシ
-    if (req.headers.upgrade !== 'websocket') {
-        proxy.web(req, res, { target: `http://localhost:${WEBSOCKIFY_PORT}` });
-    }
-});
-
-const server = app.listen(PORT, async () => {
-    console.log(`URL-Triggered Launcher Proxy running on port ${PORT}`);
-    await launchBrowser();
-});
-
-server.on('upgrade', (req, socket, head) => {
-    proxy.ws(req, socket, head, { target: `ws://localhost:${WEBSOCKIFY_PORT}` });
-});
-EOF
-
-echo "Starting URL-triggered launcher..."
-node /app/url-launcher.js &
+# Browserを起動
+playwright codegen $TARGET_URL
 
 # プロセスを維持し、ログを表示
 tail -f /tmp/*.log

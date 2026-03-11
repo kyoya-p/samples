@@ -9,10 +9,18 @@ Webクライアントは下記それぞれの接続方
 # 実装のポイント
 本実装では、Azure ACS のシグナリング機能を維持しつつ、廃止された ACS リレーサービスの代わりに ACI 上に構築した **Coturn サーバー** を使用して WebRTC PeerConnection を確立。
 データ同期（描画点）は、P2P接続が確立されている場合は **WebRTC DataChannel** を通じて実行される。
-- 
+
 - **Server**: Express サーバーにて、ACS の Identity トークン発行と同時に、構築した Coturn サーバーの認証情報を `/ice-servers` で提供。
 - **Client (Kotlin/JS)**: `RTCPeerConnection` と `RTCDataChannel` を実装。接続確立時にアクティブな ICE 候補ペアを表示するデバッグ機能を搭載。
 - **TURN Server**: `coturn/coturn` イメージをベースに、UDP 3478 ポートおよび長期認証 (lt-cred-mech) を有効化して ACI に配備。
+
+# クライアントアプリ
+- Connectボタン, TURN強制ボタン
+- Drawエリア
+    - クリックした座標に青丸を描画、同時に座標を送信
+    - 受信した座標に赤丸を描画
+    - 描画された内容は時間とともに白く(薄く)なり消滅
+- ログ表示
 
 # 環境
 - OS: Ubuntu 24.04
