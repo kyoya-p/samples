@@ -37,16 +37,17 @@ Azure にサービス（App Server & TURN Server）を配備
 ```bash
 mise run deploy
 ```
-# Client環境テスト
-URL:
-- Client 1: http://localhost:8081/vnc.html?autoconnect=true?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
-- Client 2: http://localhost:8082/vnc.html?autoconnect=true?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
 
-
-## 3. 検証
-- **TURN 強制接続テスト**: 「Force TURN (Relay only)」を有効にし、ログに `Selected Path: Local[relay] <-> Remote[relay]` が表示されることを確認。
-- **DataChannel 同期**: 複数ブラウザタブ間でのリアルタイム描画同期を確認。
-- **スクリーンショット**: `.playwright-mcp/` 内の画像で操作結果と接続ログの状態をエビデンスとして保持。
+# 検証
+異なるブリッジネットワーク（`net1`, `net2`）に分離された 2 つのクライアントコンテナを起動し、STUN (`srflx`) および TURN (`relay`) による接続をローカルでシミュレーションする。
+```bash
+mise run test:up  # 検証用コンテナの起動
+# Test★
+mise run test:down  # 検証用コンテナの終了
+```
+★ブラウザで以下の URL を開き、VNC 経由で各クライアントのデスクトップ（ブラウザ）を操作する。
+- **Client 1**: [http://localhost:8081/vnc.html?autoconnect=true&?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
+- **Client 2**: [http://localhost:8082/vnc.html?autoconnect=true&?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
 
 
 # 知見 (Findings)
