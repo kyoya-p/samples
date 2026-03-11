@@ -37,6 +37,11 @@ Azure にサービス（App Server & TURN Server）を配備
 ```bash
 mise run deploy
 ```
+# Client環境テスト
+URL:
+- Client 1: http://localhost:8081/vnc.html?autoconnect=true?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
+- Client 2: http://localhost:8082/vnc.html?autoconnect=true?target=http://webrtc-full-stack.japaneast.azurecontainer.io:3000
+
 
 ## 3. 検証
 - **TURN 強制接続テスト**: 「Force TURN (Relay only)」を有効にし、ログに `Selected Path: Local[relay] <-> Remote[relay]` が表示されることを確認。

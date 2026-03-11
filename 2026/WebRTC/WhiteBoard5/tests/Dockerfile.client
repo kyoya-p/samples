@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     websockify \
     fluxbox \
     curl \
+    x11-xserver-utils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -20,7 +21,7 @@ COPY package*.json ./
 RUN npm install
 
 # エントリーポイントのコピーと権限付与
-COPY entrypoint-client.sh /entrypoint.sh
+COPY tests/entrypoint-client.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # noVNC のポート

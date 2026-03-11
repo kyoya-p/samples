@@ -38,14 +38,17 @@ run = "az resource list --resource-group $RESOURCE_GROUP -o table"
 description = "Delete Azure Resource Group"
 run = "az group delete --name $RESOURCE_GROUP --yes"
 
-[tasks.test-client]
-description = "Start manual test environment with noVNC (client1:8081, client2:8082)"
-depends = ["build"]
-run = "docker compose up -d --build"
+[tasks."test:up"]
+description = "Start local test environment with noVNC (client1:8083, client2:8084)"
+dir = "tests"
+run = "docker compose -f docker-compose.yml up -d --build"
 
-[tasks.test-logs]
-description = "Show logs from the test environment"
-run = "docker compose logs -f"
+[tasks."test:logs"]
+description = "Show logs from the local test environment"
+dir = "tests"
+run = "docker compose -f docker-compose.yml logs -f"
 
-[tasks.test-clear]
-run = "docker compose down --rmi local --volumes --remove-orphans"
+[tasks."test:down"]
+description = "Stop and remove the local test environment"
+dir = "tests"
+run = "docker compose -f docker-compose.yml down --rmi local --volumes --remove-orphans"
