@@ -1,4 +1,10 @@
+# 概要
 
+クラウドマネージドサービスを使用したWebRTC のサーバとそれ用のWebクライアントの実証
+Webクライアントは下記方式いずれかで接続する
+- P2PダイレクトIP接続
+- NAT/PROXYを経由するダイレクト通信
+- インターネット上のサーバを経由するLAN間通信
 
 ```mermaid
 sequenceDiagram
@@ -35,6 +41,12 @@ sequenceDiagram
         turn -->> A:  受信(Data)
     end
 ```
+
+# 参考
+
+- https://webrtc.github.io/samples/
+- https://note.com/npaka/n/n92408f0fa5bf
+
 
 # 開発履歴とディレクトリ構成 (POC Index)
 本プロジェクトは、WebRTCの基礎習得から、ネットワーク制約の克服、Azure ACS 統合、そして最終的な独自リレーサーバー構築へと段階的に進化してきました。
