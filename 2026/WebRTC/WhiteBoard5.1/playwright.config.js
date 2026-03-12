@@ -8,7 +8,7 @@ module.exports = defineConfig({
     timeout: 60000 // expect タイムアウト 60s
   },
   use: {
-    baseURL: 'http://localhost:3001',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
   },
   projects: [

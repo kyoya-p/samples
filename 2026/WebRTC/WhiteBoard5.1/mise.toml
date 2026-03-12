@@ -8,11 +8,7 @@ RESOURCE_GROUP="rg-webrtc-poc"
 
 [tasks.build]
 description = "Build client/server modules"
-run = """
-mkdir -p server/public/js/
-cp client/index.html server/public/
-cp client/src/client.js server/public/js/
-"""
+run = "echo 'Assets already in public/'"
 
 [tasks.deploy]
 description = "Deploy to Azure (TURN + App)"
