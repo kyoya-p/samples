@@ -1,29 +1,48 @@
 # プロジェクト履歴
 
-# poc.1
+全16個のPOCおよびプロトタイプの実装履歴。
 
-# poc.2
+## POC 索引 (Index)
 
+### 1. 基礎・ローカル開発フェーズ
+- **[poc.1](./poc.1/)**: WebRTCの基本挙動確認。
+- **[poc.2](./poc.2/)**: メディアストリーム基礎（カメラ・画面共有）。
+- **[poc.3](./poc.3/)**: セキュアコンテキスト対応（HTTPS化）。
+- **[poc.4](./poc.4/)**: 強制リレー検証（Force TURN）。
 
-# poc.3
-- **HTTPS 移行**: `selfsigned` を利用した自己署名証明書による HTTPS サーバー化。
-- **TURN サーバー統合**: `node-turn` を同一プロセス内で起動し、外部ネットワークや制限された環境での通信をサポート。
-- **ダミーストリーム**: カメラ未検出時に自動で Canvas + Oscillator による動的メディアストリームを生成するフォールバックを実装。
+### 2. Azure クラウド・インフラ構築フェーズ
+- **[poc.5](./poc.5/)**: Azure CLI 開発環境整備。
+- **[poc.7](./poc.7/)**: App Service + ACI (Coturn) による初のクラウド実証。
+- **[poc.8_ACS](./poc.8_ACS/)**: Azure Communication Services (ACS) リレー調査。
 
-# poc.4
-- **強制リレーモード**: UIに「Force TURN (Relay)」を追加。`iceTransportPolicy: 'relay'` を設定することで、P2P（直接接続）を意図的に排除した通信テストを可能にした。
-- **検証成功**: 
-  - クライアントログにて `relay` 候補のみが利用されていることを確認。
-  - サーバーログにて `[TURN] DEBUG: Receiving/Sending` が記録され、中継が行われていることを確認。
-  - ブラウザのスクリーンショットにより、リレー経由での映像の相互受信を確認。
+### 3. ACS 認証・SDK 調査フェーズ (Deep Dive)
+- **[poc.az.acs1](./poc.az.acs1/)**: ACS リソース管理と Python SDK の基礎検証。
+- **[poc.az.acs2](./poc.az.acs2/)**: Python による TURN 資格情報の動的取得検証。
+- **[poc.az.acs3](./poc.az.acs3/)**: Kotlin/JS (Amper) と ACS Signaling の統合試作。
 
-# 非採用となった設計・検討事項
+### 4. Kotlin/JS & ACS 統合フェーズ
+- **[poc.9](./poc.9/)**: Kotlin/JS 移行後の接続エラー（404）分析。
+- **[poc.10](./poc.10/)**: Identity 連携による ACS リレーの最終実証。
 
+### 5. アプリケーション実装フェーズ
+- **[BoardService](./BoardService/)**: ホワイトボード同期の初期実装。
+- **[BoardService4](./BoardService4/)**: ACI Coturn リレーを統合したプロダクト構成。
+- **[WhiteBoard5](./WhiteBoard5/)**: 安定版。ACI 最適化 Coturn 構築と DataChannel 同期。
+- **[WhiteBoard5.1](./WhiteBoard5.1/)**: **(最新)** 自動テスト導入、構造最適化、シグナリング安定化。
 
-# 技術的な留意事項
+---
 
-## getDisplayMedia の利用制限
-- **事象**: `Capture error: Cannot read properties of undefined (reading 'getDisplayMedia')` が発生。
-- **原因**: `getDisplayMedia` は **Secure Context**（HTTPS または localhost）でなければ `navigator.mediaDevices` 内で `undefined` となる。IPアドレス指定（http://192.168.x.x 等）でアクセスした場合にこの制限に抵触する。
-- **対策**: `localhost` でのアクセスを徹底するか、HTTPS 環境を構築する必要がある。
+## 主要な技術的知見 (Findings)
 
+### 1. ネットワーク・リレー
+- **Azure ACS TURN 終了**: 2024年3月31日に終了。現在は ACI 上の Coturn 自前構築が必須。
+- **Coturn 構成**: `--external-ip` 指定がないとリレー候補生成に失敗する。
+- **経路検証**: `getStats()` で `Local[relay] <-> Remote[relay]` を確認する手法。
+
+### 2. ブラウザ制限と実装
+- **Secure Context**: `getDisplayMedia` は localhost/HTTPS 必須。
+- **Candidate シリアル化**: `toJSON()` を使用しないとプロパティが欠落する。
+
+### 3. テストと保守
+- **シグナリング安定化**: テストごとのユニークな `room` 管理と `socket.id` フィルタリング。
+- **接続判定**: `ConnectionState` だけでなく `ICEConnectionState` も成否判定に活用。
