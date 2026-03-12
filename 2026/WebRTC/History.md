@@ -1,6 +1,6 @@
 # プロジェクト履歴
 
-全16個のPOCおよびプロトタイプの実装履歴。
+全17個のPOCおよびプロトタイプの実装履歴。
 
 ## POC 索引 (Index)
 
@@ -28,7 +28,8 @@
 - **[BoardService](./BoardService/)**: ホワイトボード同期の初期実装。
 - **[BoardService4](./BoardService4/)**: ACI Coturn リレーを統合したプロダクト構成。
 - **[WhiteBoard5](./WhiteBoard5/)**: 安定版。ACI 最適化 Coturn 構築と DataChannel 同期。
-- **[WhiteBoard5.1](./WhiteBoard5.1/)**: **(最新)** 自動テスト導入、構造最適化、シグナリング安定化。
+- **[WhiteBoard5.1](./WhiteBoard5.1/)**: メンテナンス版。自動テスト導入、構造最適化。
+- **[rtcsock.1](./rtcsock.1/)**: **(最新)** WebRTC DataChannel をトランスポート層として使用し、noVNC をクラウド/NAT越しに利用可能にする POC。
 
 ---
 
@@ -46,3 +47,7 @@
 ### 3. テストと保守
 - **シグナリング安定化**: テストごとのユニークな `room` 管理と `socket.id` フィルタリング。
 - **接続判定**: `ConnectionState` だけでなく `ICEConnectionState` も成否判定に活用。
+
+### 4. VNC 連携 (rtcsock)
+- **WebSocket 抽象化**: noVNC の `RFB.js` が期待する WebSocket オブジェクトを WebRTC DataChannel でラップして偽装 (`fakeWS`) することで、既存ライブラリを無改造で WebRTC 化。
+- **ヘッドレス・ブリッジ**: サーバーサイドでの WebRTC スタック構築を避け、Playwright (Chromium) をエージェントとして動かすことで安定した VNC ↔ WebRTC 変換を実現。

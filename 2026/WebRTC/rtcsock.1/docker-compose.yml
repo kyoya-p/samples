@@ -1,0 +1,23 @@
+services:
+  signaling:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - rtc-net
+
+  agent:
+    build:
+      context: vnc
+    environment:
+      - SIGNALING_URL=http://signaling:3000
+    depends_on:
+      - signaling
+    networks:
+      - rtc-net
+
+networks:
+  rtc-net:
+    driver: bridge

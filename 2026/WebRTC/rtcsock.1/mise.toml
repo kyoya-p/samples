@@ -1,0 +1,18 @@
+[tools]
+node = "lts"
+
+[tasks.up]
+description = "Start all services with docker-compose"
+run = "docker compose up -d --build"
+
+[tasks.down]
+description = "Stop all services with docker-compose"
+run = "docker compose down"
+
+[tasks.logs]
+description = "View logs from docker-compose"
+run = "docker compose logs -f"
+
+[tasks.clean]
+description = "Remove all images and volumes"
+run = "docker compose down --rmi all --volumes --remove-orphans"

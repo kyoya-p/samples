@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>VNC WebRTC Agent</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="status">エージェント待機中...</div>
+    <script>
+        const socket = io(location.origin);
+        let peerConnection;
+        let vncWS;
+
+        socket.on('connect', () => {
+            document.getElementById('status').innerText = "シグナリングサーバに接続";
+            socket.emit('join', 'vnc-room');
+        });
+
+        socket.on('signal', async (data) => {
+            if (data.type === 'offer') {
+                await setupWebRTC(data);
+            } else if (data.type === 'candidate' && peerConnection) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            }
+        });
+
+        async function setupWebRTC(offer) {
+            const iceResp = await fetch('/ice-servers');
+            const iceServers = await iceResp.json();
+
+            peerConnection = new RTCPeerConnection({ iceServers });
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('signal', { type: 'candidate', candidate: event.candidate.toJSON(), room: 'vnc-room' });
+                }
+            };
+
+            peerConnection.ondatachannel = (event) => {
+                const dataChannel = event.channel;
+                dataChannel.binaryType = "arraybuffer";
+                
+                document.getElementById('status').innerText = "DataChannel 接続確立。VNCブリッジ開始。";
+
+                // ローカルの websockify (VNC) に接続
+                vncWS = new WebSocket('ws://localhost:6080');
+                vncWS.binaryType = 'arraybuffer';
+
+                vncWS.onmessage = (e) => {
+                    if (dataChannel.readyState === 'open') dataChannel.send(e.data);
+                };
+
+                dataChannel.onmessage = (e) => {
+                    if (vncWS.readyState === WebSocket.OPEN) vncWS.send(e.data);
+                };
+
+                vncWS.onclose = () => dataChannel.close();
+                dataChannel.onclose = () => vncWS.close();
+            };
+
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('signal', { type: answer.type, sdp: answer.sdp, room: 'vnc-room' });
+        }
+    </script>
+</body>
+</html>

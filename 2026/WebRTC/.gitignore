@@ -3,3 +3,4 @@ node_modules/
 /.playwright-mcp/
 poc.*/cert.pem
 poc.*/key.pem
+/.server.pid
