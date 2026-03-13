@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Explorer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --primary: #3b82f6;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --accent: #8b5cf6;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* Sidebar Controls */
+        .sidebar {
+            width: 360px;
+            background-color: var(--card-bg);
+            border-right: 1px solid #334155;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        h1 { font-size: 1.4rem; margin: 0; color: var(--primary); font-weight: 800; }
+        .step-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        
+        /* Main View */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top right, #1e1b4b, var(--bg-color));
+            overflow-y: auto;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+        }
+        .video-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+            position: relative;
+            aspect-ratio: 4/3;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .video-card h3 { position: absolute; top: 12px; left: 12px; margin: 0; font-size: 0.8rem; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 6px; z-index: 2; backdrop-filter: blur(4px); }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; cursor: crosshair; }
+        
+        /* Responsive Overrides */
+        @media (max-width: 1000px) {
+            .video-grid { grid-template-columns: 1fr; max-width: 500px; }
+            .sidebar { width: 300px; }
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { 
+                width: auto; 
+                order: 2; 
+                border-right: none; 
+                border-top: 1px solid #334155; 
+                box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+                flex-shrink: 1;
+            }
+            .main-content { order: 1; padding: 15px; min-height: 80vh; }
+            .video-grid { gap: 12px; }
+            .video-card { aspect-ratio: 16/9; }
+        }
+
+        /* UI Elements */
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        button.secondary { background-color: var(--accent); }
+        button.outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        
+        textarea {
+            background: #020617;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            width: calc(100% - 20px);
+            height: 100px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.7rem;
+            resize: vertical;
+        }
+        #iceList {
+            background: #020617;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.65rem;
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+        }
+        .ice-item { padding: 3px 0; border-bottom: 1px solid #1e293b; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ice-item span { font-weight: bold; color: var(--accent); margin-right: 4px; }
+        body.hide-host .ice-item.host { display: none; }
+        
+        hr { border: 0; border-top: 1px solid #334155; width: 100%; margin: 5px 0; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--danger); margin-right: 6px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>WebRTC Explorer</h1>
+        <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Serverless P2P Verification</p>
+        
+        <hr>
+        
+        <div>
+            <div class="step-label">Step 1: Role Selection</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button id="createOfferBtn" class="secondary">[A] Offer作成</button>
+                <button id="createAnswerBtn" class="outline">[B] Answer作成</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="step-label">Step 2: Finalize</div>
+            <button id="setAnswerBtn" style="background: var(--success);">[A] Answer適用・接続</button>
+        </div>
+
+        <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                <div class="step-label" style="margin-bottom: 0;">ICE Candidates</div>
+                <label style="font-size: 0.6rem; color: #94a3b8; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    <input type="checkbox" id="noHostCheck"> NOHOST
+                </label>
+            </div>
+            <div id="iceList">Click Local Video to Start...</div>
+        </div>
+
+        <div>
+            <div class="step-label">SDP Payload</div>
+            <textarea id="sdpArea" placeholder="SDP will appear here..."></textarea>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="video-grid">
+            <div class="video-card">
+                <h3>LOCAL</h3>
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+            <div class="video-card">
+                <h3>REMOTE</h3>
+                <video id="remoteVideo" autoplay playsinline></video>
+            </div>
+        </div>
+        <div id="connStatus" style="font-size: 0.85rem; color: #94a3b8; margin-top: 10px;">
+            <span class="status-dot"></span> ICE Connection: disconnected
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>

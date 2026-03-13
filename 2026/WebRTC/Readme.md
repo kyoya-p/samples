@@ -42,6 +42,16 @@ sequenceDiagram
     end
 ```
 
+## WebRTC 接続パターン (UDP/TCP)
+
+| 接続タイプ | プロトコル | 特徴・用途 |
+| :--- | :--- | :--- |
+| **Host** | UDP | **同一LAN内。** 端末のプライベートIPを使用して直接通信。最も低遅延。 |
+| **STUN (Srflx)** | UDP | **一般インターネット(WAN)。** NATの外側IPを学習し、P2Pで直接通信。 |
+| **TURN (Relay)** | UDP | **リレー通信。** 直接のP2Pが失敗した場合、サーバがUDPパケットを中継。 |
+| **TURN (Relay)** | TCP | **フォールバック。** UDPが禁止されている企業内ネットワーク等で使用。 |
+| **TURN (Relay)** | TLS (TCP) | **最終手段。** Proxy環境やポート制限が厳しい場合、443ポート(HTTPS)に偽装して通信。 |
+
 # 参考
 
 - https://webrtc.github.io/samples/
