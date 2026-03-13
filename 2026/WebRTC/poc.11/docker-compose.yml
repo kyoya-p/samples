@@ -1,0 +1,55 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./server/public:/home/node/app/public
+    environment:
+      - PORT=3000
+    networks:
+      - webrtc-net
+
+  client1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8081:6080"
+    environment:
+      - TARGET_URL=http://server:3000/index.html
+    volumes:
+      - .:/app
+    networks:
+      - webrtc-net
+
+  client2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8082:6080"
+    environment:
+      - TARGET_URL=http://server:3000/index.html
+    volumes:
+      - .:/app
+    networks:
+      - webrtc-net
+
+  turn:
+    build:
+      context: ./turn
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49152-49154:49152-49154/udp"
+    environment:
+      - EXTERNAL_IP=127.0.0.1
+    networks:
+      - webrtc-net
+
+networks:
+  webrtc-net:
+    driver: bridge

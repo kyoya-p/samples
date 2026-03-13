@@ -1,0 +1,29 @@
+FROM mcr.microsoft.com/playwright:v1.50.1-jammy
+
+# インタラクティブなプロンプトを無効化
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 必要なGUIツールのインストール
+RUN apt-get update && apt-get install -y \
+    xvfb \
+    x11vnc \
+    novnc \
+    websockify \
+    fluxbox \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# package.json のコピー
+COPY package*.json ./
+RUN npm install
+
+# エントリーポイントのコピーと権限付与
+COPY entrypoint-client.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# noVNC のポート
+EXPOSE 6080
+
+ENTRYPOINT ["/entrypoint.sh"]

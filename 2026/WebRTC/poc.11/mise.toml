@@ -1,0 +1,23 @@
+[tasks.up]
+description = "Start the environment with docker-compose"
+run = "docker-compose up -d --build"
+
+[tasks.down]
+description = "Stop and remove containers"
+run = "docker-compose down"
+
+[tasks.logs]
+description = "Show real-time logs"
+run = "docker-compose logs -f"
+
+[tasks.server-sh]
+description = "Open a shell in the signaling server container"
+run = "docker-compose exec server bash"
+
+[tasks.turn-sh]
+description = "Open a shell in the turn server container"
+run = "docker-compose exec turn bash"
+
+[tasks.ps]
+description = "Show container status"
+run = "docker-compose ps"
