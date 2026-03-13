@@ -44,7 +44,7 @@
                 document.getElementById('status').innerText = "DataChannel 接続確立。VNCブリッジ開始。";
 
                 // ローカルの websockify (VNC) に接続
-                vncWS = new WebSocket('ws://localhost:6080');
+                vncWS = new WebSocket('ws://127.0.0.1:6080');
                 vncWS.binaryType = 'arraybuffer';
 
                 vncWS.onmessage = (e) => {

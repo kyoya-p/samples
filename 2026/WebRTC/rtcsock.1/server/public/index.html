@@ -21,11 +21,9 @@
     <div id="screen"></div>
 
     <script type="module">
-        import RFB from 'https://cdn.jsdelivr.net/npm/@novnc/novnc/core/rfb.js';
+        import RFB from '/novnc/core/rfb.js';
 
-        const signalingHost = window.location.hostname === 'localhost' ? 'localhost' : (window.location.hostname || 'signaling');
-        const socket = io(`http://${signalingHost}:3000`);
-        
+        const socket = io();
         const btnConnect = document.getElementById('btnConnect');
         const statusEl = document.getElementById('status');
         let peerConnection;
@@ -37,7 +35,6 @@
             try {
                 const iceResp = await fetch('/ice-servers');
                 const iceServers = await iceResp.json();
-
                 peerConnection = new RTCPeerConnection({ iceServers });
                 
                 dataChannel = peerConnection.createDataChannel("vnc-data", { negotiated: false });
@@ -59,51 +56,67 @@
                 socket.emit('signal', { type: offer.type, sdp: offer.sdp, room: 'vnc-room' });
             } catch (e) {
                 statusEl.innerText = "エラー: " + e.message;
-                console.error(e);
             }
         }
 
         socket.on('signal', async (data) => {
             if (!peerConnection) return;
-            if (data.type === 'answer') {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-            } else if (data.type === 'candidate') {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-            }
+            try {
+                if (data.type === 'answer') {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+                } else if (data.type === 'candidate') {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            } catch (e) {}
         });
 
         function setupVNCProxy() {
             const fakeWS = {
-                send: (data) => {
-                    if (dataChannel.readyState === 'open') dataChannel.send(data);
+                send: (data) => { 
+                    if (dataChannel.readyState === 'open') {
+                        dataChannel.send(data); 
+                    }
                 },
                 close: () => dataChannel.close(),
                 readyState: WebSocket.OPEN,
+                protocol: 'binary',
                 onopen: null,
                 onmessage: null,
                 onclose: null,
                 onerror: null,
-                binaryType: 'arraybuffer'
+                binaryType: 'arraybuffer',
+                addEventListener: function(type, listener) { this['on' + type] = listener; },
+                removeEventListener: function(type, listener) { if (this['on' + type] === listener) this['on' + type] = null; }
             };
 
             dataChannel.onmessage = (event) => {
-                if (fakeWS.onmessage) fakeWS.onmessage({ data: event.data });
+                if (fakeWS.onmessage) {
+                    // noVNCのWebsock.jsはMessageEventオブジェクトを期待する
+                    fakeWS.onmessage(new MessageEvent('message', { data: event.data }));
+                }
             };
 
-            rfb = new RFB(document.getElementById('screen'), 'ws://localhost', {
+            // グローバルWebSocketを一時的に差し替え
+            const OriginalWebSocket = window.WebSocket;
+            window.WebSocket = function() { return fakeWS; };
+            window.WebSocket.OPEN = OriginalWebSocket.OPEN;
+
+            rfb = new RFB(document.getElementById('screen'), 'ws://dummy', {
                 shared: true,
                 credentials: { password: 'password123' }
             });
 
-            rfb._sock._websocket = fakeWS;
-            setTimeout(() => { if (fakeWS.onopen) fakeWS.onopen(); }, 100);
+            window.WebSocket = OriginalWebSocket;
+
+            // 少し遅延させてオープンを通知
+            setTimeout(() => { if (fakeWS.onopen) fakeWS.onopen(); }, 1000);
 
             rfb.addEventListener("connect", () => {
-                statusEl.innerText = "VNC 接続成功";
+                statusEl.innerText = "VNC 接続成功 (画面表示中)";
                 btnConnect.disabled = true;
             });
-            rfb.addEventListener("disconnect", () => {
-                statusEl.innerText = "VNC 切断";
+            rfb.addEventListener("disconnect", (e) => {
+                statusEl.innerText = "VNC 切断: " + (e.detail.clean ? "正常" : "エラー");
                 btnConnect.disabled = false;
             });
         }
