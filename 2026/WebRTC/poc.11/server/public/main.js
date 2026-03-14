@@ -25,6 +25,7 @@ const signalingDot = document.getElementById('signalingDot');
 const roomInput = document.getElementById('roomInput');
 const connectBtn = document.getElementById('connectBtn');
 const logArea = document.getElementById('logArea');
+const signalingUrlDisplay = document.getElementById('signalingUrl');
 
 // --- Custom Logger ---
 const originalLog = console.log;
@@ -59,6 +60,9 @@ let qixContext = {
 };
 
 window.addEventListener('load', () => {
+    if (signalingUrlDisplay) {
+        signalingUrlDisplay.innerText = `Signaling: ${window.location.origin}`;
+    }
     initQixCanvas();
     qixContext.active = true;
     localStream = qixContext.canvas.captureStream(30);
@@ -72,12 +76,14 @@ window.addEventListener('load', () => {
     });
 
     connectBtn.onclick = () => {
-        if (socket) return;
+        if (socket) {
+            socket.disconnect();
+            return;
+        }
         roomName = roomInput.value;
         if (!roomName) return alert("Enter room name");
         
         initSignaling();
-        connectBtn.disabled = true;
         connectBtn.innerText = 'Connecting...';
         roomInput.disabled = true;
     };
@@ -99,7 +105,8 @@ function initSignaling() {
         console.log('Connected to signaling server');
         signalingStatus.querySelector('span:last-child').innerText = `Connected: ${roomName}`;
         signalingDot.style.background = '#22c55e';
-        connectBtn.innerText = 'Joined';
+        connectBtn.innerText = 'Disconnect';
+        connectBtn.style.backgroundColor = 'var(--danger)';
         socket.emit('join', roomName);
     });
 
@@ -110,7 +117,12 @@ function initSignaling() {
         roomInput.disabled = false;
         connectBtn.disabled = false;
         connectBtn.innerText = 'Connect';
+        connectBtn.style.backgroundColor = 'var(--accent)';
         socket = null;
+        if (pc) {
+            pc.close();
+            pc = null;
+        }
     });
 
     socket.on('user-joined', (id) => {
@@ -125,7 +137,12 @@ function initSignaling() {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        socket.emit('answer', { answer, roomName });
+        
+        const finalAnswer = {
+            type: answer.type,
+            sdp: filterSdp(answer.sdp)
+        };
+        socket.emit('answer', { answer: finalAnswer, roomName });
     });
 
     socket.on('answer', async ({ answer, from }) => {
@@ -136,7 +153,13 @@ function initSignaling() {
     });
 
     socket.on('ice-candidate', async ({ candidate, from }) => {
-        console.log('Received ice-candidate from:', from);
+        if (!candidate || !candidate.candidate) return;
+
+        if (noHostCheck.checked && candidate.candidate.includes('typ host')) {
+            console.log('Skipping received host candidate due to No HOST check');
+            return;
+        }
+        console.log('Received ice-candidate from:', from, candidate.candidate.split(' ')[7] || '');
         if (pc) {
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -154,12 +177,31 @@ function initSignaling() {
     };
 }
 
+function getProcessedSDP() {
+    if (!pc || !pc.localDescription) return "";
+    let sdp = pc.localDescription.sdp;
+    if (noHostCheck.checked) {
+        sdp = sdp.replace(/^a=candidate:.*typ host.*\r?\n/gm, '');
+    }
+    return JSON.stringify({ type: pc.localDescription.type, sdp: sdp });
+}
+
+function filterSdp(sdp) {
+    if (!noHostCheck.checked) return sdp;
+    return sdp.replace(/^a=candidate:.*typ host.*\r?\n/gm, '');
+}
+
 async function initiateCall() {
     console.log('Initiating call...');
     setupPC();
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit('offer', { offer, roomName });
+    
+    const finalOffer = {
+        type: offer.type,
+        sdp: filterSdp(offer.sdp)
+    };
+    socket.emit('offer', { offer: finalOffer, roomName });
     updateSDPArea();
 }
 
@@ -167,15 +209,6 @@ function updateSDPArea() {
     if (pc && pc.localDescription) {
         sdpArea.value = getProcessedSDP();
     }
-}
-
-function getProcessedSDP() {
-    if (!pc || !pc.localDescription) return "";
-    let sdpObj = JSON.parse(JSON.stringify(pc.localDescription));
-    if (noHostCheck.checked) {
-        sdpObj.sdp = sdpObj.sdp.split('\n').filter(line => !line.includes('typ host')).join('\n');
-    }
-    return JSON.stringify(sdpObj);
 }
 
 // Manual buttons still work for debugging
@@ -226,7 +259,11 @@ function setupPC() {
             
             // 自動シグナリング時はCandidateを送信
             if (roomName && socket) {
-                socket.emit('ice-candidate', { candidate: cand, roomName });
+                if (noHostCheck.checked && cand.candidate.includes('typ host')) {
+                    console.log('Not sending local host candidate due to No HOST check');
+                } else {
+                    socket.emit('ice-candidate', { candidate: cand, roomName });
+                }
             }
         } else {
             console.log('Local ICE candidate gathering complete.');

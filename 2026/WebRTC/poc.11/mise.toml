@@ -1,3 +1,19 @@
+[tasks.server]
+description = "Start the signaling server on port 49880 (allowed by firewall-1)"
+dir = "server"
+run = "npm install && node index.js"
+
+[tasks.turn]
+description = "Start the TURN server on port 3478 and relay ports 49900-49999 (allowed by firewall-1)"
+run = """
+docker build -t webrtc-turn ./turn && \
+docker run -d --rm \
+  --name webrtc-turn \
+  -p 3478:3478 -p 3478:3478/udp \
+  -p 49900-49999:49900-49999/udp \
+  webrtc-turn
+"""
+
 [tasks.up]
 description = "Start the environment with docker-compose"
 run = "docker-compose up -d --build"

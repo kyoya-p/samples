@@ -44,7 +44,7 @@ services:
     ports:
       - "3478:3478"
       - "3478:3478/udp"
-      - "49152-49154:49152-49154/udp"
+      - "49900-49999:49900-49999/udp"
     environment:
       - EXTERNAL_IP=127.0.0.1
     networks:
