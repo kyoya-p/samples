@@ -1,0 +1,27 @@
+services:
+  client1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8081:6080"
+    environment:
+      - TARGET_URL=http://server:49880/index.html
+    networks:
+      - webrtc-net
+
+  client2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8082:6080"
+    environment:
+      - TARGET_URL=http://server:49880/index.html
+    networks:
+      - webrtc-net
+
+networks:
+  webrtc-net:
+    name: webrtc-shared-net
+    external: true
