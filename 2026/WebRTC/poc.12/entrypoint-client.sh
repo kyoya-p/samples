@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+# set -e removed to keep container alive on failure
 
 # 仮想ディスプレイの起動
 export DISPLAY=:99
@@ -43,7 +43,10 @@ const { chromium } = require('playwright');
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox',
-                '--start-maximized'
+                '--start-maximized',
+                '--use-gl=angle',
+                '--use-angle=swiftshader-webgl',
+                '--disable-gpu-compositing'
             ]
         });
         // ビューポートをディスプレイサイズに合わせる
@@ -54,6 +57,18 @@ const { chromium } = require('playwright');
         const url = process.env.TARGET_URL || 'http://server:3000/index.html';
         console.log('Navigating to ' + url);
         await page.goto(url);
+        
+        // Auto-connect
+        console.log('Waiting for connect button...');
+        await page.waitForSelector('#connectBtn', { timeout: 10000 });
+        console.log('Clicking connect button...');
+        await page.click('#connectBtn');
+
+        // Trigger animation
+        console.log('Waiting for localVideo...');
+        await page.waitForSelector('#localVideo', { timeout: 5000 });
+        console.log('Clicking localVideo to trigger animation...');
+        await page.click('#localVideo');
         
         browser.on('disconnected', () => {
             console.log('Browser closed, exiting...');
@@ -67,7 +82,7 @@ const { chromium } = require('playwright');
 EOF
 
 # Playwrightを使用してブラウザをヘッドフル（GUIあり）で起動
-node /app/launch-browser.js
+node /app/launch-browser.js || echo "Browser launch script failed but keeping container alive..."
 
 # プロセスを維持
-wait
+tail -f /dev/null

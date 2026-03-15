@@ -8,8 +8,11 @@ services:
       - "8081:6080"
     environment:
       - TARGET_URL=${TARGET_URL:-http://example.com}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - nat1
+      - webrtc-shared-net
 
   # NAT2 Network Client
   client-nat2:
@@ -20,8 +23,11 @@ services:
       - "8082:6080"
     environment:
       - TARGET_URL=${TARGET_URL:-http://example.com}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - nat2
+      - webrtc-shared-net
 
   # PXY1 Network Client & Proxy
   client-pxy1:
@@ -34,8 +40,11 @@ services:
       - TARGET_URL=${TARGET_URL:-http://example.com}
       - HTTP_PROXY=http://proxy1:3128
       - HTTPS_PROXY=http://proxy1:3128
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - pxy1
+      - webrtc-shared-net
     depends_on:
       - proxy1
 
@@ -57,8 +66,11 @@ services:
       - TARGET_URL=${TARGET_URL:-http://example.com}
       - HTTP_PROXY=http://proxy2:3128
       - HTTPS_PROXY=http://proxy2:3128
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - pxy2
+      - webrtc-shared-net
     depends_on:
       - proxy2
 
@@ -78,3 +90,6 @@ networks:
     driver: bridge
   pxy2:
     driver: bridge
+  webrtc-shared-net:
+    name: webrtc-shared-net
+    external: true

@@ -54,6 +54,7 @@ window.addEventListener('load', () => {
     qixContext.active = true;
     localStream = qixContext.canvas.captureStream(30);
     localVideo.srcObject = localStream;
+    localVideo.play().catch(e => console.error("Local video play failed:", e));
     addNewLineSet(qixContext.canvas.width / 2, qixContext.canvas.height / 2);
     animateQix();
 
@@ -278,6 +279,7 @@ function setupPC() {
         const remoteVideo = document.getElementById('remoteVideo');
         if (remoteVideo.srcObject !== event.streams[0]) {
             remoteVideo.srcObject = event.streams[0];
+            remoteVideo.play().catch(e => console.error("Remote video play failed:", e));
         }
     };
 }
