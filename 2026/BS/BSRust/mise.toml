@@ -1,0 +1,6 @@
+[tools]
+rust = "1.94.0"
+
+[tasks.test]
+description = "仕様に基づいたリーガルアクション生成のユニットテストを実行"
+run = "cargo test"

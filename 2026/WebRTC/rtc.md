@@ -1,17 +1,41 @@
 # WebRTC 接続シーケンス (RFC 8445 準拠)
 
 ICE (Interactive Connectivity Establishment) における主要な接続パターン別の通信確立フロー。
+## 0. ICE Candidate交換
+WebRTC接続を確立するために、SDP (Session Description) や ICE Candidate などの制御情報をピア間で交換するプロセス。
 
-## 1. Host-to-Host (ローカルP2P)
+```mermaid
+sequenceDiagram
+    participant A as Client-A (controller)
+    participant S as Signaling Server
+    participant B as Client-B
+
+    A->>S: セッション確立
+    B->>S: セッション確立
+
+    Note over A, B: Offer/Answer 交換
+    A->>S: Offer(SDP-A)
+    S->>B: Offer(SDP-A)
+    B->>S: Answer(SDP-B)
+    S->>A: Answer(SDP-B)
+    
+    Note over A, B: Candidate 交換 (Trickle ICE)
+    A->>S: ICE Candidate (A)
+    S->>B: ICE Candidate (A)
+    B->>S: ICE Candidate (B)
+    S->>A: ICE Candidate (B)
+```
+
+## 1. Host-to-Host (ローカルP2P/UDP)
 同一ネットワーク内などで、直接パケットが到達可能な場合のフロー。
 
 ```mermaid
 sequenceDiagram
-    participant A as Client-A (Host)
-    participant B as Client-B (Host)
-    
-    Note over A, B: シグナリングで互いのHost Candidateを交換済み
-    
+    participant A as Client-A
+    participant B as Client-B
+     
+    Note over A, B: ICE Candidate交換
+     
     A->>B: STUN Binding Request (Check)
     B-->>A: STUN Binding Response (Success)
     
@@ -36,12 +60,11 @@ sequenceDiagram
     participant NAT_B as NAT-B
     participant B as Client-B
 
-    Note over A, STUN: 候補収集 (Gathering)
+    Note over A, B: ICE Candidate交換
     A->>STUN: STUN Binding Request
     STUN-->>A: STUN Binding Response (XOR-MAPPED-ADDRESS)
-    Note left of A: srflx候補を取得
     
-    Note over A, B: シグナリングでsrflx候補を交換
+    Note over A, B: srflx候補を交換
     
     Note over A, B: 接続確認 (Connectivity Checks)
     A->>NAT_A: STUN Binding Request (to B's srflx)
@@ -113,4 +136,6 @@ sequenceDiagram
 ```
 
 ---
-ソース: [RFC 8445: Interactive Connectivity Establishment (ICE)](https://datatracker.ietf.org/doc/html/rfc8445)
+ソース: 
+- [RFC 8445: Interactive Connectivity Establishment (ICE)](https://datatracker.ietf.org/doc/html/rfc8445)
+- [RFC 8829: JavaScript Session Establishment Protocol (JSEP)](https://datatracker.ietf.org/doc/html/rfc8829)

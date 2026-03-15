@@ -7,3 +7,6 @@ run = "amper.bat build --module web-gameboard && amper.bat run --module web-serv
 description = "Compose Multiplatform (Wasm) ビルド"
 dir = "tools"
 run = "amper.bat build --module web-gameboard"
+
+[tools]
+rust = "latest"
