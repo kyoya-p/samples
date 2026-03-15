@@ -27,11 +27,8 @@ const connectBtn = document.getElementById('connectBtn');
 const logArea = document.getElementById('logArea');
 const signalingUrlDisplay = document.getElementById('signalingUrl');
 
-// --- Custom Logger ---
-const originalLog = console.log;
-const originalError = console.error;
-
-function appendLog(message, isError = false) {
+// --- Signaling Logger ---
+function sigLog(message, isError = false) {
     if (!logArea) return;
     const div = document.createElement('div');
     const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit', fractionalSecondDigits: 3 });
@@ -40,16 +37,6 @@ function appendLog(message, isError = false) {
     logArea.appendChild(div);
     logArea.scrollTop = logArea.scrollHeight;
 }
-
-console.log = function(...args) {
-    originalLog.apply(console, args);
-    appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
-};
-
-console.error = function(...args) {
-    originalError.apply(console, args);
-    appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '), true);
-};
 // ---------------------
 
 let qixContext = {
@@ -102,16 +89,17 @@ function initSignaling() {
     socket = io();
     
     socket.on('connect', () => {
-        console.log('Connected to signaling server');
+        sigLog('Connected to signaling server');
         signalingStatus.querySelector('span:last-child').innerText = `Connected: ${roomName}`;
         signalingDot.style.background = '#22c55e';
         connectBtn.innerText = 'Disconnect';
         connectBtn.style.backgroundColor = 'var(--danger)';
+        sigLog(`Emitting join: ${roomName}`);
         socket.emit('join', roomName);
     });
 
     socket.on('disconnect', (reason) => {
-        console.error('Disconnected from signaling server:', reason);
+        sigLog(`Disconnected from signaling server: ${reason}`, true);
         signalingStatus.querySelector('span:last-child').innerText = 'Offline';
         signalingDot.style.background = '#ef4444';
         roomInput.disabled = false;
@@ -126,13 +114,13 @@ function initSignaling() {
     });
 
     socket.on('user-joined', (id) => {
-        console.log('New user joined room:', id);
+        sigLog(`New user joined room: ${id}`);
         // 新しいユーザーが来たらOfferを送る（自分が先にいた場合）
         initiateCall();
     });
 
     socket.on('offer', async ({ offer, from }) => {
-        console.log('Received offer from:', from);
+        sigLog(`Received offer from: ${from}`);
         setupPC();
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
@@ -142,11 +130,12 @@ function initSignaling() {
             type: answer.type,
             sdp: filterSdp(answer.sdp)
         };
+        sigLog(`Emitting answer to: ${from}`);
         socket.emit('answer', { answer: finalAnswer, roomName });
     });
 
     socket.on('answer', async ({ answer, from }) => {
-        console.log('Received answer from:', from);
+        sigLog(`Received answer from: ${from}`);
         if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(answer));
         }
@@ -159,7 +148,7 @@ function initSignaling() {
             console.log('Skipping received host candidate due to No HOST check');
             return;
         }
-        console.log('Received ice-candidate from:', from, candidate.candidate.split(' ')[7] || '');
+        sigLog(`Received ice-candidate from: ${from} (${candidate.candidate.split(' ')[7] || ''})`);
         if (pc) {
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -169,12 +158,7 @@ function initSignaling() {
         }
     });
 
-    joinBtn.onclick = () => {
-        // This is now integrated into connectBtn.onclick but keeping it for safety
-        roomName = roomInput.value;
-        if (!roomName) return alert("Enter room name");
-        socket.emit('join', roomName);
-    };
+    // socket.emit('join', roomName) is now handled in 'connect' listener
 }
 
 function getProcessedSDP() {
@@ -201,6 +185,7 @@ async function initiateCall() {
         type: offer.type,
         sdp: filterSdp(offer.sdp)
     };
+    sigLog(`Emitting offer for room: ${roomName}`);
     socket.emit('offer', { offer: finalOffer, roomName });
     updateSDPArea();
 }
@@ -262,6 +247,7 @@ function setupPC() {
                 if (noHostCheck.checked && cand.candidate.includes('typ host')) {
                     console.log('Not sending local host candidate due to No HOST check');
                 } else {
+                    sigLog(`Emitting local ice-candidate: ${cand.type} (${cand.address || cand.ip})`);
                     socket.emit('ice-candidate', { candidate: cand, roomName });
                 }
             }
