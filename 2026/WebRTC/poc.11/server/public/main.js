@@ -77,7 +77,6 @@ window.addEventListener('load', () => {
 
     // --- Fix: Ensure listener is added after DOM load ---
     localVideo.addEventListener('mousedown', (e) => {
-        console.log('Local video clicked: adding new effect at', e.offsetX, e.offsetY);
         const rect = localVideo.getBoundingClientRect();
         const x = (e.clientX - rect.left) * (qixContext.canvas.width / rect.width);
         const y = (e.clientY - rect.top) * (qixContext.canvas.height / rect.height);
@@ -145,7 +144,6 @@ function initSignaling() {
         if (!candidate || !candidate.candidate) return;
 
         if (noHostCheck.checked && candidate.candidate.includes('typ host')) {
-            console.log('Skipping received host candidate due to No HOST check');
             return;
         }
         sigLog(`Received ice-candidate from: ${from} (${candidate.candidate.split(' ')[7] || ''})`);
@@ -153,7 +151,7 @@ function initSignaling() {
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
             } catch (e) {
-                console.error('Error adding ice candidate:', e);
+                // Silently handle candidate errors
             }
         }
     });
@@ -176,7 +174,6 @@ function filterSdp(sdp) {
 }
 
 async function initiateCall() {
-    console.log('Initiating call...');
     setupPC();
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -201,7 +198,6 @@ document.getElementById('createOfferBtn').onclick = initiateCall;
 
 document.getElementById('createAnswerBtn').onclick = async () => {
     if (!sdpArea.value) return alert("Please paste Offer SDP first");
-    console.log('Manual Answer creation...');
     setupPC();
     try {
         const offer = JSON.parse(sdpArea.value);
@@ -213,7 +209,6 @@ document.getElementById('createAnswerBtn').onclick = async () => {
 };
 
 document.getElementById('setAnswerBtn').onclick = async () => {
-    console.log('Manual Answer setting...');
     try {
         const answer = JSON.parse(sdpArea.value);
         await pc.setRemoteDescription(new RTCSessionDescription(answer));
@@ -222,21 +217,17 @@ document.getElementById('setAnswerBtn').onclick = async () => {
 
 function setupPC() {
     if (pc) {
-        console.log('RTCPeerConnection already exists. Reusing...');
         return;
     }
-    console.log('Creating new RTCPeerConnection...');
     pc = new RTCPeerConnection(config);
     iceList.innerHTML = "";
     localStream.getTracks().forEach(track => {
-        console.log('Adding local track:', track.kind);
         pc.addTrack(track, localStream);
     });
     
     pc.onicecandidate = (event) => {
         if (event.candidate) {
             const cand = event.candidate;
-            console.log('Local ICE candidate found:', cand.type, cand.address || cand.ip);
             const div = document.createElement('div');
             div.className = `ice-item ${cand.type}`;
             div.innerHTML = `<span>${cand.type}</span> ${cand.protocol}://${cand.address || cand.ip}:${cand.port}`;
@@ -245,20 +236,17 @@ function setupPC() {
             // 自動シグナリング時はCandidateを送信
             if (roomName && socket) {
                 if (noHostCheck.checked && cand.candidate.includes('typ host')) {
-                    console.log('Not sending local host candidate due to No HOST check');
+                    // Skip sending local host candidate
                 } else {
                     sigLog(`Emitting local ice-candidate: ${cand.type} (${cand.address || cand.ip})`);
                     socket.emit('ice-candidate', { candidate: cand, roomName });
                 }
             }
-        } else {
-            console.log('Local ICE candidate gathering complete.');
         }
     };
 
     pc.oniceconnectionstatechange = () => {
         const state = pc.iceConnectionState;
-        console.log('ICE Connection State Change:', state);
         statusText.innerHTML = `<span class="status-dot"></span> ICE Connection: ${state}`;
         const dot = statusText.querySelector('.status-dot');
         if (state === 'connected' || state === 'completed') {
@@ -271,22 +259,15 @@ function setupPC() {
     };
 
     pc.onconnectionstatechange = () => {
-        console.log('PeerConnection State Change:', pc.connectionState);
         if (pc.connectionState === 'connected') {
             updateSelectedIce();
         }
     };
 
-    pc.onsignalingstatechange = () => {
-        console.log('Signaling State Change:', pc.signalingState);
-    };
-
     pc.ontrack = (event) => {
-        console.log('Remote track received:', event.track.kind);
         const remoteVideo = document.getElementById('remoteVideo');
         if (remoteVideo.srcObject !== event.streams[0]) {
             remoteVideo.srcObject = event.streams[0];
-            console.log('Remote stream attached to video element');
         }
     };
 }
@@ -316,10 +297,9 @@ async function updateSelectedIce() {
                     <span>REMOTE:</span> ${remote.candidateType} (${remote.protocol}://${remote.ip}:${remote.port})
                 </div>
             `;
-            console.log('Selected ICE Pair:', local.candidateType, '->', remote.candidateType);
         }
     } catch (e) {
-        console.error('Error fetching ICE stats:', e);
+        // Silently handle stats errors
     }
 }
 
