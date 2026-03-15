@@ -1,0 +1,8 @@
+{
+  "name": "poc.11",
+  "version": "1.0.0",
+  "description": "WebRTC POC 11 with containerized clients",
+  "dependencies": {
+    "playwright": "^1.50.1"
+  }
+}

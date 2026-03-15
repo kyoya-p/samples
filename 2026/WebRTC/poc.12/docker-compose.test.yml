@@ -1,0 +1,80 @@
+services:
+  # NAT1 Network Client
+  client-nat1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8081:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://example.com}
+    networks:
+      - nat1
+
+  # NAT2 Network Client
+  client-nat2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8082:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://example.com}
+    networks:
+      - nat2
+
+  # PXY1 Network Client & Proxy
+  client-pxy1:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8083:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://example.com}
+      - HTTP_PROXY=http://proxy1:3128
+      - HTTPS_PROXY=http://proxy1:3128
+    networks:
+      - pxy1
+    depends_on:
+      - proxy1
+
+  proxy1:
+    image: ubuntu/squid:latest
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf
+    networks:
+      - pxy1
+
+  # PXY2 Network Client & Proxy
+  client-pxy2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8084:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://example.com}
+      - HTTP_PROXY=http://proxy2:3128
+      - HTTPS_PROXY=http://proxy2:3128
+    networks:
+      - pxy2
+    depends_on:
+      - proxy2
+
+  proxy2:
+    image: ubuntu/squid:latest
+    volumes:
+      - ./squid.conf:/etc/squid/squid.conf
+    networks:
+      - pxy2
+
+networks:
+  nat1:
+    driver: bridge
+  nat2:
+    driver: bridge
+  pxy1:
+    driver: bridge
+  pxy2:
+    driver: bridge
