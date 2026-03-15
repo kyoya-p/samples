@@ -1,10 +1,18 @@
-[tasks.server]
+[tasks.server-up]
 description = "Start the server environment"
 run = "docker compose -f docker-compose.server.yml up -d --build"
 
-[tasks.client]
+[tasks.server-down]
+description = "Stop the server environment"
+run = "docker compose -f docker-compose.server.yml down"
+
+[tasks.client-up]
 description = "Start the client test environment"
 run = "docker compose -f docker-compose.client.yml up --build"
+
+[tasks.client-down]
+description = "Stop the client test environment"
+run = "docker compose -f docker-compose.client.yml down"
 
 [tasks.up]
 description = "Start all services"
