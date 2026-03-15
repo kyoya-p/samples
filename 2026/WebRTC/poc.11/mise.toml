@@ -1,39 +1,15 @@
 [tasks.server]
-description = "Start the signaling server on port 49880 (allowed by firewall-1)"
-dir = "server"
-run = "npm install && node index.js"
+description = "Start the server environment"
+run = "docker compose -f docker-compose.server.yml up -d --build"
 
-[tasks.turn]
-description = "Start the TURN server on port 3478 and relay ports 49900-49999 (allowed by firewall-1)"
-run = """
-docker build -t webrtc-turn ./turn && \
-docker run -d --rm \
-  --name webrtc-turn \
-  -p 3478:3478 -p 3478:3478/udp \
-  -p 49900-49999:49900-49999/udp \
-  webrtc-turn
-"""
+[tasks.client]
+description = "Start the client test environment"
+run = "docker compose -f docker-compose.client.yml up --build"
 
 [tasks.up]
-description = "Start the environment with docker-compose"
-run = "docker-compose up -d --build"
+description = "Start all services"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.client.yml up -d --build"
 
 [tasks.down]
-description = "Stop and remove containers"
-run = "docker-compose down"
-
-[tasks.logs]
-description = "Show real-time logs"
-run = "docker-compose logs -f"
-
-[tasks.server-sh]
-description = "Open a shell in the signaling server container"
-run = "docker-compose exec server bash"
-
-[tasks.turn-sh]
-description = "Open a shell in the turn server container"
-run = "docker-compose exec turn bash"
-
-[tasks.ps]
-description = "Show container status"
-run = "docker-compose ps"
+description = "Stop and remove all containers"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.client.yml down"
