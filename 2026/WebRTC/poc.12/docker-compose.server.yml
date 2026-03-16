@@ -1,0 +1,28 @@
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "49880:49880"
+    volumes:
+      - ./server/public:/home/node/app/public
+    environment:
+      - PORT=49880
+    networks:
+      - webrtc-net
+
+  turn:
+    build:
+      context: ./turn
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "49900-49999:49900-49999/udp"
+    networks:
+      - webrtc-net
+
+networks:
+  webrtc-net:
+    name: webrtc-shared-net
+    driver: bridge

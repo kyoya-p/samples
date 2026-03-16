@@ -1,0 +1,17 @@
+product:
+  type: lib
+  platforms: [ jvm, linuxArm64, linuxX64, macosArm64, mingwX64 ]
+settings:
+  ktor: enabled
+  kotlin:
+    serialization: json
+dependencies:
+  - $ktor.client.cio
+  - $ktor.client.contentNegotiation
+  - $ktor.server.cio
+  - $ktor.server.contentNegotiation
+  - $ktor.serialization.kotlinx.json
+dependencies@linux:
+  - io.ktor:ktor-client-curl:3.2.3
+dependencies@mingw:
+  - $ktor.client.winhttp

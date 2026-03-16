@@ -1,0 +1,32 @@
+[env]
+SCREENSHOT_DIR = ".records"
+GEMINI_API_KEY = "自身のKEYを環境に定義。このファイルへ記載はNG"
+
+[tasks.screenshot]
+description = "デスクトップを1枚撮影"
+shell = "powershell -Command"
+run = """
+$dir = $env:SCREENSHOT_DIR
+if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
+$path = Join-Path $dir "current_desktop.png"
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+$Width  = $Screen.Bounds.Width
+$Height = $Screen.Bounds.Height
+$Left   = $Screen.Bounds.Left
+$Top    = $Screen.Bounds.Top
+$Bitmap = New-Object System.Drawing.Bitmap $Width, $Height
+$Graphic = [System.Drawing.Graphics]::FromImage($Bitmap)
+$Graphic.CopyFromScreen($Left, $Top, 0, 0, $Bitmap.Size)
+$Bitmap.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+$Graphic.Dispose()
+$Bitmap.Dispose()
+Write-Host "Screenshot saved to $path"
+"""
+
+[tasks.analyze]
+description = "指定された画像を解析する"
+run = "node cli.js {{arg(i=0, default='.records/current_desktop.png')}}"
+

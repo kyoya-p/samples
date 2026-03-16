@@ -1,5 +1,0 @@
-product: jvm/app
-
-dependencies:
-  - jakarta.servlet:jakarta.servlet-api:5.0.0
-

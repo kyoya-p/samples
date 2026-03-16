@@ -1,0 +1,49 @@
+[tools]
+python = "latest"
+pipx = "latest"
+azure-cli = "latest"
+java = "21"
+
+[tasks."setup:amper"]
+description = "Amper CLIをダウンロードしてセットアップ"
+run = """
+curl -fsSL -o amper https://jb.gg/amper/wrapper.sh
+chmod +x amper
+./amper update -c
+"""
+
+[tasks.build]
+description = "Build client/server modeules"
+depends = ["setup:amper"]
+run = """
+cd client && ../amper build && cd ..
+mkdir -p server/public/build/tasks/_client_linkJs/
+cp client/index.html server/public/
+cp client/build/tasks/_client_linkJs/client.mjs server/public/build/tasks/_client_linkJs/
+"""
+
+[tasks.deploy]
+description = "Deploy to Azure (TURN + App)"
+depends = ["build"]
+run = "bash ./deploy.sh"
+
+[tasks.list]
+description = "List all resources in the resource group"
+run = "az resource list --resource-group rg-webrtc-poc -o table"
+
+[tasks.destroy]
+description = "Delete Azure Resource Group"
+run = "az group delete --name rg-webrtc-poc --yes"
+
+[tasks.test-client]
+description = "Start manual test environment with noVNC (client1:8081, client2:8082)"
+depends = ["build"]
+run = "docker compose up -d --build"
+
+[tasks.test-logs]
+description = "Show logs from the test environment"
+run = "docker compose logs -f"
+
+[tasks.test-clear]
+
+run = "docker compose down --rmi local --volumes --remove-orphans"

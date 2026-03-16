@@ -1,0 +1,39 @@
+[tools]
+python = "latest"
+azure-cli = "latest"
+java = "21"
+
+[env]
+RESOURCE_GROUP="rg-webrtc-poc"
+
+[tasks.build]
+description = "Build client/server modules"
+run = "echo 'Assets already in public/'"
+
+[tasks.deploy]
+description = "Deploy to Azure (TURN + App)"
+depends = ["build"]
+run = "bash ./deploy.sh"
+
+[tasks.list]
+description = "List all resources in the resource group"
+run = "az resource list --resource-group $RESOURCE_GROUP -o table"
+
+[tasks.destroy]
+description = "Delete Azure Resource Group"
+run = "az group delete --name $RESOURCE_GROUP --yes"
+
+[tasks."test:up"]
+description = "Start local test environment with noVNC (client1:8083, client2:8084)"
+dir = "tests"
+run = "docker compose -f docker-compose.yml up -d --build"
+
+[tasks."test:logs"]
+description = "Show logs from the local test environment"
+dir = "tests"
+run = "docker compose -f docker-compose.yml logs -f"
+
+[tasks."test:down"]
+description = "Stop and remove the local test environment"
+dir = "tests"
+run = "docker compose -f docker-compose.yml down --rmi local --volumes --remove-orphans"

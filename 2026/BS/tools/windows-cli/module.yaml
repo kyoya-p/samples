@@ -1,0 +1,8 @@
+product:
+  type: windows/app
+  platforms: [ mingwX64 ]
+settings:
+  ktor: enabled
+dependencies:
+  - ../shared
+  - io.ktor:ktor-client-curl:3.0.3

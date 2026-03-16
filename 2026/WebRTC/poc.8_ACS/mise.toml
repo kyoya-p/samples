@@ -1,0 +1,36 @@
+[tools]
+python = "latest"
+uv = "latest"
+
+[env]
+# mise が .venv を自動的に PATH に追加するように設定
+_.python.venv = ".venv"
+resourceGroup = "rg-webrtc8-acs"
+location = "japaneast"
+resourceName = "acs-webrtc-poc"
+
+[tasks.setup]
+description = "uv を使用して高速に Azure CLI 環境を構築"
+run = """
+uv venv
+uv pip install azure-cli
+"""
+
+[tasks.login]
+description = "Azure CLI にログイン"
+run = "az login"
+
+[tasks.create-resource]
+description = "Azure Communication Services (ACS) リソースを作成"
+run = """
+az group create --name $env:resourceGroup --location $env:location
+az communication create --name $env:resourceName --location Global --data-location Japan --resource-group $env:resourceGroup
+"""
+
+[tasks.get-connection-string]
+description = "ACS の接続文字列を取得"
+run = "az communication list-key --name $env:resourceName --resource-group $env:resourceGroup --query primaryConnectionString -o tsv"
+
+[tasks.get-ice-servers]
+description = "ACS の Network Traversal (TURN) 設定を取得"
+run = "az communication network-traversal issue-relay-configuration --name $env:resourceName --resource-group $env:resourceGroup"

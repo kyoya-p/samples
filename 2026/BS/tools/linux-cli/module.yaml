@@ -1,0 +1,10 @@
+product:
+  type: linux/app
+  platforms: [ linuxX64 ]
+
+settings:
+  ktor: enabled
+dependencies:
+  - ../shared
+  - $ktor.client.core
+  - io.ktor:ktor-client-curl:3.2.3

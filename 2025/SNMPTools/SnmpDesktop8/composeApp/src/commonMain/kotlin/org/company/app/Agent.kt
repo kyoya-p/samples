@@ -20,11 +20,16 @@ import androidx.compose.ui.Modifier
 import com.charleskorn.kaml.Yaml
 import io.github.xxfast.kstore.KStore
 import jp.wjg.shokkaa.snmp4jutils.yamlSnmp4j
+import kotlinx.datetime.Clock.System.now
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import okio.Path.Companion.toPath
-import org.snmp4j.smi.OID
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -45,7 +50,19 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     var filePath by remember { mutableStateOf(app.mibFile) }
 
     LaunchedEffect(app) { appStore.set(app) }
-    LaunchedEffect(mib) { snmpAgent(vbl = mib) }
+    LaunchedEffect(mib) {
+        snmpAgent(vbl = mib) { ev, pdu ->
+            val t = now().toLocalDateTime(TimeZone.currentSystemDefault())
+            val format =
+                LocalDateTime.Format {
+                    year(); char('/'); monthNumber(); char('/'); dayOfMonth(); char(' ')
+                    hour(); char(':'); minute(); char(':'); second()
+                }
+
+            snackBarMessage = "${t.format(format)} ${ev.peerAddress.inetAddress}: ${pdu.variableBindings.getOrNull(0)}"
+            pdu
+        }
+    }
     LaunchedEffect(filePath) { app = app.copy(mibFile = filePath) }
 
     runCatching { mib = loadMib(filePath.toPath().toFile()) }
@@ -76,7 +93,7 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
     )
     Scaffold(
         modifier = Modifier.padding(8.dp),
-        snackbarHost = { if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage, maxLines = 1) } },
+//        snackbarHost = {  },
     ) {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             snmpCaptureDialog.placing()
@@ -86,6 +103,7 @@ fun capturePage(window: ComposeWindow) = with(FileSystem.SYSTEM) {
                 Button(onClick = ::saveMib) { Text("Save") }
                 Button(onClick = ::loadMib) { Text("Load") }
             }
+            if (snackBarMessage.isNotEmpty()) Snackbar { Text(snackBarMessage, maxLines = 1) }
         }
     }
 }

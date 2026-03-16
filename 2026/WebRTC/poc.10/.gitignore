@@ -1,0 +1,9 @@
+/.idea/
+/.playwright-mcp/
+/amper
+/amper.bat
+/server/public/build/
+/client/build/
+/test-results/tests-relay_verify-Strict--5476e-ia-Docker-isolated-networks/error-context.md
+/test-results/.last-run.json
+/test-results/

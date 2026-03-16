@@ -1,0 +1,8 @@
+[tools]
+python = "latest"
+
+[env]
+_.python.venv = ".venv"
+
+[tasks.setup]
+run = "python -m venv .venv && pip install azure-cli"

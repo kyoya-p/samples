@@ -41,7 +41,7 @@ kotlin {
             implementation("com.charleskorn.kaml:kaml:0.57.0")  // https://mvnrepository.com/artifact/com.charleskorn.kaml/kaml
             implementation("androidx.datastore:datastore-preferences-core:1.1.1") // https://mvnrepository.com/artifact/androidx.datastore/datastore
 
-            implementation("jp.wjg.shokkaa:snmp4jutils:1.9.1")  // local private library
+            implementation("jp.wjg.shokkaa:snmp4jutils:1.10.0")  // local private library
         }
 
         commonTest.dependencies {
@@ -63,7 +63,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "SNMP Desktop"
-            packageVersion = "1.8.5"
+            packageVersion = "1.10.0"
             windows {
                 shortcut = true
                 menu = true

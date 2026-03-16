@@ -1,0 +1,7 @@
+/.idea/
+/.gradle/
+/build/
+/.kotlin/
+/*log*.txt
+
+/tokens/

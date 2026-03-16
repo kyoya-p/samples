@@ -1,0 +1,10 @@
+/.idea/
+/build/
+/tmp/
+/node_modules/
+/cards/
+/.bscache/
+/samples/
+/temp/
+/.bscards/
+/.bscards-test/

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "node-turn": "^0.0.6",
+    "ws": "^8.19.0"
+  }
+}

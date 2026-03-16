@@ -1,0 +1,32 @@
+[tools]
+python = "3.10.11"
+uv = "latest"
+azure-cli = "latest"
+
+[env]
+RESOURCE_GROUP = "rg-webrtc-poc-az"
+LOCATION = "japaneast"
+ACS_NAME = "acs-webrtc-poc-az"
+
+[tasks."create:acs"]
+description = "Create Azure Communication Services resources"
+run = """
+set -e
+echo "Creating resource group: $RESOURCE_GROUP..."
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+echo "Creating ACS resource: $ACS_NAME..."
+az communication create --name "$ACS_NAME" --resource-group "$RESOURCE_GROUP" --location "Global" --data-location "United States"
+
+CONNECTION_STRING=$(az communication list-key --name "$ACS_NAME" --resource-group "$RESOURCE_GROUP" --query "primaryConnectionString" -o tsv)
+echo "ACS_CONNECTION_STRING=$CONNECTION_STRING"
+"""
+
+[tasks."remove:acs"]
+description = "Remove Azure Communication Services resources"
+run = """
+set -e
+echo "Deleting resource group: $RESOURCE_GROUP..."
+az group delete --name "$RESOURCE_GROUP" --yes --no-wait
+echo "Deletion triggered. It may take a few minutes to complete."
+"""

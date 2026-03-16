@@ -1,4 +1,3 @@
-import jp.wjg.shokkaa.snmp4jutils.IntRangeSet
 import jp.wjg.shokkaa.snmp4jutils.ULongRangeSet
 import jp.wjg.shokkaa.snmp4jutils.totalLength
 import kotlinx.coroutines.delay
@@ -11,23 +10,23 @@ import kotlin.time.Duration.Companion.milliseconds
 class RengeSetTest {
     @Test
     fun construction1() {
-        val r1 = IntRangeSet() // empty
+        val r1 = ULongRangeSet() // empty
         assert(r1.size == 0)
     }
 
     @Test
     fun construction2() {
-        val r1 = IntRangeSet(listOf())
+        val r1 = ULongRangeSet(listOf())
         assert(r1.size == 0)
     }
 
     @Test
     fun construction3_order() {
-        val r1 = 1..2
-        val r2 = 5..6
+        val r1 = 1UL..2UL
+        val r2 = 5UL..6UL
 
-        val rs1 = IntRangeSet(listOf(r1, r2))
-        val rs2 = IntRangeSet(listOf(r2, r1))
+        val rs1 = ULongRangeSet(listOf(r1, r2))
+        val rs2 = ULongRangeSet(listOf(r2, r1))
 
         assert(rs1 == rs2)
         assert(rs1.toList()[0] == r1)
@@ -38,18 +37,18 @@ class RengeSetTest {
 
     @Test
     fun equal1() {
-        val r1 = IntRangeSet(listOf(4..7))
-        val r2 = IntRangeSet(listOf(4..7))
+        val r1 = ULongRangeSet(listOf(4UL..7UL))
+        val r2 = ULongRangeSet(listOf(4UL..7UL))
         assert(r1 == r2)
     }
 
     @Test
     fun add1() {
-        val rs = IntRangeSet()
+        val rs = ULongRangeSet()
 
         @Suppress("EmptyRange")
-        val rx = 7..4
-        val r = 4..7
+        val rx = 7UL..4UL
+        val r = 4UL..7UL
         assert(rs.add(rx) == false)
         assert(rs.size == 0)
 
@@ -65,27 +64,27 @@ class RengeSetTest {
 
     @Test
     fun add2() {
-        val rs = IntRangeSet()
-        val r1 = 1..1
-        val r2 = 2..2
-        val r3 = 3..3
+        val rs = ULongRangeSet()
+        val r1 = 1UL..1UL
+        val r2 = 2UL..2UL
+        val r3 = 3UL..3UL
         rs.add(r1)
         assert(rs.size == 1)
         rs.add(r3)
         assert(rs.size == 2)
         rs.add(r2)
         assert(rs.size == 1)
-        assert(rs.toList()[0].start == 1)
-        assert(rs.toList()[0].endInclusive == 3)
+        assert(rs.toList()[0].start == 1UL)
+        assert(rs.toList()[0].endInclusive == 3UL)
     }
 
     @Test
     fun totalLength1() {
-        val rs = IntRangeSet()
-        rs.add(1..10)
-        assert(rs.totalLength() == 10)
-        rs.add(21..30)
-        assert(rs.totalLength() == 20)
+        val rs = ULongRangeSet()
+        rs.add(1UL..10UL)
+        assert(rs.totalLength() == 10UL)
+        rs.add(21UL..30UL)
+        assert(rs.totalLength() == 20UL)
     }
 
     @Test
@@ -126,8 +125,8 @@ class RengeSetTest {
 
     @Test
     fun sequence1() {
-        val rs = IntRangeSet(1..1, 3..5, 7..7)
-        assert(rs.toList() == listOf(1..1, 3..5, 7..7))
+        val rs = ULongRangeSet(1UL..1UL, 3UL..5UL, 7UL..7UL)
+        assert(rs.toList() == listOf(1UL..1UL, 3UL..5UL, 7UL..7UL))
     }
 
     @Test

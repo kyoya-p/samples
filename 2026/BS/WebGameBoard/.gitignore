@@ -1,0 +1,14 @@
+/.idea/
+/tmp/
+/node_modules/
+/cards/
+/.bscache/
+/temp/
+/.cypher
+/output/
+/.playwright-mcp/
+/*.png
+build/
+test.*/
+/.gradle/
+/.kotlin/

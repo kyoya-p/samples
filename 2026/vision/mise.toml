@@ -1,0 +1,32 @@
+[tools]
+java = "21"
+
+[tasks.screenshot]
+description = "geminiAgenticVisionを使用して現在のデスクトップを解析する"
+dir = "geminiAgenticVision"
+run = "mise run screenshot"
+
+[tasks."analyze"]
+description = "画像をAIで解析する (引数: image_path)"
+dir = "geminiAgenticVision"
+run = "mise run analyze"
+
+[tasks.record-1h]
+description = "定期的なスクリーンキャプチャを実行する 1h,60min,5秒間隔"
+dir = "screencapt"
+run = "java -cp bin Main 5 3600 300"
+
+[tasks.sample2]
+description = "最新のデスクトップをキャプチャしてAIで解析する (Java版)"
+shell = "powershell -Command"
+run = """
+Write-Host "--- Capturing Current Desktop ---"
+cd screencapt
+# 1秒間、1枚だけ撮影
+java -cp bin Main 1 1 1
+$latest = Get-ChildItem .screenshot | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
+
+Write-Host "`n--- Analyzing with Gemini ---"
+cd ../geminiAgenticVision
+node cli.js $latest -p "Analyze the current state of this desktop in detail."
+"""

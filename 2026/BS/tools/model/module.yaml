@@ -1,0 +1,10 @@
+product:
+  type: lib
+  platforms: [ jvm, linuxX64, mingwX64, wasmJs ]
+
+dependencies:
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
+
+settings:
+  kotlin:
+    serialization: enabled

@@ -1,0 +1,15 @@
+# Minimal dependencies for WasmJS
+settings:
+  compose: enabled
+  kotlin:
+    serialization: enabled
+
+product:
+  type: wasm-js/app
+
+dependencies:
+  - ../model
+  - $compose.foundation
+  - $compose.material3
+  - $compose.ui
+  - $compose.components.resources

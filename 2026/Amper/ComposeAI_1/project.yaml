@@ -1,0 +1,4 @@
+modules:
+  - android-app
+  - jvm-app
+  - shared

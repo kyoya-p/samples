@@ -1,0 +1,11 @@
+/.idea/
+/tmp/
+/node_modules/
+/cards/
+/.bscache/
+/temp/
+/.cypher
+/output/
+/.playwright-mcp/
+/*.png
+/.gradle/

@@ -1,0 +1,12 @@
+product:
+  type: jvm/app
+settings:
+  jvm:
+    mainClass: gamefield.MainKt
+  kotlin:
+    serialization: enabled
+dependencies:
+  - ../shared
+  - com.github.ajalt.clikt:clikt:5.0.3
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0
+  - com.charleskorn.kaml:kaml:0.72.0

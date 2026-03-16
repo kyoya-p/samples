@@ -1,0 +1,26 @@
+services:
+  client1:
+    build:
+      dockerfile: Dockerfile.client
+    ports:
+      - "8081:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://webrtc-full-stack.japaneast.azurecontainer.io:3000/index.html}
+    networks:
+      - net1
+
+  client2:
+    build:
+      dockerfile: Dockerfile.client
+    ports:
+      - "8082:6080"
+    environment:
+      - TARGET_URL=${TARGET_URL:-http://webrtc-full-stack.japaneast.azurecontainer.io:3000/index.html}
+    networks:
+      - net2
+
+networks:
+  net1:
+    driver: bridge
+  net2:
+    driver: bridge

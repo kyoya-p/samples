@@ -1,0 +1,10 @@
+product:
+  type: lib
+  platforms: [linuxX64,  mingwX64, jvm, linuxArm64]
+
+
+settings:
+  compose: enabled
+
+dependencies:
+  - com.jakewharton.mosaic:mosaic-runtime:0.18.0
