@@ -4,3 +4,4 @@ node_modules/
 poc.*/cert.pem
 poc.*/key.pem
 /.server.pid
+/poc.13/test/

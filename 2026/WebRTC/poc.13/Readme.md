@@ -29,16 +29,18 @@ WebRTC `RTCDataChannel` を利用した P2P テキストチャット環境。
 - 送信ボタンおよび Enter キーによるメッセージ送信。
 - DataChannel の状態（open/closed）をリアルタイムにバッジで表示。
 
+## 修正
+テスト結果 `./test`を参照し修正。
+修正内容を `./test/MMDD-HHMMSS.fix-report.md` に生成
+テストは別のAIセッションで実施するので不要
+
 ## ローカルテスト
 
+各テストの実行内容とその結果のを比較し、内容が期待通りではないことを証明
 テスト環境として docker-compose.test.yml を起動
-各テストでss採取し内容が期待通りか確認
-
-Network構成:
-server <-- nat1 -- client
-server <-- nat2 -- client
-server <-- pxy1 -- client
-server <-- pxy2 -- client
+テスト用のコードのみ修正可とする
+プログラム修正は別AIセッションで実施するので不要
+結果を `test/MMDD-HHMMSS.test-report.md` に生成
 
 ```bash
 mise run up

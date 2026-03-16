@@ -1,14 +1,16 @@
-let pc;
+let peers = {}; // id -> { pc, dc }
 let socket;
 let roomName;
-let dataChannel;
 
 const turnHost = location.hostname === 'server' ? 'turn' : location.hostname;
 const config = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         {
-            urls: `turn:${turnHost}:3478`,
+            urls: [
+                `turn:${turnHost}:3478?transport=tcp`,
+                `turn:${turnHost}:3478?transport=udp`
+            ],
             username: 'user',
             credential: 'password123'
         }
@@ -82,11 +84,21 @@ window.addEventListener('load', () => {
 
 function sendMessage() {
     const text = chatInput.value.trim();
-    if (!text || !dataChannel || dataChannel.readyState !== 'open') return;
+    if (!text) return;
     
-    dataChannel.send(text);
-    appendMessage(text, 'local');
-    chatInput.value = '';
+    let sent = false;
+    for (const id in peers) {
+        const dc = peers[id].dc;
+        if (dc && dc.readyState === 'open') {
+            dc.send(text);
+            sent = true;
+        }
+    }
+    
+    if (sent) {
+        appendMessage(text, 'local');
+        chatInput.value = '';
+    }
 }
 
 function initSignaling() {
@@ -110,21 +122,21 @@ function initSignaling() {
         connectBtn.innerText = 'Connect';
         connectBtn.style.backgroundColor = 'var(--accent)';
         socket = null;
-        if (pc) {
-            pc.close();
-            pc = null;
+        for (const id in peers) {
+            peers[id].pc.close();
         }
-        updateDCStatus('closed');
+        peers = {};
+        updateOverallStatus();
     });
 
     socket.on('user-joined', (id) => {
         sigLog(`New user joined room: ${id}`);
-        initiateCall();
+        initiateCall(id);
     });
 
     socket.on('offer', async ({ offer, from }) => {
         sigLog(`Received offer from: ${from}`);
-        setupPC();
+        const pc = setupPC(from);
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
@@ -134,11 +146,12 @@ function initSignaling() {
             sdp: filterSdp(answer.sdp)
         };
         sigLog(`Emitting answer to: ${from}`);
-        socket.emit('answer', { answer: finalAnswer, roomName });
+        socket.emit('answer', { answer: finalAnswer, to: from });
     });
 
     socket.on('answer', async ({ answer, from }) => {
         sigLog(`Received answer from: ${from}`);
+        const pc = peers[from]?.pc;
         if (pc) {
             await pc.setRemoteDescription(new RTCSessionDescription(answer));
         }
@@ -151,6 +164,7 @@ function initSignaling() {
             return;
         }
         sigLog(`Received ice-candidate from: ${from} (${candidate.candidate.split(' ')[7] || ''})`);
+        const pc = peers[from]?.pc;
         if (pc) {
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(candidate));
@@ -164,10 +178,11 @@ function filterSdp(sdp) {
     return sdp.replace(/^a=candidate:.*typ host.*\r?\n/gm, '');
 }
 
-async function initiateCall() {
-    setupPC();
-    // 自分が発信側の場合はDataChannelを作成する
-    setDataChannel(pc.createDataChannel("chat"));
+async function initiateCall(id) {
+    const pc = setupPC(id);
+    const dc = pc.createDataChannel("chat");
+    peers[id].dc = dc;
+    setupDataChannel(dc, id);
     
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
@@ -176,14 +191,15 @@ async function initiateCall() {
         type: offer.type,
         sdp: filterSdp(offer.sdp)
     };
-    sigLog(`Emitting offer for room: ${roomName}`);
-    socket.emit('offer', { offer: finalOffer, roomName });
+    sigLog(`Emitting offer to: ${id}`);
+    socket.emit('offer', { offer: finalOffer, to: id });
 }
 
-function setupPC() {
-    if (pc) return;
-    pc = new RTCPeerConnection(config);
-    iceList.innerHTML = "";
+function setupPC(id) {
+    if (peers[id]) return peers[id].pc;
+    
+    const pc = new RTCPeerConnection(config);
+    peers[id] = { pc: pc, dc: null };
     
     pc.onicecandidate = (event) => {
         if (event.candidate) {
@@ -193,98 +209,82 @@ function setupPC() {
             div.innerHTML = `<span>${cand.type}</span> ${cand.protocol}://${cand.address || cand.ip}:${cand.port}`;
             iceList.appendChild(div);
             
-            if (roomName && socket) {
+            if (socket) {
                 if (noHostCheck.checked && cand.candidate.includes('typ host')) {
                 } else {
-                    sigLog(`Emitting local ice-candidate: ${cand.type} (${cand.address || cand.ip})`);
-                    socket.emit('ice-candidate', { candidate: cand, roomName });
+                    sigLog(`Emitting local ice-candidate: ${cand.type} (${cand.address || cand.ip}) to ${id}`);
+                    socket.emit('ice-candidate', { candidate: cand, to: id });
                 }
             }
         }
     };
 
     pc.oniceconnectionstatechange = () => {
-        const state = pc.iceConnectionState;
-        statusText.innerHTML = `<span class="dot"></span> ICE: ${state}`;
-        const dot = statusText.querySelector('.dot');
-        if (state === 'connected' || state === 'completed') {
-            dot.style.background = '#22c55e';
-            updateSelectedIce();
-        }
-        else if (state === 'checking') dot.style.background = '#eab308';
-        else if (state === 'failed' || state === 'disconnected' || state === 'closed') dot.style.background = '#ef4444';
-        else dot.style.background = '#94a3b8';
+        updateOverallStatus();
     };
 
     pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') {
-            updateSelectedIce();
-        }
+        updateOverallStatus();
     };
 
-    // 相手側がDataChannelを受け取った時の処理
     pc.ondatachannel = (event) => {
-        sigLog("Received remote DataChannel");
-        setDataChannel(event.channel);
+        sigLog(`Received remote DataChannel from ${id}`);
+        peers[id].dc = event.channel;
+        setupDataChannel(event.channel, id);
     };
+
+    return pc;
 }
 
-function setDataChannel(dc) {
-    dataChannel = dc;
-    dataChannel.onopen = () => {
-        sigLog("DataChannel opened");
-        updateDCStatus('open');
+function setupDataChannel(dc, id) {
+    dc.onopen = () => {
+        sigLog(`DataChannel opened with ${id}`);
+        updateOverallStatus();
     };
-    dataChannel.onclose = () => {
-        sigLog("DataChannel closed");
-        updateDCStatus('closed');
+    dc.onclose = () => {
+        sigLog(`DataChannel closed with ${id}`);
+        updateOverallStatus();
     };
-    dataChannel.onmessage = (event) => {
-        sigLog("Message received via DataChannel");
+    dc.onmessage = (event) => {
+        sigLog(`Message received via DataChannel from ${id}`);
         appendMessage(event.data, 'remote');
     };
 }
 
-function updateDCStatus(state) {
-    dcStatus.innerHTML = `<span class="dot"></span> DataChannel: ${state}`;
-    const dot = dcStatus.querySelector('.dot');
-    if (state === 'open') {
-        dot.style.background = '#22c55e';
+function updateOverallStatus() {
+    let anyOpen = false;
+    let anyConnected = false;
+    let anyChecking = false;
+
+    for (const id in peers) {
+        const pc = peers[id].pc;
+        const dc = peers[id].dc;
+        
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') anyConnected = true;
+        if (pc.iceConnectionState === 'checking') anyChecking = true;
+        
+        if (dc && dc.readyState === 'open') anyOpen = true;
+    }
+
+    // ICE Status
+    if (anyConnected) {
+        statusText.innerHTML = `<span class="dot" style="background:#22c55e"></span> ICE: connected`;
+    } else if (anyChecking) {
+        statusText.innerHTML = `<span class="dot" style="background:#eab308"></span> ICE: checking`;
+    } else {
+        statusText.innerHTML = `<span class="dot" style="background:#ef4444"></span> ICE: disconnected`;
+    }
+
+    // DC Status
+    if (anyOpen) {
+        dcStatus.innerHTML = `<span class="dot" style="background:#22c55e"></span> DataChannel: open`;
         chatInput.disabled = false;
         sendBtn.disabled = false;
         chatInput.placeholder = "Type a message...";
     } else {
-        dot.style.background = '#ef4444';
+        dcStatus.innerHTML = `<span class="dot" style="background:#ef4444"></span> DataChannel: closed`;
         chatInput.disabled = true;
         sendBtn.disabled = true;
         chatInput.placeholder = "Awaiting connection...";
     }
-}
-
-async function updateSelectedIce() {
-    if (!pc) return;
-    try {
-        const stats = await pc.getStats();
-        let activeCandidatePair = null;
-        stats.forEach(report => {
-            if (report.type === 'transport') {
-                const pairId = report.selectedCandidatePairId;
-                if (pairId) activeCandidatePair = stats.get(pairId);
-            }
-        });
-
-        if (activeCandidatePair && activeCandidatePair.state === 'succeeded') {
-            const local = stats.get(activeCandidatePair.localCandidateId);
-            const remote = stats.get(activeCandidatePair.remoteCandidateId);
-            
-            const selectedInfo = document.getElementById('selectedIce');
-            selectedInfo.innerHTML = `
-                <div style="color: var(--success); font-weight: bold; margin-bottom: 4px;">✔ Selected ICE Pair</div>
-                <div class="ice-item active" style="border: 1px solid var(--success); background: #f0fdf4;">
-                    <span>LOCAL:</span> ${local.candidateType}<br>
-                    <span>REMOTE:</span> ${remote.candidateType}
-                </div>
-            `;
-        }
-    } catch (e) {}
 }

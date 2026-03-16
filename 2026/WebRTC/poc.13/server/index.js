@@ -20,16 +20,16 @@ io.on('connection', (socket) => {
         socket.to(roomName).emit('user-joined', socket.id);
     });
 
-    socket.on('offer', ({ offer, roomName }) => {
-        socket.to(roomName).emit('offer', { offer, from: socket.id });
+    socket.on('offer', ({ offer, to }) => {
+        socket.to(to).emit('offer', { offer, from: socket.id });
     });
 
-    socket.on('answer', ({ answer, roomName }) => {
-        socket.to(roomName).emit('answer', { answer, from: socket.id });
+    socket.on('answer', ({ answer, to }) => {
+        socket.to(to).emit('answer', { answer, from: socket.id });
     });
 
-    socket.on('ice-candidate', ({ candidate, roomName }) => {
-        socket.to(roomName).emit('ice-candidate', { candidate, from: socket.id });
+    socket.on('ice-candidate', ({ candidate, to }) => {
+        socket.to(to).emit('ice-candidate', { candidate, from: socket.id });
     });
 
     socket.on('disconnect', () => {
@@ -41,3 +41,26 @@ const PORT = process.env.PORT || 49880;
 server.listen(PORT, () => {
     console.log(`Signaling server running on port ${PORT}`);
 });
+
+// --- TCP Echo Server ---
+const net = require('net');
+const tcpEchoServer = net.createServer((socket) => {
+    console.log('TCP Echo connection from:', socket.remoteAddress);
+    socket.pipe(socket);
+});
+tcpEchoServer.listen(parseInt(PORT) + 1, () => {
+    console.log(`TCP Echo server running on port ${parseInt(PORT) + 1}`);
+});
+
+// --- UDP Echo Server ---
+const dgram = require('dgram');
+const udpEchoServer = dgram.createSocket('udp4');
+udpEchoServer.on('message', (msg, rinfo) => {
+    console.log(`UDP Echo message from ${rinfo.address}:${rinfo.port}: ${msg.toString().trim()}`);
+    udpEchoServer.send(msg, rinfo.port, rinfo.address);
+});
+udpEchoServer.on('listening', () => {
+    const address = udpEchoServer.address();
+    console.log(`UDP Echo server listening on ${address.address}:${address.port}`);
+});
+udpEchoServer.bind(PORT);

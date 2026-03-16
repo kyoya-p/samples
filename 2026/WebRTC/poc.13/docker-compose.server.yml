@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "49880:49880"
+      - "49880:49880/udp"
+      - "49881:49881"
     volumes:
       - ./server/public:/home/node/app/public
     environment:

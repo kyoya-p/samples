@@ -7,12 +7,26 @@ services:
     ports:
       - "8081:6080"
     environment:
-      - TARGET_URL=http://server:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/index.html
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "turn:host-gateway" # TURN server resolution via host
     networks:
       - nat1
-      - webrtc-shared-net
+
+  client-nat1-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8085:6080"
+    environment:
+      - TARGET_URL=http://host.docker.internal:49880/index.html
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "turn:host-gateway"
+    networks:
+      - nat1
 
   # NAT2 Network Client
   client-nat2:
@@ -22,12 +36,12 @@ services:
     ports:
       - "8082:6080"
     environment:
-      - TARGET_URL=http://server:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/index.html
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "turn:host-gateway"
     networks:
       - nat2
-      - webrtc-shared-net
 
   # PXY1 Network Client & Proxy
   client-pxy1:
@@ -37,11 +51,32 @@ services:
     ports:
       - "8083:6080"
     environment:
-      - TARGET_URL=http://server:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/index.html
       - HTTP_PROXY=http://proxy1:3128
       - HTTPS_PROXY=http://proxy1:3128
+      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "turn:host-gateway"
+    networks:
+      - pxy1
+    depends_on:
+      - proxy1
+
+  client-pxy1-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "8086:6080"
+    environment:
+      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - HTTP_PROXY=http://proxy1:3128
+      - HTTPS_PROXY=http://proxy1:3128
+      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+      - "turn:host-gateway"
     networks:
       - pxy1
     depends_on:
@@ -51,6 +86,8 @@ services:
     image: ubuntu/squid:latest
     volumes:
       - ./squid.conf:/etc/squid/squid.conf
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - pxy1
       - webrtc-shared-net
@@ -63,11 +100,12 @@ services:
     ports:
       - "8084:6080"
     environment:
-      - TARGET_URL=http://server:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/index.html
       - HTTP_PROXY=http://proxy2:3128
       - HTTPS_PROXY=http://proxy2:3128
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "turn:host-gateway"
     networks:
       - pxy2
     depends_on:
@@ -77,6 +115,8 @@ services:
     image: ubuntu/squid:latest
     volumes:
       - ./squid.conf:/etc/squid/squid.conf
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - pxy2
       - webrtc-shared-net
@@ -88,8 +128,10 @@ networks:
     driver: bridge
   pxy1:
     driver: bridge
+    # internal: true  # WebRTC (UDP/TURN) needs outbound access
   pxy2:
     driver: bridge
+    # internal: true
   webrtc-shared-net:
     name: webrtc-shared-net
     external: true
