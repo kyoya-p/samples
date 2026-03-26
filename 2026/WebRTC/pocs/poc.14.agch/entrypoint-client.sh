@@ -54,6 +54,11 @@ const { chromium } = require('playwright');
             viewport: null
         });
         const page = await context.newPage();
+
+        page.on('console', msg => {
+            console.log('PAGE_LOG: ' + msg.text());
+        });
+
         const url = process.env.TARGET_URL || 'http://server:49880/index.html';
         console.log('Navigating to ' + url);
         await page.goto(url);
@@ -64,20 +69,42 @@ const { chromium } = require('playwright');
         console.log('Clicking connect button...');
         await page.click('#connectBtn');
 
-        // Text chat logic for automation
+        // 定期的に状態をログ出力
         setInterval(async () => {
             try {
-                const isOpen = await page.evaluate(() => {
-                    const dcStatus = document.getElementById('dcStatus');
-                    return dcStatus && dcStatus.innerText.includes('open');
+                const status = await page.evaluate(() => {
+                    const dcEl = document.getElementById('dcStatus');
+                    const connEl = document.getElementById('connStatus');
+                    if (!dcEl || !connEl) return { error: 'Elements not found' };
+
+                    const dcStatus = dcEl.innerText;
+                    const iceStatus = connEl.innerText;
+                    const messages = Array.from(document.querySelectorAll('.message')).map(m => m.innerText);
+                    return {
+                        dcStatus,
+                        iceStatus,
+                        messageCount: messages.length,
+                        lastMessage: messages[messages.length - 1] || null
+                    };
                 });
-                
-                if (isOpen) {
-                    await page.fill('#chatInput', 'Automated message at ' + new Date().toLocaleTimeString());
-                    await page.click('#sendBtn');
+                console.log('CHECK_STATUS:' + JSON.stringify(status));
+
+                // 接続が確立されていたらテストメッセージを送ってみる
+                if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 5) {
+                    const inputEl = document.getElementById('chatInput');
+                    if (inputEl && !inputEl.disabled) {
+                        const chatInput = document.querySelector('#chatInput');
+                        const sendBtn = document.querySelector('#sendBtn');
+                        if (chatInput && sendBtn) {
+                           chatInput.value = 'Automated message at ' + new Date().toLocaleTimeString();
+                           sendBtn.click();
+                        }
+                    }
                 }
-            } catch (e) {}
-        }, 10000);
+            } catch (e) {
+                console.error('Status check error:', e.message);
+            }
+        }, 5000);
         
         browser.on('disconnected', () => {
             console.log('Browser closed, exiting...');
