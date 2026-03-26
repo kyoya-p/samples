@@ -1,0 +1,30 @@
+[env]
+TARGET_URL = "http://localhost:49880/"
+
+[tasks."up.test"]
+description = "Start the 4-network client test environment"
+run = "docker compose -f docker-compose.test.yml up -d --build"
+
+[tasks."down.test"]
+description = "Stop the 4-network client test environment"
+run = "docker compose -f docker-compose.test.yml down"
+
+[tasks."up.server"]
+description = "Start the server environment"
+run = "docker compose -f docker-compose.server.yml up -d --build"
+
+[tasks."down.server"]
+description = "Stop the server environment"
+run = "docker compose -f docker-compose.server.yml down"
+
+[tasks.up]
+description = "Start all services"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml up -d --build"
+
+[tasks.down]
+description = "Stop and remove all containers"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml down"
+
+[tasks.ps]
+description = "Start all services"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml ps"
