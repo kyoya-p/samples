@@ -1,8 +1,0 @@
-{
-  "name": "poc.13",
-  "version": "1.0.0",
-  "description": "WebRTC Text Chat POC (DataChannel)",
-  "dependencies": {
-    "playwright": "^1.50.1"
-  }
-}

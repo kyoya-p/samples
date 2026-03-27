@@ -90,15 +90,13 @@ const { chromium } = require('playwright');
                 console.log('CHECK_STATUS:' + JSON.stringify(status));
 
                 // 接続が確立されていたらテストメッセージを送ってみる
-                if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 5) {
-                    const inputEl = document.getElementById('chatInput');
-                    if (inputEl && !inputEl.disabled) {
-                        const chatInput = document.querySelector('#chatInput');
-                        const sendBtn = document.querySelector('#sendBtn');
-                        if (chatInput && sendBtn) {
-                           chatInput.value = 'Automated message at ' + new Date().toLocaleTimeString();
-                           sendBtn.click();
-                        }
+                if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 10) {
+                    const isInputDisabled = await page.evaluate(() => document.getElementById('chatInput').disabled);
+                    if (!isInputDisabled) {
+                        const timestamp = new Date().toLocaleTimeString();
+                        await page.fill('#chatInput', 'Automated message at ' + timestamp);
+                        await page.click('#sendBtn');
+                        console.log('SENT_MESSAGE at ' + timestamp);
                     }
                 }
             } catch (e) {
