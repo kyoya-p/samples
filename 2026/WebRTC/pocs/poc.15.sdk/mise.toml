@@ -1,0 +1,104 @@
+[env]
+SIGNALING_URL = "http://host.docker.internal:49880"
+ROOM_ID = '{{ env.ROOM_ID | default(value="room1") }}'
+
+[tasks."up.server"]
+description = "Start the server and TURN environment"
+run = "docker compose -f docker-compose.server.yml up -d --build"
+
+[tasks."down.server"]
+description = "Stop the server environment"
+run = "docker compose -f docker-compose.server.yml down"
+
+[tasks.ps]
+description = "Check container status"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml ps"
+
+
+[tasks]
+"test.nat1" = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-nat1-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
+"test.nat2" = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-nat2-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
+"test.all" = "echo \"Tests started on all nodes in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+
+[tasks."test.pxy1"]
+description = "Run Node.js test on PXY1"
+run = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-pxy1-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
+
+[tasks."test.pxy2"]
+description = "Run Node.js test on PXY2"
+run = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-pxy2-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
+
+# --- 複合テストタスク ---
+[tasks."test.nat1-nat2"]
+description = "Run SDK test between NAT1 and NAT2 nodes"
+depends = ["test.nat1", "test.nat2"]
+run = "echo \"Tests started between NAT1 and NAT2 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+
+[tasks."test.nat1-pxy1"]
+description = "Run SDK test between NAT1 and PXY1 nodes"
+depends = ["test.nat1", "test.pxy1"]
+run = "echo \"Tests started between NAT1 and PXY1 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+
+[tasks."test.pxy1-pxy2"]
+description = "Run SDK test between PXY1 and PXY2 nodes"
+depends = ["test.pxy1", "test.pxy2"]
+run = "echo \"Tests started between PXY1 and PXY2 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+
+
+[tasks.logs]
+description = "Summarize paired sent/received messages per Room ID"
+run = """
+# 全ノードからユニークなROOM_IDを収集
+ALL_ROOMS=$(for node in nat1 nat2 pxy1 pxy2; do
+  docker exec "poc15sdk-client-${node}-1" grep "Starting Pure Node.js SDK test in room:" test.log 2>/dev/null | awk '{print $NF}'
+done | sort -u)
+
+if [ -z "$ALL_ROOMS" ]; then
+  echo "No test logs found."
+  exit 0
+fi
+
+for room in $ALL_ROOMS; do
+  echo "======================================================================================"
+  echo "  FLOW SUMMARY FOR ROOM: $room"
+  echo "======================================================================================"
+  (
+    for node in nat1 nat2 pxy1 pxy2; do
+      CONTAINER="poc15sdk-client-${node}-1"
+      docker exec $CONTAINER awk -v n="$node" -v r="room: $room" '
+        $0 ~ r { flag=1; next }
+        $0 ~ /Starting Pure Node.js SDK test in room:/ { flag=0 }
+        flag && ($0 ~ /\\[SENT\\]/ || $0 ~ /\\[MSG from/) { print "[" n "] " $0 }
+      ' test.log
+    done
+  ) | awk '
+    /\\[RANDOM_MSG\\]/ {
+      # メッセージ本文を抽出 ( [RANDOM_MSG] と (at の間)
+      start = index($0, "[RANDOM_MSG] ") + 13
+      end = index($0, " (at ")
+      msg = substr($0, start, end - start)
+      
+      # 時刻を抽出 ( (at と ) の間)
+      t_start = index($0, "(at ") + 4
+      t_end = index($0, ")")
+      time = substr($0, t_start, t_end - t_start)
+      
+      # ノード名を抽出
+      node = substr($1, 2, length($1)-2)
+      
+      if ($0 ~ /\\[SENT\\]/) {
+        senders[msg] = node
+        times[msg] = time
+      } else {
+        receivers[msg] = (receivers[msg] ? receivers[msg] "," : "") node
+      }
+    }
+    END {
+      for (m in senders) {
+        printf "[%s] %-5s -> [%s] | Msg: %s\\n", times[m], senders[m], (receivers[m] ? receivers[m] : "???"), m
+      }
+    }
+  ' | sort -t ']' -k 1
+  echo ""
+done
+"""

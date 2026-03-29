@@ -1,8 +1,0 @@
-{
-  "name": "poc.14.agch",
-  "version": "1.0.0",
-  "description": "WebRTC Text Chat POC (DataChannel) - poc.14.agch",
-  "dependencies": {
-    "playwright": "^1.50.1"
-  }
-}

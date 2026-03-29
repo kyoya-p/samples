@@ -1,0 +1,16 @@
+FROM node:18-slim
+
+WORKDIR /app
+
+# ツール（デバッグ用）のインストール
+RUN apt-get update && apt-get install -y curl netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+# 依存関係
+COPY package*.json ./
+RUN npm install
+
+# ソースコード
+COPY . .
+
+# コンテナ維持
+CMD ["tail", "-f", "/dev/null"]

@@ -7,7 +7,7 @@ services:
     ports:
       - "8181:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "turn:host-gateway"
@@ -21,7 +21,7 @@ services:
     ports:
       - "8185:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "turn:host-gateway"
@@ -36,7 +36,7 @@ services:
     ports:
       - "8182:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
     extra_hosts:
       - "host.docker.internal:host-gateway"
       - "turn:host-gateway"
@@ -51,7 +51,7 @@ services:
     ports:
       - "8183:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
       - HTTP_PROXY=http://proxy1:3128
       - HTTPS_PROXY=http://proxy1:3128
       - NO_PROXY=localhost,127.0.0.1,host.docker.internal
@@ -70,7 +70,7 @@ services:
     ports:
       - "8186:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
       - HTTP_PROXY=http://proxy1:3128
       - HTTPS_PROXY=http://proxy1:3128
       - NO_PROXY=localhost,127.0.0.1,host.docker.internal
@@ -100,7 +100,7 @@ services:
     ports:
       - "8184:6080"
     environment:
-      - TARGET_URL=http://host.docker.internal:49880/index.html
+      - TARGET_URL=http://host.docker.internal:49880/client/index.html
       - HTTP_PROXY=http://proxy2:3128
       - HTTPS_PROXY=http://proxy2:3128
     extra_hosts:

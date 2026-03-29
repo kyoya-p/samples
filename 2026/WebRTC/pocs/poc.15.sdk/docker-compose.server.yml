@@ -9,6 +9,8 @@ services:
       - "49881:49881"
     volumes:
       - ./server/public:/home/node/app/public
+      - ./sdk:/home/node/sdk
+      - ./client:/home/node/client
     environment:
       - PORT=49880
     networks:
@@ -21,6 +23,8 @@ services:
       - "3478:3478"
       - "3478:3478/udp"
       - "49900-49999:49900-49999/udp"
+    environment:
+      - EXTERNAL_IP=172.17.0.1
     networks:
       - webrtc-net
 

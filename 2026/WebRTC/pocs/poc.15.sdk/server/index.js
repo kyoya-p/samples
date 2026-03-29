@@ -10,6 +10,8 @@ const io = new Server(server, {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/sdk', express.static(path.join(__dirname, '../sdk')));
+app.use('/client', express.static(path.join(__dirname, '../client')));
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
