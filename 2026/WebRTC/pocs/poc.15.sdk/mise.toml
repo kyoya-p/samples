@@ -1,7 +1,5 @@
 [env]
 SIGNALING_URL = "http://host.docker.internal:49880"
-# デフォルト値。実行時に外部から上書きされることを期待。
-ROOM_ID = "room_default"
 
 [tasks."up.server"]
 description = "Start the server and TURN environment"
@@ -21,7 +19,7 @@ run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml ps
 "test.pxy1" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-pxy1-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
 "test.pxy2" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-pxy2-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
 
-# --- 複合テストタスク (並列実行して終了を待機) ---
+# --- 複合テストタスク ---
 [tasks."test.nat1-nat2"]
 description = "Run SDK test between NAT1 and NAT2"
 run = "mise run test.nat1 & mise run test.nat2 & wait"
@@ -41,7 +39,8 @@ run = """
 for scenario in nat1-nat2 nat1-pxy1 pxy1-pxy2; do
   RID="room_$(head /dev/urandom | tr -dc a-z0-9 | head -c 8)"
   echo ">>> Starting scenario: $scenario (Room: $RID)"
-  ROOM_ID=$RID mise run test.$scenario
+  export ROOM_ID=$RID
+  mise run test.$scenario
 done
 mise run logs
 """
@@ -74,19 +73,13 @@ for room in $ALL_ROOMS; do
     done
   ) | awk -v room_id="$room" '
     /\\[RANDOM_MSG\\]/ {
-      # メッセージ本文を抽出
       start = index($0, "[RANDOM_MSG] ") + 13
       end = index($0, " (at ")
       msg = substr($0, start, end - start)
-      
-      # 時刻を抽出
       t_start = index($0, "(at ") + 4
       t_end = index($0, ")")
       time = substr($0, t_start, t_end - t_start)
-      
-      # ノード名を抽出
       node = substr($1, 2, length($1)-2)
-      
       if ($0 ~ /\\[SENT\\]/) {
         senders[msg] = node
         times[msg] = time
