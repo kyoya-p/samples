@@ -32,6 +32,9 @@ sdk.onStatusChange = (status) => {
     console.log(`[${hostname}] Starting Pure Node.js SDK test in room: ${roomID}`);
     await sdk.join(roomID);
 
+    let sentCount = 0;
+    const maxMessages = 10;
+
     // 定期的にメッセージ送信を試行
     let interval = setInterval(() => {
         if (peerCount === 0) {
@@ -42,13 +45,20 @@ sdk.onStatusChange = (status) => {
         const msg = `[RANDOM_MSG] ${randomMsg} (at ${timestamp})`;
         if (sdk.send(msg)) {
             console.log(`[SENT] ${msg}`);
+            sentCount++;
         }
-    }, 5000);
 
-    // 60秒後に終了
+        if (sentCount >= maxMessages) {
+            clearInterval(interval);
+            console.log(`Successfully sent ${maxMessages} messages. Test finished.`);
+            setTimeout(() => process.exit(0), 2000); // 残りの受信を少し待ってから終了
+        }
+    }, 2000); // 2秒間隔に短縮
+
+    // 安全のためのタイムアウト (相手が現れない場合)
     setTimeout(() => {
         clearInterval(interval);
-        console.log("Test cycle finished.");
-        process.exit(0);
-    }, 60000);
+        console.log("Test timed out.");
+        process.exit(1);
+    }, 45000);
 })();
