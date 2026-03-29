@@ -1,6 +1,7 @@
 [env]
 SIGNALING_URL = "http://host.docker.internal:49880"
-ROOM_ID = '{{ env.ROOM_ID | default(value="room1") }}'
+# デフォルト値。実行時に外部から上書きされることを期待。
+ROOM_ID = "room_default"
 
 [tasks."up.server"]
 description = "Start the server and TURN environment"
@@ -14,36 +15,36 @@ run = "docker compose -f docker-compose.server.yml down"
 description = "Check container status"
 run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml ps"
 
-
 [tasks]
-"test.nat1" = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-nat1-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
-"test.nat2" = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-nat2-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
-"test.all" = "echo \"Tests started on all nodes in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+"test.nat1" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-nat1-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.nat2" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-nat2-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.pxy1" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-pxy1-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.pxy2" = "docker exec -e ROOM_ID=${ROOM_ID} poc15sdk-client-pxy2-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
 
-[tasks."test.pxy1"]
-description = "Run Node.js test on PXY1"
-run = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-pxy1-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
-
-[tasks."test.pxy2"]
-description = "Run Node.js test on PXY2"
-run = "docker exec -e ROOM_ID=${ROOM_ID} -d poc15sdk-client-pxy2-1 bash -c 'node client/run-test-node.js > test.log 2>&1'"
-
-# --- 複合テストタスク ---
+# --- 複合テストタスク (並列実行して終了を待機) ---
 [tasks."test.nat1-nat2"]
-description = "Run SDK test between NAT1 and NAT2 nodes"
-depends = ["test.nat1", "test.nat2"]
-run = "echo \"Tests started between NAT1 and NAT2 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+description = "Run SDK test between NAT1 and NAT2"
+run = "mise run test.nat1 & mise run test.nat2 & wait"
 
 [tasks."test.nat1-pxy1"]
-description = "Run SDK test between NAT1 and PXY1 nodes"
-depends = ["test.nat1", "test.pxy1"]
-run = "echo \"Tests started between NAT1 and PXY1 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+description = "Run SDK test between NAT1 and PXY1"
+run = "mise run test.nat1 & mise run test.pxy1 & wait"
 
 [tasks."test.pxy1-pxy2"]
-description = "Run SDK test between PXY1 and PXY2 nodes"
-depends = ["test.pxy1", "test.pxy2"]
-run = "echo \"Tests started between PXY1 and PXY2 in room '${ROOM_ID}'. Use 'mise run logs' to monitor.\""
+description = "Run SDK test between PXY1 and PXY2"
+run = "mise run test.pxy1 & mise run test.pxy2 & wait"
 
+# 全シナリオ実行
+[tasks."test.all-scenarios"]
+description = "Run all test scenarios sequentially with fresh random IDs"
+run = """
+for scenario in nat1-nat2 nat1-pxy1 pxy1-pxy2; do
+  RID="room_$(head /dev/urandom | tr -dc a-z0-9 | head -c 8)"
+  echo ">>> Starting scenario: $scenario (Room: $RID)"
+  ROOM_ID=$RID mise run test.$scenario
+done
+mise run logs
+"""
 
 [tasks.logs]
 description = "Summarize paired sent/received messages per Room ID"
@@ -71,14 +72,14 @@ for room in $ALL_ROOMS; do
         flag && ($0 ~ /\\[SENT\\]/ || $0 ~ /\\[MSG from/) { print "[" n "] " $0 }
       ' test.log
     done
-  ) | awk '
+  ) | awk -v room_id="$room" '
     /\\[RANDOM_MSG\\]/ {
-      # メッセージ本文を抽出 ( [RANDOM_MSG] と (at の間)
+      # メッセージ本文を抽出
       start = index($0, "[RANDOM_MSG] ") + 13
       end = index($0, " (at ")
       msg = substr($0, start, end - start)
       
-      # 時刻を抽出 ( (at と ) の間)
+      # 時刻を抽出
       t_start = index($0, "(at ") + 4
       t_end = index($0, ")")
       time = substr($0, t_start, t_end - t_start)
@@ -95,7 +96,7 @@ for room in $ALL_ROOMS; do
     }
     END {
       for (m in senders) {
-        printf "[%s] %-5s -> [%s] | Msg: %s\\n", times[m], senders[m], (receivers[m] ? receivers[m] : "???"), m
+        printf "[%s] [%s] %-5s -> [%s] | Msg: %s\\n", times[m], room_id, senders[m], (receivers[m] ? receivers[m] : "???"), m
       }
     }
   ' | sort -t ']' -k 1
