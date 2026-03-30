@@ -26,7 +26,7 @@ Open a PowerShell terminal and run the following command:
 ### Optional Parameters
 
 - `-InstallDir <path>`: Specifies the installation directory.
-  - Default: `C:\neo4j-community-5.6.0`
+  - Default: `$env:LOCALAPPDATA\neo4j-community-5.6.0`
   - Example: `.\scripts\install-neo4j-community.ps1 -InstallDir "C:\my-neo4j"`
 
 ## Neo4j Configuration
