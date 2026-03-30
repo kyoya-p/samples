@@ -68,17 +68,15 @@ for room in $ALL_ROOMS; do
       docker exec $CONTAINER awk -v n="$node" -v r="room: $room" '
         $0 ~ r { flag=1; next }
         $0 ~ /Starting Pure Node.js SDK test in room:/ { flag=0 }
-        flag && ($0 ~ /\\[SENT\\]/ || $0 ~ /\\[MSG from/ || $0 ~ /\\[SDK\\] ICE Connected using/) { print "[" n "] " $0 }
+        flag && ($0 ~ /\\[SENT\\]/ || $0 ~ /\\[MSG from/ || $0 ~ /ICE Connected using/) { print "[" n "] " $0 }
       ' test.log 2>/dev/null
     done
   ) | awk -v room_id="$room" '
-    /\\[SDK\\] ICE Connected using/ {
+    /ICE Connected using/ {
       node = substr($1, 2, length($1)-2)
-      # type を抽出
-      # [node] [SDK] ICE Connected using type (proto) with id
+      # [node] [SDK_RAW] ICE Connected using type with id
       type = $6
-      proto = $7
-      conn_types[node] = type " " proto
+      conn_types[node] = type
     }
     /\\[RANDOM_MSG\\]/ {
       start = index($0, "[RANDOM_MSG] ") + 13

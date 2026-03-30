@@ -5,11 +5,7 @@
 class WebRTCSDK {
     constructor(signalingUrl, iceConfig = {}, deps = {}) {
         this.signalingUrl = signalingUrl;
-        
-        // Environment detection and dependency injection
         this.io = deps.io || (typeof io !== 'undefined' ? io : null);
-        
-        // Inject dependencies or use global ones
         this._RTCPeerConnection = deps.RTCPeerConnection || (typeof RTCPeerConnection !== 'undefined' ? RTCPeerConnection : null);
         this._RTCSessionDescription = deps.RTCSessionDescription || (typeof RTCSessionDescription !== 'undefined' ? RTCSessionDescription : null);
         this._RTCIceCandidate = deps.RTCIceCandidate || (typeof RTCIceCandidate !== 'undefined' ? RTCIceCandidate : null);
@@ -60,6 +56,11 @@ class WebRTCSDK {
             const pc = this.peers[from]?.pc;
             if (pc && candidate) {
                 try {
+                    // 受信したCandidateのタイプをログ
+                    if (candidate.candidate) {
+                        const type = candidate.candidate.split(' ')[7];
+                        this._log(`Received ICE Candidate (${type}) from ${from}`);
+                    }
                     await pc.addIceCandidate(candidate);
                 } catch (e) {
                     this._log(`ICE Candidate error: ${e.message}`, true);
@@ -86,8 +87,13 @@ class WebRTCSDK {
         this.peers[id] = { pc, dc: null };
 
         pc.onicecandidate = (event) => {
-            if (event.candidate && this.socket) {
-                this.socket.emit('ice-candidate', { candidate: event.candidate, to: id });
+            if (event.candidate) {
+                // 生成したCandidateのタイプをログ
+                const type = event.candidate.candidate.split(' ')[7];
+                this._log(`Generated ICE Candidate (${type}) for ${id}`);
+                if (this.socket) {
+                    this.socket.emit('ice-candidate', { candidate: event.candidate, to: id });
+                }
             }
         };
 
@@ -100,40 +106,11 @@ class WebRTCSDK {
         pc.oniceconnectionstatechange = () => {
             this._log(`ICE connection state change: ${pc.iceConnectionState}`);
             if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                this._log(`ICE connection established, fetching stats...`);
                 this._logIceStats(pc, id);
             }
             this._updateStatus();
         };
         return pc;
-    }
-
-    async _logIceStats(pc, id) {
-        try {
-            const stats = await pc.getStats();
-            let selectedPair = null;
-            stats.forEach(report => {
-                if (report.type === 'transport') {
-                    selectedPair = stats.get(report.selectedCandidatePairId);
-                }
-                // フォールバック: 直接 candidate-pair を探す
-                if (!selectedPair && report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
-                    selectedPair = report;
-                }
-            });
-            
-            if (selectedPair) {
-                const local = stats.get(selectedPair.localCandidateId) || {};
-                const remote = stats.get(selectedPair.remoteCandidateId) || {};
-                const type = local.candidateType || "unknown";
-                const proto = local.protocol || "unknown";
-                this._log(`ICE Connected using ${type} (${proto}) with ${id}`);
-            } else {
-                this._log(`No selected ICE candidate pair found in stats.`);
-            }
-        } catch (e) {
-            this._log(`Error getting ICE stats: ${e.message}`);
-        }
     }
 
     async _initiateCall(id) {
@@ -150,6 +127,7 @@ class WebRTCSDK {
     _setupDataChannel(dc, id) {
         dc.onopen = () => {
             this._log(`DataChannel opened with ${id}`);
+            this._logIceStats(this.peers[id].pc, id);
             this._updateStatus();
         };
         dc.onmessage = (event) => this.onMessage(id, event.data);
@@ -157,6 +135,34 @@ class WebRTCSDK {
             this._log(`DataChannel closed with ${id}`);
             this._updateStatus();
         };
+    }
+
+    async _logIceStats(pc, id) {
+        try {
+            // Node.js (wrtc) では getStats() がコールバック形式の場合があるため、両対応
+            const getStatsPromise = () => new Promise((resolve, reject) => {
+                const res = pc.getStats(resolve, reject);
+                if (res instanceof Promise) res.then(resolve, reject);
+            });
+
+            const stats = await getStatsPromise();
+            let selectedType = "unknown";
+            
+            stats.forEach(report => {
+                if (report.type === 'local-candidate' && (report.candidateType || report.type)) {
+                    // 最後に成功したペアのタイプを推測 (succeededなpairを探すのが本来だが一旦全部出す)
+                    if (report.candidateType) selectedType = report.candidateType;
+                }
+                if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                    const local = stats.get(report.localCandidateId);
+                    if (local) selectedType = local.candidateType || local.type;
+                }
+            });
+            
+            this._log(`ICE Connected using ${selectedType} with ${id}`);
+        } catch (e) {
+            // this._log(`Stats failed: ${e.message}`);
+        }
     }
 
     _updateStatus() {
@@ -169,7 +175,9 @@ class WebRTCSDK {
 
     _log(msg, isError = false) {
         this.onLog(msg);
-        if (isError) console.error(msg);
+        // コンテナの標準出力に確実に出す
+        if (isError) console.error(`[ERR] ${msg}`);
+        else console.log(`[SDK_RAW] ${msg}`);
     }
 }
 
