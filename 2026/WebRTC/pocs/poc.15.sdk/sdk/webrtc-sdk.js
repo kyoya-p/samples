@@ -97,8 +97,43 @@ class WebRTCSDK {
             this._setupDataChannel(event.channel, id);
         };
 
-        pc.oniceconnectionstatechange = () => this._updateStatus();
+        pc.oniceconnectionstatechange = () => {
+            this._log(`ICE connection state change: ${pc.iceConnectionState}`);
+            if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                this._log(`ICE connection established, fetching stats...`);
+                this._logIceStats(pc, id);
+            }
+            this._updateStatus();
+        };
         return pc;
+    }
+
+    async _logIceStats(pc, id) {
+        try {
+            const stats = await pc.getStats();
+            let selectedPair = null;
+            stats.forEach(report => {
+                if (report.type === 'transport') {
+                    selectedPair = stats.get(report.selectedCandidatePairId);
+                }
+                // フォールバック: 直接 candidate-pair を探す
+                if (!selectedPair && report.type === 'candidate-pair' && report.state === 'succeeded' && report.nominated) {
+                    selectedPair = report;
+                }
+            });
+            
+            if (selectedPair) {
+                const local = stats.get(selectedPair.localCandidateId) || {};
+                const remote = stats.get(selectedPair.remoteCandidateId) || {};
+                const type = local.candidateType || "unknown";
+                const proto = local.protocol || "unknown";
+                this._log(`ICE Connected using ${type} (${proto}) with ${id}`);
+            } else {
+                this._log(`No selected ICE candidate pair found in stats.`);
+            }
+        } catch (e) {
+            this._log(`Error getting ICE stats: ${e.message}`);
+        }
     }
 
     async _initiateCall(id) {

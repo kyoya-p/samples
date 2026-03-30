@@ -6,6 +6,8 @@ const WebRTCChannel = require('../sdk/webrtc-channel');
 const signalingUrl = process.env.SIGNALING_URL || 'http://host.docker.internal:49880';
 const roomID = process.env.ROOM_ID || 'room1';
 const hostname = process.env.HOSTNAME || 'node-client';
+// クライアント固有のランダムIDを生成
+const clientId = Math.random().toString(36).substring(2, 8);
 
 const sdk = new WebRTCChannel(signalingUrl, {
     iceTransportPolicy: 'all',
@@ -29,7 +31,7 @@ sdk.onStatusChange = (status) => {
 };
 
 (async () => {
-    console.log(`[${hostname}] Starting Pure Node.js SDK test in room: ${roomID}`);
+    console.log(`[${hostname}] [CID:${clientId}] Starting Pure Node.js SDK test in room: ${roomID}`);
     await sdk.join(roomID);
 
     let sentCount = 0;
@@ -41,8 +43,9 @@ sdk.onStatusChange = (status) => {
             return;
         }
         const timestamp = new Date().toLocaleTimeString();
-        const randomMsg = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 12);
-        const msg = `[RANDOM_MSG] ${randomMsg} (at ${timestamp})`;
+        const randomStr = Math.random().toString(36).substring(2, 12);
+        // クライアントIDをメッセージに含める
+        const msg = `[RANDOM_MSG] CID:${clientId} MSG:${randomStr} (at ${timestamp})`;
         if (sdk.send(msg)) {
             console.log(`[SENT] ${msg}`);
             sentCount++;
@@ -51,11 +54,11 @@ sdk.onStatusChange = (status) => {
         if (sentCount >= maxMessages) {
             clearInterval(interval);
             console.log(`Successfully sent ${maxMessages} messages. Test finished.`);
-            setTimeout(() => process.exit(0), 2000); // 残りの受信を少し待ってから終了
+            setTimeout(() => process.exit(0), 2000);
         }
-    }, 2000); // 2秒間隔に短縮
+    }, 2000);
 
-    // 安全のためのタイムアウト (相手が現れない場合)
+    // 安全のためのタイムアウト
     setTimeout(() => {
         clearInterval(interval);
         console.log("Test timed out.");
