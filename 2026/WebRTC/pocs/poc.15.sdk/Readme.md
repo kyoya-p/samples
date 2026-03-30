@@ -26,7 +26,7 @@
 # テスト環境
 下記パターンで検証
 
-- test1:
-    nat1 <- nat2
-- nat1 <- pxy1
-- pxy1 <- pxy2
+- test:
+    - nat1 <- nat2
+    - nat1 <- pxy1
+    - pxy1 <- pxy2
