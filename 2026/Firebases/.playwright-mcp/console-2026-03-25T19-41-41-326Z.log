@@ -1,0 +1,3 @@
+[  105627ms] Failed to resolve module specifier "@js-joda/core". Relative references must start with either "/", "./", or "../".
+[  105638ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8081/favicon.ico:0
+[  129030ms] Failed to resolve module specifier "@js-joda/core". Relative references must start with either "/", "./", or "../".

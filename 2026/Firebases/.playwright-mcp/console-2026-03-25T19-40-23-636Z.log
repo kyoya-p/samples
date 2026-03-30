@@ -1,0 +1,2 @@
+[    1759ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/index.html:0
+[    1847ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:8080/favicon.ico:0

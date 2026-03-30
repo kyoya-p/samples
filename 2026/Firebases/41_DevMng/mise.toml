@@ -1,0 +1,29 @@
+[tasks.build]
+description = "Build all modules"
+run = ".\\amper.bat build"
+
+[tasks.build-wasm]
+description = "Build the Wasm module"
+run = ".\\amper.bat build -m wasm-app"
+
+[tasks.layout]
+description = "Copy index.html to the build output directory"
+depends = ["build-wasm"]
+run = "powershell -Command \"Copy-Item -Force -Path wasm-app/src/index.html -Destination build/tasks/_wasm-app_linkWasmJs/index.html\""
+
+[tasks.run-wasm]
+description = "Run the Wasm app with a local HTTP server"
+depends = ["layout"]
+run = "cd build/tasks/_wasm-app_linkWasmJs && python -m http.server 8081"
+
+[tasks.build-wasi]
+description = "Build the WASI module"
+run = ".\\amper.bat build -m wasi-app"
+
+[tasks.run-wasi]
+description = "Run the WASI app using Node.js"
+depends = ["build-wasi"]
+run = "cd build/tasks/_wasi-app_linkWasmWasi && node wasi-app.mjs"
+
+[tools]
+python = "latest"
