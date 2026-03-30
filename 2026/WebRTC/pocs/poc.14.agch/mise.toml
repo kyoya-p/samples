@@ -1,5 +1,5 @@
 [env]
-TARGET_URL = "http://localhost:49880/"
+TARGET_URL = "http://host.docker.internal:49880/"
 
 [tasks."up.test"]
 description = "Start the 4-network client test environment"
