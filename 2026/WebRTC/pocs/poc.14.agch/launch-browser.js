@@ -15,7 +15,15 @@ const { chromium } = require('playwright');
         });
         const context = await browser.newContext({ viewport: { width: 1280, height: 1024 } });
         const page = await context.newPage();
+<<<<<<< HEAD
         page.setDefaultNavigationTimeout(120000);
+=======
+
+        page.on('console', msg => {
+            console.log('PAGE_LOG: ' + msg.text());
+        });
+
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
         const url = process.env.TARGET_URL || 'http://server:49880/index.html';
         console.log('Navigating to ' + url);
         await page.goto(url, { waitUntil: 'load', timeout: 120000 });
@@ -29,8 +37,12 @@ const { chromium } = require('playwright');
         setInterval(async () => {
             try {
                 const status = await page.evaluate(() => {
-                    const dcStatus = document.getElementById('dcStatus').innerText;
-                    const iceStatus = document.getElementById('connStatus').innerText;
+                    const dcEl = document.getElementById('dcStatus');
+                    const connEl = document.getElementById('connStatus');
+                    if (!dcEl || !connEl) return { error: 'Elements not found' };
+
+                    const dcStatus = dcEl.innerText;
+                    const iceStatus = connEl.innerText;
                     const messages = Array.from(document.querySelectorAll('.message')).map(m => m.innerText);
                     return {
                         dcStatus,
@@ -42,12 +54,26 @@ const { chromium } = require('playwright');
                 console.log('CHECK_STATUS:' + JSON.stringify(status));
 
                 // 接続が確立されていたらテストメッセージを送ってみる
+<<<<<<< HEAD
                 if (status.dcStatus.includes('open') && status.messageCount < 10) {
                     await page.fill('#chatInput', 'Hello from Playwright! ' + new Date().toLocaleTimeString());
                     await page.click('#sendBtn');
+=======
+                if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 5) {
+                    const inputEl = document.getElementById('chatInput');
+                    if (inputEl && !inputEl.disabled) {
+                        await new Promise(r => setTimeout(r, 500)); // 少し待機
+                        const chatInput = document.querySelector('#chatInput');
+                        const sendBtn = document.querySelector('#sendBtn');
+                        if (chatInput && sendBtn) {
+                           chatInput.value = 'Hello from Playwright! ' + new Date().toLocaleTimeString();
+                           sendBtn.click();
+                        }
+                    }
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
                 }
             } catch (e) {
-                console.error('Status check error:', e);
+                console.error('Status check error:', e.message);
             }
         }, 5000);
 

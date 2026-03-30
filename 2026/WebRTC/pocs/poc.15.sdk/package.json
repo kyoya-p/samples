@@ -1,0 +1,9 @@
+{
+  "name": "poc.15.sdk-node",
+  "version": "1.0.0",
+  "description": "Pure Node.js WebRTC DataChannel SDK POC",
+  "dependencies": {
+    "socket.io-client": "^4.7.2",
+    "werift": "^0.19.0"
+  }
+}

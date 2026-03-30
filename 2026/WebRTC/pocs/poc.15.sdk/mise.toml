@@ -1,0 +1,110 @@
+[env]
+SIGNALING_URL = "http://host.docker.internal:49880"
+
+[tasks."up.server"]
+description = "Start the server and TURN environment"
+run = "docker compose -f docker-compose.server.yml up -d --build"
+
+[tasks."up.test"]
+description = "Start the test client environment"
+run = "docker compose -f docker-compose.test.yml up -d --build"
+
+[tasks."down"]
+description = "Stop all environments"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml down"
+
+[tasks.ps]
+description = "Check container status"
+run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml ps"
+
+[tasks]
+# 各ノードのテスト実行 (環境変数 ROOM_ID を使用)
+"test.nat1" = "docker exec -e ROOM_ID=\"$ROOM_ID\" poc15sdk-client-nat1-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.nat2" = "docker exec -e ROOM_ID=\"$ROOM_ID\" poc15sdk-client-nat2-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.pxy1" = "docker exec -e ROOM_ID=\"$ROOM_ID\" poc15sdk-client-pxy1-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+"test.pxy2" = "docker exec -e ROOM_ID=\"$ROOM_ID\" poc15sdk-client-pxy2-1 bash -c 'node client/run-test-node.js >> test.log 2>&1'"
+
+# --- 複合テストタスク (並列実行して終了を待機) ---
+"test.nat1-nat2" = "mise run test.nat1 & mise run test.nat2 & wait"
+"test.nat1-pxy1" = "mise run test.nat1 & mise run test.pxy1 & wait"
+"test.pxy1-pxy2" = "mise run test.pxy1 & mise run test.pxy2 & wait"
+
+# 全シナリオ実行
+[tasks."test.all-scenarios"]
+description = "Run all test scenarios sequentially with fresh random IDs"
+run = """
+# ログクリア
+for node in nat1 nat2 pxy1 pxy2; do 
+  docker exec poc15sdk-client-${node}-1 bash -c '> test.log' || true
+done
+
+for scenario in nat1-nat2 nat1-pxy1 pxy1-pxy2; do
+  RID="r_$(head /dev/urandom | tr -dc a-z0-9 | head -c 6)"
+  echo ">>> Starting scenario: $scenario (Room: $RID)"
+  ROOM_ID=$RID mise run test.$scenario
+done
+mise run logs
+"""
+
+[tasks.logs]
+description = "Summarize paired sent/received messages per Room ID"
+run = """
+ALL_ROOMS=$(for node in nat1 nat2 pxy1 pxy2; do
+  docker exec "poc15sdk-client-${node}-1" grep "Starting Pure Node.js SDK test in room:" test.log 2>/dev/null | awk '{print $NF}'
+done | sort -u)
+
+if [ -z "$ALL_ROOMS" ]; then
+  echo "No test logs found."
+  exit 0
+fi
+
+for room in $ALL_ROOMS; do
+  echo "======================================================================================"
+  echo "  FLOW SUMMARY FOR ROOM: $room"
+  echo "======================================================================================"
+  (
+    for node in nat1 nat2 pxy1 pxy2; do
+      CONTAINER="poc15sdk-client-${node}-1"
+      docker exec $CONTAINER awk -v n="$node" -v r="room: $room" '
+        $0 ~ r { flag=1; next }
+        $0 ~ /Starting Pure Node.js SDK test in room:/ { flag=0 }
+        flag && ($0 ~ /\\[SENT\\]/ || $0 ~ /\\[MSG from/ || $0 ~ /\\[SDK\\] ICE Connected using/) { print "[" n "] " $0 }
+      ' test.log 2>/dev/null
+    done
+  ) | awk -v room_id="$room" '
+    /\\[SDK\\] ICE Connected using/ {
+      node = substr($1, 2, length($1)-2)
+      # type を抽出
+      # [node] [SDK] ICE Connected using type (proto) with id
+      type = $6
+      proto = $7
+      conn_types[node] = type " " proto
+    }
+    /\\[RANDOM_MSG\\]/ {
+      start = index($0, "[RANDOM_MSG] ") + 13
+      end = index($0, " (at ")
+      msg = substr($0, start, end - start)
+      t_start = index($0, "(at ") + 4
+      t_end = index($0, ")")
+      time = substr($0, t_start, t_end - t_start)
+      node = substr($1, 2, length($1)-2)
+      if ($0 ~ /\\[SENT\\]/) {
+        senders[msg] = node
+        times[msg] = time
+      } else {
+        receivers[msg] = (receivers[msg] ? receivers[msg] "," : "") node
+      }
+    }
+    END {
+      # 接続情報を冒頭に出力
+      for (n in conn_types) {
+        printf "[INFO] Node %-5s used ICE: %s\\n", n, conn_types[n]
+      }
+      for (m in senders) {
+        printf "[%s] [%s] %-5s -> [%s] | Msg: %s\\n", times[m], room_id, senders[m], (receivers[m] ? receivers[m] : "???"), m
+      }
+    }
+  ' | sort -t ']' -k 1
+  echo ""
+done
+"""

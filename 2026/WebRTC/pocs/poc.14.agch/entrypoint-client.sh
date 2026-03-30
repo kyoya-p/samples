@@ -54,6 +54,7 @@ const { chromium } = require('playwright');
         });
         const context = await browser.newContext({ viewport: { width: 1280, height: 1024 } });
         const page = await context.newPage();
+<<<<<<< HEAD
         
         // タイムアウトを大幅に延長
         page.setDefaultNavigationTimeout(120000);
@@ -64,6 +65,16 @@ const { chromium } = require('playwright');
         
         await page.goto(url, { waitUntil: 'load', timeout: 120000 });
         console.log('Page loaded successfully');
+=======
+
+        page.on('console', msg => {
+            console.log('PAGE_LOG: ' + msg.text());
+        });
+
+        const url = process.env.TARGET_URL || 'http://server:49880/index.html';
+        console.log('Navigating to ' + url);
+        await page.goto(url);
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
         
         // Auto-connect
         console.log('Waiting for connect button...');
@@ -71,10 +82,11 @@ const { chromium } = require('playwright');
         console.log('Clicking connect button...');
         await page.click('#connectBtn');
 
-        // Text chat logic for automation
+        // 定期的に状態をログ出力
         setInterval(async () => {
             try {
                 const status = await page.evaluate(() => {
+<<<<<<< HEAD
                     const dcStatus = document.getElementById('dcStatus');
                     const connStatus = document.getElementById('connStatus');
                     const dcText = dcStatus ? dcStatus.innerText : 'unknown';
@@ -98,6 +110,38 @@ const { chromium } = require('playwright');
                 // Ignore evaluation errors during transient states
             }
         }, 10000);
+=======
+                    const dcEl = document.getElementById('dcStatus');
+                    const connEl = document.getElementById('connStatus');
+                    if (!dcEl || !connEl) return { error: 'Elements not found' };
+
+                    const dcStatus = dcEl.innerText;
+                    const iceStatus = connEl.innerText;
+                    const messages = Array.from(document.querySelectorAll('.message')).map(m => m.innerText);
+                    return {
+                        dcStatus,
+                        iceStatus,
+                        messageCount: messages.length,
+                        lastMessage: messages[messages.length - 1] || null
+                    };
+                });
+                console.log('CHECK_STATUS:' + JSON.stringify(status));
+
+                // 接続が確立されていたらテストメッセージを送ってみる
+                if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 10) {
+                    const isInputDisabled = await page.evaluate(() => document.getElementById('chatInput').disabled);
+                    if (!isInputDisabled) {
+                        const timestamp = new Date().toLocaleTimeString();
+                        await page.fill('#chatInput', 'Automated message at ' + timestamp);
+                        await page.click('#sendBtn');
+                        console.log('SENT_MESSAGE at ' + timestamp);
+                    }
+                }
+            } catch (e) {
+                console.error('Status check error:', e.message);
+            }
+        }, 5000);
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
         
         browser.on('disconnected', () => {
             console.log('Browser closed, exiting...');
