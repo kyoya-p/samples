@@ -2,16 +2,16 @@
 SIGNALING_URL = "http://host.docker.internal:49880"
 
 [tasks."up.server"]
-description = "Start the server and TURN environment"
 run = "docker compose -f docker-compose.server.yml up -d --build"
 
 [tasks."up.test"]
-description = "Start the test client environment"
 run = "docker compose -f docker-compose.test.yml up -d --build"
 
-[tasks."down"]
-description = "Stop all environments"
-run = "docker compose -f docker-compose.server.yml -f docker-compose.test.yml down"
+[tasks."down.server"]
+run = "docker compose -f docker-compose.server.yml down"
+
+[tasks."down.test"]
+run = "docker compose -f docker-compose.test.yml down"
 
 [tasks.ps]
 description = "Check container status"

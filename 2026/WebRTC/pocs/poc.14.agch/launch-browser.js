@@ -3,6 +3,7 @@ const { chromium } = require('playwright');
     try {
         const browser = await chromium.launch({ 
             headless: false,
+            timeout: 120000,
             args: [
                 '--no-sandbox', 
                 '--disable-setuid-sandbox',
@@ -14,17 +15,21 @@ const { chromium } = require('playwright');
         });
         const context = await browser.newContext({ viewport: { width: 1280, height: 1024 } });
         const page = await context.newPage();
+<<<<<<< HEAD
+        page.setDefaultNavigationTimeout(120000);
+=======
 
         page.on('console', msg => {
             console.log('PAGE_LOG: ' + msg.text());
         });
 
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
         const url = process.env.TARGET_URL || 'http://server:49880/index.html';
         console.log('Navigating to ' + url);
-        await page.goto(url);
+        await page.goto(url, { waitUntil: 'load', timeout: 120000 });
         
         console.log('Waiting for connect button...');
-        await page.waitForSelector('#connectBtn', { timeout: 10000 });
+        await page.waitForSelector('#connectBtn', { timeout: 30000 });
         console.log('Clicking connect button...');
         await page.click('#connectBtn');
 
@@ -49,6 +54,11 @@ const { chromium } = require('playwright');
                 console.log('CHECK_STATUS:' + JSON.stringify(status));
 
                 // 接続が確立されていたらテストメッセージを送ってみる
+<<<<<<< HEAD
+                if (status.dcStatus.includes('open') && status.messageCount < 10) {
+                    await page.fill('#chatInput', 'Hello from Playwright! ' + new Date().toLocaleTimeString());
+                    await page.click('#sendBtn');
+=======
                 if (status.dcStatus && status.dcStatus.includes('open') && status.messageCount < 5) {
                     const inputEl = document.getElementById('chatInput');
                     if (inputEl && !inputEl.disabled) {
@@ -60,6 +70,7 @@ const { chromium } = require('playwright');
                            sendBtn.click();
                         }
                     }
+>>>>>>> 9c2f9c28183bf939f5d51f5b9347f51b8a84c23a
                 }
             } catch (e) {
                 console.error('Status check error:', e.message);

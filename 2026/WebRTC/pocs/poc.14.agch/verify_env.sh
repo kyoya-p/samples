@@ -23,15 +23,18 @@ echo -n "  TCP 49880 (HTTP): "
 docker exec $CLIENT_NAT1_CONTAINER curl -s -o /dev/null --connect-timeout 2 -w "%{http_code}" http://host.docker.internal:49880/index.html | grep -q "200" && echo "OK" || echo "FAIL"
 
 echo -n "  TCP 49881 (Echo): "
-docker exec $CLIENT_NAT1_CONTAINER bash -c "echo 'test' | nc -w 1 host.docker.internal 49881" | grep -q "test" && echo "OK" || echo "FAIL"
+# nc -w 1 returns 0 even if it receives data, we check if we get output
+RES=$(docker exec $CLIENT_NAT1_CONTAINER bash -c "echo 'test' | nc -w 1 host.docker.internal 49881")
+if [[ "$RES" == *"test"* ]]; then echo "OK"; else echo "FAIL"; fi
 
 echo -n "  UDP 49880 (Echo): "
-docker exec $CLIENT_NAT1_CONTAINER bash -c "echo 'test' | nc -u -w 1 host.docker.internal 49880" | grep -q "test" && echo "OK" || echo "FAIL"
+RES=$(docker exec $CLIENT_NAT1_CONTAINER bash -c "echo 'test' | nc -u -w 1 host.docker.internal 49880")
+if [[ "$RES" == *"test"* ]]; then echo "OK"; else echo "FAIL"; fi
 
 # 2. Inbound/Direct Checks (Expected: FAIL/Blocked)
 echo "[ISOLATION CHECKS]"
 echo -n "  nat1 -> server (Direct IP): "
-docker exec $CLIENT_NAT1_CONTAINER curl -s -o /dev/null --connect-timeout 2 -w "%{http_code}" http://$SERVER_IP:49880/index.html && echo "SUCCESS (Unexpected)" || echo "FAIL (Blocked)"
+docker exec $CLIENT_NAT1_CONTAINER curl -s -o /dev/null --connect-timeout 2 -w "%{http_code}" http://$SERVER_IP:49880/index.html 2>/dev/null && echo "SUCCESS (Unexpected)" || echo "FAIL (Blocked)"
 
 echo -n "  nat1 <- server (Inbound):   "
 docker exec $SERVER_CONTAINER bash -c "timeout 2 bash -c 'cat < /dev/null > /dev/tcp/$CLIENT_NAT1_IP/6080'" 2>/dev/null && echo "SUCCESS (Unexpected)" || echo "FAIL (Blocked)"
@@ -39,9 +42,13 @@ docker exec $SERVER_CONTAINER bash -c "timeout 2 bash -c 'cat < /dev/null > /dev
 # 3. pxy1 -> server (Expected: OK via Proxy only)
 echo "[PXY1 -> SERVER]"
 echo -n "  Direct via Host (Direct):   "
-docker exec $CLIENT_NAT1_CONTAINER curl --noproxy "*" -s -o /dev/null --connect-timeout 2 -w "%{http_code}" http://host.docker.internal:49880/index.html && echo "SUCCESS (Unexpected)" || echo "FAIL (Blocked)"
+# We expect this to FAIL if isolation is working, but host.docker.internal might bypass it depending on how it's resolved.
+# In poc.13, pxy1 network should not reach host.docker.internal directly if it's isolated.
+docker exec poc14agch-client-pxy1-1 curl --noproxy "*" -s -o /dev/null --connect-timeout 2 -w "%{http_code}" http://host.docker.internal:49880/index.html 2>/dev/null && echo "SUCCESS (Unexpected)" || echo "FAIL (Blocked)"
 
 echo -n "  Via Proxy (HTTP):           "
+# Proxy container (proxy1) is on both pxy1 and webrtc-shared-net-14.
+# It should be able to resolve and reach 'server' via webrtc-shared-net-14.
 docker exec poc14agch-client-pxy1-1 curl -s -o /dev/null --connect-timeout 2 -w "%{http_code}" -x http://proxy1:3128 http://server:49880/index.html | grep -q "200" && echo "OK" || echo "FAIL"
 
 echo "--- Verification Finished ---"
