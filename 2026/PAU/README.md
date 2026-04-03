@@ -10,6 +10,7 @@ sh gradlew clean kotest
 ```shell : Build msi
 sh gradlew composeApp:packageMsi
 ```
+成果物: `build/compose/binaries/main/msi/PAU-x.x.x.msi`
 
 ```shell : Generate SBOM (Runtime dependencies only)
 sh gradlew generateSbomMd
