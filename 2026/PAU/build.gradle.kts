@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "jp.wjg.shokkaa"
-version = "1.0.9"
+version = "1.0.10"
 val pauLicense = "LGPL-3.0-only"
 
 tasks.cyclonedxBom {
