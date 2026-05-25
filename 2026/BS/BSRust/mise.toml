@@ -1,6 +1,7 @@
 [tools]
 rust = "1.94.0"
 
-[tasks.test]
-description = "仕様に基づいたリーガルアクション生成のユニットテストを実行"
-run = "cargo test"
+[tasks.t1]
+description = "インドラ vs 甲魚デッキでのAI自立対戦シミュレーションを実行"
+run = "cargo run -- deck-kogyo.yaml deck-kogyo.yaml --ai-sim"
+

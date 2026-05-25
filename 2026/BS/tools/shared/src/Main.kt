@@ -12,7 +12,6 @@ import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.*
-import kotlinx.serialization.encodeToString
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.buffered
@@ -21,6 +20,8 @@ import kotlinx.io.*
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
 import io.ktor.client.HttpClient
+
+val _debug = "xxxxx"
 
 expect fun getEnv(key: String): String
 expect fun createClient(): HttpClient

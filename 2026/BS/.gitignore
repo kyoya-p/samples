@@ -9,3 +9,4 @@
 /.playwright-mcp/
 /*.png
 /.gradle/
+/.codeql-db/
