@@ -2,6 +2,5 @@
 rust = "1.94.0"
 
 [tasks.t1]
-description = "インドラ vs 甲魚デッキでのAI自立対戦シミュレーションを実行"
-run = "cargo run -- deck-kogyo.yaml deck-kogyo.yaml --ai-sim"
+run = "cargo run -- deck-kogyo.yaml deck-kogyo.yaml"
 
