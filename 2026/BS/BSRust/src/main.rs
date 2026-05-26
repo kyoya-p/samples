@@ -36,15 +36,148 @@ impl Cores {
         self.total - self.soul
     }
     pub fn format(&self) -> String {
-        let normal = self.normal();
         if self.soul == 0 {
-            format!("{}", normal)
-        } else if normal == 0 {
-            "ソウル:1".to_string()
+            format!("{}", self.total)
         } else {
-            format!("{}, ソウル:1", normal)
+            format!("{}s", self.total)
         }
     }
+    pub fn add(&mut self, normal: u8, soul: u8) {
+        self.total += normal + soul;
+        self.soul += soul;
+    }
+    pub fn sub(&mut self, normal: u8, soul: u8) {
+        self.total -= normal + soul;
+        self.soul -= soul;
+    }
+}
+
+pub fn format_symbols(symbols: &[Color]) -> String {
+    let mut red = 0;
+    let mut purple = 0;
+    let mut green = 0;
+    let mut white = 0;
+    let mut yellow = 0;
+    let mut blue = 0;
+    for col in symbols {
+        match col {
+            Color::Red => red += 1,
+            Color::Purple => purple += 1,
+            Color::Green => green += 1,
+            Color::White => white += 1,
+            Color::Yellow => yellow += 1,
+            Color::Blue => blue += 1,
+            Color::None => {}
+        }
+    }
+    let mut parts = Vec::new();
+    if red > 0 { parts.push(format!("赤{}", red)); }
+    if purple > 0 { parts.push(format!("紫{}", purple)); }
+    if green > 0 { parts.push(format!("緑{}", green)); }
+    if white > 0 { parts.push(format!("白{}", white)); }
+    if yellow > 0 { parts.push(format!("黄{}", yellow)); }
+    if blue > 0 { parts.push(format!("青{}", blue)); }
+    parts.join("")
+}
+
+pub fn parse_colors(s: &str) -> Vec<Color> {
+    let mut cols = Vec::new();
+    let color_map = [
+        ("赤", Color::Red),
+        ("紫", Color::Purple),
+        ("緑", Color::Green),
+        ("白", Color::White),
+        ("黄", Color::Yellow),
+        ("青", Color::Blue),
+    ];
+    for &(name, col) in &color_map {
+        if s.contains(name) {
+            if let Some(idx) = s.find(name) {
+                let rest = &s[idx + name.len()..];
+                let count = rest.chars().next()
+                    .and_then(|c| c.to_digit(10))
+                    .unwrap_or(1) as usize;
+                for _ in 0..count {
+                    cols.push(col);
+                }
+            }
+        }
+    }
+    cols
+}
+
+pub fn format_sources(
+    state: &GameState,
+    payment: &[CoreSource],
+    use_soul: bool,
+    placement: &[CoreSource],
+    place_soul: bool,
+) -> String {
+    let mut reserve_normal = 0;
+    let mut reserve_soul = 0;
+    let mut field_cores: std::collections::HashMap<String, (u8, u8)> = std::collections::HashMap::new();
+
+    if use_soul {
+        if state.player.reserve.soul > 0 {
+            reserve_soul += 1;
+        } else {
+            for obj in &state.player.field {
+                if obj.cores.soul > 0 {
+                    field_cores.insert(obj.id.clone(), (0, 1));
+                    break;
+                }
+            }
+        }
+    }
+
+    if place_soul {
+        let remaining_reserve_soul = state.player.reserve.soul.saturating_sub(reserve_soul);
+        if remaining_reserve_soul > 0 {
+            reserve_soul += 1;
+        } else {
+            for obj in &state.player.field {
+                let taken_soul = field_cores.get(&obj.id).map(|&(_, s)| s).unwrap_or(0);
+                if obj.cores.soul > taken_soul {
+                    let entry = field_cores.entry(obj.id.clone()).or_insert((0, 0));
+                    entry.1 += 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    for src in payment {
+        if src.source_id == "Reserve" {
+            reserve_normal += src.count;
+        } else {
+            let entry = field_cores.entry(src.source_id.clone()).or_insert((0, 0));
+            entry.0 += src.count;
+        }
+    }
+
+    for src in placement {
+        if src.source_id == "Reserve" {
+            reserve_normal += src.count;
+        } else {
+            let entry = field_cores.entry(src.source_id.clone()).or_insert((0, 0));
+            entry.0 += src.count;
+        }
+    }
+
+    let mut parts = Vec::new();
+    if reserve_normal > 0 || reserve_soul > 0 {
+        let cores = Cores::new(reserve_normal + reserve_soul, reserve_soul);
+        parts.push(format!("リザーブ:{}", cores.format()));
+    }
+
+    for obj in &state.player.field {
+        if let Some(&(normal, soul)) = field_cores.get(&obj.id) {
+            let cores = Cores::new(normal + soul, soul);
+            parts.push(format!("{}:{}", obj.name, cores.format()));
+        }
+    }
+
+    parts.join(", ")
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -150,13 +283,13 @@ pub enum Priority {
     Defender,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub struct CoreSource {
     pub source_id: String, // "Reserve" or FieldObject ID
     pub count: u8,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Hash)]
 pub enum Action {
     PlayCard {
         card_id: String,
@@ -427,29 +560,29 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     if state.player.reserve.normal() < source.count {
                         return Err("Not enough normal cores in reserve".to_string());
                     }
-                    state.player.reserve.total -= source.count;
-                    state.player.trash_cores.total += source.count;
+                    state.player.reserve.sub(source.count, 0);
+                    state.player.trash_cores.add(source.count, 0);
                 } else {
                     let obj = state.player.field.iter_mut().find(|o| &o.id == &source.source_id)
                         .ok_or_else(|| "Payment source object not found".to_string())?;
                     if obj.cores.normal() < source.count {
                         return Err("Not enough normal cores on object".to_string());
                     }
-                    obj.cores.total -= source.count;
-                    state.player.trash_cores.total += source.count;
+                    obj.cores.sub(source.count, 0);
+                    state.player.trash_cores.add(source.count, 0);
                 }
             }
             if *use_soul_core {
                 let mut found_soul = false;
                 if state.player.reserve.soul > 0 {
-                    state.player.reserve.soul -= 1;
-                    state.player.trash_cores.soul += 1;
+                    state.player.reserve.sub(0, 1);
+                    state.player.trash_cores.add(0, 1);
                     found_soul = true;
                 } else {
                     for obj in &mut state.player.field {
                         if obj.cores.soul > 0 {
-                            obj.cores.soul -= 1;
-                            state.player.trash_cores.soul += 1;
+                            obj.cores.sub(0, 1);
+                            state.player.trash_cores.add(0, 1);
                             found_soul = true;
                             break;
                         }
@@ -469,7 +602,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                         if state.player.reserve.normal() < source.count {
                             return Err("Not enough normal cores in reserve for placement".to_string());
                         }
-                        state.player.reserve.total -= source.count;
+                        state.player.reserve.sub(source.count, 0);
                         placement_total += source.count;
                     } else {
                         let obj = state.player.field.iter_mut().find(|o| &o.id == &source.source_id)
@@ -477,20 +610,20 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                         if obj.cores.normal() < source.count {
                             return Err("Not enough normal cores on object for placement".to_string());
                         }
-                        obj.cores.total -= source.count;
+                        obj.cores.sub(source.count, 0);
                         placement_total += source.count;
                     }
                 }
                 if *placement_soul_core {
                     let mut found_soul = false;
                     if state.player.reserve.soul > 0 {
-                        state.player.reserve.soul -= 1;
+                        state.player.reserve.sub(0, 1);
                         placement_soul += 1;
                         found_soul = true;
                     } else {
                         for obj in &mut state.player.field {
                             if obj.cores.soul > 0 {
-                                obj.cores.soul -= 1;
+                                obj.cores.sub(0, 1);
                                 placement_soul += 1;
                                 found_soul = true;
                                 break;
@@ -502,8 +635,9 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     }
                 }
 
+                state.player.count += 1;
                 let new_obj = FieldObject {
-                    id: card.id.clone(),
+                    id: format!("{}_{}", card.id, state.player.count),
                     name: card.name.clone(),
                     colors: card.colors.clone(),
                     card_type: card.card_type,
@@ -520,46 +654,40 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             check_and_process_depletion(&mut state.player);
         }
         (Phase::MainStep, Action::MoveCore { from, to, normal_cores, soul_core }) => {
-            let mut move_soul = 0;
-            let mut _move_normal = 0;
+            let move_soul;
+            let move_normal;
             if from == "Reserve" {
-                if state.player.reserve.total < *normal_cores {
-                    return Err("Not enough cores in reserve".to_string());
+                if state.player.reserve.normal() < *normal_cores {
+                    return Err("Not enough normal cores in reserve".to_string());
                 }
                 if *soul_core && state.player.reserve.soul == 0 {
                     return Err("Soul core not in reserve".to_string());
                 }
-                state.player.reserve.total -= *normal_cores;
-                _move_normal = *normal_cores;
-                if *soul_core {
-                    state.player.reserve.soul -= 1;
-                    move_soul = 1;
-                }
+                let s = if *soul_core { 1 } else { 0 };
+                state.player.reserve.sub(*normal_cores, s);
+                move_normal = *normal_cores;
+                move_soul = s;
             } else {
                 let obj = state.player.field.iter_mut().find(|o| &o.id == from)
                     .ok_or_else(|| "Source object not found".to_string())?;
-                if obj.cores.total < *normal_cores {
-                    return Err("Not enough cores on source object".to_string());
+                if obj.cores.normal() < *normal_cores {
+                    return Err("Not enough normal cores on source object".to_string());
                 }
                 if *soul_core && obj.cores.soul == 0 {
                     return Err("Soul core not on source object".to_string());
                 }
-                obj.cores.total -= *normal_cores;
-                _move_normal = *normal_cores;
-                if *soul_core {
-                    obj.cores.soul -= 1;
-                    move_soul = 1;
-                }
+                let s = if *soul_core { 1 } else { 0 };
+                obj.cores.sub(*normal_cores, s);
+                move_normal = *normal_cores;
+                move_soul = s;
             }
 
             if to == "Reserve" {
-                state.player.reserve.total += _move_normal + move_soul;
-                state.player.reserve.soul += move_soul;
+                state.player.reserve.add(move_normal, move_soul);
             } else {
                 let obj = state.player.field.iter_mut().find(|o| &o.id == to)
                     .ok_or_else(|| "Target object not found".to_string())?;
-                obj.cores.total += _move_normal + move_soul;
-                obj.cores.soul += move_soul;
+                obj.cores.add(move_normal, move_soul);
             }
 
             check_and_process_depletion(&mut state.player);
@@ -617,14 +745,14 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             state.player.trash.push(card);
             for source in payment {
                 if source.source_id == "Reserve" {
-                    state.player.reserve.total -= source.count;
-                    state.player.trash_cores.total += source.count;
+                    state.player.reserve.sub(source.count, 0);
+                    state.player.trash_cores.add(source.count, 0);
                 }
             }
             if *use_soul_core {
                 if state.player.reserve.soul > 0 {
-                    state.player.reserve.soul -= 1;
-                    state.player.trash_cores.soul += 1;
+                    state.player.reserve.sub(0, 1);
+                    state.player.trash_cores.add(0, 1);
                 }
             }
         }
@@ -666,7 +794,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                 } else {
                     // ノーブロック：ライフ減少
                     state.opponent.life = state.opponent.life.saturating_sub(1);
-                    state.opponent.reserve.total += 1;
+                    state.opponent.reserve.add(1, 0);
                 }
             }
             state.active_attacker = None;
@@ -871,7 +999,16 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
         }
         _ => {}
     }
-    actions
+
+    // 選択肢の重複排除
+    let mut seen = std::collections::HashSet::new();
+    let mut unique_actions = Vec::new();
+    for action in actions {
+        if seen.insert(action.clone()) {
+            unique_actions.push(action);
+        }
+    }
+    unique_actions
 }
 
 // ----------------------------------------------------
@@ -937,33 +1074,8 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
         CardType::Spirit
     };
 
-    let mut symbols = Vec::new();
-    if symbols_str.contains("黄") {
-        let count = symbols_str.chars().filter(|c| c.is_digit(10))
-            .collect::<String>().parse::<usize>().unwrap_or(1);
-        for _ in 0..count {
-            symbols.push(Color::Yellow);
-        }
-    } else if symbols_str.contains("赤") {
-        symbols.push(Color::Red);
-    } else if symbols_str.contains("紫") {
-        symbols.push(Color::Purple);
-    } else if symbols_str.contains("緑") {
-        symbols.push(Color::Green);
-    } else if symbols_str.contains("白") {
-        symbols.push(Color::White);
-    } else if symbols_str.contains("青") {
-        symbols.push(Color::Blue);
-    }
-
-    let mut reduction_symbols = Vec::new();
-    if reduction_str.contains("黄") {
-        let count = reduction_str.chars().filter(|c| c.is_digit(10))
-            .collect::<String>().parse::<usize>().unwrap_or(1);
-        for _ in 0..count {
-            reduction_symbols.push(Color::Yellow);
-        }
-    }
+    let symbols = parse_colors(&symbols_str);
+    let reduction_symbols = parse_colors(&reduction_str);
 
     if lv_costs.is_empty() {
         if card_type == CardType::Spirit || card_type == CardType::Ultimate {
@@ -973,11 +1085,13 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
         }
     }
 
+    let card_colors = if symbols.is_empty() { vec![Color::Yellow] } else { vec![symbols[0]] };
+
     Ok(Card {
         id: card_no.to_string(),
         name,
         base_cost: cost,
-        colors: vec![Color::Yellow],
+        colors: card_colors,
         reduction_symbols,
         card_type,
         lv_costs,
@@ -1133,7 +1247,28 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
     // 初期自動遷移
     process_automatic_steps(&mut state);
 
+    let mut game_history: Vec<LogEntry> = Vec::new();
+
     loop {
+        let (p1, p2) = if state.player.player_id == 1 {
+            (&state.player, &state.opponent)
+        } else {
+            (&state.opponent, &state.player)
+        };
+        let entry = LogEntry {
+            tuen: state.turn_count,
+            phase: format_phase_camel(&state.phase),
+            player1: LogSideState::from(p1),
+            player2: LogSideState::from(p2),
+        };
+        game_history.push(entry);
+
+        if let Ok(yaml_content) = serde_yaml::to_string(&game_history) {
+            if let Err(e) = std::fs::write("bs-log.yaml", yaml_content) {
+                println!("警告: bs-log.yaml の書き込みに失敗しました: {}", e);
+            }
+        }
+
         println!("\n=======================================================");
         println!("【ゲーム局面】 プレイヤー{} のターン / フェイズ: {:?} (ターン: {})", state.player.player_id, state.phase, state.turn_count);
         println!("-------------------------------------------------------");
@@ -1149,18 +1284,20 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
             println!("  (なし)");
         } else {
             for obj in &state.player.field {
-                let status = if obj.is_exhausted { "[疲労]" } else { "[回復]" };
-                println!("  - [{}] {} (コア: {}) {}", obj.id, obj.name, obj.cores.format(), status);
+                let status = if obj.is_exhausted { "[疲労]" } else { "" };
+                let sym_str = format_symbols(&obj.base_symbols);
+                let sym_part = if sym_str.is_empty() { "".to_string() } else { format!("シンボル:{}, ", sym_str) };
+                println!("  - {}({}コア:{}){}", obj.name, sym_part, obj.cores.format(), status);
             }
         }
         println!("手札:");
         if state.player.hand.is_empty() {
             println!("  (なし)");
         } else {
-            for (idx, card) in state.player.hand.iter().enumerate() {
-                let reduction = calculate_reduction(card, &state.player.field);
-                let cost_to_pay = card.base_cost.saturating_sub(reduction);
-                println!("  {}. [{}] {} (コスト: {}, 軽減後: {})", idx + 1, card.id, card.name, card.base_cost, cost_to_pay);
+            for card in &state.player.hand {
+                let red_str = format_symbols(&card.reduction_symbols);
+                let red_part = if red_str.is_empty() { "".to_string() } else { format!(", 軽減:{}", red_str) };
+                println!("  {} (コスト:{}{})", card.name, card.base_cost, red_part);
             }
         }
         println!("-------------------------------------------------------");
@@ -1225,8 +1362,11 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         println!("選択可能なアクション (カテゴリ):");
         for (idx, group) in groups.iter().enumerate() {
             match group {
-                ActionGroup::PlayCardGroup(_, name) => {
-                    println!("  {}: 【手札から使用/召喚】 {}", idx + 1, name);
+                ActionGroup::PlayCardGroup(card_id, name) => {
+                    let card = state.player.hand.iter().find(|c| &c.id == card_id).unwrap();
+                    let reduction = calculate_reduction(card, &state.player.field);
+                    let cost_to_pay = card.base_cost.saturating_sub(reduction);
+                    println!("  {}: 【手札から使用/召喚】 {} (コスト:{}, 軽減後:{})", idx + 1, name, card.base_cost, cost_to_pay);
                 }
                 ActionGroup::MoveCoreGroup => {
                     println!("  {}: 【コア移動】 フィールド・リザーブ間のコア移動", idx + 1);
@@ -1258,7 +1398,17 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
+        match io::stdin().read_line(&mut input) {
+            Ok(0) => {
+                println!("入力の終端に達しました。サレンダーします。");
+                break;
+            }
+            Err(_) => {
+                println!("入力エラー。ゲームを終了します。");
+                break;
+            }
+            _ => {}
+        }
         let trimmed = input.trim();
 
         if trimmed.to_lowercase() == "q" {
@@ -1312,6 +1462,42 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
             }
         }
 
+        // 詳細コア支払のソート仕様
+        // - リザーブからの支払いが多いものを上位に表示
+        // - ソウルコアをコストとしてトラッシュに送るものを下位に表示
+        sub_actions.sort_by(|a, b| {
+            let a_soul = match a {
+                Action::PlayCard { use_soul_core, .. } => *use_soul_core,
+                _ => false,
+            };
+            let b_soul = match b {
+                Action::PlayCard { use_soul_core, .. } => *use_soul_core,
+                _ => false,
+            };
+
+            let a_reserve = match a {
+                Action::PlayCard { payment, .. } => {
+                    payment.iter()
+                        .filter(|p| p.source_id == "Reserve")
+                        .map(|p| p.count)
+                        .sum::<u8>()
+                }
+                _ => 0,
+            };
+            let b_reserve = match b {
+                Action::PlayCard { payment, .. } => {
+                    payment.iter()
+                        .filter(|p| p.source_id == "Reserve")
+                        .map(|p| p.count)
+                        .sum::<u8>()
+                }
+                _ => 0,
+            };
+
+            a_soul.cmp(&b_soul)
+                .then_with(|| b_reserve.cmp(&a_reserve))
+        });
+
         // 第2階層が1つしかない場合は自動で適用
         if sub_actions.len() == 1 {
             let chosen_action = &sub_actions[0];
@@ -1327,16 +1513,41 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         println!("\n--- 詳細なオプションを選択してください ---");
         for (idx, action) in sub_actions.iter().enumerate() {
             match action {
-                Action::PlayCard { payment, use_soul_core, placement, placement_soul_core, .. } => {
+                Action::PlayCard { card_id: _, payment, use_soul_core, placement, placement_soul_core } => {
                     let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
+                    let pay_soul = if *use_soul_core { 1 } else { 0 };
+                    let pay_cores = Cores::new(pay_amount + pay_soul, pay_soul);
+                    
                     let place_amount: u8 = placement.iter().map(|p| p.count).sum();
-                    let pay_cores = Cores::new(pay_amount + if *use_soul_core { 1 } else { 0 }, if *use_soul_core { 1 } else { 0 });
-                    let place_cores = Cores::new(place_amount + if *placement_soul_core { 1 } else { 0 }, if *placement_soul_core { 1 } else { 0 });
-                    println!("  {}: 支払コスト: {} / 配置コア: {}", idx + 1, pay_cores.format(), place_cores.format());
+                    let place_soul = if *placement_soul_core { 1 } else { 0 };
+                    let place_cores = Cores::new(place_amount + place_soul, place_soul);
+                    
+                    let total_str = format_sources(&state, payment, *use_soul_core, placement, *placement_soul_core);
+                    
+                    println!("  {}: コスト:{}, 配置コア:{}, ({})", 
+                        idx + 1, 
+                        pay_cores.format(), 
+                        place_cores.format(), 
+                        total_str
+                    );
                 }
                 Action::MoveCore { from, to, normal_cores, soul_core } => {
+                    let from_name = if from == "Reserve" {
+                        "リザーブ".to_string()
+                    } else {
+                        state.player.field.iter().find(|o| &o.id == from)
+                            .map(|o| o.name.clone())
+                            .unwrap_or(from.clone())
+                    };
+                    let to_name = if to == "Reserve" {
+                        "リザーブ".to_string()
+                    } else {
+                        state.player.field.iter().find(|o| &o.id == to)
+                            .map(|o| o.name.clone())
+                            .unwrap_or(to.clone())
+                    };
                     let move_cores = Cores::new(*normal_cores + if *soul_core { 1 } else { 0 }, if *soul_core { 1 } else { 0 });
-                    println!("  {}: {} -> {} (コア: {})", idx + 1, from, to, move_cores.format());
+                    println!("  {}: {} -> {} (コア:{})", idx + 1, from_name, to_name, move_cores.format());
                 }
                 _ => {
                     println!("  {}: {:?}", idx + 1, action);
@@ -1349,7 +1560,17 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         io::stdout().flush().unwrap();
 
         let mut sub_input = String::new();
-        io::stdin().read_line(&mut sub_input).unwrap();
+        match io::stdin().read_line(&mut sub_input) {
+            Ok(0) => {
+                println!("入力の終端に達しました。サレンダーします。");
+                break;
+            }
+            Err(_) => {
+                println!("入力エラー。ゲームを終了します。");
+                break;
+            }
+            _ => {}
+        }
         let sub_trimmed = sub_input.trim();
 
         if sub_trimmed.to_lowercase() == "b" {
@@ -1373,162 +1594,65 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
     }
 }
 
+#[derive(Serialize)]
+pub struct LogSideState {
+    pub player_id: u8,
+    pub life: u8,
+    pub reserve: Cores,
+    pub field: Vec<FieldObject>,
+    pub hand: Vec<String>,       // カードはカード番号(ID)のみ
+    pub trash: Vec<String>,      // カードはカード番号(ID)のみ
+    pub trash_cores: Cores,
+    pub opened: Vec<String>,     // カードはカード番号(ID)のみ
+    pub count: u8,
+}
 
-fn run_ai_simulation(deck1_path: &str, deck2_path: &str) {
-    println!("=== TCG BattleSpirits AI自立対戦シミュレーション ===");
-
-    let mut deck = match load_deck_from_file(deck1_path) {
-        Ok(d) => d,
-        Err(e) => {
-            println!("プレイヤー1のデッキの読み込みに失敗しました: {}", e);
-            return;
-        }
-    };
-    
-    let target_fixed_ids = vec![
-        "BS75-CX03".to_string(), "BS75-042".to_string(), "BS75-043".to_string(), "BS75-068".to_string(),
-        "BS49-X09".to_string(), "BS49-040".to_string(), "BS49-X04".to_string(), "SD56-RV009".to_string(),
-        "26RSD03-X01".to_string(), "26RSD03-X02".to_string(), "26RSD03-001".to_string(), "26RSD03-003".to_string()
-    ];
-
-    let mut hand = Vec::new();
-    for card_id in &target_fixed_ids {
-        if hand.len() >= 4 { break; }
-        if let Some(idx) = deck.iter().position(|c| &c.id == card_id) {
-            hand.push(deck.remove(idx));
-        }
-    }
-    pseudo_shuffle(&mut deck);
-    while hand.len() < 4 && !deck.is_empty() {
-        hand.push(deck.remove(0));
-    }
-
-    let mut opponent_deck = match load_deck_from_file(deck2_path) {
-        Ok(d) => d,
-        Err(e) => {
-            println!("プレイヤー2のデッキの読み込みに失敗しました: {}", e);
-            return;
-        }
-    };
-
-    let mut opponent_hand = Vec::new();
-    for card_id in &target_fixed_ids {
-        if opponent_hand.len() >= 4 { break; }
-        if let Some(idx) = opponent_deck.iter().position(|c| &c.id == card_id) {
-            opponent_hand.push(opponent_deck.remove(idx));
+impl LogSideState {
+    pub fn from(side: &SideState) -> Self {
+        Self {
+            player_id: side.player_id,
+            life: side.life,
+            reserve: side.reserve,
+            field: side.field.clone(),
+            hand: side.hand.iter().map(|c| c.id.clone()).collect(),
+            trash: side.trash.iter().map(|c| c.id.clone()).collect(),
+            trash_cores: side.trash_cores,
+            opened: side.opened.iter().map(|c| c.id.clone()).collect(),
+            count: side.count,
         }
     }
-    pseudo_shuffle(&mut opponent_deck);
-    while opponent_hand.len() < 4 && !opponent_deck.is_empty() {
-        opponent_hand.push(opponent_deck.remove(0));
+}
+
+#[derive(Serialize)]
+pub struct LogEntry {
+    pub tuen: u32,               // 誤植に合わせた "tuen" キー
+    pub phase: String,
+    pub player1: LogSideState,
+    pub player2: LogSideState,
+}
+
+fn format_phase_camel(phase: &Phase) -> String {
+    match phase {
+        Phase::StartStep => "startStep".to_string(),
+        Phase::CoreStep => "coreStep".to_string(),
+        Phase::DrawStep => "drawStep".to_string(),
+        Phase::RefreshStep => "refreshStep".to_string(),
+        Phase::MainStep => "mainStep".to_string(),
+        Phase::AttackStep(_) => "attackStep".to_string(),
+        Phase::EndStep => "endStep".to_string(),
     }
-
-    let player = SideState {
-        player_id: 1,
-        life: 5,
-        reserve: Cores::new(4, 1),
-        field: vec![],
-        hand,
-        trash: vec![],
-        trash_cores: Cores::new(0, 0),
-        opened: deck,
-        count: 0,
-    };
-
-    let opponent = SideState {
-        player_id: 2,
-        life: 5,
-        reserve: Cores::new(4, 1),
-        field: vec![],
-        hand: opponent_hand,
-        trash: vec![],
-        trash_cores: Cores::new(0, 0),
-        opened: opponent_deck,
-        count: 0,
-    };
-
-    let mut state = GameState {
-        player,
-        opponent,
-        phase: Phase::StartStep,
-        turn_count: 1,
-        active_attacker: None,
-        active_blocker: None,
-    };
-
-    process_automatic_steps(&mut state);
-
-    let print_state = |state: &GameState| {
-        println!("\n-------------------------------------------------------");
-        println!("【AI局面】 プレイヤー{} のターン / フェイズ: {:?} (ターン: {})", state.player.player_id, state.phase, state.turn_count);
-        println!("  プレイヤー1 ライフ: {} / リザーブコア: {}", state.player.life, state.player.reserve.format());
-        println!("  プレイヤー2 ライフ: {} / リザーブコア: {}", state.opponent.life, state.opponent.reserve.format());
-        println!("  P{} フィールド:", state.player.player_id);
-        for obj in &state.player.field {
-            println!("    - [{}] {} (コア: {})", obj.id, obj.name, obj.cores.format());
-        }
-    };
-
-    let mut loop_count = 0;
-    while state.player.life > 0 && state.opponent.life > 0 && loop_count < 100 {
-        loop_count += 1;
-        print_state(&state);
-
-        let actions = generate_legal_actions(&state);
-        if actions.is_empty() {
-            state.phase = Phase::EndStep;
-            apply_action(&mut state, &Action::EndStep).unwrap();
-            process_automatic_steps(&mut state);
-            continue;
-        }
-
-        // AIの簡易意思決定ヒューリスティック
-        // 優先度: PlayCard > Attack > Block > MoveCore > Pass/EndStep
-        let mut chosen_action = actions[0].clone();
-        
-        if let Some(act) = actions.iter().find(|a| matches!(a, Action::PlayCard { .. })) {
-            chosen_action = act.clone();
-        } else if let Some(act) = actions.iter().find(|a| matches!(a, Action::Attack { .. })) {
-            chosen_action = act.clone();
-        } else if let Some(act) = actions.iter().find(|a| matches!(a, Action::Block { .. })) {
-            chosen_action = act.clone();
-        } else if let Some(act) = actions.iter().find(|a| matches!(a, Action::Pass)) {
-            chosen_action = act.clone();
-        } else if let Some(act) = actions.iter().find(|a| matches!(a, Action::EndStep)) {
-            chosen_action = act.clone();
-        }
-
-        println!(">> AI選択アクション: {:?}", chosen_action);
-        if let Err(e) = apply_action(&mut state, &chosen_action) {
-            println!("エラー: {}", e);
-            break;
-        }
-        process_automatic_steps(&mut state);
-    }
-
-    println!("\n=============================================");
-    println!("  ★ AI自立対戦シミュレーション終了 ★");
-    println!("  プレイヤー1 ライフ: {}", state.player.life);
-    println!("  プレイヤー2 ライフ: {}", state.opponent.life);
-    println!("=============================================");
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let is_ai_sim = args.iter().any(|arg| arg == "--ai-sim");
     
     let deck_args: Vec<&str> = args.iter()
         .skip(1)
-        .filter(|arg| *arg != "--ai-sim")
         .map(|s| s.as_str())
         .collect();
 
     let deck1_path = deck_args.get(0).unwrap_or(&"deck.yaml");
     let deck2_path = deck_args.get(1).unwrap_or(&"deck2.yaml");
     
-    if is_ai_sim {
-        run_ai_simulation(deck1_path, deck2_path);
-    } else {
-        run_interactive_loop(deck1_path, deck2_path);
-    }
+    run_interactive_loop(deck1_path, deck2_path);
 }
