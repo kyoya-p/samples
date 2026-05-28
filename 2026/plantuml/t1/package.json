@@ -1,0 +1,20 @@
+{
+  "name": "plantuml",
+  "version": "1.0.0",
+  "description": "オリジナルレンダラサイト https://plantuml.com/ja/sequence-diagram を参照し、サンプルコードとそれに対応するsvg画像を採取。\r 上記を参照し同等のsvgファイルを生成するindex.htmlコードを生成する",
+  "main": "plantuml-renderer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer": "^24.42.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantUML Renderer (Local)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; color: #333; }
+        #output {
+            margin-top: 2rem;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px dashed #ccc;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+        .error { color: #d32f2f; }
+        .info { color: #666; font-size: 0.9rem; margin-top: 1rem; }
+        pre { background: #eee; padding: 0.5rem; border-radius: 4px; overflow-x: auto; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PlantUML Renderer (Local)</h1>
+        <div id="status"></div>
+        
+        <div id="input-area">
+            <div style="margin-bottom: 12px;">
+                <label for="sample-select" style="font-weight: bold; margin-right: 8px;">公式サンプルを選択:</label>
+                <select id="sample-select" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">-- サンプルを選択 --</option>
+                    <option value="basic">基本的なメッセージ</option>
+                    <option value="participants">参加者の種類 (actor, database等)</option>
+                    <option value="arrows">矢印のバリエーション</option>
+                    <option value="groups">グループ化 (alt, loop等)</option>
+                    <option value="notes">ノート (注釈)</option>
+                    <option value="autonumber">自動採番 (autonumber)</option>
+                </select>
+            </div>
+            <textarea id="uml-input" placeholder="@startuml\nAlice -> Bob: Hello\n@enduml" style="width: 100%; height: 200px; font-family: 'Cascadia Code', 'Courier New', monospace; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px;"></textarea>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="copy-btn" style="padding: 10px 16px; cursor: pointer; background: #eee; color: #333; border: 1px solid #ccc; border-radius: 4px;">URLをコピー</button>
+            </div>
+        </div>
+
+        <div id="output">
+            <p style="color: #888;">UMLを入力して「ローカルで描画」をクリックするか、URLパラメータを指定してください。</p>
+        </div>
+        
+        <div class="info">
+            <p>使用方法: <code>?uml=[PlantUMLテキスト]</code></p>
+            <p>現在の共有用URL:</p>
+            <div style="display: flex; gap: 8px;">
+                <pre id="current-url" style="flex-grow: 1; margin: 0; min-height: 1.2em;">なし</pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { PlantUmlRenderer } from './plantuml-renderer.mjs';
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function renderUML(uml) {
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+            const currentUrlPre = document.getElementById('current-url');
+            
+            if (!uml || !uml.trim()) return;
+
+            try {
+                // 独自レンダラーによるSVG生成
+                const renderer = new PlantUmlRenderer(uml);
+                const svg = renderer.render();
+                
+                output.innerHTML = svg;
+                status.innerHTML = `<p style="color: #4CAF50; font-weight: bold;">✓ 独自レンダラーで正常に生成されました（外部通信なし）</p>`;
+                
+                // シェア用URLの更新
+                const shareUrl = window.location.origin + window.location.pathname + "?uml=" + encodeURIComponent(uml);
+                currentUrlPre.textContent = shareUrl;
+            } catch (e) {
+                console.error("Render Error:", e);
+                
+                // Parse line number from error (e.g. "解析エラー (行 3): ...")
+                const lineMatch = e.message.match(/行 (\d+)/);
+                let codePreviewHtml = "";
+                
+                if (lineMatch) {
+                    const errorLineNum = parseInt(lineMatch[1], 10);
+                    const rawLines = uml.split(/\r?\n/);
+                    
+                    const start = Math.max(0, errorLineNum - 2);
+                    const end = Math.min(rawLines.length - 1, errorLineNum);
+                    
+                    let previewLines = [];
+                    for (let idx = start; idx <= end; idx++) {
+                        const currentLineNum = idx + 1;
+                        const isErrorLine = currentLineNum === errorLineNum;
+                        const lineContent = rawLines[idx];
+                        
+                        const lineStyle = isErrorLine 
+                            ? 'background: #7f1d1d; color: #fecaca; font-weight: bold; padding: 2px 4px; border-radius: 4px; display: block; border-left: 3px solid #f87171;' 
+                            : 'color: #94a3b8; display: block; padding-left: 7px;';
+                        
+                        const marker = isErrorLine ? "👉 " : "   ";
+                        previewLines.push(`<span style="${lineStyle}">${marker}${String(currentLineNum).padStart(2, '0')}: ${escapeHtml(lineContent)}</span>`);
+                    }
+                    codePreviewHtml = `
+                    <div style="margin-top: 12px;">
+                        <span style="font-size: 0.8rem; font-weight: bold; color: #4b5563; display: block; margin-bottom: 6px;">エラー箇所周辺のコード:</span>
+                        <div style="background: #0f172a; color: #e2e8f0; font-family: 'Cascadia Code', Consolas, monospace; padding: 12px; border-radius: 6px; font-size: 0.85rem; overflow-x: auto; line-height: 1.6; text-align: left; box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06);">
+                            ${previewLines.join('')}
+                        </div>
+                    </div>`;
+                }
+
+                output.innerHTML = `
+                <div style="background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; padding: 1.25rem; border-radius: 8px; text-align: left; width: 100%; box-sizing: border-box; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); margin: 0 auto;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #991b1b; font-weight: bold; margin-bottom: 8px; font-size: 1.05rem;">
+                        <svg style="width: 20px; height: 20px; fill: currentColor;" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        <span>構文解析エラー</span>
+                    </div>
+                    <p style="color: #7f1d1d; margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 500; line-height: 1.4;">${escapeHtml(e.message)}</p>
+                    ${codePreviewHtml}
+                </div>`;
+                status.innerHTML = "";
+            }
+        }
+
+        const SAMPLES = {
+            basic: `@startuml\nAlice -> Bob: Authentication Request\nBob --> Alice: Authentication Response\n\nAlice -> Bob: Another authentication Request\nAlice <-- Bob: another authentication Response\n@enduml`,
+            participants: `@startuml\nactor Foo1\nparticipant Foo2\ndatabase Foo3\ncollections Foo4\n\nFoo1 -> Foo2 : To participant\nFoo1 -> Foo3 : To database\nFoo1 -> Foo4 : To collections\n@enduml`,
+            arrows: `@startuml\nBob -> Alice\nBob ->> Alice\nBob -->> Alice\nBob --> Alice\nBob <-> Alice\n@enduml`,
+            groups: `@startuml\nAlice -> Bob: Authentication Request\nalt successful case\n    Bob -> Alice: Authentication Accepted\nelse some kind of failure\n    Bob -> Alice: Authentication Failure\n    group My own label\n    Alice -> Log : Log attack start\n        loop 1000 times\n            Alice -> Bob: DNS Attack\n        end\n    Alice -> Log : Log attack end\n    end\nelse Another type of failure\n   Bob -> Alice: Please repeat\nend\n@enduml`,
+            notes: `@startuml\nAlice->Alice: This is a signal to self.\\nIt also demonstrates\\nmultiline \\ntext\nnote left: this is a first note\nnote right: this is another note\nnote over Alice, Bob: This is displayed over\\nboth Alice and Bob.\n@enduml`,
+            autonumber: `@startuml\nautonumber\nAlice -> Bob: Authentication Request\nBob --> Alice: Authentication Response\nautonumber\nAlice -> Bob: Another authentication Request\nBob --> Alice: Another authentication Response\n@enduml`
+        };
+
+        document.getElementById('sample-select').addEventListener('change', (e) => {
+            const key = e.target.value;
+            if (key && SAMPLES[key]) {
+                document.getElementById('uml-input').value = SAMPLES[key];
+                renderUML(SAMPLES[key]);
+            }
+        });
+
+        let debounceTimeout;
+        document.getElementById('uml-input').addEventListener('input', (e) => {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                renderUML(e.target.value);
+            }, 250);
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const url = document.getElementById('current-url').textContent;
+            if (url && url !== "なし") {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert("URLをクリップボードにコピーしました");
+                });
+            }
+        });
+
+        // 初期化処理
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const umlParam = urlParams.get('uml');
+
+            if (umlParam) {
+                // umlパラメータがあれば、それをソースとしてセットし描画
+                const decodedUml = umlParam.replace(/\\n/g, '\n');
+                document.getElementById('uml-input').value = decodedUml;
+                renderUML(decodedUml);
+            } else {
+                // パラメータがない場合の初期サンプル
+                const defaultUml = `@startuml\na -> b : Normal Arrow\na ->> b : Narrow Arrow\na --> b : Dashed Line\na -->> b : Narrow Dashed Line\n@enduml`;
+                document.getElementById('uml-input').value = defaultUml;
+                renderUML(defaultUml);
+            }
+        });
+    </script>
+</body>
+</html>
