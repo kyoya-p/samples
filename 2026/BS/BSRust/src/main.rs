@@ -1,5 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
+use burn::record::{CompactRecorder, Recorder};
+use burn::module::Module;
+
+pub mod ai;
+use crate::ai::decision::evaluate_action;
+
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
@@ -757,7 +763,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             }
         }
         (Phase::AttackStep(AttackSubPhase::DeclareBlock), Action::Block { object_id }) => {
-            let obj = state.player.field.iter_mut().find(|o| &o.id == object_id)
+            let obj = state.opponent.field.iter_mut().find(|o| &o.id == object_id)
                 .ok_or_else(|| "Blocker object not found".to_string())?;
             if obj.is_exhausted {
                 return Err("Blocker already exhausted".to_string());
@@ -973,7 +979,7 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
                     actions.push(Action::Pass);
                 }
                 AttackSubPhase::DeclareBlock => {
-                    for obj in &state.player.field {
+                    for obj in &state.opponent.field {
                         if (obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate)
                             && !obj.is_exhausted
                             && obj.current_lv() >= 1
@@ -1107,7 +1113,7 @@ struct YamlDeck {
     cards: std::collections::HashMap<String, usize>,
 }
 
-fn load_deck_from_file(filename: &str) -> Result<Vec<Card>, String> {
+pub fn load_deck_from_file(filename: &str) -> Result<Vec<Card>, String> {
     let path = filename;
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("Failed to read deck file {}: {}", path, e))?;
@@ -1142,7 +1148,7 @@ fn load_deck_from_file(filename: &str) -> Result<Vec<Card>, String> {
 }
 
 // 疑似乱数シャッフル
-fn pseudo_shuffle(deck: &mut Vec<Card>) {
+pub fn pseudo_shuffle(deck: &mut Vec<Card>) {
     let mut seed: u64 = 123456789;
     for i in (1..deck.len()).rev() {
         seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
@@ -1151,21 +1157,8 @@ fn pseudo_shuffle(deck: &mut Vec<Card>) {
     }
 }
 
-// ----------------------------------------------------
-// 対話型CLIゲームループの実装 (二段階入力ウィザード)
-// ----------------------------------------------------
-fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
-    println!("=== TCG BattleSpirits デッキシミュレータ (エターナルフォーマット) ===");
-
-    let mut deck = match load_deck_from_file(deck1_path) {
-        Ok(d) => d,
-        Err(e) => {
-            println!("プレイヤー1のデッキの読み込みに失敗しました: {}", e);
-            return;
-        }
-    };
-    println!("プレイヤー1のデッキをロードしました。合計枚数: {}枚", deck.len());
-    
+pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameState, String> {
+    let mut deck = load_deck_from_file(deck1_path)?;
     let target_fixed_ids = vec![
         "BS75-CX03".to_string(), "BS75-042".to_string(), "BS75-043".to_string(), "BS75-068".to_string(),
         "BS49-X09".to_string(), "BS49-040".to_string(), "BS49-X04".to_string(), "SD56-RV009".to_string(),
@@ -1177,7 +1170,6 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         if hand.len() >= 4 { break; }
         if let Some(idx) = deck.iter().position(|c| &c.id == card_id) {
             let card = deck.remove(idx);
-            println!("プレイヤー1初期手札固定カード [{}] {} をセットしました。", card.id, card.name);
             hand.push(card);
         }
     }
@@ -1187,21 +1179,12 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         hand.push(deck.remove(0));
     }
 
-    let mut opponent_deck = match load_deck_from_file(deck2_path) {
-        Ok(d) => d,
-        Err(e) => {
-            println!("プレイヤー2のデッキの読み込みに失敗しました: {}", e);
-            return;
-        }
-    };
-    println!("プレイヤー2のデッキをロードしました。合計枚数: {}枚", opponent_deck.len());
-
+    let mut opponent_deck = load_deck_from_file(deck2_path)?;
     let mut opponent_hand = Vec::new();
     for card_id in &target_fixed_ids {
         if opponent_hand.len() >= 4 { break; }
         if let Some(idx) = opponent_deck.iter().position(|c| &c.id == card_id) {
             let card = opponent_deck.remove(idx);
-            println!("プレイヤー2初期手札固定カード [{}] {} をセットしました。", card.id, card.name);
             opponent_hand.push(card);
         }
     }
@@ -1214,24 +1197,24 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
     let player = SideState {
         player_id: 1,
         life: 5,
-        reserve: Cores::new(4, 1), // 通常コア3個, ソウルコア1個 (合計4)
+        reserve: Cores::new(4, 1),
         field: vec![],
         hand,
         trash: vec![],
         trash_cores: Cores::new(0, 0),
-        opened: deck, // 山札
+        opened: deck,
         count: 0,
     };
 
     let opponent = SideState {
         player_id: 2,
         life: 5,
-        reserve: Cores::new(4, 1), // 通常コア3個, ソウルコア1個 (合計4)
+        reserve: Cores::new(4, 1),
         field: vec![],
         hand: opponent_hand,
         trash: vec![],
         trash_cores: Cores::new(0, 0),
-        opened: opponent_deck, // 山札
+        opened: opponent_deck,
         count: 0,
     };
 
@@ -1244,12 +1227,98 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         active_blocker: None,
     };
 
-    // 初期自動遷移
     process_automatic_steps(&mut state);
+    Ok(state)
+}
+
+fn calculate_state_hash(state: &GameState) -> u64 {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    format!("{:?}", state.phase).hash(&mut hasher);
+    state.turn_count.hash(&mut hasher);
+    state.player.life.hash(&mut hasher);
+    state.player.reserve.total.hash(&mut hasher);
+    state.player.reserve.soul.hash(&mut hasher);
+    state.player.trash_cores.total.hash(&mut hasher);
+    state.player.trash_cores.soul.hash(&mut hasher);
+    state.opponent.life.hash(&mut hasher);
+    state.opponent.reserve.total.hash(&mut hasher);
+    state.opponent.reserve.soul.hash(&mut hasher);
+    state.opponent.trash_cores.total.hash(&mut hasher);
+    state.opponent.trash_cores.soul.hash(&mut hasher);
+    for obj in &state.player.field {
+        obj.id.hash(&mut hasher);
+        obj.cores.total.hash(&mut hasher);
+        obj.cores.soul.hash(&mut hasher);
+        obj.is_exhausted.hash(&mut hasher);
+    }
+    for obj in &state.opponent.field {
+        obj.id.hash(&mut hasher);
+        obj.cores.total.hash(&mut hasher);
+        obj.cores.soul.hash(&mut hasher);
+        obj.is_exhausted.hash(&mut hasher);
+    }
+    hasher.finish()
+}
+
+fn is_same_state(s1: &GameState, s2: &GameState) -> bool {
+    s1.phase == s2.phase 
+        && s1.turn_count == s2.turn_count
+        && s1.player.life == s2.player.life
+        && s1.player.reserve.total == s2.player.reserve.total
+        && s1.player.reserve.soul == s2.player.reserve.soul
+        && s1.player.trash_cores.total == s2.player.trash_cores.total
+        && s1.player.trash_cores.soul == s2.player.trash_cores.soul
+        && s1.opponent.life == s2.opponent.life
+        && s1.opponent.reserve.total == s2.opponent.reserve.total
+        && s1.opponent.reserve.soul == s2.opponent.reserve.soul
+        && s1.opponent.trash_cores.total == s2.opponent.trash_cores.total
+        && s1.opponent.trash_cores.soul == s2.opponent.trash_cores.soul
+        && s1.player.field.len() == s2.player.field.len()
+        && s1.player.field.iter().zip(&s2.player.field).all(|(a, b)| {
+            a.id == b.id 
+                && a.cores.total == b.cores.total 
+                && a.cores.soul == b.cores.soul
+                && a.is_exhausted == b.is_exhausted
+        })
+        && s1.opponent.field.len() == s2.opponent.field.len()
+        && s1.opponent.field.iter().zip(&s2.opponent.field).all(|(a, b)| {
+            a.id == b.id 
+                && a.cores.total == b.cores.total 
+                && a.cores.soul == b.cores.soul
+                && a.is_exhausted == b.is_exhausted
+        })
+}
+
+// ----------------------------------------------------
+// 対話型CLIゲームループの実装 (二段階入力ウィザード)
+// ----------------------------------------------------
+fn run_interactive_loop(
+    deck1_path: &str,
+    deck2_path: &str,
+    model: Option<&ai::model::BoardEvaluator<burn::backend::NdArray>>,
+    device: &<burn::backend::NdArray as burn::tensor::backend::Backend>::Device,
+) {
+    println!("=== TCG BattleSpirits デッキシミュレータ (エターナルフォーマット) ===");
+
+    let mut state = match setup_initial_state(deck1_path, deck2_path) {
+        Ok(s) => s,
+        Err(e) => {
+            println!("初期状態の構築に失敗しました: {}", e);
+            return;
+        }
+    };
+    
+    println!("プレイヤー1の初期手札を設定しました。山札残り: {}枚", state.player.opened.len());
+    println!("プレイヤー2の初期手札を設定しました。山札残り: {}枚", state.opponent.opened.len());
 
     let mut game_history: Vec<LogEntry> = Vec::new();
+    let mut visited_states: Vec<(GameState, u64)> = Vec::new();
 
     loop {
+        let current_hash = calculate_state_hash(&state);
+        visited_states.push((state.clone(), current_hash));
         let (p1, p2) = if state.player.player_id == 1 {
             (&state.player, &state.opponent)
         } else {
@@ -1310,6 +1379,33 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
             continue;
         }
 
+        // 選択肢がない(n,qのみ)の場合は選択は行わずその選択肢を実施
+        let has_end = actions.contains(&Action::EndStep);
+        let has_pass = actions.contains(&Action::Pass);
+        let has_category_actions = actions.iter().any(|act| matches!(act, 
+            Action::PlayCard { .. } | Action::MoveCore { .. } | Action::Attack { .. } | Action::Block { .. }
+        ));
+
+        if !has_category_actions {
+            if has_end {
+                println!("選択可能なアクション（EndStep/Passを除く）がありません。自動的にステップ終了を実行します。");
+                println!(">> アクションを実行: EndStep");
+                if let Err(e) = apply_action(&mut state, &Action::EndStep) {
+                    println!("自動遷移エラー: {}", e);
+                }
+                process_automatic_steps(&mut state);
+                continue;
+            } else if has_pass {
+                println!("選択可能なアクション（EndStep/Passを除く）がありません。自動的にパス/スキップを実行します。");
+                println!(">> アクションを実行: Pass");
+                if let Err(e) = apply_action(&mut state, &Action::Pass) {
+                    println!("自動遷移エラー: {}", e);
+                }
+                process_automatic_steps(&mut state);
+                continue;
+            }
+        }
+
         // 第1階層のグループ分類
         #[derive(Clone, PartialEq, Eq)]
         enum ActionGroup {
@@ -1361,21 +1457,54 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
 
         println!("選択可能なアクション (カテゴリ):");
         for (idx, group) in groups.iter().enumerate() {
+            let mut max_eval: Option<f32> = None;
+            if let Some(m) = model {
+                for action in &actions {
+                    let is_match = match (group, action) {
+                        (ActionGroup::PlayCardGroup(card_id, _), Action::PlayCard { card_id: action_card_id, .. }) => card_id == action_card_id,
+                        (ActionGroup::MoveCoreGroup, Action::MoveCore { .. }) => true,
+                        (ActionGroup::AttackGroup(id, _), Action::Attack { object_id }) => id == object_id,
+                        (ActionGroup::BlockGroup(id, _), Action::Block { object_id }) => id == object_id,
+                        _ => false
+                    };
+                    if is_match {
+                        if let Some(mut val) = evaluate_action(m, &state, action, device) {
+                            let mut next_state = state.clone();
+                            if apply_action(&mut next_state, action).is_ok() {
+                                let next_hash = calculate_state_hash(&next_state);
+                                if visited_states.iter().any(|(prev_state, prev_hash)| {
+                                    *prev_hash == next_hash && is_same_state(prev_state, &next_state)
+                                }) {
+                                    val = -2.0;
+                                }
+                            }
+                            max_eval = Some(max_eval.map_or(val, |curr| curr.max(val)));
+                        }
+                    }
+                }
+            }
+
+            let eval_str = if let Some(val) = max_eval {
+                format!(" [AI評価値: {:.3}]", val)
+            } else {
+                "".to_string()
+            };
+
             match group {
                 ActionGroup::PlayCardGroup(card_id, name) => {
                     let card = state.player.hand.iter().find(|c| &c.id == card_id).unwrap();
                     let reduction = calculate_reduction(card, &state.player.field);
                     let cost_to_pay = card.base_cost.saturating_sub(reduction);
-                    println!("  {}: 【手札から使用/召喚】 {} (コスト:{}, 軽減後:{})", idx + 1, name, card.base_cost, cost_to_pay);
+                    println!("  {}: 【手札から使用/召喚】 {} (コスト:{}, 軽減後:{}){}", idx + 1, name, card.base_cost, cost_to_pay, eval_str);
                 }
                 ActionGroup::MoveCoreGroup => {
-                    println!("  {}: 【コア移動】 フィールド・リザーブ間のコア移動", idx + 1);
+                    println!("  {}: 【コア移動】 フィールド・リザーブ間のコア移動{}", idx + 1, eval_str);
                 }
                 ActionGroup::AttackGroup(_, name) => {
-                    println!("  {}: 【アタック宣言】 {}", idx + 1, name);
+                    println!("  {}: 【アタック宣言】 {}{}", idx + 1, name, eval_str);
                 }
                 ActionGroup::BlockGroup(_, name) => {
-                    println!("  {}: 【ブロック宣言】 {}", idx + 1, name);
+                    println!("  {}: 【ブロック宣言】 {}{}", idx + 1, name, eval_str);
                 }
             }
         }
@@ -1383,17 +1512,61 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         let has_end = actions.contains(&Action::EndStep);
         let has_pass = actions.contains(&Action::Pass);
         
+        let mut end_eval_str = "".to_string();
+        let mut pass_eval_str = "".to_string();
+        if let Some(m) = model {
+            if has_end {
+                if let Some(mut val) = evaluate_action(m, &state, &Action::EndStep, device) {
+                    let mut next_state = state.clone();
+                    if apply_action(&mut next_state, &Action::EndStep).is_ok() {
+                        let next_hash = calculate_state_hash(&next_state);
+                        if visited_states.iter().any(|(prev_state, prev_hash)| {
+                            *prev_hash == next_hash && is_same_state(prev_state, &next_state)
+                        }) {
+                            val = -2.0;
+                        }
+                    }
+                    end_eval_str = format!(" [AI評価値: {:.3}]", val);
+                }
+            }
+            if has_pass {
+                if let Some(mut val) = evaluate_action(m, &state, &Action::Pass, device) {
+                    let mut next_state = state.clone();
+                    if apply_action(&mut next_state, &Action::Pass).is_ok() {
+                        let next_hash = calculate_state_hash(&next_state);
+                        if visited_states.iter().any(|(prev_state, prev_hash)| {
+                            *prev_hash == next_hash && is_same_state(prev_state, &next_state)
+                        }) {
+                            val = -2.0;
+                        }
+                    }
+                    pass_eval_str = format!(" [AI評価値: {:.3}]", val);
+                }
+            }
+        }
+
         if has_end {
-            println!("  n: ステップ終了 / ターン終了");
+            println!("  n: ステップ終了{}", end_eval_str);
         } else if has_pass {
-            println!("  n: パス / スキップ");
+            println!("  n: パス / スキップ{}", pass_eval_str);
         }
         println!("  q: サレンダー（ゲームを終了する）");
+        if model.is_some() {
+            println!("  a: AI自動決定 (最善手を選択して実行)");
+        }
 
         if has_end || has_pass {
-            print!("\n選択してください [1-{}, n:終了, q:サレンダー]: ", groups.len());
+            if model.is_some() {
+                print!("\n選択してください [1-{}, n:終了, q:サレンダー, a:AI自動決定]: ", groups.len());
+            } else {
+                print!("\n選択してください [1-{}, n:終了, q:サレンダー]: ", groups.len());
+            }
         } else {
-            print!("\n選択してください [1-{}, q:サレンダー]: ", groups.len());
+            if model.is_some() {
+                print!("\n選択してください [1-{}, q:サレンダー, a:AI自動決定]: ", groups.len());
+            } else {
+                print!("\n選択してください [1-{}, q:サレンダー]: ", groups.len());
+            }
         }
         io::stdout().flush().unwrap();
 
@@ -1410,6 +1583,40 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
             _ => {}
         }
         let trimmed = input.trim();
+
+        if trimmed.to_lowercase() == "a" && model.is_some() {
+            let m = model.unwrap();
+            let mut best_action: Option<&Action> = None;
+            let mut best_val = -999.0;
+            for action in &actions {
+                if let Some(mut val) = evaluate_action(m, &state, action, device) {
+                    let mut next_state = state.clone();
+                    if apply_action(&mut next_state, action).is_ok() {
+                        let next_hash = calculate_state_hash(&next_state);
+                        if visited_states.iter().any(|(prev_state, prev_hash)| {
+                            *prev_hash == next_hash && is_same_state(prev_state, &next_state)
+                        }) {
+                            val = -2.0;
+                        }
+                    }
+                    if val > best_val {
+                        best_val = val;
+                        best_action = Some(action);
+                    }
+                }
+            }
+            if let Some(act) = best_action {
+                println!(">> AI自動決定（評価値: {:.3}）: {:?}", best_val, act);
+                if let Err(e) = apply_action(&mut state, act) {
+                    println!("自動遷移エラー: {}", e);
+                }
+                process_automatic_steps(&mut state);
+                continue;
+            } else {
+                println!("AIによる選択肢の評価に失敗しました。");
+                continue;
+            }
+        }
 
         if trimmed.to_lowercase() == "q" {
             println!("サレンダーしました。ゲームオーバー。");
@@ -1512,6 +1719,16 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
         // 複数ある場合は第2段階の詳細選択画面を表示
         println!("\n--- 詳細なオプションを選択してください ---");
         for (idx, action) in sub_actions.iter().enumerate() {
+            let eval_str = if let Some(m) = model {
+                if let Some(val) = evaluate_action(m, &state, action, device) {
+                    format!(" [AI評価値: {:.3}]", val)
+                } else {
+                    "".to_string()
+                }
+            } else {
+                "".to_string()
+            };
+
             match action {
                 Action::PlayCard { card_id: _, payment, use_soul_core, placement, placement_soul_core } => {
                     let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
@@ -1524,11 +1741,12 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
                     
                     let total_str = format_sources(&state, payment, *use_soul_core, placement, *placement_soul_core);
                     
-                    println!("  {}: コスト:{}, 配置コア:{}, ({})", 
+                    println!("  {}: コスト:{}, 配置コア:{}, ({}){}", 
                         idx + 1, 
                         pay_cores.format(), 
                         place_cores.format(), 
-                        total_str
+                        total_str,
+                        eval_str
                     );
                 }
                 Action::MoveCore { from, to, normal_cores, soul_core } => {
@@ -1547,10 +1765,10 @@ fn run_interactive_loop(deck1_path: &str, deck2_path: &str) {
                             .unwrap_or(to.clone())
                     };
                     let move_cores = Cores::new(*normal_cores + if *soul_core { 1 } else { 0 }, if *soul_core { 1 } else { 0 });
-                    println!("  {}: {} -> {} (コア:{})", idx + 1, from_name, to_name, move_cores.format());
+                    println!("  {}: {} -> {} (コア:{}){}", idx + 1, from_name, to_name, move_cores.format(), eval_str);
                 }
                 _ => {
-                    println!("  {}: {:?}", idx + 1, action);
+                    println!("  {}: {:?}{}", idx + 1, action, eval_str);
                 }
             }
         }
@@ -1646,6 +1864,11 @@ fn format_phase_camel(phase: &Phase) -> String {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     
+    if args.len() > 1 && args[1] == "train" {
+        ai::train::train_model();
+        return;
+    }
+
     let deck_args: Vec<&str> = args.iter()
         .skip(1)
         .map(|s| s.as_str())
@@ -1654,5 +1877,20 @@ fn main() {
     let deck1_path = deck_args.get(0).unwrap_or(&"deck.yaml");
     let deck2_path = deck_args.get(1).unwrap_or(&"deck2.yaml");
     
-    run_interactive_loop(deck1_path, deck2_path);
+    type MyBackend = burn::backend::NdArray;
+    let device = Default::default();
+    let model_path = "tmp/bs_model/checkpoint/model-10";
+    let model = if std::path::Path::new("tmp/bs_model/checkpoint/model-10.mpk").exists() {
+        println!("学習済みモデル weights をロードしています: {}.mpk", model_path);
+        let record = CompactRecorder::new()
+            .load(model_path.into(), &device)
+            .expect("Failed to load model weights");
+        let config = ai::model::BoardEvaluatorConfig::new();
+        Some(config.init::<MyBackend>(&device).load_record(record))
+    } else {
+        println!("警告: 学習済みモデル weights が見つかりません。評価値は表示されません。");
+        None
+    };
+
+    run_interactive_loop(deck1_path, deck2_path, model.as_ref(), &device);
 }
