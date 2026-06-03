@@ -1,0 +1,8 @@
+@startuml
+@startuml
+alice -> bob   --++ #gold: hello
+bob   -> alice --++ #gold: you too
+alice -> bob   --: step1
+alice -> bob   : step2
+@enduml
+@enduml

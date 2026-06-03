@@ -1,0 +1,7 @@
+@startuml
+skinparam stereotypePosition bottom
+
+participant A<<st1>>
+participant B<<st2>>
+A --> B : stereo test
+@enduml

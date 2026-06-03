@@ -1,0 +1,17 @@
+@startuml
+participant Alice
+participant Bob
+note left of Alice #aqua
+this is
+displayed
+left of Alice
+end note
+
+note right of Alice: this is displayed right of Alice
+
+note over Alice: this is displayed over Alice
+
+note over Alice, Bob #FFAAAA: this is displayed\n over Alice and Bob
+
+note over Bob, Alice : this is yet another\nover Alice and Bob
+@enduml

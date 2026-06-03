@@ -1,0 +1,9 @@
+@startuml
+autonumber 10
+Alice -> Bob
+note right
+  the %autonumber% works everywhere.
+  Here, its value is ** %autonumber% **
+end note
+Bob --> Alice: //This is the response %autonumber%//
+@enduml

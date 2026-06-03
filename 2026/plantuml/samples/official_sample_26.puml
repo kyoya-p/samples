@@ -1,0 +1,15 @@
+@startuml
+Alice -> Bob: hello
+note left: this is a first note
+
+Bob -> Alice: ok
+note right: this is another note
+
+Alice -> Bob: yes
+note left
+this is
+a note
+spanning
+several lines
+end note
+@enduml
