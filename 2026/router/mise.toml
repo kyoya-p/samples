@@ -1,0 +1,18 @@
+[tools]
+mitmproxy = "latest"
+node = "latest"
+uv = "latest"
+gemini = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
+
+[tasks.mitm]
+run="""
+mitmweb -p 3080 --web-host 0.0.0.0
+"""
+
+[tasks."bridge:setup"]
+description = "Setup eth0 and eth1 bridge using Netplan (Safe mode)"
+run = """
+sudo cp 99-bridge.yaml /etc/netplan/
+echo \"Applying config with 'try' mode. If you lose connection, it will revert in 120s.\"
+sudo netplan try
+"""

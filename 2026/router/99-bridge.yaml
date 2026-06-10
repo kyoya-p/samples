@@ -1,0 +1,16 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+    eth1:
+      dhcp4: no
+  bridges:
+    br0:
+      interfaces: [eth0, eth1]
+      dhcp4: yes
+      parameters:
+        stp: true
+        forward-delay: 4
+
