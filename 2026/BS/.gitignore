@@ -10,3 +10,5 @@
 /*.png
 /.gradle/
 /.codeql-db/
+/build/
+/images/

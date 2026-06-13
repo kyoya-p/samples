@@ -106,8 +106,9 @@ fun normalizeCardId(id: String): String {
     val upperId = id.uppercase()
     val parts = upperId.split("-")
     if (parts.size == 2) {
+        val prefix = parts[0]
         val numberPart = parts[1]
-        if (numberPart.all { it.isDigit() } && numberPart.length < 3) {
+        if (!prefix.startsWith("PX") && numberPart.all { it.isDigit() } && numberPart.length < 3) {
             return "${parts[0]}-${numberPart.padStart(3, '0')}"
         }
     }
