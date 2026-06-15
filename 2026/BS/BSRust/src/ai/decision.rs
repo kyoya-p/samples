@@ -45,10 +45,13 @@ pub fn evaluate_action<B: Backend>(
     if apply_action(&mut next_state, action).is_ok() {
         process_automatic_steps(&mut next_state);
         
+        // 評価用にフェイズを正規化（フェイズ差でNN出力が歪むのを防止）
+        next_state.phase = crate::Phase::MainStep;
+        
         let encoded = encode_state(&next_state);
         let input_data = TensorData::from(encoded.as_slice());
         let input_tensor = Tensor::<B, 1>::from_data(input_data, device)
-            .reshape([1, 220]);
+            .reshape([1, 520]);
         
         let output = model.forward(input_tensor);
         let val = output.into_data().as_slice::<f32>().unwrap()[0];

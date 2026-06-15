@@ -15,7 +15,7 @@ pub struct BoardEvaluator<B: Backend> {
 
 #[derive(Config, Debug)]
 pub struct BoardEvaluatorConfig {
-    #[config(default = 220)]
+    #[config(default = 520)]
     pub input_size: usize,
     #[config(default = 256)]
     pub hidden_size: usize,
