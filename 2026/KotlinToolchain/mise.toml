@@ -1,0 +1,6 @@
+[tools]
+kotlin = "2.4"
+kotlintoolchain = "latest"
+
+[tasks]
+kt-init = "kotlin init"
