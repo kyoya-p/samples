@@ -1,4 +1,4 @@
-use burn::tensor::backend::{Backend, AutodiffBackend};
+use burn::tensor::backend::Backend;
 use burn::tensor::{Tensor, TensorData};
 use burn::data::dataset::Dataset;
 use burn::data::dataloader::{DataLoaderBuilder, batcher::Batcher};
@@ -8,7 +8,7 @@ use burn::record::CompactRecorder;
 use rand::Rng;
 
 use super::model::{BoardEvaluator, BoardEvaluatorConfig, RegressionBatch};
-use super::encoder::encode_state;
+use super::encoder::{encode_state, get_card_cost};
 use super::decision::select_best_action;
 use crate::{setup_initial_state, apply_action, process_automatic_steps, CardType};
 
@@ -45,7 +45,7 @@ impl<B: Backend> ExpBatcher<B> {
 impl<B: Backend> Batcher<Experience, RegressionBatch<B>> for ExpBatcher<B> {
     fn batch(&self, items: Vec<Experience>) -> RegressionBatch<B> {
         let batch_size = items.len();
-        let mut inputs: Vec<f32> = Vec::with_capacity(batch_size * 220);
+        let mut inputs: Vec<f32> = Vec::with_capacity(batch_size * super::encoder::STATE_DIM);
         let mut targets: Vec<f32> = Vec::with_capacity(batch_size);
 
         for item in items {
@@ -57,7 +57,7 @@ impl<B: Backend> Batcher<Experience, RegressionBatch<B>> for ExpBatcher<B> {
         let targets_data = TensorData::from(targets.as_slice());
 
         let inputs_tensor = Tensor::<B, 1>::from_data(inputs_data, &self.device)
-            .reshape([batch_size, 220]);
+            .reshape([batch_size, super::encoder::STATE_DIM]);
         let targets_tensor = Tensor::<B, 1>::from_data(targets_data, &self.device)
             .reshape([batch_size, 1]);
 
@@ -139,17 +139,27 @@ pub fn generate_self_play_data<B: Backend>(model: &BoardEvaluator<B>) -> Vec<Exp
                 .count() as f32;
             let opponent_spirit_score = (10.0 - opponent_spirits).max(0.0) * 0.2;
 
-            // 3. スピリットを召喚する（優先度: 低、重み: 0.05）
-            let my_spirits = hist_state.player.field.iter()
-                .filter(|o| o.card_type == CardType::Spirit || o.card_type == CardType::Ultimate)
-                .count() as f32;
-            let my_spirit_score = my_spirits * 0.05;
+            // 3. 自分のフィールドオブジェクト数（優先度: 低、重み: 0.05）
+            let my_objects = hist_state.player.field.len() as f32;
+            let my_object_score = my_objects * 0.05;
 
-            // 4. 同じ効果の場合コストが少ないほうが評価値が高い（トラッシュのコア数をペナルティとする、重み: -0.01）
-            let cost_penalty = hist_state.player.trash_cores.total as f32 * -0.01;
+            // 4. ソウルコアの消費に対するペナルティ
+            let soul_trash = hist_state.player.trash_cores.soul as f32;
+            let soul_penalty = soul_trash * -0.05;
+
+            // 5. 自分のフィールドにあるカードのコストに対するボーナス (コストの高い強力なカードの配置を促す)
+            let mut my_field_cost = 0.0;
+            for obj in &hist_state.player.field {
+                my_field_cost += get_card_cost(&obj.id) as f32;
+            }
+            let my_cost_score = my_field_cost * 0.03;
+
+            // 6. 自分のフィールドに「光虫の旗手ファラ」が存在する場合の追加ボーナス
+            let has_fara = hist_state.player.field.iter().any(|o| o.name == "光虫の旗手ファラ");
+            let fara_bonus = if has_fara { 0.5 } else { 0.0 };
 
             // 中間報酬を統合し、tanhでスケーリング
-            let intermediate_score = opponent_life_loss + opponent_spirit_score + my_spirit_score + cost_penalty;
+            let intermediate_score = opponent_life_loss + opponent_spirit_score + my_object_score + soul_penalty + my_cost_score + fara_bonus;
             let blended_reward = (base_reward * 0.4 + intermediate_score.tanh() * 0.6).clamp(-1.0, 1.0);
 
             let encoded = encode_state(&hist_state);
@@ -165,7 +175,7 @@ pub fn generate_self_play_data<B: Backend>(model: &BoardEvaluator<B>) -> Vec<Exp
     if experiences.is_empty() {
         let mut rng = rand::thread_rng();
         for _ in 0..100 {
-            let state_vec: Vec<f32> = (0..220).map(|_| rng.gen_range(-1.0..1.0)).collect();
+            let state_vec: Vec<f32> = (0..super::encoder::STATE_DIM).map(|_| rng.gen_range(-1.0..1.0)).collect();
             let reward = rng.gen_range(-1.0..1.0);
             experiences.push(Experience { state_vec, reward });
         }

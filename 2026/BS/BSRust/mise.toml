@@ -1,6 +1,16 @@
 [tools]
 rust = "1.94.0"
 
+
+[tasks.build]
+run = "cargo build"
+sources = ["src/**/*.rs", "Cargo.toml", "Cargo.lock"]
+outputs = ["target/debug/BSRust.exe"]
+
 [tasks.t1]
+depends = ["build"]
 run = "cargo run -- deck-kogyo.yaml deck-kogyo.yaml"
 
+[tasks.fara]
+depends = ["build"]
+run = "cargo run -- deck-fara.yaml deck-kogyo.yaml"

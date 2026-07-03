@@ -17,3 +17,8 @@ run = "amper.bat build --module web-gameboard"
 run = """
 codeql database create .codeql-db --db-cluster --language=javascript,rust --source-root=. --build-mode=none --overwrite
 """
+
+[tasks."bs-sim"]
+description = "Run BSRust deck simulation"
+dir = "BSRust"
+run = "cargo build --quiet && cargo run -- deck-fara.yaml deck-kogyo.yaml"

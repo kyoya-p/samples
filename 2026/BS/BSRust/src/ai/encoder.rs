@@ -1,9 +1,9 @@
-use crate::{CardType, GameState, Phase, SideState};
+use crate::{CardType, GameState, Phase, SideState, Color};
 
 pub const MAX_FIELD_OBJECTS: usize = 10;
-pub const FIELD_OBJ_DIM: usize = 10;
-pub const SIDE_STATE_DIM: usize = 6 + MAX_FIELD_OBJECTS * FIELD_OBJ_DIM; // 6 + 100 = 106
-pub const STATE_DIM: usize = 8 + SIDE_STATE_DIM * 2; // 8 + 106*2 = 220
+pub const FIELD_OBJ_DIM: usize = 25; // 10 (base) + 1 (cost) + 7 (colors) + 1 (symbols_count) + 6 (systems)
+pub const SIDE_STATE_DIM: usize = 6 + MAX_FIELD_OBJECTS * FIELD_OBJ_DIM; // 6 + 250 = 256
+pub const STATE_DIM: usize = 8 + SIDE_STATE_DIM * 2; // 8 + 256*2 = 520
 
 pub fn encode_state(state: &GameState) -> Vec<f32> {
     let mut vec = Vec::with_capacity(STATE_DIM);
@@ -18,6 +18,20 @@ pub fn encode_state(state: &GameState) -> Vec<f32> {
         Phase::MainStep => phase_oh[4] = 1.0,
         Phase::AttackStep(_) => phase_oh[5] = 1.0,
         Phase::EndStep => phase_oh[6] = 1.0,
+        Phase::ResolveFaraEffect { is_placement } => {
+            if is_placement {
+                phase_oh[4] = 1.0;
+            } else {
+                phase_oh[5] = 1.0;
+            }
+        }
+        Phase::ResolveBasiliskEffect { is_main } => {
+            if is_main {
+                phase_oh[4] = 1.0;
+            } else {
+                phase_oh[5] = 1.0;
+            }
+        }
     }
     vec.extend(phase_oh);
 
@@ -38,6 +52,33 @@ pub fn encode_state(state: &GameState) -> Vec<f32> {
     vec.truncate(STATE_DIM);
 
     vec
+}
+
+pub fn get_card_cost(card_id: &str) -> u8 {
+    let base_id = if let Some(idx) = card_id.find('_') {
+        &card_id[..idx]
+    } else {
+        card_id
+    };
+
+    if let Ok(user_home) = std::env::var("USERPROFILE") {
+        let path = format!("{}\\.bscards\\yaml\\{}.yaml", user_home, base_id);
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("cost:") {
+                    if let Ok(c) = trimmed["cost:".len()..].trim().parse::<u8>() {
+                        return c;
+                    }
+                }
+            }
+        }
+    }
+    
+    if base_id == "BS76-T001" {
+        return 0; // プラチナム・バグ (トークン)
+    }
+    3 // デフォルト
 }
 
 fn encode_side_state(side: &SideState, vec: &mut Vec<f32>) {
@@ -68,6 +109,46 @@ fn encode_side_state(side: &SideState, vec: &mut Vec<f32>) {
             vec.push(obj.cores.soul as f32);
             vec.push(if obj.is_exhausted { 1.0 } else { 0.0 });
             vec.push(obj.current_lv() as f32 / 3.0);
+
+            // Card Cost (1 dim)
+            vec.push(get_card_cost(&obj.id) as f32 / 10.0);
+
+            // -- NEW FEATURES --
+            // Colors (One-Hot / Multi-Hot, 7 dims)
+            let mut colors_oh = vec![0.0; 7];
+            for col in &obj.colors {
+                match col {
+                    Color::Red => colors_oh[0] = 1.0,
+                    Color::Purple => colors_oh[1] = 1.0,
+                    Color::Green => colors_oh[2] = 1.0,
+                    Color::White => colors_oh[3] = 1.0,
+                    Color::Yellow => colors_oh[4] = 1.0,
+                    Color::Blue => colors_oh[5] = 1.0,
+                    Color::None => colors_oh[6] = 1.0,
+                }
+            }
+            vec.extend(colors_oh);
+
+            // Symbols Count (1 dim)
+            vec.push(obj.base_symbols.len() as f32 / 3.0);
+
+            // Systems (Multi-Hot, 6 dims: フラッグ, 光契約, 旗種, 翆海, 甲獣, その他)
+            let mut sys_oh = vec![0.0; 6];
+            let mut matched = false;
+            for sys in &obj.systems {
+                match sys.as_str() {
+                    "フラッグ" => { sys_oh[0] = 1.0; matched = true; },
+                    "光契約" => { sys_oh[1] = 1.0; matched = true; },
+                    "旗種" => { sys_oh[2] = 1.0; matched = true; },
+                    "翆海" => { sys_oh[3] = 1.0; matched = true; },
+                    "甲獣" => { sys_oh[4] = 1.0; matched = true; },
+                    _ => {}
+                }
+            }
+            if !obj.systems.is_empty() && !matched {
+                sys_oh[5] = 1.0;
+            }
+            vec.extend(sys_oh);
         } else {
             // Padding for empty slots
             vec.extend(vec![0.0; FIELD_OBJ_DIM]);
