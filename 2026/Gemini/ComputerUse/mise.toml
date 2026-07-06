@@ -1,0 +1,7 @@
+[tools]
+kotlin = "2.4"
+gradle = "9.6"
+
+[tasks]
+build = "gradle build --no-daemon"
+agent = "gradle run --no-daemon --args=\"{{ arg(name='goal', default='Launch search, search for notepad, and open it.') }}\""
