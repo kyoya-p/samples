@@ -1,0 +1,11 @@
+[tools]
+kotlin = "2.4"
+gradle = "9.6"
+
+opencode = "latest" # Todo remov
+
+[tasks]
+test_junit = "mise -C Test_JUnit run test-all"
+test_kotest = "mise -C Test_KoTest run test-all"
+test_testballoon = "mise -C Test_TestBalloon run test-all"
+test-all = { depends=[ "test_junit",  "test_kotest", "test_testballoon" ] }
