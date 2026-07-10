@@ -1,6 +1,7 @@
 [tools]
 rust = "latest"
-codeql = { version = "latest", bin_path = "codeql", platforms = { linux-x64 = { asset_pattern = "codeql-linux64.zip" }, macos-arm64 = { asset_pattern = "codeql-osx64.zip" }, macos-x64 = { asset_pattern = "codeql-osx64.zip" }, windows-x64 = { asset_pattern = "codeql-win64.zip" } } }
+opencode = "latest"
+claude-code = "latest"
 
 [tasks.web-gameboard]
 description = "Compose Multiplatform (Wasm) + Ktor Server 起動"

@@ -10,9 +10,11 @@ pub trait CardEffect: Send + Sync {
     /// カードID (例: "BS76-CX03")
     fn card_id(&self) -> &str;
     
-    /// 配置/召喚時効果。追加アクション候補を返す。
-    /// PhaseをResolveFaraEffect等に変更する必要がある場合はSome(phase変更指示)を返す
-    fn on_placement(&self, _state: &mut GameState) -> Option<crate::Phase> {
+    /// 配置/召喚/煌臨時効果。追加アクション候補を返す。
+    /// PhaseをResolveFaraEffect等に変更する必要がある場合はSome(phase変更指示)を返す。
+    /// return_to_main: 効果解決後にMainStepへ戻る文脈か(true)、AttackFlashへ戻る文脈か(false)。
+    /// （煌臨はMainStep中とフラッシュタイミングの双方で起こり得るため、呼び出し側から伝える）
+    fn on_placement(&self, _state: &mut GameState, _return_to_main: bool) -> Option<crate::Phase> {
         None
     }
     
@@ -44,6 +46,13 @@ pub trait CardEffect: Send + Sync {
     
     /// MainStepでの煌臨可能か (フラッシュタイミング以外)
     fn can_kourin_main_step(&self) -> bool {
+        false
+    }
+
+    /// 【契約煌臨元】等、煌臨で下敷きになった後も自身の配置/アタック時効果が
+    /// 持続して発揮されるか（trueの場合、このカードが under_cards にあれば
+    /// 現在の一番上のカードの効果と同時に発揮する対象として扱う）
+    fn persists_through_kourin(&self) -> bool {
         false
     }
 }

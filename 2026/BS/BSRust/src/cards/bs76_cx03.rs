@@ -17,9 +17,9 @@ impl CardEffect for Bs76Cx03 {
         "BS76-CX03"
     }
     
-    fn on_placement(&self, _state: &mut GameState) -> Option<Phase> {
-        // 配置時: トークン召喚の選択フェイズへ移行
-        Some(Phase::ResolveFaraEffect { is_placement: true })
+    fn on_placement(&self, _state: &mut GameState, return_to_main: bool) -> Option<Phase> {
+        // 配置/煌臨時: トークン召喚の選択フェイズへ移行
+        Some(Phase::ResolveFaraEffect { is_placement: return_to_main })
     }
     
     fn on_attack(&self, _state: &mut GameState, _object_id: &str) -> Option<Phase> {
@@ -33,5 +33,10 @@ impl CardEffect for Bs76Cx03 {
     
     fn is_valid_kourin_target(&self, _target: &FieldObject) -> bool {
         false // 煌臨カードではない
+    }
+
+    fn persists_through_kourin(&self) -> bool {
+        // 【契約煌臨元】: 煌臨で下敷きになった後も配置/アタック時効果が持続する
+        true
     }
 }

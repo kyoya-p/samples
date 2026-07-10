@@ -5,6 +5,7 @@ use burn::module::Module;
 
 pub mod ai;
 pub mod cards;
+pub mod web;
 use crate::ai::decision::evaluate_action;
 
 
@@ -187,6 +188,204 @@ pub fn format_sources(
     parts.join(", ")
 }
 
+/// アクションの表示用情報（CLI/Web共通）
+/// category: 第1階層（カテゴリ選択）ラベル、detail: 第2階層（詳細コア支払）ラベル
+#[derive(Debug, Clone, Serialize)]
+pub struct ActionInfo {
+    pub index: usize,
+    pub kind: String,
+    pub category: String,
+    pub detail: String,
+    pub eval: Option<f32>,
+    pub forbidden: bool,
+    /// 選択不可の理由（選択可能ならNone）
+    pub forbidden_reason: Option<String>,
+    /// 第2階層ソート用: リザーブからの通常コア支払数
+    pub reserve_pay: u8,
+    /// 第2階層ソート用: ソウルコアをコストとして支払うか
+    pub soul_pay: bool,
+}
+
+/// アクションから (kind, 第1階層ラベル, 第2階層ラベル, リザーブ支払数, ソウル支払) を生成
+pub fn describe_action(state: &GameState, action: &Action) -> (String, String, String, u8, bool) {
+    match action {
+        Action::PlayCard { card_id, payment, use_soul_core, placement, placement_soul_core } => {
+            let card = find_card_in_state(state, card_id);
+            let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
+            let card_type = card.as_ref().map(|c| c.card_type).unwrap_or(CardType::Magic);
+            let action_label = match card_type {
+                CardType::Spirit | CardType::Ultimate | CardType::Brave => "召喚",
+                CardType::Nexus => "配置",
+                CardType::Magic => "使用",
+            };
+            let base_cost = card.as_ref().map(|c| c.base_cost).unwrap_or(0);
+            // 現在のフィールドシンボルから軽減後コストを算出（元コストと両表示）
+            let acting_side = find_card_side(state, card_id);
+            let reduced = card.as_ref()
+                .map(|c| c.base_cost.saturating_sub(calculate_reduction(c, &acting_side.field)))
+                .unwrap_or(base_cost);
+            let category = format!("【手札から{}】 {} (コスト:{}, 軽減後:{})", action_label, card_name, base_cost, reduced);
+
+            let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
+            let pay_soul = if *use_soul_core { 1 } else { 0 };
+            let pay_cores = Cores::new(pay_amount + pay_soul, pay_soul);
+            let place_amount: u8 = placement.iter().map(|p| p.count).sum();
+            let place_soul = if *placement_soul_core { 1 } else { 0 };
+            let place_cores = Cores::new(place_amount + place_soul, place_soul);
+            let sources = format_sources(state, payment, *use_soul_core, placement, *placement_soul_core);
+            let detail = format!("コスト{}, 配置コア:{}, ({})", pay_cores.format(), place_cores.format(), sources);
+
+            let reserve_pay: u8 = payment.iter().chain(placement.iter())
+                .filter(|s| s.source_id == "Reserve").map(|s| s.count).sum();
+            ("play".to_string(), category, detail, reserve_pay, *use_soul_core)
+        }
+        Action::Kourin { card_id, target_id, payment, use_soul_core: _, placement } => {
+            let card = find_card_in_state(state, card_id);
+            let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
+            let target = find_field_object_in_state(state, target_id);
+            let target_name = target.as_ref().map(|o| o.name.as_str()).unwrap_or("不明な対象");
+            let category = format!("【手札から煌臨】 {} を {} に重ねて煌臨", card_name, target_name);
+            let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
+            let pay_cores = Cores::new(pay_amount + 1, 1);
+            let place_amount: u8 = placement.iter().map(|p| p.count).sum();
+            let place_cores = Cores::new(place_amount, 0);
+            let sources = format_sources(state, payment, true, placement, false);
+            let detail = format!("コスト{}, 配置コア:{}, ({})", pay_cores.format(), place_cores.format(), sources);
+            let reserve_pay: u8 = placement.iter()
+                .filter(|s| s.source_id == "Reserve").map(|s| s.count).sum();
+            ("kourin".to_string(), category, detail, reserve_pay, true)
+        }
+        Action::MoveCore { from, to, normal_cores, soul_core } => {
+            let from_name = if from == "Reserve" { "リザーブ".to_string() } else {
+                find_field_object_in_state(state, from).map(|o| o.name.clone()).unwrap_or(from.clone())
+            };
+            let to_name = if to == "Reserve" { "リザーブ".to_string() } else {
+                find_field_object_in_state(state, to).map(|o| o.name.clone()).unwrap_or(to.clone())
+            };
+            let s = if *soul_core { 1 } else { 0 };
+            let move_cores = Cores::new(*normal_cores + s, s);
+            let category = format!("【コア移動】 {} -> {} (コア:{})", from_name, to_name, move_cores.format());
+            ("movecore".to_string(), category.clone(), category, 0, *soul_core)
+        }
+        Action::Attack { object_id } => {
+            let obj_name = find_field_object_in_state(state, object_id)
+                .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
+            let category = format!("【アタック宣言】 {}", obj_name);
+            ("attack".to_string(), category.clone(), category, 0, false)
+        }
+        Action::Block { object_id } => {
+            let obj_name = find_field_object_in_state(state, object_id)
+                .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
+            let category = format!("【ブロック宣言】 {}", obj_name);
+            ("block".to_string(), category.clone(), category, 0, false)
+        }
+        Action::UseActiveEffect { object_id, effect_name, .. } => {
+            let obj_name = find_field_object_in_state(state, object_id)
+                .map(|o| o.name.clone()).unwrap_or_else(|| object_id.clone());
+            let category = format!("【効果使用】 {} : {}", obj_name, effect_name);
+            ("effect".to_string(), category.clone(), category, 0, false)
+        }
+        Action::ResolveFaraToken { summon, use_void } => {
+            let text = match (summon, use_void) {
+                (false, _) => "ファラの効果：トークンを召喚しない（パス）".to_string(),
+                (true, true) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（ボイドからコア1個を置く／ターンに1回）".to_string(),
+                (true, false) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（自分のコアを置く）".to_string(),
+            };
+            let category = format!("【効果解決】 {}", text);
+            ("effect".to_string(), category.clone(), category, 0, false)
+        }
+        Action::ResolveBasilisk { use_effect, destroy_bug } => {
+            let text = match (use_effect, destroy_bug) {
+                (false, _) => "バシリスクの効果：使用しない（パス）".to_string(),
+                (true, false) => "バシリスクの効果：デッキオープン3枚から白の旗種を1枚回収".to_string(),
+                (true, true) => "バシリスクの効果：バグを破壊しデッキオープン3枚から白の旗種を2枚回収".to_string(),
+            };
+            let category = format!("【効果解決】 {}", text);
+            ("effect".to_string(), category.clone(), category, 0, false)
+        }
+        Action::ChooseEffectOrder { card_id } => {
+            let name = state.pending_effects.iter()
+                .find(|pe| &pe.card_id == card_id)
+                .map(|pe| pe.card_name.as_str())
+                .unwrap_or("不明なカード");
+            let category = format!("【効果解決順選択】 {} の効果を先に解決する", name);
+            ("choose_effect_order".to_string(), category.clone(), category, 0, false)
+        }
+        Action::Pass => ("pass".to_string(), "パス / スキップ".to_string(), "パス / スキップ".to_string(), 0, false),
+        Action::EndStep => ("end".to_string(), "ステップ終了".to_string(), "ステップ終了".to_string(), 0, false),
+    }
+}
+
+/// カードが属する側（手札にある側）を返す。見つからなければ自分側。
+fn find_card_side<'a>(state: &'a GameState, card_id: &str) -> &'a SideState {
+    if state.opponent.hand.iter().any(|c| c.id == card_id)
+        && !state.player.hand.iter().any(|c| c.id == card_id) {
+        &state.opponent
+    } else {
+        &state.player
+    }
+}
+
+/// 勝敗判定: ライフ0のプレイヤーがいれば勝者のplayer_idを返す
+pub fn check_game_end(state: &GameState) -> Option<u8> {
+    if state.opponent.life == 0 {
+        Some(state.player.player_id)
+    } else if state.player.life == 0 {
+        Some(state.opponent.player_id)
+    } else {
+        None
+    }
+}
+
+/// 全合法手のActionInfoリストを構築（CLI/Web共通）
+/// 第2階層ソート規則: リザーブ支払が多いものを上位、ソウルコア支払を下位
+pub fn build_action_infos(
+    state: &GameState,
+    actions: &[Action],
+    model: Option<&ai::model::BoardEvaluator<burn::backend::NdArray>>,
+    device: &<burn::backend::NdArray as burn::tensor::backend::Backend>::Device,
+    visited_states: &[(GameState, u64)],
+) -> Vec<ActionInfo> {
+    actions.iter().enumerate().map(|(index, action)| {
+        let (kind, category, detail, reserve_pay, soul_pay) = describe_action(state, action);
+        let reason = forbidden_reason(action, state, visited_states);
+        let forbidden = reason.is_some();
+        let eval = model.and_then(|m| evaluate_action(m, state, action, device))
+            .map(|v| if forbidden { -2.0 } else { v });
+        ActionInfo { index, kind, category, detail, eval, forbidden, forbidden_reason: reason, reserve_pay, soul_pay }
+    }).collect()
+}
+
+/// カテゴリでグループ化し、第2階層をソートする（CLI/Web共通）
+/// 第2階層ソート規則: ソウルコア支払いを下位、リザーブからの支払いが多いものを上位
+pub fn group_action_infos(infos: Vec<ActionInfo>, sort_groups_by_eval: bool) -> Vec<(String, Vec<ActionInfo>)> {
+    let mut groups: Vec<(String, Vec<ActionInfo>)> = Vec::new();
+    for info in infos {
+        if let Some(g) = groups.iter_mut().find(|(c, _)| c == &info.category) {
+            g.1.push(info);
+        } else {
+            groups.push((info.category.clone(), vec![info]));
+        }
+    }
+    for (_, items) in &mut groups {
+        items.sort_by(|a, b| {
+            a.soul_pay.cmp(&b.soul_pay)
+                .then(b.reserve_pay.cmp(&a.reserve_pay))
+                .then(b.eval.unwrap_or(0.0).partial_cmp(&a.eval.unwrap_or(0.0))
+                    .unwrap_or(std::cmp::Ordering::Equal))
+        });
+    }
+    // 第1階層: グループ内最大評価値の降順
+    if sort_groups_by_eval {
+        groups.sort_by(|a, b| {
+            let am = a.1.iter().filter_map(|i| i.eval).fold(f32::NEG_INFINITY, f32::max);
+            let bm = b.1.iter().filter_map(|i| i.eval).fold(f32::NEG_INFINITY, f32::max);
+            bm.partial_cmp(&am).unwrap_or(std::cmp::Ordering::Equal)
+        });
+    }
+    groups
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Card {
     pub id: String,
@@ -212,6 +411,10 @@ pub struct FieldObject {
     pub base_symbols: Vec<Color>,
     pub systems: Vec<String>,
     pub under_cards: Vec<Card>,
+    /// 現在このオブジェクトを構成している「一番上」のカードのベースID。
+    /// idは初回配置時のまま固定なので、煌臨で表示上のカードが変わってもidだけでは
+    /// 追跡できない。効果解決(on_placement/on_attack)のディスパッチ先を判定するために使う。
+    pub current_card_id: String,
 }
 
 impl FieldObject {
@@ -262,6 +465,16 @@ pub struct GameState {
     pub token_summoned_this_turn: bool, // ターン中のトークン召喚コアブースト済フラグ
     pub last_move_core: Option<(String, String)>,
     pub core_move_count_this_turn: u8,
+    /// 同一タイミングで複数発動した効果の待ち行列（ターンプレイヤーが解決順を選択する）
+    pub pending_effects: Vec<PendingEffect>,
+}
+
+/// 同時に発動し、解決順の選択待ちとなっている効果
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct PendingEffect {
+    pub card_id: String,
+    pub card_name: String,
+    pub target_phase: Phase,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
@@ -275,6 +488,8 @@ pub enum Phase {
     EndStep,
     ResolveFaraEffect { is_placement: bool },
     ResolveBasiliskEffect { is_main: bool },
+    /// 同時に複数の効果が発揮した場合、ターンプレイヤーが解決順を選択するフェイズ
+    ChooseEffectOrder,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
@@ -328,8 +543,10 @@ pub enum Action {
         payment: Vec<CoreSource>,
         use_soul_core: bool,
     },
-    ResolveFaraToken { summon: bool },
+    ResolveFaraToken { summon: bool, use_void: bool },
     ResolveBasilisk { use_effect: bool, destroy_bug: bool },
+    /// 同時発揮した複数効果のうち、次に解決するものを選択する（ターンプレイヤーの権利）
+    ChooseEffectOrder { card_id: String },
     Kourin {
         card_id: String,
         target_id: String,
@@ -583,114 +800,196 @@ pub fn process_automatic_steps(state: &mut GameState) {
     }
 }
 
-pub fn try_summon_token(state: &mut GameState, token_card_id: &str) {
+/// トークンの維持コアとして自分のコア（リザーブ→ネクサス→スピリット余剰）から確保できる数
+pub fn available_cores_for_token(state: &GameState) -> u8 {
+    let mut available = state.player.reserve.normal();
+    for obj in &state.player.field {
+        if obj.card_type == CardType::Nexus {
+            available += obj.cores.normal();
+        } else if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
+            let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
+            if obj.cores.normal() > lv1 {
+                available += obj.cores.normal() - lv1;
+            }
+        }
+    }
+    available
+}
+
+/// トークン召喚。use_void=true ならボイドからコア1個を置く（ターンに1回）。
+/// 不足分（Lv1コスト - ボイド分）はリザーブ→ネクサス→スピリット余剰の順で確保する。
+pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bool) {
     if let Some(token_idx) = state.player.token_pool.iter().position(|c| c.id == token_card_id) {
         let token = &state.player.token_pool[token_idx];
         let lv1_cost = token.lv_costs.get(0).copied().unwrap_or(1);
-        
-        let mut cores_to_place = 0;
-        let mut void_boost = false;
-        
-        if !state.token_summoned_this_turn {
-            // ターンに1回、ボイドからLv1コスト分のコアを置いて出せる
-            cores_to_place = lv1_cost;
-            void_boost = true;
+
+        // ボイドから置けるのはターンに1回、コア1個
+        let void_cores = if use_void && !state.token_summoned_this_turn {
+            1u8.min(lv1_cost)
         } else {
-            // ボイドから置けない場合、リザーブやフィールドから維持コスト分のコアを確保する
-            let needed = lv1_cost;
-            let mut available = 0;
-            
-            // 1. リザーブから
-            let from_reserve = state.player.reserve.normal().min(needed);
-            available += from_reserve;
-            
-            // 2. フィールド（ネクサス）から
-            if available < needed {
-                for obj in &state.player.field {
-                    if obj.card_type == CardType::Nexus {
-                        let take = obj.cores.normal().min(needed - available);
-                        available += take;
-                        if available >= needed { break; }
-                    }
+            0
+        };
+        let needed = lv1_cost - void_cores;
+
+        if available_cores_for_token(state) < needed {
+            return;
+        }
+
+        let mut remaining = needed;
+
+        // リザーブから引く
+        let take_res = state.player.reserve.normal().min(remaining);
+        state.player.reserve.sub(take_res, 0);
+        remaining -= take_res;
+
+        // ネクサスから引く
+        if remaining > 0 {
+            for obj in &mut state.player.field {
+                if obj.card_type == CardType::Nexus {
+                    let take = obj.cores.normal().min(remaining);
+                    obj.cores.sub(take, 0);
+                    remaining -= take;
+                    if remaining == 0 { break; }
                 }
-            }
-            
-            // 3. フィールド（スピリット/アルティメットの余剰コア）から
-            if available < needed {
-                for obj in &state.player.field {
-                    if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
-                        let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
-                        if obj.cores.normal() > lv1 {
-                            let excess = obj.cores.normal() - lv1;
-                            let take = excess.min(needed - available);
-                            available += take;
-                            if available >= needed { break; }
-                        }
-                    }
-                }
-            }
-            
-            if available >= needed {
-                let mut remaining = needed;
-                
-                // リザーブから引く
-                let take_res = state.player.reserve.normal().min(remaining);
-                state.player.reserve.sub(take_res, 0);
-                remaining -= take_res;
-                
-                // ネクサスから引く
-                if remaining > 0 {
-                    for obj in &mut state.player.field {
-                        if obj.card_type == CardType::Nexus {
-                            let take = obj.cores.normal().min(remaining);
-                            obj.cores.sub(take, 0);
-                            remaining -= take;
-                            if remaining == 0 { break; }
-                        }
-                    }
-                }
-                
-                // スピリットから引く
-                if remaining > 0 {
-                    for obj in &mut state.player.field {
-                        if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
-                            let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
-                            if obj.cores.normal() > lv1 {
-                                let excess = obj.cores.normal() - lv1;
-                                let take = excess.min(remaining);
-                                obj.cores.sub(take, 0);
-                                remaining -= take;
-                                if remaining == 0 { break; }
-                            }
-                        }
-                    }
-                }
-                
-                cores_to_place = needed;
             }
         }
-        
-        if cores_to_place >= lv1_cost {
-            let token = state.player.token_pool.remove(token_idx);
-            state.player.count += 1;
-            let token_obj = FieldObject {
-                id: format!("{}_{}", token.id, state.player.count),
-                name: token.name.clone(),
-                colors: token.colors.clone(),
-                card_type: token.card_type,
-                cores: Cores::new(cores_to_place, 0),
-                is_exhausted: false,
-                lv_costs: token.lv_costs.clone(),
-                base_symbols: token.symbols.clone(),
-                systems: token.systems.clone(),
-                under_cards: vec![],
+
+        // スピリットから引く
+        if remaining > 0 {
+            for obj in &mut state.player.field {
+                if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
+                    let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
+                    if obj.cores.normal() > lv1 {
+                        let excess = obj.cores.normal() - lv1;
+                        let take = excess.min(remaining);
+                        obj.cores.sub(take, 0);
+                        remaining -= take;
+                        if remaining == 0 { break; }
+                    }
+                }
+            }
+        }
+
+        let token = state.player.token_pool.remove(token_idx);
+        state.player.count += 1;
+        let token_obj = FieldObject {
+            id: format!("{}_{}", token.id, state.player.count),
+            name: token.name.clone(),
+            colors: token.colors.clone(),
+            card_type: token.card_type,
+            cores: Cores::new(lv1_cost, 0),
+            is_exhausted: false,
+            lv_costs: token.lv_costs.clone(),
+            base_symbols: token.symbols.clone(),
+            systems: token.systems.clone(),
+            under_cards: vec![],
+            current_card_id: token.id.clone(),
+        };
+        state.player.field.push(token_obj);
+
+        if void_cores > 0 {
+            state.token_summoned_this_turn = true;
+        }
+    }
+}
+
+/// 配置/アタック、いずれのタイミングで効果をトリガーしたか。
+/// Placementのreturn_to_mainは、効果解決後にMainStepへ戻るか(true)、
+/// AttackFlashへ戻るか(false)を表す（煌臨はMainStep/フラッシュ双方で起こり得るため）。
+#[derive(Clone, Copy)]
+pub enum EffectTrigger {
+    Placement { return_to_main: bool },
+    Attack,
+}
+
+/// object_id を含む方の SideState を返す
+fn side_containing<'a>(state: &'a GameState, object_id: &str) -> Option<&'a SideState> {
+    if state.player.field.iter().any(|o| o.id == object_id) {
+        Some(&state.player)
+    } else if state.opponent.field.iter().any(|o| o.id == object_id) {
+        Some(&state.opponent)
+    } else {
+        None
+    }
+}
+
+/// 配置時/アタック時に同時発揮する効果をすべて収集する。
+/// 現在の一番上のカード(current_card_id)自身の効果に加え、under_cardsのうち
+/// 持続効果(persists_through_kourin、例:ファラの契約煌臨元)を持つカードの効果も対象に含める。
+/// 複数の効果が同時に発揮した場合の解決順は、公式ルール上ターンプレイヤーが選択する。
+pub fn collect_triggered_effects(state: &mut GameState, object_id: &str, trigger: EffectTrigger) -> Vec<PendingEffect> {
+    let candidates: Vec<(String, String)> = {
+        let side = match side_containing(state, object_id) {
+            Some(s) => s,
+            None => return Vec::new(),
+        };
+        let obj = match side.field.iter().find(|o| o.id == object_id) {
+            Some(o) => o,
+            None => return Vec::new(),
+        };
+        let mut ids = vec![(obj.current_card_id.clone(), obj.name.clone())];
+        for uc in &obj.under_cards {
+            if uc.id == obj.current_card_id {
+                continue;
+            }
+            if let Some(effect) = cards::CARD_REGISTRY.get(&uc.id) {
+                if effect.persists_through_kourin() {
+                    ids.push((uc.id.clone(), uc.name.clone()));
+                }
+            }
+        }
+        ids
+    };
+
+    let mut seen = std::collections::HashSet::new();
+    let mut result = Vec::new();
+    for (card_id, card_name) in candidates {
+        if !seen.insert(card_id.clone()) {
+            continue;
+        }
+        if let Some(effect) = cards::CARD_REGISTRY.get(&card_id) {
+            let phase_opt = match trigger {
+                EffectTrigger::Attack => effect.on_attack(state, object_id),
+                EffectTrigger::Placement { return_to_main } => effect.on_placement(state, return_to_main),
             };
-            state.player.field.push(token_obj);
-            
-            if void_boost {
-                state.token_summoned_this_turn = true;
+            if let Some(target_phase) = phase_opt {
+                result.push(PendingEffect { card_id, card_name, target_phase });
             }
         }
+    }
+    result
+}
+
+/// collect_triggered_effectsの結果をGameStateに適用する。
+/// 0件なら何もしない、1件ならそのままそのフェイズへ、2件以上ならChooseEffectOrderフェイズへ
+/// 遷移しpending_effectsに積む（ターンプレイヤーが解決順を選ぶ）。
+pub fn enter_triggered_effects(state: &mut GameState, mut effects: Vec<PendingEffect>) {
+    if effects.is_empty() {
+        return;
+    } else if effects.len() == 1 {
+        state.phase = effects.remove(0).target_phase;
+    } else {
+        state.pending_effects = effects;
+        state.phase = Phase::ChooseEffectOrder;
+    }
+}
+
+/// 効果解決フェイズ(ResolveFaraEffect/ResolveBasiliskEffect等)の選択が完了した後、
+/// 次に進むフェイズを決定する。pending_effectsが残っていればそちらを優先する。
+pub fn advance_after_effect_resolution(state: &mut GameState, fallback_to_main: bool) {
+    if !state.pending_effects.is_empty() {
+        if state.pending_effects.len() == 1 {
+            state.phase = state.pending_effects.remove(0).target_phase;
+        } else {
+            state.phase = Phase::ChooseEffectOrder;
+        }
+    } else if fallback_to_main {
+        state.phase = Phase::MainStep;
+    } else {
+        state.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
+            priority: Priority::Defender,
+            consecutive_passes: 0,
+        });
     }
 }
 
@@ -803,15 +1102,14 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     base_symbols: card.symbols.clone(),
                     systems: card.systems.clone(),
                     under_cards: vec![],
+                    current_card_id: card.id.clone(),
                 };
+                let new_obj_id = new_obj.id.clone();
                 state.player.field.push(new_obj);
 
-                // カード固有の配置時効果（CardRegistry経由）
-                if let Some(effect) = cards::CARD_REGISTRY.get(&card.id) {
-                    if let Some(new_phase) = effect.on_placement(state) {
-                        state.phase = new_phase;
-                    }
-                }
+                // カード固有の配置時効果（CardRegistry経由。同時発揮する複数効果はターンプレイヤーが解決順を選ぶ）
+                let triggered = collect_triggered_effects(state, &new_obj_id, EffectTrigger::Placement { return_to_main: true });
+                enter_triggered_effects(state, triggered);
             } else if card.card_type == CardType::Magic {
                 state.player.trash.push(card);
             }
@@ -867,39 +1165,35 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             }
         }
         (Phase::AttackStep(AttackSubPhase::DeclareAttack), Action::Attack { object_id }) => {
-            let attack_phase_override = {
+            {
                 let obj = state.player.field.iter_mut().find(|o| &o.id == object_id)
                     .ok_or_else(|| "Attacker object not found".to_string())?;
                 if obj.is_exhausted {
                     return Err("Attacker already exhausted".to_string());
                 }
                 obj.is_exhausted = true;
-                // CardRegistry経由でアタック時効果を判定
-                cards::CARD_REGISTRY.get(&obj.id)
-                    .and_then(|e| e.on_attack(state, object_id))
-            };
+            }
             state.active_attacker = Some(object_id.clone());
-            if let Some(new_phase) = attack_phase_override {
-                state.phase = new_phase;
-            } else {
+            // CardRegistry経由でアタック時効果を判定（同時発揮する複数効果はターンプレイヤーが解決順を選ぶ）
+            let triggered = collect_triggered_effects(state, object_id, EffectTrigger::Attack);
+            if triggered.is_empty() {
                 state.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
                     priority: Priority::Defender,
                     consecutive_passes: 0,
                 });
+            } else {
+                enter_triggered_effects(state, triggered);
             }
         }
-        (Phase::ResolveFaraEffect { is_placement }, Action::ResolveFaraToken { summon }) => {
+        (Phase::ResolveFaraEffect { is_placement }, Action::ResolveFaraToken { summon, use_void }) => {
             if *summon {
-                try_summon_token(state, "BS76-T001");
+                // ボイドからのコア配置はターンに1回のみ
+                if *use_void && state.token_summoned_this_turn {
+                    return Err("ボイドからのコア配置はターンに1回のみです".to_string());
+                }
+                try_summon_token(state, "BS76-T001", *use_void);
             }
-            if is_placement {
-                state.phase = Phase::MainStep;
-            } else {
-                state.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
-                    priority: Priority::Defender,
-                    consecutive_passes: 0,
-                });
-            }
+            advance_after_effect_resolution(state, is_placement);
         }
         (Phase::ResolveBasiliskEffect { is_main }, Action::ResolveBasilisk { use_effect, destroy_bug }) => {
             if *use_effect {
@@ -954,14 +1248,13 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                 state.player.opened.extend(remains);
             }
 
-            if is_main {
-                state.phase = Phase::MainStep;
-            } else {
-                state.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
-                    priority: Priority::Defender,
-                    consecutive_passes: 0,
-                });
-            }
+            advance_after_effect_resolution(state, is_main);
+        }
+        (Phase::ChooseEffectOrder, Action::ChooseEffectOrder { card_id }) => {
+            let idx = state.pending_effects.iter().position(|pe| &pe.card_id == card_id)
+                .ok_or_else(|| "Pending effect not found".to_string())?;
+            let chosen = state.pending_effects.remove(idx);
+            state.phase = chosen.target_phase;
         }
         (Phase::AttackStep(AttackSubPhase::DeclareAttack), Action::EndStep) => {
             state.phase = Phase::EndStep;
@@ -1131,9 +1424,9 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             let obj = acting_side.field.iter_mut().find(|o| &o.id == target_id)
                 .ok_or_else(|| "Target object not found".to_string())?;
             
-            // 煌臨元のカードを退避
+            // 煌臨元のカードを退避（現在の一番上のカードの実際のIDを記録する）
             let prev_card = Card {
-                id: obj.id.clone(),
+                id: obj.current_card_id.clone(),
                 name: obj.name.clone(),
                 base_cost: 0,
                 colors: obj.colors.clone(),
@@ -1144,7 +1437,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                 systems: obj.systems.clone(),
             };
             obj.under_cards.push(prev_card);
-            
+
             // 煌臨スピリットの情報に書き換える
             obj.name = card.name.clone();
             obj.colors = card.colors.clone();
@@ -1152,13 +1445,27 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             obj.lv_costs = card.lv_costs.clone();
             obj.base_symbols = card.symbols.clone();
             obj.systems = card.systems.clone();
+            obj.current_card_id = card.id.clone();
 
             // 収集したコアを追加
             if collected_cores > 0 {
                 obj.cores.add(collected_cores, 0);
             }
 
-            if phase != Phase::MainStep {
+            check_and_process_depletion(acting_side);
+
+            let is_main_step_kourin = phase == Phase::MainStep;
+            // 煌臨(=配置に準ずるタイミング)で発揮する効果を収集。同時発揮する複数効果は
+            // ターンプレイヤーが解決順を選ぶ（例: 契約煌臨元として持続するファラの効果 と
+            // 煌臨した本人自身の「煌臨時」効果が同時に発揮する場合）
+            let triggered = collect_triggered_effects(
+                state,
+                target_id,
+                EffectTrigger::Placement { return_to_main: is_main_step_kourin },
+            );
+            if !triggered.is_empty() {
+                enter_triggered_effects(state, triggered);
+            } else if !is_main_step_kourin {
                 let priority = match phase {
                     Phase::AttackStep(AttackSubPhase::AttackFlash { priority, .. }) => priority,
                     _ => Priority::Defender,
@@ -1172,8 +1479,6 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     consecutive_passes: 0,
                 });
             }
-
-            check_and_process_depletion(acting_side);
         }
                 (Phase::EndStep, Action::EndStep) => {
             let temp = state.player.clone();
@@ -1546,26 +1851,18 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
             actions.push(Action::EndStep);
         }
         Phase::ResolveFaraEffect { .. } => {
-            actions.push(Action::ResolveFaraToken { summon: false });
-            let token_needed = if !state.token_summoned_this_turn { 0 } else { 1 };
-            let token_count = state.player.token_pool.iter().filter(|c| c.id == "BS76-T001").count();
-            eprintln!("[DEBUG ResolveFara] token_pool(BS76-T001): {}, token_summoned_this_turn: {}, token_needed: {}",
-                token_count, state.token_summoned_this_turn, token_needed);
-            if state.player.token_pool.iter().any(|c| c.id == "BS76-T001") {
-                let mut available = state.player.reserve.normal();
-                for other in &state.player.field {
-                    if other.card_type == CardType::Nexus {
-                        available += other.cores.normal();
-                    } else {
-                        let lv1 = other.lv_costs.get(0).copied().unwrap_or(1);
-                        if other.cores.normal() > lv1 {
-                            available += other.cores.normal() - lv1;
-                        }
-                    }
+            actions.push(Action::ResolveFaraToken { summon: false, use_void: false });
+            if let Some(token) = state.player.token_pool.iter().find(|c| c.id == "BS76-T001") {
+                let lv1_cost = token.lv_costs.get(0).copied().unwrap_or(1);
+                let available = available_cores_for_token(state);
+                // ボイドからコア1個を置いて召喚（ターンに1回）。
+                // 使用済みターン中も選択肢として表示するため常に列挙する（選択時はエラー）。
+                if available >= lv1_cost.saturating_sub(1) {
+                    actions.push(Action::ResolveFaraToken { summon: true, use_void: true });
                 }
-                eprintln!("[DEBUG ResolveFara] available_cores: {}, condition: {} >= {}", available, available, token_needed);
-                if available >= token_needed {
-                    actions.push(Action::ResolveFaraToken { summon: true });
+                // ボイドを使わず自分のコア（リザーブ/フィールド）のみで召喚
+                if available >= lv1_cost {
+                    actions.push(Action::ResolveFaraToken { summon: true, use_void: false });
                 }
             }
         }
@@ -1575,6 +1872,12 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
             let has_bug = state.player.field.iter().any(|o| o.name == "プラチナム・バグ");
             if has_bug {
                 actions.push(Action::ResolveBasilisk { use_effect: true, destroy_bug: true });
+            }
+        }
+        Phase::ChooseEffectOrder => {
+            // 同時に発揮した効果のうち、ターンプレイヤーが次に解決するものを選ぶ
+            for pe in &state.pending_effects {
+                actions.push(Action::ChooseEffectOrder { card_id: pe.card_id.clone() });
             }
         }
         _ => {}
@@ -1853,6 +2156,7 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         token_summoned_this_turn: false,
         last_move_core: None,
         core_move_count_this_turn: 0,
+        pending_effects: vec![],
     };
 
     process_automatic_steps(&mut state);
@@ -1934,16 +2238,25 @@ pub enum ActionGroup {
     KourinGroup(String, String, String), // CardId, TargetId, TargetName
 }
 
-pub fn is_forbidden_action(action: &Action, state: &GameState, visited: &[(GameState, u64)]) -> bool {
+/// アクションが選択不可な理由を返す（選択可能ならNone）。
+/// apply_actionが返すエラーメッセージをそのまま理由として使うため、
+/// 個々の「ターンに1回」等のルールを表示側で二重管理せずに済む。
+pub fn forbidden_reason(action: &Action, state: &GameState, visited: &[(GameState, u64)]) -> Option<String> {
     let mut next_state = state.clone();
-    if apply_action(&mut next_state, action).is_ok() {
-        let next_hash = calculate_state_hash(&next_state);
-        visited.iter().any(|(prev_state, prev_hash)| {
-            *prev_hash == next_hash && is_same_state(prev_state, &next_state)
-        })
-    } else {
-        false
+    match apply_action(&mut next_state, action) {
+        Ok(()) => {
+            let next_hash = calculate_state_hash(&next_state);
+            let looped = visited.iter().any(|(prev_state, prev_hash)| {
+                *prev_hash == next_hash && is_same_state(prev_state, &next_state)
+            });
+            if looped { Some("同一盤面につき禁止".to_string()) } else { None }
+        }
+        Err(e) => Some(e),
     }
+}
+
+pub fn is_forbidden_action(action: &Action, state: &GameState, visited: &[(GameState, u64)]) -> bool {
+    forbidden_reason(action, state, visited).is_some()
 }
 
 pub fn is_group_forbidden(group: &ActionGroup, state: &GameState, visited: &[(GameState, u64)], actions: &[Action]) -> bool {
@@ -1954,7 +2267,7 @@ pub fn is_group_forbidden(group: &ActionGroup, state: &GameState, visited: &[(Ga
             (ActionGroup::MoveCoreGroup, Action::MoveCore { .. }) => true,
             (ActionGroup::AttackGroup(id, _), Action::Attack { object_id, .. }) => id == object_id,
             (ActionGroup::BlockGroup(id, _), Action::Block { object_id }) => id == object_id,
-            (ActionGroup::ResolveFaraTokenGroup(s1), Action::ResolveFaraToken { summon: s2 }) => s1 == s2,
+            (ActionGroup::ResolveFaraTokenGroup(s1), Action::ResolveFaraToken { summon: s2, .. }) => s1 == s2,
             (ActionGroup::ResolveBasiliskGroup(u1, d1), Action::ResolveBasilisk { use_effect: u2, destroy_bug: d2 }) => u1 == u2 && d1 == d2,
             (ActionGroup::KourinGroup(c1, t1, _), Action::Kourin { card_id: c2, target_id: t2, .. }) => c1 == c2 && t1 == t2,
             _ => false
@@ -2014,6 +2327,13 @@ fn run_interactive_loop(
             if let Err(e) = std::fs::write("bs-log.yaml", yaml_content) {
                 println!("警告: bs-log.yaml の書き込みに失敗しました: {}", e);
             }
+        }
+
+        // 勝敗判定（ライフ0）
+        if let Some(winner) = check_game_end(&state) {
+            println!("\n=======================================================");
+            println!("=== ゲーム終了: プレイヤー{} の勝利！（相手のライフが0になりました） ===", winner);
+            break;
         }
 
         println!("\n=======================================================");
@@ -2099,182 +2419,41 @@ fn run_interactive_loop(
             }
         }
 
-        // 選択可能なアクションを一括で列挙して表示（コア移動等もすべて個別の選択肢）
-        let display_actions: Vec<Action> = actions.iter()
-            .filter(|act| !matches!(act, Action::EndStep | Action::Pass))
-            .cloned()
-            .collect();
-
+        // 全アクションの表示情報を構築（CLI/Web共通ロジック）
+        let mut infos = build_action_infos(&state, &actions, model, device, &visited_states);
+        // EndStep/Pass は n キーで処理するため一覧から除外
+        infos.retain(|i| i.kind != "end" && i.kind != "pass");
+        // 同一表示のアクションを除去（重複アクションの完全排除）
         let mut seen_labels = std::collections::HashSet::new();
-        let mut unique_display_actions = Vec::new();
-        for action in display_actions {
-            let label = match &action {
-                Action::PlayCard { card_id, payment, use_soul_core, placement, placement_soul_core } => {
-                    let card = find_card_in_state(&state, card_id);
-                    let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
-                    let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
-                    let pay_soul = if *use_soul_core { 1 } else { 0 };
-                    let pay_cores = Cores::new(pay_amount + pay_soul, pay_soul);
-                    
-                    let place_amount: u8 = placement.iter().map(|p| p.count).sum();
-                    let place_soul = if *placement_soul_core { 1 } else { 0 };
-                    let place_cores = Cores::new(place_amount + place_soul, place_soul);
-                    
-                    let total_str = format_sources(&state, payment, *use_soul_core, placement, *placement_soul_core);
-                    format!("PlayCard:{} pay:{} place:{} sources:{}", card_name, pay_cores.format(), place_cores.format(), total_str)
-                }
-                Action::Kourin { card_id, target_id, payment, use_soul_core: _, placement } => {
-                    let card = find_card_in_state(&state, card_id);
-                    let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
-                    let target = find_field_object_in_state(&state, target_id);
-                    let target_name = target.as_ref().map(|o| o.name.as_str()).unwrap_or("不明な対象");
-                    let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
-                    let pay_cores = Cores::new(pay_amount + 1, 1);
-                    let place_amount: u8 = placement.iter().map(|p| p.count).sum();
-                    let place_cores = Cores::new(place_amount, 0);
-                    let total_str = format_sources(&state, payment, true, placement, false);
-                    format!("Kourin:{} target:{} pay:{} place:{} sources:{}", card_name, target_name, pay_cores.format(), place_cores.format(), total_str)
-                }
-                Action::MoveCore { from, to, normal_cores, soul_core } => {
-                    format!("MoveCore:{}->{} normal:{} soul:{}", from, to, normal_cores, soul_core)
-                }
-                Action::Attack { object_id } => {
-                    format!("Attack:{}", object_id)
-                }
-                Action::Block { object_id } => {
-                    format!("Block:{}", object_id)
-                }
-                Action::ResolveFaraToken { summon } => {
-                    format!("ResolveFaraToken:{}", summon)
-                }
-                Action::ResolveBasilisk { use_effect, destroy_bug } => {
-                    format!("ResolveBasilisk:use_effect={},destroy_bug={}", use_effect, destroy_bug)
-                }
-                _ => format!("{:?}", action),
-            };
+        infos.retain(|i| seen_labels.insert((i.category.clone(), i.detail.clone())));
 
-            if seen_labels.insert(label) {
-                unique_display_actions.push(action);
-            }
-        }
-        let display_actions = unique_display_actions;
+        // 第1階層（カテゴリ）でグループ化 + readme仕様のソート
+        let groups = group_action_infos(infos, model.is_some());
 
-        // 評価値を事前に計算
-        let mut evaluated_actions: Vec<(Action, f32)> = display_actions.iter().map(|action| {
-            let mut val = 0.0;
-            if let Some(m) = model {
-                if let Some(mut eval) = evaluate_action(m, &state, action, device) {
-                    if is_forbidden_action(action, &state, &visited_states) {
-                        eval = -2.0;
-                    }
-                    val = eval;
-                }
-            }
-            (action.clone(), val)
-        }).collect();
-
-        // すべて評価値の降順（大きい順）にする
-        evaluated_actions.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
-        });
-
-        let display_actions: Vec<Action> = evaluated_actions.iter().map(|(a, _)| a.clone()).collect();
-
+        // 第1階層（カテゴリ選択）の表示
         println!("選択可能なアクション:");
-        for (idx, (action, eval_val)) in evaluated_actions.iter().enumerate() {
-            let eval_str = if model.is_some() {
-                format!(" [AI評価値: {:.3}]", eval_val)
+        for (idx, (category, items)) in groups.iter().enumerate() {
+            let best = items.iter().filter_map(|i| i.eval).fold(f32::NEG_INFINITY, f32::max);
+            let eval_str = if model.is_some() && best > f32::NEG_INFINITY {
+                format!(" [AI評価値: {:.3}]", best)
             } else {
-                "".to_string()
+                String::new()
             };
-
-            let is_forbidden = is_forbidden_action(action, &state, &visited_states);
-            let forbidden_prefix = if is_forbidden { "🚫[同一盤面につき禁止] " } else { "" };
-
-            match action {
-                Action::PlayCard { card_id, payment, use_soul_core, placement, placement_soul_core } => {
-                    let card = find_card_in_state(&state, card_id);
-                    let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
-                    let card_type = card.as_ref().map(|c| c.card_type).unwrap_or(CardType::Magic);
-                    let action_label = match card_type {
-                        CardType::Spirit | CardType::Ultimate | CardType::Brave => "召喚",
-                        CardType::Nexus => "配置",
-                        CardType::Magic => "使用",
-                    };
-                    let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
-                    let pay_soul = if *use_soul_core { 1 } else { 0 };
-                    let pay_cores = Cores::new(pay_amount + pay_soul, pay_soul);
-                    
-                    let place_amount: u8 = placement.iter().map(|p| p.count).sum();
-                    let place_soul = if *placement_soul_core { 1 } else { 0 };
-                    let place_cores = Cores::new(place_amount + place_soul, place_soul);
-                    
-                    let total_str = format_sources(&state, payment, *use_soul_core, placement, *placement_soul_core);
-                    
-                    println!("  {}: {}【手札から{}】 {} (コスト:{}, 配置コア:{}, {}){}", 
-                        idx + 1, 
-                        forbidden_prefix,
-                        action_label, 
-                        card_name,
-                        pay_cores.format(), 
-                        place_cores.format(), 
-                        total_str,
-                        eval_str
-                    );
-                }
-                Action::Kourin { card_id, target_id, payment, use_soul_core: _, placement } => {
-                    let card = find_card_in_state(&state, card_id);
-                    let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
-                    let target = find_field_object_in_state(&state, target_id);
-                    let target_name = target.as_ref().map(|o| o.name.as_str()).unwrap_or("不明な対象");
-                    let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
-                    let pay_cores = Cores::new(pay_amount + 1, 1);
-                    let place_amount: u8 = placement.iter().map(|p| p.count).sum();
-                    let place_cores = Cores::new(place_amount, 0);
-                    let total_str = format_sources(&state, payment, true, placement, false);
-                    println!("  {}: {}【手札から煌臨】 {} を {} に重ねて煌臨 (コスト:{}, 配置コア:{}, {}){}", 
-                        idx + 1, forbidden_prefix, card_name, target_name, pay_cores.format(), place_cores.format(), total_str, eval_str);
-                }
-                Action::MoveCore { from, to, normal_cores, soul_core } => {
-                    let from_name = if from == "Reserve" {
-                        "リザーブ".to_string()
-                    } else {
-                        find_field_object_in_state(&state, from)
-                            .map(|o| o.name.clone())
-                            .unwrap_or(from.clone())
-                    };
-                    let to_name = if to == "Reserve" {
-                        "リザーブ".to_string()
-                    } else {
-                        find_field_object_in_state(&state, to)
-                            .map(|o| o.name.clone())
-                            .unwrap_or(to.clone())
-                    };
-                    let move_cores = Cores::new(*normal_cores + if *soul_core { 1 } else { 0 }, if *soul_core { 1 } else { 0 });
-                    println!("  {}: {}【コア移動】 {} -> {} (コア:{}){}", idx + 1, forbidden_prefix, from_name, to_name, move_cores.format(), eval_str);
-                }
-                Action::Attack { object_id } => {
-                    let obj = find_field_object_in_state(&state, object_id);
-                    let obj_name = obj.map(|o| o.name.as_str()).unwrap_or("不明な対象");
-                    println!("  {}: {}【アタック宣言】 {}{}", idx + 1, forbidden_prefix, obj_name, eval_str);
-                }
-                Action::Block { object_id } => {
-                    let obj = find_field_object_in_state(&state, object_id);
-                    let obj_name = obj.map(|o| o.name.as_str()).unwrap_or("不明な対象");
-                    println!("  {}: {}【ブロック宣言】 {}{}", idx + 1, forbidden_prefix, obj_name, eval_str);
-                }
-                Action::ResolveFaraToken { summon } => {
-                    let text = if *summon {
-                        "ファラの効果：トークン「プラチナム・バグ」を召喚する"
-                    } else {
-                        "ファラの効果：トークンを召喚しない（パス）"
-                    };
-                    println!("  {}: {}【効果解決】 {}{}", idx + 1, forbidden_prefix, text, eval_str);
-                }
-                _ => {
-                    println!("  {}: {}{:?}{}", idx + 1, forbidden_prefix, action, eval_str);
-                }
-            }
+            let all_forbidden = items.iter().all(|i| i.forbidden);
+            let forbidden_prefix = if all_forbidden {
+                let reason = items[0].forbidden_reason.as_deref().unwrap_or("選択不可");
+                format!("🚫[{}] ", reason)
+            } else {
+                String::new()
+            };
+            let suffix = if items.len() > 1 {
+                format!(" (支払パターン: {}通り)", items.len())
+            } else if items[0].kind == "play" || items[0].kind == "kourin" {
+                format!(" ({})", items[0].detail)
+            } else {
+                String::new()
+            };
+            println!("  {}: {}{}{}{}", idx + 1, forbidden_prefix, category, suffix, eval_str);
         }
         
         let has_end = actions.contains(&Action::EndStep);
@@ -2313,10 +2492,12 @@ fn run_interactive_loop(
             }
         }
 
-        let is_end_forbidden = has_end && is_forbidden_action(&Action::EndStep, &state, &visited_states);
-        let is_pass_forbidden = has_pass && is_forbidden_action(&Action::Pass, &state, &visited_states);
-        let end_forbidden_suffix = if is_end_forbidden { " 🚫[同一盤面につき禁止]" } else { "" };
-        let pass_forbidden_suffix = if is_pass_forbidden { " 🚫[同一盤面につき禁止]" } else { "" };
+        let end_reason = if has_end { forbidden_reason(&Action::EndStep, &state, &visited_states) } else { None };
+        let pass_reason = if has_pass { forbidden_reason(&Action::Pass, &state, &visited_states) } else { None };
+        let is_end_forbidden = end_reason.is_some();
+        let is_pass_forbidden = pass_reason.is_some();
+        let end_forbidden_suffix = end_reason.as_ref().map(|r| format!(" 🚫[{}]", r)).unwrap_or_default();
+        let pass_forbidden_suffix = pass_reason.as_ref().map(|r| format!(" 🚫[{}]", r)).unwrap_or_default();
 
         if has_end {
             println!("  n: ステップ終了{}{}", end_eval_str, end_forbidden_suffix);
@@ -2330,15 +2511,15 @@ fn run_interactive_loop(
 
         if has_end || has_pass {
             if model.is_some() {
-                print!("\n選択してください [1-{}, n:終了, q:サレンダー, Enter:AI]: ", display_actions.len());
+                print!("\n選択してください [1-{}, n:終了, q:サレンダー, Enter:AI]: ", groups.len());
             } else {
-                print!("\n選択してください [1-{}, n:終了, q:サレンダー]: ", display_actions.len());
+                print!("\n選択してください [1-{}, n:終了, q:サレンダー]: ", groups.len());
             }
         } else {
             if model.is_some() {
-                print!("\n選択してください [1-{}, q:サレンダー, Enter:AI]: ", display_actions.len());
+                print!("\n選択してください [1-{}, q:サレンダー, Enter:AI]: ", groups.len());
             } else {
-                print!("\n選択してください [1-{}, q:サレンダー]: ", display_actions.len());
+                print!("\n選択してください [1-{}, q:サレンダー]: ", groups.len());
             }
         }
         io::stdout().flush().unwrap();
@@ -2393,7 +2574,7 @@ fn run_interactive_loop(
         if trimmed.to_lowercase() == "n" {
             if actions.contains(&Action::EndStep) {
                 if is_end_forbidden {
-                    println!("🚫 このアクションは同一盤面に遷移するため選択できません。");
+                    println!("🚫 このアクションは選択できません: {}", end_reason.as_deref().unwrap_or("選択不可"));
                     continue;
                 }
                 println!(">> アクションを実行: {:?}", Action::EndStep);
@@ -2404,7 +2585,7 @@ fn run_interactive_loop(
                 continue;
             } else if actions.contains(&Action::Pass) {
                 if is_pass_forbidden {
-                    println!("🚫 このアクションは同一盤面に遷移するため選択できません。");
+                    println!("🚫 このアクションは選択できません: {}", pass_reason.as_deref().unwrap_or("選択不可"));
                     continue;
                 }
                 println!(">> アクションを実行: {:?}", Action::Pass);
@@ -2420,16 +2601,49 @@ fn run_interactive_loop(
         }
 
         let choice = match trimmed.parse::<usize>() {
-            Ok(num) if num >= 1 && num <= display_actions.len() => num - 1,
+            Ok(num) if num >= 1 && num <= groups.len() => num - 1,
             _ => {
                 println!("無効な入力です。");
                 continue;
             }
         };
 
-        let chosen_action = &display_actions[choice];
-        if is_forbidden_action(chosen_action, &state, &visited_states) {
-            println!("🚫 このアクションは同一盤面に遷移するため選択できません。");
+        // 第2階層（詳細コア支払）の選択
+        let (category, items) = &groups[choice];
+        let chosen_info = if items.len() == 1 {
+            items[0].clone()
+        } else {
+            println!("\n【詳細コア支払の選択】 {}", category);
+            for (i, info) in items.iter().enumerate() {
+                let eval_str = info.eval.map(|v| format!(" [AI評価値: {:.3}]", v)).unwrap_or_default();
+                let forbidden_prefix = info.forbidden_reason.as_ref()
+                    .map(|r| format!("🚫[{}] ", r)).unwrap_or_default();
+                println!("  {}: {}{}{}", i + 1, forbidden_prefix, info.detail, eval_str);
+            }
+            println!("  b: 戻る");
+            print!("選択してください [1-{}, b:戻る]: ", items.len());
+            io::stdout().flush().unwrap();
+            let mut sub_input = String::new();
+            if io::stdin().read_line(&mut sub_input).is_err() {
+                println!("入力エラー。");
+                continue;
+            }
+            let sub_trimmed = sub_input.trim();
+            if sub_trimmed.eq_ignore_ascii_case("b") {
+                continue;
+            }
+            match sub_trimmed.parse::<usize>() {
+                Ok(num) if num >= 1 && num <= items.len() => items[num - 1].clone(),
+                _ => {
+                    println!("無効な入力です。");
+                    continue;
+                }
+            }
+        };
+
+        let chosen_action = &actions[chosen_info.index];
+        if let Some(reason) = forbidden_reason(chosen_action, &state, &visited_states) {
+            println!("🚫 このアクションは選択できません: {}", reason);
             continue;
         }
 
@@ -2490,6 +2704,7 @@ fn format_phase_camel(phase: &Phase) -> String {
         Phase::EndStep => "endStep".to_string(),
         Phase::ResolveFaraEffect { .. } => "resolveFaraEffect".to_string(),
         Phase::ResolveBasiliskEffect { .. } => "resolveBasiliskEffect".to_string(),
+        Phase::ChooseEffectOrder => "chooseEffectOrder".to_string(),
     }
 }
 
@@ -2498,6 +2713,13 @@ fn main() {
     
     if args.len() > 1 && args[1] == "train" {
         ai::train::train_model();
+        return;
+    }
+
+    // Webサービスモード: cargo run -- web [port]
+    if args.len() > 1 && args[1] == "web" {
+        let port: u16 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(8080);
+        web::run_server(port);
         return;
     }
 
@@ -2545,6 +2767,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
         };
 
         let bug = FieldObject {
@@ -2558,6 +2781,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-T001".to_string(),
         };
 
         let ageha = Card {
@@ -2607,6 +2831,7 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
+            pending_effects: vec![],
         }
     }
 
@@ -2663,6 +2888,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
         };
 
         let bug = FieldObject {
@@ -2676,6 +2902,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-T001".to_string(),
         };
 
         let magic = Card {
@@ -2725,6 +2952,7 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
+            pending_effects: vec![],
         };
 
         let actions = generate_legal_actions(&state);
@@ -2769,6 +2997,7 @@ mod flash_kourin_tests {
             base_symbols: vec![],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-T001".to_string(),
         };
 
         let basilisk = FieldObject {
@@ -2782,6 +3011,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec![],
             under_cards: vec![],
+            current_card_id: "BS76-035".to_string(),
         };
 
         let mut state = GameState {
@@ -2861,5 +3091,199 @@ mod flash_kourin_tests {
         assert!(res_basilisk.is_ok());
         assert_eq!(state_basilisk.opponent.life, 4);
         assert_eq!(state_basilisk.opponent.reserve.total, 1);
+    }
+
+    fn make_fara_void_test_state() -> GameState {
+        let fara = FieldObject {
+            id: "BS76-CX03_1".to_string(),
+            name: "光虫の旗手ファラ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Nexus,
+            cores: Cores::new(0, 0),
+            is_exhausted: false,
+            lv_costs: vec![0],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
+            under_cards: vec![],
+        };
+        let bug_token = Card {
+            id: "BS76-T001".to_string(),
+            name: "プラチナム・バグ".to_string(),
+            base_cost: 0,
+            colors: vec![Color::White],
+            reduction_symbols: vec![],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1],
+            symbols: vec![],
+            systems: vec!["フラッグ".to_string()],
+        };
+
+        GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(0, 0), // 自前のコアは無し = ボイド以外では召喚不可
+                field: vec![fara],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![bug_token],
+                count: 1,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::ResolveFaraEffect { is_placement: true },
+            turn_count: 1,
+            active_attacker: None,
+            active_blocker: None,
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+        }
+    }
+
+    #[test]
+    fn test_fara_void_option_shown_and_usable_once() {
+        let mut state = make_fara_void_test_state();
+
+        // 自前のコアが無いため、ボイドを使う召喚(use_void:true)のみが選択肢に出るはず
+        let actions = generate_legal_actions(&state);
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: true }));
+        assert!(!actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
+
+        // ボイドからコアを置いて召喚 → 成功し、フィールドにバグが追加され、token_summoned_this_turnが立つ
+        let res = apply_action(&mut state, &Action::ResolveFaraToken { summon: true, use_void: true });
+        assert!(res.is_ok());
+        assert!(state.token_summoned_this_turn);
+        assert!(state.player.field.iter().any(|o| o.name == "プラチナム・バグ"));
+    }
+
+    #[test]
+    fn test_fara_void_option_still_listed_but_forbidden_after_use() {
+        // 同一ターン中に既にボイドからのコア配置を使用済み（例: 1体目のトークン召喚時に使用）
+        // かつ、トークンプールにまだバグが残っている状況を作る（2体目の召喚選択がまた提示される場面）
+        let mut state = make_fara_void_test_state();
+        state.token_summoned_this_turn = true;
+
+        // ボイド使用済みでも、選択肢としては引き続き列挙される（表示はされる）
+        let actions = generate_legal_actions(&state);
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: true }));
+
+        // ただし is_forbidden_action は true を返し、実際には選択（適用）できない
+        let visited: Vec<(GameState, u64)> = Vec::new();
+        let forbidden = is_forbidden_action(
+            &Action::ResolveFaraToken { summon: true, use_void: true },
+            &state,
+            &visited,
+        );
+        assert!(forbidden, "ボイド使用済みターン中は同オプションが選択不可(forbidden)であるべき");
+
+        // 実際に適用しようとするとエラーになる
+        let mut state2 = state.clone();
+        let res = apply_action(&mut state2, &Action::ResolveFaraToken { summon: true, use_void: true });
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_kourin_onto_fara_then_attack_trigger_diagnosis() {
+        let fara = FieldObject {
+            id: "BS76-CX03_1".to_string(),
+            name: "光虫の旗手ファラ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Nexus,
+            cores: Cores::new(1, 1),
+            is_exhausted: false,
+            lv_costs: vec![0],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
+            under_cards: vec![],
+        };
+        let basilisk_card = Card {
+            id: "BS76-035".to_string(),
+            name: "プラチナム・バシリスク".to_string(),
+            base_cost: 4,
+            colors: vec![Color::White],
+            reduction_symbols: vec![Color::White, Color::White],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2, 5],
+            symbols: vec![Color::White],
+            systems: vec!["光契約".to_string(), "旗種".to_string()],
+        };
+
+        let mut state = GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(1, 0),
+                field: vec![fara],
+                hand: vec![basilisk_card],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::MainStep,
+            turn_count: 3,
+            active_attacker: None,
+            active_blocker: None,
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+        };
+
+        // ファラにバシリスクを煌臨（自身のソウルコア1個を対価、リザーブから1個配置してLv1条件を満たす）
+        let kourin = Action::Kourin {
+            card_id: "BS76-035".to_string(),
+            target_id: "BS76-CX03_1".to_string(),
+            payment: vec![CoreSource { source_id: "BS76-CX03_1".to_string(), count: 0 }],
+            use_soul_core: true,
+            placement: vec![CoreSource { source_id: "Reserve".to_string(), count: 1 }],
+        };
+        apply_action(&mut state, &kourin).expect("煌臨に成功するはず");
+
+        let obj = state.player.field.iter().find(|o| o.id == "BS76-CX03_1").unwrap();
+        assert_eq!(obj.name, "プラチナム・バシリスク", "煌臨後は名前がバシリスクになる");
+        assert_eq!(obj.card_type, CardType::Spirit);
+        // 煌臨(kourin)自体ではon_placementが呼ばれず、バシリスクの「煌臨時」効果は現状発動しない
+        assert_eq!(state.phase, Phase::MainStep, "現状Kourinはon_placementを呼ばないためMainStepのまま");
+
+        // アタックステップへ進め、煌臨済みオブジェクトでアタック宣言
+        apply_action(&mut state, &Action::EndStep).unwrap();
+        assert_eq!(state.phase, Phase::AttackStep(AttackSubPhase::DeclareAttack));
+
+        apply_action(&mut state, &Action::Attack { object_id: "BS76-CX03_1".to_string() }).unwrap();
+
+        // 現状の実装: obj.id (="BS76-CX03_1") でCARD_REGISTRY検索するため、
+        // 名前上は「プラチナム・バシリスク」でも発動する効果はファラの効果(ResolveFaraEffect)になる。
+        // バシリスク自身の「このスピリットのアタック時」効果(ResolveBasiliskEffect)は発動しない。
+        assert_eq!(
+            state.phase,
+            Phase::ResolveFaraEffect { is_placement: false },
+            "現状は id 起点でファラの効果が発動する（バシリスク自身のアタック時効果は発動しない）"
+        );
     }
 }

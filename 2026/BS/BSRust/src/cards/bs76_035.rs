@@ -13,9 +13,9 @@ impl CardEffect for Bs76035 {
         "BS76-035"
     }
     
-    fn on_placement(&self, _state: &mut GameState) -> Option<Phase> {
+    fn on_placement(&self, _state: &mut GameState, return_to_main: bool) -> Option<Phase> {
         // 煌臨（または召喚）時: 煌臨時効果の解決フェイズへ移行
-        Some(Phase::ResolveBasiliskEffect { is_main: true })
+        Some(Phase::ResolveBasiliskEffect { is_main: return_to_main })
     }
     
     fn on_attack(&self, _state: &mut GameState, _object_id: &str) -> Option<Phase> {

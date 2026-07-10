@@ -9,50 +9,50 @@
     field: []
     hand:
     - BS76-CX03
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 0
   player2:
     player_id: 2
@@ -71,43 +71,43 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-002
+    - 26RSD03-009
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 1
   phase: resolveFaraEffect
@@ -137,50 +137,50 @@
       - 旗種
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 1
   player2:
     player_id: 2
@@ -199,43 +199,43 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-002
+    - 26RSD03-009
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 1
   phase: mainStep
@@ -281,50 +281,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -343,43 +343,187 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-002
+    - 26RSD03-009
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-001
     - 26RSD03-003
+    count: 0
+- tuen: 1
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-034
+    - BS76-039
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-041
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 2
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 4
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
     - 26RSD03-013
+    - 26RSD03-007
     - 26RSD03-009
-    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
+    - 26RSD03-X02
+    - 26RSD03-005
     - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
     - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 1
   phase: endStep
@@ -387,8 +531,8 @@
     player_id: 1
     life: 5
     reserve:
-      total: 1
-      soul: 1
+      total: 0
+      soul: 0
     field:
     - id: BS76-CX03_1
       name: 光虫の旗手ファラ
@@ -396,8 +540,8 @@
       - White
       card_type: Nexus
       cores:
-        total: 0
-        soul: 0
+        total: 1
+        soul: 1
       is_exhausted: false
       lv_costs:
       - 1
@@ -425,50 +569,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -487,43 +631,43 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-002
+    - 26RSD03-009
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 2
   phase: mainStep
@@ -531,8 +675,8 @@
     player_id: 1
     life: 5
     reserve:
-      total: 1
-      soul: 1
+      total: 0
+      soul: 0
     field:
     - id: BS76-CX03_1
       name: 光虫の旗手ファラ
@@ -540,8 +684,8 @@
       - White
       card_type: Nexus
       cores:
-        total: 0
-        soul: 0
+        total: 1
+        soul: 1
       is_exhausted: false
       lv_costs:
       - 1
@@ -569,50 +713,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -626,48 +770,48 @@
     - 26RSD03-X02
     - 26RSD03-001
     - 26RSD03-003
-    - 26RSD03-002
+    - 26RSD03-009
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 2
   phase: attackStep
@@ -675,8 +819,8 @@
     player_id: 1
     life: 5
     reserve:
-      total: 1
-      soul: 1
+      total: 0
+      soul: 0
     field:
     - id: BS76-CX03_1
       name: 光虫の旗手ファラ
@@ -684,8 +828,8 @@
       - White
       card_type: Nexus
       cores:
-        total: 0
-        soul: 0
+        total: 1
+        soul: 1
       is_exhausted: false
       lv_costs:
       - 1
@@ -713,50 +857,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -770,48 +914,48 @@
     - 26RSD03-X02
     - 26RSD03-001
     - 26RSD03-003
-    - 26RSD03-002
+    - 26RSD03-009
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 2
   phase: endStep
@@ -819,8 +963,8 @@
     player_id: 1
     life: 5
     reserve:
-      total: 1
-      soul: 1
+      total: 0
+      soul: 0
     field:
     - id: BS76-CX03_1
       name: 光虫の旗手ファラ
@@ -828,8 +972,8 @@
       - White
       card_type: Nexus
       cores:
-        total: 0
-        soul: 0
+        total: 1
+        soul: 1
       is_exhausted: false
       lv_costs:
       - 1
@@ -857,50 +1001,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
+    - BS76-041
     trash: []
     trash_cores:
       total: 3
       soul: 0
     opened:
-    - BS76-039
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
+    - BS76-041
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -914,48 +1058,48 @@
     - 26RSD03-X02
     - 26RSD03-001
     - 26RSD03-003
-    - 26RSD03-002
+    - 26RSD03-009
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-009
-    - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
-    - 26RSD03-013
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-007
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     count: 0
 - tuen: 3
   phase: mainStep
@@ -963,8 +1107,8 @@
     player_id: 1
     life: 5
     reserve:
-      total: 5
-      soul: 1
+      total: 4
+      soul: 0
     field:
     - id: BS76-CX03_1
       name: 光虫の旗手ファラ
@@ -972,8 +1116,8 @@
       - White
       card_type: Nexus
       cores:
-        total: 0
-        soul: 0
+        total: 1
+        soul: 1
       is_exhausted: false
       lv_costs:
       - 1
@@ -1001,50 +1145,50 @@
       - 光虫
       under_cards: []
     hand:
-    - BS76-X07
-    - BS76-042
-    - BS76-072
+    - BS76-038
+    - BS76-034
     - BS76-039
-    - BS76-039
+    - BS76-041
+    - BS76-041
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - BS76-086
-    - PX26-02
-    - BS76-086
-    - BS76-034
     - BS76-072
     - BS76-CX03
-    - BS76-033
-    - BS76-042
-    - BS76-034
-    - BS76-X07
-    - BS76-041
-    - BS76-CX03
-    - BS76-033
     - BS76-035
-    - BS76-034
-    - BS76-085
-    - BS76-038
     - PX26-02
-    - BS76-041
-    - BS76-035
-    - BS76-X07
-    - BS76-038
-    - BS76-086
-    - BS76-037
-    - BS76-038
-    - BS76-035
-    - BS76-042
     - BS76-039
-    - BS76-037
-    - BS76-043
-    - PX26-02
+    - BS76-039
     - BS76-043
     - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
     - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
     count: 2
   player2:
     player_id: 2
@@ -1058,46 +1202,7875 @@
     - 26RSD03-X02
     - 26RSD03-001
     - 26RSD03-003
-    - 26RSD03-002
+    - 26RSD03-009
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
     - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-008
     - 26RSD03-006
-    - 26RSD03-013
-    - 26RSD03-X02
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-001
     - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
     - 26RSD03-005
     - 26RSD03-014
     - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-001
     - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
     - 26RSD03-013
+    - 26RSD03-007
     - 26RSD03-009
-    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-010
-    - 26RSD03-007
+    - 26RSD03-X02
+    - 26RSD03-005
     - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
     - 26RSD03-011
     - 26RSD03-004
     - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
     - 26RSD03-013
     - 26RSD03-011
-    - 26RSD03-009
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
     - 26RSD03-007
     - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
     - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 3
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 4
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 4
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 4
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 1
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 2
+      soul: 0
+    opened:
+    - BS76-072
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 4
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    - BS76-072
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 3
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    hand:
+    - BS76-038
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 4
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 4
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 5
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-002
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 6
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 6
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 6
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 0
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 3
+      soul: 0
+    opened:
+    - BS76-CX03
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 4
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    - BS76-CX03
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 5
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: resolveFaraEffect
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 6
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 2
+      soul: 0
+    field:
+    - id: BS76-CX03_1
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 1
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_2
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: true
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-034_3
+      name: プラチナム・パラボリザード
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      - 甲竜
+      under_cards: []
+    - id: BS76-072_4
+      name: 白の大音楽堂
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 0
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      base_symbols:
+      - White
+      systems:
+      - 旗種
+      under_cards: []
+    - id: BS76-038_5
+      name: プラチナム・アゲハ
+      colors:
+      - White
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      - 2
+      - 3
+      base_symbols:
+      - White
+      systems:
+      - 光契約
+      - 旗種
+      - 光虫
+      under_cards: []
+    - id: BS76-CX03_6
+      name: 光虫の旗手ファラ
+      colors:
+      - White
+      card_type: Nexus
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols:
+      - White
+      systems:
+      - フラッグ
+      - 光契約
+      - 旗種
+      under_cards: []
+    - id: BS76-T001_7
+      name: プラチナム・バグ
+      colors:
+      - Yellow
+      card_type: Spirit
+      cores:
+        total: 1
+        soul: 0
+      is_exhausted: false
+      lv_costs:
+      - 1
+      base_symbols: []
+      systems:
+      - 旗種
+      - 光虫
+      under_cards: []
+    hand:
+    - BS76-039
+    - BS76-041
+    - BS76-041
+    trash: []
+    trash_cores:
+      total: 1
+      soul: 0
+    opened:
+    - BS76-035
+    - PX26-02
+    - BS76-039
+    - BS76-039
+    - BS76-043
+    - BS76-033
+    - PX26-02
+    - BS76-038
+    - BS76-033
+    - BS76-037
+    - BS76-043
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - BS76-042
+    - BS76-X07
+    - BS76-042
+    - BS76-X07
+    - BS76-038
+    - BS76-042
+    - BS76-035
+    - BS76-035
+    - BS76-085
+    - BS76-X07
+    - BS76-034
+    - BS76-041
+    - BS76-037
+    - BS76-034
+    - BS76-CX03
+    - BS76-086
+    - BS76-086
+    - BS76-033
+    count: 7
+  player2:
+    player_id: 2
+    life: 3
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-002
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-006
+    - 26RSD03-007
+    - 26RSD03-003
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-X02
+    - 26RSD03-005
+    - 26RSD03-009
+    - 26RSD03-002
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-006
+    - 26RSD03-004
+    - 26RSD03-010
+    - 26RSD03-004
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-X01
+    - 26RSD03-007
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-011
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-003
     count: 0
