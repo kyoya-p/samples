@@ -14,3 +14,7 @@ run = "cargo run -- deck-kogyo.yaml deck-kogyo.yaml"
 [tasks.fara]
 depends = ["build"]
 run = "cargo run -- deck-fara.yaml deck-kogyo.yaml"
+
+[tasks.gui]
+depends = ["build"]
+run = "cargo run -- web 8080"

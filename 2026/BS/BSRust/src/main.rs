@@ -288,8 +288,8 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
         Action::ResolveFaraToken { summon, use_void } => {
             let text = match (summon, use_void) {
                 (false, _) => "ファラの効果：トークンを召喚しない（パス）".to_string(),
-                (true, true) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（ボイドからコア1個を置く／ターンに1回）".to_string(),
-                (true, false) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（自分のコアを置く）".to_string(),
+                (true, true) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（ボイドからコアを置く／ターンに1回）".to_string(),
+                (true, false) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（自分のコアで払う）".to_string(),
             };
             let category = format!("【効果解決】 {}", text);
             ("effect".to_string(), category.clone(), category, 0, false)
@@ -816,24 +816,25 @@ pub fn available_cores_for_token(state: &GameState) -> u8 {
     available
 }
 
-/// トークン召喚。use_void=true ならボイドからコア1個を置く（ターンに1回）。
-/// 不足分（Lv1コスト - ボイド分）はリザーブ→ネクサス→スピリット余剰の順で確保する。
-pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bool) {
+/// トークンを場に出す（「召喚」ではなくカード効果による配置のため、召喚コストの支払いは発生しない）。
+/// use_void=true なら対象のLv1コストと同じになるようボイドからコアを置く
+/// （ターンに1回の任意効果。自分のコアは一切消費しない）。
+/// use_void=false なら持っている分だけリザーブ→ネクサス→スピリット余剰の順で自分のコアを置く。
+/// コストの支払い可否によって行為自体を禁止することはなく、コアが足りず維持コストに満たない
+/// 場合は配置後に(呼び出し側の)check_and_process_depletionでそのまま消滅処理される。
+pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bool) -> Result<(), String> {
     if let Some(token_idx) = state.player.token_pool.iter().position(|c| c.id == token_card_id) {
         let token = &state.player.token_pool[token_idx];
         let lv1_cost = token.lv_costs.get(0).copied().unwrap_or(1);
 
-        // ボイドから置けるのはターンに1回、コア1個
-        let void_cores = if use_void && !state.token_summoned_this_turn {
-            1u8.min(lv1_cost)
-        } else {
-            0
-        };
-        let needed = lv1_cost - void_cores;
-
-        if available_cores_for_token(state) < needed {
-            return;
+        if use_void && state.token_summoned_this_turn {
+            return Err("ボイドからのコア配置はターンに1回のみです".to_string());
         }
+
+        // ボイドから出す場合はLv1コスト全額をボイドから賄う（ターンに1回、自分のコアは使わない）
+        let void_cores = if use_void { lv1_cost } else { 0 };
+        // 自分のコアで払う場合は、持っている分だけ置く（不足していても行為自体は禁止しない）
+        let needed = (lv1_cost - void_cores).min(available_cores_for_token(state));
 
         let mut remaining = needed;
 
@@ -877,7 +878,8 @@ pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bo
             name: token.name.clone(),
             colors: token.colors.clone(),
             card_type: token.card_type,
-            cores: Cores::new(lv1_cost, 0),
+            // 実際に置けたコア数(ボイド分+自分のコア分)。不足時はlv1_costに満たないこともある。
+            cores: Cores::new(void_cores + needed, 0),
             is_exhausted: false,
             lv_costs: token.lv_costs.clone(),
             base_symbols: token.symbols.clone(),
@@ -891,6 +893,7 @@ pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bo
             state.token_summoned_this_turn = true;
         }
     }
+    Ok(())
 }
 
 /// 配置/アタック、いずれのタイミングで効果をトリガーしたか。
@@ -1187,11 +1190,9 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
         }
         (Phase::ResolveFaraEffect { is_placement }, Action::ResolveFaraToken { summon, use_void }) => {
             if *summon {
-                // ボイドからのコア配置はターンに1回のみ
-                if *use_void && state.token_summoned_this_turn {
-                    return Err("ボイドからのコア配置はターンに1回のみです".to_string());
-                }
-                try_summon_token(state, "BS76-T001", *use_void);
+                try_summon_token(state, "BS76-T001", *use_void)?;
+                // 維持コア(Lv1コスト)に満たない場合はそのまま消滅処理する（他の配置と同じ扱い）
+                check_and_process_depletion(&mut state.player);
             }
             advance_after_effect_resolution(state, is_placement);
         }
@@ -1852,18 +1853,13 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
         }
         Phase::ResolveFaraEffect { .. } => {
             actions.push(Action::ResolveFaraToken { summon: false, use_void: false });
-            if let Some(token) = state.player.token_pool.iter().find(|c| c.id == "BS76-T001") {
-                let lv1_cost = token.lv_costs.get(0).copied().unwrap_or(1);
-                let available = available_cores_for_token(state);
-                // ボイドからコア1個を置いて召喚（ターンに1回）。
-                // 使用済みターン中も選択肢として表示するため常に列挙する（選択時はエラー）。
-                if available >= lv1_cost.saturating_sub(1) {
-                    actions.push(Action::ResolveFaraToken { summon: true, use_void: true });
-                }
-                // ボイドを使わず自分のコア（リザーブ/フィールド）のみで召喚
-                if available >= lv1_cost {
-                    actions.push(Action::ResolveFaraToken { summon: true, use_void: false });
-                }
+            if state.player.token_pool.iter().any(|c| c.id == "BS76-T001") {
+                // 「ボイドから置く」「置かない(自分のコアで払う)」は常に両方を選択肢として提示する。
+                // トークンを出すのは「召喚」ではないためコスト支払い可否で禁止されることはない
+                // （自分のコアが足りなければ持っている分だけ置き、不足すればそのまま消滅処理される）。
+                // ボイドは「ターンに1回」のみ真に禁止され、使用済みならapply_actionがエラーを返す。
+                actions.push(Action::ResolveFaraToken { summon: true, use_void: true });
+                actions.push(Action::ResolveFaraToken { summon: true, use_void: false });
             }
         }
         Phase::ResolveBasiliskEffect { .. } => {
@@ -3046,6 +3042,7 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
+            pending_effects: vec![],
         };
 
         let res = apply_action(&mut state, &Action::Pass);
@@ -3085,6 +3082,7 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
+            pending_effects: vec![],
         };
 
         let res_basilisk = apply_action(&mut state_basilisk, &Action::Pass);
@@ -3105,6 +3103,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
         };
         let bug_token = Card {
             id: "BS76-T001".to_string(),
@@ -3150,6 +3149,7 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
+            pending_effects: vec![],
         }
     }
 
@@ -3157,16 +3157,44 @@ mod flash_kourin_tests {
     fn test_fara_void_option_shown_and_usable_once() {
         let mut state = make_fara_void_test_state();
 
-        // 自前のコアが無いため、ボイドを使う召喚(use_void:true)のみが選択肢に出るはず
+        // 「ボイドから置く」「置かない」は自分のコアの有無によらず常に両方選択肢として出る
         let actions = generate_legal_actions(&state);
         assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: true }));
-        assert!(!actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
+
+        // トークンを出すのは「召喚」ではないため、自前のコアが無くても行為自体は禁止されない。
+        // ただし置けるコアが0でLv1コスト未満のため、即座に消滅してトークンプールへ戻る。
+        let mut state_no_cores = state.clone();
+        let res = apply_action(&mut state_no_cores, &Action::ResolveFaraToken { summon: true, use_void: false });
+        assert!(res.is_ok());
+        assert!(!state_no_cores.player.field.iter().any(|o| o.name == "プラチナム・バグ"), "コア不足のため場に留まれず消滅する");
+        assert!(state_no_cores.player.token_pool.iter().any(|c| c.id == "BS76-T001"), "トークンプールに戻る");
 
         // ボイドからコアを置いて召喚 → 成功し、フィールドにバグが追加され、token_summoned_this_turnが立つ
         let res = apply_action(&mut state, &Action::ResolveFaraToken { summon: true, use_void: true });
         assert!(res.is_ok());
         assert!(state.token_summoned_this_turn);
         assert!(state.player.field.iter().any(|o| o.name == "プラチナム・バグ"));
+    }
+
+    #[test]
+    fn test_fara_void_is_optional_when_own_cores_suffice() {
+        // 自前のコアが十分にある場合、ボイドを使う/使わないの両方が選択肢として提示され、
+        // どちらを選ぶかはユーザの任意（強制されない）
+        let mut state = make_fara_void_test_state();
+        state.player.reserve = Cores::new(2, 0);
+
+        let actions = generate_legal_actions(&state);
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: true }));
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
+
+        // 自分のコアのみで召喚する場合、ボイドの「ターンに1回」枠は消費されない
+        let res = apply_action(&mut state, &Action::ResolveFaraToken { summon: true, use_void: false });
+        assert!(res.is_ok());
+        assert!(!state.token_summoned_this_turn, "自分のコアのみで召喚した場合、ボイド使用枠は消費されない");
+        assert_eq!(state.player.reserve.normal(), 1, "自分のコア1個(Lv1コスト)を消費して召喚する");
+        let bug = state.player.field.iter().find(|o| o.name == "プラチナム・バグ").unwrap();
+        assert_eq!(bug.cores.total, 1);
     }
 
     #[test]
@@ -3195,8 +3223,7 @@ mod flash_kourin_tests {
         assert!(res.is_err());
     }
 
-    #[test]
-    fn test_kourin_onto_fara_then_attack_trigger_diagnosis() {
+    fn make_kourin_onto_fara_test_state() -> GameState {
         let fara = FieldObject {
             id: "BS76-CX03_1".to_string(),
             name: "光虫の旗手ファラ".to_string(),
@@ -3208,6 +3235,7 @@ mod flash_kourin_tests {
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
         };
         let basilisk_card = Card {
             id: "BS76-035".to_string(),
@@ -3221,7 +3249,7 @@ mod flash_kourin_tests {
             systems: vec!["光契約".to_string(), "旗種".to_string()],
         };
 
-        let mut state = GameState {
+        GameState {
             player: SideState {
                 player_id: 1,
                 life: 5,
@@ -3253,23 +3281,68 @@ mod flash_kourin_tests {
             token_summoned_this_turn: false,
             last_move_core: None,
             core_move_count_this_turn: 0,
-        };
+            pending_effects: vec![],
+        }
+    }
 
+    fn kourin_basilisk_onto_fara_action() -> Action {
         // ファラにバシリスクを煌臨（自身のソウルコア1個を対価、リザーブから1個配置してLv1条件を満たす）
-        let kourin = Action::Kourin {
+        Action::Kourin {
             card_id: "BS76-035".to_string(),
             target_id: "BS76-CX03_1".to_string(),
             payment: vec![CoreSource { source_id: "BS76-CX03_1".to_string(), count: 0 }],
             use_soul_core: true,
             placement: vec![CoreSource { source_id: "Reserve".to_string(), count: 1 }],
-        };
-        apply_action(&mut state, &kourin).expect("煌臨に成功するはず");
+        }
+    }
+
+    #[test]
+    fn test_kourin_onto_fara_triggers_both_effects_simultaneously() {
+        let mut state = make_kourin_onto_fara_test_state();
+
+        apply_action(&mut state, &kourin_basilisk_onto_fara_action()).expect("煌臨に成功するはず");
 
         let obj = state.player.field.iter().find(|o| o.id == "BS76-CX03_1").unwrap();
         assert_eq!(obj.name, "プラチナム・バシリスク", "煌臨後は名前がバシリスクになる");
         assert_eq!(obj.card_type, CardType::Spirit);
-        // 煌臨(kourin)自体ではon_placementが呼ばれず、バシリスクの「煌臨時」効果は現状発動しない
-        assert_eq!(state.phase, Phase::MainStep, "現状Kourinはon_placementを呼ばないためMainStepのまま");
+        assert_eq!(obj.current_card_id, "BS76-035", "現在の一番上のカードはバシリスクになる");
+        assert_eq!(
+            obj.under_cards.last().map(|c| c.id.as_str()),
+            Some("BS76-CX03"),
+            "煌臨元(ファラ)のIDがunder_cardsに正しく記録される"
+        );
+
+        // ファラの契約煌臨元(持続)効果とバシリスク自身の煌臨時効果が同時に発揮するため、
+        // ターンプレイヤーが解決順を選ぶ ChooseEffectOrder フェイズへ移行する
+        assert_eq!(state.phase, Phase::ChooseEffectOrder);
+        assert_eq!(state.pending_effects.len(), 2);
+        let ids: std::collections::HashSet<_> = state.pending_effects.iter().map(|p| p.card_id.clone()).collect();
+        assert!(ids.contains("BS76-CX03"));
+        assert!(ids.contains("BS76-035"));
+
+        // バシリスクの効果を先に解決することを選ぶ
+        apply_action(&mut state, &Action::ChooseEffectOrder { card_id: "BS76-035".to_string() }).unwrap();
+        assert_eq!(state.phase, Phase::ResolveBasiliskEffect { is_main: true });
+
+        // バシリスクの効果を解決（使用しない）→ 残るファラの効果へ自動的に進む
+        apply_action(&mut state, &Action::ResolveBasilisk { use_effect: false, destroy_bug: false }).unwrap();
+        assert_eq!(state.phase, Phase::ResolveFaraEffect { is_placement: true }, "残り1件になったら選択なしで直接そのフェイズへ");
+        assert!(state.pending_effects.is_empty());
+
+        // ファラの効果を解決（トークン召喚しない）→ すべて解決済みなのでMainStepに戻る
+        apply_action(&mut state, &Action::ResolveFaraToken { summon: false, use_void: false }).unwrap();
+        assert_eq!(state.phase, Phase::MainStep);
+    }
+
+    #[test]
+    fn test_kourin_onto_fara_then_attack_triggers_both_effects() {
+        let mut state = make_kourin_onto_fara_test_state();
+        apply_action(&mut state, &kourin_basilisk_onto_fara_action()).unwrap();
+        // 煌臨で発生した2件の同時効果をどちらも「使用しない」で解決し、MainStepに戻す
+        apply_action(&mut state, &Action::ChooseEffectOrder { card_id: "BS76-035".to_string() }).unwrap();
+        apply_action(&mut state, &Action::ResolveBasilisk { use_effect: false, destroy_bug: false }).unwrap();
+        apply_action(&mut state, &Action::ResolveFaraToken { summon: false, use_void: false }).unwrap();
+        assert_eq!(state.phase, Phase::MainStep);
 
         // アタックステップへ進め、煌臨済みオブジェクトでアタック宣言
         apply_action(&mut state, &Action::EndStep).unwrap();
@@ -3277,13 +3350,21 @@ mod flash_kourin_tests {
 
         apply_action(&mut state, &Action::Attack { object_id: "BS76-CX03_1".to_string() }).unwrap();
 
-        // 現状の実装: obj.id (="BS76-CX03_1") でCARD_REGISTRY検索するため、
-        // 名前上は「プラチナム・バシリスク」でも発動する効果はファラの効果(ResolveFaraEffect)になる。
-        // バシリスク自身の「このスピリットのアタック時」効果(ResolveBasiliskEffect)は発動しない。
+        // アタック時もファラの持続効果とバシリスク自身のアタック時効果が同時発揮するため
+        // 再び ChooseEffectOrder で解決順を選ぶ
+        assert_eq!(state.phase, Phase::ChooseEffectOrder);
+        assert_eq!(state.pending_effects.len(), 2);
+
+        apply_action(&mut state, &Action::ChooseEffectOrder { card_id: "BS76-CX03".to_string() }).unwrap();
+        assert_eq!(state.phase, Phase::ResolveFaraEffect { is_placement: false });
+        apply_action(&mut state, &Action::ResolveFaraToken { summon: false, use_void: false }).unwrap();
+        assert_eq!(state.phase, Phase::ResolveBasiliskEffect { is_main: false }, "残り1件は選択なしで直接そのフェイズへ");
+
+        apply_action(&mut state, &Action::ResolveBasilisk { use_effect: false, destroy_bug: false }).unwrap();
         assert_eq!(
             state.phase,
-            Phase::ResolveFaraEffect { is_placement: false },
-            "現状は id 起点でファラの効果が発動する（バシリスク自身のアタック時効果は発動しない）"
+            Phase::AttackStep(AttackSubPhase::AttackFlash { priority: Priority::Defender, consecutive_passes: 0 }),
+            "両方解決後はAttackFlashへ戻る"
         );
     }
 }

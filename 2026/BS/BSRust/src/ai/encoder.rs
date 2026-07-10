@@ -32,6 +32,20 @@ pub fn encode_state(state: &GameState) -> Vec<f32> {
                 phase_oh[5] = 1.0;
             }
         }
+        Phase::ChooseEffectOrder => {
+            // 待機中の効果がMainStepへ戻る文脈かどうかで丸め込む
+            let returns_to_main = state.pending_effects.first().map_or(true, |pe| {
+                matches!(
+                    pe.target_phase,
+                    Phase::ResolveFaraEffect { is_placement: true } | Phase::ResolveBasiliskEffect { is_main: true }
+                )
+            });
+            if returns_to_main {
+                phase_oh[4] = 1.0;
+            } else {
+                phase_oh[5] = 1.0;
+            }
+        }
     }
     vec.extend(phase_oh);
 

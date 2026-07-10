@@ -1,17 +1,12 @@
-package jvm.fibonacci
-
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
-
 class FibonacciTest {
-
     @Test
     fun testFibonacciBaseCases() {
         assertEquals(0, fib(0))
         assertEquals(1, fib(1))
     }
-
     @Test
     fun testFibonacciSequence() {
         assertEquals(1, fib(2))
@@ -24,7 +19,6 @@ class FibonacciTest {
         assertEquals(34, fib(9))
         assertEquals(55, fib(10))
     }
-
     @Test
     fun testFibonacciNegativeInput() {
         assertThrows(IllegalArgumentException::class.java) {

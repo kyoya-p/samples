@@ -1,5 +1,3 @@
-package testballoon.fibonacci
-
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
