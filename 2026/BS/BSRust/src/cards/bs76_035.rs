@@ -35,4 +35,9 @@ impl CardEffect for Bs76035 {
     fn can_kourin_main_step(&self) -> bool {
         true
     }
+
+    fn kourin_own_turn_only(&self) -> bool {
+        // 《F契約煌臨：光契約》『自分のターン』のため、相手ターンには煌臨できない
+        true
+    }
 }

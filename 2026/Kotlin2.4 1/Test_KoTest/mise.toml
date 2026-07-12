@@ -1,3 +1,0 @@
-[tasks]
-test-all = "gradle test"
-test-single = "gradle test \"-Dkotest.filter.tests=fibonacci base cases\""

@@ -9,50 +9,50 @@
     field: []
     hand:
     - BS76-CX03
-    - BS76-085
-    - BS76-033
-    - BS76-X07
+    - BS76-042
     - BS76-039
+    - BS76-043
+    - BS76-038
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - BS76-039
-    - BS76-CX03
-    - BS76-037
-    - BS76-072
     - BS76-038
-    - BS76-X07
-    - BS76-X07
     - BS76-034
-    - BS76-033
-    - BS76-038
-    - BS76-043
-    - PX26-02
     - BS76-086
     - BS76-034
     - BS76-CX03
-    - BS76-038
-    - BS76-041
-    - BS76-035
-    - BS76-042
-    - PX26-02
-    - BS76-042
     - BS76-043
-    - BS76-035
-    - BS76-072
-    - BS76-086
-    - BS76-035
-    - BS76-042
+    - BS76-085
     - BS76-033
     - BS76-039
+    - BS76-CX03
+    - BS76-037
+    - PX26-02
+    - BS76-035
+    - BS76-033
+    - BS76-X07
+    - BS76-033
+    - BS76-072
+    - PX26-02
+    - BS76-086
+    - PX26-02
+    - BS76-X07
+    - BS76-037
+    - BS76-042
+    - BS76-034
+    - BS76-035
+    - BS76-042
+    - BS76-X07
+    - BS76-041
+    - BS76-038
+    - BS76-035
+    - BS76-041
     - BS76-086
     - BS76-041
-    - BS76-037
-    - BS76-041
-    - BS76-034
-    - PX26-02
+    - BS76-072
+    - BS76-039
     count: 0
   player2:
     player_id: 2
@@ -72,169 +72,40 @@
       soul: 0
     opened:
     - 26RSD03-005
-    - 26RSD03-X01
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-005
-    - 26RSD03-001
-    - 26RSD03-005
     - 26RSD03-006
-    - 26RSD03-007
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-008
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-001
     - 26RSD03-002
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-002
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-011
     - 26RSD03-010
-    - 26RSD03-011
+    - 26RSD03-009
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-005
+    - 26RSD03-002
+    - 26RSD03-005
+    - 26RSD03-007
+    - 26RSD03-013
     - 26RSD03-003
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-006
+    - 26RSD03-004
     - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-009
+    - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-003
+    - 26RSD03-009
+    - 26RSD03-010
     - 26RSD03-006
-    - 26RSD03-004
-    - 26RSD03-004
-    count: 0
-- tuen: 1
-  phase: resolveFaraEffect
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 1
-      soul: 1
-    field:
-    - id: BS76-CX03_1
-      name: 光虫の旗手ファラ
-      colors:
-      - White
-      card_type: Nexus
-      cores:
-        total: 0
-        soul: 0
-      is_exhausted: false
-      lv_costs:
-      - 1
-      base_symbols:
-      - White
-      systems:
-      - フラッグ
-      - 光契約
-      - 旗種
-      under_cards: []
-      current_card_id: BS76-CX03
-    hand:
-    - BS76-085
-    - BS76-033
-    - BS76-X07
-    - BS76-039
-    trash: []
-    trash_cores:
-      total: 3
-      soul: 0
-    opened:
-    - BS76-039
-    - BS76-CX03
-    - BS76-037
-    - BS76-072
-    - BS76-038
-    - BS76-X07
-    - BS76-X07
-    - BS76-034
-    - BS76-033
-    - BS76-038
-    - BS76-043
-    - PX26-02
-    - BS76-086
-    - BS76-034
-    - BS76-CX03
-    - BS76-038
-    - BS76-041
-    - BS76-035
-    - BS76-042
-    - PX26-02
-    - BS76-042
-    - BS76-043
-    - BS76-035
-    - BS76-072
-    - BS76-086
-    - BS76-035
-    - BS76-042
-    - BS76-033
-    - BS76-039
-    - BS76-086
-    - BS76-041
-    - BS76-037
-    - BS76-041
-    - BS76-034
-    - PX26-02
-    count: 1
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 4
-      soul: 1
-    field: []
-    hand:
+    - 26RSD03-011
+    - 26RSD03-006
+    - 26RSD03-011
+    - 26RSD03-008
     - 26RSD03-X01
+    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-004
     - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-003
-    trash: []
-    trash_cores:
-      total: 0
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-X01
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-005
-    - 26RSD03-001
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-007
-    - 26RSD03-004
     - 26RSD03-008
-    - 26RSD03-008
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-002
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-002
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-011
-    - 26RSD03-010
     - 26RSD03-011
     - 26RSD03-003
-    - 26RSD03-010
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-014
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-004
-    - 26RSD03-004
+    - 26RSD03-013
     count: 0

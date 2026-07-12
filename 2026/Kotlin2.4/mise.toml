@@ -8,4 +8,6 @@ opencode = "latest" # Todo remov
 test_junit = "mise -C Test_JUnit run test-all"
 test_kotest = "mise -C Test_KoTest run test-all"
 test_testballoon = "mise -C Test_TestBalloon run test-all"
-test-all = { depends=[ "test_junit",  "test_kotest", "test_testballoon" ] }
+test_contextparameters = "mise -C ContextParameters run test-all"
+test_explicitbackingfields = "mise -C ExplicitBackingFields run test-all"
+test-all = { depends=[ "test_junit",  "test_kotest", "test_testballoon", "test_contextparameters", "test_explicitbackingfields" ] }

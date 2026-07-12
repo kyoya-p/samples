@@ -467,6 +467,12 @@ pub struct GameState {
     pub core_move_count_this_turn: u8,
     /// 同一タイミングで複数発動した効果の待ち行列（ターンプレイヤーが解決順を選択する）
     pub pending_effects: Vec<PendingEffect>,
+    /// フィールドオブジェクトのID採番用カウンタ（ゲーム上の「カウント」とは別物）
+    #[serde(default)]
+    pub next_obj_id: u32,
+    /// バシリスクのデッキオープン効果を使用済みか（ターンに1回、リフレッシュでリセット）
+    #[serde(default)]
+    pub basilisk_effect_used_this_turn: bool,
 }
 
 /// 同時に発動し、解決順の選択待ちとなっている効果
@@ -793,6 +799,7 @@ pub fn process_automatic_steps(state: &mut GameState) {
                     obj.is_exhausted = false;
                 }
                 state.token_summoned_this_turn = false; // ターンのフラグリセット
+                state.basilisk_effect_used_this_turn = false;
                 state.phase = Phase::MainStep;
             }
             _ => break,
@@ -801,27 +808,66 @@ pub fn process_automatic_steps(state: &mut GameState) {
 }
 
 /// トークンの維持コアとして自分のコア（リザーブ→ネクサス→スピリット余剰）から確保できる数
+/// 自分のコアだけでトークンを場に出す際に使える最大コア数（通常コア＋ソウルコア）。
+/// 他のスピリット召喚時の配置と同様、通常コアが不足する場合はソウルコアも使用できる。
 pub fn available_cores_for_token(state: &GameState) -> u8 {
-    let mut available = state.player.reserve.normal();
+    let mut available = state.player.reserve.total;
     for obj in &state.player.field {
         if obj.card_type == CardType::Nexus {
-            available += obj.cores.normal();
+            available += obj.cores.total;
         } else if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
             let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
-            if obj.cores.normal() > lv1 {
-                available += obj.cores.normal() - lv1;
+            if obj.cores.total > lv1 {
+                available += obj.cores.total - lv1;
             }
         }
     }
     available
 }
 
-/// トークンを場に出す（「召喚」ではなくカード効果による配置のため、召喚コストの支払いは発生しない）。
+/// 魂状態/煌臨元を含む「光虫の旗手ファラ」を自分の場に持っているか
+pub fn has_fara(side: &SideState) -> bool {
+    side.field.iter().any(|o| {
+        o.current_card_id == "BS76-CX03"
+            || o.under_cards.iter().any(|c| c.id == "BS76-CX03")
+    })
+}
+
+/// ファラの効果によるカウント+1（最大10）。
+/// 「自分が《F契約煌臨》したか、自分の『プラチナム・バグ』が出たとき」にのみ呼ばれる。
+/// ファラ（魂状態/煌臨元を含む）が自分の場になければ発揮しない。
+pub fn fara_count_up(side: &mut SideState) {
+    if has_fara(side) && side.count < 10 {
+        side.count += 1;
+    }
+}
+
+/// コアプールから通常コアを優先的に、不足分はソウルコアも使って`remaining`分だけ取り出す。
+/// min_keep_totalはそのプールに残しておくべき最低合計コア数（スピリット/アルティメットの
+/// Lv1コストなど）。実際に取れた(通常, ソウル)を返す。
+fn extract_cores(cores: &mut Cores, remaining: &mut u8, min_keep_total: u8) -> (u8, u8) {
+    if *remaining == 0 {
+        return (0, 0);
+    }
+    let takeable_total = cores.total.saturating_sub(min_keep_total);
+    let take_total = takeable_total.min(*remaining);
+    if take_total == 0 {
+        return (0, 0);
+    }
+    let take_normal = cores.normal().min(take_total);
+    let take_soul = take_total - take_normal;
+    cores.sub(take_normal, take_soul);
+    *remaining -= take_total;
+    (take_normal, take_soul)
+}
+
+/// トークンを場に出す（「召喚」ではなくカード効果による配置）。
+/// 配置コア(維持コア)がLv1コストに満たない場合は場に出すこと自体が不可能。
 /// use_void=true なら対象のLv1コストと同じになるようボイドからコアを置く
-/// （ターンに1回の任意効果。自分のコアは一切消費しない）。
-/// use_void=false なら持っている分だけリザーブ→ネクサス→スピリット余剰の順で自分のコアを置く。
-/// コストの支払い可否によって行為自体を禁止することはなく、コアが足りず維持コストに満たない
-/// 場合は配置後に(呼び出し側の)check_and_process_depletionでそのまま消滅処理される。
+/// （ターンに1回の任意効果。自分のコアは一切消費しない）。これにより、
+/// 自分のコアだけでは足りない状況でも場に出すことが可能になる。
+/// use_void=false なら不足分をリザーブ→ネクサス→スピリット余剰の順で自分のコアから確保する
+/// （通常コアが足りなければソウルコアも使う。それでも賄いきれなければ出すこと自体ができない）。
 pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bool) -> Result<(), String> {
     if let Some(token_idx) = state.player.token_pool.iter().position(|c| c.id == token_card_id) {
         let token = &state.player.token_pool[token_idx];
@@ -833,53 +879,50 @@ pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bo
 
         // ボイドから出す場合はLv1コスト全額をボイドから賄う（ターンに1回、自分のコアは使わない）
         let void_cores = if use_void { lv1_cost } else { 0 };
-        // 自分のコアで払う場合は、持っている分だけ置く（不足していても行為自体は禁止しない）
-        let needed = (lv1_cost - void_cores).min(available_cores_for_token(state));
+        let needed = lv1_cost - void_cores;
+
+        if available_cores_for_token(state) < needed {
+            return Err("配置コアが足りないため場に出せません".to_string());
+        }
 
         let mut remaining = needed;
+        let mut soul_taken = 0u8;
 
-        // リザーブから引く
-        let take_res = state.player.reserve.normal().min(remaining);
-        state.player.reserve.sub(take_res, 0);
-        remaining -= take_res;
+        // リザーブから引く（通常優先、不足時はソウルコアも使う）
+        let (_, s) = extract_cores(&mut state.player.reserve, &mut remaining, 0);
+        soul_taken += s;
 
         // ネクサスから引く
         if remaining > 0 {
             for obj in &mut state.player.field {
                 if obj.card_type == CardType::Nexus {
-                    let take = obj.cores.normal().min(remaining);
-                    obj.cores.sub(take, 0);
-                    remaining -= take;
+                    let (_, s) = extract_cores(&mut obj.cores, &mut remaining, 0);
+                    soul_taken += s;
                     if remaining == 0 { break; }
                 }
             }
         }
 
-        // スピリットから引く
+        // スピリットから引く（自身のLv1コスト分は残す）
         if remaining > 0 {
             for obj in &mut state.player.field {
                 if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
                     let lv1 = obj.lv_costs.get(0).copied().unwrap_or(1);
-                    if obj.cores.normal() > lv1 {
-                        let excess = obj.cores.normal() - lv1;
-                        let take = excess.min(remaining);
-                        obj.cores.sub(take, 0);
-                        remaining -= take;
-                        if remaining == 0 { break; }
-                    }
+                    let (_, s) = extract_cores(&mut obj.cores, &mut remaining, lv1);
+                    soul_taken += s;
+                    if remaining == 0 { break; }
                 }
             }
         }
 
         let token = state.player.token_pool.remove(token_idx);
-        state.player.count += 1;
+        state.next_obj_id += 1;
         let token_obj = FieldObject {
-            id: format!("{}_{}", token.id, state.player.count),
+            id: format!("{}_{}", token.id, state.next_obj_id),
             name: token.name.clone(),
             colors: token.colors.clone(),
             card_type: token.card_type,
-            // 実際に置けたコア数(ボイド分+自分のコア分)。不足時はlv1_costに満たないこともある。
-            cores: Cores::new(void_cores + needed, 0),
+            cores: Cores::new(void_cores + needed, soul_taken),
             is_exhausted: false,
             lv_costs: token.lv_costs.clone(),
             base_symbols: token.symbols.clone(),
@@ -892,6 +935,9 @@ pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bo
         if void_cores > 0 {
             state.token_summoned_this_turn = true;
         }
+
+        // ファラの効果: 自分の「プラチナム・バグ」が出たとき、カウント+1（最大10）
+        fara_count_up(&mut state.player);
     }
     Ok(())
 }
@@ -1093,9 +1139,11 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     }
                 }
 
-                state.player.count += 1;
+                // ID採番のみ（ゲーム上の「カウント」は配置では増えない。カウントは
+                // ファラの効果＝F契約煌臨時またはバグが出たときにのみ+1される）
+                state.next_obj_id += 1;
                 let new_obj = FieldObject {
-                    id: format!("{}_{}", card.id, state.player.count),
+                    id: format!("{}_{}", card.id, state.next_obj_id),
                     name: card.name.clone(),
                     colors: card.colors.clone(),
                     card_type: card.card_type,
@@ -1191,13 +1239,16 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
         (Phase::ResolveFaraEffect { is_placement }, Action::ResolveFaraToken { summon, use_void }) => {
             if *summon {
                 try_summon_token(state, "BS76-T001", *use_void)?;
-                // 維持コア(Lv1コスト)に満たない場合はそのまま消滅処理する（他の配置と同じ扱い）
-                check_and_process_depletion(&mut state.player);
             }
             advance_after_effect_resolution(state, is_placement);
         }
         (Phase::ResolveBasiliskEffect { is_main }, Action::ResolveBasilisk { use_effect, destroy_bug }) => {
             if *use_effect {
+                // デッキオープン効果はターンに1回のみ
+                if state.basilisk_effect_used_this_turn {
+                    return Err("バシリスクのデッキオープン効果はターンに1回のみです".to_string());
+                }
+                state.basilisk_effect_used_this_turn = true;
                 let mut max_add = 1;
                 if *destroy_bug {
                     if let Some(bug_idx) = state.player.field.iter().position(|o| o.name == "プラチナム・バグ") {
@@ -1452,6 +1503,9 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             if collected_cores > 0 {
                 obj.cores.add(collected_cores, 0);
             }
+
+            // ファラの効果: 自分が《F契約煌臨》したとき、カウント+1（最大10）
+            fara_count_up(acting_side);
 
             check_and_process_depletion(acting_side);
 
@@ -1732,6 +1786,10 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
                     // 煌臨アクションの列挙（Flash / CardRegistry経由）
                     for card in &active_side.hand {
                         if let Some(effect) = cards::CARD_REGISTRY.get(&card.id) {
+                            // 『自分のターン』限定の煌臨カードは、相手ターン側（防御側）では煌臨不可
+                            if effect.kourin_own_turn_only() && matches!(priority, Priority::Defender) {
+                                continue;
+                            }
                             if effect.kourin_condition(active_side).is_some() {
                                 let mut soul_pools = Vec::new();
                                 if active_side.reserve.soul > 0 {
@@ -1855,9 +1913,9 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
             actions.push(Action::ResolveFaraToken { summon: false, use_void: false });
             if state.player.token_pool.iter().any(|c| c.id == "BS76-T001") {
                 // 「ボイドから置く」「置かない(自分のコアで払う)」は常に両方を選択肢として提示する。
-                // トークンを出すのは「召喚」ではないためコスト支払い可否で禁止されることはない
-                // （自分のコアが足りなければ持っている分だけ置き、不足すればそのまま消滅処理される）。
-                // ボイドは「ターンに1回」のみ真に禁止され、使用済みならapply_actionがエラーを返す。
+                // 配置コアが不足していれば場に出すこと自体が不可能なため、実行時にapply_actionが
+                // エラーを返し、forbidden_reasonとしてUI上に選択不可の理由が表示される
+                // （ボイド案は「ターンに1回」、自分のコア案は「コア不足」がそれぞれ禁止理由になり得る）。
                 actions.push(Action::ResolveFaraToken { summon: true, use_void: true });
                 actions.push(Action::ResolveFaraToken { summon: true, use_void: false });
             }
@@ -2020,8 +2078,17 @@ struct YamlDeck {
 
 /// デッキファイルを読み込み、(deckカード一覧, tokenプール) を返す
 pub fn load_deck_from_file(filename: &str) -> Result<(Vec<Card>, Vec<Card>), String> {
-    let path = filename;
-    let content = std::fs::read_to_string(path)
+    let path = if std::path::Path::new(filename).exists() {
+        filename.to_string()
+    } else {
+        let alt_path = format!("decks/{}", filename);
+        if std::path::Path::new(&alt_path).exists() {
+            alt_path
+        } else {
+            filename.to_string()
+        }
+    };
+    let content = std::fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read deck file {}: {}", path, e))?;
 
     let yaml_deck: YamlDeck = serde_yaml::from_str(&content)
@@ -2153,6 +2220,8 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         last_move_core: None,
         core_move_count_this_turn: 0,
         pending_effects: vec![],
+        next_obj_id: 0,
+        basilisk_effect_used_this_turn: false,
     };
 
     process_automatic_steps(&mut state);
@@ -2828,6 +2897,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         }
     }
 
@@ -2949,6 +3020,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         };
 
         let actions = generate_legal_actions(&state);
@@ -3043,6 +3116,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         };
 
         let res = apply_action(&mut state, &Action::Pass);
@@ -3083,6 +3158,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         };
 
         let res_basilisk = apply_action(&mut state_basilisk, &Action::Pass);
@@ -3150,6 +3227,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         }
     }
 
@@ -3162,19 +3241,35 @@ mod flash_kourin_tests {
         assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: true }));
         assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
 
-        // トークンを出すのは「召喚」ではないため、自前のコアが無くても行為自体は禁止されない。
-        // ただし置けるコアが0でLv1コスト未満のため、即座に消滅してトークンプールへ戻る。
+        // 自前のコアが無いため、「置かない」を選ぶと配置コア不足で場に出せずエラーになる
         let mut state_no_cores = state.clone();
-        let res = apply_action(&mut state_no_cores, &Action::ResolveFaraToken { summon: true, use_void: false });
-        assert!(res.is_ok());
-        assert!(!state_no_cores.player.field.iter().any(|o| o.name == "プラチナム・バグ"), "コア不足のため場に留まれず消滅する");
-        assert!(state_no_cores.player.token_pool.iter().any(|c| c.id == "BS76-T001"), "トークンプールに戻る");
+        let err = apply_action(&mut state_no_cores, &Action::ResolveFaraToken { summon: true, use_void: false });
+        assert!(err.is_err());
 
         // ボイドからコアを置いて召喚 → 成功し、フィールドにバグが追加され、token_summoned_this_turnが立つ
         let res = apply_action(&mut state, &Action::ResolveFaraToken { summon: true, use_void: true });
         assert!(res.is_ok());
         assert!(state.token_summoned_this_turn);
         assert!(state.player.field.iter().any(|o| o.name == "プラチナム・バグ"));
+    }
+
+    #[test]
+    fn test_fara_own_cores_summon_can_use_soul_core() {
+        // 通常コアが0でもソウルコアが1個あれば「自分のコアで払う」で場に出せる
+        // （リザーブにソウルコアがあるのに召喚できない、という不具合の再現/回帰テスト）
+        let mut state = make_fara_void_test_state();
+        state.player.reserve = Cores::new(1, 1); // 通常コア0、ソウルコア1
+
+        let actions = generate_legal_actions(&state);
+        assert!(actions.contains(&Action::ResolveFaraToken { summon: true, use_void: false }));
+
+        let res = apply_action(&mut state, &Action::ResolveFaraToken { summon: true, use_void: false });
+        assert!(res.is_ok());
+        assert!(!state.token_summoned_this_turn, "ボイドを使っていないので使用枠は消費されない");
+        assert_eq!(state.player.reserve.total, 0, "リザーブのソウルコアが使われる");
+        let bug = state.player.field.iter().find(|o| o.name == "プラチナム・バグ").unwrap();
+        assert_eq!(bug.cores.total, 1);
+        assert_eq!(bug.cores.soul, 1, "支払いに使ったソウルコアがそのままバグに乗る");
     }
 
     #[test]
@@ -3282,6 +3377,8 @@ mod flash_kourin_tests {
             last_move_core: None,
             core_move_count_this_turn: 0,
             pending_effects: vec![],
+            next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
+            basilisk_effect_used_this_turn: false,
         }
     }
 
@@ -3366,5 +3463,166 @@ mod flash_kourin_tests {
             Phase::AttackStep(AttackSubPhase::AttackFlash { priority: Priority::Defender, consecutive_passes: 0 }),
             "両方解決後はAttackFlashへ戻る"
         );
+    }
+
+    #[test]
+    fn test_count_not_increased_by_normal_placement() {
+        // カウントはファラの効果（F契約煌臨/バグが出たとき）でのみ増える。
+        // 通常のスピリット/ネクサス配置ではカウントは増えない。
+        let mut state = make_kourin_onto_fara_test_state();
+        state.player.hand.push(Card {
+            id: "BS76-038".to_string(),
+            name: "プラチナム・アゲハ".to_string(),
+            base_cost: 5,
+            colors: vec![Color::White],
+            reduction_symbols: vec![Color::White, Color::White, Color::White],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2, 4],
+            symbols: vec![Color::White],
+            systems: vec!["光契約".to_string(), "旗種".to_string(), "光虫".to_string()],
+        });
+        state.player.reserve = Cores::new(8, 0);
+        assert_eq!(state.player.count, 0);
+
+        // アゲハを通常召喚（コスト5をリザーブから、配置コア1）
+        let play = Action::PlayCard {
+            card_id: "BS76-038".to_string(),
+            payment: vec![CoreSource { source_id: "Reserve".to_string(), count: 5 }],
+            use_soul_core: false,
+            placement: vec![CoreSource { source_id: "Reserve".to_string(), count: 1 }],
+            placement_soul_core: false,
+        };
+        apply_action(&mut state, &play).expect("召喚に成功するはず");
+        assert!(state.player.field.iter().any(|o| o.name == "プラチナム・アゲハ"));
+        assert_eq!(state.player.count, 0, "通常召喚ではカウントは増えない");
+    }
+
+    #[test]
+    fn test_count_increased_by_kourin_and_bug_with_cap() {
+        // F契約煌臨でカウント+1（ファラが場/煌臨元にある場合）
+        let mut state = make_kourin_onto_fara_test_state();
+        assert_eq!(state.player.count, 0);
+        apply_action(&mut state, &kourin_basilisk_onto_fara_action()).unwrap();
+        assert_eq!(state.player.count, 1, "F契約煌臨でカウント+1");
+
+        // バグが出たときもカウント+1、最大10で頭打ち
+        let mut state2 = make_fara_void_test_state();
+        state2.player.count = 10;
+        apply_action(&mut state2, &Action::ResolveFaraToken { summon: true, use_void: true }).unwrap();
+        assert_eq!(state2.player.count, 10, "カウントは最大10で頭打ち");
+
+        let mut state3 = make_fara_void_test_state();
+        state3.player.count = 3;
+        apply_action(&mut state3, &Action::ResolveFaraToken { summon: true, use_void: true }).unwrap();
+        assert_eq!(state3.player.count, 4, "バグが出たときカウント+1");
+    }
+
+    #[test]
+    fn test_basilisk_deck_open_once_per_turn() {
+        // バシリスクのデッキオープン効果はターンに1回のみ
+        let mut state = make_kourin_onto_fara_test_state();
+        // デッキに白の旗種カードを積んでおく
+        for _ in 0..6 {
+            state.player.opened.push(Card {
+                id: "BS76-038".to_string(),
+                name: "プラチナム・アゲハ".to_string(),
+                base_cost: 5,
+                colors: vec![Color::White],
+                reduction_symbols: vec![],
+                card_type: CardType::Spirit,
+                lv_costs: vec![1, 2, 4],
+                symbols: vec![Color::White],
+                systems: vec!["旗種".to_string()],
+            });
+        }
+
+        apply_action(&mut state, &kourin_basilisk_onto_fara_action()).unwrap();
+        apply_action(&mut state, &Action::ChooseEffectOrder { card_id: "BS76-035".to_string() }).unwrap();
+
+        // 1回目: 使用できる
+        apply_action(&mut state, &Action::ResolveBasilisk { use_effect: true, destroy_bug: false }).unwrap();
+        assert!(state.basilisk_effect_used_this_turn);
+        assert_eq!(state.player.hand.len(), 1, "白の旗種1枚を回収");
+
+        // 残るファラの効果を解決してMainStepへ
+        apply_action(&mut state, &Action::ResolveFaraToken { summon: false, use_void: false }).unwrap();
+        assert_eq!(state.phase, Phase::MainStep);
+
+        // 同一ターン中にアタック時効果として再度使おうとするとエラー
+        apply_action(&mut state, &Action::EndStep).unwrap();
+        apply_action(&mut state, &Action::Attack { object_id: "BS76-CX03_1".to_string() }).unwrap();
+        assert_eq!(state.phase, Phase::ChooseEffectOrder);
+        apply_action(&mut state, &Action::ChooseEffectOrder { card_id: "BS76-035".to_string() }).unwrap();
+        let err = apply_action(&mut state, &Action::ResolveBasilisk { use_effect: true, destroy_bug: false });
+        assert!(err.is_err(), "同一ターン2回目のデッキオープンは不可");
+        // 使用しない選択は可能
+        apply_action(&mut state, &Action::ResolveBasilisk { use_effect: false, destroy_bug: false }).unwrap();
+    }
+
+    #[test]
+    fn test_basilisk_kourin_not_allowed_in_opponent_turn() {
+        // バシリスクは『自分のターン』限定の煌臨のため、
+        // 相手ターンのフラッシュ（防御側=opponent）では煌臨選択肢に出ない
+        let mut state = make_flash_test_state();
+        // 防御側（opponent）にバシリスクとソウルコア、煌臨先のファラを用意
+        state.opponent.hand.push(Card {
+            id: "BS76-035".to_string(),
+            name: "プラチナム・バシリスク".to_string(),
+            base_cost: 4,
+            colors: vec![Color::White],
+            reduction_symbols: vec![Color::White, Color::White],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2, 5],
+            symbols: vec![Color::White],
+            systems: vec!["光契約".to_string(), "旗種".to_string()],
+        });
+        state.opponent.reserve = Cores::new(4, 1);
+        state.opponent.field.push(FieldObject {
+            id: "BS76-CX03_9".to_string(),
+            name: "光虫の旗手ファラ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Nexus,
+            cores: Cores::new(1, 0),
+            is_exhausted: false,
+            lv_costs: vec![0],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
+            under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
+        });
+        // 防御側のフラッシュタイミングにする（state.playerがターンプレイヤー）
+        state.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
+            priority: Priority::Defender,
+            consecutive_passes: 0,
+        });
+
+        let actions = generate_legal_actions(&state);
+        let has_basilisk_kourin = actions.iter().any(|a| {
+            matches!(a, Action::Kourin { card_id, .. } if card_id == "BS76-035")
+        });
+        assert!(!has_basilisk_kourin, "相手ターン（防御側）ではバシリスクの煌臨は選択肢に出ない");
+
+        // 攻撃側（自分のターン）なら煌臨できることも確認
+        let mut state_atk = state.clone();
+        state_atk.player.hand.push(Card {
+            id: "BS76-035".to_string(),
+            name: "プラチナム・バシリスク".to_string(),
+            base_cost: 4,
+            colors: vec![Color::White],
+            reduction_symbols: vec![Color::White, Color::White],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2, 5],
+            symbols: vec![Color::White],
+            systems: vec!["光契約".to_string(), "旗種".to_string()],
+        });
+        state_atk.phase = Phase::AttackStep(AttackSubPhase::AttackFlash {
+            priority: Priority::Attacker,
+            consecutive_passes: 0,
+        });
+        let actions_atk = generate_legal_actions(&state_atk);
+        let has_basilisk_kourin_atk = actions_atk.iter().any(|a| {
+            matches!(a, Action::Kourin { card_id, .. } if card_id == "BS76-035")
+        });
+        assert!(has_basilisk_kourin_atk, "自分のターン（攻撃側）ならバシリスクの煌臨が選択肢に出る");
     }
 }
