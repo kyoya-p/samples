@@ -1,0 +1,6 @@
+[env]
+AZURE_RESOURCE_GROUP = "DBTEST2607"
+
+[tools]
+azure-cli = "latest"
+python = "latest"

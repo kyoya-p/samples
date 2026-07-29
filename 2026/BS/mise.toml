@@ -1,5 +1,8 @@
 [tools]
 rust = "latest"
+java = "21"
+kotlin = "2.4"
+gradle = "9.6"
 opencode = "latest"
 claude-code = "latest"
 
@@ -19,8 +22,28 @@ run = """
 codeql database create .codeql-db --db-cluster --language=javascript,rust --source-root=. --build-mode=none --overwrite
 """
 
+[tasks.install-kotlintoolchain]
+description = "Install JetBrains Kotlin Toolchain CLI"
+run = "pwsh -ExecutionPolicy ByPass -Command \"irm 'https://kotl.in/install.ps1' | iex\""
+
+[tasks.setup-wrapper]
+description = "Download and place Kotlin Toolchain wrappers (kotlin.bat / kotlin) in current directory"
+shell = "pwsh -Command"
+run = """
+Write-Host "Downloading kotlin.bat..."
+Invoke-WebRequest -Uri "https://packages.jetbrains.team/maven/p/amper/amper/org/jetbrains/kotlin/kotlin-cli/0.11.0/kotlin-cli-0.11.0-wrapper.bat" -OutFile "kotlin.bat"
+Write-Host "Downloading kotlin (Unix)..."
+Invoke-WebRequest -Uri "https://packages.jetbrains.team/maven/p/amper/amper/org/jetbrains/kotlin/kotlin-cli/0.11.0/kotlin-cli-0.11.0-wrapper" -OutFile "kotlin"
+Write-Host "Done!"
+"""
+
 [tasks."bs-sim"]
 description = "Run BSRust deck simulation"
 dir = "BSRust"
 run = "cargo build --quiet && cargo run -- deck-fara.yaml deck-kogyo.yaml"
+
+[tasks."bs-sim-kt"]
+description = "Run BSKt deck simulation"
+dir = "BSKt"
+run = "mise run cli"
 

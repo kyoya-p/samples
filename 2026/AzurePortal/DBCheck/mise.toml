@@ -1,0 +1,88 @@
+[tools]
+azure-cli = "2.88.0"
+
+[env]
+
+# mise が PATH に載せる azure-cli の bin/az.bat は隣に python.exe が無いため
+# `python -m azure.cli` にフォールバックし、親設定 ../mise.toml の python = "latest" を
+# 拾って ModuleNotFoundError で落ちる。azure-cli 自身の venv (python.exe と az.bat が同居)を
+# PATH の先頭に置くことで、ラッパースクリプトなしで素の `az` が正しい python で動く。
+# ここのパスはバージョン固定 (azure-cli = "2.88.0") と一致させること。
+# 副作用として、このディレクトリ配下の `python` は azure-cli の venv python が優先される。
+_.path = ["{{env.LOCALAPPDATA}}/mise/installs/azure-cli/2.88.0/azure-cli/Scripts"]
+
+# Test.1 のリソース定義。AZURE_RESOURCE_GROUP は親設定 ../mise.toml で定義。
+AZURE_LOCATION = "japaneast"
+# Cosmos DB アカウント名はグローバルに一意である必要がある。
+# 既に使われていた場合は COSMOS_ACCOUNT=... を指定して再実行する。
+COSMOS_ACCOUNT = "dbcheck-sl-2607"
+DB_NAME = "dbcheck"
+COLLECTION_NAME = "test1docs"
+
+# 変数展開はシェルに任せず mise のテンプレート({{env.X}})で解決する。
+# シェル依存の構文(行継続・変数記法)を使わないことで cmd / sh のどちらでも同じ動作になる。
+
+# 社内プロキシの TLS 傍受対策(公開CA+社内CAの結合バンドル)は上位設定
+# ~/dev/.config/mise.pxy1.toml が REQUESTS_CA_BUNDLE / CURL_CA_BUNDLE / SSL_CERT_FILE として
+# 共通提供している。az(requests)はこれを参照するため、本設定では CA 関連を持たない。
+
+[tasks."az:whoami"]
+run = 'az account show --query "{user:user.name,subscription:name,subscriptionId:id}" -o json'
+
+[tasks."az:login"]
+run = "az login --use-device-code -o table"
+
+[tasks."test1:rg"]
+run = "az group create --name {{env.AZURE_RESOURCE_GROUP}} --location {{env.AZURE_LOCATION}} -o none"
+
+[tasks."test1:account"]
+description = "Test.1: Cosmos DB for MongoDB アカウント作成 (serverless / 数分かかる)"
+# EnableServerless により従量課金モデルになる。serverless は RU/s をプロビジョニングしない。
+run = "az cosmosdb create --name {{env.COSMOS_ACCOUNT}} --resource-group {{env.AZURE_RESOURCE_GROUP}} --locations regionName={{env.AZURE_LOCATION}} --kind MongoDB --capabilities EnableMongo EnableServerless --server-version 7.0 -o none"
+
+[tasks."test1:db"]
+description = "Test.1: データベース作成"
+run = "az cosmosdb mongodb database create --account-name {{env.COSMOS_ACCOUNT}} --resource-group {{env.AZURE_RESOURCE_GROUP}} --name {{env.DB_NAME}} -o none"
+
+[tasks."test1:collection"]
+description = "Test.1: コレクション作成"
+# Test.1 は単純な Create の計測が目的でPK設計は対象外のため shard key は指定しない。
+# serverless はスループットをプロビジョニングしないため --throughput は指定できない。
+run = "az cosmosdb mongodb collection create --account-name {{env.COSMOS_ACCOUNT}} --resource-group {{env.AZURE_RESOURCE_GROUP}} --database-name {{env.DB_NAME}} --name {{env.COLLECTION_NAME}} -o none"
+
+[tasks."test1:provision"]
+description = "Test.1 用リソース作成 (rg -> account -> db -> collection)"
+# depends は並列実行されるため、順序が必要なここでは run の逐次実行を使う
+run = [
+  "mise run test1:rg",
+  "mise run test1:account",
+  "mise run test1:db",
+  "mise run test1:collection",
+  'az cosmosdb show --name {{env.COSMOS_ACCOUNT}} --resource-group {{env.AZURE_RESOURCE_GROUP}} --query "{account:name,capabilities:capabilities[].name,documentEndpoint:documentEndpoint}" -o json',
+]
+
+[tasks."test1:seed"]
+description = "Test.1 投入: docId 0..100000 の 1KB ダミードキュメントを Create し、RU / 所要時間を計測"
+run = "npm run --silent test1:seed"
+
+[tasks."test1:report"]
+description = "Test.1 集計: 実格納Document数 / 総RU / 平均RU per write / 所要時間 を reports/ に出力"
+run = "npm run --silent test1:report"
+
+[tasks."test1"]
+description = "Test.1 を通しで実行 (provision -> seed -> report)"
+run = [
+  "mise run test1:provision",
+  "mise run test1:seed",
+  "mise run test1:report",
+]
+
+[tasks."test1:teardown:show"]
+description = "Test.1: 削除対象リソースの確認"
+run = 'az resource list --resource-group {{env.AZURE_RESOURCE_GROUP}} --query "[].{name:name,type:type}" -o table'
+
+[tasks."test1:teardown"]
+description = "Test.1 用リソースグループを削除 (課金停止 / CONFIRM_TEARDOWN=yes で実削除)"
+depends = ["test1:teardown:show"]
+# 誤削除防止のガードはシェルの if ではなく mise のテンプレートで分岐する(cmd / sh 共通)。
+run = '''{% if env.CONFIRM_TEARDOWN | default(value="") == "yes" %}az group delete --name {{env.AZURE_RESOURCE_GROUP}} --yes --no-wait{% else %}echo "dry-run: CONFIRM_TEARDOWN=yes を指定すると {{env.AZURE_RESOURCE_GROUP}} を削除します"{% endif %}'''

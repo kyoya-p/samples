@@ -1,0 +1,20 @@
+{
+  "name": "dbcheck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cosmos DB for MongoDB (RU) vs vCore(DocumentDB) cost comparison",
+  "type": "module",
+  "scripts": {
+    "test1:seed": "node scripts/test1-seed.js",
+    "test1:report": "node scripts/test1-report.js",
+    "generate": "node scripts/generate-data.js",
+    "seed:ru": "node scripts/seed-ru.js",
+    "seed:vcore": "node scripts/seed-vcore.js",
+    "query-test": "node scripts/query-test.js",
+    "report": "node scripts/report.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.9.0"
+  }
+}
