@@ -27,6 +27,15 @@ web# Skill: Battle Spirits Deck Builder & Rules Advisor
     - 2026年度最新「契約編:証」第1章・第2章、およびコラボ等の特殊セットも完全網羅。
   - **禁止・制限カードリスト**: `.gemini/skills/battlespirit-deck-builder/references/restrictions/latest.md` (2026/05/30適用版)
 - **Tools CLI**: `tools/shared/src/Main.kt` (コマンド: `fetch`, `neo` 等) を必要に応じて呼び出し、不足している最新カードデータを取得する。
+- **Card Image Fetch (`faces`モジュール)**: カード画像が必要な場合、`faces`モジュールで公式サイトから画像を取得し3x3グリッドのPNGに合成できる。
+  - 実行例（BSプロジェクトルートから）: `./amper.bat run -m faces -- <card-id> [<card-id> ...]`（3枚ごとに1グリッド画像を生成、`output/combined_<id>.png`に保存）
+  - カードIDは `26RBS02-026` のように `セットコード-連番(3桁)` 形式。2桁未満の連番は自動でゼロ埋めされる。
+  - `faces/mise.toml` の `mise run generate` からも同じコマンドを呼べるが、cwdが`faces/`だと`amper.bat`が見つからず失敗するため、BSプロジェクトルートから`-m faces`指定で実行するのが確実。
+
+## Known Issues (既知の問題)
+- **ルート`project.yaml`の`BSKt`参照が不整合**: `BSKt`ディレクトリに`module.yaml`が存在しないため、`amper.bat`をBSプロジェクトルートから実行するコマンド（`faces`含む）が全て `Directory "BSKt" doesn't contain an Amper module file` で失敗する。
+  - 回避策: `project.yaml`から `- BSKt` の行を一時的に削除→目的のamperコマンドを実行→`git checkout -- project.yaml`で復元（未コミットの変更がないことを事前に確認）。
+  - 恒久対応には`BSKt`用の`module.yaml`作成、または`project.yaml`からの`BSKt`削除が必要（未着手）。
 
 ## Example Usage
 - 「BS75-CX03のサポートカードを探して」 -> Neo4jで対象カードの系統や条件をクエリし、合致するカードの一覧とソースを提示。
