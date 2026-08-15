@@ -1,0 +1,17 @@
+product:
+  type: jvm/app
+
+settings:
+  jvm:
+    mainClass: xtool.MainKt
+  kotlin:
+    serialization: enabled
+
+repositories:
+  - https://repo1.maven.org/maven2
+
+dependencies:
+  - com.microsoft.playwright:playwright:1.49.0
+  - com.github.ajalt.clikt:clikt:5.0.3
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
+  - ch.qos.logback:logback-classic:1.5.24

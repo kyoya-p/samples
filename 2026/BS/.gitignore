@@ -6,6 +6,7 @@
 /temp/
 /.cypher
 /output/
+/.auth/
 /.playwright-mcp/
 /*.png
 /.gradle/

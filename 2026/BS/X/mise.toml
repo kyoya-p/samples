@@ -1,0 +1,11 @@
+[tasks.setup]
+description = "Amperラッパースクリプトの更新とPlaywright用Chromiumのインストール"
+run = '..\amper.bat update -c; ..\amper.bat run -m X -- install-browsers'
+
+[tasks.login]
+description = "手動ログインしてセッション(storageState)を保存します"
+run = '..\amper.bat run -m X -- login'
+
+[tasks.search]
+description = "検索キーワードでXの検索結果をすべて採取します (例: mise run search -- \"キーワード\" -m 200)"
+run = '..\amper.bat run -m X -- search'
