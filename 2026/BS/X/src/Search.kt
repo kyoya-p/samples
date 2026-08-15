@@ -29,12 +29,15 @@ class Search : CliktCommand(name = "search") {
 
     val query by argument(help = "検索キーワード（複数指定でスペース区切り結合）").multiple(required = true)
     val latest by option("-l", "--latest", help = "「最新」タブで検索する（デフォルト: トップタブ）").flag()
+    val date by option("-d", "--date", help = "検索日時範囲を指定（例: \"8\": 直前8ヶ月、\"2508-\": 2025年8月1日〜現在、\"2508-2608\": 2025年8月1日〜2026年8月1日）")
     val max by option("-m", "--max", help = "採取するツイート数の上限").int().default(Int.MAX_VALUE)
     val output by option("-o", "--output", help = "出力先ファイルパス")
     val headed by option("--headed", help = "ブラウザをヘッド付きで起動する（デバッグ用）").flag()
 
     override fun run() {
-        val queryText = query.joinToString(" ")
+        val baseQuery = query.joinToString(" ")
+        val dateFilter = date?.let { parseDateFilter(it) }.orEmpty()
+        val queryText = if (dateFilter.isNotEmpty()) "$baseQuery $dateFilter" else baseQuery
 
         if (!AUTH_STATE_FILE.exists()) {
             echo("ログインセッションが見つかりません: ${AUTH_STATE_FILE.path}")
@@ -46,7 +49,9 @@ class Search : CliktCommand(name = "search") {
         outputFile.parentFile?.mkdirs()
 
         val url = buildSearchUrl(queryText, latest)
+        echo("検索クエリ: $queryText")
         echo("検索URLへアクセス: $url")
+
 
         Playwright.create().use { playwright ->
             val browser: Browser = playwright.chromium().launch(

@@ -52,12 +52,14 @@ mise run search -- "<検索キーワード>" [options]
 
 ### Subcommand: search
 
-| Option | 説明 |
-| --- | --- |
-| `-l`, `--latest` | 「トップ」タブではなく「最新」タブで検索する（デフォルト: トップ） |
-| `-m`, `--max <件数>` | 採取するツイート数の上限を指定（デフォルト: 上限なし。末尾まで採取） |
-| `-o`, `--output <path>` | 出力先ファイルパスを指定（デフォルト: `output/x-search-<キーワード>-<日時>.json`） |
-| `--headed` | ブラウザをヘッド付き（画面表示あり）で起動する（デフォルト: ヘッドレス。デバッグ用） |
+
+| Option                  | 説明                                                                                                                               |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `-l`, `--latest`        | 「トップ」タブではなく「最新」タブで検索する（デフォルト: トップ）                                                                 |
+| `-d`, `--date <範囲>`   | 検索日時範囲を指定<br/> `8`: 直前8ヶ月、<br/>`2508-`: 2025年8月1日〜現在、<br/>`2508-2608`: 2025年8月1日〜2026年8月1日） |
+| `-m`, `--max <件数>`    | 採取するツイート数の上限を指定（デフォルト: 上限なし。末尾まで採取）                                                               |
+| `-o`, `--output <path>` | 出力先ファイルパスを指定（デフォルト:`output/x-search-<キーワード>-<日時>.json`）                                                  |
+| `--headed`              | ブラウザをヘッド付き（画面表示あり）で起動する（デフォルト: ヘッドレス。デバッグ用）                                               |
 
 ### 例
 
@@ -65,11 +67,64 @@ mise run search -- "<検索キーワード>" [options]
 # 「バトルスピリッツ」をトップタブで検索し、末尾まですべて採取
 .\amper.bat run --module X -- search "バトルスピリッツ"
 
-# 「バトルスピリッツ」を最新タブで検索し、最大300件まで採取
-.\amper.bat run --module X -- search "バトルスピリッツ" -l -m 300
+# 直近8ヶ月の「バトルスピリッツ 優勝」を最新タブで検索
+.\amper.bat run --module X -- search "バトルスピリッツ 優勝" -l -d 8
+
+# 2025年8月1日〜2026年8月1日の範囲で検索（最大300件）
+.\amper.bat run --module X -- search "バトルスピリッツ 優勝" -d 2508-2608 -m 300
+
+# 2025年8月1日〜現在の範囲で検索
+.\amper.bat run --module X -- search "バトルスピリッツ" -d 2508-
 
 # 出力先を指定
 .\amper.bat run --module X -- search "バトルスピリッツ" -o ./output/bs.json
+```
+
+## 3. ショップバトル結果抽出 (Gemini API)
+
+採取した X 検索結果 JSON ファイルから、Gemini API (`gemini-2.5-flash-lite`) を利用して大会・ショップバトルの優勝結果を抽出し、CSV 形式で出力する。
+
+```shell
+# 直近の検索結果JSONから抽出してCSV出力
+.\amper.bat run --module X -- extract-sb
+
+# 入力JSONファイルや出力先を指定して実行
+.\amper.bat run --module X -- extract-sb output/x-search-優勝_バトスピ-20260815.json -o output/sb-result.csv
+
+# miseタスク経由で実行
+mise run extract-sb
+```
+
+※実行には Gemini API キーが必要（環境変数 `GEMINI_API_KEY` / `GOOGLE_API_KEY`、または `mise.secrets.gemini.json`）。
+
+### シークレット管理 (SOPS)
+
+`mise.secrets.gemini.json` を編集・暗号化するための mise タスク:
+
+```shell
+# 編集用に一時復号
+mise run dec-secret
+
+# 編集後に SOPS で再暗号化 (環境変数 SOPS_AGE_RECIPIENTS を参照)
+mise run enc-secret
+```
+
+### Subcommand: extract-sb
+
+
+| Option / Argument           | 説明                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `<input>`                   | 入力元の検索結果JSONファイルパス（未指定時は`output/` 内の最新JSONファイルを自動選択） |
+| `-o`, `--output <path>`     | 出力先CSVファイルパス（デフォルト:`output/shop-battle-<日時>.csv`）                    |
+| `--api-key <key>`           | Gemini APIキー（環境変数`GEMINI_API_KEY` / `GOOGLE_API_KEY` / `.env` からも自動取得）  |
+| `--model <name>`            | Geminiモデル名（デフォルト:`gemini-2.5-flash-lite`）                                   |
+| `-b`, `--batch-size <件数>` | 1回のリクエストでGeminiに渡すツイート数（デフォルト: 25）                              |
+
+### 出力フォーマット (CSV)
+
+```csv
+id,url,posted_at,event_category,store_or_event_name,format,deck_type,participants,winner,notes,author,tweet_text
+"1234567890","https://x.com/i/web/status/1234567890","2026-08-15T10:00:00.000Z","店舗バトル","カードショップ○○","スタンダード","鋼契約","16","プレイヤーA","準優勝: 紫エヴァ","カードショップ○○","【#バトスピ 大会結果】本日開催のショップバトル..."
 ```
 
 # 動作仕様
@@ -80,6 +135,7 @@ mise run search -- "<検索キーワード>" [options]
 4. スクロールしても新規ツイートが**5回連続**で取得できなかった場合、検索結果の末尾に到達したとみなして終了する。
 5. `--max` 指定時は、採取件数が上限に達した時点で終了する。
 6. 収集したツイートを配列としてJSONファイル (kotlinx.serialization) に書き出す。
+7. `extract-sb` コマンドで、収集ツイートを Gemini API (`gemini-2.5-flash-lite`) にバッチ送信し、大会結果（店舗名、イベント種別、参加人数、優勝者、デッキ名、備考）を構造化抽出して CSV に保存する。
 
 ## 出力フォーマット (JSON)
 
@@ -111,12 +167,13 @@ mise run search -- "<検索キーワード>" [options]
 # フォルダ構成
 
 - `module.yaml` : Amperモジュール定義 (`jvm/app`)。
-- `src/Main.kt` : CLIエントリポイント（clikt subcommands: `login` / `search` / `install-browsers`）。
+- `src/Main.kt` : CLIエントリポイント（clikt subcommands: `login` / `search` / `install-browsers` / `extract-sb`）。
 - `src/Login.kt` : 手動ログイン用コマンド。セッションを `.auth/x-state.json` に保存。
 - `src/Search.kt` : 検索・採取コマンド本体。
+- `src/ExtractShopBattle.kt` : Gemini APIを用いたショップバトル結果抽出・CSV出力コマンド。
 - `src/InstallBrowsers.kt` : Playwright用Chromiumインストールコマンド。
 - `src/TweetExtractScript.kt` : DOM上のツイート要素から情報を抽出するJSスニペット。
 - `src/Tweet.kt` : ツイートのデータクラスとパース処理。
 - `src/Config.kt` : パス等の共通設定。
 - `.auth/` (リポジトリルート) : ログインセッション保存先（Git管理対象外）。
-- `output/` (リポジトリルート) : 採取結果JSONの出力先（Git管理対象外）。
+- `output/` (リポジトリルート) : 採取結果JSONおよびCSVの出力先（Git管理対象外）。

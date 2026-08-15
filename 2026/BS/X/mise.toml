@@ -1,3 +1,8 @@
+[env]
+WD="{{config_root}}"
+_.file = "mise.secrets.gemini.json"
+
+
 [tasks.setup]
 description = "Amperラッパースクリプトの更新とPlaywright用Chromiumのインストール"
 run = '..\amper.bat update -c; ..\amper.bat run -m X -- install-browsers'
@@ -9,3 +14,17 @@ run = '..\amper.bat run -m X -- login'
 [tasks.search]
 description = "検索キーワードでXの検索結果をすべて採取します (例: mise run search -- \"キーワード\" -m 200)"
 run = '..\amper.bat run -m X -- search'
+
+[tasks.extract-sb]
+description = "Gemini APIでX検索結果からショップバトル結果を抽出してCSV出力します (例: mise run extract-sb -- [input.json])"
+run = '..\amper.bat run -m X -- extract-sb'
+
+[tasks.enc-secret]
+description = "mise.secrets.gemini.json を SOPS で暗号化 (環境変数 SOPS_AGE_RECIPIENTS を参照)"
+run = 'sops -e -i mise.secrets.gemini.json'
+
+
+[tasks.dec-secret]
+description = "mise.secrets.gemini.json を SOPS で復号（編集用）"
+run = 'sops -d -i mise.secrets.gemini.json'
+
