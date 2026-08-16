@@ -23,9 +23,10 @@ import java.time.format.DateTimeFormatter
 
 private const val ARTICLE_SELECTOR = "article[data-testid=\"tweet\"]"
 private const val NO_GROWTH_LIMIT = 5
-private const val SCROLL_WAIT_MS = 1500.0
+private const val BASE_SCROLL_WAIT_MS = 1800.0
 
 private data class SearchChunk(val label: String, val query: String)
+
 
 class Search : CliktCommand(name = "search") {
     override fun help(context: Context) = "検索キーワードでXを検索し結果をすべて採取する"
@@ -98,20 +99,54 @@ class Search : CliktCommand(name = "search") {
             context.applyStealth()
             val page = context.newPage()
 
-            for (chunk in chunkList) {
+            var consecutiveZeroCount = 0
+
+            for ((idx, chunk) in chunkList.withIndex()) {
                 if (collected.size >= max) break
+
+                // 2区間目以降は区間間のクールダウン（5〜8秒、直前が0件ならさらに10秒追加）
+                if (idx > 0) {
+                    val baseCooldown = kotlin.random.Random.nextDouble(5000.0, 8000.0)
+                    val extraCooldown = if (consecutiveZeroCount > 0) 10000.0 else 0.0
+                    page.waitForTimeout(baseCooldown + extraCooldown)
+                }
 
                 val beforeCount = collected.size
                 val url = buildSearchUrl(chunk.query, latest)
                 page.navigate(url)
 
+                var loaded = false
                 try {
                     page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                    loaded = true
                 } catch (e: Exception) {
+                    // Stage 1 リトライ: 10秒待機してリロード
+                    page.waitForTimeout(10000.0)
+                    try {
+                        page.reload()
+                        page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                        loaded = true
+                    } catch (e2: Exception) {
+                        // Stage 2 リトライ: レート制限の冷却のため60秒待機して最終リロード
+                        echo("一時的な制限/接続待機中 (60秒クールダウン)...", err = true)
+                        page.waitForTimeout(60000.0)
+                        try {
+                            page.reload()
+                            page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(20000.0))
+                            loaded = true
+                        } catch (e3: Exception) {
+                            loaded = false
+                        }
+                    }
+                }
+
+                if (!loaded) {
+                    consecutiveZeroCount++
                     echo("${chunk.label}: 0件", err = true)
                     continue
                 }
 
+                consecutiveZeroCount = 0
                 var noGrowthCount = 0
 
                 while (collected.size < max) {
@@ -132,12 +167,15 @@ class Search : CliktCommand(name = "search") {
                     }
 
                     page.mouse().wheel(0.0, 4000.0)
-                    page.waitForTimeout(SCROLL_WAIT_MS)
+                    val jitter = kotlin.random.Random.nextDouble(500.0, 1500.0)
+                    page.waitForTimeout(BASE_SCROLL_WAIT_MS + jitter)
                 }
 
                 val chunkCount = collected.size - beforeCount
                 echo("${chunk.label}: ${chunkCount}件", err = true)
             }
+
+
 
             val results = collected.values.take(max)
             val json = Json { prettyPrint = true }
