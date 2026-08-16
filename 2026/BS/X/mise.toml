@@ -1,5 +1,5 @@
 [env]
-WD="{{config_root}}"
+WD = "{{config_root}}"
 _.file = "mise.secrets.gemini.json"
 
 
@@ -28,3 +28,8 @@ run = 'sops -e -i mise.secrets.gemini.json'
 description = "mise.secrets.gemini.json を SOPS で復号（編集用）"
 run = 'sops -d -i mise.secrets.gemini.json'
 
+[tasks]
+bs = [
+    'mise run search -- -d 6 -s 7 -l (バトスピ OR バトルスピリッツ) (優勝 OR 全勝)',
+    'mise run extract-sb'
+]

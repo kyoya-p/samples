@@ -15,14 +15,24 @@ import java.time.format.DateTimeFormatter
  * - "250801-260815" -> 2025年8月1日〜2026年8月15日
  */
 fun parseDateFilter(spec: String, now: LocalDate = LocalDate.now()): String {
+    val range = parseDateRange(spec, now) ?: return ""
+    val sinceClause = "since:${range.first.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+    val untilClause = if (range.second != now) "until:${range.second.format(DateTimeFormatter.ISO_LOCAL_DATE)}" else ""
+    return listOf(sinceClause, untilClause).filter { it.isNotEmpty() }.joinToString(" ")
+}
+
+/**
+ * 日付指定文字列から (開始日, 終了日) の LocalDate ペアを抽出する。
+ */
+fun parseDateRange(spec: String, now: LocalDate = LocalDate.now()): Pair<LocalDate, LocalDate>? {
     val trimmed = spec.trim()
-    if (trimmed.isEmpty()) return ""
+    if (trimmed.isEmpty()) return null
 
     // パターン1: 直前 N か月 (例: "8", "12")
     if (trimmed.matches(Regex("""^\d{1,2}$"""))) {
         val months = trimmed.toLong()
         val sinceDate = now.minusMonths(months)
-        return "since:${sinceDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+        return Pair(sinceDate, now)
     }
 
     // パターン2: ハイフン区切りの範囲 (例: "2508-", "2508-2608", "-2608")
@@ -31,30 +41,46 @@ fun parseDateFilter(spec: String, now: LocalDate = LocalDate.now()): String {
         val startStr = parts[0].trim()
         val endStr = parts.getOrNull(1)?.trim().orEmpty()
 
-        val sinceClause = if (startStr.isNotEmpty()) {
-            val startDate = parseDateToken(startStr)
-            if (startDate != null) "since:${startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}" else ""
-        } else ""
-
-        val untilClause = if (endStr.isNotEmpty()) {
-            val endDate = parseDateToken(endStr)
-            if (endDate != null) "until:${endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)}" else ""
-        } else ""
-
-        return listOf(sinceClause, untilClause).filter { it.isNotEmpty() }.joinToString(" ")
+        val startDate = if (startStr.isNotEmpty()) parseDateToken(startStr) ?: now.minusYears(1) else now.minusYears(1)
+        val endDate = if (endStr.isNotEmpty()) parseDateToken(endStr) ?: now else now
+        return Pair(startDate, endDate)
     }
 
-    // パターン3: 単一の年月/日付指定 (例: "2508", "202508") -> 指定日以降
+    // パターン3: 単一の年月/日付指定 (例: "2508", "202508") -> 指定日〜現在
     val date = parseDateToken(trimmed)
     if (date != null) {
-        return "since:${date.format(DateTimeFormatter.ISO_LOCAL_DATE)}"
+        return Pair(date, now)
     }
 
-    return ""
+    return null
 }
 
-private fun parseDateToken(token: String): LocalDate? {
+/**
+ * 開始日〜終了日の期間を指定日数（デフォルト30日）ごとに分割した区間リストを生成する。
+ * 直近（新しい日付）から過去に向かって順次検索できるよう、新しい区間から降順で返す。
+ */
+fun splitDateRange(start: LocalDate, end: LocalDate, splitDays: Int = 30): List<Pair<LocalDate, LocalDate>> {
+    if (splitDays <= 0 || !start.isBefore(end)) {
+        return listOf(Pair(start, end))
+    }
+
+    val chunks = mutableListOf<Pair<LocalDate, LocalDate>>()
+    var curEnd = end
+
+    while (curEnd.isAfter(start)) {
+        val curStart = curEnd.minusDays(splitDays.toLong())
+        val actualStart = if (curStart.isBefore(start)) start else curStart
+        chunks.add(Pair(actualStart, curEnd))
+        curEnd = actualStart
+    }
+
+    return chunks
+}
+
+
+fun parseDateToken(token: String): LocalDate? {
     val t = token.replace("/", "").replace("-", "")
+
     return try {
         when (t.length) {
             4 -> { // YYMM -> 20YY-MM-01

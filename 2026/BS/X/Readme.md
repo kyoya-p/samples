@@ -15,31 +15,31 @@ Kotlin/JVM + JetBrains Amper で実装。
 mise run setup
 ```
 
-Amperラッパー (`amper.bat`) の更新と、Playwright用 Chromium ブラウザのインストール (`install-browsers` サブコマンド) を行う。
+Playwright用 Chromium ブラウザのインストールおよびセットアップを行う。
 
 # 使用方法
 
-リポジトリルートから直接実行する場合:
+`X` ディレクトリ内で `mise run` コマンドを実行する:
 
 ```shell
-.\amper.bat run --module X -- <subcommand> [options]...
-```
-
-`X` ディレクトリ内の mise タスク経由で実行する場合:
-
-```shell
+# ログイン（初回のみ）
 mise run login
-mise run search -- "<検索キーワード>" [options]
+
+# 検索・採取
+mise run search -- "<検索キーワード>" [options]...
+
+# 大会・ショップバトル結果抽出 (Gemini API)
+mise run extract-sb [options]...
 ```
 
 ## 1. ログイン（初回のみ）
 
 ```shell
-.\amper.bat run --module X -- login
+mise run login
 ```
 
 ブラウザ（ヘッド付き）が起動するので、手動で X にログインする（2段階認証が必要な場合も手動で完了させる）。
-ホームタイムライン (`x.com/home`) の表示を検知すると、セッション情報 (Cookie等) をリポジトリルートの `.auth/x-state.json` に保存してブラウザを終了する。
+ホームタイムライン (`x.com/home`) の表示を検知すると、セッション情報 (Cookie等) を `.auth/x-state.json` に保存してブラウザを終了する。
 
 - `.auth/x-state.json` にはログインセッションが含まれるため、`.gitignore` で管理対象外としている。第三者と共有しないこと。
 - セッションが失効した場合（採取時にログイン画面へリダイレクトされる等）は再度ログインを実行する。
@@ -47,37 +47,42 @@ mise run search -- "<検索キーワード>" [options]
 ## 2. 検索・採取
 
 ```shell
-.\amper.bat run --module X -- search "<検索キーワード>" [options]...
+mise run search -- "<検索キーワード>" [options]...
 ```
 
 ### Subcommand: search
 
 
-| Option                  | 説明                                                                                                                               |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `-l`, `--latest`        | 「トップ」タブではなく「最新」タブで検索する（デフォルト: トップ）                                                                 |
-| `-d`, `--date <範囲>`   | 検索日時範囲を指定<br/> `8`: 直前8ヶ月、<br/>`2508-`: 2025年8月1日〜現在、<br/>`2508-2608`: 2025年8月1日〜2026年8月1日） |
-| `-m`, `--max <件数>`    | 採取するツイート数の上限を指定（デフォルト: 上限なし。末尾まで採取）                                                               |
-| `-o`, `--output <path>` | 出力先ファイルパスを指定（デフォルト:`output/x-search-<キーワード>-<日時>.json`）                                                  |
-| `--headed`              | ブラウザをヘッド付き（画面表示あり）で起動する（デフォルト: ヘッドレス。デバッグ用）                                               |
+| Option                  | 説明                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `-l`, `--latest`        | 「トップ」タブではなく「最新」タブで検索する（デフォルト: トップ）                                            |
+| `-d`, `--date <範囲>`   | 検索日時範囲を指定（例:`8`: 直前8ヶ月、`2508-`: 2025年8月1日〜現在、`240101-240630`: 2024年1月1日〜2024年6月30日）|
+| `--since <日付>`        | 検索開始日を指定（例: `2024-01-01`, `240101`, `2401`）                                                       |
+| `--until <日付>`        | 検索終了日を指定（例: `2024-06-30`, `240630`, `2406`）                                                       |
+| `-s`, `--split-days <日>` | 長期間の検索を分割する日数（デフォルト: 30日/約1か月。0で分割無効）。期間が長い場合に自動で複数区間に分割して検索 |
+| `-m`, `--max <件数>`    | 採取するツイート数の上限を指定（デフォルト: 上限なし。末尾まで採取）                                          |
+
+
+| `-o`, `--output <path>` | 出力先ファイルパスを指定（デフォルト:`output/x-search-<キーワード>-<日時>.json`）                             |
+| `--headed`              | ブラウザをヘッド付き（画面表示あり）で起動する（デフォルト: ヘッドレス。デバッグ用）                          |
 
 ### 例
 
 ```shell
 # 「バトルスピリッツ」をトップタブで検索し、末尾まですべて採取
-.\amper.bat run --module X -- search "バトルスピリッツ"
+mise run search -- "バトルスピリッツ"
 
 # 直近8ヶ月の「バトルスピリッツ 優勝」を最新タブで検索
-.\amper.bat run --module X -- search "バトルスピリッツ 優勝" -l -d 8
+mise run search -- "バトルスピリッツ 優勝" -l -d 8
 
 # 2025年8月1日〜2026年8月1日の範囲で検索（最大300件）
-.\amper.bat run --module X -- search "バトルスピリッツ 優勝" -d 2508-2608 -m 300
+mise run search -- "バトルスピリッツ 優勝" -d 2508-2608 -m 300
 
 # 2025年8月1日〜現在の範囲で検索
-.\amper.bat run --module X -- search "バトルスピリッツ" -d 2508-
+mise run search -- "バトルスピリッツ" -d 2508-
 
 # 出力先を指定
-.\amper.bat run --module X -- search "バトルスピリッツ" -o ./output/bs.json
+mise run search -- "バトルスピリッツ" -o ./output/bs.json
 ```
 
 ## 3. ショップバトル結果抽出 (Gemini API)
@@ -86,13 +91,10 @@ mise run search -- "<検索キーワード>" [options]
 
 ```shell
 # 直近の検索結果JSONから抽出してCSV出力
-.\amper.bat run --module X -- extract-sb
+mise run extract-sb
 
 # 入力JSONファイルや出力先を指定して実行
-.\amper.bat run --module X -- extract-sb output/x-search-優勝_バトスピ-20260815.json -o output/sb-result.csv
-
-# miseタスク経由で実行
-mise run extract-sb
+mise run extract-sb -- output/x-search-優勝_バトスピ-20260815.json -o output/sb-result.csv
 ```
 
 ※実行には Gemini API キーが必要（環境変数 `GEMINI_API_KEY` / `GOOGLE_API_KEY`、または `mise.secrets.gemini.json`）。
@@ -126,6 +128,12 @@ mise run enc-secret
 id,url,posted_at,event_category,store_or_event_name,format,deck_type,participants,winner,notes,author,tweet_text
 "1234567890","https://x.com/i/web/status/1234567890","2026-08-15T10:00:00.000Z","店舗バトル","カードショップ○○","スタンダード","鋼契約","16","プレイヤーA","準優勝: 紫エヴァ","カードショップ○○","【#バトスピ 大会結果】本日開催のショップバトル..."
 ```
+
+### 月足シェア率 可視化ビューア (HTML)
+
+抽出した CSV ファイルをドラッグ＆ドロップするだけで、即座にフォーマット別（全フォーマット / スタンダード / エターナル）の月足シェア率折れ線グラフとデータテーブルを生成するビューア:
+
+- `deck_share_trend.html`（ブラウザで直接開いて利用可能）
 
 # 動作仕様
 
