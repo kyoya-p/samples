@@ -1,0 +1,7 @@
+[tasks.deploy]
+description = "Deploy current branch to gh-pages"
+run = "git push origin HEAD:gh-pages --force"
+
+[tasks."gh-pages"]
+description = "Deploy current branch to gh-pages (alias)"
+depends = ["deploy"]
