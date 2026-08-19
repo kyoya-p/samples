@@ -3,6 +3,7 @@
 /node_modules/
 /cards/
 /.bscache/
+/.x/
 /temp/
 /.cypher
 /output/

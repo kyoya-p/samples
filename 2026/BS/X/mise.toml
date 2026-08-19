@@ -1,7 +1,10 @@
 [env]
 WD = "{{config_root}}"
 _.file = "mise.secrets.gemini.json"
-
+#X_QUERY = '(バトスピ OR バトルスピリッツ) (優勝 OR 全勝)' # デフォルト検索キーワード
+X_QUERY = '(バトスピ OR バトルスピリッツ OR battlespirits) (優勝 OR 全勝 OR ウィナー OR 勝者)' # デフォルト検索キーワード
+X_COOLDOWN_THRESHOLD = 600 # 連続採取件数の閾値
+X_COOLDOWN = 240 # クールダウン待機時間 (秒)
 
 [tasks.setup]
 description = "Amperラッパースクリプトの更新とPlaywright用Chromiumのインストール"
@@ -17,7 +20,7 @@ run = '..\amper.bat run -m X -- search'
 
 [tasks.extract-sb]
 description = "Gemini APIでX検索結果からショップバトル結果を抽出してCSV出力します (例: mise run extract-sb -- [input.json])"
-run = '..\amper.bat run -m X -- extract-sb'
+run = '..\amper.bat run -m X -- z'
 
 [tasks.enc-secret]
 description = "mise.secrets.gemini.json を SOPS で暗号化 (環境変数 SOPS_AGE_RECIPIENTS を参照)"
@@ -29,7 +32,7 @@ description = "mise.secrets.gemini.json を SOPS で復号（編集用）"
 run = 'sops -d -i mise.secrets.gemini.json'
 
 [tasks]
-bs = [
-    'mise run search -- -d 6 -s 7 -l (バトスピ OR バトルスピリッツ) (優勝 OR 全勝)',
+search-bs = [
+    'mise run search -- -d 6 -s 7 -l',
     'mise run extract-sb'
 ]

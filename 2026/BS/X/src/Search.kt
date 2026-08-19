@@ -31,7 +31,7 @@ private data class SearchChunk(val label: String, val query: String)
 class Search : CliktCommand(name = "search") {
     override fun help(context: Context) = "検索キーワードでXを検索し結果をすべて採取する"
 
-    val query by argument(help = "検索キーワード（複数指定でスペース区切り結合）").multiple(required = true)
+    val query by argument(help = "検索キーワード（複数指定でスペース区切り結合。省略時は環境変数 X_QUERY を使用）").multiple()
     val latest by option("-l", "--latest", help = "「最新」タブで検索する（デフォルト: トップタブ）").flag()
     val date by option("-d", "--date", help = "検索日時範囲を指定（例: \"8\": 直前8ヶ月、\"2508-\": 2025年8月1日〜現在、\"2508-2608\": 2025年8月1日〜2026年8月1日、\"240101-240630\"）")
     val since by option("--since", help = "検索開始日を指定（例: \"2024-01-01\", \"240101\", \"2401\"）")
@@ -42,7 +42,16 @@ class Search : CliktCommand(name = "search") {
     val headed by option("--headed", help = "ブラウザをヘッド付きで起動する（デバッグ用）").flag()
 
     override fun run() {
-        val baseQuery = query.joinToString(" ")
+        val baseQuery = if (query.isNotEmpty()) {
+            query.joinToString(" ")
+        } else {
+            DEFAULT_SEARCH_QUERY
+        }
+
+        if (baseQuery.isNullOrBlank()) {
+            echo("検索キーワードが指定されていません。引数または環境変数 X_QUERY で指定してください。", err = true)
+            return
+        }
 
         if (!AUTH_STATE_FILE.exists()) {
             echo("ログインセッションが見つかりません: ${AUTH_STATE_FILE.path}", err = true)
@@ -99,61 +108,71 @@ class Search : CliktCommand(name = "search") {
             context.applyStealth()
             val page = context.newPage()
 
-            var consecutiveZeroCount = 0
+            var rateLimitHit = false
+            page.onResponse { response ->
+                if (response.status() == 429) {
+                    rateLimitHit = true
+                }
+            }
 
             for ((idx, chunk) in chunkList.withIndex()) {
                 if (collected.size >= max) break
 
-                // 2区間目以降は区間間のクールダウン（5〜8秒、直前が0件ならさらに10秒追加）
+                // 2区間目以降のインターバル（短時間の自然な待機: 3〜6秒）
                 if (idx > 0) {
-                    val baseCooldown = kotlin.random.Random.nextDouble(5000.0, 8000.0)
-                    val extraCooldown = if (consecutiveZeroCount > 0) 10000.0 else 0.0
-                    page.waitForTimeout(baseCooldown + extraCooldown)
+                    val baseCooldown = kotlin.random.Random.nextDouble(3000.0, 6000.0)
+                    page.waitForTimeout(baseCooldown)
                 }
 
                 val beforeCount = collected.size
                 val url = buildSearchUrl(chunk.query, latest)
+                rateLimitHit = false
                 page.navigate(url)
 
                 var loaded = false
-                try {
-                    page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
-                    loaded = true
-                } catch (e: Exception) {
-                    // Stage 1 リトライ: 10秒待機してリロード
-                    page.waitForTimeout(10000.0)
+                var attempts = 0
+                val maxAttempts = 3
+
+                while (attempts < maxAttempts && !loaded) {
+                    attempts++
                     try {
-                        page.reload()
-                        page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                        page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(12000.0))
                         loaded = true
-                    } catch (e2: Exception) {
-                        // Stage 2 リトライ: レート制限の冷却のため60秒待機して最終リロード
-                        echo("一時的な制限/接続待機中 (60秒クールダウン)...", err = true)
-                        page.waitForTimeout(60000.0)
-                        try {
-                            page.reload()
-                            page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(20000.0))
-                            loaded = true
-                        } catch (e3: Exception) {
+                    } catch (e: Exception) {
+                        // 制限発生（HTTP 429 または エラー画面）かチェック
+                        if (rateLimitHit || isErrorState(page)) {
+                            echo("[${nowStr()}] レート制限を検知 (HTTP 429/エラー画面)。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...", err = true)
+                            page.waitForTimeout(BATCH_COOLDOWN_MS)
+                            rateLimitHit = false
+                            try {
+                                page.reload()
+                                page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                                loaded = true
+                            } catch (e2: Exception) {
+                                loaded = false
+                            }
+                        } else {
+                            // 制限ではなく正常な0件（または読み込み完了）の場合はリトライ不要で抜ける
                             loaded = false
+                            break
                         }
                     }
                 }
 
                 if (!loaded) {
-                    consecutiveZeroCount++
-                    echo("${chunk.label}: 0件", err = true)
+                    echo("[${nowStr()}] ${chunk.label}: 0件", err = true)
                     continue
                 }
 
-                consecutiveZeroCount = 0
                 var noGrowthCount = 0
 
                 while (collected.size < max) {
                     val raw = page.evalOnSelectorAll(ARTICLE_SELECTOR, TWEET_EXTRACT_SCRIPT)
                     val before = collected.size
                     for (tweet in parseTweets(raw)) {
-                        collected.putIfAbsent(tweet.id, tweet)
+                        if (collected.putIfAbsent(tweet.id, tweet) == null) {
+                            tweet.saveToCache()
+                        }
                     }
 
                     if (collected.size == before) {
@@ -162,6 +181,18 @@ class Search : CliktCommand(name = "search") {
                         noGrowthCount = 0
                     }
 
+                    // スクロール中にレート制限が発生した場合はクールダウン後に再開
+                    if (rateLimitHit || isErrorState(page)) {
+                        echo("[${nowStr()}] スクロール中にレート制限を検知。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...", err = true)
+                        page.waitForTimeout(BATCH_COOLDOWN_MS)
+                        rateLimitHit = false
+                        noGrowthCount = 0
+                        page.mouse().wheel(0.0, 2000.0)
+                        page.waitForTimeout(BASE_SCROLL_WAIT_MS)
+                        continue
+                    }
+
+                    // 正常末尾到達: 新規追加がなくレート制限もない場合は即終了
                     if (noGrowthCount >= NO_GROWTH_LIMIT) {
                         break
                     }
@@ -172,7 +203,7 @@ class Search : CliktCommand(name = "search") {
                 }
 
                 val chunkCount = collected.size - beforeCount
-                echo("${chunk.label}: ${chunkCount}件", err = true)
+                echo("[${nowStr()}] ${chunk.label}: ${chunkCount}件", err = true)
             }
 
 
@@ -180,13 +211,23 @@ class Search : CliktCommand(name = "search") {
             val results = collected.values.take(max)
             val json = Json { prettyPrint = true }
             outputFile.writeText(json.encodeToString(results))
-            echo("合計: ${results.size}件 -> ${outputFile.path}", err = true)
+            echo("[${nowStr()}] 合計: ${results.size}件 -> ${outputFile.path}", err = true)
 
 
             browser.close()
         }
     }
 }
+
+private fun isErrorState(page: Page): Boolean {
+    return try {
+        page.locator("[data-testid=\"error-detail\"], button:has-text(\"やりなおす\"), button:has-text(\"Retry\"), div:has-text(\"問題が発生しました\")").count() > 0
+    } catch (e: Exception) {
+        false
+    }
+}
+
+private fun nowStr(): String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 
 private fun buildSearchUrl(query: String, latest: Boolean): String {
     val encoded = URLEncoder.encode(query, StandardCharsets.UTF_8)

@@ -44,9 +44,9 @@ data class ShopBattleRecord(
 
 
 class ExtractShopBattle : CliktCommand(name = "extract-sb") {
-    override fun help(context: Context) = "Gemini API (flash-lite-2.5) を用いてX検索結果JSONからショップバトル結果を抽出しCSV出力する"
+    override fun help(context: Context) = "Gemini API (flash-lite-2.5) を用いて.xキャッシュまたはX検索結果JSONからショップバトル結果を抽出しCSV出力する"
 
-    val input by argument(help = "入力元のX検索結果JSONファイルパス（未指定時はoutput/の最新ファイルを対象）").optional()
+    val input by argument(help = "入力元のキャッシュディレクトリまたは検索結果JSONファイルパス（未指定時は.x/キャッシュフォルダを対象）").optional()
     val output by option("-o", "--output", help = "出力先CSVファイルパス（デフォルト: output/shop-battle-<日時>.csv）")
     val apiKey by option("--api-key", envvar = "GEMINI_API_KEY", help = "Gemini APIキー (環境変数 GEMINI_API_KEY も可)")
     val model by option("--model", help = "Geminiモデル名（デフォルト: gemini-2.5-flash-lite）").default("gemini-2.5-flash-lite")
@@ -66,7 +66,7 @@ class ExtractShopBattle : CliktCommand(name = "extract-sb") {
 
         val inputFile = resolveInputFile(input)
         if (inputFile == null || !inputFile.exists()) {
-            echo("入力JSONファイルが見つかりません: ${inputFile?.path ?: "output/*.json"}")
+            echo("入力ファイル/キャッシュフォルダが見つかりません: ${inputFile?.path ?: ".x/"}")
             return
         }
 
@@ -77,7 +77,16 @@ class ExtractShopBattle : CliktCommand(name = "extract-sb") {
         echo("モデル: $model (バッチサイズ: $batchSize)")
 
         val tweets: List<Tweet> = try {
-            json.decodeFromString<List<Tweet>>(inputFile.readText())
+            if (inputFile.isDirectory) {
+                Tweet.loadAllFromCache(inputFile)
+            } else {
+                val text = inputFile.readText(Charsets.UTF_8).trim()
+                if (text.startsWith("[")) {
+                    json.decodeFromString<List<Tweet>>(text)
+                } else {
+                    listOf(json.decodeFromString<Tweet>(text))
+                }
+            }
         } catch (e: Exception) {
             echo("JSONファイルのパースに失敗しました: ${e.message}")
             return
@@ -164,12 +173,35 @@ class ExtractShopBattle : CliktCommand(name = "extract-sb") {
         if (!path.isNullOrBlank()) {
             val direct = File(path)
             if (direct.exists()) return direct
+            val inCache = File(CACHE_DIR, path)
+            if (inCache.exists()) return inCache
             val inOutput = File(OUTPUT_DIR, path)
             if (inOutput.exists()) return inOutput
+            val inParentCache = File("../.x", path)
+            if (inParentCache.exists()) return inParentCache
             val inParentOutput = File("../output", path)
             if (inParentOutput.exists()) return inParentOutput
             return direct
         }
+
+        // 未指定時は .x キャッシュフォルダを最優先
+        if (CACHE_DIR.exists() && CACHE_DIR.isDirectory) {
+            val cacheFiles = CACHE_DIR.listFiles { file -> file.isFile && file.name.endsWith(".json") }
+            if (!cacheFiles.isNullOrEmpty()) {
+                return CACHE_DIR
+            }
+        }
+        val candidateCacheDirs = listOf(File(".x"), File("X/.x"), File("../.x"), File("../X/.x"))
+            .filter { it.isDirectory && it.exists() }
+            .distinctBy { it.canonicalPath }
+        for (dir in candidateCacheDirs) {
+            val cacheFiles = dir.listFiles { file -> file.isFile && file.name.endsWith(".json") }
+            if (!cacheFiles.isNullOrEmpty()) {
+                return dir
+            }
+        }
+
+        // キャッシュにツイートJSONがない場合のフォールバック（output/配下の最新JSON）
         val candidateDirs = listOf(OUTPUT_DIR, File("output"), File("X/output"), File("../output"))
             .filter { it.isDirectory && it.exists() }
             .distinctBy { it.canonicalPath }
@@ -179,7 +211,7 @@ class ExtractShopBattle : CliktCommand(name = "extract-sb") {
                 file.isFile && file.name.startsWith("x-search-") && file.name.endsWith(".json")
             }?.toList() ?: emptyList()
         }
-        return allFiles.maxByOrNull { it.lastModified() }
+        return allFiles.maxByOrNull { it.lastModified() } ?: CACHE_DIR
     }
 
 

@@ -1,7 +1,16 @@
-[tasks.deploy]
-description = "Deploy current branch to gh-pages"
-run = "git push origin HEAD:gh-pages --force"
-
 [tasks."gh-pages"]
-description = "Deploy current branch to gh-pages (alias)"
-depends = ["deploy"]
+description = "Deploy current branch to gh-pages branch"
+run = """
+git push origin HEAD:gh-pages --force
+echo "=== Deployed to gh-pages branch ==="
+echo "Site URL: https://kyoya-p.github.io/samples/"
+echo "Target HTML: https://kyoya-p.github.io/samples/2026/BS/X/deck_share_trend.html"
+"""
+
+[tasks."pages-open"]
+description = "Open GitHub Pages in browser via winops"
+run = "mise run winops move 750 900 click wait 200 key-press ctrl key a key-release ctrl type 'https://kyoya-p.github.io/samples/2026/BS/X/deck_share_trend.html' key enter wait 3000 ss"
+
+[tasks."pages-settings"]
+description = "Open GitHub Pages Settings in browser via winops"
+run = "mise run winops move 750 900 click wait 200 key-press ctrl key a key-release ctrl type 'https://github.com/kyoya-p/samples/settings/pages' key enter wait 3000 ss"
