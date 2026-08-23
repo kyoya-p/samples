@@ -9,7 +9,7 @@ class XTool : CliktCommand(name = "x-tool") {
 }
 
 fun main(args: Array<String>) = XTool()
-    .subcommands(Login(), Search(), InstallBrowsers(), ExtractShopBattle())
+    .subcommands(Login(), Search(), InstallBrowsers(), ExtractShopBattle(), ClearCache())
     .main(args)
 
 

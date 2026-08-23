@@ -22,8 +22,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 private const val ARTICLE_SELECTOR = "article[data-testid=\"tweet\"]"
-private const val NO_GROWTH_LIMIT = 5
-private const val BASE_SCROLL_WAIT_MS = 1800.0
+private const val NO_GROWTH_LIMIT = 4
+private const val BASE_SCROLL_WAIT_MS = 1200.0
 
 private data class SearchChunk(val label: String, val query: String)
 
@@ -40,8 +40,14 @@ class Search : CliktCommand(name = "search") {
     val max by option("-m", "--max", help = "採取するツイート数の上限").int().default(Int.MAX_VALUE)
     val output by option("-o", "--output", help = "出力先ファイルパス")
     val headed by option("--headed", help = "ブラウザをヘッド付きで起動する（デバッグ用）").flag()
+    val clearCache by option("-c", "--clear-cache", help = "検索開始前に既存の.xキャッシュフォルダ内のJSONをクリアする").flag()
 
     override fun run() {
+        if (clearCache) {
+            val deleted = Tweet.clearCache()
+            echo("[${nowStr()}] キャッシュをクリアしました (${deleted}件削除)")
+        }
+
         val baseQuery = if (query.isNotEmpty()) {
             query.joinToString(" ")
         } else {
@@ -97,6 +103,12 @@ class Search : CliktCommand(name = "search") {
         outputFile.parentFile?.mkdirs()
 
         val collected = LinkedHashMap<String, Tweet>()
+        for (cached in Tweet.loadAllFromCache()) {
+            collected[cached.id] = cached
+        }
+        if (collected.isNotEmpty()) {
+            echo("[${nowStr()}] 既存キャッシュから ${collected.size} 件のツイートをロードしました")
+        }
 
         Playwright.create().use { playwright ->
             val browser: Browser = playwright.chromium().launch(
@@ -115,106 +127,165 @@ class Search : CliktCommand(name = "search") {
                 }
             }
 
-            for ((idx, chunk) in chunkList.withIndex()) {
-                if (collected.size >= max) break
+            val pendingChunks = ArrayDeque(chunkList)
+            val retryChunks = mutableListOf<SearchChunk>()
+            var pass = 1
 
-                // 2区間目以降のインターバル（短時間の自然な待機: 3〜6秒）
-                if (idx > 0) {
-                    val baseCooldown = kotlin.random.Random.nextDouble(3000.0, 6000.0)
-                    page.waitForTimeout(baseCooldown)
-                }
-
-                val beforeCount = collected.size
-                val url = buildSearchUrl(chunk.query, latest)
-                rateLimitHit = false
-                page.navigate(url)
-
-                var loaded = false
-                var attempts = 0
-                val maxAttempts = 3
-
-                while (attempts < maxAttempts && !loaded) {
-                    attempts++
-                    try {
-                        page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(12000.0))
-                        loaded = true
-                    } catch (e: Exception) {
-                        // 制限発生（HTTP 429 または エラー画面）かチェック
-                        if (rateLimitHit || isErrorState(page)) {
-                            echo("[${nowStr()}] レート制限を検知 (HTTP 429/エラー画面)。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...", err = true)
-                            page.waitForTimeout(BATCH_COOLDOWN_MS)
-                            rateLimitHit = false
-                            try {
-                                page.reload()
-                                page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
-                                loaded = true
-                            } catch (e2: Exception) {
-                                loaded = false
-                            }
-                        } else {
-                            // 制限ではなく正常な0件（または読み込み完了）の場合はリトライ不要で抜ける
-                            loaded = false
-                            break
-                        }
-                    }
-                }
-
-                if (!loaded) {
-                    echo("[${nowStr()}] ${chunk.label}: 0件", err = true)
-                    continue
-                }
-
-                var noGrowthCount = 0
-
-                while (collected.size < max) {
-                    val raw = page.evalOnSelectorAll(ARTICLE_SELECTOR, TWEET_EXTRACT_SCRIPT)
-                    val before = collected.size
-                    for (tweet in parseTweets(raw)) {
-                        if (collected.putIfAbsent(tweet.id, tweet) == null) {
-                            tweet.saveToCache()
-                        }
-                    }
-
-                    if (collected.size == before) {
-                        noGrowthCount++
-                    } else {
-                        noGrowthCount = 0
-                    }
-
-                    // スクロール中にレート制限が発生した場合はクールダウン後に再開
-                    if (rateLimitHit || isErrorState(page)) {
-                        echo("[${nowStr()}] スクロール中にレート制限を検知。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...", err = true)
-                        page.waitForTimeout(BATCH_COOLDOWN_MS)
-                        rateLimitHit = false
-                        noGrowthCount = 0
-                        page.mouse().wheel(0.0, 2000.0)
-                        page.waitForTimeout(BASE_SCROLL_WAIT_MS)
-                        continue
-                    }
-
-                    // 正常末尾到達: 新規追加がなくレート制限もない場合は即終了
-                    if (noGrowthCount >= NO_GROWTH_LIMIT) {
-                        break
-                    }
-
-                    page.mouse().wheel(0.0, 4000.0)
-                    val jitter = kotlin.random.Random.nextDouble(500.0, 1500.0)
-                    page.waitForTimeout(BASE_SCROLL_WAIT_MS + jitter)
-                }
-
-                val chunkCount = collected.size - beforeCount
-                echo("[${nowStr()}] ${chunk.label}: ${chunkCount}件", err = true)
+            fun flushOutput() {
+                val results = collected.values.take(max)
+                val json = Json { prettyPrint = true }
+                outputFile.writeText(json.encodeToString(results))
             }
 
+            try {
+                while (pendingChunks.isNotEmpty() && collected.size < max) {
+                    val totalInPass = pendingChunks.size
+                    var currentPassIndex = 0
 
+                    while (pendingChunks.isNotEmpty() && collected.size < max) {
+                        val chunk = pendingChunks.removeFirst()
+                        currentPassIndex++
 
-            val results = collected.values.take(max)
-            val json = Json { prettyPrint = true }
-            outputFile.writeText(json.encodeToString(results))
-            echo("[${nowStr()}] 合計: ${results.size}件 -> ${outputFile.path}", err = true)
+                        val progress = if (pass > 1) "[$currentPassIndex/$totalInPass (再試行$pass)]" else "[$currentPassIndex/$totalInPass]"
+                        echo("[${nowStr()}] [${chunk.label}] $progress 検索開始 (現在累積: ${collected.size}件)")
 
+                        // 区間間のインターバル（3〜6秒）
+                        val baseCooldown = kotlin.random.Random.nextDouble(3000.0, 6000.0)
+                        page.waitForTimeout(baseCooldown)
 
-            browser.close()
+                        val beforeCount = collected.size
+                        val url = buildSearchUrl(chunk.query, latest)
+                        rateLimitHit = false
+                        page.navigate(url)
+
+                        var loaded = false
+                        var attempts = 0
+                        val maxAttempts = 3
+
+                        while (attempts < maxAttempts && !loaded) {
+                            attempts++
+                            try {
+                                page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(12000.0))
+                                loaded = true
+                            } catch (e: Exception) {
+                                if (rateLimitHit || isErrorState(page)) {
+                                    echo("[${nowStr()}] [${chunk.label}] $progress 【クールダウン判定】レート制限を検知 (HTTP 429/エラー画面)。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...")
+                                    page.waitForTimeout(BATCH_COOLDOWN_MS)
+                                    rateLimitHit = false
+                                    echo("[${nowStr()}] [${chunk.label}] $progress クールダウン待機完了。再試行します...")
+                                    try {
+                                        page.reload()
+                                        page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                                        loaded = true
+                                    } catch (e2: Exception) {
+                                        loaded = false
+                                    }
+                                } else {
+                                    loaded = false
+                                    break
+                                }
+                            }
+                        }
+
+                        if (!loaded) {
+                            if (rateLimitHit || isErrorState(page)) {
+                                echo("[${nowStr()}] [${chunk.label}] $progress 未完了区間としてリトライキューに登録")
+                                retryChunks.add(chunk)
+                            } else {
+                                echo("[${nowStr()}] [${chunk.label}] $progress 検索完了: 0件 (累積: ${collected.size}件)")
+                            }
+                            continue
+                        }
+
+                        var noGrowthCount = 0
+                        var lastReportedCount = beforeCount
+                        var scrollErrorRetries = 0
+                        var wasTruncatedByRateLimit = false
+
+                        while (collected.size < max) {
+                            val raw = page.evalOnSelectorAll(ARTICLE_SELECTOR, TWEET_EXTRACT_SCRIPT)
+                            val beforeEval = collected.size
+                            for (tweet in parseTweets(raw)) {
+                                if (collected.putIfAbsent(tweet.id, tweet) == null) {
+                                    tweet.saveToCache()
+                                }
+                            }
+
+                            val currentChunkCount = collected.size - beforeCount
+                            if (collected.size > lastReportedCount) {
+                                echo("[${nowStr()}] [${chunk.label}] $progress 採取中: 区間内 ${currentChunkCount}件 (累積: ${collected.size}件)")
+                                lastReportedCount = collected.size
+                            }
+
+                            if (collected.size == beforeEval) {
+                                noGrowthCount++
+                            } else {
+                                noGrowthCount = 0
+                            }
+
+                            // スクロール中にレート制限が発生した場合はクールダウン後に画面復旧
+                            if (rateLimitHit || isErrorState(page)) {
+                                scrollErrorRetries++
+                                if (scrollErrorRetries > 2) {
+                                    echo("[${nowStr()}] [${chunk.label}] $progress レート制限のためこの区間を一時終了し、リトライキューに登録して次へ進みます")
+                                    wasTruncatedByRateLimit = true
+                                    retryChunks.add(chunk)
+                                    break
+                                }
+                                echo("[${nowStr()}] [${chunk.label}] $progress 【クールダウン判定】スクロール中にレート制限/エラー画面を検知 (試行 $scrollErrorRetries/2)。${BATCH_COOLDOWN_SEC}秒間クールダウン待機中...")
+                                page.waitForTimeout(BATCH_COOLDOWN_MS)
+                                rateLimitHit = false
+                                noGrowthCount = 0
+                                echo("[${nowStr()}] [${chunk.label}] $progress クールダウン完了。画面状態の復旧を試行します...")
+                                try {
+                                    val retryBtn = page.locator("button:has-text(\"やりなおす\"), button:has-text(\"Retry\"), div[role=\"button\"]:has-text(\"やりなおす\")").first()
+                                    if (retryBtn.isVisible()) {
+                                        retryBtn.click()
+                                        page.waitForTimeout(3000.0)
+                                    } else {
+                                        page.reload()
+                                        page.waitForTimeout(3000.0)
+                                    }
+                                    page.waitForSelector(ARTICLE_SELECTOR, Page.WaitForSelectorOptions().setTimeout(15000.0))
+                                } catch (e: Exception) {
+                                    // 復旧失敗
+                                }
+                                continue
+                            } else {
+                                scrollErrorRetries = 0
+                            }
+
+                            // 正常末尾到達: 新規追加がなくレート制限もない場合は即終了
+                            if (noGrowthCount >= NO_GROWTH_LIMIT) {
+                                break
+                            }
+
+                            page.mouse().wheel(0.0, 4000.0)
+                            val jitter = kotlin.random.Random.nextDouble(200.0, 600.0)
+                            page.waitForTimeout(BASE_SCROLL_WAIT_MS + jitter)
+                        }
+
+                        val chunkCount = collected.size - beforeCount
+                        val statusSuffix = if (wasTruncatedByRateLimit) " (一部未完了・後続リトライ予定)" else ""
+                        echo("[${nowStr()}] [${chunk.label}] $progress 検索完了: 区間内 ${chunkCount}件 / 累積合計: ${collected.size}件$statusSuffix")
+                        flushOutput()
+                    }
+
+                    // 2パス目以降の処理
+                    if (retryChunks.isNotEmpty() && pass < 3) {
+                        pass++
+                        echo("[${nowStr()}] [再試行パス$pass] レート制限で中断/未完了となった ${retryChunks.size} 件の区間を補完します。${BATCH_COOLDOWN_SEC}秒待機中...")
+                        page.waitForTimeout(BATCH_COOLDOWN_MS)
+                        pendingChunks.addAll(retryChunks)
+                        retryChunks.clear()
+                    }
+                }
+            } finally {
+                flushOutput()
+                val results = collected.values.take(max)
+                echo("[${nowStr()}] 合計: ${results.size}件 -> ${outputFile.path}", err = true)
+                browser.close()
+            }
         }
     }
 }
@@ -237,6 +308,11 @@ private fun buildSearchUrl(query: String, latest: Boolean): String {
 
 private fun defaultOutputFile(query: String): File {
     val stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(LocalDateTime.now())
-    val safeQuery = query.replace(Regex("[^\\w-]+"), "_").take(50).ifEmpty { "query" }
+    val safeQuery = query
+        .replace(Regex("""[\\/:*?"<>|\r\n\t]"""), "_")
+        .replace(Regex("""_+"""), "_")
+        .trim('_')
+        .take(50)
+        .ifEmpty { "query" }
     return File(OUTPUT_DIR, "x-search-$safeQuery-$stamp.json")
 }

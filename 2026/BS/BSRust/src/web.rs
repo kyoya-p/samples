@@ -63,6 +63,8 @@ struct SessionReq {
 #[derive(Serialize)]
 struct FieldView {
     id: String,
+    card_id: String,
+    image_url: String,
     name: String,
     symbols: String,
     cores: String,
@@ -72,6 +74,8 @@ struct FieldView {
 
 #[derive(Serialize)]
 struct HandView {
+    id: String,
+    image_url: String,
     name: String,
     cost: u8,
     reduction: String,
@@ -179,22 +183,34 @@ fn side_view(side: &SideState, reveal_hand: bool) -> SideView {
         field: side
             .field
             .iter()
-            .map(|o| FieldView {
-                id: o.id.clone(),
-                name: o.name.clone(),
-                symbols: format_symbols(&o.base_symbols),
-                cores: o.cores.format(),
-                exhausted: o.is_exhausted,
-                lv: o.current_lv(),
+            .map(|o| {
+                let card_id = o.current_card_id.clone();
+                let image_url = format!("https://www.battlespirits.com/images/cardlist/{}.webp", card_id);
+                FieldView {
+                    id: o.id.clone(),
+                    card_id,
+                    image_url,
+                    name: o.name.clone(),
+                    symbols: format_symbols(&o.base_symbols),
+                    cores: o.cores.format(),
+                    exhausted: o.is_exhausted,
+                    lv: o.current_lv(),
+                }
             })
             .collect(),
         hand: if reveal_hand {
             side.hand
                 .iter()
-                .map(|c| HandView {
-                    name: c.name.clone(),
-                    cost: c.base_cost,
-                    reduction: format_symbols(&c.reduction_symbols),
+                .map(|c| {
+                    let card_id = c.id.clone();
+                    let image_url = format!("https://www.battlespirits.com/images/cardlist/{}.webp", card_id);
+                    HandView {
+                        id: card_id,
+                        image_url,
+                        name: c.name.clone(),
+                        cost: c.base_cost,
+                        reduction: format_symbols(&c.reduction_symbols),
+                    }
                 })
                 .collect()
         } else {
@@ -516,8 +532,9 @@ pub fn run_server(port: u16) {
         let config = BoardEvaluatorConfig::new();
         Some(config.init::<MyBackend>(&device).load_record(record))
     } else {
-        println!("警告: 学習済みモデル weights が見つかりません。評価値は表示されません。");
-        None
+        println!("初期ニューラルネットワーク評価モデル (520 -> 256 -> 256 -> 1) を初期化しました。");
+        let config = BoardEvaluatorConfig::new();
+        Some(config.init::<MyBackend>(&device))
     };
 
     let app_state: AppState = Arc::new(Mutex::new(Inner {

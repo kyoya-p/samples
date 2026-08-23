@@ -1,7 +1,6 @@
 # X検索採取ツール
 
 Playwright (Java版) で X (旧Twitter) にアクセスし、検索結果をすべて採取するツール。
-Kotlin/JVM + JetBrains Amper で実装。
 
 # 概要
 
@@ -9,131 +8,23 @@ Kotlin/JVM + JetBrains Amper で実装。
 - X の検索結果はログインしないと閲覧できないため、事前に1回だけ手動ログインしてセッションを保存し、以降はそのセッションを再利用する。
 - 採取されたツイートはメッセージ単位で `.x/<tweetId>.json` にキャッシュ保存されるほか、検索結果全体の JSON ファイルとして `output/` に保存する。
 
-# セットアップ
+---
+
+# ビルド・実行・セットアップ
+
+ビルド、実行、各コマンドのオプションや実行例については [ルート Readme.md](../Readme.md) を参照。
 
 ```shell
-mise run setup
+# クイックリファレンス
+mise run setup       # 初期セットアップ
+mise run package     # JARビルド
+mise run login        # ログイン
+mise run search       # 検索・採取
+mise run extract-sb   # 大会・ショップバトル結果抽出
+mise run clean-cache  # キャッシュクリア
 ```
 
-Playwright用 Chromium ブラウザのインストールおよびセットアップを行う。
-
-# 使用方法
-
-`X` ディレクトリ内で `mise run` コマンドを実行する:
-
-```shell
-# ログイン（初回のみ）
-mise run login
-
-# 検索・採取
-mise run search -- "<検索キーワード>" [options]...
-
-# 大会・ショップバトル結果抽出 (Gemini API)
-mise run extract-sb [options]...
-```
-
-## 1. ログイン（初回のみ）
-
-```shell
-mise run login
-```
-
-ブラウザ（ヘッド付き）が起動するので、手動で X にログインする（2段階認証が必要な場合も手動で完了させる）。
-ホームタイムライン (`x.com/home`) の表示を検知すると、セッション情報 (Cookie等) を `.auth/x-state.json` に保存してブラウザを終了する。
-
-- `.auth/x-state.json` にはログインセッションが含まれるため、`.gitignore` で管理対象外としている。第三者と共有しないこと。
-- セッションが失効した場合（採取時にログイン画面へリダイレクトされる等）は再度ログインを実行する。
-
-## 2. 検索・採取
-
-```shell
-mise run search -- "<検索キーワード>" [options]...
-```
-
-### Subcommand: search
-
-
-| Option                  | 説明                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `-l`, `--latest`        | 「トップ」タブではなく「最新」タブで検索する（デフォルト: トップ）                                            |
-| `-d`, `--date <範囲>`   | 検索日時範囲を指定（例:`8`: 直前8ヶ月、`2508-`: 2025年8月1日〜現在、`240101-240630`: 2024年1月1日〜2024年6月30日）|
-| `--since <日付>`        | 検索開始日を指定（例: `2024-01-01`, `240101`, `2401`）                                                       |
-| `--until <日付>`        | 検索終了日を指定（例: `2024-06-30`, `240630`, `2406`）                                                       |
-| `-s`, `--split-days <日>` | 長期間の検索を分割する日数（デフォルト: 30日/約1か月。0で分割無効）。期間が長い場合に自動で複数区間に分割して検索 |
-| `-m`, `--max <件数>`    | 採取するツイート数の上限を指定（デフォルト: 上限なし。末尾まで採取）                                          |
-
-
-| `-o`, `--output <path>` | 出力先ファイルパスを指定（デフォルト:`output/x-search-<キーワード>-<日時>.json`）                             |
-| `--headed`              | ブラウザをヘッド付き（画面表示あり）で起動する（デフォルト: ヘッドレス。デバッグ用）                          |
-
-### 例
-
-```shell
-# 「バトルスピリッツ」をトップタブで検索し、末尾まですべて採取
-mise run search -- "バトルスピリッツ"
-
-# 直近8ヶ月の「バトルスピリッツ 優勝」を最新タブで検索
-mise run search -- "バトルスピリッツ 優勝" -l -d 8
-
-# 2025年8月1日〜2026年8月1日の範囲で検索（最大300件）
-mise run search -- "バトルスピリッツ 優勝" -d 2508-2608 -m 300
-
-# 2025年8月1日〜現在の範囲で検索
-mise run search -- "バトルスピリッツ" -d 2508-
-
-# 出力先を指定
-mise run search -- "バトルスピリッツ" -o ./output/bs.json
-```
-
-## 3. ショップバトル結果抽出 (Gemini API)
-
-採取した X 検索結果 JSON ファイルから、Gemini API (`gemini-2.5-flash-lite`) を利用して大会・ショップバトルの優勝結果を抽出し、CSV 形式で出力する。
-
-```shell
-# 直近の検索結果JSONから抽出してCSV出力
-mise run extract-sb
-
-# 入力JSONファイルや出力先を指定して実行
-mise run extract-sb -- output/x-search-優勝_バトスピ-20260815.json -o output/sb-result.csv
-```
-
-※実行には Gemini API キーが必要（環境変数 `GEMINI_API_KEY` / `GOOGLE_API_KEY`、または `mise.secrets.gemini.json`）。
-
-### シークレット管理 (SOPS)
-
-`mise.secrets.gemini.json` を編集・暗号化するための mise タスク:
-
-```shell
-# 編集用に一時復号
-mise run dec-secret
-
-# 編集後に SOPS で再暗号化 (環境変数 SOPS_AGE_RECIPIENTS を参照)
-mise run enc-secret
-```
-
-### Subcommand: extract-sb
-
-
-| Option / Argument           | 説明                                                                                   |
-| --------------------------- | -------------------------------------------------------------------------------------- |
-| `<input>`                   | 入力元の検索結果JSONファイルパス（未指定時は`output/` 内の最新JSONファイルを自動選択） |
-| `-o`, `--output <path>`     | 出力先CSVファイルパス（デフォルト:`output/shop-battle-<日時>.csv`）                    |
-| `--api-key <key>`           | Gemini APIキー（環境変数`GEMINI_API_KEY` / `GOOGLE_API_KEY` / `.env` からも自動取得）  |
-| `--model <name>`            | Geminiモデル名（デフォルト:`gemini-2.5-flash-lite`）                                   |
-| `-b`, `--batch-size <件数>` | 1回のリクエストでGeminiに渡すツイート数（デフォルト: 25）                              |
-
-### 出力フォーマット (CSV)
-
-```csv
-id,url,posted_at,event_category,store_or_event_name,format,deck_type,participants,winner,notes,author,tweet_text
-"1234567890","https://x.com/i/web/status/1234567890","2026-08-15T10:00:00.000Z","店舗バトル","カードショップ○○","スタンダード","鋼契約","16","プレイヤーA","準優勝: 紫エヴァ","カードショップ○○","【#バトスピ 大会結果】本日開催のショップバトル..."
-```
-
-### 月足シェア率 可視化ビューア (HTML)
-
-抽出した CSV ファイルをドラッグ＆ドロップするだけで、即座にフォーマット別（全フォーマット / スタンダード / エターナル）の月足シェア率折れ線グラフとデータテーブルを生成するビューア:
-
-- `deck_share_trend.html`（ブラウザで直接開いて利用可能）
+---
 
 # 動作仕様
 
@@ -145,7 +36,9 @@ id,url,posted_at,event_category,store_or_event_name,format,deck_type,participant
 6. 収集したツイートを配列としてJSONファイル (kotlinx.serialization) に書き出す。
 7. `extract-sb` コマンドで、収集ツイートを Gemini API (`gemini-2.5-flash-lite`) にバッチ送信し、大会結果（店舗名、イベント種別、参加人数、優勝者、デッキ名、備考）を構造化抽出して CSV に保存する。
 
-## 出力フォーマット (JSON)
+## 出力フォーマット
+
+### 1. 検索結果 (JSON)
 
 ```json
 [
@@ -165,12 +58,42 @@ id,url,posted_at,event_category,store_or_event_name,format,deck_type,participant
 ]
 ```
 
+### 2. ショップバトル抽出結果 (CSV)
+
+```csv
+id,url,posted_at,event_category,store_or_event_name,format,deck_type,participants,winner,notes,author,tweet_text
+"1234567890","https://x.com/i/web/status/1234567890","2026-08-15T10:00:00.000Z","店舗バトル","カードショップ○○","スタンダード","鋼契約","16","プレイヤーA","準優勝: 紫エヴァ","カードショップ○○","【#バトスピ 大会結果】本日開催のショップバトル..."
+```
+
+### 3. 月足シェア率 可視化ビューア (HTML)
+
+抽出した CSV ファイルをドラッグ＆ドロップするだけで、即座にフォーマット別（全フォーマット / スタンダード / エターナル）の月足シェア率折れ線グラフとデータテーブルを生成するビューア:
+
+- [`deck_share_trend.html`](deck_share_trend.html)（ブラウザで直接開いて利用可能）
+
+---
+
 # 制限事項
 
 - X の仕様上、検索結果として表示・取得できる件数やさかのぼれる期間には上限がある（アカウント種別やレート制限の影響を受ける）。「すべて採取」とは、**その時点でUI上にスクロールして表示可能な範囲をすべて**という意味であり、X内部に存在する全ツイートを保証するものではない。
 - 短時間に大量のリクエストを行うと、一時的なレート制限やアカウント制限の対象となる可能性がある。連続実行の間隔には注意すること。
 - DOM構造 (`data-testid` 属性等) は X 側の仕様変更により変わる可能性があり、その場合は `src/TweetExtractScript.kt` の抽出ロジックの修正が必要になる。
 - Playwright Java (JVM) を使用しているため、本ツールはJVM上でのみ動作する（Kotlin Nativeターゲット非対応）。
+
+---
+
+# 環境変数
+
+| 変数名 | 説明 | デフォルト値 |
+|---|---|---|
+| `X_QUERY` | デフォルトの検索キーワード | `(バトスピ OR バトルスピリッツ OR battlespirits) (優勝 OR 全勝 OR ウィナー OR 勝者)` |
+| `X_CACHE_DIR` | 個別ツイートJSONのキャッシュ保存先ディレクトリ | `.x` |
+| `X_OUTPUT_DIR` | 総合JSON/CSVの出力先ディレクトリ | `output` |
+| `X_COOLDOWN_THRESHOLD` | 安全のための連続採取件数閾値 | `600` |
+| `X_COOLDOWN` / `X_COOLDOWN_SEC` | クールダウン待機時間（秒） | `240` |
+| `GEMINI_API_KEY` | 大会結果抽出用 Gemini API キー | - |
+
+---
 
 # フォルダ構成
 

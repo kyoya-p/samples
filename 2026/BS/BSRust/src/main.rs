@@ -224,7 +224,7 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
             let reduced = card.as_ref()
                 .map(|c| c.base_cost.saturating_sub(calculate_reduction(c, &acting_side.field)))
                 .unwrap_or(base_cost);
-            let category = format!("【手札から{}】 {} (コスト:{}, 軽減後:{})", action_label, card_name, base_cost, reduced);
+            let category = format!("🎴【手札から{}】 {} (コスト:{}, 軽減後:{})", action_label, card_name, base_cost, reduced);
 
             let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
             let pay_soul = if *use_soul_core { 1 } else { 0 };
@@ -244,7 +244,7 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
             let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
             let target = find_field_object_in_state(state, target_id);
             let target_name = target.as_ref().map(|o| o.name.as_str()).unwrap_or("不明な対象");
-            let category = format!("【手札から煌臨】 {} を {} に重ねて煌臨", card_name, target_name);
+            let category = format!("🎴【手札から煌臨】 {} を {} に重ねて煌臨", card_name, target_name);
             let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
             let pay_cores = Cores::new(pay_amount + 1, 1);
             let place_amount: u8 = placement.iter().map(|p| p.count).sum();
@@ -264,25 +264,25 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
             };
             let s = if *soul_core { 1 } else { 0 };
             let move_cores = Cores::new(*normal_cores + s, s);
-            let category = format!("【コア移動】 {} -> {} (コア:{})", from_name, to_name, move_cores.format());
+            let category = format!("💎【コア移動】 {} -> {} (コア:{})", from_name, to_name, move_cores.format());
             ("movecore".to_string(), category.clone(), category, 0, *soul_core)
         }
         Action::Attack { object_id } => {
             let obj_name = find_field_object_in_state(state, object_id)
                 .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
-            let category = format!("【アタック宣言】 {}", obj_name);
+            let category = format!("⚔️【アタック宣言】 {}", obj_name);
             ("attack".to_string(), category.clone(), category, 0, false)
         }
         Action::Block { object_id } => {
             let obj_name = find_field_object_in_state(state, object_id)
                 .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
-            let category = format!("【ブロック宣言】 {}", obj_name);
+            let category = format!("🛡️【ブロック宣言】 {}", obj_name);
             ("block".to_string(), category.clone(), category, 0, false)
         }
         Action::UseActiveEffect { object_id, effect_name, .. } => {
             let obj_name = find_field_object_in_state(state, object_id)
                 .map(|o| o.name.clone()).unwrap_or_else(|| object_id.clone());
-            let category = format!("【効果使用】 {} : {}", obj_name, effect_name);
+            let category = format!("⚡【効果使用】 {} : {}", obj_name, effect_name);
             ("effect".to_string(), category.clone(), category, 0, false)
         }
         Action::ResolveFaraToken { summon, use_void } => {
@@ -291,7 +291,7 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
                 (true, true) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（ボイドからコアを置く／ターンに1回）".to_string(),
                 (true, false) => "ファラの効果：トークン「プラチナム・バグ」を召喚する（自分のコアで払う）".to_string(),
             };
-            let category = format!("【効果解決】 {}", text);
+            let category = format!("✨【効果解決】 {}", text);
             ("effect".to_string(), category.clone(), category, 0, false)
         }
         Action::ResolveBasilisk { use_effect, destroy_bug } => {
@@ -300,7 +300,7 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
                 (true, false) => "バシリスクの効果：デッキオープン3枚から白の旗種を1枚回収".to_string(),
                 (true, true) => "バシリスクの効果：バグを破壊しデッキオープン3枚から白の旗種を2枚回収".to_string(),
             };
-            let category = format!("【効果解決】 {}", text);
+            let category = format!("✨【効果解決】 {}", text);
             ("effect".to_string(), category.clone(), category, 0, false)
         }
         Action::ChooseEffectOrder { card_id } => {
@@ -308,11 +308,11 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
                 .find(|pe| &pe.card_id == card_id)
                 .map(|pe| pe.card_name.as_str())
                 .unwrap_or("不明なカード");
-            let category = format!("【効果解決順選択】 {} の効果を先に解決する", name);
+            let category = format!("📑【効果解決順選択】 {} の効果を先に解決する", name);
             ("choose_effect_order".to_string(), category.clone(), category, 0, false)
         }
-        Action::Pass => ("pass".to_string(), "パス / スキップ".to_string(), "パス / スキップ".to_string(), 0, false),
-        Action::EndStep => ("end".to_string(), "ステップ終了".to_string(), "ステップ終了".to_string(), 0, false),
+        Action::Pass => ("pass".to_string(), "⏩ パス / スキップ".to_string(), "⏩ パス / スキップ".to_string(), 0, false),
+        Action::EndStep => ("end".to_string(), "⏭️ ステップ終了".to_string(), "⏭️ ステップ終了".to_string(), 0, false),
     }
 }
 
@@ -2149,7 +2149,7 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         "BS76-CX03".to_string(),
         "BS75-CX03".to_string(), "BS75-042".to_string(), "BS75-043".to_string(), "BS75-068".to_string(),
         "BS49-X09".to_string(), "BS49-040".to_string(), "BS49-X04".to_string(), "SD56-RV009".to_string(),
-        "26RSD03-X01".to_string(), "26RSD03-X02".to_string(), "26RSD03-001".to_string(), "26RSD03-003".to_string()
+        "26RSD03-X01".to_string(), "26RSD03-X02".to_string(), "26RSD03-001".to_string(), "26RSD03-002".to_string(), "26RSD03-003".to_string()
     ];
 
     let mut hand = Vec::new();
@@ -3624,5 +3624,75 @@ mod flash_kourin_tests {
             matches!(a, Action::Kourin { card_id, .. } if card_id == "BS76-035")
         });
         assert!(has_basilisk_kourin_atk, "自分のターン（攻撃側）ならバシリスクの煌臨が選択肢に出る");
+    }
+
+    #[test]
+    fn test_puffer_summon_places_core_to_trash_from_void() {
+        // 26RSD03-002 パッファー: 召喚時にボイドからコア1個をトラッシュに置く
+        let puffer = Card {
+            id: "26RSD03-002".to_string(),
+            name: "パッファー".to_string(),
+            base_cost: 3,
+            colors: vec![Color::Green],
+            reduction_symbols: vec![Color::Green],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2],
+            symbols: vec![Color::Green],
+            systems: vec!["甲魚".to_string()],
+        };
+
+        let mut state = GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(4, 0),
+                field: vec![],
+                hand: vec![puffer],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::MainStep,
+            turn_count: 1,
+            active_attacker: None,
+            active_blocker: None,
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+            pending_effects: vec![],
+            next_obj_id: 0,
+            basilisk_effect_used_this_turn: false,
+        };
+
+        // コスト3をリザーブから支払い、配置コア1個で召喚
+        let play_action = Action::PlayCard {
+            card_id: "26RSD03-002".to_string(),
+            payment: vec![CoreSource { source_id: "Reserve".to_string(), count: 3 }],
+            use_soul_core: false,
+            placement: vec![CoreSource { source_id: "Reserve".to_string(), count: 1 }],
+            placement_soul_core: false,
+        };
+
+        apply_action(&mut state, &play_action).expect("パッファーの召喚に成功するはず");
+
+        // コスト支払い3 + 召喚時効果でボイドから1 = トラッシュコア合計4
+        assert_eq!(state.player.trash_cores.total, 4, "召喚時効果によりボイドからトラッシュに1個コアが増加して合計4になる");
+        assert_eq!(state.player.reserve.total, 0, "リザーブは 4 - 3(支払) - 1(配置) = 0");
+        assert_eq!(state.player.field.len(), 1, "パッファーが場に存在する");
+        assert_eq!(state.player.field[0].cores.total, 1, "パッファー上のコアは1個");
     }
 }

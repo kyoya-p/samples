@@ -25,6 +25,7 @@ data class Tweet(
             cacheDir.mkdirs()
             val datePrefix = extractYyyyMmDd(postedAt)?.let { "${it}_" } ?: ""
             val file = File(cacheDir, "$datePrefix$id.json")
+            if (file.exists()) return
             val json = Json { prettyPrint = true }
             file.writeText(json.encodeToString(this), Charsets.UTF_8)
         } catch (e: Exception) {
@@ -66,6 +67,20 @@ data class Tweet(
                     null
                 }
             }
+        }
+
+        fun clearCache(cacheDir: File = CACHE_DIR): Int {
+            val targetDirs = listOf(cacheDir, File(".x"), File("X/.x"))
+                .filter { it.exists() && it.isDirectory }
+                .distinctBy { it.canonicalPath }
+            var deletedCount = 0
+            for (dir in targetDirs) {
+                val files = dir.listFiles { f -> f.isFile && f.name.endsWith(".json") } ?: emptyArray()
+                for (f in files) {
+                    if (f.delete()) deletedCount++
+                }
+            }
+            return deletedCount
         }
     }
 }

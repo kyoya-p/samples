@@ -41,6 +41,11 @@ pub fn evaluate_action<B: Backend>(
     action: &Action,
     device: &B::Device,
 ) -> Option<f32> {
+    let prev_spirit_ids: std::collections::HashSet<String> = state.player.field.iter()
+        .filter(|o| o.card_type == crate::CardType::Spirit || o.card_type == crate::CardType::Ultimate)
+        .map(|o| o.id.clone())
+        .collect();
+
     let mut next_state = state.clone();
     if apply_action(&mut next_state, action).is_ok() {
         process_automatic_steps(&mut next_state);
@@ -57,12 +62,30 @@ pub fn evaluate_action<B: Backend>(
         let val = output.into_data().as_slice::<f32>().unwrap()[0];
         
         // 手番が相手に移った場合は、相手視点での評価値を反転して自分視点にする（ネガマックス法）
-        let adjusted_val = if next_state.player.player_id == state.player.player_id {
+        let mut adjusted_val = if next_state.player.player_id == state.player.player_id {
             val
         } else {
             -val
         };
-        Some(adjusted_val)
+
+        // 既存スピリットが消滅した数（自壊数）を検知しペナルティを付与
+        let next_side = if next_state.player.player_id == state.player.player_id {
+            &next_state.player
+        } else {
+            &next_state.opponent
+        };
+        let next_spirit_ids: std::collections::HashSet<String> = next_side.field.iter()
+            .filter(|o| o.card_type == crate::CardType::Spirit || o.card_type == crate::CardType::Ultimate)
+            .map(|o| o.id.clone())
+            .collect();
+        
+        let destroyed_count = prev_spirit_ids.iter().filter(|id| !next_spirit_ids.contains(*id)).count();
+        if destroyed_count > 0 {
+            // スピリット消滅1体あたり -0.40 のペナルティ（ステップ終了の現状維持を優先）
+            adjusted_val -= (destroyed_count as f32) * 0.40;
+        }
+
+        Some(adjusted_val.clamp(-1.0, 1.0))
     } else {
         None
     }

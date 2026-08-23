@@ -18,6 +18,10 @@ val AUTH_STATE_FILE: File
 
 val CACHE_DIR: File
     get() {
+        val envCache = System.getenv("X_CACHE_DIR")?.takeIf { it.isNotBlank() }
+            ?: System.getenv("CACHE_DIR")?.takeIf { it.isNotBlank() }
+        if (envCache != null) return File(envCache)
+
         val candidates = listOf(
             File(".x"),
             File("X/.x"),
@@ -29,6 +33,10 @@ val CACHE_DIR: File
 
 val OUTPUT_DIR: File
     get() {
+        val envOutput = System.getenv("X_OUTPUT_DIR")?.takeIf { it.isNotBlank() }
+            ?: System.getenv("OUTPUT_DIR")?.takeIf { it.isNotBlank() }
+        if (envOutput != null) return File(envOutput)
+
         val candidates = listOf(
             File("output"),
             File("X/output")
@@ -43,11 +51,6 @@ val STEALTH_LAUNCH_ARGS: List<String> = listOf("--disable-blink-features=Automat
 fun BrowserContext.applyStealth() {
     addInitScript("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
 }
-
-val BATCH_COOLDOWN_THRESHOLD: Int
-    get() = System.getenv("X_COOLDOWN_THRESHOLD")?.toIntOrNull()
-        ?: System.getenv("X_COOLDOWN_COUNT")?.toIntOrNull()
-        ?: 600
 
 val BATCH_COOLDOWN_SEC: Long
     get() = System.getenv("X_COOLDOWN_SEC")?.toLongOrNull()

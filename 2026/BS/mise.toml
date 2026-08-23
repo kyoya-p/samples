@@ -6,6 +6,71 @@ gradle = "9.6"
 opencode = "latest"
 claude-code = "latest"
 
+[env]
+WD = "{{config_root}}"
+_.file = "X/mise.secrets.gemini.json"
+X_QUERY = '(バトスピ OR バトルスピリッツ OR battlespirits) (優勝 OR 全勝 OR ウィナー OR 勝者)' # デフォルト検索キーワード
+X_CACHE_DIR = ".x" # ツイートJSONキャッシュディレクトリ
+X_COOLDOWN = 240 # クールダウン待機時間 (秒)
+
+[tasks.package]
+description = "AmperでXモジュールのシングル実行可能JAR (Fat JAR) を生成します"
+run = 'amper.bat package -m X -f executable-jar'
+
+[tasks.setup]
+description = "Amperラッパースクリプトの更新、JARビルド、Playwright用Chromiumのインストール"
+depends = ["package"]
+run = 'java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar install-browsers'
+
+[tasks.x-login]
+description = "手動ログインしてセッション(storageState)を保存します"
+depends = ["package"]
+run = 'java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar login'
+
+[tasks.search]
+description = "検索キーワードでXの検索結果をすべて採取します (例: mise run search -- \"キーワード\" -m 200)"
+depends = ["package"]
+run = 'java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar search'
+
+[tasks.extract-sb]
+description = "Gemini APIでX検索結果からショップバトル結果を抽出してCSV出力します (例: mise run extract-sb -- [input.json])"
+depends = ["package"]
+run = 'java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar extract-sb'
+
+[tasks.enc-secret]
+description = "X/mise.secrets.gemini.json を SOPS で暗号化 (環境変数 SOPS_AGE_RECIPIENTS を参照)"
+run = 'sops -e -i X/mise.secrets.gemini.json'
+
+[tasks.clean-cache]
+description = ".x キャッシュディレクトリ内のツイートJSONを全削除します"
+depends = ["package"]
+run = 'java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar clear-cache'
+
+[tasks.dec-secret]
+description = "X/mise.secrets.gemini.json を SOPS で復号（編集用）"
+run = 'sops -d -i X/mise.secrets.gemini.json'
+
+[tasks.search-bs]
+description = "バトスピ大会結果の検索採取およびGemini抽出を一括実行"
+depends = ["package"]
+run = """
+java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar search -d 6 -s 7 -l
+java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar extract-sb
+"""
+[tasks.search1]
+env = { X_CACHE_DIR =".x1"}
+run = "java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar search -d 6 -s 7 -l"
+
+[tasks.search2]
+env = { X_CACHE_DIR =".x2"}
+run = "java -jar build/tasks/_X_executableJarJvm/X-jvm-executable.jar search -d 6 -s 7 -l"
+
+[tasks.search-test]
+run = [
+    "mise run search1",
+    "mise run search2",
+]
+
 [tasks.web-gameboard]
 description = "Compose Multiplatform (Wasm) + Ktor Server 起動"
 dir = "tools"
@@ -15,7 +80,6 @@ run = "amper.bat build --module web-gameboard && amper.bat run --module web-serv
 description = "Compose Multiplatform (Wasm) ビルド"
 dir = "tools"
 run = "amper.bat build --module web-gameboard"
-
 
 [tasks.codeql-create]
 run = """
@@ -47,3 +111,22 @@ description = "Run BSKt deck simulation"
 dir = "BSKt"
 run = "mise run cli"
 
+[tasks.gamefield]
+description = "Kotlin Amper 対話型シミュレータ (gamefield) を起動"
+dir = "tools"
+run = ".\\amper.bat run -m gamefield"
+
+[tasks."gf:train"]
+description = "gamefield 強化学習 (Self-Play) を実行してモデルを更新"
+dir = "tools"
+run = ".\\amper.bat run -m gamefield -- --train --epochs 10"
+
+[tasks."gf:kogyo"]
+description = "gamefield で甲魚デッキ同士の対戦シミュレーションを実行"
+dir = "tools"
+run = ".\\amper.bat run -m gamefield -- -d1 deck-kogyo.yaml -d2 deck-kogyo.yaml"
+
+[tasks."gf:fara"]
+description = "gamefield で光契約(ファラ) vs 甲魚デッキの対戦シミュレーションを実行"
+dir = "tools"
+run = ".\\amper.bat run -m gamefield -- -d1 deck-fara.yaml -d2 deck-kogyo.yaml"

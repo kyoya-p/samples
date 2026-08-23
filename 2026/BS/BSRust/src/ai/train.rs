@@ -76,17 +76,16 @@ pub fn generate_self_play_data<B: Backend>(model: &BoardEvaluator<B>) -> Vec<Exp
 
     // 5ゲームの対戦を実行して高品質なデータを収集
     for game_idx in 0..5 {
-        let mut state = match setup_initial_state("deck.yaml", "deck-kogyo.yaml") {
+        let mut state = setup_initial_state("deck-fara.yaml", "deck-kogyo.yaml")
+            .or_else(|_| setup_initial_state("deck.yaml", "deck-kogyo.yaml"))
+            .or_else(|_| setup_initial_state("deck.yaml", "deck.yaml"))
+            .map_err(|e| {
+                println!("Failed to setup initial state: {}", e);
+                e
+            });
+        let mut state = match state {
             Ok(s) => s,
-            Err(_) => {
-                match setup_initial_state("deck.yaml", "deck.yaml") {
-                    Ok(s) => s,
-                    Err(e) => {
-                        println!("Failed to setup initial state: {}", e);
-                        continue;
-                    }
-                }
-            }
+            Err(_) => continue,
         };
 
         let mut game_states_history = Vec::new();

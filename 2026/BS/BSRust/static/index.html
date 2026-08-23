@@ -25,8 +25,8 @@
     font-size: 14px;
   }
   h1 { font-size: 18px; margin: 0 0 12px; }
-  .layout { display: grid; grid-template-columns: 1fr 380px; gap: 16px; max-width: 1280px; margin: 0 auto; }
-  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .layout { display: grid; grid-template-columns: 1fr 440px; gap: 16px; max-width: 1360px; margin: 0 auto; }
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
   .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
@@ -41,6 +41,10 @@
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: 0.4; cursor: not-allowed; }
   button.primary { background: #114d66; border-color: var(--accent); }
+  button.best-btn { background: #133824; border-color: #00e676; color: #00e676; font-weight: 600; }
+  button.best-btn:hover:not(:disabled) { background: #1b4d32; border-color: #66ffa6; color: #ffffff; box-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
+  button#btn-n { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
+  button#btn-n.is-best { background: #133824; border-color: #00e676; color: #ffffff; box-shadow: 0 0 10px rgba(0, 230, 118, 0.35); }
   button.danger { border-color: var(--danger); color: var(--danger); }
   .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; }
   .statusline .phase { color: var(--warn); font-weight: bold; }
@@ -50,34 +54,225 @@
   .life { letter-spacing: 2px; }
   .life .on { color: var(--danger); }
   .life .off { color: #444; }
-  .cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; align-items: flex-start; }
   .card {
     background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 10px; line-height: 1.5;
+    padding: 6px 10px; line-height: 1.5; cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
   .card .nm { font-weight: bold; }
   .card .sub { color: var(--muted); font-size: 12px; }
   .card.exhausted { opacity: 0.55; border-style: dashed; }
   .card.exhausted .nm::after { content: " [疲労]"; color: var(--warn); font-weight: normal; font-size: 12px; }
   .empty { color: #556; padding: 6px 0; }
+
+  /* プレイ可能な手札カードおよび展開選択肢スタイル */
+  .hand-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    max-width: 280px;
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+  .card.playable {
+    border-color: #0288d1;
+    background: linear-gradient(180deg, #182230, #131a24);
+    cursor: pointer;
+  }
+  .card.playable:hover {
+    border-color: #29b6f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(2, 136, 209, 0.35);
+  }
+  .card.playable.is-best {
+    border-color: #00e676;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.25);
+  }
+  .card.playable.is-best:hover {
+    border-color: #69f0ae;
+    box-shadow: 0 0 14px rgba(0, 230, 118, 0.45);
+  }
+  .card.playable.open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+  }
+  .playable-badge {
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .playable-badge .top-tag {
+    color: #00e676;
+    font-weight: bold;
+    font-size: 10.5px;
+    background: rgba(0, 230, 118, 0.15);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .hand-options {
+    background: #0f151d;
+    border: 1px solid #0288d1;
+    border-top: 1px dashed rgba(2, 136, 209, 0.4);
+    border-radius: 0 0 6px 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-top: -1px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  }
+  .hand-options.is-best {
+    border-color: #00e676;
+    border-top: 1px dashed rgba(0, 230, 118, 0.4);
+  }
+  .hand-opt-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    text-align: left;
+    font-size: 11.5px;
+    color: #cfd8dc;
+    width: 100%;
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .hand-opt-btn .detail-text::before {
+    content: "└ ";
+    color: var(--muted);
+    margin-right: 3px;
+    font-family: monospace;
+  }
+  .hand-opt-btn:last-child {
+    border-bottom: none;
+  }
+  .hand-opt-btn:hover:not(:disabled) {
+    background: #1e293b;
+    color: #fff;
+  }
+  .hand-opt-btn.best-option {
+    background: rgba(0, 230, 118, 0.12);
+    border-left: 3px solid #00e676;
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .hand-opt-btn.best-option .detail-text::before {
+    color: #00e676;
+    font-weight: bold;
+  }
+  
+  /* カード画像プレビュー（マウスから遠い位置にオーバーラップ表示・2倍拡大） */
+  .card-preview {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #141a22;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 420px;
+    transition: opacity 0.15s ease;
+  }
+  .card-preview img {
+    width: 400px;
+    height: 560px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    background: #0f141c;
+  }
+  .card-preview .name {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+  }
+  
+  /* アクション一覧・階層リスト */
   .group {
     border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; overflow: hidden;
+    background: var(--panel2);
   }
   .group > .head {
     width: 100%; text-align: left; border: none; border-radius: 0;
-    padding: 9px 10px; background: var(--panel2); display: flex; gap: 8px; align-items: baseline;
+    padding: 9px 12px; background: var(--panel2); display: flex; gap: 8px; align-items: center;
   }
-  .group > .head .cat { flex: 1; }
-  .group.forbidden > .head { opacity: 0.5; }
-  .eval { color: var(--ok); font-size: 12px; white-space: nowrap; }
-  .cnt { color: var(--muted); font-size: 12px; white-space: nowrap; }
-  .opts { border-top: 1px solid var(--border); }
+  .group > .head .cat { flex: 1; font-weight: 500; font-size: 13px; }
+  .group.forbidden > .head { opacity: 0.45; }
+  .group.single-best > .head,
+  .group.closed-best > .head {
+    background: linear-gradient(90deg, rgba(0, 230, 118, 0.18), rgba(26, 32, 39, 0.9));
+    border-left: 4px solid #00e676;
+  }
+  .group.single-best > .head .cat,
+  .group.closed-best > .head .cat {
+    color: #ffffff;
+    font-weight: 600;
+  }
+  
+  .eval-badge {
+    font-size: 12px; font-weight: bold; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+  }
+  .eval-high { background: rgba(102, 187, 106, 0.25); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); }
+  .eval-mid { background: rgba(79, 195, 247, 0.2); color: #4fc3f7; border: 1px solid rgba(79, 195, 247, 0.4); }
+  .eval-low { background: rgba(255, 183, 77, 0.2); color: #ffb74d; border: 1px solid rgba(255, 183, 77, 0.4); }
+  .eval-neg { background: rgba(239, 83, 80, 0.2); color: #ef5350; border: 1px solid rgba(239, 83, 80, 0.4); }
+  
+  .cnt {
+    color: var(--accent); font-size: 11px; white-space: nowrap; font-weight: 500;
+    padding: 2px 6px; background: rgba(79, 195, 247, 0.12); border-radius: 4px;
+  }
+  .opts {
+    border-top: 1px solid var(--border);
+    background: #141a22;
+  }
   .opts button {
-    display: block; width: 100%; text-align: left; border: none; border-radius: 0;
-    border-bottom: 1px solid var(--border); background: var(--panel); padding: 8px 10px 8px 24px;
+    display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; border: none; border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: transparent; padding: 8px 12px 8px 20px;
+    font-size: 12.5px; color: #cfd8dc; transition: background 0.15s ease;
+  }
+  .opts button .detail-text::before {
+    content: "└ ";
+    color: var(--muted);
+    margin-right: 4px;
+    font-family: monospace;
   }
   .opts button:last-child { border-bottom: none; }
-  .opts button:hover:not(:disabled) { background: #26313d; }
+  .opts button:hover:not(:disabled) { background: #1f2732; color: #fff; }
+  
+  /* 最適選択肢ボタンの強調スタイル */
+  .opts button.best-option {
+    background: rgba(0, 230, 118, 0.12);
+    border-left: 4px solid #00e676;
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .opts button.best-option .detail-text::before {
+    color: #00e676;
+    font-weight: bold;
+  }
   #messages { max-height: 160px; overflow-y: auto; font-size: 12px; color: var(--muted); }
   #messages div { padding: 2px 0; border-bottom: 1px dotted #2a333d; }
   #messages div.err { color: var(--danger); }
@@ -144,7 +339,7 @@
       <h2>選択可能なアクション</h2>
       <div class="sysbtns">
         <button id="btn-n">ステップ終了</button>
-        <button id="btn-ai" class="primary hidden">AI自動決定</button>
+        <button id="btn-best" class="best-btn">最適手</button>
         <button id="btn-surrender" class="danger">サレンダー</button>
       </div>
       <div id="groups"><div class="empty">「新規ゲーム開始」を押してください</div></div>
@@ -156,11 +351,48 @@
   </div>
 </div>
 
+<!-- カード画像プレビュー ポップアップ -->
+<div id="card-preview" class="card-preview hidden">
+  <img id="card-preview-img" src="" alt="カード画像">
+  <div id="card-preview-name" class="name"></div>
+</div>
+
 <script>
 let sessionId = null;
 let current = null;
 
 const $ = (id) => document.getElementById(id);
+
+function updatePreviewPosition(e) {
+  const preview = $("card-preview");
+  // マウスが画面の右半分にある場合は「左上」、左半分にある場合は「右上」に配置（常にマウスから遠い場所へ）
+  const isRightHalf = e ? e.clientX > (window.innerWidth / 2) : false;
+  preview.style.top = "16px";
+  if (isRightHalf) {
+    preview.style.left = "16px";
+    preview.style.right = "auto";
+  } else {
+    preview.style.left = "auto";
+    preview.style.right = "16px";
+  }
+}
+
+function bindCardPreview(el, name, imgUrl) {
+  if (!imgUrl) return;
+  el.addEventListener("mouseenter", (e) => {
+    const preview = $("card-preview");
+    const previewImg = $("card-preview-img");
+    const previewName = $("card-preview-name");
+    previewImg.src = imgUrl;
+    previewName.textContent = name;
+    updatePreviewPosition(e);
+    preview.classList.remove("hidden");
+  });
+  el.addEventListener("mouseleave", () => {
+    const preview = $("card-preview");
+    preview.classList.add("hidden");
+  });
+}
 
 function lifeStr(n, max = 5) {
   let s = "";
@@ -170,8 +402,15 @@ function lifeStr(n, max = 5) {
   return s + ` (${n}/${max})`;
 }
 
-function evalStr(v) {
-  return v == null ? "" : `[AI評価値: ${v.toFixed(3)}]`;
+function getEvalBadge(v) {
+  if (v == null) return "";
+  const winRate = ((v + 1.0) / 2.0 * 100).toFixed(1);
+  let cls = "eval-mid";
+  if (v >= 0.6) cls = "eval-high";
+  else if (v >= 0.2) cls = "eval-mid";
+  else if (v >= -0.2) cls = "eval-low";
+  else cls = "eval-neg";
+  return `<span class="eval-badge ${cls}">${winRate}%</span>`;
 }
 
 function esc(s) {
@@ -216,43 +455,137 @@ function renderField(el, field) {
     const sym = o.symbols ? `シンボル:${esc(o.symbols)}, ` : "";
     div.innerHTML = `<div class="nm">${esc(o.name)}</div>` +
       `<div class="sub">${sym}コア:${esc(o.cores)}, Lv${o.lv}</div>`;
+    if (o.image_url) bindCardPreview(div, o.name, o.image_url);
     el.appendChild(div);
   }
 }
 
-function renderHand(el, hand) {
+function renderHand(el, hand, groups, maxEval) {
   el.innerHTML = "";
   if (!hand.length) {
     el.innerHTML = '<div class="empty">(なし)</div>';
     return;
   }
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
   for (const c of hand) {
-    const div = document.createElement("div");
-    div.className = "card";
+    const wrap = document.createElement("div");
+    wrap.className = "hand-card-wrapper";
+
+    // この手札に対応するグループ（召喚、配置、使用、煌臨）を検索
+    const matchedGroups = (groups || []).filter(g => g.category.includes(c.name));
+    const isPlayable = matchedGroups.length > 0 && matchedGroups.some(g => !g.all_forbidden);
+
+    let cardBestEval = null;
+    let totalOptions = 0;
+    matchedGroups.forEach(g => {
+      totalOptions += g.options.length;
+      if (g.best_eval != null) {
+        if (cardBestEval == null || g.best_eval > cardBestEval) {
+          cardBestEval = g.best_eval;
+        }
+      }
+    });
+
+    const isTop = (isPlayable && isNearBest(cardBestEval, maxEval));
+
+    const cardDiv = document.createElement("div");
+    let cardClass = "card";
+    if (isPlayable) cardClass += " playable";
+    if (isTop) cardClass += " is-best";
+    cardDiv.className = cardClass;
+
     const red = c.reduction ? `, 軽減:${esc(c.reduction)}` : "";
-    div.innerHTML = `<div class="nm">${esc(c.name)}</div>` +
-      `<div class="sub">コスト:${c.cost}${red}</div>`;
-    el.appendChild(div);
+    let playBadgeHtml = "";
+    if (isPlayable) {
+      const topBadge = isTop ? `<span class="top-tag">★最善手</span>` : "";
+      playBadgeHtml = `<div class="playable-badge">${topBadge}<span>▶ 支払 ${totalOptions}通り</span> ${getEvalBadge(cardBestEval)}</div>`;
+    }
+
+    cardDiv.innerHTML = `<div class="nm">${esc(c.name)}</div>` +
+      `<div class="sub">コスト:${c.cost}${red}</div>` +
+      playBadgeHtml;
+
+    if (c.image_url) bindCardPreview(cardDiv, c.name, c.image_url);
+
+    wrap.appendChild(cardDiv);
+
+    if (isPlayable) {
+      const optsDiv = document.createElement("div");
+      optsDiv.className = "hand-options hidden" + (isTop ? " is-best" : "");
+
+      matchedGroups.forEach(g => {
+        for (const o of g.options) {
+          const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
+          const btn = document.createElement("button");
+          btn.className = "hand-opt-btn" + (isOptBest ? " best-option" : "");
+          btn.disabled = o.forbidden;
+          if (o.forbidden) btn.title = o.forbidden_reason || "選択不可";
+          const prefix = o.forbidden ? `🚫[${esc(o.forbidden_reason || "選択不可")}] ` : "";
+          btn.innerHTML = `<span class="detail-text">${prefix}${esc(o.detail)}</span> ${getEvalBadge(o.eval)}`;
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            doAct(o.index);
+          };
+          optsDiv.appendChild(btn);
+        }
+      });
+
+      wrap.appendChild(optsDiv);
+
+      cardDiv.onclick = () => {
+        const isHidden = optsDiv.classList.toggle("hidden");
+        cardDiv.classList.toggle("open", !isHidden);
+      };
+    }
+
+    el.appendChild(wrap);
   }
 }
 
-function renderGroups(groups) {
+function renderGroups(groups, maxEval) {
   const box = $("groups");
   box.innerHTML = "";
   if (!groups.length) {
     box.innerHTML = '<div class="empty">選択可能なアクションはありません</div>';
     return;
   }
-  groups.forEach((g) => {
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
+  groups.forEach((g, idx) => {
+    const isTop = (!g.all_forbidden && isNearBest(g.best_eval, maxEval));
+    const isSingleBest = (isTop && g.options.length === 1);
     const div = document.createElement("div");
-    div.className = "group" + (g.all_forbidden ? " forbidden" : "");
+    div.className = "group" + (g.all_forbidden ? " forbidden" : "") + (isSingleBest ? " single-best" : "");
 
     const head = document.createElement("button");
     head.className = "head";
     const forbidden = g.all_forbidden ? `🚫[${esc(g.forbidden_reason || "選択不可")}] ` : "";
-    const cnt = g.options.length > 1 ? `<span class="cnt">支払 ${g.options.length}通り ▾</span>` : "";
-    head.innerHTML = `<span class="cat">${forbidden}${esc(g.category)}</span>${cnt}` +
-      `<span class="eval">${evalStr(g.best_eval)}</span>`;
+    
+    // サブ選択肢がある場合の ▶ / ▼ インジケータ
+    const hasSub = g.options.length > 1;
+    let arrowIcon = isTop ? "▼" : "▶";
+    const cntHtml = hasSub ? `<span class="cnt" id="cnt-${idx}">${arrowIcon} 支払 ${g.options.length}通り</span>` : "";
+    
+    head.innerHTML = `<span class="cat">${forbidden}${esc(g.category)}</span>${cntHtml}` +
+      `${getEvalBadge(g.best_eval)}`;
+    
+    // カテゴリ名に含まれるカード名から画像プレビューを紐付け
+    for (const [cName, cImg] of Object.entries(cardImageMap)) {
+      if (g.category.includes(cName)) {
+        bindCardPreview(head, cName, cImg);
+        break;
+      }
+    }
+    
     div.appendChild(head);
 
     if (g.options.length === 1) {
@@ -263,26 +596,58 @@ function renderGroups(groups) {
     } else {
       // 第2階層（詳細コア支払）を開閉
       const opts = document.createElement("div");
-      opts.className = "opts hidden";
+      opts.className = "opts" + (isTop ? "" : " hidden"); // 最適手グループは初期展開
+      
+      // 初期状態で閉じている最適手グループには closed-best を付与
+      if (isTop && opts.classList.contains("hidden")) {
+        div.classList.add("closed-best");
+      }
+
       for (const o of g.options) {
+        const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
         const btn = document.createElement("button");
+        if (isOptBest) btn.className = "best-option";
         btn.disabled = o.forbidden;
         if (o.forbidden) btn.title = o.forbidden_reason || "選択不可";
         const prefix = o.forbidden ? `🚫[${esc(o.forbidden_reason || "選択不可")}] ` : "";
-        btn.innerHTML = `${prefix}${esc(o.detail)} <span class="eval">${evalStr(o.eval)}</span>`;
+        btn.innerHTML = `<span class="detail-text">${prefix}${esc(o.detail)}</span> ${getEvalBadge(o.eval)}`;
         btn.onclick = () => doAct(o.index);
         opts.appendChild(btn);
       }
       div.appendChild(opts);
-      head.onclick = () => opts.classList.toggle("hidden");
+      
+      head.onclick = () => {
+        const isNowHidden = opts.classList.toggle("hidden");
+        if (isTop) {
+          div.classList.toggle("closed-best", isNowHidden);
+        }
+        const cntEl = $(`cnt-${idx}`);
+        if (cntEl) {
+          cntEl.textContent = `${isNowHidden ? "▶" : "▼"} 支払 ${g.options.length}通り`;
+        }
+      };
     }
     box.appendChild(div);
   });
 }
 
+let cardImageMap = {};
+
 function render(data) {
   current = data;
   sessionId = data.session;
+
+  // カード名から画像URLへのマップを更新
+  cardImageMap = {};
+  if (data.player && data.player.hand) {
+    data.player.hand.forEach(c => { if (c.image_url) cardImageMap[c.name] = c.image_url; });
+  }
+  if (data.player && data.player.field) {
+    data.player.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
+  }
+  if (data.opponent && data.opponent.field) {
+    data.opponent.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
+  }
 
   $("turn").textContent = data.turn;
   $("active").textContent = `プレイヤー${data.active_player}`;
@@ -298,7 +663,6 @@ function render(data) {
   $("my-count").textContent = data.player.count;
   $("my-deck-count").textContent = data.player.deck_count;
   renderField($("my-field"), data.player.field);
-  renderHand($("my-hand"), data.player.hand);
 
   $("opp-life").innerHTML = lifeStr(data.opponent.life);
   $("opp-reserve").textContent = data.opponent.reserve;
@@ -308,15 +672,37 @@ function render(data) {
   $("opp-deck-count").textContent = data.opponent.deck_count;
   renderField($("opp-field"), data.opponent.field);
 
-  renderGroups(data.groups);
+  // 全体での最高評価値 (groups および n_eval) を算出
+  let maxEval = -Infinity;
+  if (!data.n_forbidden && data.n_eval != null) {
+    maxEval = data.n_eval;
+  }
+  if (data.groups) {
+    data.groups.forEach(g => {
+      if (!g.all_forbidden && g.best_eval != null && g.best_eval > maxEval) {
+        maxEval = g.best_eval;
+      }
+    });
+  }
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
+  renderGroups(data.groups, maxEval);
+  renderHand($("my-hand"), data.player.hand, data.groups, maxEval);
 
   const nBtn = $("btn-n");
-  nBtn.textContent = data.n_label || "ステップ終了";
+  const isNBest = (!data.n_forbidden && isNearBest(data.n_eval, maxEval));
+  nBtn.classList.toggle("is-best", isNBest);
+  const nLabel = esc(data.n_label || "ステップ終了");
+  const nForbiddenPrefix = data.n_forbidden ? `🚫[${esc(data.n_forbidden_reason || "選択不可")}] ` : "";
+  nBtn.innerHTML = `<span>${nForbiddenPrefix}${nLabel}</span> ${getEvalBadge(data.n_eval)}`;
   nBtn.disabled = data.n_index == null || data.n_forbidden || data.winner != null;
-  nBtn.title = data.n_forbidden ? (data.n_forbidden_reason || "選択不可") : evalStr(data.n_eval || null);
+  nBtn.title = data.n_forbidden ? (data.n_forbidden_reason || "選択不可") : "";
 
-  $("btn-ai").classList.toggle("hidden", !data.ai_available);
-  $("btn-ai").disabled = data.winner != null;
+  $("btn-best").disabled = data.winner != null;
   $("btn-surrender").disabled = data.winner != null;
 
   const banner = $("winner");
@@ -336,7 +722,30 @@ async function doAct(index) {
   if (data) render(data);
 }
 
+function saveDeckSettings() {
+  const d1 = $("deck1").value.trim();
+  const d2 = $("deck2").value.trim();
+  if (d1) localStorage.setItem("bs_deck1", d1);
+  if (d2) localStorage.setItem("bs_deck2", d2);
+}
+
+function loadDeckSettings() {
+  const d1 = localStorage.getItem("bs_deck1");
+  const d2 = localStorage.getItem("bs_deck2");
+  if (d1) $("deck1").value = d1;
+  if (d2) $("deck2").value = d2;
+}
+
+// ページ初期化時に保存済みデッキ設定を復元
+loadDeckSettings();
+
+$("deck1").addEventListener("change", saveDeckSettings);
+$("deck1").addEventListener("input", saveDeckSettings);
+$("deck2").addEventListener("change", saveDeckSettings);
+$("deck2").addEventListener("input", saveDeckSettings);
+
 $("btn-new").onclick = async () => {
+  saveDeckSettings();
   const data = await api("/api/new", {
     deck1: $("deck1").value.trim(),
     deck2: $("deck2").value.trim(),
@@ -351,7 +760,7 @@ $("btn-n").onclick = () => {
   if (current && current.n_index != null) doAct(current.n_index);
 };
 
-$("btn-ai").onclick = async () => {
+$("btn-best").onclick = async () => {
   if (!sessionId) return;
   const data = await api("/api/auto", { session: sessionId });
   if (data) render(data);

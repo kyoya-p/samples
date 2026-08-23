@@ -87,6 +87,7 @@ impl CardRegistry {
         self.register(Box::new(bs76_038::Bs76038));
         self.register(Box::new(bs76_041::Bs76041));
         self.register(Box::new(bs76_t001::Bs76T001));
+        self.register(Box::new(rsd03_002::Rsd03002));
     }
     
     pub fn get(&self, card_id: &str) -> Option<&dyn CardEffect> {
@@ -106,3 +107,4 @@ pub mod bs76_035;
 pub mod bs76_038;
 pub mod bs76_041;
 pub mod bs76_t001;
+pub mod rsd03_002;
