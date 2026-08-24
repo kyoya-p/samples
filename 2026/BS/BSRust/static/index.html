@@ -25,15 +25,18 @@
     font-size: 14px;
   }
   h1 { font-size: 18px; margin: 0 0 12px; }
+  .hidden { display: none !important; }
   .layout { display: grid; grid-template-columns: 1fr 440px; gap: 16px; max-width: 1360px; margin: 0 auto; }
   @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
   .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-  .toolbar input {
+  .toolbar input, .toolbar select {
     background: var(--panel2); color: var(--text); border: 1px solid var(--border);
-    border-radius: 4px; padding: 6px 8px; width: 180px;
+    border-radius: 4px; padding: 6px 8px; font-size: 13px;
   }
+  .toolbar input { width: 170px; }
+  .toolbar select { cursor: pointer; }
   button {
     background: var(--panel2); color: var(--text); border: 1px solid var(--border);
     border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px;
@@ -43,17 +46,22 @@
   button.primary { background: #114d66; border-color: var(--accent); }
   button.best-btn { background: #133824; border-color: #00e676; color: #00e676; font-weight: 600; }
   button.best-btn:hover:not(:disabled) { background: #1b4d32; border-color: #66ffa6; color: #ffffff; box-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
-  button#btn-n { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; }
+  button#btn-n { display: inline-flex; align-items: center; gap: 8px; font-weight: bold; padding: 6px 14px; }
   button#btn-n.is-best { background: #133824; border-color: #00e676; color: #ffffff; box-shadow: 0 0 10px rgba(0, 230, 118, 0.35); }
-  button.danger { border-color: var(--danger); color: var(--danger); }
-  .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; }
+  .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
   .statusline .phase { color: var(--warn); font-weight: bold; }
-  .side { margin-bottom: 4px; }
-  .side .meta { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); margin-bottom: 8px; }
-  .side .meta b { color: var(--text); }
-  .life { letter-spacing: 2px; }
-  .life .on { color: var(--danger); }
-  .life .off { color: #444; }
+  .status-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+  .side { margin-bottom: 4px; transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
+  .side.active-turn {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.25) !important;
+    background: linear-gradient(180deg, rgba(0, 230, 118, 0.04), var(--panel)) !important;
+  }
+  .side.active-turn h2 {
+    color: #00e676 !important;
+  }
+  .life { display: inline-flex; align-items: center; gap: 4px; }
+  .core-icons, .life-cores { letter-spacing: -4px; margin-right: 5px; font-size: 14px; display: inline-block; }
   .cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; align-items: flex-start; }
   .card {
     background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
@@ -66,10 +74,52 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   }
   .card .nm { font-weight: bold; }
-  .card .sub { color: var(--muted); font-size: 12px; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
   .card.exhausted { opacity: 0.55; border-style: dashed; }
   .card.exhausted .nm::after { content: " [疲労]"; color: var(--warn); font-weight: normal; font-size: 12px; }
   .empty { color: #556; padding: 6px 0; }
+
+  /* 実際のカード風 コスト＆軽減シンボルバー */
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cost-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 6px 2px 2px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+  .cost-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffe57f, #ffd700 50%, #b8860b 85%, #5c4300);
+    color: #1a1200;
+    font-weight: 900;
+    font-size: 12.5px;
+    font-family: 'Arial Black', Impact, sans-serif;
+    line-height: 1;
+    border: 1.5px solid #fff9db;
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+  }
+  .reduction-gems {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    font-size: 11px;
+    letter-spacing: -2px;
+  }
 
   /* プレイ可能な手札カードおよび展開選択肢スタイル */
   .hand-card-wrapper {
@@ -178,7 +228,7 @@
     font-weight: bold;
   }
   
-  /* カード画像プレビュー（マウスから遠い位置にオーバーラップ表示・2倍拡大） */
+  /* カード画像プレビュー（2倍サイズ拡大表示） */
   .card-preview {
     position: fixed;
     z-index: 9999;
@@ -191,20 +241,22 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 420px;
+    width: 500px;
+    max-height: calc(100vh - 32px);
     transition: opacity 0.15s ease;
   }
   .card-preview img {
-    width: 400px;
-    height: 560px;
+    width: 480px;
+    height: 672px;
+    max-height: calc(100vh - 80px);
     object-fit: contain;
     border-radius: 8px;
     display: block;
     background: #0f141c;
   }
   .card-preview .name {
-    margin-top: 10px;
-    font-size: 14px;
+    margin-top: 8px;
+    font-size: 15px;
     font-weight: bold;
     color: #fff;
     text-align: center;
@@ -234,6 +286,14 @@
   
   .eval-badge {
     font-size: 12px; font-weight: bold; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .eval-badge.is-best {
+    background: #00e676 !important;
+    color: #002b11 !important;
+    border: 1px solid #00e676 !important;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.6) !important;
+    font-weight: 800 !important;
   }
   .eval-high { background: rgba(102, 187, 106, 0.25); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); }
   .eval-mid { background: rgba(79, 195, 247, 0.2); color: #4fc3f7; border: 1px solid rgba(79, 195, 247, 0.4); }
@@ -283,15 +343,246 @@
   }
   .hidden { display: none; }
   .sysbtns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* コア提供元インタラクティブハイライトスタイル */
+  .reserve-box {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+  .core-source-interactive {
+    outline: 2px dashed #00e676 !important;
+    outline-offset: 2px;
+    cursor: pointer !important;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.45);
+    animation: pulseHighlight 1.5s infinite alternate;
+  }
+  @keyframes pulseHighlight {
+    0% { outline-color: #00e676; }
+    100% { outline-color: #69f0ae; }
+  }
+  .core-source-interactive:hover {
+    background: rgba(0, 230, 118, 0.18) !important;
+  }
+  .core-icon-group {
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0 1px;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .core-icon-group:hover {
+    transform: scale(1.25);
+    filter: drop-shadow(0 0 5px #00e676);
+  }
+  .soul-core-btn {
+    display: inline-block;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .soul-core-btn:hover {
+    transform: scale(1.35);
+    filter: drop-shadow(0 0 6px #ff9800);
+  }
+  .core-source-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #00e676;
+    color: #05140b;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    z-index: 10;
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .core-source-badge.has-soul {
+    background: linear-gradient(135deg, #00e676, #ff9800);
+    color: #000;
+  }
+  .core-alloc-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #15222e;
+    border: 1px solid #00e676;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .core-alloc-bar .info {
+    color: #00e676;
+    font-weight: bold;
+    font-size: 11px;
+    word-break: break-all;
+  }
+  .core-alloc-bar .actions {
+    display: flex;
+    gap: 6px;
+  }
+  .core-alloc-bar button.btn-confirm {
+    flex: 1;
+    background: #00e676;
+    color: #05140b;
+    font-weight: bold;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+  }
+  .core-alloc-bar button.btn-confirm:disabled {
+    background: #2a3b32;
+    color: #666;
+    cursor: not-allowed;
+  }
+  .core-alloc-bar button.btn-reset {
+    background: #2a3440;
+    color: #aaa;
+    border: 1px solid #445566;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .hand-opt-btn.matched-option,
+  .source-opt-btn.matched-option {
+    background: rgba(0, 230, 118, 0.25) !important;
+    border: 2px solid #00e676 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+    box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+  }
+
+  /* 階層表示: 1. コスト・配置コア サブグループ */
+  .cost-subgroup {
+    margin-bottom: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(18, 24, 32, 0.7);
+  }
+  .cost-subgroup.is-best {
+    border-color: rgba(0, 230, 118, 0.35);
+  }
+  .cost-subgroup-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: #192330;
+    border: none;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+  }
+  .cost-subgroup-head:hover {
+    background: #223042;
+  }
+  .cost-subgroup-head .cost-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cost-subgroup-head .arrow-icon {
+    font-size: 9px;
+    color: #00e676;
+    margin-right: 2px;
+  }
+  .cost-subgroup-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 6px;
+    background: rgba(11, 16, 23, 0.85);
+  }
+  .source-opt-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: #151e2a;
+    border: 1px solid #273546;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #cbd5e1;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+  .source-opt-btn:hover:not(:disabled) {
+    background: #1e2c3c;
+    border-color: #00e676;
+    color: #fff;
+  }
+  .source-opt-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .source-opt-btn.best-option {
+    border-left: 3px solid #00e676;
+    background: rgba(0, 230, 118, 0.08);
+  }
+  .source-opt-btn .detail-text {
+    flex: 1;
+    overflow: visible;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.35;
+  }
+  .winner-banner {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.3));
+    border: 2px solid #2ecc71;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .winner-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #2ecc71;
+    margin-bottom: 10px;
+  }
+  .winner-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
 </style>
 </head>
 <body>
-<h1>⚔ TCG BattleSpirits デッキシミュレータ（エターナルフォーマット）</h1>
+<h1 id="main-title">⚔ TCG BattleSpirits デッキシミュレータ</h1>
 
 <div class="toolbar">
+  <label>フォーマット:
+    <select id="format">
+      <option value="eternal">エターナル</option>
+      <option value="standard">スタンダード</option>
+    </select>
+  </label>
   <label>デッキ1: <input id="deck1" value="deck-fara.yaml"></label>
   <label>デッキ2: <input id="deck2" value="deck-kogyo.yaml"></label>
   <button id="btn-new" class="primary">新規ゲーム開始</button>
+  <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
 </div>
 
 <div class="layout">
@@ -303,15 +594,18 @@
         <span>ターン: <b id="turn">-</b></span>
         <span>手番: <b id="active">-</b></span>
         <span class="phase" id="phase">ゲーム未開始</span>
+        <div class="status-actions">
+          <button id="btn-n">ステップ終了</button>
+        </div>
       </div>
     </div>
 
-    <div class="panel side">
+    <div class="panel side" id="opp-panel">
       <h2 id="opp-title">相手</h2>
       <div class="meta">
-        <span>ライフ: <span class="life" id="opp-life"></span></span>
-        <span>リザーブ: <b id="opp-reserve">-</b></span>
-        <span>トラッシュコア: <b id="opp-trash-cores">-</b></span>
+        <span>L: <span class="life" id="opp-life"></span></span>
+        <span>R: <b id="opp-reserve">-</b></span>
+        <span>T: <b id="opp-trash-cores">-</b></span>
         <span>カウント: <b id="opp-count">-</b></span>
         <span>手札: <b id="opp-hand-count">-</b>枚</span>
         <span>山札: <b id="opp-deck-count">-</b>枚</span>
@@ -319,12 +613,12 @@
       <div class="cards" id="opp-field"></div>
     </div>
 
-    <div class="panel side">
+    <div class="panel side" id="my-panel">
       <h2 id="my-title">自分</h2>
       <div class="meta">
-        <span>ライフ: <span class="life" id="my-life"></span></span>
-        <span>リザーブ: <b id="my-reserve">-</b></span>
-        <span>トラッシュコア: <b id="my-trash-cores">-</b></span>
+        <span>L: <span class="life" id="my-life"></span></span>
+        <span id="my-reserve-box" class="reserve-box">R: <b id="my-reserve">-</b></span>
+        <span>T: <b id="my-trash-cores">-</b></span>
         <span>カウント: <b id="my-count">-</b></span>
         <span>山札: <b id="my-deck-count">-</b>枚</span>
       </div>
@@ -337,11 +631,6 @@
   <div id="sidebar">
     <div class="panel">
       <h2>選択可能なアクション</h2>
-      <div class="sysbtns">
-        <button id="btn-n">ステップ終了</button>
-        <button id="btn-best" class="best-btn">最適手</button>
-        <button id="btn-surrender" class="danger">サレンダー</button>
-      </div>
       <div id="groups"><div class="empty">「新規ゲーム開始」を押してください</div></div>
     </div>
     <div class="panel">
@@ -383,10 +672,25 @@ function bindCardPreview(el, name, imgUrl) {
     const preview = $("card-preview");
     const previewImg = $("card-preview-img");
     const previewName = $("card-preview-name");
+    
+    // ロード完了するまで非表示を維持
+    preview.classList.add("hidden");
+    previewImg.onload = () => {
+      if (el.matches(':hover')) {
+        updatePreviewPosition(e);
+        preview.classList.remove("hidden");
+      }
+    };
+    previewImg.onerror = () => {
+      preview.classList.add("hidden");
+    };
     previewImg.src = imgUrl;
     previewName.textContent = name;
-    updatePreviewPosition(e);
-    preview.classList.remove("hidden");
+
+    if (previewImg.complete && previewImg.naturalWidth > 0) {
+      updatePreviewPosition(e);
+      preview.classList.remove("hidden");
+    }
   });
   el.addEventListener("mouseleave", () => {
     const preview = $("card-preview");
@@ -394,15 +698,42 @@ function bindCardPreview(el, name, imgUrl) {
   });
 }
 
-function lifeStr(n, max = 5) {
-  let s = "";
-  for (let i = 0; i < max; i++) {
-    s += `<span class="${i < n ? "on" : "off"}">■</span>`;
+function formatCoresDisplay(str, sourceId) {
+  if (str == null || str === "" || str === "0" || str === 0 || str === "-") return "-";
+  const s = String(str);
+  const hasSoul = s.endsWith("s");
+  const total = parseInt(s, 10) || 0;
+  const soulCount = hasSoul ? 1 : 0;
+  const normalCount = Math.max(0, total - soulCount);
+
+  let normalHtml = "";
+  if (normalCount > 0) {
+    const clickAttr = sourceId ? `onclick="event.stopPropagation(); handleSourceCoreClick('${sourceId}', 'normal');"` : "";
+    normalHtml = `<span class="core-icon-group normal-core-btn" ${clickAttr} title="通常コア (${normalCount}個)">${"🔷".repeat(normalCount)}</span>`;
   }
-  return s + ` (${n}/${max})`;
+  let soulHtml = "";
+  if (soulCount > 0) {
+    const clickAttr = sourceId ? `onclick="event.stopPropagation(); handleSourceCoreClick('${sourceId}', 'soul');"` : "";
+    soulHtml = `<span class="core-icon-group soul-core-btn" ${clickAttr} title="ソウルコア (1個)">🔶</span>`;
+  }
+  if (normalCount === 0 && soulCount === 0) return "-";
+  return `<span class="core-icons">${normalHtml}${soulHtml}</span>`;
 }
 
-function getEvalBadge(v) {
+function formatCountDisplay(count) {
+  const n = Math.max(0, parseInt(count, 10) || 0);
+  if (n === 0) return "-";
+  return `<span class="core-icons">${"🔷".repeat(n)}</span>`;
+}
+
+function lifeStr(n) {
+  const count = Math.max(0, parseInt(n, 10) || 0);
+  if (count === 0) return `<span class="life-cores">💀</span>`;
+  const icons = "🔷".repeat(count);
+  return `<span class="life-cores">${icons}</span>`;
+}
+
+function getEvalBadge(v, isBest = false) {
   if (v == null) return "";
   const winRate = ((v + 1.0) / 2.0 * 100).toFixed(1);
   let cls = "eval-mid";
@@ -410,7 +741,8 @@ function getEvalBadge(v) {
   else if (v >= 0.2) cls = "eval-mid";
   else if (v >= -0.2) cls = "eval-low";
   else cls = "eval-neg";
-  return `<span class="eval-badge ${cls}">${winRate}%</span>`;
+  const bestClass = isBest ? " is-best" : "";
+  return `<span class="eval-badge ${cls}${bestClass}">${winRate}%</span>`;
 }
 
 function esc(s) {
@@ -422,10 +754,19 @@ function esc(s) {
 function addMessages(msgs, isError = false) {
   const box = $("messages");
   for (const m of msgs) {
-    const div = document.createElement("div");
-    div.textContent = m;
-    if (isError) div.className = "err";
-    box.prepend(div);
+    const first = box.firstElementChild;
+    if (first && first.dataset.rawText === m && !isError && !first.classList.contains("err")) {
+      const count = (parseInt(first.dataset.count, 10) || 1) + 1;
+      first.dataset.count = count;
+      first.textContent = `${m} (×${count})`;
+    } else {
+      const div = document.createElement("div");
+      div.textContent = m;
+      div.dataset.rawText = m;
+      div.dataset.count = 1;
+      if (isError) div.className = "err";
+      box.prepend(div);
+    }
   }
 }
 
@@ -438,12 +779,274 @@ async function api(path, body) {
   const data = await res.json();
   if (data.error) {
     addMessages([data.error], true);
+    if (data.error.includes("セッションが見つかりません") && path !== "/api/new") {
+      addMessages(["ℹ️ 有効なゲームセッションを自動再初期化しています..."]);
+      setTimeout(() => startNewGame(), 100);
+    }
     return null;
   }
   return data;
 }
 
-function renderField(el, field) {
+function formatReductionGems(redStr) {
+  if (!redStr) return "";
+  const gemMap = {
+    "赤": "🔴",
+    "紫": "🟣",
+    "緑": "🟢",
+    "白": "⚪",
+    "黄": "🟡",
+    "青": "🔵"
+  };
+  let gems = "";
+  for (const [col, icon] of Object.entries(gemMap)) {
+    const match = redStr.match(new RegExp(`${col}(\\d+)`));
+    if (match) {
+      const count = parseInt(match[1], 10);
+      gems += icon.repeat(count);
+    }
+  }
+  return gems ? `<span class="reduction-gems" title="軽減: ${esc(redStr)}">${gems}</span>` : "";
+}
+
+let activePlayContext = null;
+
+function parseDetailSources(detail) {
+  // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
+  const sources = {};
+  const match = detail.match(/\(([^)]+)\)$/);
+  if (!match) return sources;
+  const inner = match[1];
+  const cleaned = inner.replace(/[\$💲支払📥配置][:：]?/g, '');
+  const parts = cleaned.split(/[,、]/);
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+    const colonIdx = p.lastIndexOf(':');
+    if (colonIdx !== -1) {
+      let name = p.substring(0, colonIdx).trim();
+      if (name === "リザーブ") name = "R";
+      const countStr = p.substring(colonIdx + 1).trim();
+      let normal = (countStr.match(/🔷/g) || []).length;
+      let soul = (countStr.match(/🔶/g) || []).length;
+      if (normal === 0 && soul === 0 && countStr !== "0") {
+        const hasSoul = countStr.endsWith("s");
+        const total = parseInt(countStr, 10) || 0;
+        soul = hasSoul ? 1 : 0;
+        normal = Math.max(0, total - soul);
+      }
+      if (name) {
+        if (!sources[name]) sources[name] = { normal: 0, soul: 0 };
+        sources[name].normal += normal;
+        sources[name].soul += soul;
+      }
+    }
+  }
+  return sources;
+}
+
+function updateCoreAllocationUI() {
+  document.querySelectorAll(".core-source-interactive").forEach(el => el.classList.remove("core-source-interactive"));
+  document.querySelectorAll(".core-source-badge").forEach(el => el.remove());
+  document.querySelectorAll(".hand-opt-btn.matched-option").forEach(el => el.classList.remove("matched-option"));
+
+  if (!activePlayContext) {
+    const existingBar = document.querySelector(".core-alloc-bar");
+    if (existingBar) existingBar.remove();
+    return;
+  }
+
+  // 1. リザーブ(R)のハイライトとバッジ
+  const reserveBox = $("my-reserve-box");
+  if (reserveBox) {
+    reserveBox.classList.add("core-source-interactive");
+    const resAlloc = activePlayContext.alloc["Reserve"] || { normal: 0, soul: 0 };
+    if (resAlloc.normal > 0 || resAlloc.soul > 0) {
+      const b = document.createElement("span");
+      b.className = "core-source-badge" + (resAlloc.soul > 0 ? " has-soul" : "");
+      let text = "";
+      if (resAlloc.normal > 0) text += `+${resAlloc.normal}🔷`;
+      if (resAlloc.soul > 0) text += `${text ? ' ' : ''}+${resAlloc.soul}🔶`;
+      b.textContent = text;
+      reserveBox.appendChild(b);
+    }
+  }
+
+  // 2. 自分のフィールドカードのハイライトとバッジ
+  const myFieldCards = document.querySelectorAll("#my-field .card");
+  myFieldCards.forEach(cardEl => {
+    const srcId = cardEl.getAttribute("data-obj-id");
+    if (srcId) {
+      cardEl.classList.add("core-source-interactive");
+      const objAlloc = activePlayContext.alloc[srcId] || { normal: 0, soul: 0 };
+      if (objAlloc.normal > 0 || objAlloc.soul > 0) {
+        const b = document.createElement("span");
+        b.className = "core-source-badge" + (objAlloc.soul > 0 ? " has-soul" : "");
+        let text = "";
+        if (objAlloc.normal > 0) text += `+${objAlloc.normal}🔷`;
+        if (objAlloc.soul > 0) text += `${text ? ' ' : ''}+${objAlloc.soul}🔶`;
+        b.textContent = text;
+        cardEl.appendChild(b);
+      }
+    }
+  });
+
+  // 3. マッチする選択肢を探索
+  const allOpts = [];
+  activePlayContext.groups.forEach(g => {
+    g.options.forEach(o => allOpts.push(o));
+  });
+
+  // alloc 内訳（名前ベース: Reserve -> "R", obj_id -> obj.name）
+  const allocByName = {};
+  for (const [srcId, counts] of Object.entries(activePlayContext.alloc)) {
+    if ((counts.normal || 0) <= 0 && (counts.soul || 0) <= 0) continue;
+    let name = srcId;
+    if (srcId === "Reserve") {
+      name = "R";
+    } else if (current && current.player && current.player.field) {
+      const obj = current.player.field.find(o => o.id === srcId);
+      if (obj) name = obj.name;
+    }
+    allocByName[name] = { normal: counts.normal || 0, soul: counts.soul || 0 };
+  }
+
+  let matchedOpt = null;
+  const hasAlloc = Object.values(allocByName).some(v => v.normal > 0 || v.soul > 0);
+  if (hasAlloc) {
+    matchedOpt = allOpts.find(o => {
+      if (o.forbidden) return false;
+      const parsed = parseDetailSources(o.detail);
+      const parsedKeys = Object.keys(parsed).filter(k => (parsed[k].normal || 0) > 0 || (parsed[k].soul || 0) > 0);
+      const allocKeys = Object.keys(allocByName).filter(k => (allocByName[k].normal || 0) > 0 || (allocByName[k].soul || 0) > 0);
+      if (parsedKeys.length !== allocKeys.length) return false;
+      return allocKeys.every(k => {
+        const p = parsed[k] || { normal: 0, soul: 0 };
+        const a = allocByName[k] || { normal: 0, soul: 0 };
+        return p.normal === a.normal && p.soul === a.soul;
+      });
+    });
+  }
+
+  // マッチしたボタンをハイライト & 親のアコーディオンを自動展開
+  if (matchedOpt) {
+    const btn = activePlayContext.optsDiv.querySelector(`button[data-act-idx="${matchedOpt.index}"]`);
+    if (btn) {
+      btn.classList.add("matched-option");
+      const parentOpts = btn.closest(".cost-subgroup-opts");
+      if (parentOpts) {
+        // 他を閉じて該当を展開
+        activePlayContext.optsDiv.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+          if (el !== parentOpts) el.classList.add("hidden");
+        });
+        activePlayContext.optsDiv.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+          arr.textContent = "▶";
+        });
+        parentOpts.classList.remove("hidden");
+        const parentHead = parentOpts.previousElementSibling;
+        if (parentHead) {
+          const arrowEl = parentHead.querySelector(".arrow-icon");
+          if (arrowEl) arrowEl.textContent = "▼";
+        }
+      }
+    }
+  }
+
+  // 4. コア配分バーの更新
+  let bar = activePlayContext.optsDiv.querySelector(".core-alloc-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.className = "core-alloc-bar";
+    activePlayContext.optsDiv.insertBefore(bar, activePlayContext.optsDiv.firstChild);
+  }
+
+  const allocStrs = Object.entries(allocByName).map(([k, v]) => {
+    let s = `${k}: `;
+    let p = [];
+    if (v.normal > 0) p.push(`${v.normal}🔷`);
+    if (v.soul > 0) p.push(`${v.soul}🔶`);
+    return s + p.join(" + ");
+  });
+  const allocText = allocStrs.length ? allocStrs.join(", ") : "R/カードのコア(🔷/🔶)をクリックして配分";
+
+  let confirmHtml = "";
+  if (matchedOpt) {
+    const winRate = matchedOpt.eval != null ? ` (${((matchedOpt.eval + 1.0) / 2.0 * 100).toFixed(1)}%)` : "";
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm">この配分でプレイ${winRate}</button>`;
+  } else if (hasAlloc) {
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm" disabled title="一致する合法支払・配置パターンがありません">一致する手なし</button>`;
+  } else {
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm" disabled>配分を選択</button>`;
+  }
+
+  bar.innerHTML = `<span class="info">💎 選択コア: ${allocText}</span>` +
+    `<div class="actions">${confirmHtml}<button class="btn-reset" id="btn-alloc-reset">クリア</button></div>`;
+
+  const confBtn = bar.querySelector("#btn-alloc-confirm");
+  if (confBtn && matchedOpt) {
+    confBtn.onclick = (e) => {
+      e.stopPropagation();
+      doAct(matchedOpt.index);
+    };
+  }
+  const resetBtn = bar.querySelector("#btn-alloc-reset");
+  if (resetBtn) {
+    resetBtn.onclick = (e) => {
+      e.stopPropagation();
+      activePlayContext.alloc = {};
+      updateCoreAllocationUI();
+    };
+  }
+}
+
+function handleSourceCoreClick(sourceId, coreType = 'normal') {
+  if (!activePlayContext) return;
+  if (!activePlayContext.alloc[sourceId]) {
+    activePlayContext.alloc[sourceId] = { normal: 0, soul: 0 };
+  }
+
+  let maxNormal = 0;
+  let maxSoul = 0;
+  if (sourceId === "Reserve") {
+    const s = String(current?.player?.reserve || "0");
+    const hasSoul = s.endsWith("s");
+    const total = parseInt(s, 10) || 0;
+    maxSoul = hasSoul ? 1 : 0;
+    maxNormal = Math.max(0, total - maxSoul);
+  } else if (current?.player?.field) {
+    const obj = current.player.field.find(o => o.id === sourceId);
+    if (obj) {
+      const s = String(obj.cores || "0");
+      const hasSoul = s.endsWith("s");
+      const total = parseInt(s, 10) || 0;
+      maxSoul = hasSoul ? 1 : 0;
+      maxNormal = Math.max(0, total - maxSoul);
+    }
+  }
+
+  if (coreType === 'soul') {
+    if (maxSoul > 0) {
+      activePlayContext.alloc[sourceId].soul = (activePlayContext.alloc[sourceId].soul > 0) ? 0 : 1;
+    }
+  } else {
+    // 通常コアまたは "R" / カード本体クリック: 通常コア+1、最大到達でソウルコア+1
+    const curNormal = activePlayContext.alloc[sourceId].normal || 0;
+    const curSoul = activePlayContext.alloc[sourceId].soul || 0;
+
+    if (curNormal < maxNormal) {
+      activePlayContext.alloc[sourceId].normal = curNormal + 1;
+    } else if (maxSoul > 0 && curSoul === 0) {
+      activePlayContext.alloc[sourceId].soul = 1;
+    } else {
+      activePlayContext.alloc[sourceId].normal = 0;
+      activePlayContext.alloc[sourceId].soul = 0;
+    }
+  }
+
+  updateCoreAllocationUI();
+}
+
+function renderField(el, field, isMyField) {
   el.innerHTML = "";
   if (!field.length) {
     el.innerHTML = '<div class="empty">(なし)</div>';
@@ -452,12 +1055,129 @@ function renderField(el, field) {
   for (const o of field) {
     const div = document.createElement("div");
     div.className = "card" + (o.exhausted ? " exhausted" : "");
-    const sym = o.symbols ? `シンボル:${esc(o.symbols)}, ` : "";
+    if (isMyField) {
+      div.setAttribute("data-obj-id", o.id);
+      div.setAttribute("data-obj-name", o.name);
+      div.onclick = (e) => {
+        if (activePlayContext) {
+          e.stopPropagation();
+          handleSourceCoreClick(o.id, 'normal');
+        }
+      };
+    }
+    const symGems = formatReductionGems(o.symbols);
+    const symHtml = symGems ? `${symGems} ` : "";
+    const sourceIdForField = isMyField ? o.id : null;
     div.innerHTML = `<div class="nm">${esc(o.name)}</div>` +
-      `<div class="sub">${sym}コア:${esc(o.cores)}, Lv${o.lv}</div>`;
+      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}</div>`;
     if (o.image_url) bindCardPreview(div, o.name, o.image_url);
     el.appendChild(div);
   }
+}
+
+function splitOptionDetail(detail) {
+  // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
+  const match = detail.match(/^(.*?)[,、]?\s*(\(([^)]+)\))$/);
+  if (match) {
+    return {
+      costPlacement: match[1].trim(),
+      sourcesLabel: match[2].trim(),
+      innerSources: match[3].trim()
+    };
+  }
+  return {
+    costPlacement: detail.trim(),
+    sourcesLabel: detail.trim(),
+    innerSources: ""
+  };
+}
+
+function groupOptionsByCostPlacement(options) {
+  const map = new Map();
+  for (const o of options) {
+    const { costPlacement, sourcesLabel, innerSources } = splitOptionDetail(o.detail);
+    if (!map.has(costPlacement)) {
+      map.set(costPlacement, {
+        costPlacement,
+        options: []
+      });
+    }
+    map.get(costPlacement).options.push({
+      ...o,
+      costPlacement,
+      sourcesLabel,
+      innerSources
+    });
+  }
+  return Array.from(map.values());
+}
+
+function renderOptionsHierarchy(container, options, maxEval, isNearBest) {
+  const subGroups = groupOptionsByCostPlacement(options);
+
+  subGroups.forEach((sg) => {
+    const validEvals = sg.options.filter(o => !o.forbidden).map(o => o.eval).filter(e => e != null);
+    const bestInSg = validEvals.length ? validEvals.reduce((m, v) => Math.max(m, v), -Infinity) : null;
+    const isSgBest = (bestInSg != null && isNearBest(bestInSg, maxEval));
+
+    const sgDiv = document.createElement("div");
+    sgDiv.className = "cost-subgroup" + (isSgBest ? " is-best" : "");
+
+    // 1段目: 必要コア（コスト、配置コア）選択見出し（初期状態は閉じた状態）
+    const head = document.createElement("button");
+    head.className = "cost-subgroup-head";
+    const patternCountStr = sg.options.length > 1 ? ` (${sg.options.length}パターン)` : "";
+    const bestBadge = bestInSg != null ? getEvalBadge(bestInSg, isSgBest) : "";
+
+    head.innerHTML = `<span class="cost-title"><span class="arrow-icon">▶</span>${esc(sg.costPlacement)}${patternCountStr}</span>${bestBadge}`;
+
+    // 2段目: コア確保パターン選択肢一覧
+    const optsDiv = document.createElement("div");
+    optsDiv.className = "cost-subgroup-opts hidden";
+
+    for (const o of sg.options) {
+      const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
+      const btn = document.createElement("button");
+      btn.className = "source-opt-btn" + (isOptBest ? " best-option" : "");
+      btn.setAttribute("data-act-idx", o.index);
+      btn.disabled = o.forbidden;
+      btn.title = o.forbidden ? (o.forbidden_reason || "選択不可") : o.detail;
+      const prefix = o.forbidden ? `🚫[${esc(o.forbidden_reason || "選択不可")}] ` : "";
+      btn.innerHTML = `<span class="detail-text">${prefix}${esc(o.sourcesLabel || o.detail)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        doAct(o.index);
+      };
+      optsDiv.appendChild(btn);
+    }
+
+    head.onclick = (e) => {
+      e.stopPropagation();
+      const isNowOpening = optsDiv.classList.contains("hidden");
+      
+      // 他のサブグループを閉じる（アコーディオン）
+      container.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+        if (el !== optsDiv) el.classList.add("hidden");
+      });
+      container.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+        arr.textContent = "▶";
+      });
+
+      if (isNowOpening) {
+        optsDiv.classList.remove("hidden");
+        const arrowEl = head.querySelector(".arrow-icon");
+        if (arrowEl) arrowEl.textContent = "▼";
+      } else {
+        optsDiv.classList.add("hidden");
+        const arrowEl = head.querySelector(".arrow-icon");
+        if (arrowEl) arrowEl.textContent = "▶";
+      }
+    };
+
+    sgDiv.appendChild(head);
+    sgDiv.appendChild(optsDiv);
+    container.appendChild(sgDiv);
+  });
 }
 
 function renderHand(el, hand, groups, maxEval) {
@@ -476,14 +1196,11 @@ function renderHand(el, hand, groups, maxEval) {
     const wrap = document.createElement("div");
     wrap.className = "hand-card-wrapper";
 
-    // この手札に対応するグループ（召喚、配置、使用、煌臨）を検索
     const matchedGroups = (groups || []).filter(g => g.category.includes(c.name));
     const isPlayable = matchedGroups.length > 0 && matchedGroups.some(g => !g.all_forbidden);
 
     let cardBestEval = null;
-    let totalOptions = 0;
     matchedGroups.forEach(g => {
-      totalOptions += g.options.length;
       if (g.best_eval != null) {
         if (cardBestEval == null || g.best_eval > cardBestEval) {
           cardBestEval = g.best_eval;
@@ -499,15 +1216,15 @@ function renderHand(el, hand, groups, maxEval) {
     if (isTop) cardClass += " is-best";
     cardDiv.className = cardClass;
 
-    const red = c.reduction ? `, 軽減:${esc(c.reduction)}` : "";
+    const redGems = formatReductionGems(c.reduction);
+    const costBarHtml = `<div class="cost-bar" title="コスト:${c.cost}${c.reduction ? ', 軽減:' + esc(c.reduction) : ''}"><span class="cost-circle">${c.cost}</span>${redGems}</div>`;
+
     let playBadgeHtml = "";
     if (isPlayable) {
-      const topBadge = isTop ? `<span class="top-tag">★最善手</span>` : "";
-      playBadgeHtml = `<div class="playable-badge">${topBadge}<span>▶ 支払 ${totalOptions}通り</span> ${getEvalBadge(cardBestEval)}</div>`;
+      playBadgeHtml = `<div class="playable-badge"><span class="hand-arrow">▶</span> ${getEvalBadge(cardBestEval, isTop)}</div>`;
     }
 
-    cardDiv.innerHTML = `<div class="nm">${esc(c.name)}</div>` +
-      `<div class="sub">コスト:${c.cost}${red}</div>` +
+    cardDiv.innerHTML = `<div class="card-top">${costBarHtml}<div class="nm">${esc(c.name)}</div></div>` +
       playBadgeHtml;
 
     if (c.image_url) bindCardPreview(cardDiv, c.name, c.image_url);
@@ -518,28 +1235,40 @@ function renderHand(el, hand, groups, maxEval) {
       const optsDiv = document.createElement("div");
       optsDiv.className = "hand-options hidden" + (isTop ? " is-best" : "");
 
+      const allHandOpts = [];
       matchedGroups.forEach(g => {
-        for (const o of g.options) {
-          const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
-          const btn = document.createElement("button");
-          btn.className = "hand-opt-btn" + (isOptBest ? " best-option" : "");
-          btn.disabled = o.forbidden;
-          if (o.forbidden) btn.title = o.forbidden_reason || "選択不可";
-          const prefix = o.forbidden ? `🚫[${esc(o.forbidden_reason || "選択不可")}] ` : "";
-          btn.innerHTML = `<span class="detail-text">${prefix}${esc(o.detail)}</span> ${getEvalBadge(o.eval)}`;
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            doAct(o.index);
-          };
-          optsDiv.appendChild(btn);
-        }
+        g.options.forEach(o => allHandOpts.push(o));
       });
+
+      renderOptionsHierarchy(optsDiv, allHandOpts, maxEval, isNearBest);
 
       wrap.appendChild(optsDiv);
 
-      cardDiv.onclick = () => {
+      cardDiv.onclick = (e) => {
+        e.stopPropagation();
         const isHidden = optsDiv.classList.toggle("hidden");
         cardDiv.classList.toggle("open", !isHidden);
+        const arrowEl = cardDiv.querySelector(".hand-arrow");
+        if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+        if (!isHidden) {
+          document.querySelectorAll("#my-hand .hand-card-wrapper").forEach(w => {
+            if (w !== wrap) {
+              const otherOpts = w.querySelector(".hand-options");
+              const otherCard = w.querySelector(".card");
+              if (otherOpts) otherOpts.classList.add("hidden");
+              if (otherCard) {
+                otherCard.classList.remove("open");
+                const otherArrow = otherCard.querySelector(".hand-arrow");
+                if (otherArrow) otherArrow.textContent = "▶";
+              }
+            }
+          });
+          activePlayContext = { card: c, groups: matchedGroups, alloc: {}, wrapEl: wrap, optsDiv: optsDiv };
+        } else {
+          activePlayContext = null;
+        }
+        updateCoreAllocationUI();
       };
     }
 
@@ -570,15 +1299,13 @@ function renderGroups(groups, maxEval) {
     head.className = "head";
     const forbidden = g.all_forbidden ? `🚫[${esc(g.forbidden_reason || "選択不可")}] ` : "";
     
-    // サブ選択肢がある場合の ▶ / ▼ インジケータ
     const hasSub = g.options.length > 1;
     let arrowIcon = isTop ? "▼" : "▶";
-    const cntHtml = hasSub ? `<span class="cnt" id="cnt-${idx}">${arrowIcon} 支払 ${g.options.length}通り</span>` : "";
+    const cntHtml = hasSub ? `<span class="cnt" id="cnt-${idx}">${arrowIcon}</span>` : "";
     
     head.innerHTML = `<span class="cat">${forbidden}${esc(g.category)}</span>${cntHtml}` +
-      `${getEvalBadge(g.best_eval)}`;
+      `${getEvalBadge(g.best_eval, isTop)}`;
     
-    // カテゴリ名に含まれるカード名から画像プレビューを紐付け
     for (const [cName, cImg] of Object.entries(cardImageMap)) {
       if (g.category.includes(cName)) {
         bindCardPreview(head, cName, cImg);
@@ -589,31 +1316,18 @@ function renderGroups(groups, maxEval) {
     div.appendChild(head);
 
     if (g.options.length === 1) {
-      // 第1階層のみで実行
       head.disabled = g.all_forbidden;
       if (g.all_forbidden) head.title = g.forbidden_reason || "選択不可";
       head.onclick = () => doAct(g.options[0].index);
     } else {
-      // 第2階層（詳細コア支払）を開閉
       const opts = document.createElement("div");
-      opts.className = "opts" + (isTop ? "" : " hidden"); // 最適手グループは初期展開
+      opts.className = "opts" + (isTop ? "" : " hidden");
       
-      // 初期状態で閉じている最適手グループには closed-best を付与
       if (isTop && opts.classList.contains("hidden")) {
         div.classList.add("closed-best");
       }
 
-      for (const o of g.options) {
-        const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
-        const btn = document.createElement("button");
-        if (isOptBest) btn.className = "best-option";
-        btn.disabled = o.forbidden;
-        if (o.forbidden) btn.title = o.forbidden_reason || "選択不可";
-        const prefix = o.forbidden ? `🚫[${esc(o.forbidden_reason || "選択不可")}] ` : "";
-        btn.innerHTML = `<span class="detail-text">${prefix}${esc(o.detail)}</span> ${getEvalBadge(o.eval)}`;
-        btn.onclick = () => doAct(o.index);
-        opts.appendChild(btn);
-      }
+      renderOptionsHierarchy(opts, g.options, maxEval, isNearBest);
       div.appendChild(opts);
       
       head.onclick = () => {
@@ -623,10 +1337,11 @@ function renderGroups(groups, maxEval) {
         }
         const cntEl = $(`cnt-${idx}`);
         if (cntEl) {
-          cntEl.textContent = `${isNowHidden ? "▶" : "▼"} 支払 ${g.options.length}通り`;
+          cntEl.textContent = isNowHidden ? "▶" : "▼";
         }
       };
     }
+
     box.appendChild(div);
   });
 }
@@ -634,6 +1349,9 @@ function renderGroups(groups, maxEval) {
 let cardImageMap = {};
 
 function render(data) {
+  activePlayContext = null;
+  updateCoreAllocationUI();
+
   current = data;
   sessionId = data.session;
 
@@ -657,20 +1375,35 @@ function render(data) {
   $("my-title").textContent = `自分（プレイヤー${data.player.player_id}・手番）`;
   $("opp-title").textContent = `相手（プレイヤー${data.opponent.player_id}）`;
 
+  const myPanel = $("my-panel");
+  const oppPanel = $("opp-panel");
+  if (myPanel) myPanel.classList.add("active-turn");
+  if (oppPanel) oppPanel.classList.remove("active-turn");
+
   $("my-life").innerHTML = lifeStr(data.player.life);
-  $("my-reserve").textContent = data.player.reserve;
-  $("my-trash-cores").textContent = data.player.trash_cores;
-  $("my-count").textContent = data.player.count;
+  $("my-reserve").innerHTML = formatCoresDisplay(data.player.reserve, "Reserve");
+  $("my-trash-cores").innerHTML = formatCoresDisplay(data.player.trash_cores);
+  $("my-count").innerHTML = formatCountDisplay(data.player.count);
   $("my-deck-count").textContent = data.player.deck_count;
-  renderField($("my-field"), data.player.field);
+  renderField($("my-field"), data.player.field, true);
+
+  const resBox = $("my-reserve-box");
+  if (resBox) {
+    resBox.onclick = (e) => {
+      if (activePlayContext) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
 
   $("opp-life").innerHTML = lifeStr(data.opponent.life);
-  $("opp-reserve").textContent = data.opponent.reserve;
-  $("opp-trash-cores").textContent = data.opponent.trash_cores;
-  $("opp-count").textContent = data.opponent.count;
+  $("opp-reserve").innerHTML = formatCoresDisplay(data.opponent.reserve);
+  $("opp-trash-cores").innerHTML = formatCoresDisplay(data.opponent.trash_cores);
+  $("opp-count").innerHTML = formatCountDisplay(data.opponent.count);
   $("opp-hand-count").textContent = data.opponent.hand_count;
   $("opp-deck-count").textContent = data.opponent.deck_count;
-  renderField($("opp-field"), data.opponent.field);
+  renderField($("opp-field"), data.opponent.field, false);
 
   // 全体での最高評価値 (groups および n_eval) を算出
   let maxEval = -Infinity;
@@ -698,16 +1431,17 @@ function render(data) {
   nBtn.classList.toggle("is-best", isNBest);
   const nLabel = esc(data.n_label || "ステップ終了");
   const nForbiddenPrefix = data.n_forbidden ? `🚫[${esc(data.n_forbidden_reason || "選択不可")}] ` : "";
-  nBtn.innerHTML = `<span>${nForbiddenPrefix}${nLabel}</span> ${getEvalBadge(data.n_eval)}`;
+  nBtn.innerHTML = `<span>${nForbiddenPrefix}${nLabel}</span> ${getEvalBadge(data.n_eval, isNBest)}`;
   nBtn.disabled = data.n_index == null || data.n_forbidden || data.winner != null;
   nBtn.title = data.n_forbidden ? (data.n_forbidden_reason || "選択不可") : "";
 
-  $("btn-best").disabled = data.winner != null;
-  $("btn-surrender").disabled = data.winner != null;
-
   const banner = $("winner");
   if (data.winner != null) {
-    banner.textContent = `🏆 ゲーム終了: プレイヤー${data.winner} の勝利！`;
+    banner.innerHTML = `<div class="winner-title">🏆 ゲーム終了: プレイヤー${data.winner} の勝利！</div>` +
+      `<div class="winner-actions">` +
+      `<button class="primary" onclick="restartGame()">🔄 同じ条件でリスタート</button>` +
+      `<button class="secondary" onclick="startNewGame()">✨ 新規ゲーム開始</button>` +
+      `</div>`;
     banner.classList.remove("hidden");
   } else {
     banner.classList.add("hidden");
@@ -716,62 +1450,124 @@ function render(data) {
   if (data.messages && data.messages.length) addMessages(data.messages);
 }
 
+let isActing = false;
+
+async function startNewGame() {
+  if (isActing) return;
+  isActing = true;
+  saveDeckSettings();
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/new", {
+      deck1: $("deck1").value.trim(),
+      deck2: $("deck2").value.trim(),
+      format: $("format").value,
+    });
+    if (data) {
+      $("messages").innerHTML = "";
+      render(data);
+    }
+  } finally {
+    isActing = false;
+  }
+}
+
+async function restartGame() {
+  if (!sessionId) {
+    await startNewGame();
+    return;
+  }
+  if (isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/restart", { session: sessionId });
+    if (data) {
+      $("messages").innerHTML = "";
+      render(data);
+    }
+  } finally {
+    isActing = false;
+  }
+}
+
 async function doAct(index) {
-  if (!sessionId) return;
-  const data = await api("/api/act", { session: sessionId, index });
-  if (data) render(data);
+  if (!sessionId) {
+    await startNewGame();
+    return;
+  }
+  if (isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/act", { session: sessionId, index });
+    if (data) render(data);
+  } finally {
+    isActing = false;
+  }
+}
+
+function updateFormatTitle() {
+  $("main-title").textContent = "⚔ TCG BattleSpirits デッキシミュレータ";
 }
 
 function saveDeckSettings() {
   const d1 = $("deck1").value.trim();
   const d2 = $("deck2").value.trim();
+  const fmt = $("format").value;
   if (d1) localStorage.setItem("bs_deck1", d1);
   if (d2) localStorage.setItem("bs_deck2", d2);
+  if (fmt) localStorage.setItem("bs_format", fmt);
+  updateFormatTitle();
 }
 
 function loadDeckSettings() {
   const d1 = localStorage.getItem("bs_deck1");
   const d2 = localStorage.getItem("bs_deck2");
+  const fmt = localStorage.getItem("bs_format");
   if (d1) $("deck1").value = d1;
   if (d2) $("deck2").value = d2;
+  if (fmt) $("format").value = fmt;
+  updateFormatTitle();
 }
 
-// ページ初期化時に保存済みデッキ設定を復元
+// ページ初期化時に保存済みデッキ設定およびフォーマット設定を復元し、自動で新規ゲームを開始
 loadDeckSettings();
+startNewGame();
 
 $("deck1").addEventListener("change", saveDeckSettings);
 $("deck1").addEventListener("input", saveDeckSettings);
 $("deck2").addEventListener("change", saveDeckSettings);
 $("deck2").addEventListener("input", saveDeckSettings);
+$("format").addEventListener("change", saveDeckSettings);
 
-$("btn-new").onclick = async () => {
-  saveDeckSettings();
-  const data = await api("/api/new", {
-    deck1: $("deck1").value.trim(),
-    deck2: $("deck2").value.trim(),
-  });
-  if (data) {
-    $("messages").innerHTML = "";
-    render(data);
-  }
-};
+$("btn-new").onclick = startNewGame;
+$("btn-restart").onclick = restartGame;
 
 $("btn-n").onclick = () => {
+  activePlayContext = null;
+  updateCoreAllocationUI();
   if (current && current.n_index != null) doAct(current.n_index);
 };
 
-$("btn-best").onclick = async () => {
-  if (!sessionId) return;
-  const data = await api("/api/auto", { session: sessionId });
-  if (data) render(data);
-};
-
-$("btn-surrender").onclick = async () => {
-  if (!sessionId) return;
-  if (!confirm("サレンダーしますか？")) return;
-  const data = await api("/api/surrender", { session: sessionId });
-  if (data) render(data);
-};
+// 画面外クリック時に手札の展開を閉じ、コアハイライトを完全に解消
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#my-hand") && !e.target.closest("#my-reserve-box") && !e.target.closest("#my-field .card")) {
+    if (activePlayContext) {
+      document.querySelectorAll("#my-hand .hand-options").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll("#my-hand .card.open").forEach(el => {
+        el.classList.remove("open");
+        const arr = el.querySelector(".hand-arrow");
+        if (arr) arr.textContent = "▶";
+      });
+      activePlayContext = null;
+      updateCoreAllocationUI();
+    }
+  }
+});
 </script>
 </body>
 </html>

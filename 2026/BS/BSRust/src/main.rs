@@ -50,6 +50,21 @@ impl Cores {
             format!("{}s", self.total)
         }
     }
+    pub fn format_icons(&self) -> String {
+        if self.total == 0 {
+            return "-".to_string();
+        }
+        let normal_count = self.normal() as usize;
+        let soul_count = self.soul as usize;
+        let mut s = String::new();
+        for _ in 0..normal_count {
+            s.push('🔷');
+        }
+        for _ in 0..soul_count {
+            s.push('🔶');
+        }
+        s
+    }
     pub fn add(&mut self, normal: u8, soul: u8) {
         self.total += normal + soul;
         self.soul += soul;
@@ -114,6 +129,44 @@ pub fn parse_colors(s: &str) -> Vec<Color> {
     cols
 }
 
+pub fn get_field_object_display_name(obj_id: &str, field: &[FieldObject]) -> String {
+    if obj_id == "Reserve" {
+        return "R".to_string();
+    }
+    let target = field.iter().find(|o| o.id == obj_id);
+    if let Some(target_obj) = target {
+        let same_name_objs: Vec<_> = field.iter().filter(|o| o.name == target_obj.name).collect();
+        if same_name_objs.len() > 1 {
+            let index = same_name_objs.iter().position(|o| o.id == obj_id).unwrap_or(0) + 1;
+            format!("{} #{}", target_obj.name, index)
+        } else {
+            target_obj.name.clone()
+        }
+    } else {
+        obj_id.to_string()
+    }
+}
+
+pub fn get_field_object_display_name_in_state(obj_id: &str, state: &GameState) -> String {
+    if obj_id == "Reserve" {
+        return "R".to_string();
+    }
+    let target = state.player.field.iter().find(|o| o.id == obj_id)
+        .or_else(|| state.opponent.field.iter().find(|o| o.id == obj_id));
+    if let Some(target_obj) = target {
+        let same_name_objs: Vec<_> = state.player.field.iter().chain(&state.opponent.field)
+            .filter(|o| o.name == target_obj.name).collect();
+        if same_name_objs.len() > 1 {
+            let index = same_name_objs.iter().position(|o| o.id == obj_id).unwrap_or(0) + 1;
+            format!("{} #{}", target_obj.name, index)
+        } else {
+            target_obj.name.clone()
+        }
+    } else {
+        obj_id.to_string()
+    }
+}
+
 pub fn format_sources(
     state: &GameState,
     payment: &[CoreSource],
@@ -121,71 +174,59 @@ pub fn format_sources(
     placement: &[CoreSource],
     place_soul: bool,
 ) -> String {
-    let mut reserve_normal = 0;
-    let mut reserve_soul = 0;
-    let mut field_cores: std::collections::HashMap<String, (u8, u8)> = std::collections::HashMap::new();
+    let fmt_group = |sources: &[CoreSource], soul: bool| -> String {
+        let mut reserve_normal = 0;
+        let mut reserve_soul = 0;
+        let mut field_cores: std::collections::HashMap<String, (u8, u8)> = std::collections::HashMap::new();
 
-    if use_soul {
-        if state.player.reserve.soul > 0 {
-            reserve_soul += 1;
-        } else {
-            for obj in &state.player.field {
-                if obj.cores.soul > 0 {
-                    field_cores.insert(obj.id.clone(), (0, 1));
-                    break;
+        if soul {
+            if state.player.reserve.soul > 0 {
+                reserve_soul += 1;
+            } else {
+                for obj in &state.player.field {
+                    if obj.cores.soul > 0 {
+                        field_cores.insert(obj.id.clone(), (0, 1));
+                        break;
+                    }
                 }
             }
         }
-    }
 
-    if place_soul {
-        let remaining_reserve_soul = state.player.reserve.soul.saturating_sub(reserve_soul);
-        if remaining_reserve_soul > 0 {
-            reserve_soul += 1;
-        } else {
-            for obj in &state.player.field {
-                let taken_soul = field_cores.get(&obj.id).map(|&(_, s)| s).unwrap_or(0);
-                if obj.cores.soul > taken_soul {
-                    let entry = field_cores.entry(obj.id.clone()).or_insert((0, 0));
-                    entry.1 += 1;
-                    break;
-                }
+        for src in sources {
+            if src.source_id == "Reserve" {
+                reserve_normal += src.count;
+            } else {
+                let entry = field_cores.entry(src.source_id.clone()).or_insert((0, 0));
+                entry.0 += src.count;
             }
         }
-    }
 
-    for src in payment {
-        if src.source_id == "Reserve" {
-            reserve_normal += src.count;
+        let mut parts = Vec::new();
+        if reserve_normal > 0 || reserve_soul > 0 {
+            let cores = Cores::new(reserve_normal + reserve_soul, reserve_soul);
+            parts.push(format!("R:{}", cores.format_icons()));
+        }
+        for obj in &state.player.field {
+            if let Some(&(normal, soul)) = field_cores.get(&obj.id) {
+                let cores = Cores::new(normal + soul, soul);
+                let d_name = get_field_object_display_name(&obj.id, &state.player.field);
+                parts.push(format!("{}:{}", d_name, cores.format_icons()));
+            }
+        }
+        if parts.is_empty() {
+            "-".to_string()
         } else {
-            let entry = field_cores.entry(src.source_id.clone()).or_insert((0, 0));
-            entry.0 += src.count;
+            parts.join(", ")
         }
-    }
+    };
 
-    for src in placement {
-        if src.source_id == "Reserve" {
-            reserve_normal += src.count;
-        } else {
-            let entry = field_cores.entry(src.source_id.clone()).or_insert((0, 0));
-            entry.0 += src.count;
-        }
+    let pay_str = fmt_group(payment, use_soul);
+    let place_str = fmt_group(placement, place_soul);
+    if placement.is_empty() && !place_soul {
+        format!("💲{}", pay_str)
+    } else {
+        format!("💲{}, 📥{}", pay_str, place_str)
     }
-
-    let mut parts = Vec::new();
-    if reserve_normal > 0 || reserve_soul > 0 {
-        let cores = Cores::new(reserve_normal + reserve_soul, reserve_soul);
-        parts.push(format!("リザーブ:{}", cores.format()));
-    }
-
-    for obj in &state.player.field {
-        if let Some(&(normal, soul)) = field_cores.get(&obj.id) {
-            let cores = Cores::new(normal + soul, soul);
-            parts.push(format!("{}:{}", obj.name, cores.format()));
-        }
-    }
-
-    parts.join(", ")
 }
 
 /// アクションの表示用情報（CLI/Web共通）
@@ -233,7 +274,7 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
             let place_soul = if *placement_soul_core { 1 } else { 0 };
             let place_cores = Cores::new(place_amount + place_soul, place_soul);
             let sources = format_sources(state, payment, *use_soul_core, placement, *placement_soul_core);
-            let detail = format!("コスト{}, 配置コア:{}, ({})", pay_cores.format(), place_cores.format(), sources);
+            let detail = format!("💲{}, 📥{}, ({})", pay_cores.format_icons(), place_cores.format_icons(), sources);
 
             let reserve_pay: u8 = payment.iter().chain(placement.iter())
                 .filter(|s| s.source_id == "Reserve").map(|s| s.count).sum();
@@ -242,46 +283,39 @@ pub fn describe_action(state: &GameState, action: &Action) -> (String, String, S
         Action::Kourin { card_id, target_id, payment, use_soul_core: _, placement } => {
             let card = find_card_in_state(state, card_id);
             let card_name = card.as_ref().map(|c| c.name.as_str()).unwrap_or("不明なカード");
-            let target = find_field_object_in_state(state, target_id);
-            let target_name = target.as_ref().map(|o| o.name.as_str()).unwrap_or("不明な対象");
+            let target_name = get_field_object_display_name_in_state(target_id, state);
             let category = format!("🎴【手札から煌臨】 {} を {} に重ねて煌臨", card_name, target_name);
             let pay_amount: u8 = payment.iter().map(|p| p.count).sum();
             let pay_cores = Cores::new(pay_amount + 1, 1);
             let place_amount: u8 = placement.iter().map(|p| p.count).sum();
             let place_cores = Cores::new(place_amount, 0);
             let sources = format_sources(state, payment, true, placement, false);
-            let detail = format!("コスト{}, 配置コア:{}, ({})", pay_cores.format(), place_cores.format(), sources);
+            let detail = format!("💲{}, 📥{}, ({})", pay_cores.format_icons(), place_cores.format_icons(), sources);
             let reserve_pay: u8 = placement.iter()
                 .filter(|s| s.source_id == "Reserve").map(|s| s.count).sum();
             ("kourin".to_string(), category, detail, reserve_pay, true)
         }
         Action::MoveCore { from, to, normal_cores, soul_core } => {
-            let from_name = if from == "Reserve" { "リザーブ".to_string() } else {
-                find_field_object_in_state(state, from).map(|o| o.name.clone()).unwrap_or(from.clone())
-            };
-            let to_name = if to == "Reserve" { "リザーブ".to_string() } else {
-                find_field_object_in_state(state, to).map(|o| o.name.clone()).unwrap_or(to.clone())
-            };
+            let from_name = get_field_object_display_name_in_state(from, state);
+            let to_name = get_field_object_display_name_in_state(to, state);
             let s = if *soul_core { 1 } else { 0 };
             let move_cores = Cores::new(*normal_cores + s, s);
-            let category = format!("💎【コア移動】 {} -> {} (コア:{})", from_name, to_name, move_cores.format());
-            ("movecore".to_string(), category.clone(), category, 0, *soul_core)
+            let category = format!("💎【コア移動】 移動先: {}", to_name);
+            let detail = format!("移動元: {} (コア:{})", from_name, move_cores.format_icons());
+            ("movecore".to_string(), category, detail, 0, *soul_core)
         }
         Action::Attack { object_id } => {
-            let obj_name = find_field_object_in_state(state, object_id)
-                .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
+            let obj_name = get_field_object_display_name_in_state(object_id, state);
             let category = format!("⚔️【アタック宣言】 {}", obj_name);
             ("attack".to_string(), category.clone(), category, 0, false)
         }
         Action::Block { object_id } => {
-            let obj_name = find_field_object_in_state(state, object_id)
-                .map(|o| o.name.clone()).unwrap_or_else(|| "不明な対象".to_string());
+            let obj_name = get_field_object_display_name_in_state(object_id, state);
             let category = format!("🛡️【ブロック宣言】 {}", obj_name);
             ("block".to_string(), category.clone(), category, 0, false)
         }
         Action::UseActiveEffect { object_id, effect_name, .. } => {
-            let obj_name = find_field_object_in_state(state, object_id)
-                .map(|o| o.name.clone()).unwrap_or_else(|| object_id.clone());
+            let obj_name = get_field_object_display_name_in_state(object_id, state);
             let category = format!("⚡【効果使用】 {} : {}", obj_name, effect_name);
             ("effect".to_string(), category.clone(), category, 0, false)
         }
@@ -1576,10 +1610,19 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
                 let total_available: u8 = pools.iter().map(|p| p.normal + p.soul).sum();
                 let mut placement_options = Vec::new();
                 if card.card_type == CardType::Spirit || card.card_type == CardType::Ultimate {
-                    placement_options.push(card.lv_costs[0]);
+                    for &cost in &card.lv_costs {
+                        if !placement_options.contains(&cost) {
+                            placement_options.push(cost);
+                        }
+                    }
                 } else if card.card_type == CardType::Nexus {
                     placement_options.push(0);
                     placement_options.push(1);
+                    for &cost in &card.lv_costs {
+                        if !placement_options.contains(&cost) {
+                            placement_options.push(cost);
+                        }
+                    }
                 } else {
                     placement_options.push(0);
                 }
@@ -1871,14 +1914,42 @@ pub fn generate_legal_actions(state: &GameState) -> Vec<Action> {
                         if card.card_type == CardType::Magic {
                             let reduction = calculate_reduction(card, &active_side.field);
                             let cost_to_pay = card.base_cost.saturating_sub(reduction);
-                            if active_side.reserve.total >= cost_to_pay {
-                                actions.push(Action::PlayCard {
-                                    card_id: card.id.clone(),
-                                    payment: vec![CoreSource { source_id: "Reserve".to_string(), count: cost_to_pay }],
-                                    use_soul_core: false,
-                                    placement: vec![],
-                                    placement_soul_core: false,
+                            let mut pools = Vec::new();
+                            pools.push(CorePool {
+                                id: "Reserve".to_string(),
+                                normal: active_side.reserve.normal(),
+                                soul: active_side.reserve.soul,
+                            });
+                            for obj in &active_side.field {
+                                pools.push(CorePool {
+                                    id: obj.id.clone(),
+                                    normal: obj.cores.normal(),
+                                    soul: obj.cores.soul,
                                 });
+                            }
+
+                            let total_available: u8 = pools.iter().map(|p| p.normal + p.soul).sum();
+                            if total_available >= cost_to_pay {
+                                for use_soul in &[false, true] {
+                                    if *use_soul && !has_soul_core_in_pool(&pools) {
+                                        continue;
+                                    }
+                                    let required_normal = if *use_soul {
+                                        cost_to_pay.saturating_sub(1)
+                                    } else {
+                                        cost_to_pay
+                                    };
+                                    let payment_combinations = get_payment_combinations(&pools, required_normal, *use_soul);
+                                    for (payment, _) in payment_combinations {
+                                        actions.push(Action::PlayCard {
+                                            card_id: card.id.clone(),
+                                            payment,
+                                            use_soul_core: *use_soul,
+                                            placement: vec![],
+                                            placement_soul_core: false,
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
@@ -1961,6 +2032,7 @@ fn find_card_in_state(state: &GameState, card_id: &str) -> Option<Card> {
         .cloned()
 }
 
+#[allow(dead_code)]
 fn find_field_object_in_state<'a>(state: &'a GameState, obj_id: &str) -> Option<&'a FieldObject> {
     state.player.field.iter().chain(&state.opponent.field)
         .find(|o| &o.id == obj_id)
@@ -2383,6 +2455,7 @@ fn run_interactive_loop(
         let entry = LogEntry {
             tuen: state.turn_count,
             phase: format_phase_camel(&state.phase),
+            action: None,
             player1: LogSideState::from(p1),
             player2: LogSideState::from(p2),
         };
@@ -2512,7 +2585,7 @@ fn run_interactive_loop(
                 String::new()
             };
             let suffix = if items.len() > 1 {
-                format!(" (支払パターン: {}通り)", items.len())
+                " ▶".to_string()
             } else if items[0].kind == "play" || items[0].kind == "kourin" {
                 format!(" ({})", items[0].detail)
             } else {
@@ -2605,21 +2678,23 @@ fn run_interactive_loop(
 
         if (trimmed.is_empty() || trimmed.to_lowercase() == "a") && model.is_some() {
             let m = model.unwrap();
-            let mut best_action: Option<&Action> = None;
+            let mut best_index: Option<usize> = None;
             let mut best_val = -9999.0;
-            for action in &actions {
+            for (idx, action) in actions.iter().enumerate() {
                 if is_forbidden_action(action, &state, &visited_states) {
                     continue;
                 }
                 if let Some(val) = evaluate_action(m, &state, action, device) {
                     if val > best_val {
                         best_val = val;
-                        best_action = Some(action);
+                        best_index = Some(idx);
                     }
                 }
             }
-            if let Some(act) = best_action {
+            if let Some(idx) = best_index {
+                let act = &actions[idx];
                 println!(">> AI自動決定（評価値: {:.3}）: {:?}", best_val, act);
+                log_action_choice("cli", &state, &actions, idx, model, device);
                 if let Err(e) = apply_action(&mut state, act) {
                     println!("自動遷移エラー: {}", e);
                 }
@@ -2637,23 +2712,25 @@ fn run_interactive_loop(
         }
 
         if trimmed.to_lowercase() == "n" {
-            if actions.contains(&Action::EndStep) {
+            if let Some(end_idx) = actions.iter().position(|a| matches!(a, Action::EndStep)) {
                 if is_end_forbidden {
                     println!("🚫 このアクションは選択できません: {}", end_reason.as_deref().unwrap_or("選択不可"));
                     continue;
                 }
                 println!(">> アクションを実行: {:?}", Action::EndStep);
+                log_action_choice("cli", &state, &actions, end_idx, model, device);
                 if let Err(e) = apply_action(&mut state, &Action::EndStep) {
                     println!("エラー: {}", e);
                 }
                 process_automatic_steps(&mut state);
                 continue;
-            } else if actions.contains(&Action::Pass) {
+            } else if let Some(pass_idx) = actions.iter().position(|a| matches!(a, Action::Pass)) {
                 if is_pass_forbidden {
                     println!("🚫 このアクションは選択できません: {}", pass_reason.as_deref().unwrap_or("選択不可"));
                     continue;
                 }
                 println!(">> アクションを実行: {:?}", Action::Pass);
+                log_action_choice("cli", &state, &actions, pass_idx, model, device);
                 if let Err(e) = apply_action(&mut state, &Action::Pass) {
                     println!("エラー: {}", e);
                 }
@@ -2713,6 +2790,7 @@ fn run_interactive_loop(
         }
 
         println!(">> アクションを実行: {:?}", chosen_action);
+        log_action_choice("cli", &state, &actions, chosen_info.index, model, device);
         if let Err(e) = apply_action(&mut state, chosen_action) {
             println!("エラー: {}", e);
         }
@@ -2754,11 +2832,92 @@ impl LogSideState {
 pub struct LogEntry {
     pub tuen: u32,               // 誤植に合わせた "tuen" キー
     pub phase: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub action: Option<String>,
     pub player1: LogSideState,
     pub player2: LogSideState,
 }
 
-fn format_phase_camel(phase: &Phase) -> String {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ActionLogEntry {
+    pub session_id: String,
+    pub turn: u32,
+    pub acting_player: u8,
+    pub phase: String,
+    pub chosen_index: usize,
+    pub chosen_action: Action,
+    pub chosen_desc: String,
+    pub chosen_eval: Option<f32>,
+    pub candidates: Vec<ActionCandidateLog>,
+    pub state_vector: Vec<f32>,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ActionCandidateLog {
+    pub index: usize,
+    pub action: Action,
+    pub desc: String,
+    pub eval: Option<f32>,
+    pub is_chosen: bool,
+}
+
+pub fn log_action_choice(
+    session_id: &str,
+    state: &GameState,
+    actions: &[Action],
+    chosen_index: usize,
+    model: Option<&ai::model::BoardEvaluator<burn::backend::NdArray>>,
+    device: &<burn::backend::NdArray as burn::tensor::backend::Backend>::Device,
+) {
+    if chosen_index >= actions.len() {
+        return;
+    }
+    let chosen_action = &actions[chosen_index];
+    let (_, _, chosen_desc, _, _) = describe_action(state, chosen_action);
+    let chosen_eval = model.and_then(|m| evaluate_action(m, state, chosen_action, device));
+
+    let mut candidates = Vec::with_capacity(actions.len());
+    for (i, a) in actions.iter().enumerate() {
+        let (_, _, desc, _, _) = describe_action(state, a);
+        let eval = model.and_then(|m| evaluate_action(m, state, a, device));
+        candidates.push(ActionCandidateLog {
+            index: i,
+            action: a.clone(),
+            desc,
+            eval,
+            is_chosen: i == chosen_index,
+        });
+    }
+
+    let state_vector = ai::encoder::encode_state(state);
+
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let ts = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+
+    let entry = ActionLogEntry {
+        session_id: session_id.to_string(),
+        turn: state.turn_count,
+        acting_player: state.player.player_id,
+        phase: format_phase_camel(&state.phase),
+        chosen_index,
+        chosen_action: chosen_action.clone(),
+        chosen_desc,
+        chosen_eval,
+        candidates,
+        state_vector,
+        timestamp: format!("{}", ts),
+    };
+
+    if let Ok(json_line) = serde_json::to_string(&entry) {
+        use std::io::Write;
+        if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open("bs-actions-log.jsonl") {
+            let _ = writeln!(file, "{}", json_line);
+        }
+    }
+}
+
+pub fn format_phase_camel(phase: &Phase) -> String {
     match phase {
         Phase::StartStep => "startStep".to_string(),
         Phase::CoreStep => "coreStep".to_string(),
@@ -3695,4 +3854,152 @@ mod flash_kourin_tests {
         assert_eq!(state.player.field.len(), 1, "パッファーが場に存在する");
         assert_eq!(state.player.field[0].cores.total, 1, "パッファー上のコアは1個");
     }
+
+    #[test]
+    fn test_play_card_using_cores_from_field_object() {
+        // フィールド上に存在するスピリット/ネクサス上のコアを使って別のカードをプレイ可能であることを検証
+        let existing_obj = FieldObject {
+            id: "BS76-CX03_1".to_string(),
+            name: "光虫の旗手ファラ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Nexus,
+            cores: Cores::new(2, 0),
+            is_exhausted: false,
+            lv_costs: vec![0, 1],
+            base_symbols: vec![Color::White],
+            systems: vec!["光契約".to_string(), "旗種".to_string()],
+            under_cards: vec![],
+            current_card_id: "BS76-CX03".to_string(),
+        };
+
+        let card_in_hand = Card {
+            id: "BS76-034".to_string(),
+            name: "プラチナム・グッピー".to_string(),
+            base_cost: 3,
+            colors: vec![Color::White],
+            reduction_symbols: vec![Color::White, Color::White],
+            card_type: CardType::Spirit,
+            lv_costs: vec![1, 2],
+            symbols: vec![Color::White],
+            systems: vec!["旗種".to_string()],
+        };
+
+        let state = GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(1, 0), // リザーブは1個のみ
+                field: vec![existing_obj],  // ファラ上に2個
+                hand: vec![card_in_hand],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::MainStep,
+            turn_count: 1,
+            active_attacker: None,
+            active_blocker: None,
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+            pending_effects: vec![],
+            next_obj_id: 1,
+            basilisk_effect_used_this_turn: false,
+        };
+
+        // 合法手を生成
+        let actions = generate_legal_actions(&state);
+
+        // ファラからコアを1個支払いに使い、リザーブから1個支払いに使って召喚する選択肢が含まれているか検証
+        let has_field_pay = actions.iter().any(|a| {
+            if let Action::PlayCard { payment, placement, .. } = a {
+                payment.iter().any(|p| p.source_id == "BS76-CX03_1")
+                    || placement.iter().any(|p| p.source_id == "BS76-CX03_1")
+            } else {
+                false
+            }
+        });
+        assert!(has_field_pay, "フィールド上のファラからコアを支払う/配置する選択肢が合法手として生成されている");
+
+        // 実際にアクションを実行
+        let play_action = Action::PlayCard {
+            card_id: "BS76-034".to_string(),
+            // 軽減1によりコスト2（リザーブ1 + ファラ1）
+            payment: vec![
+                CoreSource { source_id: "Reserve".to_string(), count: 1 },
+                CoreSource { source_id: "BS76-CX03_1".to_string(), count: 1 },
+            ],
+            use_soul_core: false,
+            // 配置コア1個をファラから持ってくる
+            placement: vec![CoreSource { source_id: "BS76-CX03_1".to_string(), count: 1 }],
+            placement_soul_core: false,
+        };
+
+        let mut next_state = state.clone();
+        apply_action(&mut next_state, &play_action).expect("フィールドコアを使った召喚が成功するはず");
+
+        assert_eq!(next_state.player.reserve.normal(), 0, "リザーブの通常コアは0");
+        assert_eq!(next_state.player.trash_cores.normal(), 2, "支払った2個がトラッシュへ");
+        assert_eq!(next_state.player.field.len(), 2, "ファラとグッピーの両方が場に存在");
+        let fara = next_state.player.field.iter().find(|o| o.id == "BS76-CX03_1").unwrap();
+        assert_eq!(fara.cores.total, 0, "ファラ上のコアは2 - 1(支払) - 1(配置) = 0");
+        let guppy = next_state.player.field.iter().find(|o| o.id.starts_with("BS76-034")).unwrap();
+        assert_eq!(guppy.cores.total, 1, "グッピー上に1個配置された");
+    }
+
+    #[test]
+    fn test_reduction_calculation_detailed() {
+        let (deck1, token_pool) = load_deck_from_file("decks/deck-fara.yaml").expect("Failed to load deck");
+        println!("\n=== Token Cards ===");
+        for t in &token_pool {
+            println!("Token: {} ({}) | BaseCost: {} | Symbols: {:?} | LvCosts: {:?}",
+                t.name, t.id, t.base_cost, t.symbols, t.lv_costs
+            );
+        }
+        println!("\n=== Card Reductions in deck-fara.yaml ===");
+        for card in &deck1 {
+            println!("Card: {} ({}) | BaseCost: {} | Symbols: {:?} | ReductionSymbols: {:?}",
+                card.name, card.id, card.base_cost, card.symbols, card.reduction_symbols
+            );
+        }
+
+        // 白シンボルが場に1個ある状態
+        let field_with_1_white = vec![
+            FieldObject {
+                id: "BS76-CX03_1".to_string(),
+                name: "光虫の旗手ファラ".to_string(),
+                colors: vec![Color::White],
+                card_type: CardType::Nexus,
+                cores: Cores::new(0, 0),
+                is_exhausted: false,
+                lv_costs: vec![0],
+                base_symbols: vec![Color::White],
+                systems: vec!["旗種".to_string()],
+                under_cards: vec![],
+                current_card_id: "BS76-CX03".to_string(),
+            }
+        ];
+
+        for card in &deck1 {
+            let red = calculate_reduction(card, &field_with_1_white);
+            println!("Card: {} | BaseCost: {} | Reduction: {} | CostToPay: {}",
+                card.name, card.base_cost, red, card.base_cost.saturating_sub(red)
+            );
+        }
+    }
 }
+

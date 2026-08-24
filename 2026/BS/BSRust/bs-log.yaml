@@ -8,52 +8,51 @@
       soul: 1
     field: []
     hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-002
-    - 26RSD03-009
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
@@ -72,172 +71,43 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-013
-    - 26RSD03-005
     - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
     - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
     - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
     - 26RSD03-014
-    count: 0
-- tuen: 1
-  phase: mainStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
     - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
     - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
     - 26RSD03-003
     - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
     - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
+    - 26RSD03-011
     - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
     - 26RSD03-011
     - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
     - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 4
-      soul: 1
-    field: []
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-002
-    trash: []
-    trash_cores:
-      total: 0
-      soul: 0
-    opened:
-    - 26RSD03-013
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
     - 26RSD03-X01
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
+    - 26RSD03-006
     - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
     - 26RSD03-004
     - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-011
-    - 26RSD03-014
+    - 26RSD03-005
     count: 0
 - tuen: 1
   phase: endStep
@@ -245,73 +115,55 @@
     player_id: 1
     life: 5
     reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 4
+      soul: 1
+    field: []
     hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
     trash: []
     trash_cores:
-      total: 4
+      total: 0
       soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
@@ -330,43 +182,43 @@
       total: 0
       soul: 0
     opened:
-    - 26RSD03-013
-    - 26RSD03-005
     - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
     - 26RSD03-003
     - 26RSD03-006
-    - 26RSD03-005
+    - 26RSD03-002
     - 26RSD03-007
-    - 26RSD03-013
     - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
     - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
     - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
     - 26RSD03-009
     - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
     - 26RSD03-X01
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
+    - 26RSD03-006
     - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
     - 26RSD03-004
     - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-011
-    - 26RSD03-014
+    - 26RSD03-005
     count: 0
 - tuen: 2
   phase: mainStep
@@ -374,73 +226,55 @@
     player_id: 1
     life: 5
     reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 4
+      soul: 1
+    field: []
     hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
     trash: []
     trash_cores:
-      total: 4
+      total: 0
       soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
@@ -454,194 +288,48 @@
     - 26RSD03-X02
     - 26RSD03-001
     - 26RSD03-002
-    - 26RSD03-013
+    - 26RSD03-007
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
     - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
     - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
     - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: mainStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
     - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
     - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
     - 26RSD03-003
     - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
     - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
+    - 26RSD03-011
     - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
     - 26RSD03-011
     - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
     - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
     - 26RSD03-X01
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
+    - 26RSD03-006
     - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
     - 26RSD03-004
     - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-011
-    - 26RSD03-014
+    - 26RSD03-005
     count: 0
 - tuen: 2
   phase: attackStep
@@ -649,1311 +337,2661 @@
     player_id: 1
     life: 5
     reserve:
+      total: 4
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    trash: []
+    trash_cores:
       total: 0
       soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
     life: 5
     reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 5
+      soul: 1
+    field: []
     hand:
     - 26RSD03-X01
     - 26RSD03-X02
     - 26RSD03-001
-    - 26RSD03-013
+    - 26RSD03-002
+    - 26RSD03-007
     trash: []
     trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
       total: 0
       soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
     - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
     - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
+    - 26RSD03-X02
     - 26RSD03-003
+    - 26RSD03-006
     - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
     - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
     - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
     - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
     - 26RSD03-003
     - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
     - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
+    - 26RSD03-011
     - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
     - 26RSD03-011
     - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
     - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
     - 26RSD03-X01
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
     - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
     - 26RSD03-003
-    - 26RSD03-002
+    - 26RSD03-004
     - 26RSD03-008
     - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
     - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
     - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 5
-    reserve:
-      total: 0
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 4
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 2
-  phase: attackStep
-  player1:
-    player_id: 1
-    life: 4
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
-    count: 0
-  player2:
-    player_id: 2
-    life: 5
-    reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
     count: 0
 - tuen: 2
   phase: endStep
   player1:
     player_id: 1
-    life: 4
+    life: 5
     reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 4
+      soul: 1
+    field: []
     hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
     trash: []
     trash_cores:
-      total: 4
+      total: 0
       soul: 0
     opened:
-    - 26RSD03-007
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
-    - 26RSD03-009
-    - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-003
-    - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-005
-    - 26RSD03-006
-    - 26RSD03-006
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
     life: 5
     reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 5
+      soul: 1
+    field: []
     hand:
     - 26RSD03-X01
     - 26RSD03-X02
     - 26RSD03-001
-    - 26RSD03-013
-    trash: []
-    trash_cores:
-      total: 4
-      soul: 0
-    opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
     - 26RSD03-002
-    - 26RSD03-003
-    - 26RSD03-006
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-013
-    - 26RSD03-001
-    - 26RSD03-003
-    - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-009
-    - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-X01
-    - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
-    - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-008
-    - 26RSD03-011
-    - 26RSD03-014
-    count: 0
-- tuen: 3
-  phase: mainStep
-  player1:
-    player_id: 1
-    life: 4
-    reserve:
-      total: 6
-      soul: 0
-    field:
-    - id: 26RSD03-002_1
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: false
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
-    hand:
-    - 26RSD03-X01
-    - 26RSD03-X02
-    - 26RSD03-001
-    - 26RSD03-009
     - 26RSD03-007
     trash: []
     trash_cores:
       total: 0
       soul: 0
     opened:
-    - 26RSD03-003
-    - 26RSD03-013
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-013
     - 26RSD03-009
+    - 26RSD03-010
     - 26RSD03-X02
-    - 26RSD03-009
-    - 26RSD03-005
-    - 26RSD03-004
+    - 26RSD03-003
     - 26RSD03-006
-    - 26RSD03-011
-    - 26RSD03-010
-    - 26RSD03-011
-    - 26RSD03-X01
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
     - 26RSD03-003
     - 26RSD03-002
-    - 26RSD03-008
-    - 26RSD03-013
-    - 26RSD03-014
-    - 26RSD03-003
-    - 26RSD03-007
     - 26RSD03-001
-    - 26RSD03-007
-    - 26RSD03-001
+    - 26RSD03-011
     - 26RSD03-008
     - 26RSD03-010
-    - 26RSD03-004
-    - 26RSD03-005
     - 26RSD03-011
     - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
     - 26RSD03-008
+    - 26RSD03-X01
     - 26RSD03-005
     - 26RSD03-006
-    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 3
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
     count: 0
   player2:
     player_id: 2
     life: 5
     reserve:
-      total: 1
-      soul: 0
-    field:
-    - id: 26RSD03-002_2
-      name: パッファー
-      colors:
-      - Green
-      card_type: Spirit
-      cores:
-        total: 1
-        soul: 1
-      is_exhausted: true
-      lv_costs:
-      - 1
-      - 2
-      base_symbols:
-      - Green
-      systems:
-      - 甲魚
-      under_cards: []
-      current_card_id: 26RSD03-002
+      total: 5
+      soul: 1
+    field: []
     hand:
     - 26RSD03-X01
     - 26RSD03-X02
     - 26RSD03-001
-    - 26RSD03-013
+    - 26RSD03-002
+    - 26RSD03-007
     trash: []
     trash_cores:
-      total: 4
+      total: 0
       soul: 0
     opened:
-    - 26RSD03-005
-    - 26RSD03-007
-    - 26RSD03-006
-    - 26RSD03-002
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
     - 26RSD03-003
     - 26RSD03-006
-    - 26RSD03-005
+    - 26RSD03-002
     - 26RSD03-007
-    - 26RSD03-013
     - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
     - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
     - 26RSD03-011
-    - 26RSD03-009
-    - 26RSD03-009
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
     - 26RSD03-009
     - 26RSD03-013
-    - 26RSD03-007
-    - 26RSD03-002
-    - 26RSD03-004
-    - 26RSD03-006
-    - 26RSD03-011
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
     - 26RSD03-X01
     - 26RSD03-005
-    - 26RSD03-008
-    - 26RSD03-010
-    - 26RSD03-008
-    - 26RSD03-004
-    - 26RSD03-010
+    - 26RSD03-006
     - 26RSD03-003
-    - 26RSD03-001
-    - 26RSD03-X02
-    - 26RSD03-010
     - 26RSD03-004
     - 26RSD03-008
+    - 26RSD03-013
     - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 3
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
     - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 3
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 4
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 4
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 4
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 5
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 5
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 5
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 5
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 6
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 6
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 6
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 6
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - PX26-02
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 7
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 7
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 7
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-X02
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 8
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 8
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 8
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 7
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-043
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 9
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 9
+  phase: attackStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 9
+  phase: endStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-003
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
+    count: 0
+- tuen: 10
+  phase: mainStep
+  player1:
+    player_id: 1
+    life: 5
+    reserve:
+      total: 8
+      soul: 1
+    field: []
+    hand:
+    - BS76-CX03
+    - BS76-034
+    - BS76-033
+    - BS76-039
+    - BS76-038
+    - BS76-038
+    - BS76-037
+    - PX26-02
+    - BS76-043
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - BS76-042
+    - BS76-039
+    - BS76-039
+    - BS76-086
+    - BS76-033
+    - BS76-042
+    - BS76-072
+    - BS76-035
+    - BS76-X07
+    - BS76-086
+    - BS76-037
+    - BS76-042
+    - BS76-041
+    - BS76-035
+    - PX26-02
+    - BS76-035
+    - BS76-CX03
+    - BS76-072
+    - BS76-034
+    - BS76-043
+    - BS76-X07
+    - BS76-034
+    - BS76-CX03
+    - BS76-033
+    - BS76-038
+    - BS76-X07
+    - BS76-041
+    - PX26-02
+    - BS76-041
+    - BS76-086
+    - BS76-085
+    count: 0
+  player2:
+    player_id: 2
+    life: 5
+    reserve:
+      total: 9
+      soul: 1
+    field: []
+    hand:
+    - 26RSD03-X01
+    - 26RSD03-X02
+    - 26RSD03-001
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-009
+    - 26RSD03-010
+    - 26RSD03-X02
+    - 26RSD03-003
+    trash: []
+    trash_cores:
+      total: 0
+      soul: 0
+    opened:
+    - 26RSD03-006
+    - 26RSD03-002
+    - 26RSD03-007
+    - 26RSD03-001
+    - 26RSD03-007
+    - 26RSD03-006
+    - 26RSD03-005
+    - 26RSD03-014
+    - 26RSD03-004
+    - 26RSD03-004
+    - 26RSD03-003
+    - 26RSD03-002
+    - 26RSD03-001
+    - 26RSD03-011
+    - 26RSD03-008
+    - 26RSD03-010
+    - 26RSD03-011
+    - 26RSD03-010
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-009
+    - 26RSD03-013
+    - 26RSD03-008
+    - 26RSD03-X01
+    - 26RSD03-005
+    - 26RSD03-006
+    - 26RSD03-003
+    - 26RSD03-004
+    - 26RSD03-008
+    - 26RSD03-013
+    - 26RSD03-011
+    - 26RSD03-005
     count: 0

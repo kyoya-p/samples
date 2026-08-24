@@ -25,6 +25,10 @@ type MyDevice = <MyBackend as burn::tensor::backend::Backend>::Device;
 
 struct GameSession {
     state: GameState,
+    initial_state: GameState,
+    format_label: String,
+    deck1: String,
+    deck2: String,
     /// 現局面の合法手（レスポンスの index はこのVecへの添字）
     actions: Vec<Action>,
     visited_states: Vec<(GameState, u64)>,
@@ -47,6 +51,7 @@ type AppState = Arc<Mutex<Inner>>;
 struct NewGameReq {
     deck1: Option<String>,
     deck2: Option<String>,
+    format: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -186,11 +191,12 @@ fn side_view(side: &SideState, reveal_hand: bool) -> SideView {
             .map(|o| {
                 let card_id = o.current_card_id.clone();
                 let image_url = format!("https://www.battlespirits.com/images/cardlist/{}.webp", card_id);
+                let display_name = crate::get_field_object_display_name(&o.id, &side.field);
                 FieldView {
                     id: o.id.clone(),
                     card_id,
                     image_url,
-                    name: o.name.clone(),
+                    name: display_name,
                     symbols: format_symbols(&o.base_symbols),
                     cores: o.cores.format(),
                     exhausted: o.is_exhausted,
@@ -231,6 +237,7 @@ fn record_log(session: &mut GameSession) {
     session.game_history.push(LogEntry {
         tuen: session.state.turn_count,
         phase: crate::format_phase_camel(&session.state.phase),
+        action: None,
         player1: LogSideState::from(p1),
         player2: LogSideState::from(p2),
     });
@@ -403,14 +410,22 @@ async fn new_game(
     inner.next_id += 1;
     let session_id = format!("g{:08x}-{:04x}", inner.next_id, rand::random::<u16>());
 
+    let format_label = match req.format.as_deref() {
+        Some("standard") => "スタンダード",
+        _ => "エターナル",
+    };
     let mut session = GameSession {
+        initial_state: state.clone(),
+        format_label: format_label.to_string(),
+        deck1: deck1.clone(),
+        deck2: deck2.clone(),
         state,
         actions: Vec::new(),
         visited_states: Vec::new(),
         game_history: Vec::new(),
         winner: None,
     };
-    let mut messages = vec![format!("新規ゲームを開始しました (deck1: {}, deck2: {})", deck1, deck2)];
+    let mut messages = vec![format!("新規ゲームを開始しました [フォーマット: {}] (deck1: {}, deck2: {})", format_label, deck1, deck2)];
     advance(&mut session, &mut messages);
     inner.sessions.insert(session_id.clone(), session);
 
@@ -421,21 +436,41 @@ async fn act(
     State(app): State<AppState>,
     Json(req): Json<ActReq>,
 ) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
-    let mut inner = app.lock().unwrap();
-    let session = inner.sessions.get_mut(&req.session).ok_or_else(|| {
+    let mut inner_guard = app.lock().unwrap();
+    let Inner {
+        ref mut sessions,
+        ref model,
+        ref device,
+        ..
+    } = *inner_guard;
+
+    let session = sessions.get_mut(&req.session).ok_or_else(|| {
         Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
     })?;
     if session.winner.is_some() {
         return Err(Json(ErrorResponse { error: "ゲームは終了しています".to_string() }));
     }
-    let action = session.actions.get(req.index).cloned().ok_or_else(|| {
-        Json(ErrorResponse { error: "無効なアクションです".to_string() })
-    })?;
+    let action = match session.actions.get(req.index).cloned() {
+        Some(a) => a,
+        None => {
+            return Err(Json(ErrorResponse { error: "無効なアクションです".to_string() }));
+        }
+    };
     if is_forbidden_action(&action, &session.state, &session.visited_states) {
         return Err(Json(ErrorResponse {
             error: "🚫 このアクションは同一盤面に遷移するため選択できません".to_string(),
         }));
     }
+
+    // 学習用アクション選択ログを記録
+    crate::log_action_choice(
+        &req.session,
+        &session.state,
+        &session.actions,
+        req.index,
+        model.as_ref(),
+        device,
+    );
 
     let mut messages = Vec::new();
     if let Err(e) = apply_action(&mut session.state, &action) {
@@ -444,61 +479,88 @@ async fn act(
     process_automatic_steps(&mut session.state);
     advance(session, &mut messages);
 
-    Ok(Json(build_response(&inner, &req.session, messages)))
+    Ok(Json(build_response(&inner_guard, &req.session, messages)))
 }
 
 async fn auto(
     State(app): State<AppState>,
     Json(req): Json<SessionReq>,
 ) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
-    let mut inner = app.lock().unwrap();
-    if inner.model.is_none() {
+    let mut inner_guard = app.lock().unwrap();
+    if inner_guard.model.is_none() {
         return Err(Json(ErrorResponse {
             error: "学習済みモデルがないためAI自動決定は利用できません".to_string(),
         }));
     }
-    // borrow分割のため一旦セッションを取り出す
-    let mut session = inner.sessions.remove(&req.session).ok_or_else(|| {
+    let Inner {
+        ref mut sessions,
+        ref model,
+        ref device,
+        ..
+    } = *inner_guard;
+
+    let session = sessions.get_mut(&req.session).ok_or_else(|| {
         Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
     })?;
 
-    let result = (|| {
-        if session.winner.is_some() {
-            return Err("ゲームは終了しています".to_string());
+    if session.winner.is_some() {
+        return Err(Json(ErrorResponse { error: "ゲームは終了しています".to_string() }));
+    }
+    let model_ref = model.as_ref().unwrap();
+    let mut best: Option<(usize, f32)> = None;
+    for (i, action) in session.actions.iter().enumerate() {
+        if is_forbidden_action(action, &session.state, &session.visited_states) {
+            continue;
         }
-        let model = inner.model.as_ref().unwrap();
-        let mut best: Option<(usize, f32)> = None;
-        for (i, action) in session.actions.iter().enumerate() {
-            if is_forbidden_action(action, &session.state, &session.visited_states) {
-                continue;
+        if let Some(val) =
+            crate::ai::decision::evaluate_action(model_ref, &session.state, action, device)
+        {
+            if best.map_or(true, |(_, bv)| val > bv) {
+                best = Some((i, val));
             }
-            if let Some(val) =
-                crate::ai::decision::evaluate_action(model, &session.state, action, &inner.device)
-            {
-                if best.map_or(true, |(_, bv)| val > bv) {
-                    best = Some((i, val));
-                }
-            }
-        }
-        best.ok_or_else(|| "AIによる選択肢の評価に失敗しました".to_string())
-    })();
-
-    match result {
-        Ok((idx, val)) => {
-            let action = session.actions[idx].clone();
-            let mut messages =
-                vec![format!("AI自動決定（評価値: {:.3}）: {:?}", val, action)];
-            let _ = apply_action(&mut session.state, &action);
-            process_automatic_steps(&mut session.state);
-            advance(&mut session, &mut messages);
-            inner.sessions.insert(req.session.clone(), session);
-            Ok(Json(build_response(&inner, &req.session, messages)))
-        }
-        Err(e) => {
-            inner.sessions.insert(req.session.clone(), session);
-            Err(Json(ErrorResponse { error: e }))
         }
     }
+    let (idx, val) = best.ok_or_else(|| {
+        Json(ErrorResponse { error: "AIによる選択肢の評価に失敗しました".to_string() })
+    })?;
+
+    let action = session.actions[idx].clone();
+    // 学習用アクション選択ログを記録
+    crate::log_action_choice(
+        &req.session,
+        &session.state,
+        &session.actions,
+        idx,
+        model.as_ref(),
+        device,
+    );
+    let mut messages =
+        vec![format!("AI自動決定（評価値: {:.3}）: {:?}", val, action)];
+    let _ = apply_action(&mut session.state, &action);
+    process_automatic_steps(&mut session.state);
+    advance(session, &mut messages);
+    Ok(Json(build_response(&inner_guard, &req.session, messages)))
+}
+
+async fn restart_game(
+    State(app): State<AppState>,
+    Json(req): Json<SessionReq>,
+) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
+    let mut inner = app.lock().unwrap();
+    let session = inner.sessions.get_mut(&req.session).ok_or_else(|| {
+        Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
+    })?;
+    session.state = session.initial_state.clone();
+    session.actions.clear();
+    session.visited_states.clear();
+    session.game_history.clear();
+    session.winner = None;
+    let mut messages = vec![format!(
+        "🔄 同じ初期条件でゲームをリスタートしました [フォーマット: {}] (deck1: {}, deck2: {})",
+        session.format_label, session.deck1, session.deck2
+    )];
+    advance(session, &mut messages);
+    Ok(Json(build_response(&inner, &req.session, messages)))
 }
 
 async fn surrender(
@@ -553,6 +615,7 @@ pub fn run_server(port: u16) {
         let app = Router::new()
             .route("/", get(index))
             .route("/api/new", post(new_game))
+            .route("/api/restart", post(restart_game))
             .route("/api/act", post(act))
             .route("/api/auto", post(auto))
             .route("/api/surrender", post(surrender))
