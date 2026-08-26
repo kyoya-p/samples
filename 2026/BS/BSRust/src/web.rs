@@ -12,28 +12,164 @@ use burn::module::Module;
 use burn::record::{CompactRecorder, Recorder};
 use serde::{Deserialize, Serialize};
 
+use chrono::Local;
+
 use crate::ai::model::{BoardEvaluator, BoardEvaluatorConfig};
 use crate::{
-    apply_action, build_action_infos, calculate_state_hash, check_game_end, format_symbols,
-    generate_legal_actions, group_action_infos, is_forbidden_action, process_automatic_steps,
-    setup_initial_state, Action, ActionInfo, AttackSubPhase, GameState, LogEntry, LogSideState,
-    Phase, Priority, SideState,
+    apply_action, build_action_infos, calculate_state_hash, check_game_end, describe_action,
+    format_symbols, generate_legal_actions, group_action_infos, is_forbidden_action,
+    process_automatic_steps, Action, ActionInfo, AttackSubPhase, Card, Cores,
+    GameState, LogEntry, LogSideState, Phase, Priority, SideState,
 };
 
 type MyBackend = burn::backend::NdArray;
 type MyDevice = <MyBackend as burn::tensor::backend::Backend>::Device;
 
+// ---------- リプレイログ（LLM学習用 JSONフォーマット） ----------
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayLog {
+    pub metadata: ReplayMetadata,
+    pub initial_state: ReplayInitialState,
+    pub steps: Vec<ReplayStep>,
+    pub result: Option<ReplayResult>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayMetadata {
+    pub version: String,
+    pub recorded_at: String,
+    pub deck1_name: String,
+    pub deck2_name: String,
+    pub format: String,
+    pub total_turns: u32,
+    pub total_steps: usize,
+    pub seed: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayInitialState {
+    pub seed: u64,
+    pub player1: ReplaySideInitial,
+    pub player2: ReplaySideInitial,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplaySideInitial {
+    pub player_id: u8,
+    pub life: u8,
+    pub reserve: Cores,
+    /// 初期デッキ（40枚、カードID昇順ソート）
+    pub initial_deck: Vec<ReplayCardInfo>,
+    pub token_pool: Vec<ReplayCardInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayCardInfo {
+    pub id: String,
+    pub name: String,
+    pub card_type: String,
+    pub base_cost: u8,
+    pub colors: Vec<String>,
+    pub reduction_symbols: Vec<String>,
+    pub symbols: Vec<String>,
+    pub systems: Vec<String>,
+}
+
+impl From<&Card> for ReplayCardInfo {
+    fn from(c: &Card) -> Self {
+        Self {
+            id: c.id.clone(),
+            name: c.name.clone(),
+            card_type: format!("{:?}", c.card_type),
+            base_cost: c.base_cost,
+            colors: c.colors.iter().map(|col| format!("{:?}", col)).collect(),
+            reduction_symbols: c.reduction_symbols.iter().map(|col| format!("{:?}", col)).collect(),
+            symbols: c.symbols.iter().map(|col| format!("{:?}", col)).collect(),
+            systems: c.systems.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayStep {
+    pub step_index: usize,
+    pub turn: u32,
+    pub active_player: u8,
+    pub phase: String,
+    pub state_snapshot: ReplayStateSnapshot,
+    pub available_action_count: usize,
+    pub chosen_action_index: usize,
+    pub chosen_action_category: String,
+    pub chosen_action_detail: String,
+    pub chosen_action_kind: String,
+    pub chosen_action_eval: Option<f32>,
+    pub result_messages: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayStateSnapshot {
+    pub p1_life: u8,
+    pub p1_reserve: String,
+    pub p1_trash_cores: String,
+    pub p1_count: u8,
+    pub p1_hand: Vec<String>,
+    pub p1_field: Vec<ReplayFieldObjectSnapshot>,
+    pub p1_trash: Vec<String>,
+    pub p1_deck_count: usize,
+    pub p2_life: u8,
+    pub p2_reserve: String,
+    pub p2_trash_cores: String,
+    pub p2_count: u8,
+    pub p2_hand: Vec<String>,
+    pub p2_field: Vec<ReplayFieldObjectSnapshot>,
+    pub p2_trash: Vec<String>,
+    pub p2_deck_count: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayFieldObjectSnapshot {
+    pub id: String,
+    pub name: String,
+    pub cores: String,
+    pub lv: u8,
+    pub is_exhausted: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ReplayResult {
+    pub winner: u8,
+    pub reason: String,
+    pub saved_file: Option<String>,
+}
+
+#[derive(Clone)]
+struct HistoryEntry {
+    state: GameState,
+    #[allow(dead_code)]
+    actions: Vec<Action>,
+    visited_states: Vec<(GameState, u64)>,
+    game_history: Vec<LogEntry>,
+    #[allow(dead_code)]
+    messages: Vec<String>,
+}
+
 struct GameSession {
+    seed: u64,
     state: GameState,
     initial_state: GameState,
     format_label: String,
     deck1: String,
     deck2: String,
+    replay_log: ReplayLog,
     /// 現局面の合法手（レスポンスの index はこのVecへの添字）
     actions: Vec<Action>,
     visited_states: Vec<(GameState, u64)>,
     game_history: Vec<LogEntry>,
     winner: Option<u8>,
+    history: Vec<HistoryEntry>,
+    history_idx: usize,
+    replay_file_path: String,
 }
 
 struct Inner {
@@ -52,6 +188,7 @@ struct NewGameReq {
     deck1: Option<String>,
     deck2: Option<String>,
     format: Option<String>,
+    seed: Option<u64>,
 }
 
 #[derive(Deserialize)]
@@ -75,6 +212,7 @@ struct FieldView {
     cores: String,
     exhausted: bool,
     lv: u8,
+    bp: u32,
 }
 
 #[derive(Serialize)]
@@ -122,6 +260,7 @@ struct GroupView {
 #[derive(Serialize)]
 struct GameResponse {
     session: String,
+    seed: u64,
     winner: Option<u8>,
     turn: u32,
     phase: String,
@@ -136,7 +275,11 @@ struct GameResponse {
     n_forbidden: bool,
     n_forbidden_reason: Option<String>,
     ai_available: bool,
+    can_undo: bool,
+    can_redo: bool,
     messages: Vec<String>,
+    replay_steps: Vec<ReplayStep>,
+    replay_file: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -201,6 +344,7 @@ fn side_view(side: &SideState, reveal_hand: bool) -> SideView {
                     cores: o.cores.format(),
                     exhausted: o.is_exhausted,
                     lv: o.current_lv(),
+                    bp: o.current_bp(),
                 }
             })
             .collect(),
@@ -226,6 +370,164 @@ fn side_view(side: &SideState, reveal_hand: bool) -> SideView {
         deck_count: side.opened.len(),
         trash: side.trash.iter().map(|c| c.name.clone()).collect(),
     }
+}
+
+pub fn make_state_snapshot(state: &GameState) -> ReplayStateSnapshot {
+    let (p1, p2) = if state.player.player_id == 1 {
+        (&state.player, &state.opponent)
+    } else {
+        (&state.opponent, &state.player)
+    };
+    ReplayStateSnapshot {
+        p1_life: p1.life,
+        p1_reserve: p1.reserve.format(),
+        p1_trash_cores: p1.trash_cores.format(),
+        p1_count: p1.count,
+        p1_hand: p1.hand.iter().map(|c| c.name.clone()).collect(),
+        p1_field: p1.field.iter().map(|o| ReplayFieldObjectSnapshot {
+            id: o.id.clone(),
+            name: o.name.clone(),
+            cores: o.cores.format(),
+            lv: o.current_lv(),
+            is_exhausted: o.is_exhausted,
+        }).collect(),
+        p1_trash: p1.trash.iter().map(|c| c.name.clone()).collect(),
+        p1_deck_count: p1.opened.len(),
+
+        p2_life: p2.life,
+        p2_reserve: p2.reserve.format(),
+        p2_trash_cores: p2.trash_cores.format(),
+        p2_count: p2.count,
+        p2_hand: p2.hand.iter().map(|c| c.name.clone()).collect(),
+        p2_field: p2.field.iter().map(|o| ReplayFieldObjectSnapshot {
+            id: o.id.clone(),
+            name: o.name.clone(),
+            cores: o.cores.format(),
+            lv: o.current_lv(),
+            is_exhausted: o.is_exhausted,
+        }).collect(),
+        p2_trash: p2.trash.iter().map(|c| c.name.clone()).collect(),
+        p2_deck_count: p2.opened.len(),
+    }
+}
+
+pub fn create_initial_replay_log(
+    initial_state: &GameState,
+    format_label: &str,
+    deck1: &str,
+    deck2: &str,
+    seed: u64,
+) -> ReplayLog {
+    let now = Local::now();
+    let (deck_cards1, tokens1) = crate::load_deck_from_file(deck1).unwrap_or_default();
+    let (deck_cards2, tokens2) = crate::load_deck_from_file(deck2).unwrap_or_default();
+
+    let (p1, p2) = if initial_state.player.player_id == 1 {
+        (&initial_state.player, &initial_state.opponent)
+    } else {
+        (&initial_state.opponent, &initial_state.player)
+    };
+
+    let p1_initial = ReplaySideInitial {
+        player_id: 1,
+        life: p1.life,
+        reserve: p1.reserve,
+        initial_deck: deck_cards1.iter().map(ReplayCardInfo::from).collect(),
+        token_pool: tokens1.iter().map(ReplayCardInfo::from).collect(),
+    };
+
+    let p2_initial = ReplaySideInitial {
+        player_id: 2,
+        life: p2.life,
+        reserve: p2.reserve,
+        initial_deck: deck_cards2.iter().map(ReplayCardInfo::from).collect(),
+        token_pool: tokens2.iter().map(ReplayCardInfo::from).collect(),
+    };
+
+    ReplayLog {
+        metadata: ReplayMetadata {
+            version: "1.0".to_string(),
+            recorded_at: now.to_rfc3339(),
+            deck1_name: deck1.to_string(),
+            deck2_name: deck2.to_string(),
+            format: format_label.to_string(),
+            total_turns: 1,
+            total_steps: 0,
+            seed,
+        },
+        initial_state: ReplayInitialState {
+            seed,
+            player1: p1_initial,
+            player2: p2_initial,
+        },
+        steps: Vec::new(),
+        result: None,
+    }
+}
+
+fn record_replay_step(
+    session: &mut GameSession,
+    action_idx: usize,
+    action: &Action,
+    eval: Option<f32>,
+) {
+    let snapshot = make_state_snapshot(&session.state);
+    let (kind, category, detail, _, _) = describe_action(&session.state, action);
+    let step = ReplayStep {
+        step_index: session.replay_log.steps.len() + 1,
+        turn: session.state.turn_count,
+        active_player: session.state.player.player_id,
+        phase: phase_label(&session.state.phase),
+        state_snapshot: snapshot,
+        available_action_count: session.actions.len(),
+        chosen_action_index: action_idx,
+        chosen_action_category: category,
+        chosen_action_detail: detail,
+        chosen_action_kind: kind,
+        chosen_action_eval: eval,
+        result_messages: Vec::new(),
+    };
+    session.replay_log.steps.push(step);
+    save_replay_log(session);
+}
+
+fn generate_replay_filename(deck1: &str, deck2: &str) -> String {
+    let now = Local::now();
+    let d1_stem = std::path::Path::new(deck1)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("deck1");
+    let d2_stem = std::path::Path::new(deck2)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("deck2");
+
+    let filename = format!("{}-{}.{}.json", d1_stem, d2_stem, now.format("%y%m%d-%H%M"));
+    let temp_dir = if std::path::Path::new("../temp").exists() {
+        std::path::PathBuf::from("../temp")
+    } else {
+        let p = std::path::PathBuf::from("temp");
+        let _ = std::fs::create_dir_all(&p);
+        p
+    };
+    temp_dir.join(&filename).to_string_lossy().to_string()
+}
+
+fn save_replay_log(session: &mut GameSession) -> Option<String> {
+    session.replay_log.metadata.total_turns = session.state.turn_count;
+    session.replay_log.metadata.total_steps = session.replay_log.steps.len();
+
+    let full_path = std::path::PathBuf::from(&session.replay_file_path);
+    if let Some(parent) = full_path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    if let Ok(json_str) = serde_json::to_string_pretty(&session.replay_log) {
+        if let Ok(_) = std::fs::write(&full_path, json_str) {
+            return Some(session.replay_file_path.clone());
+        }
+    }
+    None
 }
 
 fn record_log(session: &mut GameSession) {
@@ -254,10 +556,22 @@ fn advance(session: &mut GameSession, messages: &mut Vec<String>) {
         if let Some(winner) = check_game_end(&session.state) {
             session.winner = Some(winner);
             session.actions.clear();
+            session.replay_log.result = Some(ReplayResult {
+                winner,
+                reason: "opponent_life_zero".to_string(),
+                saved_file: None,
+            });
+            let saved_path = save_replay_log(session);
+            if let Some(ref mut res) = session.replay_log.result {
+                res.saved_file = saved_path.clone();
+            }
             messages.push(format!(
                 "ゲーム終了: プレイヤー{} の勝利！（相手のライフが0になりました）",
                 winner
             ));
+            if let Some(path) = saved_path {
+                messages.push(format!("📄 リプレイログ保存完了: {}", path));
+            }
             return;
         }
 
@@ -370,8 +684,14 @@ fn build_response(inner: &Inner, session_id: &str, messages: Vec<String>) -> Gam
             .collect();
     }
 
+    let can_undo = session.history_idx > 0;
+    let can_redo = session.history_idx + 1 < session.history.len();
+    let replay_steps = session.replay_log.steps.clone();
+    let replay_file = Some(session.replay_file_path.clone());
+
     GameResponse {
         session: session_id.to_string(),
+        seed: session.seed,
         winner: session.winner,
         turn: state.turn_count,
         phase: phase_label(&state.phase),
@@ -385,7 +705,11 @@ fn build_response(inner: &Inner, session_id: &str, messages: Vec<String>) -> Gam
         n_forbidden,
         n_forbidden_reason,
         ai_available: model.is_some(),
+        can_undo,
+        can_redo,
         messages,
+        replay_steps,
+        replay_file,
     }
 }
 
@@ -401,8 +725,9 @@ async fn new_game(
 ) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
     let deck1 = req.deck1.filter(|s| !s.is_empty()).unwrap_or_else(|| "deck-fara.yaml".to_string());
     let deck2 = req.deck2.filter(|s| !s.is_empty()).unwrap_or_else(|| "deck-kogyo.yaml".to_string());
+    let seed = req.seed.unwrap_or_else(|| rand::random::<u64>());
 
-    let state = setup_initial_state(&deck1, &deck2).map_err(|e| {
+    let state = crate::setup_initial_state_with_seed(&deck1, &deck2, seed).map_err(|e| {
         Json(ErrorResponse { error: format!("初期状態の構築に失敗しました: {}", e) })
     })?;
 
@@ -414,19 +739,37 @@ async fn new_game(
         Some("standard") => "スタンダード",
         _ => "エターナル",
     };
+    let replay_file_path = generate_replay_filename(&deck1, &deck2);
+    let replay_log = create_initial_replay_log(&state, format_label, &deck1, &deck2, seed);
     let mut session = GameSession {
+        seed,
         initial_state: state.clone(),
         format_label: format_label.to_string(),
         deck1: deck1.clone(),
         deck2: deck2.clone(),
+        replay_log,
         state,
         actions: Vec::new(),
         visited_states: Vec::new(),
         game_history: Vec::new(),
         winner: None,
+        history: Vec::new(),
+        history_idx: 0,
+        replay_file_path,
     };
-    let mut messages = vec![format!("新規ゲームを開始しました [フォーマット: {}] (deck1: {}, deck2: {})", format_label, deck1, deck2)];
+    let mut messages = vec![format!("新規ゲームを開始しました [フォーマット: {}] (Seed: {}, deck1: {}, deck2: {})", format_label, seed, deck1, deck2)];
     advance(&mut session, &mut messages);
+
+    session.history = vec![HistoryEntry {
+        state: session.state.clone(),
+        actions: session.actions.clone(),
+        visited_states: session.visited_states.clone(),
+        game_history: session.game_history.clone(),
+        messages: messages.clone(),
+    }];
+    session.history_idx = 0;
+    save_replay_log(&mut session);
+
     inner.sessions.insert(session_id.clone(), session);
 
     Ok(Json(build_response(&inner, &session_id, messages)))
@@ -462,6 +805,11 @@ async fn act(
         }));
     }
 
+    let eval = model.as_ref().and_then(|m| crate::ai::decision::evaluate_action(m, &session.state, &action, device));
+
+    // リプレイログへステップを記録
+    record_replay_step(session, req.index, &action, eval);
+
     // 学習用アクション選択ログを記録
     crate::log_action_choice(
         &req.session,
@@ -478,6 +826,20 @@ async fn act(
     }
     process_automatic_steps(&mut session.state);
     advance(session, &mut messages);
+
+    if session.history_idx < session.history.len().saturating_sub(1) {
+        session.history.truncate(session.history_idx + 1);
+    }
+    session.history.push(HistoryEntry {
+        state: session.state.clone(),
+        actions: session.actions.clone(),
+        visited_states: session.visited_states.clone(),
+        game_history: session.game_history.clone(),
+        messages: messages.clone(),
+    });
+    session.history_idx = session.history.len() - 1;
+
+    save_replay_log(session);
 
     Ok(Json(build_response(&inner_guard, &req.session, messages)))
 }
@@ -525,6 +887,10 @@ async fn auto(
     })?;
 
     let action = session.actions[idx].clone();
+
+    // リプレイログへステップを記録
+    record_replay_step(session, idx, &action, Some(val));
+
     // 学習用アクション選択ログを記録
     crate::log_action_choice(
         &req.session,
@@ -539,6 +905,21 @@ async fn auto(
     let _ = apply_action(&mut session.state, &action);
     process_automatic_steps(&mut session.state);
     advance(session, &mut messages);
+
+    if session.history_idx < session.history.len().saturating_sub(1) {
+        session.history.truncate(session.history_idx + 1);
+    }
+    session.history.push(HistoryEntry {
+        state: session.state.clone(),
+        actions: session.actions.clone(),
+        visited_states: session.visited_states.clone(),
+        game_history: session.game_history.clone(),
+        messages: messages.clone(),
+    });
+    session.history_idx = session.history.len() - 1;
+
+    save_replay_log(session);
+
     Ok(Json(build_response(&inner_guard, &req.session, messages)))
 }
 
@@ -555,11 +936,78 @@ async fn restart_game(
     session.visited_states.clear();
     session.game_history.clear();
     session.winner = None;
+    session.replay_log = create_initial_replay_log(&session.initial_state, &session.format_label, &session.deck1, &session.deck2, session.seed);
     let mut messages = vec![format!(
-        "🔄 同じ初期条件でゲームをリスタートしました [フォーマット: {}] (deck1: {}, deck2: {})",
-        session.format_label, session.deck1, session.deck2
+        "🔄 同じ初期条件でゲームをリスタートしました [フォーマット: {}] (Seed: {}, deck1: {}, deck2: {})",
+        session.format_label, session.seed, session.deck1, session.deck2
     )];
     advance(session, &mut messages);
+
+    session.history = vec![HistoryEntry {
+        state: session.state.clone(),
+        actions: session.actions.clone(),
+        visited_states: session.visited_states.clone(),
+        game_history: session.game_history.clone(),
+        messages: messages.clone(),
+    }];
+    session.history_idx = 0;
+
+    save_replay_log(session);
+
+    Ok(Json(build_response(&inner, &req.session, messages)))
+}
+
+async fn undo(
+    State(app): State<AppState>,
+    Json(req): Json<SessionReq>,
+) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
+    let mut inner = app.lock().unwrap();
+    let session = inner.sessions.get_mut(&req.session).ok_or_else(|| {
+        Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
+    })?;
+    if session.history_idx == 0 {
+        return Err(Json(ErrorResponse { error: "これ以上戻れません".to_string() }));
+    }
+    session.history_idx -= 1;
+    let entry = session.history[session.history_idx].clone();
+    session.state = entry.state;
+    session.visited_states = entry.visited_states;
+    session.game_history = entry.game_history;
+    session.winner = None;
+
+    session.replay_log.steps.truncate(session.history_idx);
+    session.replay_log.result = None;
+
+    let mut messages = vec!["◀ 1手前の局面に巻き戻しました".to_string()];
+    advance(session, &mut messages);
+
+    save_replay_log(session);
+
+    Ok(Json(build_response(&inner, &req.session, messages)))
+}
+
+async fn redo(
+    State(app): State<AppState>,
+    Json(req): Json<SessionReq>,
+) -> Result<Json<GameResponse>, Json<ErrorResponse>> {
+    let mut inner = app.lock().unwrap();
+    let session = inner.sessions.get_mut(&req.session).ok_or_else(|| {
+        Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
+    })?;
+    if session.history_idx + 1 >= session.history.len() {
+        return Err(Json(ErrorResponse { error: "これ以上進めません".to_string() }));
+    }
+    session.history_idx += 1;
+    let entry = session.history[session.history_idx].clone();
+    session.state = entry.state;
+    session.visited_states = entry.visited_states;
+    session.game_history = entry.game_history;
+
+    let mut messages = vec!["進む ▶ 1手先の局面に進めました".to_string()];
+    advance(session, &mut messages);
+
+    save_replay_log(session);
+
     Ok(Json(build_response(&inner, &req.session, messages)))
 }
 
@@ -574,11 +1022,31 @@ async fn surrender(
     let winner = session.state.opponent.player_id;
     session.winner = Some(winner);
     session.actions.clear();
-    let messages = vec![format!(
+    session.replay_log.result = Some(ReplayResult {
+        winner,
+        reason: "surrender".to_string(),
+        saved_file: Some(session.replay_file_path.clone()),
+    });
+    let saved_path = save_replay_log(session);
+    let mut messages = vec![format!(
         "プレイヤー{} がサレンダーしました。プレイヤー{} の勝利！",
         session.state.player.player_id, winner
     )];
+    if let Some(path) = saved_path {
+        messages.push(format!("📄 リプレイログ保存完了: {}", path));
+    }
     Ok(Json(build_response(&inner, &req.session, messages)))
+}
+
+async fn get_replay(
+    State(app): State<AppState>,
+    Json(req): Json<SessionReq>,
+) -> Result<Json<ReplayLog>, Json<ErrorResponse>> {
+    let inner = app.lock().unwrap();
+    let session = inner.sessions.get(&req.session).ok_or_else(|| {
+        Json(ErrorResponse { error: "セッションが見つかりません".to_string() })
+    })?;
+    Ok(Json(session.replay_log.clone()))
 }
 
 // ---------- 起動 ----------
@@ -616,9 +1084,12 @@ pub fn run_server(port: u16) {
             .route("/", get(index))
             .route("/api/new", post(new_game))
             .route("/api/restart", post(restart_game))
+            .route("/api/undo", post(undo))
+            .route("/api/redo", post(redo))
             .route("/api/act", post(act))
             .route("/api/auto", post(auto))
             .route("/api/surrender", post(surrender))
+            .route("/api/replay", post(get_replay))
             .with_state(app_state);
 
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", port))

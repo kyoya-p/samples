@@ -10,5 +10,6 @@ serde_yaml = "0.9"
 burn = { version = "0.14.0", features = ["train", "wgpu", "ndarray"] }
 burn-ndarray = "0.14.0"
 rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
 axum = "0.7"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }

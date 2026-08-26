@@ -429,6 +429,7 @@ pub struct Card {
     pub reduction_symbols: Vec<Color>,
     pub card_type: CardType,
     pub lv_costs: Vec<u8>,
+    pub lv_bp: Vec<u32>,
     pub symbols: Vec<Color>,
     pub systems: Vec<String>,
 }
@@ -442,6 +443,7 @@ pub struct FieldObject {
     pub cores: Cores,
     pub is_exhausted: bool,
     pub lv_costs: Vec<u8>,
+    pub lv_bp: Vec<u32>,
     pub base_symbols: Vec<Color>,
     pub systems: Vec<String>,
     pub under_cards: Vec<Card>,
@@ -464,6 +466,19 @@ impl FieldObject {
             }
         }
         lv
+    }
+
+    pub fn current_bp(&self) -> u32 {
+        let lv = self.current_lv();
+        if lv == 0 || self.lv_bp.is_empty() {
+            return 0;
+        }
+        let idx = (lv as usize).saturating_sub(1);
+        if idx < self.lv_bp.len() {
+            self.lv_bp[idx]
+        } else {
+            *self.lv_bp.last().unwrap_or(&0)
+        }
     }
 
     pub fn active_symbols(&self) -> Vec<Color> {
@@ -507,6 +522,19 @@ pub struct GameState {
     /// バシリスクのデッキオープン効果を使用済みか（ターンに1回、リフレッシュでリセット）
     #[serde(default)]
     pub basilisk_effect_used_this_turn: bool,
+    /// 対局初期化時に使用された乱数シード（完全再現用）
+    #[serde(default)]
+    pub seed: u64,
+    /// 実行時乱数生成器の内部状態
+    #[serde(default)]
+    pub rng_state: u64,
+}
+
+impl GameState {
+    pub fn next_random_u64(&mut self) -> u64 {
+        self.rng_state = self.rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        self.rng_state
+    }
 }
 
 /// 同時に発動し、解決順の選択待ちとなっている効果
@@ -770,7 +798,7 @@ pub fn check_and_process_depletion(side: &mut SideState) {
     while i < side.field.len() {
         let obj = &side.field[i];
         if obj.card_type == CardType::Spirit || obj.card_type == CardType::Ultimate {
-            let lv1_cost = obj.lv_costs[0];
+            let lv1_cost = obj.lv_costs.get(0).copied().unwrap_or(1);
             if obj.cores.total < lv1_cost {
                 let removed = side.field.remove(i);
                 side.reserve.total += removed.cores.total;
@@ -787,6 +815,7 @@ pub fn check_and_process_depletion(side: &mut SideState) {
                     reduction_symbols: vec![],
                     card_type: removed.card_type,
                     lv_costs: removed.lv_costs.clone(),
+                    lv_bp: removed.lv_bp.clone(),
                     symbols: removed.base_symbols.clone(),
                     systems: removed.systems.clone(),
                 };
@@ -797,10 +826,63 @@ pub fn check_and_process_depletion(side: &mut SideState) {
                 } else {
                     side.trash.push(card);
                 }
+                for under in removed.under_cards {
+                    let under_returns = cards::CARD_REGISTRY.get(&under.id)
+                        .map_or(false, |e| e.returns_to_token_pool());
+                    if under_returns {
+                        side.token_pool.push(under);
+                    } else {
+                        side.trash.push(under);
+                    }
+                }
                 continue;
             }
         }
         i += 1;
+    }
+}
+
+/// フィールド上のオブジェクトを破壊する（BP負け/効果破壊等）
+pub fn destroy_field_object(side: &mut SideState, obj_id: &str) -> bool {
+    if let Some(idx) = side.field.iter().position(|o| o.id == obj_id) {
+        let removed = side.field.remove(idx);
+        side.reserve.total += removed.cores.total;
+        side.reserve.soul += removed.cores.soul;
+        let mut card_id = removed.id.clone();
+        if let Some(pos) = card_id.find('_') {
+            card_id.truncate(pos);
+        }
+        let card = Card {
+            id: card_id,
+            name: removed.name.clone(),
+            base_cost: 0,
+            colors: removed.colors.clone(),
+            reduction_symbols: vec![],
+            card_type: removed.card_type,
+            lv_costs: removed.lv_costs.clone(),
+            lv_bp: removed.lv_bp.clone(),
+            symbols: removed.base_symbols.clone(),
+            systems: removed.systems.clone(),
+        };
+        let returns_to_pool = cards::CARD_REGISTRY.get(&card.id)
+            .map_or(false, |e| e.returns_to_token_pool());
+        if returns_to_pool {
+            side.token_pool.push(card);
+        } else {
+            side.trash.push(card);
+        }
+        for under in removed.under_cards {
+            let under_returns = cards::CARD_REGISTRY.get(&under.id)
+                .map_or(false, |e| e.returns_to_token_pool());
+            if under_returns {
+                side.token_pool.push(under);
+            } else {
+                side.trash.push(under);
+            }
+        }
+        true
+    } else {
+        false
     }
 }
 
@@ -959,6 +1041,7 @@ pub fn try_summon_token(state: &mut GameState, token_card_id: &str, use_void: bo
             cores: Cores::new(void_cores + needed, soul_taken),
             is_exhausted: false,
             lv_costs: token.lv_costs.clone(),
+            lv_bp: token.lv_bp.clone(),
             base_symbols: token.symbols.clone(),
             systems: token.systems.clone(),
             under_cards: vec![],
@@ -1184,6 +1267,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                     cores: Cores::new(placement_total + placement_soul, placement_soul),
                     is_exhausted: false,
                     lv_costs: card.lv_costs.clone(),
+                    lv_bp: card.lv_bp.clone(),
                     base_symbols: card.symbols.clone(),
                     systems: card.systems.clone(),
                     under_cards: vec![],
@@ -1298,6 +1382,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                                     reduction_symbols: vec![],
                                     card_type: bug.card_type,
                                     lv_costs: bug.lv_costs.clone(),
+                                    lv_bp: bug.lv_bp.clone(),
                                     symbols: bug.base_symbols.clone(),
                                     systems: bug.systems.clone(),
                                 };
@@ -1423,8 +1508,24 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
         }
         (Phase::AttackStep(AttackSubPhase::BattleResolution), _) => {
             if let Some(attacker_id) = &state.active_attacker {
-                if let Some(_blocker_id) = &state.active_blocker {
-                    // ブロックあり戦闘
+                if let Some(blocker_id) = &state.active_blocker {
+                    // ブロックあり戦闘: BP比べ
+                    let attacker_bp = state.player.field.iter().find(|o| &o.id == attacker_id)
+                        .map(|o| o.current_bp()).unwrap_or(0);
+                    let blocker_bp = state.opponent.field.iter().find(|o| &o.id == blocker_id)
+                        .map(|o| o.current_bp()).unwrap_or(0);
+
+                    if attacker_bp < blocker_bp {
+                        // アタッカー破壊
+                        destroy_field_object(&mut state.player, attacker_id);
+                    } else if blocker_bp < attacker_bp {
+                        // ブロッカー破壊
+                        destroy_field_object(&mut state.opponent, blocker_id);
+                    } else {
+                        // BP同値: 両方破壊
+                        destroy_field_object(&mut state.player, attacker_id);
+                        destroy_field_object(&mut state.opponent, blocker_id);
+                    }
                 } else {
                     // ノーブロック：ライフ減少 (アタッカーのシンボル数に応じたダメージ)
                     let attacker = state.player.field.iter().chain(&state.opponent.field)
@@ -1519,6 +1620,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
                 reduction_symbols: vec![],
                 card_type: obj.card_type,
                 lv_costs: obj.lv_costs.clone(),
+                lv_bp: obj.lv_bp.clone(),
                 symbols: obj.base_symbols.clone(),
                 systems: obj.systems.clone(),
             };
@@ -1529,6 +1631,7 @@ pub fn apply_action(state: &mut GameState, action: &Action) -> Result<(), String
             obj.colors = card.colors.clone();
             obj.card_type = CardType::Spirit; // 煌臨スピリットになる
             obj.lv_costs = card.lv_costs.clone();
+            obj.lv_bp = card.lv_bp.clone();
             obj.base_symbols = card.symbols.clone();
             obj.systems = card.systems.clone();
             obj.current_card_id = card.id.clone();
@@ -2053,6 +2156,7 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
     let mut symbols_str = String::new();
     let mut reduction_str = String::new();
     let mut lv_costs = Vec::new();
+    let mut lv_bp = Vec::new();
     let mut in_lv_info = false;
     let mut systems = Vec::new();
     let mut in_systems = false;
@@ -2084,9 +2188,15 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
             in_lv_info = true;
         } else if in_lv_info && trimmed.starts_with("-") {
             let info = trimmed["-".len()..].trim().trim_matches('"');
-            if let Some(comma_pos) = info.find(',') {
-                if let Ok(lv_cost) = info[..comma_pos].trim().parse::<u8>() {
+            let parts: Vec<&str> = info.split(',').map(|s| s.trim()).collect();
+            if parts.len() >= 2 {
+                if let Ok(lv_cost) = parts[1].parse::<u8>() {
                     lv_costs.push(lv_cost);
+                }
+            }
+            if parts.len() >= 3 {
+                if let Ok(bp) = parts[2].parse::<u32>() {
+                    lv_bp.push(bp);
                 }
             }
         } else if in_lv_info && !trimmed.starts_with("-") && !trimmed.is_empty() {
@@ -2118,8 +2228,10 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
     if lv_costs.is_empty() {
         if card_type == CardType::Spirit || card_type == CardType::Ultimate {
             lv_costs = vec![1];
+            lv_bp = vec![3000];
         } else {
             lv_costs = vec![0];
+            lv_bp = vec![];
         }
     }
 
@@ -2133,6 +2245,7 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
         reduction_symbols,
         card_type,
         lv_costs,
+        lv_bp,
         symbols,
         systems,
     })
@@ -2143,9 +2256,9 @@ fn load_card_from_yaml(card_no: &str) -> Result<Card, String> {
 // ----------------------------------------------------
 #[derive(Debug, Deserialize)]
 struct YamlDeck {
-    cards: std::collections::HashMap<String, usize>,
+    cards: std::collections::BTreeMap<String, usize>,
     #[serde(default)]
-    tokens: std::collections::HashMap<String, usize>,
+    tokens: std::collections::BTreeMap<String, usize>,
 }
 
 /// デッキファイルを読み込み、(deckカード一覧, tokenプール) を返す
@@ -2181,6 +2294,7 @@ pub fn load_deck_from_file(filename: &str) -> Result<(Vec<Card>, Vec<Card>), Str
                 reduction_symbols: vec![Color::Yellow],
                 card_type: CardType::Spirit,
                 lv_costs: vec![1],
+                lv_bp: vec![3000],
                 symbols: vec![Color::Yellow],
                 systems: vec![],
             };
@@ -2205,17 +2319,22 @@ pub fn load_deck_from_file(filename: &str) -> Result<(Vec<Card>, Vec<Card>), Str
 }
 
 
-// 疑似乱数シャッフル
-pub fn pseudo_shuffle(deck: &mut Vec<Card>) {
-    let mut seed: u64 = 123456789;
+// 乱数シードを用いた確定シャッフル
+pub fn shuffle_deck_with_seed(deck: &mut Vec<Card>, rng_state: &mut u64) {
     for i in (1..deck.len()).rev() {
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-        let j = (seed % (i as u64 + 1)) as usize;
+        *rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        let j = (*rng_state % (i as u64 + 1)) as usize;
         deck.swap(i, j);
     }
 }
 
-pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameState, String> {
+pub fn pseudo_shuffle(deck: &mut Vec<Card>) {
+    let mut default_seed: u64 = 123456789;
+    shuffle_deck_with_seed(deck, &mut default_seed);
+}
+
+pub fn setup_initial_state_with_seed(deck1_path: &str, deck2_path: &str, seed: u64) -> Result<GameState, String> {
+    let mut rng_state = seed;
     let (mut deck, token_pool1) = load_deck_from_file(deck1_path)?;
     let target_fixed_ids = vec![
         "BS76-CX03".to_string(),
@@ -2233,7 +2352,7 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         }
     }
     
-    pseudo_shuffle(&mut deck);
+    shuffle_deck_with_seed(&mut deck, &mut rng_state);
     while hand.len() < 4 && !deck.is_empty() {
         hand.push(deck.remove(0));
     }
@@ -2248,7 +2367,7 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         }
     }
 
-    pseudo_shuffle(&mut opponent_deck);
+    shuffle_deck_with_seed(&mut opponent_deck, &mut rng_state);
     while opponent_hand.len() < 4 && !opponent_deck.is_empty() {
         opponent_hand.push(opponent_deck.remove(0));
     }
@@ -2278,8 +2397,8 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         token_pool: token_pool2,
         count: 0,
     };
-    println!("【デッキ情報】プレイヤー1 デッキ総枚数: {}枚 (山札: {}枚, 手札: {}枚), トークンプール: {}枚", player.opened.len() + player.hand.len(), player.opened.len(), player.hand.len(), player.token_pool.len());
-    println!("【デッキ情報】プレイヤー2 デッキ総枚数: {}枚 (山札: {}枚, 手札: {}枚), トークンプール: {}枚", opponent.opened.len() + opponent.hand.len(), opponent.opened.len(), opponent.hand.len(), opponent.token_pool.len());
+    println!("【デッキ情報】(Seed: {}) プレイヤー1 デッキ総枚数: {}枚 (山札: {}枚, 手札: {}枚), トークンプール: {}枚", seed, player.opened.len() + player.hand.len(), player.opened.len(), player.hand.len(), player.token_pool.len());
+    println!("【デッキ情報】(Seed: {}) プレイヤー2 デッキ総枚数: {}枚 (山札: {}枚, 手札: {}枚), トークンプール: {}枚", seed, opponent.opened.len() + opponent.hand.len(), opponent.opened.len(), opponent.hand.len(), opponent.token_pool.len());
 
     let mut state = GameState {
         player,
@@ -2294,10 +2413,17 @@ pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameSta
         pending_effects: vec![],
         next_obj_id: 0,
         basilisk_effect_used_this_turn: false,
+        seed,
+        rng_state,
     };
 
     process_automatic_steps(&mut state);
     Ok(state)
+}
+
+pub fn setup_initial_state(deck1_path: &str, deck2_path: &str) -> Result<GameState, String> {
+    let seed = rand::random::<u64>();
+    setup_initial_state_with_seed(deck1_path, deck2_path, seed)
 }
 
 fn calculate_state_hash(state: &GameState) -> u64 {
@@ -2799,7 +2925,7 @@ fn run_interactive_loop(
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogSideState {
     pub player_id: u8,
     pub life: u8,
@@ -2828,7 +2954,7 @@ impl LogSideState {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogEntry {
     pub tuen: u32,               // 誤植に合わせた "tuen" キー
     pub phase: String,
@@ -2988,6 +3114,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: false,
             lv_costs: vec![0],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3002,6 +3129,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: true,
             lv_costs: vec![1],
+            lv_bp: vec![3000],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
@@ -3016,6 +3144,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2, 4],
+            lv_bp: vec![5000, 7000, 10000],
             symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string()],
         };
@@ -3058,6 +3187,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         }
     }
 
@@ -3111,6 +3242,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: false,
             lv_costs: vec![0],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3125,6 +3257,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: true,
             lv_costs: vec![1],
+            lv_bp: vec![3000],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
@@ -3139,6 +3272,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White],
             card_type: CardType::Magic,
             lv_costs: vec![],
+            lv_bp: vec![],
             symbols: vec![],
             systems: vec![],
         };
@@ -3181,6 +3315,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         };
 
         let actions = generate_legal_actions(&state);
@@ -3222,6 +3358,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: true,
             lv_costs: vec![1],
+            lv_bp: vec![3000],
             base_symbols: vec![],
             systems: vec!["フラッグ".to_string()],
             under_cards: vec![],
@@ -3236,6 +3373,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: true,
             lv_costs: vec![1, 2, 5],
+            lv_bp: vec![4000, 6000, 9000],
             base_symbols: vec![Color::White],
             systems: vec![],
             under_cards: vec![],
@@ -3277,6 +3415,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         };
 
         let res = apply_action(&mut state, &Action::Pass);
@@ -3319,6 +3459,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         };
 
         let res_basilisk = apply_action(&mut state_basilisk, &Action::Pass);
@@ -3336,6 +3478,7 @@ mod flash_kourin_tests {
             cores: Cores::new(0, 0),
             is_exhausted: false,
             lv_costs: vec![0],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3349,6 +3492,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![],
             card_type: CardType::Spirit,
             lv_costs: vec![1],
+            lv_bp: vec![3000],
             symbols: vec![],
             systems: vec!["フラッグ".to_string()],
         };
@@ -3388,6 +3532,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         }
     }
 
@@ -3486,6 +3632,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 1),
             is_exhausted: false,
             lv_costs: vec![0],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3499,6 +3646,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2, 5],
+            lv_bp: vec![4000, 6000, 9000],
             symbols: vec![Color::White],
             systems: vec!["光契約".to_string(), "旗種".to_string()],
         };
@@ -3538,6 +3686,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 100, // テスト用: 手動作成オブジェクトのIDと衝突しない値
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         }
     }
 
@@ -3637,6 +3787,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2, 4],
+            lv_bp: vec![5000, 7000, 10000],
             symbols: vec![Color::White],
             systems: vec!["光契約".to_string(), "旗種".to_string(), "光虫".to_string()],
         });
@@ -3690,6 +3841,7 @@ mod flash_kourin_tests {
                 reduction_symbols: vec![],
                 card_type: CardType::Spirit,
                 lv_costs: vec![1, 2, 4],
+                lv_bp: vec![5000, 7000, 10000],
                 symbols: vec![Color::White],
                 systems: vec!["旗種".to_string()],
             });
@@ -3732,6 +3884,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2, 5],
+            lv_bp: vec![4000, 6000, 9000],
             symbols: vec![Color::White],
             systems: vec!["光契約".to_string(), "旗種".to_string()],
         });
@@ -3744,6 +3897,7 @@ mod flash_kourin_tests {
             cores: Cores::new(1, 0),
             is_exhausted: false,
             lv_costs: vec![0],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["フラッグ".to_string(), "光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3771,6 +3925,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2, 5],
+            lv_bp: vec![4000, 6000, 9000],
             symbols: vec![Color::White],
             systems: vec!["光契約".to_string(), "旗種".to_string()],
         });
@@ -3796,6 +3951,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::Green],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2],
+            lv_bp: vec![3000, 4000],
             symbols: vec![Color::Green],
             systems: vec!["甲魚".to_string()],
         };
@@ -3835,6 +3991,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 0,
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         };
 
         // コスト3をリザーブから支払い、配置コア1個で召喚
@@ -3866,6 +4024,7 @@ mod flash_kourin_tests {
             cores: Cores::new(2, 0),
             is_exhausted: false,
             lv_costs: vec![0, 1],
+            lv_bp: vec![],
             base_symbols: vec![Color::White],
             systems: vec!["光契約".to_string(), "旗種".to_string()],
             under_cards: vec![],
@@ -3880,6 +4039,7 @@ mod flash_kourin_tests {
             reduction_symbols: vec![Color::White, Color::White],
             card_type: CardType::Spirit,
             lv_costs: vec![1, 2],
+            lv_bp: vec![3000, 4000],
             symbols: vec![Color::White],
             systems: vec!["旗種".to_string()],
         };
@@ -3919,6 +4079,8 @@ mod flash_kourin_tests {
             pending_effects: vec![],
             next_obj_id: 1,
             basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
         };
 
         // 合法手を生成
@@ -3987,6 +4149,7 @@ mod flash_kourin_tests {
                 cores: Cores::new(0, 0),
                 is_exhausted: false,
                 lv_costs: vec![0],
+                lv_bp: vec![],
                 base_symbols: vec![Color::White],
                 systems: vec!["旗種".to_string()],
                 under_cards: vec![],
@@ -4000,6 +4163,172 @@ mod flash_kourin_tests {
                 card.name, card.base_cost, red, card.base_cost.saturating_sub(red)
             );
         }
+    }
+
+    #[test]
+    fn test_block_battle_resolution_attacker_wins() {
+        // アタッカー(BP 5000) vs ブロッカー(BP 3000)
+        let attacker = FieldObject {
+            id: "BS76-038_1".to_string(),
+            name: "プラチナム・アゲハ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Spirit,
+            cores: Cores::new(1, 0),
+            is_exhausted: true,
+            lv_costs: vec![1, 2, 4],
+            lv_bp: vec![5000, 7000, 10000],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string()],
+            under_cards: vec![],
+            current_card_id: "BS76-038".to_string(),
+        };
+
+        let blocker = FieldObject {
+            id: "BS76-T001_2".to_string(),
+            name: "プラチナム・バグ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Spirit,
+            cores: Cores::new(1, 0),
+            is_exhausted: true,
+            lv_costs: vec![1],
+            lv_bp: vec![3000],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string()],
+            under_cards: vec![],
+            current_card_id: "BS76-T001".to_string(),
+        };
+
+        let mut state = GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![attacker],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 1,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![blocker],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::AttackStep(AttackSubPhase::BattleResolution),
+            turn_count: 3,
+            active_attacker: Some("BS76-038_1".to_string()),
+            active_blocker: Some("BS76-T001_2".to_string()),
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+            pending_effects: vec![],
+            next_obj_id: 100,
+            basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
+        };
+
+        let res = apply_action(&mut state, &Action::Pass);
+        assert!(res.is_ok());
+        // ブロッカー(BP 3000)が破壊され、トークンプールへ戻る
+        assert_eq!(state.opponent.field.len(), 0, "ブロッカーが破壊されてフィールドから消える");
+        assert_eq!(state.opponent.token_pool.len(), 1, "トークンはトークンプールへ戻る");
+        assert_eq!(state.opponent.reserve.total, 1, "乗っていたコア1個がリザーブへ移動");
+        assert_eq!(state.player.field.len(), 1, "アタッカー(BP 5000)は生存");
+        assert_eq!(state.opponent.life, 5, "ブロックされたためライフ減少なし");
+    }
+
+    #[test]
+    fn test_block_battle_resolution_draw_both_destroyed() {
+        // アタッカー(BP 3000) vs ブロッカー(BP 3000)
+        let attacker = FieldObject {
+            id: "26RSD03-002_1".to_string(),
+            name: "パッファー".to_string(),
+            colors: vec![Color::Green],
+            card_type: CardType::Spirit,
+            cores: Cores::new(1, 0),
+            is_exhausted: true,
+            lv_costs: vec![1, 2],
+            lv_bp: vec![3000, 4000],
+            base_symbols: vec![Color::Green],
+            systems: vec!["甲魚".to_string()],
+            under_cards: vec![],
+            current_card_id: "26RSD03-002".to_string(),
+        };
+
+        let blocker = FieldObject {
+            id: "BS76-T001_2".to_string(),
+            name: "プラチナム・バグ".to_string(),
+            colors: vec![Color::White],
+            card_type: CardType::Spirit,
+            cores: Cores::new(1, 0),
+            is_exhausted: true,
+            lv_costs: vec![1],
+            lv_bp: vec![3000],
+            base_symbols: vec![Color::White],
+            systems: vec!["フラッグ".to_string()],
+            under_cards: vec![],
+            current_card_id: "BS76-T001".to_string(),
+        };
+
+        let mut state = GameState {
+            player: SideState {
+                player_id: 1,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![attacker],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 1,
+            },
+            opponent: SideState {
+                player_id: 2,
+                life: 5,
+                reserve: Cores::new(0, 0),
+                field: vec![blocker],
+                hand: vec![],
+                trash: vec![],
+                trash_cores: Cores::new(0, 0),
+                opened: vec![],
+                token_pool: vec![],
+                count: 0,
+            },
+            phase: Phase::AttackStep(AttackSubPhase::BattleResolution),
+            turn_count: 3,
+            active_attacker: Some("26RSD03-002_1".to_string()),
+            active_blocker: Some("BS76-T001_2".to_string()),
+            token_summoned_this_turn: false,
+            last_move_core: None,
+            core_move_count_this_turn: 0,
+            pending_effects: vec![],
+            next_obj_id: 100,
+            basilisk_effect_used_this_turn: false,
+            seed: 0,
+            rng_state: 0,
+        };
+
+        let res = apply_action(&mut state, &Action::Pass);
+        assert!(res.is_ok());
+        // BP同値: 両方破壊
+        assert_eq!(state.player.field.len(), 0, "アタッカー破壊");
+        assert_eq!(state.player.trash.len(), 1, "パッファーはトラッシュへ");
+        assert_eq!(state.player.reserve.total, 1, "コアはリザーブへ");
+        assert_eq!(state.opponent.field.len(), 0, "ブロッカー破壊");
+        assert_eq!(state.opponent.token_pool.len(), 1, "トークンはトークンプールへ");
+        assert_eq!(state.opponent.reserve.total, 1, "コアはリザーブへ");
+        assert_eq!(state.opponent.life, 5, "ライフ減少なし");
     }
 }
 

@@ -48,6 +48,30 @@
   button.best-btn:hover:not(:disabled) { background: #1b4d32; border-color: #66ffa6; color: #ffffff; box-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
   button#btn-n { display: inline-flex; align-items: center; gap: 8px; font-weight: bold; padding: 6px 14px; }
   button#btn-n.is-best { background: #133824; border-color: #00e676; color: #ffffff; box-shadow: 0 0 10px rgba(0, 230, 118, 0.35); }
+  .btn-history {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-history:not(:disabled) {
+    background: #0f2744;
+    border-color: #2563eb;
+    color: #60a5fa;
+  }
+  .btn-history:hover:not(:disabled) {
+    background: #1d4ed8;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+  }
+  .btn-history:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
   .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
   .statusline .phase { color: var(--warn); font-weight: bold; }
   .status-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
@@ -567,6 +591,105 @@
     justify-content: center;
     align-items: center;
   }
+  /* ログタブ & 選択ログ(JSON)スタイル */
+  .log-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+  .log-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .log-tab-btn.active {
+    background: #1e293b;
+    border-color: #3b82f6;
+    color: #fff;
+    font-weight: bold;
+  }
+  .json-path-box {
+    background: #0b1017;
+    border: 1px solid #1e293b;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 10px;
+    color: #e2e8f0;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .json-path-box code {
+    font-family: monospace;
+    color: #38bdf8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+  .replay-step-item {
+    background: #151e2a;
+    border: 1px solid #273546;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .replay-step-item:hover {
+    background: #1e2c3c;
+    border-color: #3b82f6;
+  }
+  .replay-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94a3b8;
+    margin-bottom: 3px;
+  }
+  .replay-step-badge {
+    background: #2563eb;
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 9.5px;
+  }
+  .replay-step-detail {
+    color: #f1f5f9;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .replay-step-meta {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .replay-step-json {
+    margin-top: 6px;
+    padding: 6px;
+    background: #0b1017;
+    border: 1px solid #1e293b;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 10px;
+    color: #a5f3fc;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 160px;
+    overflow-y: auto;
+  }
 </style>
 </head>
 <body>
@@ -581,8 +704,11 @@
   </label>
   <label>デッキ1: <input id="deck1" value="deck-fara.yaml"></label>
   <label>デッキ2: <input id="deck2" value="deck-kogyo.yaml"></label>
+  <label>シード: <input id="seed" placeholder="ランダム" style="width:110px;"></label>
   <button id="btn-new" class="primary">新規ゲーム開始</button>
   <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
+  <button id="btn-undo" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
+  <button id="btn-redo" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
 </div>
 
 <div class="layout">
@@ -595,6 +721,8 @@
         <span>手番: <b id="active">-</b></span>
         <span class="phase" id="phase">ゲーム未開始</span>
         <div class="status-actions">
+          <button id="btn-undo-board" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
+          <button id="btn-redo-board" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
           <button id="btn-n">ステップ終了</button>
         </div>
       </div>
@@ -634,8 +762,24 @@
       <div id="groups"><div class="empty">「新規ゲーム開始」を押してください</div></div>
     </div>
     <div class="panel">
-      <h2>ログ</h2>
-      <div id="messages"></div>
+      <div class="log-tabs">
+        <button id="tab-messages" class="log-tab-btn active" onclick="switchLogTab('messages')">📝 メッセージ</button>
+        <button id="tab-replay" class="log-tab-btn" onclick="switchLogTab('replay')">📊 選択ログ (JSON)</button>
+        <button id="tab-rawjson" class="log-tab-btn" onclick="switchLogTab('rawjson')">📄 生JSON</button>
+      </div>
+      <div id="json-path-info" class="json-path-box">
+        <span>📁 ログ保存先: <code id="json-path-label">./temp/... (ゲーム終了時に自動出力)</code></span>
+        <button class="secondary" style="padding:2px 6px; font-size:10px;" onclick="copyReplayJson()">📋 JSONコピー</button>
+      </div>
+      <div id="messages-tab-content">
+        <div id="messages"></div>
+      </div>
+      <div id="replay-tab-content" class="hidden">
+        <div id="replay-steps-list"><div class="empty">選択ログはまだありません</div></div>
+      </div>
+      <div id="rawjson-tab-content" class="hidden">
+        <textarea id="raw-json-viewer" readonly style="width:100%; height:260px; background:#0b1017; color:#38bdf8; font-family:monospace; font-size:10.5px; border:1px solid #1e293b; border-radius:4px; padding:6px; resize:vertical;"></textarea>
+      </div>
     </div>
   </div>
 </div>
@@ -1067,9 +1211,10 @@ function renderField(el, field, isMyField) {
     }
     const symGems = formatReductionGems(o.symbols);
     const symHtml = symGems ? `${symGems} ` : "";
+    const bpHtml = o.bp ? `, BP${o.bp}` : "";
     const sourceIdForField = isMyField ? o.id : null;
     div.innerHTML = `<div class="nm">${esc(o.name)}</div>` +
-      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}</div>`;
+      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}${bpHtml}</div>`;
     if (o.image_url) bindCardPreview(div, o.name, o.image_url);
     el.appendChild(div);
   }
@@ -1300,7 +1445,7 @@ function renderGroups(groups, maxEval) {
     const forbidden = g.all_forbidden ? `🚫[${esc(g.forbidden_reason || "選択不可")}] ` : "";
     
     const hasSub = g.options.length > 1;
-    let arrowIcon = isTop ? "▼" : "▶";
+    let arrowIcon = hasSub ? "▶" : "";
     const cntHtml = hasSub ? `<span class="cnt" id="cnt-${idx}">${arrowIcon}</span>` : "";
     
     head.innerHTML = `<span class="cat">${forbidden}${esc(g.category)}</span>${cntHtml}` +
@@ -1321,23 +1466,31 @@ function renderGroups(groups, maxEval) {
       head.onclick = () => doAct(g.options[0].index);
     } else {
       const opts = document.createElement("div");
-      opts.className = "opts" + (isTop ? "" : " hidden");
-      
-      if (isTop && opts.classList.contains("hidden")) {
-        div.classList.add("closed-best");
-      }
+      // 初期状態は常に閉じた状態にし、スピリット一覧のみをコンパクトに表示
+      opts.className = "opts hidden";
 
       renderOptionsHierarchy(opts, g.options, maxEval, isNearBest);
       div.appendChild(opts);
       
       head.onclick = () => {
-        const isNowHidden = opts.classList.toggle("hidden");
-        if (isTop) {
-          div.classList.toggle("closed-best", isNowHidden);
-        }
-        const cntEl = $(`cnt-${idx}`);
-        if (cntEl) {
-          cntEl.textContent = isNowHidden ? "▶" : "▼";
+        const isNowOpening = opts.classList.contains("hidden");
+
+        // 他のグループをすべて閉じる（アコーディオン）
+        box.querySelectorAll(".opts").forEach(el => {
+          if (el !== opts) el.classList.add("hidden");
+        });
+        box.querySelectorAll(".cnt").forEach(cnt => {
+          cnt.textContent = "▶";
+        });
+
+        if (isNowOpening) {
+          opts.classList.remove("hidden");
+          const cntEl = $(`cnt-${idx}`);
+          if (cntEl) cntEl.textContent = "▼";
+        } else {
+          opts.classList.add("hidden");
+          const cntEl = $(`cnt-${idx}`);
+          if (cntEl) cntEl.textContent = "▶";
         }
       };
     }
@@ -1435,6 +1588,16 @@ function render(data) {
   nBtn.disabled = data.n_index == null || data.n_forbidden || data.winner != null;
   nBtn.title = data.n_forbidden ? (data.n_forbidden_reason || "選択不可") : "";
 
+  if ($("btn-undo")) $("btn-undo").disabled = !data.can_undo;
+  if ($("btn-redo")) $("btn-redo").disabled = !data.can_redo;
+  if ($("btn-undo-board")) $("btn-undo-board").disabled = !data.can_undo;
+  if ($("btn-redo-board")) $("btn-redo-board").disabled = !data.can_redo;
+
+  renderReplaySteps(data);
+  if (currentTab === 'rawjson') {
+    loadRawJson();
+  }
+
   const banner = $("winner");
   if (data.winner != null) {
     banner.innerHTML = `<div class="winner-title">🏆 ゲーム終了: プレイヤー${data.winner} の勝利！</div>` +
@@ -1450,6 +1613,101 @@ function render(data) {
   if (data.messages && data.messages.length) addMessages(data.messages);
 }
 
+let currentTab = 'messages';
+
+function switchLogTab(tabName) {
+  currentTab = tabName;
+  ['messages', 'replay', 'rawjson'].forEach(t => {
+    $(`tab-${t}`).classList.toggle('active', t === tabName);
+    $(`${t}-tab-content`).classList.toggle('hidden', t !== tabName);
+  });
+  if (tabName === 'rawjson') {
+    loadRawJson();
+  }
+}
+
+function renderReplaySteps(data) {
+  const container = $("replay-steps-list");
+  const pathLabel = $("json-path-label");
+  if (data.replay_file) {
+    pathLabel.textContent = data.replay_file;
+    pathLabel.title = data.replay_file;
+  } else {
+    const d1 = ($("deck1").value || "deck1").replace(/\.[^/.]+$/, "");
+    const d2 = ($("deck2").value || "deck2").replace(/\.[^/.]+$/, "");
+    pathLabel.textContent = `./temp/${d1}-${d2}.YYMMDD-HHMM.json (ゲーム終了時に自動保存)`;
+  }
+
+  if (!data.replay_steps || data.replay_steps.length === 0) {
+    container.innerHTML = `<div class="empty">選択ログはまだありません</div>`;
+    return;
+  }
+
+  container.innerHTML = data.replay_steps.map((st, idx) => {
+    const evalStr = st.chosen_action_eval != null ? st.chosen_action_eval.toFixed(3) : '-';
+    const jsonPreview = JSON.stringify({
+      step: st.step_index,
+      turn: st.turn,
+      player: st.active_player,
+      phase: st.phase,
+      action_category: st.chosen_action_category,
+      action_kind: st.chosen_action_kind,
+      action_detail: st.chosen_action_detail,
+      eval: st.chosen_action_eval,
+      available_actions: st.available_action_count,
+      snapshot: st.state_snapshot
+    }, null, 2);
+
+    return `
+      <div class="replay-step-item" onclick="toggleStepJson(${idx})">
+        <div class="replay-step-header">
+          <span class="replay-step-badge">#${st.step_index}</span>
+          <span>Turn ${st.turn} [P${st.active_player}] ${esc(st.phase)}</span>
+        </div>
+        <div class="replay-step-detail">
+          <b>${esc(st.chosen_action_category || st.chosen_action_kind)}</b>: ${esc(st.chosen_action_detail)}
+        </div>
+        <div class="replay-step-meta">
+          <span>評価値: <b>${evalStr}</b></span>
+          <span>選択肢数: ${st.available_action_count}</span>
+          <span style="color:#38bdf8;">▼ JSON詳細</span>
+        </div>
+        <div id="step-json-${idx}" class="replay-step-json hidden">${esc(jsonPreview)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleStepJson(idx) {
+  const el = $(`step-json-${idx}`);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function loadRawJson() {
+  if (!sessionId) return;
+  try {
+    const replayData = await api("/api/replay", { session: sessionId });
+    if (replayData) {
+      $("raw-json-viewer").value = JSON.stringify(replayData, null, 2);
+    }
+  } catch (e) {
+    $("raw-json-viewer").value = "JSON取得エラー: " + e;
+  }
+}
+
+async function copyReplayJson() {
+  if (!sessionId) return;
+  try {
+    const replayData = await api("/api/replay", { session: sessionId });
+    if (replayData) {
+      await navigator.clipboard.writeText(JSON.stringify(replayData, null, 2));
+      alert("✅ リプレイログ JSON をクリップボードにコピーしました！");
+    }
+  } catch (e) {
+    alert("コピーに失敗しました: " + e);
+  }
+}
+
 let isActing = false;
 
 async function startNewGame() {
@@ -1459,12 +1717,18 @@ async function startNewGame() {
   activePlayContext = null;
   updateCoreAllocationUI();
   try {
+    const seedVal = $("seed").value.trim();
+    const reqSeed = seedVal ? parseInt(seedVal, 10) : undefined;
     const data = await api("/api/new", {
       deck1: $("deck1").value.trim(),
       deck2: $("deck2").value.trim(),
       format: $("format").value,
+      seed: isNaN(reqSeed) ? undefined : reqSeed,
     });
     if (data) {
+      if (data.seed != null) {
+        $("seed").placeholder = String(data.seed);
+      }
       $("messages").innerHTML = "";
       render(data);
     }
@@ -1488,6 +1752,32 @@ async function restartGame() {
       $("messages").innerHTML = "";
       render(data);
     }
+  } finally {
+    isActing = false;
+  }
+}
+
+async function undo() {
+  if (!sessionId || isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/undo", { session: sessionId });
+    if (data) render(data);
+  } finally {
+    isActing = false;
+  }
+}
+
+async function redo() {
+  if (!sessionId || isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/redo", { session: sessionId });
+    if (data) render(data);
   } finally {
     isActing = false;
   }
@@ -1546,12 +1836,31 @@ $("format").addEventListener("change", saveDeckSettings);
 
 $("btn-new").onclick = startNewGame;
 $("btn-restart").onclick = restartGame;
+$("btn-undo").onclick = undo;
+$("btn-redo").onclick = redo;
+if ($("btn-undo-board")) $("btn-undo-board").onclick = undo;
+if ($("btn-redo-board")) $("btn-redo-board").onclick = redo;
 
 $("btn-n").onclick = () => {
   activePlayContext = null;
   updateCoreAllocationUI();
   if (current && current.n_index != null) doAct(current.n_index);
 };
+
+// キーボードショートカット (Ctrl+Z: 戻る, Ctrl+Y / Ctrl+Shift+Z: 進む)
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    if (e.shiftKey) {
+      redo();
+    } else {
+      undo();
+    }
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+    e.preventDefault();
+    redo();
+  }
+});
 
 // 画面外クリック時に手札の展開を閉じ、コアハイライトを完全に解消
 document.addEventListener("click", (e) => {

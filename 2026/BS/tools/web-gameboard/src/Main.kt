@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    CanvasBasedWindow("BS Web Game Board") {
+    CanvasBasedWindow(title = "BS Web Game Board", canvasElementId = "ComposeTarget") {
         App()
     }
 }
