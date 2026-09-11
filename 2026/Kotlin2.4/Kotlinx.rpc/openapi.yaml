@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: ChatService gRPC API
+  version: 1.0.0
+  description: >-
+    kotlinx.rpc による Proto-less gRPC 双方向ストリーミング（Bidirectional Streaming RPC）サービスに対応する OpenAPI 定義。
+    gRPC over HTTP/2 プロトコル仕様に基づくエンドポイントマッピング。
+servers:
+  - url: http://localhost:50055
+    description: ローカル gRPC サーバー
+
+paths:
+  /chat.model.ChatService/chat:
+    post:
+      summary: 双方向チャットストリーミング (Bidirectional Streaming RPC)
+      description: >-
+        クライアントとサーバー間で ChatMessage を双方向かつリアルタイムにストリーミング送受信する。
+        gRPC over HTTP/2 の POST リクエスト上で動作。
+      operationId: chat
+      requestBody:
+        required: true
+        description: クライアントからの連続メッセージストリーム (Flow<ChatMessage>)
+        content:
+          application/grpc+json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+          application/grpc:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+      responses:
+        '200':
+          description: サーバーからのリアルタイムブロードキャストストリーム (Flow<ChatMessage>)
+          headers:
+            grpc-status:
+              description: gRPC ステータスコード (0 = OK)
+              schema:
+                type: integer
+                example: 0
+            grpc-message:
+              description: gRPC エラーメッセージ (エラー時のみ返却)
+              schema:
+                type: string
+          content:
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+            application/grpc:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        default:
+          description: gRPC エラーレスポンス
+          content:
+            application/grpc+json:
+              schema:
+                $ref: '#/components/schemas/GrpcStatus'
+
+components:
+  schemas:
+    ChatMessage:
+      type: object
+      description: チャットメッセージモデル
+      required:
+        - sender
+        - text
+      properties:
+        sender:
+          type: string
+          description: 送信者ユーザー名
+          example: User_123
+        text:
+          type: string
+          description: 送信メッセージ本文
+          example: Hello, continuous gRPC streaming!
+    GrpcStatus:
+      type: object
+      description: gRPC エラーステータス詳細
+      properties:
+        code:
+          type: integer
+          description: gRPC ステータスコード (例: 0=OK, 14=UNAVAILABLE)
+          example: 0
+        message:
+          type: string
+          description: エラー詳細メッセージ
+          example: OK

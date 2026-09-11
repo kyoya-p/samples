@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+
+# Kotlin / KMP
+.kotlin/
+.konan/
+
+# IDE (IntelliJ IDEA)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other
+local.properties
+*.hprof
