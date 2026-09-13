@@ -327,7 +327,7 @@ private fun tokenFromTrashCard(card: CardData, zone: Double): DoubleArray = doub
  * トラッシュは自分・相手とも公開情報 (4-4-2) なので両方含める。
  * デッキは所有者自身にも非公開 (4-2-2) なのでどちらのデッキも枚数(大域特徴)のみで中身は含めない。
  */
-private fun buildTokenSequence(p: PlayerState, opp: PlayerState): List<DoubleArray> {
+fun buildTokenSequence(p: PlayerState, opp: PlayerState): List<DoubleArray> {
     val tokens = ArrayList<DoubleArray>(p.hand.size + p.field.size + opp.field.size + p.trashCards.size + opp.trashCards.size)
     for (c in p.hand) tokens.add(tokenFromHandCard(c))
     for (fc in p.field) tokens.add(tokenFromFieldCard(fc, zone = 0.25))
@@ -338,7 +338,7 @@ private fun buildTokenSequence(p: PlayerState, opp: PlayerState): List<DoubleArr
 }
 
 /** 系列にできない大域的なスカラー特徴。すべて公開情報 + 自分の非公開情報のみ (相手手札の中身は使わない) */
-private fun buildGlobalFeatures(state: GameState, p: PlayerState, opp: PlayerState): DoubleArray = doubleArrayOf(
+fun buildGlobalFeatures(state: GameState, p: PlayerState, opp: PlayerState): DoubleArray = doubleArrayOf(
     p.life / 10.0,
     opp.life / 10.0,
     p.reserve.total / 10.0,

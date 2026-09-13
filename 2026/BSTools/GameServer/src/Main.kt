@@ -185,6 +185,40 @@ fun main(args: Array<String>) {
         return
     }
 
+    if (args.contains("--kann-train")) {
+        runKannRandomTraining(args)
+        return
+    }
+
+    if (args.contains("--kann-rnn-debug")) {
+        val net = KannValueNetwork()
+        val v1 = evaluateStateWithKann(net, state, 1)
+        val v2 = evaluateStateWithKann(net, state, 2)
+        println("KANN GRU value network (未学習): V(state, player1)=$v1 V(state, player2)=$v2")
+        net.delete()
+        return
+    }
+
+    if (args.contains("--kann-train-debug")) {
+        println("step1: constructing network...")
+        val net = KannValueNetwork()
+        println("step2: building features...")
+        val p = state.player1
+        val opp = state.player2
+        val tokens = buildTokenSequence(p, opp)
+        val globals = buildGlobalFeatures(state, p, opp)
+        println("step3: tokens=${tokens.size} calling trainStep...")
+        val cost = net.trainStep(tokens, globals, 1.0, 0.02f)
+        println("step4: cost=$cost")
+        for (i in 1..50) {
+            val c = net.trainStep(tokens, globals, if (i % 2 == 0) 1.0 else 0.0, 0.02f)
+            println("loop $i: cost=$c")
+        }
+        net.delete()
+        println("done")
+        return
+    }
+
     // 評価値の算出方式。Playmats が選択肢の列挙をこのプロセスへ委譲するため、
     // 両者で evalMode を揃えないと Playmats 側の --eval-rnn が効かない
     // (evalMode/rnnParams はプロセスごとのグローバル変数のため)。
