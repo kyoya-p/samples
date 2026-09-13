@@ -1,0 +1,12 @@
+product:
+  type: windows/app
+  platforms: [ mingwX64 ]
+
+dependencies:
+  - ../model
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
+  - org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0
+
+settings:
+  kotlin:
+    serialization: enabled

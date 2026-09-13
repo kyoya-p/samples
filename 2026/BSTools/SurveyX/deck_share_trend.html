@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>バトスピ デッキタイプ別シェア率 変動グラフ</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0b1120;
+      color: #f8fafc;
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      background: #1e293b;
+      padding: 28px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      border: 1px solid #334155;
+    }
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .app-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin: 0 0 8px 0;
+    }
+    .app-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .drop-zone {
+      border: 2px dashed #475569;
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      background: #0f172a;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      margin-bottom: 20px;
+    }
+    .drop-zone.compact {
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #38bdf8;
+      background: #1e293b;
+      box-shadow: 0 0 20px rgba(56,189,248,0.25);
+      transform: translateY(-1px);
+    }
+    .drop-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    .drop-zone.compact .drop-icon {
+      font-size: 20px;
+      margin-bottom: 0;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    .drop-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .drop-zone.compact .drop-text {
+      font-size: 13px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .drop-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    .drop-zone.compact .drop-sub {
+      display: none;
+    }
+    #contentArea {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #0f172a;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .status-badge {
+      background: #0369a1;
+      color: #e0f2fe;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    
+    /* コントロールパネル */
+    .control-panel {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    select, input[type="date"] {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus, input[type="date"]:focus {
+      border-color: #38bdf8;
+    }
+    .quick-btn {
+      background: #334155;
+      border: none;
+      color: #cbd5e1;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover {
+      background: #475569;
+      color: #f8fafc;
+    }
+    .category-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip-checkbox {
+      display: none;
+    }
+    .chip-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .chip-checkbox:checked + .chip-label {
+      background: #0369a1;
+      border-color: #38bdf8;
+      color: #f0f9ff;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 6px 0;
+      color: #38bdf8;
+    }
+    p.desc {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .tab-group {
+      display: flex;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: #f8fafc;
+    }
+    .tab-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(56,189,248,0.3);
+    }
+    .chart-box {
+      position: relative;
+      height: 460px;
+      width: 100%;
+      margin-bottom: 30px;
+    }
+    .table-section {
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    h2 {
+      font-size: 15px;
+      color: #cbd5e1;
+      margin: 0 0 12px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #334155;
+    }
+    th {
+      background: #0f172a;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    th:first-child, td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: #f1f5f9;
+      position: sticky;
+      left: 0;
+      background: #1e293b;
+      z-index: 1;
+    }
+    th:first-child {
+      background: #0f172a;
+    }
+    tr:hover td {
+      background: #273549;
+    }
+    .badge {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="app-header">
+      <div class="app-title">🏆 バトスピ シェア率 変動分析ビューア</div>
+      <div class="app-subtitle">ショップバトル抽出結果 CSV をドロップして期間・カテゴリ別にシェア率を分析</div>
+    </div>
+
+
+    <!-- ファイルドロップゾーン -->
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-icon">📊</div>
+      <div class="drop-text">ここに CSV ファイル (shop-battle-*.csv) をドロップ（またはクリックして選択）</div>
+      <div class="drop-sub">対応形式: .csv (ショップバトル抽出データ) / .json</div>
+      <input type="file" id="fileInput" accept=".csv,.json" style="display:none">
+    </div>
+
+    <!-- データ展開エリア -->
+    <div id="contentArea">
+      <!-- ステータスバー -->
+      <div class="status-bar" id="statusBar">
+        <div>読み込みファイル: <span class="status-badge" id="sourceFileName">-</span></div>
+        <div>全レコード数: <span id="statTotalRows">0</span> 件</div>
+        <div>フィルタ後有効件数: <span id="statValidDecks">0</span> 件</div>
+        <div>データ期間: <span id="statPeriod">-</span></div>
+      </div>
+
+      <!-- コントロールパネル -->
+      <div class="control-panel">
+        <!-- 1. 集計単位（期間） -->
+        <div class="control-group">
+          <label class="control-label" for="intervalSelect">⏳ 集計単位（期間）</label>
+          <select id="intervalSelect" onchange="recalcAndRender()">
+            <option value="week-1">1週間</option>
+            <option value="week-2">2週間</option>
+            <option value="month-1" selected>1か月</option>
+            <option value="month-2">2か月</option>
+            <option value="month-3">3か月 (四半期)</option>
+            <option value="month-4">4か月</option>
+            <option value="month-6">6か月 (半期)</option>
+            <option value="all">全期間</option>
+          </select>
+        </div>
+
+
+        <!-- 2. グラフ期間（開始日〜終了日） -->
+        <div class="control-group">
+          <label class="control-label">📅 グラフ期間（いつから 〜 いつまで）</label>
+          <div class="control-row">
+            <input type="date" id="startDateInput" onchange="recalcAndRender()" title="開始日">
+            <span style="color:#64748b;">〜</span>
+            <input type="date" id="endDateInput" onchange="recalcAndRender()" title="終了日">
+            <button class="quick-btn" onclick="setQuickDate('all')">全期間</button>
+            <button class="quick-btn" onclick="setQuickDate('6m')">直近6か月</button>
+            <button class="quick-btn" onclick="setQuickDate('1y')">直近1年</button>
+          </div>
+        </div>
+
+
+        <!-- 3. カテゴリ複数選択 -->
+        <div class="control-group" style="grid-column: 1 / -1;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="control-label">🏷️ イベントカテゴリ（複数選択）</label>
+            <div style="display:flex; gap:6px;">
+              <button class="quick-btn" onclick="toggleAllCategories(true)">全選択</button>
+              <button class="quick-btn" onclick="toggleAllCategories(false)">全解除</button>
+            </div>
+          </div>
+          <div class="category-chips" id="categoryContainer"></div>
+        </div>
+      </div>
+
+      <div class="header">
+        <div>
+          <h1 id="viewTitle">🏆 シェア率 変動グラフ (全フォーマット)</h1>
+          <p class="desc" id="viewDesc">指定条件における主要デッキタイプのシェア率（%）推移</p>
+        </div>
+        <div class="tab-group">
+          <button class="tab-btn active" onclick="switchFormat('all')">全フォーマット</button>
+          <button class="tab-btn" onclick="switchFormat('standard')">スタンダード</button>
+          <button class="tab-btn" onclick="switchFormat('eternal')">エターナル</button>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="deckChart"></canvas>
+      </div>
+
+      <div class="table-section">
+        <h2 id="tableTitle">シェア率データ (%)</h2>
+        <div id="tableContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLOR_PALETTE = [
+      '#38bdf8', '#4ade80', '#a855f7', '#f43f5e',
+      '#fbbf24', '#e2e8f0', '#f97316', '#06b6d4',
+      '#ec4899', '#10b981', '#6366f1', '#eab308'
+    ];
+
+    let rawRecordsGlobal = [];
+    let currentFormat = 'all';
+    let chartInstance = null;
+    let availableCategories = [];
+    let minDataDate = '';
+    let maxDataDate = '';
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        try {
+          if (file.name.endsWith('.json')) {
+            const parsed = JSON.parse(text);
+            initLoadedData(parsed, file.name);
+          } else if (file.name.endsWith('.csv')) {
+            const parsed = parseCSV(text);
+            initLoadedData(parsed, file.name);
+          } else {
+            alert('対応形式: .csv または .json');
+          }
+        } catch (err) {
+          alert('ファイルの解析に失敗しました: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function parseCSV(csvText) {
+      const rows = [];
+      let currentRow = [];
+      let currentField = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < csvText.length; i++) {
+        const char = csvText[i];
+        const nextChar = csvText[i + 1];
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            currentField += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          currentRow.push(currentField.trim());
+          currentField = '';
+        } else if ((char === '\r' || char === '\n') && !inQuotes) {
+          if (char === '\r' && nextChar === '\n') {
+            i++;
+          }
+          currentRow.push(currentField.trim());
+          if (currentRow.length > 1 || currentRow[0] !== '') {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+          currentField = '';
+        } else {
+          currentField += char;
+        }
+      }
+
+      if (currentField.length > 0 || currentRow.length > 0) {
+        currentRow.push(currentField.trim());
+        if (currentRow.length > 1 || currentRow[0] !== '') {
+          rows.push(currentRow);
+        }
+      }
+
+      if (rows.length === 0) return [];
+      const headers = rows[0];
+      const records = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const obj = {};
+        headers.forEach((h, idx) => {
+          obj[h] = row[idx] || '';
+        });
+        records.push(obj);
+      }
+      return records;
+    }
+
+    function initLoadedData(rawRecords, fileName) {
+      if (!Array.isArray(rawRecords) || rawRecords.length === 0) {
+        alert('有効なレコードが見つかりませんでした。');
+        return;
+      }
+
+      rawRecordsGlobal = rawRecords.map(r => {
+        const postedAtRaw = r.posted_at || r.postedAt || '';
+        const dateStr = postedAtRaw.length >= 10 ? postedAtRaw.substring(0, 10) : '';
+        const deckType = (r.deck_type || r.deckType || r.deckName || '').trim();
+        const format = (r.format || r.regulation || '').trim();
+        const category = (r.event_category || r.eventCategory || r.category || 'その他').trim();
+
+        return {
+          rawDate: postedAtRaw,
+          dateStr: dateStr,
+          deckType: deckType,
+          format: format,
+          category: category.length > 0 ? category : 'その他'
+        };
+      }).filter(r => r.dateStr.length === 10);
+
+      if (rawRecordsGlobal.length === 0) {
+        alert('日付 (posted_at) を正しく認識できませんでした。');
+        return;
+      }
+
+      const allDates = rawRecordsGlobal.map(r => r.dateStr).sort();
+      minDataDate = allDates[0];
+      maxDataDate = allDates[allDates.length - 1];
+
+      // カテゴリ一覧
+      const catSet = new Set(rawRecordsGlobal.map(r => r.category));
+      availableCategories = Array.from(catSet);
+
+      // カテゴリチェックボックス生成
+      renderCategoryChips();
+
+      // 初期開始日・終了日
+      document.getElementById('startDateInput').value = minDataDate;
+      document.getElementById('startDateInput').min = minDataDate;
+      document.getElementById('startDateInput').max = maxDataDate;
+
+      document.getElementById('endDateInput').value = maxDataDate;
+      document.getElementById('endDateInput').min = minDataDate;
+      document.getElementById('endDateInput').max = maxDataDate;
+
+      // UI展開
+      dropZone.classList.add('compact');
+      document.getElementById('contentArea').style.display = 'block';
+
+      // ステータス更新
+      document.getElementById('sourceFileName').textContent = fileName;
+      document.getElementById('statTotalRows').textContent = rawRecords.length;
+      document.getElementById('statPeriod').textContent = `${minDataDate} 〜 ${maxDataDate}`;
+
+      recalcAndRender();
+    }
+
+    function renderCategoryChips() {
+      const container = document.getElementById('categoryContainer');
+      container.innerHTML = '';
+
+      availableCategories.forEach((cat, idx) => {
+        const id = `cat_cb_${idx}`;
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+          <input type="checkbox" id="${id}" class="chip-checkbox" value="${cat}" checked onchange="recalcAndRender()">
+          <label for="${id}" class="chip-label">✓ ${cat}</label>
+        `;
+        container.appendChild(wrapper);
+      });
+    }
+
+    function toggleAllCategories(checked) {
+      document.querySelectorAll('#categoryContainer .chip-checkbox').forEach(cb => {
+        cb.checked = checked;
+      });
+      recalcAndRender();
+    }
+
+    function setQuickDate(type) {
+      if (!maxDataDate) return;
+      const maxD = new Date(maxDataDate);
+      let targetD = new Date(minDataDate);
+
+      document.getElementById('endDateInput').value = maxDataDate;
+
+      if (type === 'all') {
+        targetD = new Date(minDataDate);
+      } else if (type === '6m') {
+        targetD = new Date(maxD);
+        targetD.setMonth(targetD.getMonth() - 6);
+      } else if (type === '1y') {
+        targetD = new Date(maxD);
+        targetD.setFullYear(targetD.getFullYear() - 1);
+      }
+
+      const iso = targetD.toISOString().substring(0, 10);
+      document.getElementById('startDateInput').value = iso < minDataDate ? minDataDate : iso;
+      recalcAndRender();
+    }
+
+
+    function switchFormat(fmtKey) {
+      currentFormat = fmtKey;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => {
+        const txt = b.getAttribute('onclick');
+        return txt.includes(fmtKey);
+      });
+      if (activeBtn) activeBtn.classList.add('active');
+
+      recalcAndRender();
+    }
+
+    function getBucketKey(dateStr, interval) {
+      const parts = dateStr.split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      const dateObj = new Date(y, m - 1, d);
+
+      if (interval === 'all') {
+        return '全期間';
+      }
+
+      if (interval === 'month-1') {
+        return `${parts[0]}-${parts[1]}`;
+      }
+
+      if (interval === 'month-2') {
+        const b = Math.floor((m - 1) / 2) * 2 + 1;
+        const e = b + 1;
+        const bStr = b < 10 ? '0' + b : '' + b;
+        const eStr = e < 10 ? '0' + e : '' + e;
+        return `${y}-${bStr}〜${eStr}月`;
+      }
+
+      if (interval === 'month-3') {
+        const q = Math.floor((m - 1) / 3) + 1;
+        return `${y}-Q${q} (${(q-1)*3+1}〜${q*3}月)`;
+      }
+
+      if (interval === 'month-4') {
+        const b = Math.floor((m - 1) / 4) * 4 + 1;
+        const e = b + 3;
+        const bStr = b < 10 ? '0' + b : '' + b;
+        const eStr = e < 10 ? '0' + e : '' + e;
+        return `${y}-${bStr}〜${eStr}月`;
+      }
+
+      if (interval === 'month-6') {
+        const half = m <= 6 ? '上期(1〜6月)' : '下期(7〜12月)';
+        return `${y}-${half}`;
+      }
+
+      if (interval === 'week-1') {
+        // 週の月曜日を起点とする
+        const day = dateObj.getDay();
+        const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(dateObj.setDate(diff));
+        const monStr = mon.toISOString().substring(0, 10);
+        return `${monStr} 週`;
+      }
+
+      if (interval === 'week-2') {
+        // 2週ブロック
+        const day = dateObj.getDay();
+        const diff = dateObj.getDate() - day + (day === 0 ? -6 : 1);
+        const mon = new Date(dateObj.setDate(diff));
+        const weekNum = Math.floor(mon.getDate() / 14) + 1;
+        const monMonth = mon.toISOString().substring(0, 7);
+        return `${monMonth} 第${weekNum * 2 - 1}・${weekNum * 2}週`;
+      }
+
+      return `${parts[0]}-${parts[1]}`;
+    }
+
+    function recalcAndRender() {
+      if (rawRecordsGlobal.length === 0) return;
+
+      const interval = document.getElementById('intervalSelect').value;
+      const startDate = document.getElementById('startDateInput').value || minDataDate;
+      const endDate = document.getElementById('endDateInput').value || maxDataDate;
+
+      // 選択されているカテゴリ
+      const checkedCategories = Array.from(document.querySelectorAll('#categoryContainer .chip-checkbox:checked')).map(cb => cb.value);
+
+      // 1. フィルタリング (開始日〜終了日・カテゴリ・フォーマット)
+      let filtered = rawRecordsGlobal.filter(r => {
+        if (r.dateStr < startDate || r.dateStr > endDate) return false;
+        if (!checkedCategories.includes(r.category)) return false;
+        if (currentFormat === 'standard' && r.format !== 'スタンダード') return false;
+        if (currentFormat === 'eternal' && r.format !== 'エターナル') return false;
+        return true;
+      });
+
+
+      const validFiltered = filtered.filter(r => r.deckType.length > 0);
+      document.getElementById('statValidDecks').textContent = validFiltered.length;
+
+      // 2. バケット（足種）一覧の作成
+      const bucketSet = new Set();
+      validFiltered.forEach(r => {
+        const b = getBucketKey(r.dateStr, interval);
+        bucketSet.add(b);
+      });
+      const buckets = Array.from(bucketSet).sort();
+
+      // 3. Top 8 デッキ特定
+      const deckCounts = {};
+      validFiltered.forEach(r => {
+        deckCounts[r.deckType] = (deckCounts[r.deckType] || 0) + 1;
+      });
+      const topDecks = Object.keys(deckCounts)
+        .sort((a, b) => deckCounts[b] - deckCounts[a])
+        .slice(0, 8);
+
+      // 4. データセット構築
+      const datasets = topDecks.map((deck, idx) => {
+        const color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
+        const data = buckets.map(b => {
+          const bRecords = validFiltered.filter(r => getBucketKey(r.dateStr, interval) === b);
+          const bTotal = bRecords.length;
+          if (bTotal === 0) return 0.0;
+          const cnt = bRecords.filter(r => r.deckType === deck).length;
+          return Number(((cnt / bTotal) * 100).toFixed(1));
+        });
+        return {
+          label: deck,
+          data: data,
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 2.5,
+          tension: 0.25,
+          pointRadius: 4.5,
+          pointHoverRadius: 7
+        };
+      });
+
+      // タイトル更新
+      const fmtName = currentFormat === 'standard' ? 'スタンダード' : currentFormat === 'eternal' ? 'エターナル' : '全フォーマット';
+      const intervalName = document.getElementById('intervalSelect').options[document.getElementById('intervalSelect').selectedIndex].text;
+      
+      document.getElementById('viewTitle').textContent = `🏆 ${fmtName} シェア率 変動グラフ (${intervalName})`;
+      document.getElementById('viewDesc').textContent = `開始日: ${startDate} 以降 / 対象カテゴリ: ${checkedCategories.join(', ') || 'なし'}`;
+      document.getElementById('tableTitle').textContent = `${fmtName} シェア率データ (%) - ${intervalName}`;
+
+      // チャート描画
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      let maxVal = 10;
+      datasets.forEach(d => {
+        d.data.forEach(v => { if (v > maxVal) maxVal = v; });
+      });
+      const yMax = Math.max(15, Math.ceil((maxVal + 2) / 5) * 5);
+
+      const ctx = document.getElementById('deckChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: buckets, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { color: '#cbd5e1', font: { size: 12 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(c) {
+                  return c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#334155' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              grid: { color: '#334155' },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(v) { return v + '%'; }
+              },
+              min: 0,
+              max: yMax
+            }
+          }
+        }
+      });
+
+      // テーブル描画
+      renderTable(buckets, datasets);
+    }
+
+    function renderTable(buckets, datasets) {
+      let html = '<table><thead><tr><th>デッキタイプ</th>';
+      for (const b of buckets) {
+        html += `<th>${b}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      for (const d of datasets) {
+        html += `<tr><td><span class="badge" style="background:${d.borderColor}"></span>${d.label}</td>`;
+        for (const val of d.data) {
+          const isHigh = val >= 10.0;
+          const style = isHigh ? 'font-weight:bold; color:#38bdf8;' : '';
+          html += `<td style="${style}">${val.toFixed(1)}%</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+  </script>
+</body>
+</html>

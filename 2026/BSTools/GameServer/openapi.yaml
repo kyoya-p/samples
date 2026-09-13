@@ -1,0 +1,293 @@
+openapi: 3.0.3
+info:
+  title: Battle Spirits GameServer API
+  description: |
+    バトルスピリッツ（バトスピ）のスタンダードフォーマット対応局面シミュレーションおよび選択肢列挙エンジン (Kotlin/Native) の OpenAPI 仕様。
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081
+    description: ローカル開発用 GameServer
+
+paths:
+  /api/status:
+    get:
+      summary: サーバー健全性および現在局面ステータス取得
+      description: GameServer の稼働状態、現在のターン数、アクティブなステップを返却する。
+      responses:
+        '200':
+          description: 正常応答
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerStatusResponse'
+
+  /api/actions:
+    get:
+      summary: 現在の盤面に対する選択肢列挙
+      description: サーバーが保持する現在の GameState から実行可能な合法アクション一覧を取得する。
+      responses:
+        '200':
+          description: 列挙された選択肢一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvailableAction'
+    post:
+      summary: 指定された局面に対する選択肢列挙
+      description: リクエストボディで送信された GameState に対する実行可能な選択肢を列挙して返却する。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameState'
+      responses:
+        '200':
+          description: 列挙された選択肢一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvailableAction'
+
+components:
+  schemas:
+    ServerStatusResponse:
+      type: object
+      required:
+        - status
+        - service
+        - turn
+        - step
+      properties:
+        status:
+          type: string
+          example: "ok"
+        service:
+          type: string
+          example: "GameServer (Kotlin/Native)"
+        turn:
+          type: integer
+          example: 1
+        step:
+          type: string
+          example: "メインステップ"
+
+    AvailableAction:
+      type: object
+      required:
+        - actionId
+        - type
+        - description
+        - costRequired
+        - scoreEstimate
+      properties:
+        actionId:
+          type: integer
+          description: アクション識別番号
+          example: 1
+        type:
+          type: string
+          description: アクション種別 (SUMMON, ATTACK, BLOCK, MOVE_CORE, PASS_TO_MAIN2, END_STEP)
+          enum: [SUMMON, ATTACK, BLOCK, MOVE_CORE, USE_MAGIC, PASS_TO_MAIN2, END_STEP]
+          example: "SUMMON"
+        description:
+          type: string
+          description: 人間可読なアクション説明
+          example: "🎴【手札から召喚】 フラッティ (コスト:2, 軽減後:2)"
+        targetCardId:
+          type: string
+          nullable: true
+          description: 対象カード番号またはインスタンスID
+          example: "26RSD03-001"
+        costRequired:
+          type: integer
+          description: 支払いに必要なコア数
+          example: 2
+        scoreEstimate:
+          type: number
+          format: double
+          description: AI評価値・優先度スコア
+          example: 1.0
+
+    Cores:
+      type: object
+      required:
+        - normal
+        - soul
+      properties:
+        normal:
+          type: integer
+          description: 通常コア数
+          example: 4
+        soul:
+          type: integer
+          description: ソウルコア数 (0 または 1)
+          example: 1
+
+    CardColor:
+      type: string
+      enum: [RED, PURPLE, GREEN, WHITE, YELLOW, BLUE, NONE]
+      example: "GREEN"
+
+    CardCategory:
+      type: string
+      enum: [SPIRIT, NEXUS, MAGIC, BRAVE, ULTIMATE]
+      example: "SPIRIT"
+
+    CardData:
+      type: object
+      required:
+        - cardNo
+        - name
+        - cost
+      properties:
+        cardNo:
+          type: string
+          example: "26RSD03-001"
+        name:
+          type: string
+          example: "フラッティ"
+        cost:
+          type: integer
+          example: 2
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardColor'
+        reductionSymbols:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardColor'
+        category:
+          $ref: '#/components/schemas/CardCategory'
+        lvCosts:
+          type: array
+          items:
+            type: integer
+          example: [1, 3]
+        symbols:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardColor'
+        systems:
+          type: array
+          items:
+            type: string
+          example: ["甲魚"]
+        effect:
+          type: string
+          example: "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。"
+
+    FieldCard:
+      type: object
+      required:
+        - instanceId
+        - cardNo
+        - name
+        - category
+        - cores
+      properties:
+        instanceId:
+          type: string
+          example: "fc_26RSD03-001_1"
+        cardNo:
+          type: string
+          example: "26RSD03-001"
+        name:
+          type: string
+          example: "フラッティ"
+        category:
+          $ref: '#/components/schemas/CardCategory'
+        cores:
+          $ref: '#/components/schemas/Cores'
+        isExhausted:
+          type: boolean
+          example: false
+        currentBp:
+          type: integer
+          example: 1000
+
+    PlayerState:
+      type: object
+      required:
+        - playerId
+        - name
+        - life
+        - reserve
+        - trash
+      properties:
+        playerId:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "Player 1 (甲魚)"
+        life:
+          type: integer
+          example: 5
+        reserve:
+          $ref: '#/components/schemas/Cores'
+        trash:
+          $ref: '#/components/schemas/Cores'
+        deckCount:
+          type: integer
+          example: 35
+        hand:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardData'
+        field:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldCard'
+
+    Step:
+      type: string
+      enum:
+        - START
+        - CORE
+        - DRAW
+        - REFRESH
+        - MAIN
+        - ATTACK_START
+        - ATTACK_DECLARATION
+        - FLASH_TIMING
+        - BLOCK_DECLARATION
+        - BATTLE_RESOLUTION
+        - MAIN_2
+        - END
+      example: "MAIN"
+
+    GameState:
+      type: object
+      required:
+        - turn
+        - activePlayerId
+        - step
+        - player1
+        - player2
+      properties:
+        turn:
+          type: integer
+          example: 1
+        activePlayerId:
+          type: integer
+          example: 1
+        step:
+          $ref: '#/components/schemas/Step'
+        player1:
+          $ref: '#/components/schemas/PlayerState'
+        player2:
+          $ref: '#/components/schemas/PlayerState'
+        attackingCardId:
+          type: string
+          nullable: true
+          example: null
+        blockingCardId:
+          type: string
+          nullable: true
+          example: null

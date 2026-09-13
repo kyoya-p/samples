@@ -1,0 +1,19 @@
+[tools]
+kotlin = "2.4"
+rust = "latest"
+
+[tasks.build]
+description = "Build all Kotlin/Native tools"
+run = ".\\amper.bat build"
+
+[tasks."game-server"]
+description = "Run GameServer (Kotlin/Native)"
+run = ".\\amper.bat run -m GameServer"
+
+[tasks.playmats]
+description = "Run Playmats (Kotlin/Native)"
+run = ".\\amper.bat run -m Playmats"
+
+[tasks."survey-x"]
+description = "Run SurveyX (JVM / Clikt)"
+run = ".\\amper.bat run -m SurveyX --"

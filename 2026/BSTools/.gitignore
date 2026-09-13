@@ -1,0 +1,16 @@
+/.idea/
+/tmp/
+/node_modules/
+/cards/
+/.x/
+/temp/
+/.cypher
+/output/
+/.auth/
+/.playwright-mcp/
+/*.png
+/.gradle/
+/.codeql-db/
+/build/
+/images/
+/testresult/
