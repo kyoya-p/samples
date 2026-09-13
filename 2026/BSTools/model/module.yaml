@@ -4,6 +4,7 @@ product:
 
 dependencies:
   - org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3
+  - org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.7.3
 
 settings:
   kotlin:

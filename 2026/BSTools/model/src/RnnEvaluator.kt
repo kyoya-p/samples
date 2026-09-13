@@ -6,6 +6,11 @@ import kotlin.native.concurrent.ThreadLocal
 import kotlin.random.Random
 import kotlinx.cinterop.*
 import platform.posix.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.protobuf.ProtoBuf
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.decodeFromByteArray
 
 /**
  * RNN(GRU)による局面評価器。
@@ -187,29 +192,35 @@ class RnnParams(
 /**
  * 学習済みRNN重みの既定の保存先。GameServer/Playmats いずれのカレントディレクトリからも
  * 同じ相対パスで見つかるよう、プロジェクトルート直下に置く運用を想定する。
+ * Protocol Buffers形式のバイナリなので拡張子は `.pb`。
  */
-const val RNN_WEIGHTS_DEFAULT_PATH = "rnn-weights.txt"
+const val RNN_WEIGHTS_DEFAULT_PATH = "rnn-weights.pb"
+
+/** [RnnParams.flatten] の結果をProtocol Buffersでシリアライズするためのラッパー */
+@Serializable
+private data class RnnWeightsProto(val flat: List<Double>)
 
 /**
- * `RnnParams.flatten()` の結果をカンマ区切りの1行テキストとして保存する。
+ * `RnnParams.flatten()` の結果をProtocol Buffers形式で保存する。
  * これまで `tuneRnnWeights` の学習結果は変数として作られるだけで永続化されず、
  * チューニングを実行しても何も更新されない状態だった。
  */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalSerializationApi::class)
 fun saveRnnParams(params: RnnParams, path: String = RNN_WEIGHTS_DEFAULT_PATH): Boolean {
     val f = fopen(path, "wb") ?: return false
-    val bytes = params.flatten().joinToString(",").encodeToByteArray()
+    val bytes = ProtoBuf.encodeToByteArray(RnnWeightsProto(params.flatten().toList()))
     bytes.usePinned { pinned -> fwrite(pinned.addressOf(0), 1u, bytes.size.convert(), f) }
     fclose(f)
     return true
 }
 
 /**
- * [saveRnnParams] で保存した重みを読み込む。ファイルが無い・パラメータ数が現行の次元定義
- * ([RnnParams.paramCount]) と食い違う場合は null を返し、呼び出し側が乱数初期化にフォールバック
- * できるようにする (次元定数を変更した後に古い保存ファイルを誤って読み込まないための安全策)。
+ * [saveRnnParams] で保存した重みを読み込む。ファイルが無い・破損している・パラメータ数が
+ * 現行の次元定義 ([RnnParams.paramCount]) と食い違う場合は null を返し、呼び出し側が
+ * 乱数初期化にフォールバックできるようにする (次元定数を変更した後に古い保存ファイルを
+ * 誤って読み込まないための安全策)。
  */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalSerializationApi::class)
 fun loadRnnParams(path: String = RNN_WEIGHTS_DEFAULT_PATH): RnnParams? {
     val f = fopen(path, "rb") ?: return null
     fseek(f, 0, SEEK_END)
@@ -219,14 +230,18 @@ fun loadRnnParams(path: String = RNN_WEIGHTS_DEFAULT_PATH): RnnParams? {
         fclose(f)
         return null
     }
-    val text = memScoped {
-        val buf = allocArray<ByteVar>(size + 1)
+    val sizeInt = size.toInt()
+    val bytes = memScoped {
+        val buf = allocArray<ByteVar>(sizeInt)
         fread(buf, 1u, size.convert(), f)
-        buf[size] = 0.toByte()
-        buf.toKString()
+        ByteArray(sizeInt) { buf[it] }
     }
     fclose(f)
-    val flat = text.trim().split(",").mapNotNull { it.toDoubleOrNull() }.toDoubleArray()
+    val flat = try {
+        ProtoBuf.decodeFromByteArray<RnnWeightsProto>(bytes).flat.toDoubleArray()
+    } catch (e: Exception) {
+        return null
+    }
     if (flat.size != RnnParams.paramCount) return null
     // withFlat は受け手の中身に依存せず flat の値だけで全パラメータを再構築するため、
     // ここでの random() はサイズ合わせの空箱に過ぎない (scale=0.0 で無駄な計算も避ける)
