@@ -4,16 +4,16 @@ rust = "latest"
 
 [tasks.build]
 description = "Build all Kotlin/Native tools"
-run = ".\\amper.bat build"
+run = ".\\kotlin.bat build"
 
 [tasks."game-server"]
 description = "Run GameServer (Kotlin/Native)"
-run = ".\\amper.bat run -m GameServer"
+run = ".\\kotlin.bat run -m GameServer"
 
 [tasks.playmats]
 description = "Run Playmats (Kotlin/Native)"
-run = ".\\amper.bat run -m Playmats"
+run = ".\\kotlin.bat run -m Playmats"
 
 [tasks."survey-x"]
 description = "Run SurveyX (JVM / Clikt)"
-run = ".\\amper.bat run -m SurveyX --"
+run = ".\\kotlin.bat run -m SurveyX --"

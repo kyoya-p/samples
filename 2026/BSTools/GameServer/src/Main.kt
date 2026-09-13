@@ -180,6 +180,11 @@ fun main(args: Array<String>) {
         return
     }
 
+    if (args.contains("--kann-debug")) {
+        println(kannSmokeTest())
+        return
+    }
+
     // 評価値の算出方式。Playmats が選択肢の列挙をこのプロセスへ委譲するため、
     // 両者で evalMode を揃えないと Playmats 側の --eval-rnn が効かない
     // (evalMode/rnnParams はプロセスごとのグローバル変数のため)。

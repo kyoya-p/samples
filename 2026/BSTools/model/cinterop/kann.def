@@ -1,0 +1,6 @@
+package = bstools.kann
+headers = kann.h kautodiff.h
+headerFilter = kann.h kautodiff.h
+compilerOpts = -IC:/Users/kyoya/home26/works/samples/2026/BSTools/model/cinterop/kann-src
+staticLibraries = libkann.a
+libraryPaths = C:/Users/kyoya/home26/works/samples/2026/BSTools/model/cinterop/kann-src
