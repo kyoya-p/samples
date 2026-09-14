@@ -5,8 +5,8 @@ Kotlin/Native (Amper) によるバトルスピリッツ向けツール群。
 ---
 
 # ツール
-- GameServer : ゲームの各状況での選択肢を列挙・盤面シミュレーションを行う。 (Kotlin/Native)
-- Playmats : Game の WebUI。 GameServerに接続し、状況の表示と選択の指示 (Kotlin/Native)
+- GameServer : ゲームの各状況での選択肢列挙・盤面シミュレーション・AI評価、および Playmats WebUI/SSE イベント配信を行う統合サーバー (Kotlin/Native)
+- Playmats : 単一HTMLによる Web 盤面UI (`Playmats/index.html`)。GameServer に接続し盤面表示・操作・リアルタイム同期を行う
 - SurveyX : X (Twitter) 探索および大会結果・環境メタデータ調査ツール (Kotlin JVM / Playwright / Clikt)
 - model : 共通データモデル定義ライブラリ (Kotlin Multiplatform / Native)
 
@@ -20,31 +20,26 @@ Kotlin/Native (Amper) によるバトルスピリッツ向けツール群。
 # ビルド
 mise run build
 
-# GameServer (選択肢列挙エンジン) 起動 — 先に起動する
+# GameServer 起動 (WebUI http://localhost:8080 も同時配信)
 mise run game-server
-
-# Playmats (WebUI / RuleAPI エンジン) 起動
-# GameServer に選択肢の列挙を委譲する。未起動でも同一ルールでローカル列挙にフォールバックする
+# または
 mise run playmats
 
-# 引数 (接続先URL等) を指定して起動する場合
-mise run playmats -- --game-url http://localhost:8081
+# ブラウザでアクセス:
+# http://localhost:8080
 
 # SurveyX (対戦環境調査ツール) 起動
 mise run survey-x
 ```
 
-### 2. Amper による直接実行
+### 2. kotlin.bat による直接実行
 
 ```shell
-.\amper.bat build
+.\kotlin.bat build
 
-# GameServer (選択肢列挙エンジン) 起動 — 先に起動する
-.\amper.bat run -m GameServer
-
-# Playmats (WebUI / RuleAPI エンジン) 起動
-.\amper.bat run -m Playmats -- --game-url http://localhost:8081
+# GameServer 起動
+.\kotlin.bat run -m GameServer
 
 # SurveyX (対戦環境調査ツール) 起動
-.\amper.bat run -m SurveyX
+.\kotlin.bat run -m SurveyX
 ```
