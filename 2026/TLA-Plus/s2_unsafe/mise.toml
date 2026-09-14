@@ -1,0 +1,15 @@
+[tools]
+java = "latest"
+kotlin = "latest"
+"http:tla2tools" = { version = "1.7.4", url = "https://github.com/tlaplus/tlaplus/releases/download/v{{ version }}/tla2tools.jar" }
+
+[tasks]
+build = "kotlinc Counter.kt -include-runtime -d counter.jar"
+
+[tasks.app]
+run = "java -jar counter.jar"
+depends = ["build"]
+
+[tasks.tlc]
+shell = 'bash -c'
+run = "java -jar \"$(mise where http:tla2tools)/tla2tools.jar\" -workers auto -deadlock Counter.tla"
