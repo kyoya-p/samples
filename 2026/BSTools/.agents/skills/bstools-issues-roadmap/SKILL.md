@@ -7,7 +7,7 @@ description: >-
 
 # BSTools 検出課題・技術的負債ロードマップ
 
-本書は、BSTools (GameServer, Playmats, model) のコード精査および動作検証によって検出された課題・未実装機能・アーキテクチャ上の改善点を体系的にまとめた将来検討資料である。
+本書は、BSTools (GameServer, Playmats, model, SurveyX) のコード精査および動作検証によって検出された課題・未実装機能・アーキテクチャ上の改善点を体系的にまとめた将来検討資料である。
 
 ---
 
@@ -107,3 +107,16 @@ description: >-
 - **影響**: 未対応カードが意図せず緑スピリット化し、シンボルや色計算が狂う。
 - **参照箇所**: [`model/src/CardLoader.kt` L157-L169](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/model/src/CardLoader.kt#L157-L169)
 - **検討案**: カード存在チェックエラーの明示と、属性未定ダミーカードの導入。
+
+---
+
+## 5. 解決済み改善・リファクタリング履歴
+
+### 5-1. カードプレビュー拡大ポップアップの最大サイズ画面半分制限
+- **対応内容**: [Playmats/src/index.html#L292-L325](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/Playmats/src/index.html#L292-L325) の `.card-detail-popup` において、`max-width: 50vw`, `max-height: 50vh`, `width: auto`, `height: auto` を設定。画面半分（50%）を超えないよう CSS を最適化。
+
+### 5-2. XモジュールとSurveyXの一本化・JVM/Clikt統合
+- **対応内容**: 旧 `X` モジュールと `SurveyX` を `SurveyX` に一本化。[SurveyX/module.yaml](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/SurveyX/module.yaml) を `jvm/app` に更新し、Clikt + Playwright + kotlinx-serialization 構成に移行。旧 `SurveyX` のアーキタイプ集計・メタ分析を [SurveyX/src/Analyze.kt](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/SurveyX/src/Analyze.kt) (`analyze` サブコマンド) として統合。旧 `X` ディレクトリを完全削除。
+
+### 5-3. 旧プロトタイプコードのクリーンアップ
+- **対応内容**: `Playmats` および `BoardServer` に統合済みであった旧対戦シミュレータ（`tools/gamefield`）および Wasm/Compose プロトタイプ（`tools/web-gameboard`, `tools/web-server`）を削除。[tools/project.yaml](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/tools/project.yaml) をカードデータ収集ツール（`bscard`）専用設定に整理。

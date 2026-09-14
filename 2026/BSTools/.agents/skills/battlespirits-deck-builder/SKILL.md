@@ -12,7 +12,7 @@ This skill provides a standardized workflow for AI Agents to construct competiti
 ## 1. Deck Building & Optimization Workflow
 
 ```
-[1. Meta Analysis]          Analyze current Tier 1/2 archetypes using X/deck_share_trend.html
+[1. Meta Analysis]          Analyze current Tier 1/2 archetypes using SurveyX (analyze command or deck_share_trend.html)
                                   │
                                   ▼
 [2. Archetype Definition]   Choose key cards (e.g. Contract Spirit / Nexus) & synergy family (e.g. 碧雷, 極契約)

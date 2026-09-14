@@ -27,25 +27,97 @@ import kotlin.random.Random
 // model/src/KannRnnEvaluator.kt の共通実装を使う ([EvalMode.KANN] 経路と重複させない)。
 
 /**
+ * 「本当に進行しているか」を外部(GUIの`/api/training-status`)から見えるようにするための
+ * 診断用カウンタ。世代・対局番号は[runKannEsTraining]/[evaluateCandidateKann]側で更新し、
+ * 手数は[playoutGameKann]の1手ごとに増分する。単調増加が止まっていれば、対局が本当に
+ * ハングしている(無限ループ)ことを疑える(逆に増え続けていれば「低速だが生きている」)。
+ */
+private object EsDiag {
+    var generation = 0
+    var totalGenerations = 0
+    var games = 0
+    var adoptedCount = 0
+    var outPath = ""
+    var gameIndex = 0
+    var stepInGame = 0L
+    var totalSteps = 0L
+    /**
+     * 1手ごとに何個の局面(候補行動+ステップ終了の評価値)をKANNへ評価させたかの累計。
+     * `totalSteps`(手数)は「何手進んだか」しか表さないが、実際の計算コストは
+     * 「1手あたり何個の候補を評価したか」に比例する。手数の増加が鈍っても評価局面数が
+     * 順調に増えていれば「1手あたりの候補が多いだけで生きている」、逆に評価局面数まで
+     * 止まっていれば本当のハングだと判断できる。
+     */
+    var evaluatedPositions = 0L
+    /**
+     * プロセス起動から通算で遭遇した**重複を除いた**局面ハッシュの集合。対局ごとにリセットする
+     * [GameState.visitedPositions](同一局面への手を弾くためだけの、対局内限定の集合)とは別物。
+     * こちらはプロセス全体を通じて保持し続け、サイズ(size)だけを指標として公開する。
+     * 手数(totalSteps)や評価局面数(evaluatedPositions)が増えていても、実は同じ局面を
+     * 行ったり来たりしているだけ(相殺されて盤面が実質進んでいない)なら、この値は
+     * ほとんど増えない — 逆にこれが順調に増え続けていれば、本当に新しい局面を
+     * 探索し続けていることの一番強い証拠になる。
+     */
+    val distinctPositionsSeen = HashSet<Long>()
+}
+
+private fun writeEsHeartbeat(winRate: Double? = null, adopted: Boolean? = null) {
+    writeEsTrainingProgress(
+        EsTrainingProgress(
+            active = true,
+            generation = EsDiag.generation,
+            totalGenerations = EsDiag.totalGenerations,
+            games = EsDiag.games,
+            winRate = winRate,
+            adopted = adopted,
+            adoptedCount = EsDiag.adoptedCount,
+            outPath = EsDiag.outPath,
+            updatedAtMs = currentTimeMs(),
+            gameIndex = EsDiag.gameIndex,
+            stepInGame = EsDiag.stepInGame,
+            totalSteps = EsDiag.totalSteps,
+            evaluatedPositions = EsDiag.evaluatedPositions,
+            distinctPositionsSeen = EsDiag.distinctPositionsSeen.size.toLong()
+        )
+    )
+}
+
+/**
  * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)を返す。
  * 手数上限に達しても決着しない場合は null (引き分け扱い)。
  */
 private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, FloatArray>, seed: Long, maxSteps: Int): Int? {
     val state = createInitialGameState(seed = seed)
-    repeat(maxSteps) {
+    repeat(maxSteps) { step ->
         if (state.winner != null) return state.winner
+
+        EsDiag.stepInGame = step.toLong()
+        EsDiag.totalSteps++
+        EsDiag.distinctPositionsSeen.add(positionHash(state))
+        // 5手ごとに進捗を書き出す(毎手だとI/Oが増えすぎるため間引く)。stepInGame/totalSteps
+        // が単調増加し続けているかどうかで、対局が本当に進行しているかを外部から診断できる。
+        if (step % 5 == 0) writeEsHeartbeat()
 
         net.setWeights(weightsByPlayer[state.choosingPlayerId] ?: return@repeat)
         val actions = enumerateActions(state)
         val messages = mutableListOf<String>()
-        val candidates = actions.filterNot { it.forbidden }
+        // repeatsPosition(同一局面へ戻る手)はmarkRepetitions([model/src/Rules.kt])が
+        // eval=-1.0にして選ばれにくくしているだけで、候補から除外はしていない。
+        // KANNのtanh出力は極端に変異した個体だとfloat32で正確に-1.0へ飽和しうるため、
+        // 「他のどの選択肢よりも低い」という前提が崩れると、過去にRNN評価器で実際に発生した
+        // 「同一局面に戻る手を選び続けて300手ずっと停止する」無限ループ(Rules.ktのコメント参照)が
+        // KANNでも再発しうる。評価値の大小に依存せず、ここで明示的に除外して確実に回避する。
+        val candidates = actions.filterNot { it.forbidden || it.repeatsPosition }
         val scored = candidates.map { it to evaluateActionWithKann(state, it, net) }
+        EsDiag.evaluatedPositions += candidates.size
         val best = scored.maxByOrNull { it.second }
 
         if (state.step == Step.BLOCK_DECLARATION) {
             if (best != null) applyActionAndRecord(state, best.first, messages)
         } else {
-            if (best != null && best.second > kannStepEndEval(state, net)) {
+            val endEval = kannStepEndEval(state, net)
+            EsDiag.evaluatedPositions++
+            if (best != null && best.second > endEval) {
                 applyActionAndRecord(state, best.first, messages)
             } else {
                 advanceStep(state, messages)
@@ -61,6 +133,7 @@ private fun evaluateCandidateKann(net: KannValueNetwork, candidate: FloatArray, 
     var score = 0.0
     var draws = 0
     repeat(games) { i ->
+        EsDiag.gameIndex = i + 1
         val seed = rng.nextLong()
         val candidateIsP1 = i % 2 == 0
         val weightsByPlayer = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
@@ -154,12 +227,17 @@ private fun loadWeightsFromFile(path: String): FloatArray {
 
 /**
  * `--kann-es-train` 起動時のエントリポイント。
- * `--generations` `--games` `--sigma` `--seed` `--max-steps` `--out` `--init-search` で調整できる。
+ * `--generations` `--games` `--sigma` `--seed` `--max-steps` `--out` `--init-search` `--resume` で調整できる。
  *
- * 学習前に [findGoodInitNet] で初期重みを探索する。未学習の初期重みのままだと高確率で
- * END_STEPが他の全行動より常に高く評価され、両者とも「常にパス」の固定方策に陥って
- * 重みを変異させても対局結果が一切変わらなくなる(実測: 全世代がちょうど勝率50.0%に
- * 固着し学習が進まなかった)。初期重み探索でこの局所解を避けてから学習を始める。
+ * `--resume <path>` を指定しない場合、学習前に [findGoodInitNet] で初期重みを探索する。
+ * 未学習の初期重みのままだと高確率でEND_STEPが他の全行動より常に高く評価され、両者とも
+ * 「常にパス」の固定方策に陥って重みを変異させても対局結果が一切変わらなくなる
+ * (実測: 全世代がちょうど勝率50.0%に固着し学習が進まなかった)。初期重み探索でこの局所解を
+ * 避けてから学習を始める。
+ *
+ * `--resume <path>` を指定した場合、そのファイル([KannValueNetwork.save]形式)を初期チャンピオン
+ * として続きから学習する([findGoodInitNet]は実行しない)。同じファイルを`--out`にも指定すれば
+ * 上書き更新できる(例: `--resume kann-es-final.bin --out kann-es-final.bin`)。
  */
 fun runKannEsTraining(args: Array<String>) {
     fun intArg(flag: String, default: Int): Int {
@@ -182,17 +260,38 @@ fun runKannEsTraining(args: Array<String>) {
     val outIdx = args.indexOf("--out")
     val outPath = if (outIdx >= 0 && outIdx + 1 < args.size) args[outIdx + 1] else "kann-value-es.bin"
     val initSearch = intArg("--init-search", 30)
+    // 既存の学習済みモデルを初期チャンピオンとして続きから学習する(ゼロから[findGoodInitNet]で
+    // 探索し直さない)。ES自体は局所探索(山登り法)なので、良い出発点から続けるほうが
+    // 同じ世代数でも早く強くなる。
+    val resumeIdx = args.indexOf("--resume")
+    val resumePath = if (resumeIdx >= 0 && resumeIdx + 1 < args.size) args[resumeIdx + 1] else null
 
     val rng = Random(seed)
-    val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
-    var champion = net.getWeights()
+    val net: KannValueNetwork
+    var champion: FloatArray
+    if (resumePath != null) {
+        net = KannValueNetwork()
+        champion = loadWeightsFromFile(resumePath)
+        if (champion.size != net.nVar) error("重みファイルのパラメータ数(${champion.size})がネットワーク構成(${net.nVar})と一致しません: $resumePath")
+        net.setWeights(champion)
+    } else {
+        net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
+        champion = net.getWeights()
+    }
     var adoptedCount = 0
 
     println("=== KANN価値ネットワーク: 進化戦略(ES)による自己対戦学習開始 (目的関数: 勝率) ===")
     println("パラメータ数=${net.nVar}, 世代数=$generations, 1世代あたりの対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
+    println(if (resumePath != null) "初期チャンピオン: $resumePath から続きを学習" else "初期チャンピオン: 新規探索(未学習)")
     println()
 
+    EsDiag.totalGenerations = generations
+    EsDiag.games = games
+    EsDiag.outPath = outPath
+
     for (gen in 1..generations) {
+        EsDiag.generation = gen
+        EsDiag.adoptedCount = adoptedCount
         val candidate = mutateWeights(champion, rng, sigma)
         val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps)
         val adopted = winRate > 0.5
@@ -201,12 +300,34 @@ fun runKannEsTraining(args: Array<String>) {
             champion = candidate
             adoptedCount++
         }
+        // GUIを提供している別プロセス(GameServer/Playmats)が /api/training-status 経由で
+        // 参照できるよう、世代ごとに進捗をファイルへ書き出す(プロセス間はこれでしか繋がらない)。
+        EsDiag.adoptedCount = adoptedCount
+        writeEsHeartbeat(winRate = winRate, adopted = adopted)
     }
 
     println()
     println("=== 学習完了 ($adoptedCount / $generations 世代で採用) ===")
     net.setWeights(champion)
     net.save(outPath)
+    writeEsTrainingProgress(
+        EsTrainingProgress(
+            active = false,
+            generation = generations,
+            totalGenerations = generations,
+            games = games,
+            winRate = null,
+            adopted = null,
+            adoptedCount = adoptedCount,
+            outPath = outPath,
+            updatedAtMs = currentTimeMs(),
+            gameIndex = EsDiag.gameIndex,
+            stepInGame = EsDiag.stepInGame,
+            totalSteps = EsDiag.totalSteps,
+            evaluatedPositions = EsDiag.evaluatedPositions,
+            distinctPositionsSeen = EsDiag.distinctPositionsSeen.size.toLong()
+        )
+    )
     println("=== 学習済みモデルを保存: $outPath ===")
     net.delete()
 }

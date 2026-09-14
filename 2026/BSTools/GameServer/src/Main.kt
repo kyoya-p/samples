@@ -56,7 +56,7 @@ fun indexOfHeaderEnd(data: ByteArray): Int {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-fun runGameServerHttp(port: Int = 8081) {
+fun runGameServerHttp(port: Int = 8080) {
     memScoped {
         val wsaData = alloc<WSADATA>()
         if (WSAStartup(0x0202u, wsaData.ptr) != 0) {
@@ -70,6 +70,11 @@ fun runGameServerHttp(port: Int = 8081) {
             WSACleanup()
             return
         }
+
+        // ノンブロッキングモード設定
+        val nonBlocking = alloc<UIntVar>()
+        nonBlocking.value = 1u
+        platform.windows.ioctlsocket(serverSocket, platform.windows.FIONBIO.convert(), nonBlocking.ptr)
 
         val serverAddr = alloc<sockaddr_in>()
         serverAddr.sin_family = AF_INET.convert()
@@ -91,33 +96,258 @@ fun runGameServerHttp(port: Int = 8081) {
         }
 
         println("=================================================================")
-        println("=== GameServer started at http://localhost:$port/ ===")
+        println("=== GameServer & Playmats Web Server started at http://localhost:$port/ ===")
+        println("=== Non-blocking SSE Real-time Subscription Engine Enabled ===")
         println("=================================================================")
 
-        // デモ局面。Playmats と同じ共有初期化ロジックを使う (以前はここだけ別の簡易初期化だった)
-        val state = createInitialGameState()
+        var gameState = createInitialGameState()
+        val htmlContent = loadHtmlFile()
+        val subscribers = mutableMapOf<platform.posix.SOCKET, Int>()
+        val clientSockets = mutableListOf<platform.posix.SOCKET>()
         val bufSize = 65536
         val buffer = allocArray<ByteVar>(bufSize)
 
-        while (true) {
-            val clientSocket = accept(serverSocket, null, null)
-            if (clientSocket == platform.posix.INVALID_SOCKET) continue
+        fun broadcastState() {
+            val payloads = mutableMapOf<Int, ByteArray>()
+            val deadList = mutableListOf<platform.posix.SOCKET>()
 
-            val requestText = readHttpRequest(clientSocket, buffer, bufSize)
-            if (requestText != null) {
+            for ((sock, viewer) in subscribers) {
+                val bytes = payloads.getOrPut(viewer) {
+                    val dto = buildWebGameStateDto(gameState, viewer = viewer)
+                    "data: ${compactJson.encodeToString(dto)}\n\n".encodeToByteArray()
+                }
+                val sent = bytes.usePinned { p -> send(sock, p.addressOf(0), bytes.size, 0) }
+                if (sent <= 0) deadList.add(sock)
+            }
+            for (dead in deadList) {
+                subscribers.remove(dead)
+                clientSockets.remove(dead)
+                closesocket(dead)
+            }
+        }
+
+        val readFds = alloc<fd_set>()
+        val tv = alloc<timeval>()
+
+        while (true) {
+            readFds.fd_count = 0u
+            readFds.fd_array[readFds.fd_count.toInt()] = serverSocket
+            readFds.fd_count++
+
+            for (cs in clientSockets) {
+                if (readFds.fd_count.toInt() < 64) {
+                    readFds.fd_array[readFds.fd_count.toInt()] = cs
+                    readFds.fd_count++
+                }
+            }
+
+            tv.tv_sec = 0
+            tv.tv_usec = 10000 // 10ms
+
+            val selRes = platform.windows.select(0, readFds.ptr, null, null, tv.ptr)
+            if (selRes <= 0) continue
+
+            // 1. 新規接続受け入れ
+            var isServerReady = false
+            for (i in 0 until readFds.fd_count.toInt()) {
+                if (readFds.fd_array[i] == serverSocket) {
+                    isServerReady = true
+                    break
+                }
+            }
+
+            if (isServerReady) {
+                val newSock = accept(serverSocket, null, null)
+                if (newSock != platform.posix.INVALID_SOCKET) {
+                    val nb = alloc<UIntVar>()
+                    nb.value = 1u
+                    platform.windows.ioctlsocket(newSock, platform.windows.FIONBIO.convert(), nb.ptr)
+                    clientSockets.add(newSock)
+                }
+            }
+
+            // 2. クライアントからのリクエスト受信
+            for (cs in clientSockets.toList()) {
+                // SSE購読中のソケットは受信待ちを行わない（切断検出は send で行う）
+                if (subscribers.containsKey(cs)) continue
+
+                var isCsReady = false
+                for (i in 0 until readFds.fd_count.toInt()) {
+                    if (readFds.fd_array[i] == cs) {
+                        isCsReady = true
+                        break
+                    }
+                }
+                if (!isCsReady) continue
+
+                val requestText = readHttpRequest(cs, buffer, bufSize)
+                if (requestText == null) {
+                    clientSockets.remove(cs)
+                    closesocket(cs)
+                    continue
+                }
+
                 val firstLine = requestText.lines().firstOrNull() ?: ""
                 val parts = firstLine.split(" ")
                 val method = parts.getOrNull(0) ?: "GET"
                 val path = parts.getOrNull(1) ?: "/"
                 val body = requestText.substringAfter("\r\n\r\n", "")
 
+                var keepAlive = false
                 val responseBody: String
                 val contentType: String
                 var statusCode = "200 OK"
 
+                val requestViewer = parseViewer(path, requestText)
+
                 when {
-                    path == "/" || path == "/api/status" -> {
-                        responseBody = """{"status":"ok","service":"GameServer (Kotlin/Native)","turn":${state.turn},"step":"${state.step.displayName}","evalMode":"${evalMode.name}"}"""
+                    path == "/" || path == "/index.html" -> {
+                        responseBody = htmlContent
+                        contentType = "text/html; charset=UTF-8"
+                    }
+                    path == "/favicon.ico" -> {
+                        statusCode = "204 No Content"
+                        responseBody = ""
+                        contentType = ""
+                    }
+                    path.startsWith("/api/events") || path.startsWith("/api/subscribe") -> {
+                        keepAlive = true
+                        val header = "HTTP/1.1 200 OK\r\n" +
+                                "Content-Type: text/event-stream\r\n" +
+                                "Cache-Control: no-cache\r\n" +
+                                "Connection: keep-alive\r\n" +
+                                "Access-Control-Allow-Origin: *\r\n\r\n"
+                        val hBytes = header.encodeToByteArray()
+                        hBytes.usePinned { hPinned ->
+                            send(cs, hPinned.addressOf(0), hBytes.size, 0)
+                        }
+
+                        val initDto = buildWebGameStateDto(gameState, viewer = requestViewer)
+                        val initSse = "data: ${compactJson.encodeToString(initDto)}\n\n"
+                        val initBytes = initSse.encodeToByteArray()
+                        initBytes.usePinned { iPinned ->
+                            send(cs, iPinned.addressOf(0), initBytes.size, 0)
+                        }
+
+                        subscribers[cs] = requestViewer
+                        responseBody = ""
+                        contentType = ""
+                    }
+                    path.startsWith("/api/state") -> {
+                        val dto = buildWebGameStateDto(gameState, viewer = requestViewer)
+                        responseBody = jsonFormat.encodeToString(dto)
+                        contentType = "application/json"
+                    }
+                    path == "/api/act" -> {
+                        val requestedIndex = body
+                            .substringAfter("\"index\"", "")
+                            .substringAfter(":", "")
+                            .trim()
+                            .takeWhile { it.isDigit() || it == '-' }
+                            .toIntOrNull()
+
+                        val actMessages = mutableListOf<String>()
+                        when {
+                            gameState.winner != null ->
+                                actMessages.add("ℹ️ ゲームは終了しています")
+                            requestViewer != VIEWER_GOD && requestViewer != gameState.choosingPlayerId ->
+                                actMessages.add("⚠️ いまはプレイヤー${gameState.choosingPlayerId}の選択中です")
+                            requestedIndex == 999 -> {
+                                advanceStep(gameState, actMessages)
+                                gameState.visitedPositions.add(positionHash(gameState))
+                            }
+                            requestedIndex != null -> {
+                                val action = enumerateActions(gameState).find { it.index == requestedIndex }
+                                if (action == null) {
+                                    actMessages.add("⚠️ 選択肢 #$requestedIndex は現在の局面では選べません")
+                                } else {
+                                    applyAction(gameState, action, actMessages)
+                                }
+                            }
+                            else -> actMessages.add("⚠️ 不正なリクエストです")
+                        }
+
+                        val dto = buildWebGameStateDto(gameState, extraMessages = actMessages, viewer = requestViewer)
+                        responseBody = jsonFormat.encodeToString(dto)
+                        contentType = "application/json"
+
+                        broadcastState()
+                    }
+                    path == "/api/new" || path == "/api/restart" -> {
+                        val d1Name = if (body.contains("\"deck1\"")) {
+                            body.substringAfter("\"deck1\"").substringAfter(":").substringAfter("\"").substringBefore("\"").trim()
+                        } else "deck-kogyo.yaml"
+                        val d2Name = if (body.contains("\"deck2\"")) {
+                            body.substringAfter("\"deck2\"").substringAfter(":").substringAfter("\"").substringBefore("\"").trim()
+                        } else "deck-kogyo.yaml"
+
+                        val seedToUse = if (path == "/api/restart") {
+                            gameState.seed
+                        } else {
+                            if (body.contains("\"seed\"")) {
+                                val raw = body.substringAfter("\"seed\"").substringAfter(":").trim()
+                                    .removePrefix("\"")
+                                    .takeWhile { it.isDigit() || it == '-' }
+                                raw.toLongOrNull() ?: kotlin.random.Random.nextLong(1, 1_000_000)
+                            } else {
+                                kotlin.random.Random.nextLong(1, 1_000_000)
+                            }
+                        }
+
+                        val formatToUse = if (path == "/api/restart") {
+                            gameState.format
+                        } else if (body.contains("\"format\"")) {
+                            GameFormat.fromString(
+                                body.substringAfter("\"format\"").substringAfter(":")
+                                    .substringAfter("\"").substringBefore("\"").trim()
+                            )
+                        } else GameFormat.STANDARD
+
+                        val initial = createInitialGameState(
+                            d1Name.ifBlank { "deck-kogyo.yaml" },
+                            d2Name.ifBlank { "deck-kogyo.yaml" },
+                            seedToUse,
+                            formatToUse
+                        )
+
+                        gameState.turn = initial.turn
+                        gameState.activePlayerId = initial.activePlayerId
+                        gameState.step = initial.step
+                        gameState.format = initial.format
+                        gameState.winner = null
+                        for ((dst, src) in listOf(
+                            gameState.player1 to initial.player1,
+                            gameState.player2 to initial.player2
+                        )) {
+                            dst.name = src.name
+                            dst.life = src.life
+                            dst.reserve = src.reserve
+                            dst.trash = src.trash
+                            dst.field.clear()
+                            dst.hand = src.hand
+                            dst.deck = src.deck
+                            dst.deckCount = src.deckCount
+                        }
+                        gameState.seed = initial.seed
+                        gameState.visitedPositions = mutableSetOf(positionHash(gameState))
+
+                        val dto = buildWebGameStateDto(gameState, viewer = requestViewer)
+                        responseBody = jsonFormat.encodeToString(dto)
+                        contentType = "application/json"
+
+                        broadcastState()
+                    }
+                    path == "/api/status" -> {
+                        responseBody = """{"status":"ok","service":"GameServer (Kotlin/Native)","subscribers":${subscribers.size},"turn":${gameState.turn},"step":"${gameState.step.displayName}","evalMode":"${evalMode.name}"}"""
+                        contentType = "application/json"
+                    }
+                    path == "/api/weight-files" -> {
+                        responseBody = compactJson.encodeToString(listWeightFiles())
+                        contentType = "application/json"
+                    }
+                    path == "/api/training-status" -> {
+                        val progress = readEsTrainingProgress()
+                        responseBody = if (progress != null) compactJson.encodeToString(progress) else """{"active":false}"""
                         contentType = "application/json"
                     }
                     path == "/api/eval-config" -> {
@@ -133,20 +363,20 @@ fun runGameServerHttp(port: Int = 8081) {
                             val result = if (mode.isBlank()) "modeが指定されていません" else applyEvalConfig(mode, weightsPathP1, weightsPathP2)
                             if (result != "ok") statusCode = "400 Bad Request"
                             responseBody = """{"status":"${if (result == "ok") "ok" else "error"}","message":"$result","evalMode":"${evalMode.name}"}"""
+                            broadcastState()
                         } else {
                             responseBody = """{"evalMode":"${evalMode.name}"}"""
                         }
                         contentType = "application/json"
                     }
                     path == "/api/actions" -> {
-                        // POST で GameState を受け取ればその局面を、GET なら自前のデモ局面を列挙する
                         val target = if (method == "POST" && body.isNotBlank()) {
                             try {
                                 laxJson.decodeFromString<GameState>(body)
                             } catch (e: Exception) {
                                 null
                             }
-                        } else state
+                        } else gameState
 
                         if (target == null) {
                             statusCode = "400 Bad Request"
@@ -156,6 +386,19 @@ fun runGameServerHttp(port: Int = 8081) {
                         }
                         contentType = "application/json"
                     }
+                    path == "/api/undo" || path == "/api/redo" -> {
+                        val dto = buildWebGameStateDto(gameState, viewer = requestViewer)
+                        responseBody = jsonFormat.encodeToString(dto)
+                        contentType = "application/json"
+                    }
+                    path == "/api/replay" -> {
+                        responseBody = """{"steps":[]}"""
+                        contentType = "application/json"
+                    }
+                    path == "/api/formats" -> {
+                        responseBody = """["STANDARD","ETERNAL"]"""
+                        contentType = "application/json"
+                    }
                     else -> {
                         statusCode = "404 Not Found"
                         responseBody = """{"error":"Not Found"}"""
@@ -163,29 +406,32 @@ fun runGameServerHttp(port: Int = 8081) {
                     }
                 }
 
-                val bodyBytes = responseBody.encodeToByteArray()
-                val header = "HTTP/1.1 $statusCode\r\n" +
-                        "Content-Type: $contentType\r\n" +
-                        "Content-Length: ${bodyBytes.size}\r\n" +
-                        "Connection: close\r\n" +
-                        "Access-Control-Allow-Origin: *\r\n\r\n"
-                val headerBytes = header.encodeToByteArray()
+                if (!keepAlive) {
+                    val bodyBytes = responseBody.encodeToByteArray()
+                    val header = "HTTP/1.1 $statusCode\r\n" +
+                            "Content-Type: $contentType\r\n" +
+                            "Content-Length: ${bodyBytes.size}\r\n" +
+                            "Connection: close\r\n" +
+                            "Access-Control-Allow-Origin: *\r\n\r\n"
+                    val headerBytes = header.encodeToByteArray()
 
-                headerBytes.usePinned { hPinned ->
-                    send(clientSocket, hPinned.addressOf(0), headerBytes.size, 0)
-                }
-                bodyBytes.usePinned { bPinned ->
-                    send(clientSocket, bPinned.addressOf(0), bodyBytes.size, 0)
+                    headerBytes.usePinned { hPinned ->
+                        send(cs, hPinned.addressOf(0), headerBytes.size, 0)
+                    }
+                    bodyBytes.usePinned { bPinned ->
+                        send(cs, bPinned.addressOf(0), bodyBytes.size, 0)
+                    }
+                    clientSockets.remove(cs)
+                    closesocket(cs)
                 }
             }
-            closesocket(clientSocket)
         }
     }
 }
 
 fun main(args: Array<String>) {
-    println("=== GameServer: バトスピ局面選択肢列挙エンジン (Kotlin/Native) ===")
-    
+    println("=== GameServer: バトスピ局面選択肢列挙・盤面Webサーバー (Kotlin/Native) ===")
+
     val state = createInitialGameState()
 
     if (args.contains("--tune")) {
@@ -271,9 +517,6 @@ fun main(args: Array<String>) {
         return
     }
 
-    // 評価値の算出方式。Playmats が選択肢の列挙をこのプロセスへ委譲するため、
-    // 両者で evalMode を揃えないと Playmats 側の --eval-rnn が効かない
-    // (evalMode/rnnParams はプロセスごとのグローバル変数のため)。
     if (args.contains("--eval-rnn")) {
         val rnnSeed = args.indexOf("--eval-rnn-seed").let { idx ->
             if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toLongOrNull() ?: 42L else 42L
@@ -292,10 +535,6 @@ fun main(args: Array<String>) {
         }
     }
 
-    // KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワークを評価に使う。
-    // --eval-rnn と同様、実行中に GUI(Playmats) の設定ダイアログから /api/eval-config で
-    // 切り替えることもできる。--kann-weights-p1/-p2 で player1/2 に別の重みを指定でき、
-    // 片方だけの指定なら --kann-weights がその既定値になる。
     if (args.contains("--eval-kann")) {
         fun weightsArg(flag: String): String? = args.indexOf(flag).let { idx ->
             if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
@@ -324,7 +563,7 @@ fun main(args: Array<String>) {
     }
 
     val port = args.indexOf("--port").let { idx ->
-        if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toIntOrNull() ?: 8081 else 8081
+        if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toIntOrNull() ?: 8080 else 8080
     }
 
     runGameServerHttp(port)

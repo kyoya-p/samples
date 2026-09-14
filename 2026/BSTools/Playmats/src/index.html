@@ -56,6 +56,31 @@
   }
   .toolbar input { width: 170px; }
   .toolbar select { cursor: pointer; }
+  .auto-toggle {
+    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+    font-size: 13px; color: var(--muted); user-select: none;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px;
+  }
+  .auto-toggle input { cursor: pointer; }
+  .auto-toggle:has(input:checked) { color: #00e676; border-color: #00e676; }
+  #training-banner {
+    background: linear-gradient(90deg, #1b3a2e, #142833);
+    border: 1px solid #00e676; border-radius: 8px;
+    padding: 8px 14px; margin-bottom: 12px;
+    font-size: 13px; color: #baffd9;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #training-banner .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #00e676;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  #training-banner .bar {
+    flex: 1; max-width: 240px; height: 6px; background: #0f2018;
+    border-radius: 3px; overflow: hidden;
+  }
+  #training-banner .bar-fill { height: 100%; background: #00e676; transition: width 0.3s ease; }
   #settings-dialog {
     background: var(--panel); color: var(--text); border: 1px solid var(--border);
     border-radius: 10px; padding: 0; width: min(460px, 92vw);
@@ -831,12 +856,20 @@
 <body>
 <h1 id="main-title">⚔ TCG BattleSpirits デッキシミュレータ</h1>
 
+<div id="training-banner" class="hidden"></div>
+
 <div class="toolbar">
   <button id="btn-settings" class="secondary" title="フォーマット・シード・表示モード・GameServer URL・評価方式・重みファイルを設定">⚙ 設定</button>
   <button id="btn-new" class="primary">新規ゲーム開始</button>
   <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
   <button id="btn-undo" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
   <button id="btn-redo" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
+  <label class="auto-toggle" title="player1の手番になったら、評価値が最良の選択肢を自動的に選び続ける">
+    <input type="checkbox" id="auto-p1"> P1自動
+  </label>
+  <label class="auto-toggle" title="player2の手番になったら、評価値が最良の選択肢を自動的に選び続ける">
+    <input type="checkbox" id="auto-p2"> P2自動
+  </label>
 </div>
 
 <dialog id="settings-dialog">
@@ -889,15 +922,14 @@
     </div>
     <div class="settings-row pair">
       <div>
-        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。空欄ならplayer2と同じ、両方空欄なら未学習の初期重み">player1 重みファイル</label>
-        <input id="eval-weights-p1" placeholder="例: kann-es-final.bin">
+        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(共有)ならplayer2と同じ重みを使う">player1 重みファイル</label>
+        <select id="eval-weights-p1"><option value="">(未指定/共有)</option></select>
       </div>
       <div>
-        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。空欄ならplayer1と同じ、両方空欄なら未学習の初期重み">player2 重みファイル</label>
-        <input id="eval-weights-p2" placeholder="例: kann-es-run2.bin">
+        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(共有)ならplayer1と同じ重みを使う">player2 重みファイル</label>
+        <select id="eval-weights-p2"><option value="">(未指定/共有)</option></select>
       </div>
     </div>
-    <button id="btn-apply-eval" class="secondary" title="評価方式・重みファイルを適用 (GameServer側にも反映されます)" style="align-self: flex-start;">評価方式を適用</button>
   </div>
   <div class="settings-footer">
     <button id="btn-close-settings" class="primary">閉じる</button>
@@ -1003,15 +1035,24 @@ const $ = (id) => document.getElementById(id);
 
 function updatePreviewPosition(e) {
   const preview = $("card-preview");
-  // マウスが画面の右半分にある場合は「左上」、左半分にある場合は「右上」に配置（常にマウスから遠い場所へ）
+  // マウスカーソルの反対側にプレビューを出す(カーソルに隠れない・常に遠い場所へ)。
+  // 左右だけでなく上下も見て、マウスが右半分なら左、上半分なら下、というように
+  // 縦横それぞれ独立に判定する。
   const isRightHalf = e ? e.clientX > (window.innerWidth / 2) : false;
-  preview.style.top = "16px";
+  const isTopHalf = e ? e.clientY < (window.innerHeight / 2) : false;
   if (isRightHalf) {
     preview.style.left = "16px";
     preview.style.right = "auto";
   } else {
     preview.style.left = "auto";
     preview.style.right = "16px";
+  }
+  if (isTopHalf) {
+    preview.style.top = "auto";
+    preview.style.bottom = "16px";
+  } else {
+    preview.style.top = "16px";
+    preview.style.bottom = "auto";
   }
 }
 
@@ -1877,7 +1918,10 @@ function renderGroups(groups, maxEval) {
 
 let cardImageMap = {};
 
+let lastRenderData = null;
+
 function render(data) {
+  lastRenderData = data;
   activePlayContext = null;
   updateCoreAllocationUI();
   // 再描画で手札・フィールドの要素が作り直されるため、プレビューの持ち主も無効になる
@@ -2023,6 +2067,50 @@ function render(data) {
       seedEl.placeholder = String(data.seed);
     }
   }
+
+  maybeAutoPlay(data);
+}
+
+/**
+ * サーバー側の評価値greedy方策(playoutGameKannのplayoutGame等)と同じ選び方で、
+ * 現局面の最良の選択肢のindexを返す。ステップ終了(n_index)は「他のどの選択肢もこれを
+ * 上回っていない」場合にだけ選ぶ(厳密な超過が必要、KannEsTrainer.ktのkannStepEndEval比較と
+ * 同じ)。ブロック宣言などn_indexが無い局面(BLOCK_DECLARATION)ではgroups内の最良を単純に選ぶ。
+ */
+function pickBestActionIndex(data) {
+  let bestIndex = null;
+  let bestEval = -Infinity;
+  if (!data.n_forbidden && data.n_eval != null && data.n_index != null) {
+    bestIndex = data.n_index;
+    bestEval = data.n_eval;
+  }
+  for (const g of (data.groups || [])) {
+    for (const o of g.options) {
+      if (o.forbidden || o.eval == null) continue;
+      if (o.eval > bestEval) {
+        bestEval = o.eval;
+        bestIndex = o.index;
+      }
+    }
+  }
+  return bestIndex;
+}
+
+// P1自動/P2自動チェックボックス。有効なプレイヤーの手番になるたび、評価値が最良の
+// 選択肢を自動で選び続ける(自己対戦をGUI上で観戦できるようにする)。
+let autoPlayTimer = null;
+function maybeAutoPlay(data) {
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
+  }
+  if (!data || data.winner != null || data.can_act === false || isActing) return;
+  const cb = $(data.choosing_player === 1 ? "auto-p1" : "auto-p2");
+  if (!cb || !cb.checked) return;
+  const idx = pickBestActionIndex(data);
+  if (idx == null) return;
+  // 即座に連打すると盤面が読めないので、少し間を置いてから選ぶ
+  autoPlayTimer = setTimeout(() => doAct(idx), 350);
 }
 
 let currentTab = 'messages';
@@ -2282,69 +2370,145 @@ if (bUrlInput) {
   });
 }
 
-// 設定ダイアログの開閉
+// 設定ダイアログの開閉。<dialog>のshowModal()はネイティブモーダル
+// (背面を暗くし、背面要素の操作・タブ移動を無効化、Escキーでも閉じる)。
 const settingsDialog = $("settings-dialog");
 if (settingsDialog) {
-  $("btn-settings").addEventListener("click", () => settingsDialog.showModal());
+  $("btn-settings").addEventListener("click", () => {
+    // 開くたびに最新の重みファイル一覧を取り直す(手動更新ボタンを廃止した代わり)
+    refreshWeightFileOptions();
+    settingsDialog.showModal();
+  });
   $("btn-close-settings").addEventListener("click", () => settingsDialog.close());
+  // 背景(::backdrop)をクリックしても閉じる。dialog要素自体は画面いっぱいに広がるため、
+  // クリックされたのが dialog 自身(=中の要素ではなく背景の余白)かどうかで判定する
+  settingsDialog.addEventListener("click", (e) => {
+    if (e.target === settingsDialog) settingsDialog.close();
+  });
 }
 
-// 評価方式(線形/RNN/KANN)と player1/player2 それぞれの重みファイルパス。
-// localStorageで次回起動時も復元する。
+// 評価方式(線形/RNN/KANN)と player1/player2 それぞれの重みファイル。
+// localStorageで次回起動時も復元する。重みファイルは自由入力ではなく、
+// GameServer/Playmatsの作業ディレクトリから列挙したものをメニューから選ぶ。
+// 「適用」ボタンは置かず、選択を変えた瞬間に即座にサーバーへ反映する。
 function saveEvalSettings() {
   localStorage.setItem("bs_eval_mode", $("eval-mode").value);
-  localStorage.setItem("bs_eval_weights_p1", $("eval-weights-p1").value.trim());
-  localStorage.setItem("bs_eval_weights_p2", $("eval-weights-p2").value.trim());
+  localStorage.setItem("bs_eval_weights_p1", $("eval-weights-p1").value);
+  localStorage.setItem("bs_eval_weights_p2", $("eval-weights-p2").value);
 }
 function loadEvalSettings() {
   const mode = localStorage.getItem("bs_eval_mode");
-  const p1 = localStorage.getItem("bs_eval_weights_p1");
-  const p2 = localStorage.getItem("bs_eval_weights_p2");
   if (mode) $("eval-mode").value = mode;
-  if (p1) $("eval-weights-p1").value = p1;
-  if (p2) $("eval-weights-p2").value = p2;
-}
-loadEvalSettings();
-$("eval-mode").addEventListener("change", saveEvalSettings);
-for (const id of ["eval-weights-p1", "eval-weights-p2"]) {
-  $(id).addEventListener("change", saveEvalSettings);
-  $(id).addEventListener("input", saveEvalSettings);
+  // 重みファイルの選択値は refreshWeightFileOptions() がメニューを埋めた後に復元する
+  // (選択肢がまだ無い状態で value を設定しても反映されないため)
 }
 
-const btnApplyEval = $("btn-apply-eval");
-if (btnApplyEval) {
-  btnApplyEval.addEventListener("click", async () => {
-    saveEvalSettings();
-    const mode = $("eval-mode").value;
-    const weightsPathP1 = $("eval-weights-p1").value.trim();
-    const weightsPathP2 = $("eval-weights-p2").value.trim();
-    btnApplyEval.disabled = true;
-    const prevLabel = btnApplyEval.textContent;
-    btnApplyEval.textContent = "適用中...";
-    try {
-      const res = await fetch('/api/eval-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode,
-          weightsPathP1: weightsPathP1 || undefined,
-          weightsPathP2: weightsPathP2 || undefined
-        })
-      });
-      const data = await res.json();
-      if (data.status === "ok") {
-        const reached = data.gameServerReached ? "" : " (GameServerには未反映: 到達できません)";
-        addMessages([`評価方式を ${mode} に切り替えました${reached}`]);
-      } else {
-        addMessages([`評価方式の切り替えに失敗: ${data.message || "unknown error"}`], true);
-      }
-    } catch (err) {
-      addMessages([`評価方式の切り替えに失敗: ${err}`], true);
-    } finally {
-      btnApplyEval.disabled = false;
-      btnApplyEval.textContent = prevLabel;
+async function refreshWeightFileOptions() {
+  const savedP1 = localStorage.getItem("bs_eval_weights_p1") || "";
+  const savedP2 = localStorage.getItem("bs_eval_weights_p2") || "";
+  let files = [];
+  try {
+    const res = await fetch('/api/weight-files');
+    if (res.ok) files = await res.json();
+  } catch (err) {
+    console.error('Failed to load weight file list:', err);
+  }
+  for (const [selId, saved] of [["eval-weights-p1", savedP1], ["eval-weights-p2", savedP2]]) {
+    const sel = $(selId);
+    if (!sel) continue;
+    sel.innerHTML = '<option value="">(未指定/共有)</option>' +
+      files.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    if (saved && files.includes(saved)) sel.value = saved;
+  }
+}
+
+/**
+ * 評価方式・player1/player2の重みファイルを即座にサーバーへ反映する。
+ * `/api/eval-config`が成功すると Playmats 側で broadcastState() が呼ばれ、
+ * SSE(常時接続)経由でこのタブを含む全クライアントの画面が自動的に再描画されるため、
+ * ここでは明示的な再取得(loadCurrentState)を待たなくてよい設計だが、
+ * SSE再接続中などの取りこぼしに備えて保険で1回だけ直接取得もしておく。
+ */
+async function applyEvalConfigNow() {
+  saveEvalSettings();
+  const mode = $("eval-mode").value;
+  const weightsPathP1 = $("eval-weights-p1").value.trim();
+  const weightsPathP2 = $("eval-weights-p2").value.trim();
+  try {
+    const res = await fetch('/api/eval-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode,
+        weightsPathP1: weightsPathP1 || undefined,
+        weightsPathP2: weightsPathP2 || undefined
+      })
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      const reached = data.gameServerReached ? "" : " (GameServerには未反映: 到達できません)";
+      addMessages([`評価方式を ${mode} に切り替えました${reached}`]);
+      await loadCurrentState();
+    } else {
+      addMessages([`評価方式の切り替えに失敗: ${data.message || "unknown error"}`], true);
     }
-  });
+  } catch (err) {
+    addMessages([`評価方式の切り替えに失敗: ${err}`], true);
+  }
+}
+
+loadEvalSettings();
+refreshWeightFileOptions();
+for (const id of ["eval-mode", "eval-weights-p1", "eval-weights-p2"]) {
+  $(id).addEventListener("change", applyEvalConfigNow);
+}
+
+/**
+ * `--kann-es-train`(別プロセスのCLI)の学習進捗を2秒間隔でポーリングして表示する。
+ * 学習プロセスはGUIサーバーと直接通信しないため、進捗ファイル(kann-es-progress.json)
+ * 経由の間接参照になる ([readEsTrainingProgress]参照)。非アクティブ時はバナーを隠す。
+ */
+// 直前にポーリングした {distinct}(重複除去済み局面数)。今回の値と比べて増えていなければ
+// 「対局が本当にハングしている」疑いを画面上で分かるようにする(単調増加チェック)。
+let lastPolledTotalSteps = null;
+
+async function pollTrainingStatus() {
+  try {
+    const res = await fetch('/api/training-status');
+    if (res.ok) {
+      const s = await res.json();
+      const banner = $("training-banner");
+      if (s && s.active) {
+        const pct = Math.round((s.generation / s.totalGenerations) * 100);
+        const winPct = s.winRate != null ? `${Math.round(s.winRate * 1000) / 10}%` : "-";
+        const adoptedLabel = s.adopted ? "採用" : "棄却";
+        // distinctPositionsSeen(重複除去済みの累計局面数)が一番強い指標: 手数や評価局面数が
+        // 増えていても同じ局面を行き来しているだけなら増えない。これが止まっていれば
+        // 真のハング(または実質進んでいない)と判定する。
+        const stalled = lastPolledTotalSteps != null && s.distinctPositionsSeen === lastPolledTotalSteps.distinct;
+        lastPolledTotalSteps = { distinct: s.distinctPositionsSeen };
+        const progressLabel = stalled
+          ? `⚠️ 進行停止(新規局面が増えていません)`
+          : `対局 ${s.gameIndex}/${s.games} ・ ${s.stepInGame}手目 ・ 通算${s.totalSteps}手 / ${s.evaluatedPositions}局面評価 / 重複除去${s.distinctPositionsSeen}局面`;
+        banner.innerHTML =
+          `<span class="dot" style="${stalled ? 'background:#ff5252;animation:none;' : ''}"></span>` +
+          `<span>ES学習中: 世代 ${s.generation}/${s.totalGenerations} (候補勝率 ${winPct} → ${adoptedLabel}, 累計採用 ${s.adoptedCount}) → ${esc(s.outPath)} / ${progressLabel}</span>` +
+          `<span class="bar"><span class="bar-fill" style="width:${pct}%"></span></span>`;
+        banner.classList.remove("hidden");
+      } else {
+        lastPolledTotalSteps = null;
+        banner.classList.add("hidden");
+      }
+    }
+  } catch (err) {
+    // GameServer/Playmats のどちらも到達できない一時的な状態は無視して次回に回す
+  }
+}
+pollTrainingStatus();
+setInterval(pollTrainingStatus, 2000);
+
+for (const id of ["auto-p1", "auto-p2"]) {
+  if ($(id)) $(id).addEventListener("change", () => maybeAutoPlay(lastRenderData));
 }
 
 $("btn-new").onclick = startNewGame;

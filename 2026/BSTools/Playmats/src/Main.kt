@@ -282,8 +282,17 @@ fun waitSocketReady(sock: platform.posix.SOCKET, timeoutMs: Int, forWrite: Boole
  * 盤面更新のたびに同期的に呼ぶため、GameServerが応答しなくてもUIが固まらないよう
  * ノンブロッキングソケット + select でタイムアウトを強制する。
  */
+/** [httpPostJson]と同じソケット実装で GET する ([listWeightFiles] の中継など、本文が不要なとき用) */
 @OptIn(ExperimentalForeignApi::class)
-fun httpPostJson(baseUrl: String, path: String, body: String, timeoutMs: Int = 1500): String? {
+fun httpGetJson(baseUrl: String, path: String, timeoutMs: Int = 1500): String? =
+    httpRequestJson(baseUrl, path, "GET", null, timeoutMs)
+
+@OptIn(ExperimentalForeignApi::class)
+fun httpPostJson(baseUrl: String, path: String, body: String, timeoutMs: Int = 1500): String? =
+    httpRequestJson(baseUrl, path, "POST", body, timeoutMs)
+
+@OptIn(ExperimentalForeignApi::class)
+private fun httpRequestJson(baseUrl: String, path: String, method: String, body: String?, timeoutMs: Int = 1500): String? {
     val hostPort = baseUrl.substringAfter("://").trimEnd('/')
     val host = hostPort.substringBefore(":")
     val port = hostPort.substringAfter(":", "80").toIntOrNull() ?: 80
@@ -309,8 +318,8 @@ fun httpPostJson(baseUrl: String, path: String, body: String, timeoutMs: Int = 1
             return null
         }
 
-        val bodyBytes = body.encodeToByteArray()
-        val header = "POST $path HTTP/1.1\r\n" +
+        val bodyBytes = (body ?: "").encodeToByteArray()
+        val header = "$method $path HTTP/1.1\r\n" +
                 "Host: $host:$port\r\n" +
                 "Content-Type: application/json\r\n" +
                 "Content-Length: ${bodyBytes.size}\r\n" +
@@ -844,6 +853,22 @@ fun runHttpServer(port: Int = 8080, initialGameServerUrl: String = "http://local
                             responseBody = """{"status":"ok","gameServerUrl":"$gameServerUrl","port":$port}"""
                             contentType = "application/json"
                         }
+                        path == "/api/weight-files" -> {
+                            // GameServer と Playmats は同じ作業ディレクトリから起動するのが通常だが、
+                            // 別ディレクトリで起動された場合に備えてまず GameServer に問い合わせ、
+                            // 到達できなければこのプロセス自身のディレクトリを列挙する。
+                            val remote = httpGetJson(gameServerUrl, "/api/weight-files")
+                            responseBody = remote ?: compactJson.encodeToString(listWeightFiles())
+                            contentType = "application/json"
+                        }
+                        path == "/api/training-status" -> {
+                            // --kann-es-train はGameServerと同じ作業ディレクトリで動く別プロセスとして
+                            // 実行するのが通常なので、まずGameServerに問い合わせ、ダメならこのプロセス
+                            // 自身のディレクトリを見る (weight-filesと同じフォールバック方針)。
+                            val remote = httpGetJson(gameServerUrl, "/api/training-status")
+                            responseBody = remote ?: (readEsTrainingProgress()?.let { compactJson.encodeToString(it) } ?: """{"active":false}""")
+                            contentType = "application/json"
+                        }
                         path == "/api/eval-config" -> {
                             // 選択肢の列挙は基本的に GameServer に委譲する ([enumerateActionsForState]) ため、
                             // GUIからの切り替えはこのプロセス自身(ローカルフォールバック用)と GameServer の
@@ -863,6 +888,17 @@ fun runHttpServer(port: Int = 8080, initialGameServerUrl: String = "http://local
                                 // GameServer側にも同じ設定を中継する。到達不能でもローカル評価は既に切り替わっているので
                                 // フォールバック動作には影響しない(gameServerOnline=false時はローカル評価が使われる)。
                                 val remoteResponse = httpPostJson(gameServerUrl, "/api/eval-config", evalConfigBody)
+                                // enumerateActionsForState は局面が同じ間キャッシュを使い回す (GameServerへの
+                                // 問い合わせを間引くため)。評価方式・重みを切り替えても局面自体は変わらないので、
+                                // ここで無効化しないと古い評価値のアクションがそのまま返り続けてしまう。
+                                if (localResult == "ok") {
+                                    invalidateActionCache()
+                                    // SSE(/api/events)で接続中の全クライアント(このリクエストを送った本人だけでなく、
+                                    // 他のタブ・観戦者も含む)へ、新しい評価値込みの盤面を即座にプッシュ配信する。
+                                    // クライアント側は明示的な再取得(loadCurrentState等)をしなくても、
+                                    // evtSource.onmessage → render() が自動的に呼ばれ続ける常時コールバックで反映される。
+                                    broadcastState()
+                                }
 
                                 if (localResult != "ok") statusCode = "400 Bad Request"
                                 responseBody = """{"status":"${if (localResult == "ok") "ok" else "error"}","message":"$localResult","evalMode":"${evalMode.name}","gameServerReached":${remoteResponse != null}}"""

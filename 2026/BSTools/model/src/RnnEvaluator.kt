@@ -11,6 +11,9 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.protobuf.ProtoBuf
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 /**
  * RNN(GRU)による局面評価器。
@@ -516,4 +519,114 @@ fun applyEvalConfig(mode: String, weightsPathP1: String?, weightsPathP2: String?
         else -> return "不明な評価方式: $mode"
     }
     return "ok"
+}
+
+/**
+ * 作業ディレクトリ直下にある重みファイル(`.bin`=KANN [KannValueNetwork.save]形式、
+ * `.pb`=RNN [saveRnnParams]形式)を列挙する。GUIの設定ダイアログがテキスト入力ではなく
+ * 選択メニューで重みファイルを選べるようにするため(`/api/weight-files`)に使う。
+ * Kotlin/NativeにはJVMの`java.io.File`が無いため、POSIXの`opendir`/`readdir`で列挙する。
+ */
+@OptIn(ExperimentalForeignApi::class)
+fun listWeightFiles(): List<String> {
+    val result = mutableListOf<String>()
+    val dir = opendir(".") ?: return result
+    try {
+        while (true) {
+            val entry = readdir(dir) ?: break
+            val name = entry.pointed.d_name.toKString()
+            if (name.endsWith(".bin") || name.endsWith(".pb")) result.add(name)
+        }
+    } finally {
+        closedir(dir)
+    }
+    return result.sorted()
+}
+
+/**
+ * ES学習(`KannEsTrainer.kt`の`runKannEsTraining`)は起動時のCLIプロセスとして走り、GUIを
+ * サーブしているGameServer/Playmatsのプロセスとは別物なので、進捗を直接メモリ共有できない。
+ * このファイルへ世代ごとの状況を書き出し、GUI側は`/api/training-status`経由でポーリングして
+ * 参照する(プロセス間の唯一の橋渡し役)。
+ */
+@Serializable
+data class EsTrainingProgress(
+    val active: Boolean,
+    val generation: Int,
+    val totalGenerations: Int,
+    val games: Int,
+    val winRate: Double? = null,
+    val adopted: Boolean? = null,
+    val adoptedCount: Int,
+    val outPath: String,
+    val updatedAtMs: Long,
+    /** 今の世代の中で何局目を対戦中か(1始まり)。「本当に進行しているか」の診断用 */
+    val gameIndex: Int = 0,
+    /** 今の対局の何手目か。単調増加が止まっていれば対局がハングしている疑いが強い */
+    val stepInGame: Long = 0,
+    /** このプロセスの起動から通算で何手評価したか(対局をまたいで単調増加し続ける) */
+    val totalSteps: Long = 0,
+    /**
+     * 通算で何個の局面(候補行動+ステップ終了)をKANNへ評価させたか。手数(totalSteps)より
+     * 詳しい粒度の診断値 — 1手あたりの候補数が多い局面ではここだけ増え、手数が止まって
+     * 見えても本当は生きている(逆にこれも止まっていれば真のハング)ことが分かる。
+     */
+    val evaluatedPositions: Long = 0,
+    /**
+     * プロセス起動から通算で遭遇した重複除去済みの局面ハッシュの個数(常に単調増加)。
+     * 手数・評価局面数が増えていても実は同じ局面を行ったり来たりしているだけの場合、
+     * この値はほとんど増えない — 逆に順調に増え続けていれば本当に新しい局面を
+     * 探索し続けている一番強い証拠になる。
+     */
+    val distinctPositionsSeen: Long = 0
+)
+
+private const val ES_PROGRESS_PATH = "kann-es-progress.json"
+
+/** 秒単位の`time(null)`をミリ秒に換算する(このファイルではミリ秒精度は使わない、鮮度判定用) */
+@OptIn(ExperimentalForeignApi::class)
+fun currentTimeMs(): Long = time(null) * 1000L
+
+/** ES学習プロセス側から、世代ごとにこのファイルを上書きする */
+@OptIn(ExperimentalForeignApi::class)
+fun writeEsTrainingProgress(progress: EsTrainingProgress) {
+    val f = fopen(ES_PROGRESS_PATH, "wb") ?: return
+    val bytes = Json.encodeToString(progress).encodeToByteArray()
+    bytes.usePinned { pinned -> fwrite(pinned.addressOf(0), 1u, bytes.size.convert(), f) }
+    fclose(f)
+}
+
+/**
+ * GUI(GameServer/Playmatsの`/api/training-status`)側から読む。学習プロセスが異常終了して
+ * `active=true`のまま更新が止まった場合に「学習中」と誤表示し続けないよう、最終更新から
+ * [staleAfterMs]以上経っていれば強制的に非アクティブとして返す。
+ */
+@OptIn(ExperimentalForeignApi::class)
+fun readEsTrainingProgress(staleAfterMs: Long = 30_000L): EsTrainingProgress? {
+    val f = fopen(ES_PROGRESS_PATH, "rb") ?: return null
+    fseek(f, 0, SEEK_END)
+    val size = ftell(f)
+    fseek(f, 0, SEEK_SET)
+    if (size <= 0) {
+        fclose(f)
+        return null
+    }
+    val sizeInt = size.toInt()
+    val bytes = memScoped {
+        val buf = allocArray<ByteVar>(sizeInt)
+        fread(buf, 1u, size.convert(), f)
+        ByteArray(sizeInt) { buf[it] }
+    }
+    fclose(f)
+    val progress = try {
+        Json.decodeFromString<EsTrainingProgress>(bytes.decodeToString())
+    } catch (e: Exception) {
+        return null
+    }
+    val nowMs = currentTimeMs()
+    return if (progress.active && nowMs - progress.updatedAtMs > staleAfterMs) {
+        progress.copy(active = false)
+    } else {
+        progress
+    }
 }
