@@ -11,8 +11,8 @@ description = "Run GameServer (Kotlin/Native)"
 run = ".\\kotlin.bat run -m GameServer"
 
 [tasks.playmats]
-description = "Run Playmats (Kotlin/Native)"
-run = ".\\kotlin.bat run -m Playmats"
+description = "Run GameServer with Playmats WebUI (http://localhost:8080)"
+run = ".\\kotlin.bat run -m GameServer"
 
 [tasks."survey-x"]
 description = "Run SurveyX (JVM / Clikt)"

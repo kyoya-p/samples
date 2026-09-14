@@ -1,5 +1,4 @@
 modules:
-  - model
   - GameServer
-  - Playmats
   - SurveyX
+  - model
