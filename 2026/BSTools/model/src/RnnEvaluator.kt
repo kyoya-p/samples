@@ -34,7 +34,7 @@ import kotlinx.serialization.decodeFromByteArray
  */
 
 /** 現在有効な評価方式。既定は従来の線形モデルで、本番挙動に影響を与えない */
-enum class EvalMode { LINEAR, RNN }
+enum class EvalMode { LINEAR, RNN, KANN }
 
 /**
  * `@ThreadLocal`: [activeWeights] と同じ理由。Tuner の自己対戦をスレッド並列化する際、
@@ -48,6 +48,53 @@ var evalMode: EvalMode = EvalMode.LINEAR
 /** [EvalMode.RNN] のときに使う重み。未設定(null)なら RNN モードでも従来どおり線形評価にフォールバックする */
 @ThreadLocal
 var rnnParams: RnnParams? = null
+
+/**
+ * [EvalMode.KANN] のときに使うネットワーク(cinterop連携したKANNのGRU価値ネットワーク、
+ * [KannValueNetwork])。未設定(null)なら KANN モードでも従来どおり線形評価にフォールバックする。
+ * [@ThreadLocal] の理由は [rnnParams] と同じ。
+ */
+@ThreadLocal
+var kannNet: KannValueNetwork? = null
+
+/**
+ * player1/player2 それぞれ専用の重み(GUIの設定ダイアログで個別指定できる、[applyEvalConfig]参照)。
+ * どちらも未設定なら従来どおり[rnnParams]/[kannNet]を両者で共有する。[Tuner.kt]のES自己対戦は
+ * これらとは無関係に`rnnParams`を直接差し替えるので、ここが null のままなら干渉しない。
+ *
+ * KANNは[kannNet]という単一のグラフ(ann)を使い回し、手番ごとに[KannValueNetwork.setWeights]で
+ * 中身を差し替える([KannEsTrainer.kt]の`playoutGameKann`と同じ発想)。RNNは[RnnParams]が
+ * 素のKotlinオブジェクトなので、そのまま2つ保持するだけでよい。
+ */
+@ThreadLocal
+var rnnParamsP1: RnnParams? = null
+@ThreadLocal
+var rnnParamsP2: RnnParams? = null
+@ThreadLocal
+var kannWeightsP1: FloatArray? = null
+@ThreadLocal
+var kannWeightsP2: FloatArray? = null
+
+/**
+ * [state.choosingPlayerId] に応じて、そのプレイヤー専用の重み([rnnParamsP1]/[rnnParamsP2]、
+ * [kannWeightsP1]/[kannWeightsP2])が設定されていれば「現在有効な」重み([rnnParams]の中身、
+ * または[kannNet]の重み配列)へ反映する。片方(または両方)が未設定ならそのプレイヤーには
+ * 何もしない(従来どおり共有の重みのまま)。
+ *
+ * [enumerateActions] と [stepEndEval] の両方から呼ぶ(選択肢とステップ終了の基準値は同じ評価器
+ * でなければ比較が成立しない、[stepEndEval]のコメント参照) — ここに一本化することで、
+ * 過去に実際に起きた「片方だけ更新し忘れる」バグを繰り返さない。
+ */
+fun syncEvalForTurn(state: GameState) {
+    if (evalMode == EvalMode.RNN) {
+        val p = if (state.choosingPlayerId == 1) rnnParamsP1 else rnnParamsP2
+        if (p != null) rnnParams = p
+    } else if (evalMode == EvalMode.KANN) {
+        val w = if (state.choosingPlayerId == 1) kannWeightsP1 else kannWeightsP2
+        val net = kannNet
+        if (w != null && net != null) net.setWeights(w)
+    }
+}
 
 /** 1枚のカードを表すトークンの次元数 */
 const val RNN_TOKEN_DIM = 10
@@ -401,10 +448,72 @@ fun evaluateActionWithRnn(state: GameState, action: GameAction, params: RnnParam
  * という比較不能なバグを実際に起こした。二度と複製しないこと。
  */
 fun stepEndEval(state: GameState): Double {
+    syncEvalForTurn(state)
     val params = rnnParams
     if (evalMode == EvalMode.RNN && params != null) {
         val endStep = GameAction(index = 999, type = "END_STEP", category = "", detail = "", eval = 0.0)
         return evaluateActionWithRnn(state, endStep, params)
     }
+    val kann = kannNet
+    if (evalMode == EvalMode.KANN && kann != null) {
+        return kannStepEndEval(state, kann)
+    }
     return activeWeights.stepEndEval
+}
+
+/**
+ * 評価方式(`evalMode`、および player1/player2 それぞれの重み)を切り替える。
+ * GameServer/Playmats それぞれの起動時CLIフラグ(`--eval-rnn`/`--eval-kann`)と、実行中に
+ * 切り替える `/api/eval-config` エンドポイント(設定ダイアログの「評価方式を適用」)の
+ * 両方から使う共通実装(重複させない)。
+ *
+ * `weightsPathP1`/`weightsPathP2` はそれぞれ独立に省略できる。片方だけ指定した場合、
+ * 指定しなかった側の手番では[syncEvalForTurn]が何もしないため、直前に有効だった重み
+ * (通常はもう一方のプレイヤーの重み)がそのまま使われる — 実質「未指定側はplayer1/2で共有」
+ * になる。両方省略した場合、RNNは乱数初期化(`RnnParams.random`)、KANNは未学習の新規グラフ
+ * (`KannValueNetwork()`)にフォールバックする(ただし既に読み込み済みなら上書きしない)。
+ *
+ * @return "ok" なら成功、それ以外はユーザーに見せてよいエラーメッセージ
+ */
+fun applyEvalConfig(mode: String, weightsPathP1: String?, weightsPathP2: String?): String {
+    when (mode.uppercase()) {
+        "LINEAR" -> evalMode = EvalMode.LINEAR
+        "RNN" -> {
+            evalMode = EvalMode.RNN
+            if (!weightsPathP1.isNullOrBlank()) {
+                rnnParamsP1 = loadRnnParams(weightsPathP1)
+                    ?: return "player1の重みファイルを読み込めません: $weightsPathP1"
+            }
+            if (!weightsPathP2.isNullOrBlank()) {
+                rnnParamsP2 = loadRnnParams(weightsPathP2)
+                    ?: return "player2の重みファイルを読み込めません: $weightsPathP2"
+            }
+            if (rnnParams == null && rnnParamsP1 == null && rnnParamsP2 == null) {
+                rnnParams = RnnParams.random(Random(42))
+            }
+        }
+        "KANN" -> {
+            evalMode = EvalMode.KANN
+            if (kannNet == null) kannNet = KannValueNetwork()
+            val net = kannNet!!
+            if (!weightsPathP1.isNullOrBlank()) {
+                val loaded = KannValueNetwork.load(weightsPathP1)
+                    ?: return "player1の重みファイルを読み込めません: $weightsPathP1"
+                val w = loaded.getWeights()
+                loaded.delete()
+                if (w.size != net.nVar) return "player1の重みファイルのパラメータ数(${w.size})がネットワーク構成(${net.nVar})と一致しません"
+                kannWeightsP1 = w
+            }
+            if (!weightsPathP2.isNullOrBlank()) {
+                val loaded = KannValueNetwork.load(weightsPathP2)
+                    ?: return "player2の重みファイルを読み込めません: $weightsPathP2"
+                val w = loaded.getWeights()
+                loaded.delete()
+                if (w.size != net.nVar) return "player2の重みファイルのパラメータ数(${w.size})がネットワーク構成(${net.nVar})と一致しません"
+                kannWeightsP2 = w
+            }
+        }
+        else -> return "不明な評価方式: $mode"
+    }
+    return "ok"
 }

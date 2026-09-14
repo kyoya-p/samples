@@ -32,7 +32,7 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
     private val globalLabel = 1
 
     /** 学習対象の変数(重み)の総数。RMSpropの更新対象サイズと、永続メモリ配列のサイズに使う */
-    private val nVar: Int = kad_size_var(ann.pointed.n, ann.pointed.v)
+    val nVar: Int = kad_size_var(ann.pointed.n, ann.pointed.v)
 
     /**
      * RMSpropの内部メモリ(パラメータごとの二乗勾配の移動平均)。学習ステップをまたいで
@@ -42,6 +42,41 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
 
     /** 未学習のランダム初期化で新規グラフを構築する既定コンストラクタ */
     constructor() : this(buildGraph())
+
+    /**
+     * `kann_unroll_array` で展開した学習用ネットワーク一式(展開後のグラフ本体＋そこに
+     * bind する入力バッファ)を展開長ごとに束ねたもの。バッファも [nativeHeap] で永続化し、
+     * 呼び出しごとに使い回す(内容だけ上書きする) — [trainStep] 内で毎回 `memScoped` の
+     * 一時バッファを bind すると、そのバッファは関数を抜けると解放されるのに対し、
+     * 展開ネットワーク側の feed ノードは同じポインタを次の呼び出しまで保持し続けるため、
+     * 呼び出し間でダングリングポインタを指したままになる(実際にこれが原因とみられる
+     * クラッシュを確認した)。バッファ自体も展開ネットワークと同じ寿命で永続化することで
+     * この期間を無くす。
+     */
+    private val unrolledCache = mutableMapOf<Int, CPointer<kann_t>>()
+
+    private fun unrolledFor(len: Int): CPointer<kann_t> = unrolledCache.getOrPut(len) {
+        memScoped {
+            val lenArr = allocArray<IntVar>(1)
+            lenArr[0] = len
+            val ua = kann_unroll_array(ann, lenArr) ?: error("kann_unroll_array failed (len=$len)")
+            kad_sync_dim(ua.pointed.n, ua.pointed.v, 1)
+            ua
+        }
+    }
+
+    /**
+     * 重み配列(`ann->x`、サイズ[nVar])のコピーを取得する。ESによる重み最適化
+     * ([RnnParams] と同じ発想)で使う。`trainStep`(BPTT)は既知の不具合で不安定なため、
+     * こちらはBPTTを一切使わず[evaluate]のみに依存する経路。
+     */
+    fun getWeights(): FloatArray = FloatArray(nVar) { ann.pointed.x!![it] }
+
+    /** [getWeights] で取得した配列を書き戻す。サイズが[nVar]と一致しない場合は無視する */
+    fun setWeights(w: FloatArray) {
+        if (w.size != nVar) return
+        for (i in 0 until nVar) ann.pointed.x!![i] = w[i]
+    }
 
     /**
      * トークン列(可変長)と大域特徴を与えて V(state) を1回のRNN連続フィードで評価する。
@@ -89,29 +124,33 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
      * 大域特徴は各時刻に同じ値を、正解ラベルも各時刻に同じ値を与える
      * (最終時刻だけを重視したいが、KANNの逐次コスト設計では時刻ごとに与える必要があるため)。
      *
-     * **`kann_delete_unrolled` を意図的に呼ばない**: `kad_delete` は展開後の配列に含まれる
-     * ノードを無条件に `free()` するが、RNNの重み(葉)ノードは展開前後で「複製」ではなく
-     * 元の[ann]と共有(同一ポインタ)されているため、展開ネットワークを削除すると[ann]側の
-     * 重みノードまで解放されてしまい、次回の学習呼び出しでクラッシュする(実際に踏んだ)。
-     * KANN公式サンプル `rnn-bit.c` も学習中は一度だけ展開して使い回す設計であり、
-     * 「対局ごとに系列長が変わるため呼び出しごとに展開し直す」という本実装の使い方は
-     * 元々想定していない。展開構造体自体(数百バイト規模)は毎回リークするが、
-     * 1回の学習CLIプロセス内で完結する用途であれば実用上問題にならない。
+     * **展開ネットワークは削除しない・使い回す** (詳細は[unrolledFor]参照):
+     * `kad_delete` は展開後の配列に含まれるノードを無条件に `free()` するが、RNNの重み(葉)
+     * ノードは展開前後で「複製」ではなく元の[ann]と共有(同一ポインタ)されているため、
+     * 展開ネットワークを削除すると[ann]側の重みノードまで解放されてしまい、次回の学習
+     * 呼び出しでクラッシュする(実際に踏んだ)。また、同じ展開長であっても呼び出しのたびに
+     * 新規展開するとヒープが壊れ、数十回目の呼び出しで確実にクラッシュすることも実測で
+     * 確認した。KANN公式サンプル `rnn-bit.c` の「学習中は一度だけ展開して使い回す」設計
+     * 通りに、[unrolledFor] で展開長ごとにキャッシュして再利用する。
+     *
+     * **`kann_unroll_array` は展開長9以上で不定動作(クラッシュ)することも実測で確認した**
+     * (`--kann-train-debug` での二分探索により長さ8までは安定・9以上で確実にクラッシュ)。
+     * 原因はKANN側の`kad_unroll_helper`(kautodiff.c)内の実装依存の不具合と見られ、
+     * こちら側では修正できないため、学習時のみトークン列を直近[MAX_TRAIN_UNROLL_LEN]件に
+     * 切り詰めて回避する。[evaluate]（連続フィード方式、unrollを使わない）はこの制限を
+     * 受けず、長さ30程度まで実測で問題なく動作することを確認済み。
      *
      * @return このステップのコスト(小さいほど正解に近い)
      */
     fun trainStep(tokens: List<DoubleArray>, globals: DoubleArray, label: Double, lr: Float): Float {
         if (tokens.isEmpty()) return 0f
+        val tokens = if (tokens.size > MAX_TRAIN_UNROLL_LEN) tokens.takeLast(MAX_TRAIN_UNROLL_LEN) else tokens
         val len = tokens.size
         // ラベル(勝=1.0/負=0.0/引分=0.5)を出力層の tanh 値域[-1,1]に合わせて再スケールする
         val truthValue = (label * 2.0 - 1.0).toFloat()
+        val ua = unrolledFor(len)
 
         return memScoped {
-            val lenArr = allocArray<IntVar>(1)
-            lenArr[0] = len
-            val ua = kann_unroll_array(ann, lenArr) ?: error("kann_unroll_array failed")
-            kad_sync_dim(ua.pointed.n, ua.pointed.v, 1)
-
             val tokBufs = Array(len) { i ->
                 allocArray<FloatVar>(RNN_TOKEN_DIM).also { buf ->
                     for (j in 0 until RNN_TOKEN_DIM) buf[j] = tokens[i][j].toFloat()
@@ -152,6 +191,13 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
     }
 
     companion object {
+        /**
+         * [trainStep] で `kann_unroll_array` に渡す展開長の上限。実測でこれを超えると
+         * (9以上)KANN側の実装依存の不具合でクラッシュするため、超える場合は直近の
+         * トークンだけに切り詰める。[evaluate] はこの上限を受けない。
+         */
+        const val MAX_TRAIN_UNROLL_LEN = 8
+
         /**
          * [save] で保存したファイルを読み込む。グラフ構造ごとKANN組み込みの形式で
          * 保存されているため、[KannValueNetwork] を新規構築する代わりにこれを使う。
@@ -206,4 +252,28 @@ fun evaluateStateWithKann(net: KannValueNetwork, state: GameState, forPlayerId: 
     val tokens = buildTokenSequence(p, opp)
     val globals = buildGlobalFeatures(state, p, opp)
     return net.evaluate(tokens, globals)
+}
+
+/**
+ * 選択肢1件の評価値を、「その手を仮に適用した後の局面」への V(state) として求める(1手先読み)。
+ * [evaluateActionWithRnn] のKANN版。[EvalMode.KANN] での [Rules.enumerateActions] 上書きと、
+ * KannEsTrainer.kt のES自己対戦の両方から使う共通実装(重複させない、[stepEndEval]のコメント参照)。
+ */
+fun evaluateActionWithKann(state: GameState, action: GameAction, net: KannValueNetwork): Double {
+    val trial = state.snapshot()
+    val messages = mutableListOf<String>()
+    if (action.type == "END_STEP") advanceStep(trial, messages) else applyAction(trial, action, messages)
+    val p = if (state.choosingPlayerId == 1) trial.player1 else trial.player2
+    val opp = if (state.choosingPlayerId == 1) trial.player2 else trial.player1
+    return net.evaluate(buildTokenSequence(p, opp), buildGlobalFeatures(trial, p, opp))
+}
+
+/**
+ * 「ステップ終了」自体の評価値を、指定した[net]で評価する。[stepEndEval]はグローバルな
+ * [evalMode]/[kannNet]に依存するが、こちらはESの自己対戦([KannEsTrainer.kt])のように
+ * 対戦ごとに異なる重みを直接渡したい経路のために、グローバル状態を経由せず引数だけで完結させる。
+ */
+fun kannStepEndEval(state: GameState, net: KannValueNetwork): Double {
+    val endStep = GameAction(index = 999, type = "END_STEP", category = "", detail = "", eval = 0.0)
+    return evaluateActionWithKann(state, endStep, net)
 }

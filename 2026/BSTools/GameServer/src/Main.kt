@@ -120,6 +120,24 @@ fun runGameServerHttp(port: Int = 8081) {
                         responseBody = """{"status":"ok","service":"GameServer (Kotlin/Native)","turn":${state.turn},"step":"${state.step.displayName}","evalMode":"${evalMode.name}"}"""
                         contentType = "application/json"
                     }
+                    path == "/api/eval-config" -> {
+                        if (method == "POST" && body.isNotBlank()) {
+                            val mode = body.substringAfter("\"mode\"", "").substringAfter(":", "")
+                                .trim().removePrefix("\"").substringBefore("\"").trim()
+                            fun extract(field: String): String? = if (body.contains("\"$field\"")) {
+                                body.substringAfter("\"$field\"").substringAfter(":")
+                                    .substringAfter("\"").substringBefore("\"").trim()
+                            } else null
+                            val weightsPathP1 = extract("weightsPathP1")
+                            val weightsPathP2 = extract("weightsPathP2")
+                            val result = if (mode.isBlank()) "modeが指定されていません" else applyEvalConfig(mode, weightsPathP1, weightsPathP2)
+                            if (result != "ok") statusCode = "400 Bad Request"
+                            responseBody = """{"status":"${if (result == "ok") "ok" else "error"}","message":"$result","evalMode":"${evalMode.name}"}"""
+                        } else {
+                            responseBody = """{"evalMode":"${evalMode.name}"}"""
+                        }
+                        contentType = "application/json"
+                    }
                     path == "/api/actions" -> {
                         // POST で GameState を受け取ればその局面を、GET なら自前のデモ局面を列挙する
                         val target = if (method == "POST" && body.isNotBlank()) {
@@ -190,6 +208,16 @@ fun main(args: Array<String>) {
         return
     }
 
+    if (args.contains("--kann-es-train")) {
+        runKannEsTraining(args)
+        return
+    }
+
+    if (args.contains("--kann-match")) {
+        runKannMatch(args)
+        return
+    }
+
     if (args.contains("--kann-rnn-debug")) {
         val net = KannValueNetwork()
         val v1 = evaluateStateWithKann(net, state, 1)
@@ -199,23 +227,47 @@ fun main(args: Array<String>) {
         return
     }
 
-    if (args.contains("--kann-train-debug")) {
-        println("step1: constructing network...")
+    if (args.contains("--kann-inspect")) {
+        val path = args.indexOf("--kann-inspect").let { idx ->
+            if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
+        }
+        if (path == null) {
+            println("使い方: --kann-inspect <重みファイルパス>")
+            return
+        }
+        val net = KannValueNetwork.load(path)
+        if (net == null) {
+            println("重みファイルを読み込めません: $path")
+            return
+        }
+        val w = net.getWeights()
+        val mean = w.average()
+        val variance = w.sumOf { (it - mean) * (it - mean) } / w.size
+        println("=== $path ===")
+        println("パラメータ数: ${w.size}")
+        println("最小値: ${w.min()}  最大値: ${w.max()}")
+        println("平均: $mean  標準偏差: ${kotlin.math.sqrt(variance)}")
+        println("先頭16件: ${w.take(16)}")
+        net.delete()
+        return
+    }
+
+    if (args.contains("--kann-eval-spread")) {
         val net = KannValueNetwork()
-        println("step2: building features...")
-        val p = state.player1
-        val opp = state.player2
-        val tokens = buildTokenSequence(p, opp)
-        val globals = buildGlobalFeatures(state, p, opp)
-        println("step3: tokens=${tokens.size} calling trainStep...")
-        val cost = net.trainStep(tokens, globals, 1.0, 0.02f)
-        println("step4: cost=$cost")
-        for (i in 1..50) {
-            val c = net.trainStep(tokens, globals, if (i % 2 == 0) 1.0 else 0.0, 0.02f)
-            println("loop $i: cost=$c")
+        val actions = enumerateActions(state)
+        val candidates = actions.filterNot { it.forbidden }
+        println("初期局面: 選択肢${candidates.size}件、各アクション後の評価値V(state')を表示")
+        val endStep = GameAction(index = 999, type = "END_STEP", category = "", detail = "", eval = 0.0)
+        for (a in (candidates + endStep)) {
+            val trial = state.snapshot()
+            val messages = mutableListOf<String>()
+            if (a.type == "END_STEP") advanceStep(trial, messages) else applyAction(trial, a, messages)
+            val tp = if (state.choosingPlayerId == 1) trial.player1 else trial.player2
+            val topp = if (state.choosingPlayerId == 1) trial.player2 else trial.player1
+            val v = net.evaluate(buildTokenSequence(tp, topp), buildGlobalFeatures(trial, tp, topp))
+            println("  [${a.index}] ${a.type}/${a.category}: ${a.detail} -> V=$v")
         }
         net.delete()
-        println("done")
         return
     }
 
@@ -237,6 +289,25 @@ fun main(args: Array<String>) {
         } else {
             rnnParams = RnnParams.random(kotlin.random.Random(rnnSeed))
             println("=== 評価方式: RNN (GRU) / 乱数シード=$rnnSeed / パラメータ数=${RnnParams.paramCount} (未学習、$weightsPath が見つからないため) ===")
+        }
+    }
+
+    // KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワークを評価に使う。
+    // --eval-rnn と同様、実行中に GUI(Playmats) の設定ダイアログから /api/eval-config で
+    // 切り替えることもできる。--kann-weights-p1/-p2 で player1/2 に別の重みを指定でき、
+    // 片方だけの指定なら --kann-weights がその既定値になる。
+    if (args.contains("--eval-kann")) {
+        fun weightsArg(flag: String): String? = args.indexOf(flag).let { idx ->
+            if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
+        }
+        val defaultWeights = weightsArg("--kann-weights")
+        val weightsPathP1 = weightsArg("--kann-weights-p1") ?: defaultWeights
+        val weightsPathP2 = weightsArg("--kann-weights-p2") ?: defaultWeights
+        val result = applyEvalConfig("KANN", weightsPathP1, weightsPathP2)
+        if (result == "ok") {
+            println("=== 評価方式: KANN (GRU) / player1重み: ${weightsPathP1 ?: "(未学習の新規グラフ)"} / player2重み: ${weightsPathP2 ?: "(未学習の新規グラフ)"} (パラメータ数=${kannNet?.nVar}) ===")
+        } else {
+            println("=== KANN評価方式の初期化に失敗: $result ===")
         }
     }
 

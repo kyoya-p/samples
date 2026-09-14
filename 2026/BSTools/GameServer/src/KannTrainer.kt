@@ -73,6 +73,9 @@ private fun fmt4(v: Double): String {
 /**
  * `--kann-train` 起動時のエントリポイント。
  * `--games` `--max-steps` `--lr` `--seed` `--out` で調整できる。
+ * `--no-train-debug` を付けると `KannValueNetwork.trainStep` を呼ばず、ランダムプレイに
+ * よるデータ収集だけを行う(切り分け用の診断オプション。データ生成側の問題と
+ * KANN側の問題を区別するために使う)。
  */
 fun runKannRandomTraining(args: Array<String>) {
     fun intArg(flag: String, default: Int): Int {
@@ -84,6 +87,7 @@ fun runKannRandomTraining(args: Array<String>) {
         return if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toDoubleOrNull() ?: default else default
     }
 
+    val noTrainDebug = args.contains("--no-train-debug")
     val games = intArg("--games", 200)
     val maxSteps = intArg("--max-steps", 150)
     val lr = doubleArg("--lr", 0.01).toFloat()
@@ -121,7 +125,7 @@ fun runKannRandomTraining(args: Array<String>) {
                 winner == ex.playerId -> 1.0
                 else -> 0.0
             }
-            val cost = net.trainStep(ex.tokens, ex.globals, label, lr)
+            val cost = if (noTrainDebug) 0f else net.trainStep(ex.tokens, ex.globals, label, lr)
             costAccum += cost
             totalExamples++
         }

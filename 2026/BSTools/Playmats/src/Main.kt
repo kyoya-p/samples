@@ -844,6 +844,33 @@ fun runHttpServer(port: Int = 8080, initialGameServerUrl: String = "http://local
                             responseBody = """{"status":"ok","gameServerUrl":"$gameServerUrl","port":$port}"""
                             contentType = "application/json"
                         }
+                        path == "/api/eval-config" -> {
+                            // 選択肢の列挙は基本的に GameServer に委譲する ([enumerateActionsForState]) ため、
+                            // GUIからの切り替えはこのプロセス自身(ローカルフォールバック用)と GameServer の
+                            // 両方に適用しないと、GameServerが生きている間は切り替えが反映されない。
+                            val evalConfigBody = requestText.substringAfter("\r\n\r\n", "")
+                            if (method == "POST" && evalConfigBody.isNotBlank()) {
+                                val mode = evalConfigBody.substringAfter("\"mode\"", "").substringAfter(":", "")
+                                    .trim().removePrefix("\"").substringBefore("\"").trim()
+                                fun extract(field: String): String? = if (evalConfigBody.contains("\"$field\"")) {
+                                    evalConfigBody.substringAfter("\"$field\"").substringAfter(":")
+                                        .substringAfter("\"").substringBefore("\"").trim()
+                                } else null
+                                val weightsPathP1 = extract("weightsPathP1")
+                                val weightsPathP2 = extract("weightsPathP2")
+
+                                val localResult = if (mode.isBlank()) "modeが指定されていません" else applyEvalConfig(mode, weightsPathP1, weightsPathP2)
+                                // GameServer側にも同じ設定を中継する。到達不能でもローカル評価は既に切り替わっているので
+                                // フォールバック動作には影響しない(gameServerOnline=false時はローカル評価が使われる)。
+                                val remoteResponse = httpPostJson(gameServerUrl, "/api/eval-config", evalConfigBody)
+
+                                if (localResult != "ok") statusCode = "400 Bad Request"
+                                responseBody = """{"status":"${if (localResult == "ok") "ok" else "error"}","message":"$localResult","evalMode":"${evalMode.name}","gameServerReached":${remoteResponse != null}}"""
+                            } else {
+                                responseBody = """{"evalMode":"${evalMode.name}"}"""
+                            }
+                            contentType = "application/json"
+                        }
                         path == "/api/new" || path == "/api/restart" -> {
                             val d1Name = if (requestText.contains("\"deck1\"")) {
                                 requestText.substringAfter("\"deck1\"").substringAfter(":").substringAfter("\"").substringBefore("\"").trim()
@@ -1060,6 +1087,24 @@ fun main(args: Array<String>) {
         } else {
             rnnParams = RnnParams.random(kotlin.random.Random(rnnSeed))
             println("=== 評価方式: RNN (GRU) / 乱数シード=$rnnSeed / パラメータ数=${RnnParams.paramCount} (未学習、$weightsPath が見つからないため) ===")
+        }
+    }
+
+    // KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワーク。--eval-rnn と同様、
+    // 実行中に GUI の設定ダイアログから /api/eval-config で切り替えることもできる
+    // (GameServer側にも中継される)。--kann-weights-p1/-p2 で player1/2 に別の重みを指定できる。
+    if (args.contains("--eval-kann")) {
+        fun weightsArg(flag: String): String? = args.indexOf(flag).let { idx ->
+            if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
+        }
+        val defaultWeights = weightsArg("--kann-weights")
+        val weightsPathP1 = weightsArg("--kann-weights-p1") ?: defaultWeights
+        val weightsPathP2 = weightsArg("--kann-weights-p2") ?: defaultWeights
+        val result = applyEvalConfig("KANN", weightsPathP1, weightsPathP2)
+        if (result == "ok") {
+            println("=== 評価方式: KANN (GRU) / player1重み: ${weightsPathP1 ?: "(未学習の新規グラフ)"} / player2重み: ${weightsPathP2 ?: "(未学習の新規グラフ)"} (パラメータ数=${kannNet?.nVar}) ===")
+        } else {
+            println("=== KANN評価方式の初期化に失敗: $result ===")
         }
     }
 

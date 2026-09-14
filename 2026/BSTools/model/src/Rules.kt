@@ -514,12 +514,19 @@ private fun markRepetitions(state: GameState, actions: List<GameAction>): List<G
  * 既定は `EvalMode.LINEAR` なので、本番の Playmats/GameServer の挙動はこれまでと変わらない。
  */
 fun enumerateActions(state: GameState): List<GameAction> {
+    syncEvalForTurn(state)
     val actions = markRepetitions(state, enumerateRawActions(state))
     val params = rnnParams
     if (evalMode == EvalMode.RNN && params != null) {
         return actions.map { a ->
             // 同一局面(repeatsPosition)は eval=0 のまま維持する。それ以外を RNN 評価で置き換える
             if (a.repeatsPosition) a else a.copy(eval = evaluateActionWithRnn(state, a, params))
+        }
+    }
+    val kann = kannNet
+    if (evalMode == EvalMode.KANN && kann != null) {
+        return actions.map { a ->
+            if (a.repeatsPosition) a else a.copy(eval = evaluateActionWithKann(state, a, kann))
         }
     }
     return actions

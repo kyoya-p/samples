@@ -1,0 +1,273 @@
+import bstools.model.*
+import bstools.kann.kad_srand
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlin.random.Random
+
+/**
+ * KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワークを、進化戦略(ES)による
+ * 自己対戦で強化学習する。
+ *
+ * `KannValueNetwork.trainStep`(kann_unroll_arrayを使ったBPTT)は繰り返し呼び出すと
+ * 実測で約17〜19回目に確実にクラッシュする既知の不具合があり(KANN側`kad_unroll_helper`の
+ * 実装依存の問題と見られ、cinterop越しにこちらから修正できない)、実用に耐えない。
+ * このファイルは**その不具合のあるパスを一切使わず**、既に安定動作を確認済みの
+ * [KannValueNetwork.evaluate](連続フィード方式、unrollを使わない)のみを使う。
+ *
+ * 設計は `Tuner.kt` の `tuneRnnWeights`/`evaluateCandidateRnn`(自作GRU版のES)と同じ
+ * (1+1)型山登り法。対局は評価値greedy(自分の重みで最良の手を選ぶ)の自己対戦で行い、
+ * 勝率を報酬とする — 「ランダムプレイでラベル付けしてBPTTで回帰する」設計とは異なり、
+ * 重み自体が対局の意思決定に使われるため、ES(勝率を直接最適化)と自然に噛み合う。
+ *
+ * KANNの`ann`(kann_t*)はインスタンスごとに1つの計算グラフを共有するため、複数スレッドから
+ * 同時に`evaluate`/`setWeights`すると競合してクラッシュしうる(cinterop連携は
+ * `@ThreadLocal`のような仕組みを持たない)。安定性を優先し、あえて単一スレッドで実装する。
+ */
+
+// 1手先読み評価(evaluateActionWithKann)とステップ終了の基準値(kannStepEndEval)は
+// model/src/KannRnnEvaluator.kt の共通実装を使う ([EvalMode.KANN] 経路と重複させない)。
+
+/**
+ * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)を返す。
+ * 手数上限に達しても決着しない場合は null (引き分け扱い)。
+ */
+private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, FloatArray>, seed: Long, maxSteps: Int): Int? {
+    val state = createInitialGameState(seed = seed)
+    repeat(maxSteps) {
+        if (state.winner != null) return state.winner
+
+        net.setWeights(weightsByPlayer[state.choosingPlayerId] ?: return@repeat)
+        val actions = enumerateActions(state)
+        val messages = mutableListOf<String>()
+        val candidates = actions.filterNot { it.forbidden }
+        val scored = candidates.map { it to evaluateActionWithKann(state, it, net) }
+        val best = scored.maxByOrNull { it.second }
+
+        if (state.step == Step.BLOCK_DECLARATION) {
+            if (best != null) applyActionAndRecord(state, best.first, messages)
+        } else {
+            if (best != null && best.second > kannStepEndEval(state, net)) {
+                applyActionAndRecord(state, best.first, messages)
+            } else {
+                advanceStep(state, messages)
+                state.visitedPositions.add(positionHash(state))
+            }
+        }
+    }
+    return state.winner
+}
+
+/** candidate 側の勝率を baseline との自己対戦で測る。先攻/後攻を交互に入れ替えて先手有利を打ち消す */
+private fun evaluateCandidateKann(net: KannValueNetwork, candidate: FloatArray, baseline: FloatArray, games: Int, rng: Random, maxSteps: Int): Double {
+    var score = 0.0
+    var draws = 0
+    repeat(games) { i ->
+        val seed = rng.nextLong()
+        val candidateIsP1 = i % 2 == 0
+        val weightsByPlayer = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
+        val winner = playoutGameKann(net, weightsByPlayer, seed, maxSteps)
+        if (winner == null) draws++
+        score += when {
+            winner == null -> 0.5
+            candidateIsP1 && winner == 1 -> 1.0
+            !candidateIsP1 && winner == 2 -> 1.0
+            else -> 0.0
+        }
+    }
+    if (draws > 0) println("  (診断: $games 局中 $draws 局が引き分け=決着せず)")
+    return score / games
+}
+
+/**
+ * 初期局面で「最良の行動」が「ステップ終了(END_STEP)」をどれだけ上回るかを測る。
+ * 未学習の初期重みは高確率で END_STEP を常に他の全行動より高く評価してしまい
+ * ([evaluateActionWithKann]で先読みした値がどれもEND_STEPに負ける)、
+ * `best.second > kannStepEndEval(...)` ([playoutGameKann]) が常にFalseになって
+ * 両者とも「常にパス」の固定方策に落ち、ESの重み変異が対局結果に反映されなくなる
+ * (実測: sigma=0でも sigma=0.05でも毎世代ちょうど勝率50.0%に固着することを確認した)。
+ * このマージンが正(いずれかの行動がEND_STEPを上回る)になる初期化を探すために使う。
+ */
+private fun endStepMargin(net: KannValueNetwork, state: GameState): Double {
+    val actions = enumerateActions(state).filterNot { it.forbidden }
+    if (actions.isEmpty()) return Double.NEGATIVE_INFINITY
+    val bestV = actions.maxOf { evaluateActionWithKann(state, it, net) }
+    return bestV - kannStepEndEval(state, net)
+}
+
+/**
+ * KANNの重み初期化に使う大域RNG([kad_srand])のシードを何通りか試し、[endStepMargin]が
+ * 最大(理想的には正)になる初期化を採用する。「ランダム初期重みで開始」というESの
+ * 局所解対策として、学習前にこの探索を1回だけ行う。
+ */
+@OptIn(ExperimentalForeignApi::class)
+private fun findGoodInitNet(trySeeds: Int, baseSeed: Long): KannValueNetwork {
+    val state = createInitialGameState()
+    var bestNet: KannValueNetwork? = null
+    var bestMargin = Double.NEGATIVE_INFINITY
+    var bestSeed = baseSeed
+    for (i in 0 until trySeeds) {
+        val seed = baseSeed + i
+        kad_srand(null, seed.toULong())
+        val net = KannValueNetwork()
+        val margin = endStepMargin(net, state)
+        if (margin > bestMargin) {
+            bestMargin = margin
+            bestSeed = seed
+            bestNet?.delete()
+            bestNet = net
+        } else {
+            net.delete()
+        }
+    }
+    println("初期重み探索: $trySeeds 通り中 seed=$bestSeed を採用 (END_STEP優位マージン=${fmtMargin(bestMargin)})")
+    return bestNet!!
+}
+
+/** 小数第4位までの文字列にする (Kotlin/Native には String.format が無いため手書き) */
+private fun fmtMargin(v: Double): String {
+    val scaled = (v * 10000).toInt()
+    val sign = if (scaled < 0) "-" else ""
+    val a = kotlin.math.abs(scaled)
+    return "$sign${a / 10000}.${(a % 10000).toString().padStart(4, '0')}"
+}
+
+/** 重み配列全体に独立な小さいガウスノイズを同時に加える ([RnnParams.mutate] と同じ発想) */
+private fun mutateWeights(w: FloatArray, rng: Random, sigma: Float): FloatArray = FloatArray(w.size) { i ->
+    val u1 = rng.nextDouble().coerceAtLeast(1e-12)
+    val u2 = rng.nextDouble()
+    val gaussian = kotlin.math.sqrt(-2.0 * kotlin.math.ln(u1)) * kotlin.math.cos(2.0 * kotlin.math.PI * u2)
+    w[i] + (gaussian * sigma).toFloat()
+}
+
+/** 0.0〜1.0 を小数第1位までの % 文字列にする (Kotlin/Native には String.format が無いため手書き) */
+private fun pct(v: Double): String {
+    val hundredths = (v * 1000).toInt()
+    return "${hundredths / 10}.${hundredths % 10}%"
+}
+
+/** [KannValueNetwork.save]([kann_save]形式)のファイルから重み配列だけを取り出す。グラフ構造は使い捨てる */
+private fun loadWeightsFromFile(path: String): FloatArray {
+    val loaded = KannValueNetwork.load(path) ?: error("重みファイルを読み込めません: $path")
+    val w = loaded.getWeights()
+    loaded.delete()
+    return w
+}
+
+/**
+ * `--kann-es-train` 起動時のエントリポイント。
+ * `--generations` `--games` `--sigma` `--seed` `--max-steps` `--out` `--init-search` で調整できる。
+ *
+ * 学習前に [findGoodInitNet] で初期重みを探索する。未学習の初期重みのままだと高確率で
+ * END_STEPが他の全行動より常に高く評価され、両者とも「常にパス」の固定方策に陥って
+ * 重みを変異させても対局結果が一切変わらなくなる(実測: 全世代がちょうど勝率50.0%に
+ * 固着し学習が進まなかった)。初期重み探索でこの局所解を避けてから学習を始める。
+ */
+fun runKannEsTraining(args: Array<String>) {
+    fun intArg(flag: String, default: Int): Int {
+        val idx = args.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toIntOrNull() ?: default else default
+    }
+    fun doubleArg(flag: String, default: Double): Double {
+        val idx = args.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toDoubleOrNull() ?: default else default
+    }
+
+    val generations = intArg("--generations", 20)
+    val games = intArg("--games", 12)
+    val sigma = doubleArg("--sigma", 0.05).toFloat()
+    val seed = intArg("--seed", 1)
+    // 実測: 手数上限80では自己対戦が決着せず全局引き分けになり、勝率が常に50.0%に
+    // 固着して学習が進まなかった。300なら安定して決着することを確認済み ([Tuner.kt]の
+    // 自作GRU版ESと同じデフォルト300に揃える)。
+    val maxSteps = intArg("--max-steps", 300)
+    val outIdx = args.indexOf("--out")
+    val outPath = if (outIdx >= 0 && outIdx + 1 < args.size) args[outIdx + 1] else "kann-value-es.bin"
+    val initSearch = intArg("--init-search", 30)
+
+    val rng = Random(seed)
+    val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
+    var champion = net.getWeights()
+    var adoptedCount = 0
+
+    println("=== KANN価値ネットワーク: 進化戦略(ES)による自己対戦学習開始 (目的関数: 勝率) ===")
+    println("パラメータ数=${net.nVar}, 世代数=$generations, 1世代あたりの対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
+    println()
+
+    for (gen in 1..generations) {
+        val candidate = mutateWeights(champion, rng, sigma)
+        val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps)
+        val adopted = winRate > 0.5
+        println("世代$gen: 候補勝率=${pct(winRate)} ${if (adopted) "→ 採用" else "→ 棄却"}")
+        if (adopted) {
+            champion = candidate
+            adoptedCount++
+        }
+    }
+
+    println()
+    println("=== 学習完了 ($adoptedCount / $generations 世代で採用) ===")
+    net.setWeights(champion)
+    net.save(outPath)
+    println("=== 学習済みモデルを保存: $outPath ===")
+    net.delete()
+}
+
+/**
+ * `--kann-match` 起動時のエントリポイント。player1/player2 それぞれに独立した重み
+ * ([KannValueNetwork.save]形式のファイル、`--p1-weights`/`--p2-weights`)を指定して
+ * 対戦させ、勝敗を集計する。[playoutGameKann]は元々プレイヤーごとに異なる重み
+ * ([weightsByPlayer]) を扱える設計だったが、これまで `--kann-es-train` の内部
+ * (champion/candidate、いずれも同じ初期化由来)でしか使われていなかった。
+ * このモードはそれをCLIから任意の2つの重みで使えるようにする。
+ *
+ * どちらか(または両方)を省略した場合は [findGoodInitNet] で探索した未学習の初期重みで
+ * 代用する。`--games` `--max-steps` `--seed` `--init-search` で調整できる。
+ */
+fun runKannMatch(args: Array<String>) {
+    fun intArg(flag: String, default: Int): Int {
+        val idx = args.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toIntOrNull() ?: default else default
+    }
+    fun strArg(flag: String): String? {
+        val idx = args.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
+    }
+
+    val games = intArg("--games", 20)
+    val maxSteps = intArg("--max-steps", 300)
+    val seed = intArg("--seed", 1)
+    val initSearch = intArg("--init-search", 30)
+    val p1Path = strArg("--p1-weights")
+    val p2Path = strArg("--p2-weights")
+
+    val rng = Random(seed)
+    // 対局の実行には土台となる1つの ann (グラフ構造) が要る。片方でも重みファイルが
+    // 省略された場合に備え、常に探索済みの初期重みネットワークを用意しておく。
+    val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
+    val w1 = p1Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
+    val w2 = p2Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
+    if ((p1Path != null || p2Path != null) && (w1.size != net.nVar || w2.size != net.nVar)) {
+        error("重みファイルのパラメータ数(${w1.size}/${w2.size})がネットワーク構成(${net.nVar})と一致しません")
+    }
+
+    println("=== KANN価値ネットワーク: 対戦評価 ===")
+    println("player1=${p1Path ?: "(未学習初期重み)"}, player2=${p2Path ?: "(未学習初期重み)"}, 対戦数=$games, 手数上限=$maxSteps")
+    println()
+
+    var wins1 = 0
+    var wins2 = 0
+    var draws = 0
+    for (g in 1..games) {
+        val gameSeed = rng.nextLong()
+        val winner = playoutGameKann(net, mapOf(1 to w1, 2 to w2), gameSeed, maxSteps)
+        when (winner) {
+            1 -> wins1++
+            2 -> wins2++
+            else -> draws++
+        }
+        println("対戦$g/$games: winner=${winner?.let { "player$it" } ?: "引分"}")
+    }
+
+    println()
+    println("=== 結果: player1=${pct(wins1.toDouble() / games)}(${wins1}勝) player2=${pct(wins2.toDouble() / games)}(${wins2}勝) 引分=${pct(draws.toDouble() / games)}(${draws}局) ===")
+    net.delete()
+}

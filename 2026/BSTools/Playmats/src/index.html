@@ -56,6 +56,32 @@
   }
   .toolbar input { width: 170px; }
   .toolbar select { cursor: pointer; }
+  #settings-dialog {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0; width: min(460px, 92vw);
+  }
+  #settings-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  #settings-dialog h2 {
+    font-size: 15px; margin: 0; padding: 14px 16px; color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .settings-row { display: flex; flex-direction: column; gap: 4px; }
+  .settings-row label { font-size: 12px; color: var(--muted); }
+  .settings-row input, .settings-row select {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 7px 9px; font-size: 13px; width: 100%;
+  }
+  .settings-row.pair { flex-direction: row; gap: 10px; }
+  .settings-row.pair > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .settings-section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted);
+    margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px;
+  }
+  .settings-footer {
+    display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
   button {
     background: var(--panel2); color: var(--text); border: 1px solid var(--border);
     border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px;
@@ -806,28 +832,77 @@
 <h1 id="main-title">⚔ TCG BattleSpirits デッキシミュレータ</h1>
 
 <div class="toolbar">
-  <label>フォーマット:
-    <select id="format">
-      <option value="standard">スタンダード</option>
-      <option value="eternal">エターナル</option>
-    </select>
-  </label>
-  <label>デッキ1: <input id="deck1" value="deck-kogyo.yaml"></label>
-  <label>デッキ2: <input id="deck2" value="deck-kogyo.yaml"></label>
-  <label>シード: <input id="seed" type="number" placeholder="42" style="width:85px;" title="乱数シード (指定時は固定、未入力時はランダム生成)"></label>
-  <label title="GodMode=全情報を参照・両者を操作 / プレイヤー視点=公開情報と自分の手札のみ">モード:
-    <select id="viewer">
-      <option value="0">GodMode（全情報）</option>
-      <option value="1">プレイヤー1 視点</option>
-      <option value="2">プレイヤー2 視点</option>
-    </select>
-  </label>
-  <label>GameServer: <input id="game-server-url" value="http://localhost:8081" style="width:170px;" title="GameServer API 接続URL"></label>
+  <button id="btn-settings" class="secondary" title="フォーマット・シード・表示モード・GameServer URL・評価方式・重みファイルを設定">⚙ 設定</button>
   <button id="btn-new" class="primary">新規ゲーム開始</button>
   <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
   <button id="btn-undo" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
   <button id="btn-redo" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
 </div>
+
+<dialog id="settings-dialog">
+  <h2>⚙ 設定</h2>
+  <div class="settings-body">
+    <div class="settings-row pair">
+      <div>
+        <label for="format">フォーマット</label>
+        <select id="format">
+          <option value="standard">スタンダード</option>
+          <option value="eternal">エターナル</option>
+        </select>
+      </div>
+      <div>
+        <label for="seed">シード</label>
+        <input id="seed" type="number" placeholder="42" title="乱数シード (指定時は固定、未入力時はランダム生成)">
+      </div>
+    </div>
+    <div class="settings-row pair">
+      <div>
+        <label for="deck1">デッキ1</label>
+        <input id="deck1" value="deck-kogyo.yaml">
+      </div>
+      <div>
+        <label for="deck2">デッキ2</label>
+        <input id="deck2" value="deck-kogyo.yaml">
+      </div>
+    </div>
+    <div class="settings-row">
+      <label for="viewer" title="GodMode=全情報を参照・両者を操作 / プレイヤー視点=公開情報と自分の手札のみ">表示モード</label>
+      <select id="viewer">
+        <option value="0">GodMode（全情報）</option>
+        <option value="1">プレイヤー1 視点</option>
+        <option value="2">プレイヤー2 視点</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label for="game-server-url">GameServer URL</label>
+      <input id="game-server-url" value="http://localhost:8081" title="GameServer API 接続URL">
+    </div>
+
+    <div class="settings-section-label">評価方式</div>
+    <div class="settings-row">
+      <label for="eval-mode" title="局面の評価に使うモデル。線形=従来の手書き式 / RNN=自作GRU(ES学習) / KANN=cinterop連携GRU(ES学習)">方式</label>
+      <select id="eval-mode">
+        <option value="LINEAR">線形</option>
+        <option value="RNN">RNN (自作GRU)</option>
+        <option value="KANN">KANN (GRU)</option>
+      </select>
+    </div>
+    <div class="settings-row pair">
+      <div>
+        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。空欄ならplayer2と同じ、両方空欄なら未学習の初期重み">player1 重みファイル</label>
+        <input id="eval-weights-p1" placeholder="例: kann-es-final.bin">
+      </div>
+      <div>
+        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。空欄ならplayer1と同じ、両方空欄なら未学習の初期重み">player2 重みファイル</label>
+        <input id="eval-weights-p2" placeholder="例: kann-es-run2.bin">
+      </div>
+    </div>
+    <button id="btn-apply-eval" class="secondary" title="評価方式・重みファイルを適用 (GameServer側にも反映されます)" style="align-self: flex-start;">評価方式を適用</button>
+  </div>
+  <div class="settings-footer">
+    <button id="btn-close-settings" class="primary">閉じる</button>
+  </div>
+</dialog>
 
 <div class="layout">
   <div id="board">
@@ -2204,6 +2279,71 @@ if (bUrlInput) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gameServerUrl: bUrlInput.value.trim() })
     });
+  });
+}
+
+// 設定ダイアログの開閉
+const settingsDialog = $("settings-dialog");
+if (settingsDialog) {
+  $("btn-settings").addEventListener("click", () => settingsDialog.showModal());
+  $("btn-close-settings").addEventListener("click", () => settingsDialog.close());
+}
+
+// 評価方式(線形/RNN/KANN)と player1/player2 それぞれの重みファイルパス。
+// localStorageで次回起動時も復元する。
+function saveEvalSettings() {
+  localStorage.setItem("bs_eval_mode", $("eval-mode").value);
+  localStorage.setItem("bs_eval_weights_p1", $("eval-weights-p1").value.trim());
+  localStorage.setItem("bs_eval_weights_p2", $("eval-weights-p2").value.trim());
+}
+function loadEvalSettings() {
+  const mode = localStorage.getItem("bs_eval_mode");
+  const p1 = localStorage.getItem("bs_eval_weights_p1");
+  const p2 = localStorage.getItem("bs_eval_weights_p2");
+  if (mode) $("eval-mode").value = mode;
+  if (p1) $("eval-weights-p1").value = p1;
+  if (p2) $("eval-weights-p2").value = p2;
+}
+loadEvalSettings();
+$("eval-mode").addEventListener("change", saveEvalSettings);
+for (const id of ["eval-weights-p1", "eval-weights-p2"]) {
+  $(id).addEventListener("change", saveEvalSettings);
+  $(id).addEventListener("input", saveEvalSettings);
+}
+
+const btnApplyEval = $("btn-apply-eval");
+if (btnApplyEval) {
+  btnApplyEval.addEventListener("click", async () => {
+    saveEvalSettings();
+    const mode = $("eval-mode").value;
+    const weightsPathP1 = $("eval-weights-p1").value.trim();
+    const weightsPathP2 = $("eval-weights-p2").value.trim();
+    btnApplyEval.disabled = true;
+    const prevLabel = btnApplyEval.textContent;
+    btnApplyEval.textContent = "適用中...";
+    try {
+      const res = await fetch('/api/eval-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode,
+          weightsPathP1: weightsPathP1 || undefined,
+          weightsPathP2: weightsPathP2 || undefined
+        })
+      });
+      const data = await res.json();
+      if (data.status === "ok") {
+        const reached = data.gameServerReached ? "" : " (GameServerには未反映: 到達できません)";
+        addMessages([`評価方式を ${mode} に切り替えました${reached}`]);
+      } else {
+        addMessages([`評価方式の切り替えに失敗: ${data.message || "unknown error"}`], true);
+      }
+    } catch (err) {
+      addMessages([`評価方式の切り替えに失敗: ${err}`], true);
+    } finally {
+      btnApplyEval.disabled = false;
+      btnApplyEval.textContent = prevLabel;
+    }
   });
 }
 
