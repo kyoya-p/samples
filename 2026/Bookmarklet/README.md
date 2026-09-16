@@ -57,5 +57,6 @@ Chrome内蔵のオンデバイスAI(`Proofreader` API / `Prompt API`=`LanguageMo
 
 ## 注意事項
 
+- パネル右上の帯(「×」がある部分)をドラッグするとパネルを自由に移動できる
 - `contenteditable`要素への「適用」は`innerText`で書き換えるため、リッチテキストの書式(太字・リンクなど)は失われる
 - AIの出力はそのまま`textContent`として描画しているため、生成結果にHTMLタグが含まれてもスクリプトとして実行されることはない
