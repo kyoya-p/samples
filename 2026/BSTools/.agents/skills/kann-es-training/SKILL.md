@@ -70,15 +70,23 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
 
 ## 検証結果(実績)
 
-`--kann-es-train --generations 30 --games 8 --sigma 0.05 --seed 1 --max-steps 300 --init-search 30`
-→ クラッシュなく1分43秒で完走、30世代中10世代採用、勝率0%〜87.5%と正常にばらつく
-(`kann-es-final.bin`)。
+- 初期完走:
+  `--kann-es-train --generations 30 --games 8 --sigma 0.05 --seed 1 --max-steps 300 --init-search 30`
+  → クラッシュなく1分43秒で完走、30世代中10世代採用、勝率0%〜87.5%と正常にばらつく
+  (`kann-es-final.bin`)。
+- 最強モデルの進化実績:
+  - `kann-es-run2.bin`: `final` および `final-v2` に対し勝ち越し。
+  - `kann-es-run3.bin`: `run2` をベース(`--resume kann-es-run2.bin --sigma 0.04 --generations 25 --games 12`)に強化学習。25世代中10世代採用。
+  - 直接対戦評価: `run3` vs `run2` (往復40局) で **36勝4敗 (勝率90.0%)**、公平交互10局で **8勝2敗 (80.0%)**。未学習初期重みに対して **20戦20勝 (100.0%)**。現行最強モデル。
 
 ## CLIコマンド一覧(GameServer)
 
-- `--kann-es-train`: ES学習。`--generations --games --sigma --seed --max-steps --out --init-search`
-- `--kann-match --p1-weights <f> --p2-weights <f> --games N`: 2つの重みファイル同士を対戦評価
-  (省略した側は`findGoodInitNet`で探索した未学習初期重み)
+- `--kann-es-train`: ES学習。`--generations --games --sigma --seed --max-steps --out --init-search --resume`
+- `--kann-match`: 2つの重みファイル同士を対戦評価（対戦評価モード）。
+  - 引数: `--p1-weights <f> --p2-weights <f> --games N --seed S --max-steps M [--fixed-turn]`
+  - デフォルトで先手・後手を1局ごとに交互に入れ替えて公平対戦。各局の決着ターン数・手数を表示。
+  - 最終集計として、各モデルの総合勝率・先後別勝率（先手時/後手時）・平均決着ターン数・平均手数を完全出力。
+  - 省略した側は `findGoodInitNet` で探索した未学習初期重みで代用。
 - `--kann-inspect <path>`: 重みファイルの統計(パラメータ数・最小/最大/平均/標準偏差)を表示
 - `--eval-kann --kann-weights <path>` (または `--kann-weights-p1`/`-p2`): 起動時にKANN評価
   モードへ切り替え
@@ -86,6 +94,12 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
 - `--kann-debug`: cinterop連携のスモークテスト(`kannSmokeTest()`)
 
 すべて [`GameServer/src/Main.kt`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/GameServer/src/Main.kt) に配線。
+
+## クロスプラットフォームとmise運用の原則
+
+- OS固有スクリプト（`.ps1`, `.bat`, `.sh` 等）をアドホックに作成して依存させることは**禁止**。
+- 対戦評価や診断などのロジックは Kotlin/Native（`GameServer` 等）本体に直接実装し、全OS共通のCLIオプションとして提供する。
+- タスク実行は [`mise.toml`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/mise.toml) 内のタスク定義（`mise run match` や `mise run match-run2-run3` 等）で直接バイナリまたは `kotlin run` を呼び出す形に集約する。
 
 ## GUI連携(Playmats)
 

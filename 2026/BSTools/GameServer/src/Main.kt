@@ -418,8 +418,10 @@ fun runGameServerHttp(port: Int = 8080) {
                     headerBytes.usePinned { hPinned ->
                         send(cs, hPinned.addressOf(0), headerBytes.size, 0)
                     }
-                    bodyBytes.usePinned { bPinned ->
-                        send(cs, bPinned.addressOf(0), bodyBytes.size, 0)
+                    if (bodyBytes.isNotEmpty()) {
+                        bodyBytes.usePinned { bPinned ->
+                            send(cs, bPinned.addressOf(0), bodyBytes.size, 0)
+                        }
                     }
                     clientSockets.remove(cs)
                     closesocket(cs)

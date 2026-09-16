@@ -83,13 +83,22 @@ private fun writeEsHeartbeat(winRate: Double? = null, adopted: Boolean? = null) 
 }
 
 /**
- * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)を返す。
- * 手数上限に達しても決着しない場合は null (引き分け扱い)。
+ * 自己対戦1局の結果。
  */
-private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, FloatArray>, seed: Long, maxSteps: Int): Int? {
+data class KannPlayoutResult(
+    val winner: Int?,
+    val turn: Int,
+    val steps: Int
+)
+
+/**
+ * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)と決着ターン数・手数を返す。
+ * 手数上限に達しても決着しない場合は winner = null (引き分け扱い)。
+ */
+private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, FloatArray>, seed: Long, maxSteps: Int): KannPlayoutResult {
     val state = createInitialGameState(seed = seed)
     repeat(maxSteps) { step ->
-        if (state.winner != null) return state.winner
+        if (state.winner != null) return KannPlayoutResult(state.winner, state.turn, step)
 
         EsDiag.stepInGame = step.toLong()
         EsDiag.totalSteps++
@@ -125,7 +134,7 @@ private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, Flo
             }
         }
     }
-    return state.winner
+    return KannPlayoutResult(state.winner, state.turn, maxSteps)
 }
 
 /** candidate 側の勝率を baseline との自己対戦で測る。先攻/後攻を交互に入れ替えて先手有利を打ち消す */
@@ -137,7 +146,8 @@ private fun evaluateCandidateKann(net: KannValueNetwork, candidate: FloatArray, 
         val seed = rng.nextLong()
         val candidateIsP1 = i % 2 == 0
         val weightsByPlayer = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
-        val winner = playoutGameKann(net, weightsByPlayer, seed, maxSteps)
+        val res = playoutGameKann(net, weightsByPlayer, seed, maxSteps)
+        val winner = res.winner
         if (winner == null) draws++
         score += when {
             winner == null -> 0.5
@@ -299,6 +309,11 @@ fun runKannEsTraining(args: Array<String>) {
         if (adopted) {
             champion = candidate
             adoptedCount++
+            // 採用の都度ここで保存する。過去に世代12〜15付近で繰り返しハング/中断し、
+            // 最後まで走り切らないと一切保存されない実装のせいで進捗が全損した実績があるため
+            // (kann-resume8〜8dログ参照)、完走を待たずに途中経過を残す。
+            net.setWeights(champion)
+            net.save(outPath)
         }
         // GUIを提供している別プロセス(GameServer/Playmats)が /api/training-status 経由で
         // 参照できるよう、世代ごとに進捗をファイルへ書き出す(プロセス間はこれでしか繋がらない)。
@@ -353,16 +368,15 @@ fun runKannMatch(args: Array<String>) {
         return if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
     }
 
-    val games = intArg("--games", 20)
+    val games = intArg("--games", 10)
     val maxSteps = intArg("--max-steps", 300)
     val seed = intArg("--seed", 1)
     val initSearch = intArg("--init-search", 30)
     val p1Path = strArg("--p1-weights")
     val p2Path = strArg("--p2-weights")
+    val alternate = !args.contains("--fixed-turn")
 
     val rng = Random(seed)
-    // 対局の実行には土台となる1つの ann (グラフ構造) が要る。片方でも重みファイルが
-    // 省略された場合に備え、常に探索済みの初期重みネットワークを用意しておく。
     val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
     val w1 = p1Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
     val w2 = p2Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
@@ -370,25 +384,127 @@ fun runKannMatch(args: Array<String>) {
         error("重みファイルのパラメータ数(${w1.size}/${w2.size})がネットワーク構成(${net.nVar})と一致しません")
     }
 
-    println("=== KANN価値ネットワーク: 対戦評価 ===")
-    println("player1=${p1Path ?: "(未学習初期重み)"}, player2=${p2Path ?: "(未学習初期重み)"}, 対戦数=$games, 手数上限=$maxSteps")
+    val name1 = p1Path ?: "未学習初期重み(model1)"
+    val name2 = p2Path ?: "未学習初期重み(model2)"
+
+    println("=== KANN価値ネットワーク: 対戦評価モード ===")
+    println("model1=$name1")
+    println("model2=$name2")
+    println("対戦数=$games, 先手後手入替=${if (alternate) "あり(公平交互)" else "なし(固定)"}, 手数上限=$maxSteps, 乱数シード=$seed")
     println()
 
-    var wins1 = 0
-    var wins2 = 0
+    var wins1Total = 0
+    var wins1AsP1 = 0
+    var wins1AsP2 = 0
+    var games1AsP1 = 0
+    var games1AsP2 = 0
+
+    var wins2Total = 0
+    var wins2AsP1 = 0
+    var wins2AsP2 = 0
+    var games2AsP1 = 0
+    var games2AsP2 = 0
+
     var draws = 0
+    var totalTurns = 0
+    var totalSteps = 0
+
+    data class MatchRecord(
+        val index: Int,
+        val seed: Long,
+        val winnerStr: String,
+        val turn: Int,
+        val steps: Int,
+        val p1Name: String,
+        val p2Name: String
+    )
+    val records = mutableListOf<MatchRecord>()
+
     for (g in 1..games) {
         val gameSeed = rng.nextLong()
-        val winner = playoutGameKann(net, mapOf(1 to w1, 2 to w2), gameSeed, maxSteps)
-        when (winner) {
-            1 -> wins1++
-            2 -> wins2++
+        val m1IsP1 = if (alternate) (g % 2 != 0) else true
+        val weightsByPlayer = if (m1IsP1) mapOf(1 to w1, 2 to w2) else mapOf(1 to w2, 2 to w1)
+        val p1Name = if (m1IsP1) name1 else name2
+        val p2Name = if (m1IsP1) name2 else name1
+
+        if (m1IsP1) {
+            games1AsP1++
+            games2AsP2++
+        } else {
+            games1AsP2++
+            games2AsP1++
+        }
+
+        val res = playoutGameKann(net, weightsByPlayer, gameSeed, maxSteps)
+        totalTurns += res.turn
+        totalSteps += res.steps
+
+        val winnerModel = when (res.winner) {
+            1 -> if (m1IsP1) 1 else 2
+            2 -> if (m1IsP1) 2 else 1
+            else -> null
+        }
+
+        when (winnerModel) {
+            1 -> {
+                wins1Total++
+                if (m1IsP1) wins1AsP1++ else wins1AsP2++
+            }
+            2 -> {
+                wins2Total++
+                if (!m1IsP1) wins2AsP1++ else wins2AsP2++
+            }
             else -> draws++
         }
-        println("対戦$g/$games: winner=${winner?.let { "player$it" } ?: "引分"}")
+
+        val winnerStr = when (winnerModel) {
+            1 -> "$name1 (${if (m1IsP1) "先手" else "後手"})"
+            2 -> "$name2 (${if (!m1IsP1) "先手" else "後手"})"
+            else -> "引分"
+        }
+
+        records.add(
+            MatchRecord(
+                index = g,
+                seed = gameSeed,
+                winnerStr = winnerStr,
+                turn = res.turn,
+                steps = res.steps,
+                p1Name = p1Name,
+                p2Name = p2Name
+            )
+        )
+
+        println("対戦 $g/$games [シード: $gameSeed]: 勝者=$winnerStr | 決着: ${res.turn}ターン / ${res.steps}手 (先手: $p1Name, 後手: $p2Name)")
+    }
+
+    val avgTurn = if (games > 0) (totalTurns.toDouble() / games) else 0.0
+    val avgSteps = if (games > 0) (totalSteps.toDouble() / games) else 0.0
+
+    fun fmtAvg(v: Double): String {
+        val h = (v * 10).toInt()
+        return "${h / 10}.${h % 10}"
     }
 
     println()
-    println("=== 結果: player1=${pct(wins1.toDouble() / games)}(${wins1}勝) player2=${pct(wins2.toDouble() / games)}(${wins2}勝) 引分=${pct(draws.toDouble() / games)}(${draws}局) ===")
+    println("=================================================================")
+    println("=== 対戦評価集計結果 (全 $games 戦) ===")
+    println("=================================================================")
+    println("  $name1: ${pct(wins1Total.toDouble() / games)} (${wins1Total}勝)")
+    if (games1AsP1 > 0) println("    - 先手時: ${wins1AsP1}勝 / ${games1AsP1}戦 (${pct(wins1AsP1.toDouble() / games1AsP1)})")
+    if (games1AsP2 > 0) println("    - 後手時: ${wins1AsP2}勝 / ${games1AsP2}戦 (${pct(wins1AsP2.toDouble() / games1AsP2)})")
+    println("  $name2: ${pct(wins2Total.toDouble() / games)} (${wins2Total}勝)")
+    if (games2AsP1 > 0) println("    - 先手時: ${wins2AsP1}勝 / ${games2AsP1}戦 (${pct(wins2AsP1.toDouble() / games2AsP1)})")
+    if (games2AsP2 > 0) println("    - 後手時: ${wins2AsP2}勝 / ${games2AsP2}戦 (${pct(wins2AsP2.toDouble() / games2AsP2)})")
+    if (draws > 0) {
+        println("  引き分け: ${pct(draws.toDouble() / games)} (${draws}局)")
+    }
+    println("  平均決着: ${fmtAvg(avgTurn)} ターン / ${fmtAvg(avgSteps)} 手")
+    println()
+    println("--- 各対戦の個別シード・結果一覧 ---")
+    for (r in records) {
+        println("  第${r.index.toString().padStart(2, ' ')}戦 [seed=${r.seed}]: 勝者=${r.winnerStr} (${r.turn}ターン / ${r.steps}手)")
+    }
+    println("=================================================================")
     net.delete()
 }

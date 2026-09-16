@@ -4,16 +4,31 @@ rust = "latest"
 
 [tasks.build]
 description = "Build all Kotlin/Native tools"
-run = ".\\kotlin.bat build"
+run = ".\\kotlin build"
 
 [tasks."game-server"]
 description = "Run GameServer (Kotlin/Native)"
-run = ".\\kotlin.bat run -m GameServer"
+run = ".\\kotlin run -m GameServer"
 
-[tasks.playmats]
-description = "Run GameServer with Playmats WebUI (http://localhost:8080)"
-run = ".\\kotlin.bat run -m GameServer"
+[tasks."playmats"]
+description = "Serve Playmats/index.html from disk via npx (no Kotlin rebuild needed to see HTML/CSS/JS changes) and proxy /api/* to the game-server task on :8080 (http://localhost:8082)"
+run = "npx --yes local-web-server --port 8082 --directory Playmats --rewrite \"/api/(.*) -> http://localhost:8080/api/$1\""
 
 [tasks."survey-x"]
 description = "Run SurveyX (JVM / Clikt)"
 run = ".\\kotlin.bat run -m SurveyX --"
+
+[tasks."match-run2-run3"]
+description = "Evaluate match between kann-es-run2 and kann-es-run3 across 10 games with alternating turns"
+run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-match --p1-weights kann-es-run2.bin --p2-weights kann-es-run3.bin --games 10"
+
+[tasks.match]
+description = "Evaluate match between KANN weights with alternating turns and turn count diagnostics"
+run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-match"
+
+[tasks."train-run3"]
+description = "Train next-generation KANN weights starting from kann-es-run3.bin via ES self-play"
+run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-es-train --resume kann-es-run3.bin --out kann-es-run4.bin --generations 20 --games 12 --sigma 0.04 --seed 100 --max-steps 300"
+
+
+
