@@ -76,8 +76,8 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
   (`kann-es-final.bin`)。
 - 最強モデルの進化実績:
   - `kann-es-run2.bin`: `final` および `final-v2` に対し勝ち越し。
-  - `kann-es-run3.bin`: `run2` をベース(`--resume kann-es-run2.bin --sigma 0.04 --generations 25 --games 12`)に強化学習。25世代中10世代採用。
-  - 直接対戦評価: `run3` vs `run2` (往復40局) で **36勝4敗 (勝率90.0%)**、公平交互10局で **8勝2敗 (80.0%)**。未学習初期重みに対して **20戦20勝 (100.0%)**。現行最強モデル。
+  - `kann-es-run3.bin`: `run2` をベース(`--resume kann-es-run2.bin --sigma 0.04 --generations 25 --games 12`)に強化学習。25世代中10世代採用。直接対戦評価で `run2` に対し 8勝2敗 (80.0%)。
+  - `kann-es-run4.bin`: `run3` をベース(`--resume kann-es-run3.bin --sigma 0.04 --generations 20 --games 12 --seed 100`)に強化学習。20世代中9世代採用。直接対戦評価で `run3` に対し **7勝3敗 (勝率70.0%)** (先手時5勝/5戦 100%, 後手時2勝/5戦 40%)。現行最強モデル。
 
 ## CLIコマンド一覧(GameServer)
 

@@ -30,5 +30,10 @@ run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-mat
 description = "Train next-generation KANN weights starting from kann-es-run3.bin via ES self-play"
 run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-es-train --resume kann-es-run3.bin --out kann-es-run4.bin --generations 20 --games 12 --sigma 0.04 --seed 100 --max-steps 300"
 
+[tasks."match-run3-run4"]
+description = "Evaluate match between kann-es-run3 and kann-es-run4 across 10 games with alternating turns"
+run = ".\\build\\tasks\\_GameServer_linkMingwX64Debug\\GameServer.exe --kann-match --p1-weights kann-es-run4.bin --p2-weights kann-es-run3.bin --games 10"
+
+
 
 
