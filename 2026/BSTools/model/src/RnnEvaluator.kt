@@ -535,7 +535,7 @@ fun listWeightFiles(): List<String> {
         while (true) {
             val entry = readdir(dir) ?: break
             val name = entry.pointed.d_name.toKString()
-            if (name.endsWith(".bin") || name.endsWith(".pb")) result.add(name)
+            if (name.endsWith(".weight") || name.endsWith(".bin") || name.endsWith(".pb")) result.add(name)
         }
     } finally {
         closedir(dir)

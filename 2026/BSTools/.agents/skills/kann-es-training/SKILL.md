@@ -74,18 +74,34 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
   `--kann-es-train --generations 30 --games 8 --sigma 0.05 --seed 1 --max-steps 300 --init-search 30`
   → クラッシュなく1分43秒で完走、30世代中10世代採用、勝率0%〜87.5%と正常にばらつく
   (`kann-es-final.bin`)。
-- 最強モデルの進化実績:
-  - `kann-es-run2.bin`: `final` および `final-v2` に対し勝ち越し。
-  - `kann-es-run3.bin`: `run2` をベース(`--resume kann-es-run2.bin --sigma 0.04 --generations 25 --games 12`)に強化学習。25世代中10世代採用。直接対戦評価で `run2` に対し 8勝2敗 (80.0%)。
-  - `kann-es-run4.bin`: `run3` をベース(`--resume kann-es-run3.bin --sigma 0.04 --generations 20 --games 12 --seed 100`)に強化学習。20世代中9世代採用。直接対戦評価で `run3` に対し **7勝3敗 (勝率70.0%)** (先手時5勝/5戦 100%, 後手時2勝/5戦 40%)。現行最強モデル。
+## ウェイトファイルの固有名命名規則
+
+すべてのウェイトファイルは以下のフォーマットで統一管理する:
+`<派生元の名>_<派生先の名>.<NNタイプ>.weight`
+
+- `<派生元の名>`: 起点となったモデル名（例: `init`, `run1`, `run2`, `run3`, `run4`）。
+- `<派生先の名>`: 生成されたモデル名（例: `run1`, `run2`, `run3`, `run4`, `run5`）。
+- `<NNタイプ>`: ネットワーク種別（KANN価値ネットワークは `kann`）。
+- サイクルスナップショット: `<派生元の名>_<派生先の名>-c<サイクル番号>.<NNタイプ>.weight`（例: `run4_run5-c1.kann.weight`）。
+- `--resume` に指定されたファイル名から派生元名と次の派生先名が自動抽出・自動採番され、`--out` を省略してもこの規則に従ったファイル名で自動保存される。
+
+### 最強モデルの進化実績と対応表:
+- `init_run1.kann.weight`: 未学習初期重み探索からの初期学習。
+- `run1_run2.kann.weight`: `run1` ベース。初期モデルに対し勝ち越し。
+- `run2_run3.kann.weight`: `run2` ベース。25世代中10世代採用。直接対戦で `run2` に対し 8勝2敗 (80.0%)。
+- `run3_run4.kann.weight`: `run3` ベース。20世代中9世代採用。直接対戦で `run3` に対し **7勝3敗 (勝率70.0%)** (先手時5勝/5戦 100%, 後手時2勝/5戦 40%)。現行最強モデル。
+- `run4_run5.kann.weight`: `run4` ベース。
 
 ## CLIコマンド一覧(GameServer)
 
-- `--kann-es-train`: ES学習。`--generations --games --sigma --seed --max-steps --out --init-search --resume`
+- `--kann-es-train`: ES学習。`--generations --games --sigma --seed --max-steps --out --init-search --resume [--cycles N] [--target-name <name>] [--nn-type <type>]`
+  - `--out` 省略時は `<派生元>_<派生先>.<NNタイプ>.weight` 規則で自動採名。
+  - `--cycles N` (既定1): 複数サイクルの連続強化学習を実行。サイクルごとにスナップショット（例: `<out>-c1.kann.weight`）を自動保存し、開始前重みとの10局対戦評価で向上度を即座に測定。
 - `--kann-match`: 2つの重みファイル同士を対戦評価（対戦評価モード）。
-  - 引数: `--p1-weights <f> --p2-weights <f> --games N --seed S --max-steps M [--fixed-turn]`
+  - 引数: `--p1-weights <f> --p2-weights <f> --games N --seed S --max-steps M [--fixed-turn] [--log <path>] [--no-log]`
   - デフォルトで先手・後手を1局ごとに交互に入れ替えて公平対戦。各局の決着ターン数・手数を表示。
-  - 最終集計として、各モデルの総合勝率・先後別勝率（先手時/後手時）・平均決着ターン数・平均手数を完全出力。
+  - デフォルトで全対戦の全手における「盤面状態・候補行動一覧・各行動のKANN評価値・ステップ終了評価・採択結果・適用効果」をログファイル（既定: `kann-match.log`、`--log` で変更可能、`--no-log` で無効化）に詳細記録。
+  - 最終集計として、各モデルの総合勝率・先後別勝率（先手時/後手時）・平均決着ターン数・平均手数を完全出力（コンソールおよびログファイル末尾）。
   - 省略した側は `findGoodInitNet` で探索した未学習初期重みで代用。
 - `--kann-inspect <path>`: 重みファイルの統計(パラメータ数・最小/最大/平均/標準偏差)を表示
 - `--eval-kann --kann-weights <path>` (または `--kann-weights-p1`/`-p2`): 起動時にKANN評価
@@ -99,7 +115,17 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
 
 - OS固有スクリプト（`.ps1`, `.bat`, `.sh` 等）をアドホックに作成して依存させることは**禁止**。
 - 対戦評価や診断などのロジックは Kotlin/Native（`GameServer` 等）本体に直接実装し、全OS共通のCLIオプションとして提供する。
-- タスク実行は [`mise.toml`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/mise.toml) 内のタスク定義（`mise run match` や `mise run match-run2-run3` 等）で直接バイナリまたは `kotlin run` を呼び出す形に集約する。
+- タスク実行は [`mise.toml`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/mise.toml) 内のタスク定義に集約する:
+  - `mise run build`: Kotlin/Nativeバイナリ（GameServer）のビルド。
+  - `mise run build`: Kotlin/Nativeバイナリ（GameServer）のビルド。
+  - `mise run train`: 汎用ES強化学習タスク（引数追加可）。
+  - `mise run train-w3`: `w2_w3.kann.weight` を起点に `w3_w4.kann.weight` を学習。
+  - `mise run train-w4`: 現行最強 `w3_w4.kann.weight` を起点に `w4_w5.kann.weight` を学習。
+  - `mise run inspect -- <file>`: 重みファイルの統計情報（パラメータ数、最小/最大/平均/標準偏差）を表示。
+  - `mise run match-w3-w4`: `w3_w4` vs `w2_w3` の10局公平対戦評価。
+  - `mise run match-w4-w5`: `w4_w5` vs `w3_w4` の10局公平対戦評価（`kann-match.log` 自動記録）。
+  - `mise run train-loop`: 複数サイクル（既定3サイクル×20世代）の強化学習を連続実行（引数 `-- --cycles N` で回数変更可能）。
+  - `mise run train-loop-pipeline`: ビルド → 複数サイクル強化学習 → 重み検査 → 最終対戦評価の一括パイプライン。
 
 ## GUI連携(Playmats)
 
@@ -116,10 +142,17 @@ KANNの`ann`は単一の計算グラフを使い回すため、手番ごとに`s
 - `POST /api/eval-config`(GameServer・Playmats両方に実装):
   `{"mode":"KANN","weightsPathP1":"...","weightsPathP2":"..."}`。Playmatsはローカル評価にも
   適用しつつGameServerへ中継する(`httpPostJson`)。
-- Playmats WebUI([`Playmats/src/index.html`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/Playmats/src/index.html))
-  に`<dialog id="settings-dialog">`の設定ダイアログを実装済み。フォーマット・デッキ・シード・
-  表示モード・GameServer URL・評価方式・player1/player2の重みファイルをまとめて指定できる。
-  ツールバーは「⚙ 設定」ボタン+操作ボタン(新規/リスタート/戻る/進む)のみに簡素化。
+- `GET /api/weight-files`([`model/src/RnnEvaluator.kt`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/model/src/RnnEvaluator.kt)の`listWeightFiles`):
+  作業ディレクトリ直下の `.weight`, `.bin`, `.pb` ファイルを列挙して返却。
+- Playmats WebUI([`Playmats/index.html`](file:///C:/Users/kyoya/home26/works/samples/2026/BSTools/Playmats/index.html))
+  に`<dialog id="settings-dialog">`の設定ダイアログを実装済み。
+  - フォーマット・デッキ・シード・表示モード・GameServer URL・評価方式を統合指定。
+  - **重みファイルの直接指定**: player1/player2 の重みファイル入力欄は「自由テキスト入力（datalistサジェスト付）＋一覧ドロップダウン選択」のハイブリッドUIを採用。任意のカスタムパスの直接タイピングと、サーバーから列挙されたファイル一覧からのクリック選択の双方に対応。入力値は即座に `localStorage` に保持され、サーバーへ自動反映される。
+  - **自動実行ボタン**: ターン・ステップ表示エリアに3つの自動進行ボタンを実装。
+    1. `⚡ 次の選択を自動で行う`: 現局面で評価値最良の手を1手だけ即時実行。
+    2. `⏭ ステップ終了まで自動で行う`: 現在のフェイズ/ステップが切り替わるまで自動進行。実行中は「⏹ 停止」ボタンとなり中断可能。
+    3. `⏩ ターン終了まで自動で行う`: 手番ターンが切り替わるまで自動進行。実行中は「⏹ 停止」ボタンとなり中断可能。
+  - ツールバーは「⚙ 設定」ボタン+操作ボタン(新規/リスタート/戻る/進む)のみに簡素化。
 
 ## 共通の重複排除の原則
 

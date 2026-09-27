@@ -202,7 +202,7 @@ fun runGameServerHttp(port: Int = 8080) {
 
                 when {
                     path == "/" || path == "/index.html" -> {
-                        responseBody = htmlContent
+                        responseBody = loadHtmlFile()
                         contentType = "text/html; charset=UTF-8"
                     }
                     path == "/favicon.ico" -> {

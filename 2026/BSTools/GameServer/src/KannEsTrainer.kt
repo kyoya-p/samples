@@ -1,6 +1,7 @@
 import bstools.model.*
 import bstools.kann.kad_srand
-import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.*
+import platform.posix.*
 import kotlin.random.Random
 
 /**
@@ -92,13 +93,68 @@ data class KannPlayoutResult(
 )
 
 /**
+ * 対戦中の各手の選択肢・評価値・採択結果を記録するファイルロガー。
+ */
+@OptIn(ExperimentalForeignApi::class)
+private class MatchLogger(private val filePath: String) {
+    private var file: CPointer<FILE>? = null
+
+    fun open(): Boolean {
+        file = fopen(filePath, "w")
+        return file != null
+    }
+
+    fun log(text: String = "") {
+        val f = file ?: return
+        fputs(text + "\n", f)
+        fflush(f)
+    }
+
+    fun close() {
+        file?.let {
+            fflush(it)
+            fclose(it)
+        }
+        file = null
+    }
+}
+
+private fun formatPlayerSummary(p: PlayerState): String {
+    val fieldCards = if (p.field.isEmpty()) "空" else p.field.joinToString(", ") { fc ->
+        "${fc.name}(Lv${fc.level},コア${fc.cores.format()})"
+    }
+    return "Life:${p.life}, Reserve:${p.reserve.format()}, Hand:${p.hand.size}枚, Field:[$fieldCards]"
+}
+
+private fun fmtScore(v: Double): String {
+    val scaled = (v * 10000).toInt()
+    val sign = if (scaled < 0) "-" else if (scaled > 0) "+" else " "
+    val a = kotlin.math.abs(scaled)
+    return "$sign${a / 10000}.${(a % 10000).toString().padStart(4, '0')}"
+}
+
+/**
  * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)と決着ターン数・手数を返す。
  * 手数上限に達しても決着しない場合は winner = null (引き分け扱い)。
+ * [logger]が指定されている場合、全手の選択肢・評価値・採択結果をログファイルに書き出す。
  */
-private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, FloatArray>, seed: Long, maxSteps: Int): KannPlayoutResult {
+private fun playoutGameKann(
+    net: KannValueNetwork,
+    weightsByPlayer: Map<Int, FloatArray>,
+    seed: Long,
+    maxSteps: Int,
+    logger: MatchLogger? = null,
+    playerNames: Map<Int, String> = emptyMap()
+): KannPlayoutResult {
     val state = createInitialGameState(seed = seed)
     repeat(maxSteps) { step ->
-        if (state.winner != null) return KannPlayoutResult(state.winner, state.turn, step)
+        if (state.winner != null) {
+            if (logger != null) {
+                val winnerName = playerNames[state.winner] ?: "Player ${state.winner}"
+                logger.log("  【決着】 勝者: $winnerName (${state.turn}ターン / $step 手)")
+            }
+            return KannPlayoutResult(state.winner, state.turn, step)
+        }
 
         EsDiag.stepInGame = step.toLong()
         EsDiag.totalSteps++
@@ -107,7 +163,17 @@ private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, Flo
         // が単調増加し続けているかどうかで、対局が本当に進行しているかを外部から診断できる。
         if (step % 5 == 0) writeEsHeartbeat()
 
-        net.setWeights(weightsByPlayer[state.choosingPlayerId] ?: return@repeat)
+        val choosingId = state.choosingPlayerId
+        val choosingName = playerNames[choosingId] ?: "Player $choosingId"
+
+        if (logger != null) {
+            logger.log("Turn ${state.turn} | 手数 $step | 手番: $choosingName | ${state.step.displayName}")
+            logger.log("  盤面:")
+            logger.log("    P1: ${formatPlayerSummary(state.player1)}")
+            logger.log("    P2: ${formatPlayerSummary(state.player2)}")
+        }
+
+        net.setWeights(weightsByPlayer[choosingId] ?: return@repeat)
         val actions = enumerateActions(state)
         val messages = mutableListOf<String>()
         // repeatsPosition(同一局面へ戻る手)はmarkRepetitions([model/src/Rules.kt])が
@@ -121,18 +187,57 @@ private fun playoutGameKann(net: KannValueNetwork, weightsByPlayer: Map<Int, Flo
         EsDiag.evaluatedPositions += candidates.size
         val best = scored.maxByOrNull { it.second }
 
+        if (logger != null) {
+            logger.log("  候補行動 (${candidates.size}件):")
+            for ((idx, pair) in scored.withIndex()) {
+                val (act, sc) = pair
+                logger.log("    [$idx] ${act.type} | ${act.detail} -> eval: ${fmtScore(sc)}")
+            }
+        }
+
         if (state.step == Step.BLOCK_DECLARATION) {
-            if (best != null) applyActionAndRecord(state, best.first, messages)
+            if (best != null) {
+                if (logger != null) {
+                    logger.log("  => 選択: ${best.first.type} | ${best.first.detail} (eval: ${fmtScore(best.second)})")
+                }
+                applyActionAndRecord(state, best.first, messages)
+            } else {
+                if (logger != null) {
+                    logger.log("  => 選択: ブロック可能な候補なし (スルー)")
+                }
+            }
         } else {
             val endEval = kannStepEndEval(state, net)
             EsDiag.evaluatedPositions++
+            if (logger != null) {
+                logger.log("  ステップ終了評価: ${fmtScore(endEval)}")
+            }
             if (best != null && best.second > endEval) {
+                if (logger != null) {
+                    logger.log("  => 選択: ${best.first.type} | ${best.first.detail} (eval: ${fmtScore(best.second)} > 終了評価 ${fmtScore(endEval)})")
+                }
                 applyActionAndRecord(state, best.first, messages)
             } else {
+                if (logger != null) {
+                    val reason = if (best != null) " (候補最大 ${fmtScore(best.second)} <= 終了評価 ${fmtScore(endEval)})" else ""
+                    logger.log("  => 選択: ステップ終了$reason")
+                }
                 advanceStep(state, messages)
                 state.visitedPositions.add(positionHash(state))
             }
         }
+
+        if (logger != null) {
+            if (messages.isNotEmpty()) {
+                for (msg in messages) {
+                    logger.log("     効果/結果: $msg")
+                }
+            }
+            logger.log()
+        }
+    }
+    if (logger != null) {
+        logger.log("  【決着】 引き分け (手数上限 $maxSteps 手に到達)")
     }
     return KannPlayoutResult(state.winner, state.turn, maxSteps)
 }
@@ -236,8 +341,41 @@ private fun loadWeightsFromFile(path: String): FloatArray {
 }
 
 /**
+ * パス文字列からモデル識別名（例: "w3", "w4", "init"）を抽出する。
+ * 命名規則 `<派生元の名>_<派生先の名>.<NNタイプ>.weight` や既存ファイル名から自動判定する。
+ */
+fun extractModelName(path: String?): String {
+    if (path == null) return "init"
+    val filename = path.replace('\\', '/').substringAfterLast('/')
+    val base = filename.substringBefore('.')
+    if (base.contains('_')) {
+        val dst = base.substringAfterLast('_')
+        val clean = dst.substringBefore('-')
+        val wMatch = Regex("""w\d+""", RegexOption.IGNORE_CASE).find(clean)
+        if (wMatch != null) return wMatch.value.lowercase()
+        val runMatch = Regex("""run\d+""", RegexOption.IGNORE_CASE).find(clean)
+        if (runMatch != null) return "w" + runMatch.value.substring(3)
+        return clean
+    }
+    val wMatch = Regex("""w\d+""", RegexOption.IGNORE_CASE).find(base)
+    if (wMatch != null) return wMatch.value.lowercase()
+    val runMatch = Regex("""run\d+""", RegexOption.IGNORE_CASE).find(base)
+    if (runMatch != null) return "w" + runMatch.value.substring(3)
+    if (base.contains("final", ignoreCase = true)) return "w1"
+    return base
+}
+
+/**
+ * 命名規則 `<派生元の名>_<派生先の名>.<NNタイプ>.weight` に基づくウェイトファイル名を生成する。
+ */
+fun buildWeightFilename(srcName: String, dstName: String, nnType: String = "kann", cycleSuffix: String = ""): String {
+    val suffix = if (cycleSuffix.isNotEmpty()) "-$cycleSuffix" else ""
+    return "${srcName}_${dstName}${suffix}.${nnType}.weight"
+}
+
+/**
  * `--kann-es-train` 起動時のエントリポイント。
- * `--generations` `--games` `--sigma` `--seed` `--max-steps` `--out` `--init-search` `--resume` で調整できる。
+ * `--generations` `--games` `--sigma` `--seed` `--max-steps` `--out` `--init-search` `--resume` `--cycles` で調整できる。
  *
  * `--resume <path>` を指定しない場合、学習前に [findGoodInitNet] で初期重みを探索する。
  * 未学習の初期重みのままだと高確率でEND_STEPが他の全行動より常に高く評価され、両者とも
@@ -246,8 +384,8 @@ private fun loadWeightsFromFile(path: String): FloatArray {
  * 避けてから学習を始める。
  *
  * `--resume <path>` を指定した場合、そのファイル([KannValueNetwork.save]形式)を初期チャンピオン
- * として続きから学習する([findGoodInitNet]は実行しない)。同じファイルを`--out`にも指定すれば
- * 上書き更新できる(例: `--resume kann-es-final.bin --out kann-es-final.bin`)。
+ * として続きから学習する([findGoodInitNet]は実行しない)。
+ * ウェイトファイル名は `<派生元の名>_<派生先の名>.<NNタイプ>.weight` 規則に従い自動生成される。
  */
 fun runKannEsTraining(args: Array<String>) {
     fun intArg(flag: String, default: Int): Int {
@@ -258,7 +396,12 @@ fun runKannEsTraining(args: Array<String>) {
         val idx = args.indexOf(flag)
         return if (idx >= 0 && idx + 1 < args.size) args[idx + 1].toDoubleOrNull() ?: default else default
     }
+    fun strArg(flag: String): String? {
+        val idx = args.indexOf(flag)
+        return if (idx >= 0 && idx + 1 < args.size) args[idx + 1] else null
+    }
 
+    val cycles = intArg("--cycles", 1)
     val generations = intArg("--generations", 20)
     val games = intArg("--games", 12)
     val sigma = doubleArg("--sigma", 0.05).toFloat()
@@ -267,14 +410,32 @@ fun runKannEsTraining(args: Array<String>) {
     // 固着して学習が進まなかった。300なら安定して決着することを確認済み ([Tuner.kt]の
     // 自作GRU版ESと同じデフォルト300に揃える)。
     val maxSteps = intArg("--max-steps", 300)
-    val outIdx = args.indexOf("--out")
-    val outPath = if (outIdx >= 0 && outIdx + 1 < args.size) args[outIdx + 1] else "kann-value-es.bin"
     val initSearch = intArg("--init-search", 30)
-    // 既存の学習済みモデルを初期チャンピオンとして続きから学習する(ゼロから[findGoodInitNet]で
-    // 探索し直さない)。ES自体は局所探索(山登り法)なので、良い出発点から続けるほうが
-    // 同じ世代数でも早く強くなる。
+
     val resumeIdx = args.indexOf("--resume")
     val resumePath = if (resumeIdx >= 0 && resumeIdx + 1 < args.size) args[resumeIdx + 1] else null
+    val nnType = strArg("--nn-type") ?: "kann"
+    val srcName = strArg("--source-name") ?: extractModelName(resumePath)
+
+    val targetArg = strArg("--target-name") ?: strArg("--name")
+    val dstName = targetArg ?: run {
+        val numMatch = Regex("""\d+""").find(srcName)
+        if (numMatch != null) {
+            val nextNum = (numMatch.value.toIntOrNull() ?: 0) + 1
+            "w$nextNum"
+        } else if (srcName == "init") {
+            "w1"
+        } else {
+            "${srcName}_next"
+        }
+    }
+
+    val outIdx = args.indexOf("--out")
+    val outPath = if (outIdx >= 0 && outIdx + 1 < args.size) {
+        args[outIdx + 1]
+    } else {
+        buildWeightFilename(srcName, dstName, nnType)
+    }
 
     val rng = Random(seed)
     val net: KannValueNetwork
@@ -288,62 +449,100 @@ fun runKannEsTraining(args: Array<String>) {
         net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
         champion = net.getWeights()
     }
-    var adoptedCount = 0
 
     println("=== KANN価値ネットワーク: 進化戦略(ES)による自己対戦学習開始 (目的関数: 勝率) ===")
-    println("パラメータ数=${net.nVar}, 世代数=$generations, 1世代あたりの対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
+    println("パラメータ数=${net.nVar}, サイクル数=$cycles, 1サイクル世代数=$generations, 1世代対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
     println(if (resumePath != null) "初期チャンピオン: $resumePath から続きを学習" else "初期チャンピオン: 新規探索(未学習)")
     println()
 
-    EsDiag.totalGenerations = generations
-    EsDiag.games = games
-    EsDiag.outPath = outPath
-
-    for (gen in 1..generations) {
-        EsDiag.generation = gen
-        EsDiag.adoptedCount = adoptedCount
-        val candidate = mutateWeights(champion, rng, sigma)
-        val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps)
-        val adopted = winRate > 0.5
-        println("世代$gen: 候補勝率=${pct(winRate)} ${if (adopted) "→ 採用" else "→ 棄却"}")
-        if (adopted) {
-            champion = candidate
-            adoptedCount++
-            // 採用の都度ここで保存する。過去に世代12〜15付近で繰り返しハング/中断し、
-            // 最後まで走り切らないと一切保存されない実装のせいで進捗が全損した実績があるため
-            // (kann-resume8〜8dログ参照)、完走を待たずに途中経過を残す。
-            net.setWeights(champion)
-            net.save(outPath)
+    for (cycle in 1..cycles) {
+        if (cycles > 1) {
+            println("=================================================================")
+            println("=== 強化学習 サイクル $cycle / $cycles 開始 ===")
+            println("=================================================================")
         }
-        // GUIを提供している別プロセス(GameServer/Playmats)が /api/training-status 経由で
-        // 参照できるよう、世代ごとに進捗をファイルへ書き出す(プロセス間はこれでしか繋がらない)。
-        EsDiag.adoptedCount = adoptedCount
-        writeEsHeartbeat(winRate = winRate, adopted = adopted)
+
+        val cycleStartChampion = champion.copyOf()
+        var adoptedCount = 0
+
+        EsDiag.totalGenerations = generations
+        EsDiag.games = games
+        EsDiag.outPath = outPath
+
+        for (gen in 1..generations) {
+            EsDiag.generation = gen
+            EsDiag.adoptedCount = adoptedCount
+            val candidate = mutateWeights(champion, rng, sigma)
+            val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps)
+            val adopted = winRate > 0.5
+            val prefix = if (cycles > 1) "[Cycle $cycle/$cycles] " else ""
+            println("${prefix}世代$gen: 候補勝率=${pct(winRate)} ${if (adopted) "→ 採用" else "→ 棄却"}")
+            if (adopted) {
+                champion = candidate
+                adoptedCount++
+                net.setWeights(champion)
+                net.save(outPath)
+            }
+            EsDiag.adoptedCount = adoptedCount
+            writeEsHeartbeat(winRate = winRate, adopted = adopted)
+        }
+
+        println()
+        val cycleLabel = if (cycles > 1) "サイクル $cycle 完了" else "学習完了"
+        println("=== $cycleLabel ($adoptedCount / $generations 世代で採用) ===")
+        net.setWeights(champion)
+        net.save(outPath)
+
+        if (cycles > 1) {
+            val snapshotPath = if (outPath.endsWith(".${nnType}.weight")) {
+                val base = outPath.removeSuffix(".${nnType}.weight")
+                "${base}-c${cycle}.${nnType}.weight"
+            } else if (outPath.endsWith(".weight")) {
+                val base = outPath.removeSuffix(".weight")
+                "${base}-c${cycle}.weight"
+            } else if (outPath.contains('.')) {
+                val ext = outPath.substringAfterLast('.')
+                val base = outPath.substringBeforeLast('.')
+                "${base}-c${cycle}.${ext}"
+            } else {
+                "${outPath}-c${cycle}"
+            }
+            net.save(snapshotPath)
+            println("=== スナップショット保存: $snapshotPath ===")
+
+            println("--- サイクル $cycle 検証: サイクル開始時重み vs 最新重み (10局公平対戦) ---")
+            val evalWinRate = evaluateCandidateKann(net, champion, cycleStartChampion, 10, rng, maxSteps)
+            println("  -> 最新重みの対開始時勝率: ${pct(evalWinRate)}")
+            println()
+        }
+
+        writeEsTrainingProgress(
+            EsTrainingProgress(
+                active = (cycle < cycles),
+                generation = generations,
+                totalGenerations = generations,
+                games = games,
+                winRate = null,
+                adopted = null,
+                adoptedCount = adoptedCount,
+                outPath = outPath,
+                updatedAtMs = currentTimeMs(),
+                gameIndex = EsDiag.gameIndex,
+                stepInGame = EsDiag.stepInGame,
+                totalSteps = EsDiag.totalSteps,
+                evaluatedPositions = EsDiag.evaluatedPositions,
+                distinctPositionsSeen = EsDiag.distinctPositionsSeen.size.toLong()
+            )
+        )
     }
 
-    println()
-    println("=== 学習完了 ($adoptedCount / $generations 世代で採用) ===")
-    net.setWeights(champion)
-    net.save(outPath)
-    writeEsTrainingProgress(
-        EsTrainingProgress(
-            active = false,
-            generation = generations,
-            totalGenerations = generations,
-            games = games,
-            winRate = null,
-            adopted = null,
-            adoptedCount = adoptedCount,
-            outPath = outPath,
-            updatedAtMs = currentTimeMs(),
-            gameIndex = EsDiag.gameIndex,
-            stepInGame = EsDiag.stepInGame,
-            totalSteps = EsDiag.totalSteps,
-            evaluatedPositions = EsDiag.evaluatedPositions,
-            distinctPositionsSeen = EsDiag.distinctPositionsSeen.size.toLong()
-        )
-    )
-    println("=== 学習済みモデルを保存: $outPath ===")
+    if (cycles > 1) {
+        println("=================================================================")
+        println("=== 全 $cycles サイクル学習完了: 最終モデル保存 -> $outPath ===")
+        println("=================================================================")
+    } else {
+        println("=== 学習済みモデルを保存: $outPath ===")
+    }
     net.delete()
 }
 
@@ -376,6 +575,11 @@ fun runKannMatch(args: Array<String>) {
     val p2Path = strArg("--p2-weights")
     val alternate = !args.contains("--fixed-turn")
 
+    val logArg = strArg("--log") ?: strArg("--log-file")
+    val noLog = args.contains("--no-log")
+    val logPath = if (noLog) null else (logArg ?: "kann-match.log")
+    val logger = logPath?.let { MatchLogger(it) }
+
     val rng = Random(seed)
     val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
     val w1 = p1Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
@@ -391,6 +595,20 @@ fun runKannMatch(args: Array<String>) {
     println("model1=$name1")
     println("model2=$name2")
     println("対戦数=$games, 先手後手入替=${if (alternate) "あり(公平交互)" else "なし(固定)"}, 手数上限=$maxSteps, 乱数シード=$seed")
+    if (logger != null) {
+        if (logger.open()) {
+            println("対戦選択ログの出力先: $logPath")
+            logger.log("=================================================================")
+            logger.log("=== KANN価値ネットワーク 対戦評価 選択ログ ===")
+            logger.log("=================================================================")
+            logger.log("model1: $name1")
+            logger.log("model2: $name2")
+            logger.log("対戦数: $games, 先手後手入替: ${if (alternate) "あり(公平交互)" else "なし(固定)"}, 手数上限: $maxSteps, 乱数シード: $seed")
+            logger.log()
+        } else {
+            println("警告: ログファイルを開けませんでした: $logPath")
+        }
+    }
     println()
 
     var wins1Total = 0
@@ -435,7 +653,16 @@ fun runKannMatch(args: Array<String>) {
             games2AsP1++
         }
 
-        val res = playoutGameKann(net, weightsByPlayer, gameSeed, maxSteps)
+        if (logger != null) {
+            logger.log("-----------------------------------------------------------------")
+            logger.log("対戦 $g/$games [シード: $gameSeed]")
+            logger.log("  先手(P1): $p1Name")
+            logger.log("  後手(P2): $p2Name")
+            logger.log("-----------------------------------------------------------------")
+        }
+
+        val playerNames = mapOf(1 to "P1($p1Name)", 2 to "P2($p2Name)")
+        val res = playoutGameKann(net, weightsByPlayer, gameSeed, maxSteps, logger, playerNames)
         totalTurns += res.turn
         totalSteps += res.steps
 
@@ -506,5 +733,31 @@ fun runKannMatch(args: Array<String>) {
         println("  第${r.index.toString().padStart(2, ' ')}戦 [seed=${r.seed}]: 勝者=${r.winnerStr} (${r.turn}ターン / ${r.steps}手)")
     }
     println("=================================================================")
+
+    if (logger != null) {
+        logger.log()
+        logger.log("=================================================================")
+        logger.log("=== 対戦評価集計結果 (全 $games 戦) ===")
+        logger.log("=================================================================")
+        logger.log("  $name1: ${pct(wins1Total.toDouble() / games)} (${wins1Total}勝)")
+        if (games1AsP1 > 0) logger.log("    - 先手時: ${wins1AsP1}勝 / ${games1AsP1}戦 (${pct(wins1AsP1.toDouble() / games1AsP1)})")
+        if (games1AsP2 > 0) logger.log("    - 後手時: ${wins1AsP2}勝 / ${games1AsP2}戦 (${pct(wins1AsP2.toDouble() / games1AsP2)})")
+        logger.log("  $name2: ${pct(wins2Total.toDouble() / games)} (${wins2Total}勝)")
+        if (games2AsP1 > 0) logger.log("    - 先手時: ${wins2AsP1}勝 / ${games2AsP1}戦 (${pct(wins2AsP1.toDouble() / games2AsP1)})")
+        if (games2AsP2 > 0) logger.log("    - 後手時: ${wins2AsP2}勝 / ${games2AsP2}戦 (${pct(wins2AsP2.toDouble() / games2AsP2)})")
+        if (draws > 0) {
+            logger.log("  引き分け: ${pct(draws.toDouble() / games)} (${draws}局)")
+        }
+        logger.log("  平均決着: ${fmtAvg(avgTurn)} ターン / ${fmtAvg(avgSteps)} 手")
+        logger.log()
+        logger.log("--- 各対戦の個別シード・結果一覧 ---")
+        for (r in records) {
+            logger.log("  第${r.index.toString().padStart(2, ' ')}戦 [seed=${r.seed}]: 勝者=${r.winnerStr} (${r.turn}ターン / ${r.steps}手)")
+        }
+        logger.log("=================================================================")
+        logger.close()
+        println("対戦選択ログを保存しました: $logPath")
+    }
+
     net.delete()
 }

@@ -142,6 +142,55 @@
     opacity: 0.35;
     cursor: not-allowed;
   }
+  .btn-auto {
+    background: #1e293b;
+    border: 1px solid #0284c7;
+    color: #38bdf8;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+  .btn-auto:hover:not(:disabled) {
+    background: #0369a1;
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  }
+  .btn-auto:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: #334155;
+    color: #64748b;
+  }
+  .btn-auto.running {
+    background: #7f1d1d !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+  }
+  .eval-info-badge {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+  .eval-info-badge:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+  }
   .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
   .statusline .phase { color: var(--warn); font-weight: bold; }
   .status-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
@@ -915,21 +964,32 @@
     <div class="settings-row">
       <label for="eval-mode" title="局面の評価に使うモデル。線形=従来の手書き式 / RNN=自作GRU(ES学習) / KANN=cinterop連携GRU(ES学習)">方式</label>
       <select id="eval-mode">
+        <option value="KANN" selected>KANN (GRU)</option>
         <option value="LINEAR">線形</option>
         <option value="RNN">RNN (自作GRU)</option>
-        <option value="KANN">KANN (GRU)</option>
       </select>
     </div>
     <div class="settings-row pair">
       <div>
-        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(共有)ならplayer2と同じ重みを使う">player1 重みファイル</label>
-        <select id="eval-weights-p1"><option value="">(未指定/共有)</option></select>
+        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(共有)ならplayer2と同じ重みを使う。直接入力または一覧から選択可">player1 重みファイル</label>
+        <div style="display:flex; gap:6px;">
+          <input id="eval-weights-p1" list="weight-files-list" placeholder="w3_w4.kann.weight (既定)" style="flex:1;">
+          <select id="sel-weights-p1" style="width: auto; max-width: 120px;" title="一覧から選択">
+            <option value="">(一覧)</option>
+          </select>
+        </div>
       </div>
       <div>
-        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(共有)ならplayer1と同じ重みを使う">player2 重みファイル</label>
-        <select id="eval-weights-p2"><option value="">(未指定/共有)</option></select>
+        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(共有)ならplayer1と同じ重みを使う。直接入力または一覧から選択可">player2 重みファイル</label>
+        <div style="display:flex; gap:6px;">
+          <input id="eval-weights-p2" list="weight-files-list" placeholder="w3_w4.kann.weight (既定)" style="flex:1;">
+          <select id="sel-weights-p2" style="width: auto; max-width: 120px;" title="一覧から選択">
+            <option value="">(一覧)</option>
+          </select>
+        </div>
       </div>
     </div>
+    <datalist id="weight-files-list"></datalist>
   </div>
   <div class="settings-footer">
     <button id="btn-close-settings" class="primary">閉じる</button>
@@ -946,50 +1006,59 @@
         <span>手番: <b id="active">-</b></span>
         <span class="phase" id="phase">ゲーム未開始</span>
         <div class="status-actions">
+          <button id="btn-auto-next" class="btn-auto" title="次の選択を自動で行う" disabled>⚡ 次の選択を自動で行う</button>
+          <button id="btn-auto-step" class="btn-auto" title="ステップ終了まで自動で行う" disabled>⏭ ステップ終了まで自動で行う</button>
+          <button id="btn-auto-turn" class="btn-auto" title="ターン終了まで自動で行う" disabled>⏩ ターン終了まで自動で行う</button>
           <button id="btn-undo-board" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
           <button id="btn-redo-board" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
         </div>
       </div>
     </div>
 
-    <div class="panel side" id="opp-panel">
-      <h2 id="opp-title">相手</h2>
+    <!-- プレイヤー1 パネル (上) -->
+    <div class="panel side" id="p1-panel">
+      <div class="side-head">
+        <h2 id="p1-title">プレイヤー1[w3_w4.kann.weight]</h2>
+        <div id="p1-actions" class="side-actions">
+          <button id="btn-n">ステップ終了</button>
+        </div>
+      </div>
       <div class="meta">
-        <span>L: <span class="life" id="opp-life"></span></span>
-        <span>R: <b id="opp-reserve">-</b></span>
-        <span>T: <b id="opp-trash-cores">-</b></span>
-        <span>カウント: <b id="opp-count">-</b></span>
-        <span>手札: <b id="opp-hand-count">-</b>枚</span>
-        <span>山札: <b id="opp-deck-count">-</b>枚</span>
+        <span>L: <span class="life" id="p1-life"></span></span>
+        <span id="p1-reserve-box" class="reserve-box">R: <b id="p1-reserve">-</b></span>
+        <span>T: <b id="p1-trash-cores">-</b></span>
+        <span>カウント: <b id="p1-count">-</b></span>
+        <span>手札: <b id="p1-hand-count">-</b>枚</span>
+        <span>山札: <b id="p1-deck-count">-</b>枚</span>
       </div>
       <h3 class="zone-label">フィールド</h3>
-      <div class="cards" id="opp-field"></div>
-      <!-- 相手の手札は非公開情報。GodMode のときだけ中身が届く -->
-      <h3 class="zone-label" id="opp-hand-label" hidden>手札（GodMode）</h3>
-      <div class="cards" id="opp-hand" hidden></div>
-      <h3 class="zone-label" id="opp-trash-label" hidden>トラッシュ</h3>
-      <div class="cards" id="opp-trash" hidden></div>
+      <div class="cards" id="p1-field"></div>
+      <h3 class="zone-label" id="p1-hand-label">手札</h3>
+      <div class="cards" id="p1-hand"></div>
+      <h3 class="zone-label" id="p1-trash-label" hidden>トラッシュ</h3>
+      <div class="cards" id="p1-trash" hidden></div>
     </div>
 
-    <div class="panel side" id="my-panel">
-      <!-- ステップを終了できるのは常にターンプレイヤー = この「自分」パネルの側 -->
+    <!-- プレイヤー2 パネル (下) -->
+    <div class="panel side" id="p2-panel">
       <div class="side-head">
-        <h2 id="my-title">自分</h2>
-        <button id="btn-n">ステップ終了</button>
+        <h2 id="p2-title">プレイヤー2[w3_w4.kann.weight]</h2>
+        <div id="p2-actions" class="side-actions"></div>
       </div>
       <div class="meta">
-        <span>L: <span class="life" id="my-life"></span></span>
-        <span id="my-reserve-box" class="reserve-box">R: <b id="my-reserve">-</b></span>
-        <span>T: <b id="my-trash-cores">-</b></span>
-        <span>カウント: <b id="my-count">-</b></span>
-        <span>山札: <b id="my-deck-count">-</b>枚</span>
+        <span>L: <span class="life" id="p2-life"></span></span>
+        <span id="p2-reserve-box" class="reserve-box">R: <b id="p2-reserve">-</b></span>
+        <span>T: <b id="p2-trash-cores">-</b></span>
+        <span>カウント: <b id="p2-count">-</b></span>
+        <span>手札: <b id="p2-hand-count">-</b>枚</span>
+        <span>山札: <b id="p2-deck-count">-</b>枚</span>
       </div>
       <h3 class="zone-label">フィールド</h3>
-      <div class="cards" id="my-field"></div>
-      <h3 class="zone-label">手札</h3>
-      <div class="cards" id="my-hand"></div>
-      <h3 class="zone-label" id="my-trash-label" hidden>トラッシュ</h3>
-      <div class="cards" id="my-trash" hidden></div>
+      <div class="cards" id="p2-field"></div>
+      <h3 class="zone-label" id="p2-hand-label">手札</h3>
+      <div class="cards" id="p2-hand"></div>
+      <h3 class="zone-label" id="p2-trash-label" hidden>トラッシュ</h3>
+      <div class="cards" id="p2-trash" hidden></div>
     </div>
   </div>
 
@@ -1030,6 +1099,8 @@
 <script>
 let sessionId = null;
 let current = null;
+let autoRunType = null; // null | 'step' | 'turn'
+let autoRunAbort = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -1123,8 +1194,9 @@ function optionStatusTitle(o, fallback) {
 }
 
 function coreSourceElement(sourceId) {
-  if (sourceId === "Reserve") return $("my-reserve-box");
-  return document.querySelector(`#my-field .card[data-obj-id="${CSS.escape(sourceId)}"]`);
+  const chooser = current?.choosing_player || current?.active_player || 1;
+  if (sourceId === "Reserve") return $(`p${chooser}-reserve-box`);
+  return document.querySelector(`#p${chooser}-field .card[data-obj-id="${CSS.escape(sourceId)}"]`);
 }
 
 function clearCoreEffectPreview() {
@@ -1347,8 +1419,10 @@ function updateCoreAllocationUI() {
     return;
   }
 
+  const chooser = current?.choosing_player || current?.active_player || 1;
+
   // 1. リザーブ(R)のハイライトとバッジ
-  const reserveBox = $("my-reserve-box");
+  const reserveBox = $(`p${chooser}-reserve-box`);
   if (reserveBox) {
     reserveBox.classList.add("core-source-interactive");
     const resAlloc = activePlayContext.alloc["Reserve"] || { normal: 0, soul: 0 };
@@ -1363,9 +1437,9 @@ function updateCoreAllocationUI() {
     }
   }
 
-  // 2. 自分のフィールドカードのハイライトとバッジ
-  const myFieldCards = document.querySelectorAll("#my-field .card");
-  myFieldCards.forEach(cardEl => {
+  // 2. 選択中プレイヤーのフィールドカードのハイライトとバッジ
+  const chooserFieldCards = document.querySelectorAll(`#p${chooser}-field .card`);
+  chooserFieldCards.forEach(cardEl => {
     const srcId = cardEl.getAttribute("data-obj-id");
     if (srcId) {
       cardEl.classList.add("core-source-interactive");
@@ -1390,13 +1464,14 @@ function updateCoreAllocationUI() {
 
   // alloc 内訳（名前ベース: Reserve -> "R", obj_id -> obj.name）
   const allocByName = {};
+  const chooserData = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
   for (const [srcId, counts] of Object.entries(activePlayContext.alloc)) {
     if ((counts.normal || 0) <= 0 && (counts.soul || 0) <= 0) continue;
     let name = srcId;
     if (srcId === "Reserve") {
       name = "R";
-    } else if (current && current.player && current.player.field) {
-      const obj = current.player.field.find(o => o.id === srcId);
+    } else if (chooserData && chooserData.field) {
+      const obj = chooserData.field.find(o => o.id === srcId);
       if (obj) name = obj.name;
     }
     allocByName[name] = { normal: counts.normal || 0, soul: counts.soul || 0 };
@@ -1498,14 +1573,16 @@ function handleSourceCoreClick(sourceId, coreType = 'normal') {
 
   let maxNormal = 0;
   let maxSoul = 0;
+  const chooser = current?.choosing_player || current?.active_player || 1;
+  const chooserData = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
   if (sourceId === "Reserve") {
-    const s = String(current?.player?.reserve || "0");
+    const s = String(chooserData?.reserve || "0");
     const hasSoul = s.endsWith("s");
     const total = parseInt(s, 10) || 0;
     maxSoul = hasSoul ? 1 : 0;
     maxNormal = Math.max(0, total - maxSoul);
-  } else if (current?.player?.field) {
-    const obj = current.player.field.find(o => o.id === sourceId);
+  } else if (chooserData?.field) {
+    const obj = chooserData.field.find(o => o.id === sourceId);
     if (obj) {
       const s = String(obj.cores || "0");
       const hasSoul = s.endsWith("s");
@@ -1798,7 +1875,7 @@ function renderHand(el, hand, groups, maxEval) {
         if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
 
         if (!isHidden) {
-          document.querySelectorAll("#my-hand .hand-card-wrapper").forEach(w => {
+          el.querySelectorAll(".hand-card-wrapper").forEach(w => {
             if (w !== wrap) {
               const otherOpts = w.querySelector(".hand-options");
               const otherCard = w.querySelector(".card");
@@ -1933,68 +2010,84 @@ function render(data) {
 
   // カード名から画像URLへのマップを更新
   cardImageMap = {};
-  if (data.player && data.player.hand) {
-    data.player.hand.forEach(c => { if (c.image_url) cardImageMap[c.name] = c.image_url; });
-  }
-  if (data.player && data.player.field) {
-    data.player.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
-  }
-  if (data.opponent && data.opponent.field) {
-    data.opponent.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
-  }
+  [data.player, data.opponent].forEach(p => {
+    if (p && p.hand) p.hand.forEach(c => { if (c.image_url) cardImageMap[c.name] = c.image_url; });
+    if (p && p.field) p.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
+  });
 
   $("turn").textContent = data.turn;
   $("active").textContent = `プレイヤー${data.active_player}`;
   $("phase").textContent = data.phase;
 
-  // player = 手番側（手札公開）、opponent = 非手番側（手札は枚数のみ）。盤面の向きは常に固定。
-  // ブロック宣言だけは相手が選択者になるので、緑枠を相手側へ移して「相手が選ぶ番」だと示す
-  const chooser = data.choosing_player || data.player.player_id;
-  const opponentChooses = chooser === data.opponent.player_id;
+  // プレイヤー1(上段) と プレイヤー2(下段) のデータを固定配置
+  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
+  const p2 = (data.player.player_id === 2) ? data.player : data.opponent;
 
-  $("my-title").textContent =
-    `自分（プレイヤー${data.player.player_id}・手番）` + (opponentChooses ? "" : " ⬅ 選択中");
-  $("opp-title").textContent =
-    `相手（プレイヤー${data.opponent.player_id}）` + (opponentChooses ? " ⬅ 選択中" : "");
+  // 選択を行うプレイヤー (choosing_player)
+  const chooser = data.choosing_player || data.active_player || 1;
+  const p1Chooses = (chooser === 1);
+  const p2Chooses = (chooser === 2);
+  const p1IsActive = (data.active_player === 1);
+  const p2IsActive = (data.active_player === 2);
 
-  const myPanel = $("my-panel");
-  const oppPanel = $("opp-panel");
-  if (myPanel) myPanel.classList.toggle("active-turn", !opponentChooses);
-  if (oppPanel) oppPanel.classList.toggle("active-turn", opponentChooses);
+  const p1Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(1) : "w3_w4.kann.weight";
+  const p2Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(2) : "w3_w4.kann.weight";
 
-  $("my-life").innerHTML = lifeStr(data.player.life);
-  $("my-reserve").innerHTML = formatCoresDisplay(data.player.reserve, "Reserve");
-  $("my-trash-cores").innerHTML = formatCoresDisplay(data.player.trash_cores);
-  $("my-count").innerHTML = formatCountDisplay(data.player.count);
-  $("my-deck-count").textContent = data.player.deck_count;
-  renderField($("my-field"), data.player.field, true);
+  $("p1-title").textContent = `プレイヤー1[${p1Weight}]` + (p1IsActive ? "（手番）" : "") + (p1Chooses ? " ⬅ 選択中" : "");
+  $("p2-title").textContent = `プレイヤー2[${p2Weight}]` + (p2IsActive ? "（手番）" : "") + (p2Chooses ? " ⬅ 選択中" : "");
 
-  const resBox = $("my-reserve-box");
-  if (resBox) {
-    resBox.onclick = (e) => {
-      if (activePlayContext) {
+  // 選択を行うプレイヤーをミドリ枠
+  const p1Panel = $("p1-panel");
+  const p2Panel = $("p2-panel");
+  if (p1Panel) p1Panel.classList.toggle("active-turn", p1Chooses);
+  if (p2Panel) p2Panel.classList.toggle("active-turn", p2Chooses);
+
+  // ステップ終了ボタンを手番プレイヤーのパネルヘッダーへ配置
+  const nBtn = $("btn-n");
+  const targetActions = p1IsActive ? $("p1-actions") : $("p2-actions");
+  if (nBtn && targetActions && nBtn.parentElement !== targetActions) {
+    targetActions.appendChild(nBtn);
+  }
+
+  // プレイヤー1 (上段) レンダリング
+  $("p1-life").innerHTML = lifeStr(p1.life);
+  $("p1-reserve").innerHTML = formatCoresDisplay(p1.reserve, p1Chooses ? "Reserve" : null);
+  $("p1-trash-cores").innerHTML = formatCoresDisplay(p1.trash_cores);
+  $("p1-count").innerHTML = formatCountDisplay(p1.count);
+  $("p1-hand-count").textContent = p1.hand_count;
+  $("p1-deck-count").textContent = p1.deck_count;
+  renderField($("p1-field"), p1.field, p1Chooses);
+  renderTrash("p1", p1.trash_cards);
+
+  const resBoxP1 = $("p1-reserve-box");
+  if (resBoxP1) {
+    resBoxP1.onclick = (e) => {
+      if (activePlayContext && p1Chooses) {
         e.stopPropagation();
         handleSourceCoreClick("Reserve");
       }
     };
   }
 
-  $("opp-life").innerHTML = lifeStr(data.opponent.life);
-  $("opp-reserve").innerHTML = formatCoresDisplay(data.opponent.reserve);
-  $("opp-trash-cores").innerHTML = formatCoresDisplay(data.opponent.trash_cores);
-  $("opp-count").innerHTML = formatCountDisplay(data.opponent.count);
-  $("opp-hand-count").textContent = data.opponent.hand_count;
-  $("opp-deck-count").textContent = data.opponent.deck_count;
-  renderField($("opp-field"), data.opponent.field, false);
+  // プレイヤー2 (下段) レンダリング
+  $("p2-life").innerHTML = lifeStr(p2.life);
+  $("p2-reserve").innerHTML = formatCoresDisplay(p2.reserve, p2Chooses ? "Reserve" : null);
+  $("p2-trash-cores").innerHTML = formatCoresDisplay(p2.trash_cores);
+  $("p2-count").innerHTML = formatCountDisplay(p2.count);
+  $("p2-hand-count").textContent = p2.hand_count;
+  $("p2-deck-count").textContent = p2.deck_count;
+  renderField($("p2-field"), p2.field, p2Chooses);
+  renderTrash("p2", p2.trash_cards);
 
-  renderTrash("my", data.player.trash_cards);
-  renderTrash("opp", data.opponent.trash_cards);
-
-  // 相手の手札は非公開情報。GodMode のときだけ中身が届くので、届いたときだけ出す
-  const oppHand = data.opponent.hand || [];
-  $("opp-hand-label").hidden = oppHand.length === 0;
-  $("opp-hand").hidden = oppHand.length === 0;
-  if (oppHand.length) renderField($("opp-hand"), oppHand, false);
+  const resBoxP2 = $("p2-reserve-box");
+  if (resBoxP2) {
+    resBoxP2.onclick = (e) => {
+      if (activePlayContext && p2Chooses) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
 
   // 全体での最高評価値 (groups および n_eval) を算出
   let maxEval = -Infinity;
@@ -2014,18 +2107,41 @@ function render(data) {
     return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
   };
 
+  // 手札のレンダリング (P1手札: 上段 / P2手札: 下段)
+  const p1Hand = p1.hand || [];
+  if (p1Hand.length === 0 && p1.hand_count > 0 && currentViewer() === 2) {
+    $("p1-hand-label").textContent = `手札 (${p1.hand_count}枚・非公開)`;
+    $("p1-hand").innerHTML = '<div class="empty">非公開</div>';
+  } else {
+    $("p1-hand-label").textContent = "手札";
+    if (p1Chooses) {
+      renderHand($("p1-hand"), p1Hand, data.groups, maxEval);
+    } else {
+      renderField($("p1-hand"), p1Hand, false);
+    }
+  }
+
+  const p2Hand = p2.hand || [];
+  if (p2Hand.length === 0 && p2.hand_count > 0 && currentViewer() === 1) {
+    $("p2-hand-label").textContent = `手札 (${p2.hand_count}枚・非公開)`;
+    $("p2-hand").innerHTML = '<div class="empty">非公開</div>';
+  } else {
+    $("p2-hand-label").textContent = "手札";
+    if (p2Chooses) {
+      renderHand($("p2-hand"), p2Hand, data.groups, maxEval);
+    } else {
+      renderField($("p2-hand"), p2Hand, false);
+    }
+  }
+
   if (data.can_act === false && data.winner == null) {
     $("groups").innerHTML =
       '<div class="empty">⏳ プレイヤー' + data.choosing_player + ' の選択を待っています</div>';
   } else {
     renderGroups(data.groups, maxEval);
   }
-  renderHand($("my-hand"), data.player.hand, data.groups, maxEval);
-  // renderHand() が openHandCardNo を見て activePlayContext を復元した場合、
-  // それに合わせてリザーブ/フィールドのコアハイライトも復元する
   updateCoreAllocationUI();
 
-  const nBtn = $("btn-n");
   const isNBest = (!data.n_forbidden && isNearBest(data.n_eval, maxEval));
   nBtn.classList.toggle("is-best", isNBest);
   const nLabel = esc(data.n_label || "ステップ終了");
@@ -2041,6 +2157,7 @@ function render(data) {
   if ($("btn-redo")) $("btn-redo").disabled = !data.can_redo;
   if ($("btn-undo-board")) $("btn-undo-board").disabled = !data.can_undo;
   if ($("btn-redo-board")) $("btn-redo-board").disabled = !data.can_redo;
+  updateAutoButtons();
 
   renderReplaySteps(data);
   if (currentTab === 'rawjson') {
@@ -2104,6 +2221,7 @@ function maybeAutoPlay(data) {
     clearTimeout(autoPlayTimer);
     autoPlayTimer = null;
   }
+  if (autoRunType) return;
   if (!data || data.winner != null || data.can_act === false || isActing) return;
   const cb = $(data.choosing_player === 1 ? "auto-p1" : "auto-p2");
   if (!cb || !cb.checked) return;
@@ -2236,6 +2354,8 @@ async function startNewGame() {
     }
   } finally {
     isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
   }
 }
 
@@ -2257,6 +2377,8 @@ async function restartGame() {
     }
   } finally {
     isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
   }
 }
 
@@ -2270,6 +2392,8 @@ async function undo() {
     if (data) render(data);
   } finally {
     isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
   }
 }
 
@@ -2283,6 +2407,8 @@ async function redo() {
     if (data) render(data);
   } finally {
     isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
   }
 }
 
@@ -2300,6 +2426,127 @@ async function doAct(index) {
     if (data) render(data);
   } finally {
     isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+// 自動実行ロジック（1. 次の選択を自動 / 2. ステップ終了まで自動 / 3. ターン終了まで自動）
+function stopAutoRun() {
+  autoRunAbort = true;
+}
+
+function updateAutoButtons() {
+  const btnNext = $("btn-auto-next");
+  const btnStep = $("btn-auto-step");
+  const btnTurn = $("btn-auto-turn");
+  if (!btnNext || !btnStep || !btnTurn) return;
+
+  const canAct = current && current.winner == null && current.can_act !== false;
+
+  if (autoRunType === 'step') {
+    btnNext.disabled = true;
+    btnStep.disabled = false;
+    btnStep.classList.add("running");
+    btnStep.innerHTML = "⏹ 停止";
+    btnTurn.disabled = true;
+  } else if (autoRunType === 'turn') {
+    btnNext.disabled = true;
+    btnStep.disabled = true;
+    btnTurn.disabled = false;
+    btnTurn.classList.add("running");
+    btnTurn.innerHTML = "⏹ 停止";
+  } else {
+    btnNext.disabled = !canAct;
+    btnNext.classList.remove("running");
+    btnNext.innerHTML = "⚡ 次の選択を自動で行う";
+
+    btnStep.disabled = !canAct;
+    btnStep.classList.remove("running");
+    btnStep.innerHTML = "⏭ ステップ終了まで自動で行う";
+
+    btnTurn.disabled = !canAct;
+    btnTurn.classList.remove("running");
+    btnTurn.innerHTML = "⏩ ターン終了まで自動で行う";
+  }
+}
+
+async function handleAutoNext() {
+  if (autoRunType) {
+    stopAutoRun();
+    return;
+  }
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+  const idx = pickBestActionIndex(current);
+  if (idx != null) {
+    await doAct(idx);
+  }
+}
+
+async function handleAutoStep() {
+  if (autoRunType === 'step') {
+    stopAutoRun();
+    return;
+  }
+  if (autoRunType) return;
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+
+  autoRunType = 'step';
+  autoRunAbort = false;
+  updateAutoButtons();
+
+  const startPhase = current.phase;
+  const startTurn = current.turn;
+  let safetyCount = 0;
+
+  try {
+    while (!autoRunAbort && safetyCount < 100) {
+      if (!current || current.winner != null || current.can_act === false) break;
+      if (current.phase !== startPhase || current.turn !== startTurn) break;
+      const idx = pickBestActionIndex(current);
+      if (idx == null) break;
+
+      await doAct(idx);
+      safetyCount++;
+      await new Promise(r => setTimeout(r, 200));
+    }
+  } finally {
+    autoRunType = null;
+    autoRunAbort = false;
+    updateAutoButtons();
+  }
+}
+
+async function handleAutoTurn() {
+  if (autoRunType === 'turn') {
+    stopAutoRun();
+    return;
+  }
+  if (autoRunType) return;
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+
+  autoRunType = 'turn';
+  autoRunAbort = false;
+  updateAutoButtons();
+
+  const startTurn = current.turn;
+  let safetyCount = 0;
+
+  try {
+    while (!autoRunAbort && safetyCount < 300) {
+      if (!current || current.winner != null || current.can_act === false) break;
+      if (current.turn !== startTurn) break;
+      const idx = pickBestActionIndex(current);
+      if (idx == null) break;
+
+      await doAct(idx);
+      safetyCount++;
+      await new Promise(r => setTimeout(r, 200));
+    }
+  } finally {
+    autoRunType = null;
+    autoRunAbort = false;
+    updateAutoButtons();
   }
 }
 
@@ -2388,9 +2635,8 @@ if (settingsDialog) {
 }
 
 // 評価方式(線形/RNN/KANN)と player1/player2 それぞれの重みファイル。
-// localStorageで次回起動時も復元する。重みファイルは自由入力ではなく、
-// GameServer/Playmatsの作業ディレクトリから列挙したものをメニューから選ぶ。
-// 「適用」ボタンは置かず、選択を変えた瞬間に即座にサーバーへ反映する。
+// localStorageで次回起動時も復元する。自由入力でのファイルパス指定、
+// およびGameServerから列挙されたファイル一覧からのドロップダウン選択の両方に対応。
 function saveEvalSettings() {
   localStorage.setItem("bs_eval_mode", $("eval-mode").value);
   localStorage.setItem("bs_eval_weights_p1", $("eval-weights-p1").value);
@@ -2399,13 +2645,13 @@ function saveEvalSettings() {
 function loadEvalSettings() {
   const mode = localStorage.getItem("bs_eval_mode");
   if (mode) $("eval-mode").value = mode;
-  // 重みファイルの選択値は refreshWeightFileOptions() がメニューを埋めた後に復元する
-  // (選択肢がまだ無い状態で value を設定しても反映されないため)
+  const p1 = localStorage.getItem("bs_eval_weights_p1");
+  if (p1 !== null) $("eval-weights-p1").value = p1;
+  const p2 = localStorage.getItem("bs_eval_weights_p2");
+  if (p2 !== null) $("eval-weights-p2").value = p2;
 }
 
 async function refreshWeightFileOptions() {
-  const savedP1 = localStorage.getItem("bs_eval_weights_p1") || "";
-  const savedP2 = localStorage.getItem("bs_eval_weights_p2") || "";
   let files = [];
   try {
     const res = await fetch('/api/weight-files');
@@ -2413,24 +2659,74 @@ async function refreshWeightFileOptions() {
   } catch (err) {
     console.error('Failed to load weight file list:', err);
   }
-  for (const [selId, saved] of [["eval-weights-p1", savedP1], ["eval-weights-p2", savedP2]]) {
+  const dl = $("weight-files-list");
+  if (dl) {
+    dl.innerHTML = files.map(f => `<option value="${esc(f)}">`).join("");
+  }
+  for (const selId of ["sel-weights-p1", "sel-weights-p2"]) {
     const sel = $(selId);
     if (!sel) continue;
-    sel.innerHTML = '<option value="">(未指定/共有)</option>' +
+    sel.innerHTML = '<option value="">(一覧)</option>' +
       files.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
-    if (saved && files.includes(saved)) sel.value = saved;
+  }
+}
+
+function getPlayerWeightLabel(playerId) {
+  const mode = $("eval-mode") ? $("eval-mode").value : "KANN";
+  if (mode === "LINEAR") return "線形";
+  const defaultWeight = (mode === "KANN") ? "w3_w4.kann.weight" : "rnn-weights.pb";
+  const p1 = $("eval-weights-p1") ? $("eval-weights-p1").value.trim() : "";
+  const p2 = $("eval-weights-p2") ? $("eval-weights-p2").value.trim() : "";
+  if (playerId === 1) {
+    return p1 || defaultWeight;
+  } else {
+    return p2 || p1 || defaultWeight;
+  }
+}
+
+function updateEvalInfoDisplay() {
+  const badge = $("eval-info-text");
+  const mode = $("eval-mode") ? $("eval-mode").value : "KANN";
+  const d1 = getPlayerWeightLabel(1);
+  const d2 = getPlayerWeightLabel(2);
+
+  if (badge) {
+    if (mode === "KANN") {
+      if (d1 === d2) {
+        badge.textContent = `KANN: ${d1}`;
+      } else {
+        badge.textContent = `KANN: P1[${d1}] / P2[${d2}]`;
+      }
+    } else if (mode === "RNN") {
+      if (d1 === d2) {
+        badge.textContent = `RNN: ${d1}`;
+      } else {
+        badge.textContent = `RNN: P1[${d1}] / P2[${d2}]`;
+      }
+    } else {
+      badge.textContent = "線形モデル (ルールベース)";
+    }
+  }
+
+  // プレイヤータイトルのNNウェイト表示を更新
+  if (current) {
+    render(current);
+  } else {
+    const p1Title = $("p1-title");
+    const p2Title = $("p2-title");
+    if (p1Title) p1Title.textContent = `プレイヤー1[${d1}]`;
+    if (p2Title) p2Title.textContent = `プレイヤー2[${d2}]`;
   }
 }
 
 /**
  * 評価方式・player1/player2の重みファイルを即座にサーバーへ反映する。
  * `/api/eval-config`が成功すると Playmats 側で broadcastState() が呼ばれ、
- * SSE(常時接続)経由でこのタブを含む全クライアントの画面が自動的に再描画されるため、
- * ここでは明示的な再取得(loadCurrentState)を待たなくてよい設計だが、
- * SSE再接続中などの取りこぼしに備えて保険で1回だけ直接取得もしておく。
+ * SSE(常時接続)経由でこのタブを含む全クライアントの画面が自動的に再描画される。
  */
 async function applyEvalConfigNow() {
   saveEvalSettings();
+  updateEvalInfoDisplay();
   const mode = $("eval-mode").value;
   const weightsPathP1 = $("eval-weights-p1").value.trim();
   const weightsPathP2 = $("eval-weights-p2").value.trim();
@@ -2459,9 +2755,28 @@ async function applyEvalConfigNow() {
 
 loadEvalSettings();
 refreshWeightFileOptions();
+updateEvalInfoDisplay();
 for (const id of ["eval-mode", "eval-weights-p1", "eval-weights-p2"]) {
   $(id).addEventListener("change", applyEvalConfigNow);
 }
+$("sel-weights-p1")?.addEventListener("change", (e) => {
+  if (e.target.value) {
+    $("eval-weights-p1").value = e.target.value;
+    e.target.value = "";
+    applyEvalConfigNow();
+  }
+});
+$("sel-weights-p2")?.addEventListener("change", (e) => {
+  if (e.target.value) {
+    $("eval-weights-p2").value = e.target.value;
+    e.target.value = "";
+    applyEvalConfigNow();
+  }
+});
+$("eval-info-badge")?.addEventListener("click", () => {
+  refreshWeightFileOptions();
+  settingsDialog?.showModal();
+});
 
 /**
  * `--kann-es-train`(別プロセスのCLI)の学習進捗を2秒間隔でポーリングして表示する。
@@ -2517,6 +2832,9 @@ $("btn-undo").onclick = undo;
 $("btn-redo").onclick = redo;
 if ($("btn-undo-board")) $("btn-undo-board").onclick = undo;
 if ($("btn-redo-board")) $("btn-redo-board").onclick = redo;
+if ($("btn-auto-next")) $("btn-auto-next").onclick = handleAutoNext;
+if ($("btn-auto-step")) $("btn-auto-step").onclick = handleAutoStep;
+if ($("btn-auto-turn")) $("btn-auto-turn").onclick = handleAutoTurn;
 
 $("btn-n").onclick = () => {
   activePlayContext = null;
@@ -2541,10 +2859,10 @@ document.addEventListener("keydown", (e) => {
 
 // 画面外クリック時に手札の展開を閉じ、コアハイライトを完全に解消
 document.addEventListener("click", (e) => {
-  if (!e.target.closest("#my-hand") && !e.target.closest("#my-reserve-box") && !e.target.closest("#my-field .card")) {
+  if (!e.target.closest(".cards") && !e.target.closest(".reserve-box")) {
     if (activePlayContext) {
-      document.querySelectorAll("#my-hand .hand-options").forEach(el => el.classList.add("hidden"));
-      document.querySelectorAll("#my-hand .card.open").forEach(el => {
+      document.querySelectorAll(".hand-options").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll(".card.open").forEach(el => {
         el.classList.remove("open");
         const arr = el.querySelector(".hand-arrow");
         if (arr) arr.textContent = "▶";
