@@ -971,25 +971,18 @@
     </div>
     <div class="settings-row pair">
       <div>
-        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(共有)ならplayer2と同じ重みを使う。直接入力または一覧から選択可">player1 重みファイル</label>
-        <div style="display:flex; gap:6px;">
-          <input id="eval-weights-p1" list="weight-files-list" placeholder="w3_w4.kann.weight (既定)" style="flex:1;">
-          <select id="sel-weights-p1" style="width: auto; max-width: 120px;" title="一覧から選択">
-            <option value="">(一覧)</option>
-          </select>
-        </div>
+        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(未指定/共有)ならデフォルトまたはplayer2と同じ重みを使う">player1 重みファイル</label>
+        <select id="eval-weights-p1">
+          <option value="">(未指定/共有)</option>
+        </select>
       </div>
       <div>
-        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(共有)ならplayer1と同じ重みを使う。直接入力または一覧から選択可">player2 重みファイル</label>
-        <div style="display:flex; gap:6px;">
-          <input id="eval-weights-p2" list="weight-files-list" placeholder="w3_w4.kann.weight (既定)" style="flex:1;">
-          <select id="sel-weights-p2" style="width: auto; max-width: 120px;" title="一覧から選択">
-            <option value="">(一覧)</option>
-          </select>
-        </div>
+        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(未指定/共有)ならデフォルトまたはplayer1と同じ重みを使う">player2 重みファイル</label>
+        <select id="eval-weights-p2">
+          <option value="">(未指定/共有)</option>
+        </select>
       </div>
     </div>
-    <datalist id="weight-files-list"></datalist>
   </div>
   <div class="settings-footer">
     <button id="btn-close-settings" class="primary">閉じる</button>
@@ -2645,13 +2638,12 @@ function saveEvalSettings() {
 function loadEvalSettings() {
   const mode = localStorage.getItem("bs_eval_mode");
   if (mode) $("eval-mode").value = mode;
-  const p1 = localStorage.getItem("bs_eval_weights_p1");
-  if (p1 !== null) $("eval-weights-p1").value = p1;
-  const p2 = localStorage.getItem("bs_eval_weights_p2");
-  if (p2 !== null) $("eval-weights-p2").value = p2;
+  // 重みファイルの選択値は refreshWeightFileOptions() がメニューを埋めた後に復元する
 }
 
 async function refreshWeightFileOptions() {
+  const savedP1 = localStorage.getItem("bs_eval_weights_p1") || "";
+  const savedP2 = localStorage.getItem("bs_eval_weights_p2") || "";
   let files = [];
   try {
     const res = await fetch('/api/weight-files');
@@ -2659,16 +2651,18 @@ async function refreshWeightFileOptions() {
   } catch (err) {
     console.error('Failed to load weight file list:', err);
   }
-  const dl = $("weight-files-list");
-  if (dl) {
-    dl.innerHTML = files.map(f => `<option value="${esc(f)}">`).join("");
-  }
-  for (const selId of ["sel-weights-p1", "sel-weights-p2"]) {
+  for (const [selId, saved] of [["eval-weights-p1", savedP1], ["eval-weights-p2", savedP2]]) {
     const sel = $(selId);
     if (!sel) continue;
-    sel.innerHTML = '<option value="">(一覧)</option>' +
+    sel.innerHTML = '<option value="">(未指定/共有)</option>' +
       files.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    if (saved && files.includes(saved)) {
+      sel.value = saved;
+    } else if (!saved && files.includes("w3_w4.kann.weight")) {
+      sel.value = "w3_w4.kann.weight";
+    }
   }
+  updateEvalInfoDisplay();
 }
 
 function getPlayerWeightLabel(playerId) {
@@ -2759,20 +2753,6 @@ updateEvalInfoDisplay();
 for (const id of ["eval-mode", "eval-weights-p1", "eval-weights-p2"]) {
   $(id).addEventListener("change", applyEvalConfigNow);
 }
-$("sel-weights-p1")?.addEventListener("change", (e) => {
-  if (e.target.value) {
-    $("eval-weights-p1").value = e.target.value;
-    e.target.value = "";
-    applyEvalConfigNow();
-  }
-});
-$("sel-weights-p2")?.addEventListener("change", (e) => {
-  if (e.target.value) {
-    $("eval-weights-p2").value = e.target.value;
-    e.target.value = "";
-    applyEvalConfigNow();
-  }
-});
 $("eval-info-badge")?.addEventListener("click", () => {
   refreshWeightFileOptions();
   settingsDialog?.showModal();
@@ -2896,6 +2876,12 @@ function setupSubscription() {
   };
 }
 setupSubscription();
+if (window.location.hash === '#settings' || window.location.search.includes('settings')) {
+  setTimeout(() => {
+    refreshWeightFileOptions();
+    settingsDialog?.showModal();
+  }, 100);
+}
 </script>
 </body>
 </html>
