@@ -131,7 +131,7 @@ fun coreSources(p: PlayerState): List<CoreSource> {
         sources.add(
             CoreSource(
                 id = fc.instanceId,
-                label = fc.name,
+                label = fc.displayName,
                 availNormal = fc.cores.normal,
                 availSoul = fc.cores.soul,
                 cap = fc.cores.total,
@@ -225,7 +225,8 @@ fun GameState.snapshot(): GameState = GameState(
     winner = winner,
     format = format,
     seed = seed,
-    visitedPositions = visitedPositions
+    visitedPositions = visitedPositions,
+    nextCardSeq = nextCardSeq
 )
 
 private fun PlayerState.snapshot(): PlayerState = PlayerState(
@@ -409,7 +410,7 @@ private fun describeCores(normal: Int, soul: Int): String = coreIcons(normal, so
 private fun coreMoveOptions(p: PlayerState, sources: List<CoreSource>, limit: Int = 120): List<GameAction> {
     val options = mutableListOf<GameAction>()
     val destinations = listOf("Reserve") + p.field.map { it.instanceId }
-    fun labelOf(id: String) = if (id == "Reserve") "R" else p.field.first { it.instanceId == id }.name
+    fun labelOf(id: String) = if (id == "Reserve") "R" else p.field.first { it.instanceId == id }.displayName
 
     // 移動先のLvが上がるかどうか。上がらない移動を「ステップ終了」より高く評価すると、
     // 評価値だけを見て指す側が A➔B ➔ B➔A を延々と繰り返して局面が進まなくなる。
@@ -602,8 +603,8 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
                 GameAction(
                     index = idx++,
                     type = "ATTACK",
-                    category = "🗡️【アタック】 ${fc.name}",
-                    detail = "${fc.name} でアタック宣言 (Lv${fc.level}, BP${fc.currentBp}, 通ればライフ-${coreIcons(symbolCount, 0)})",
+                    category = "🗡️【アタック】 ${fc.displayName}",
+                    detail = "${fc.displayName} でアタック宣言 (Lv${fc.level}, BP${fc.currentBp}, 通ればライフ-${coreIcons(symbolCount, 0)})",
                     eval = eval,
                     targetInstanceId = fc.instanceId
                 )
@@ -616,6 +617,7 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
     if (state.step == Step.BLOCK_DECLARATION) {
         val attacker = state.notChoosingPlayer.field.find { it.instanceId == state.attackingCardId }
         val attackerBp = attacker?.currentBp ?: 0
+        val attackerName = attacker?.displayName ?: "相手"
         val lifeLoss = maxOf(1, attacker?.symbols?.size ?: 1)
         val w = activeWeights
         // 「ブロックしなければ致死か」は自分のライフ(常に自分から見える情報)だけで判定できる
@@ -625,8 +627,8 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
             if (fc.isExhausted || fc.level <= 0 || fc.category != CardCategory.SPIRIT) continue
             // BPが低い方が破壊される。同じなら相打ち (総合ルール 8-1-6-1)
             val outcome = when {
-                fc.currentBp > attackerBp -> "${attacker?.name ?: "相手"}を破壊"
-                fc.currentBp < attackerBp -> "${fc.name}が破壊される"
+                fc.currentBp > attackerBp -> "${attackerName}を破壊"
+                fc.currentBp < attackerBp -> "${fc.displayName}が破壊される"
                 else -> "相打ち"
             }
             var eval = if (fc.currentBp > attackerBp) w.blockWinEval
@@ -639,8 +641,8 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
                 GameAction(
                     index = idx++,
                     type = "BLOCK",
-                    category = "🛡️【ブロック】 ${fc.name}",
-                    detail = "${fc.name} でブロック (BP${fc.currentBp} vs BP${attackerBp} → $outcome)",
+                    category = "🛡️【ブロック】 ${fc.displayName}",
+                    detail = "${fc.displayName} でブロック (BP${fc.currentBp} vs BP${attackerBp} → $outcome)",
                     eval = eval,
                     targetInstanceId = fc.instanceId
                 )
@@ -817,9 +819,10 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             p.hand.removeAt(action.handIndex)
 
             // 残りは召喚したカードの上へ (総合ルール 11-1-1-6)
+            val seq = state.nextCardSeq++
             p.field.add(
                 FieldCard(
-                    instanceId = "fc_${card.cardNo}_${state.turn}_${p.field.size + 1}",
+                    instanceId = "fc_${card.cardNo}_${seq}",
                     cardNo = card.cardNo,
                     name = card.name,
                     category = card.category,
@@ -828,7 +831,8 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
                     lvCosts = card.lvCosts,
                     baseSymbols = card.symbols,
                     lvBps = card.lvBps,
-                    systems = card.systems
+                    systems = card.systems,
+                    seq = seq
                 )
             )
 

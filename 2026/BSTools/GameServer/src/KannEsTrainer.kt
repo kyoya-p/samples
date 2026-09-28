@@ -403,6 +403,9 @@ fun runKannEsTraining(args: Array<String>) {
 
     val cycles = intArg("--cycles", 1)
     val generations = intArg("--generations", 20)
+    val targetAdoptions = intArg("--target-adoptions", 0)
+    val maxGenerations = intArg("--max-generations", if (targetAdoptions > 0) 500 else generations)
+    val effectiveGenerations = if (targetAdoptions > 0 && !args.contains("--generations")) maxGenerations else generations
     val games = intArg("--games", 12)
     val sigma = doubleArg("--sigma", 0.05).toFloat()
     val seed = intArg("--seed", 1)
@@ -451,7 +454,8 @@ fun runKannEsTraining(args: Array<String>) {
     }
 
     println("=== KANN価値ネットワーク: 進化戦略(ES)による自己対戦学習開始 (目的関数: 勝率) ===")
-    println("パラメータ数=${net.nVar}, サイクル数=$cycles, 1サイクル世代数=$generations, 1世代対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
+    val genDesc = if (targetAdoptions > 0) "目標改善数=$targetAdoptions 回 (上限 $effectiveGenerations 世代)" else "1サイクル世代数=$generations"
+    println("パラメータ数=${net.nVar}, サイクル数=$cycles, $genDesc, 1世代対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
     println(if (resumePath != null) "初期チャンピオン: $resumePath から続きを学習" else "初期チャンピオン: 新規探索(未学習)")
     println()
 
@@ -465,11 +469,11 @@ fun runKannEsTraining(args: Array<String>) {
         val cycleStartChampion = champion.copyOf()
         var adoptedCount = 0
 
-        EsDiag.totalGenerations = generations
+        EsDiag.totalGenerations = effectiveGenerations
         EsDiag.games = games
         EsDiag.outPath = outPath
 
-        for (gen in 1..generations) {
+        for (gen in 1..effectiveGenerations) {
             EsDiag.generation = gen
             EsDiag.adoptedCount = adoptedCount
             val candidate = mutateWeights(champion, rng, sigma)
@@ -482,6 +486,10 @@ fun runKannEsTraining(args: Array<String>) {
                 adoptedCount++
                 net.setWeights(champion)
                 net.save(outPath)
+                if (targetAdoptions > 0 && adoptedCount >= targetAdoptions) {
+                    println("=== 目標改善数 ($targetAdoptions 回) を達成したため学習を完了 ===")
+                    break
+                }
             }
             EsDiag.adoptedCount = adoptedCount
             writeEsHeartbeat(winRate = winRate, adopted = adopted)
@@ -489,7 +497,7 @@ fun runKannEsTraining(args: Array<String>) {
 
         println()
         val cycleLabel = if (cycles > 1) "サイクル $cycle 完了" else "学習完了"
-        println("=== $cycleLabel ($adoptedCount / $generations 世代で採用) ===")
+        println("=== $cycleLabel ($adoptedCount / ${EsDiag.generation} 世代で採用) ===")
         net.setWeights(champion)
         net.save(outPath)
 
@@ -519,8 +527,8 @@ fun runKannEsTraining(args: Array<String>) {
         writeEsTrainingProgress(
             EsTrainingProgress(
                 active = (cycle < cycles),
-                generation = generations,
-                totalGenerations = generations,
+                generation = EsDiag.generation,
+                totalGenerations = effectiveGenerations,
                 games = games,
                 winRate = null,
                 adopted = null,

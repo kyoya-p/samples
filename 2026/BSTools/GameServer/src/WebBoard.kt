@@ -56,7 +56,9 @@ data class WebCardDto(
     val lv: Int = 1,
     val bp: Int? = null,
     val exhausted: Boolean = false,
-    val image_url: String = ""
+    val image_url: String = "",
+    val is_attacking: Boolean = false,
+    val seq: Int? = null
 )
 
 @Serializable
@@ -100,7 +102,8 @@ data class WebActionGroupDto(
     val all_forbidden: Boolean = false,
     val forbidden_reason: String? = null,
     val options: List<WebActionOptionDto>,
-    val card_no: String? = null
+    val card_no: String? = null,
+    val target_instance_id: String? = null
 )
 
 @Serializable
@@ -125,7 +128,8 @@ data class WebGameStateDto(
     val can_redo: Boolean = false,
     val winner: Int? = null,
     val messages: List<String> = emptyList(),
-    val seed: Long? = null
+    val seed: Long? = null,
+    val attacking_card_id: String? = null
 )
 
 fun coreEffectsOf(action: GameAction): List<CoreEffectDto> {
@@ -230,7 +234,9 @@ fun buildWebGameStateDto(
             lv = f.level,
             bp = f.currentBp,
             exhausted = f.isExhausted,
-            image_url = "https://www.battlespirits.com/images/cardlist/${f.cardNo}.webp"
+            image_url = "https://www.battlespirits.com/images/cardlist/${f.cardNo}.webp",
+            is_attacking = (f.instanceId == state.attackingCardId),
+            seq = f.seq
         )
     }
 
@@ -245,7 +251,9 @@ fun buildWebGameStateDto(
             lv = f.level,
             bp = f.currentBp,
             exhausted = f.isExhausted,
-            image_url = "https://www.battlespirits.com/images/cardlist/${f.cardNo}.webp"
+            image_url = "https://www.battlespirits.com/images/cardlist/${f.cardNo}.webp",
+            is_attacking = (f.instanceId == state.attackingCardId),
+            seq = f.seq
         )
     }
 
@@ -272,7 +280,8 @@ fun buildWebGameStateDto(
                         core_effects = coreEffectsOf(it)
                     )
                 },
-                card_no = cardNo
+                card_no = cardNo,
+                target_instance_id = actions.firstNotNullOfOrNull { it.targetInstanceId }
             )
         }
 
@@ -328,7 +337,8 @@ fun buildWebGameStateDto(
         messages = extraMessages.ifEmpty {
             listOf("【ターン ${state.turn}】 手番: プレイヤー${state.activePlayerId} (${state.step.displayName})")
         },
-        seed = state.seed
+        seed = state.seed,
+        attacking_card_id = state.attackingCardId
     )
 }
 

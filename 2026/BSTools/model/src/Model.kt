@@ -165,7 +165,9 @@ data class FieldCard(
     var baseSymbols: List<CardColor> = listOf(CardColor.GREEN),
     var systems: List<String> = emptyList(),
     /** Lvごとの基本BP (lvCosts と同じ並び) */
-    var lvBps: List<Int> = emptyList()
+    var lvBps: List<Int> = emptyList(),
+    /** フィールドに置かれた通し番号 (重複しない一意の番号) */
+    var seq: Int = 0
 ) {
     /** 現在のLvに対応するBP。BPはLvによって変わる (総合ルール 2-8-4) */
     val currentBp: Int
@@ -179,6 +181,10 @@ data class FieldCard(
 
     val symbols: List<CardColor>
         get() = if (level > 0) baseSymbols else emptyList()
+
+    /** フィールド番号(通し番号)付きの表示名 (例: "#1 パッファー") */
+    val displayName: String
+        get() = if (seq > 0) "#$seq $name" else name
 }
 
 /**
@@ -219,7 +225,9 @@ data class GameState(
      * その手自体は合法なので選択は妨げないが、評価値を0にしてAIの自動選択が
      * 往復し続けないようにし、UIには「選ぶと局面が進まない」ことを明記する。
      */
-    var visitedPositions: MutableSet<Long> = mutableSetOf()
+    var visitedPositions: MutableSet<Long> = mutableSetOf(),
+    /** フィールドに置かれるカードの通し番号カウンタ */
+    var nextCardSeq: Int = 1
 ) {
     val activePlayer: PlayerState get() = if (activePlayerId == 1) player1 else player2
     val opponentPlayer: PlayerState get() = if (activePlayerId == 1) player2 else player1

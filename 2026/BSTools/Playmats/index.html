@@ -236,6 +236,19 @@
   }
   .card .nm { font-weight: bold; }
   .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .card-seq {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    color: #90caf9;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 0 4px;
+    border-radius: 3px;
+    margin-right: 5px;
+    vertical-align: 1px;
+    border: 1px solid rgba(144, 202, 249, 0.25);
+  }
   .card.exhausted { opacity: 0.55; border-style: dashed; }
   .card.exhausted .nm::after { content: " [疲労]"; color: var(--warn); font-weight: normal; font-size: 12px; }
   .empty { color: #556; padding: 6px 0; }
@@ -283,7 +296,7 @@
   }
 
   /* プレイ可能な手札カードおよび展開選択肢スタイル */
-  .hand-card-wrapper {
+  .hand-card-wrapper, .field-card-wrapper {
     display: flex;
     flex-direction: column;
     min-width: 170px;
@@ -291,28 +304,79 @@
     flex-grow: 0;
     flex-shrink: 0;
   }
-  .card.playable {
+  .card.playable, .card.core-targetable {
     border-color: #0288d1;
     background: linear-gradient(180deg, #182230, #131a24);
     cursor: pointer;
   }
-  .card.playable:hover {
+  .card.playable:hover, .card.core-targetable:hover {
     border-color: #29b6f6;
     transform: translateY(-2px);
     box-shadow: 0 4px 14px rgba(2, 136, 209, 0.35);
   }
-  .card.playable.is-best {
+  .card.playable.is-best, .card.core-targetable.is-best {
     border-color: #00e676;
     box-shadow: 0 0 10px rgba(0, 230, 118, 0.25);
   }
-  .card.playable.is-best:hover {
+  .card.playable.is-best:hover, .card.core-targetable.is-best:hover {
     border-color: #69f0ae;
     box-shadow: 0 0 14px rgba(0, 230, 118, 0.45);
   }
-  .card.playable.open {
+  .card.playable.open, .card.core-targetable.open {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom-color: transparent;
+  }
+  .card.blockable {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.45) !important;
+    cursor: pointer !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card.blockable:hover {
+    border-color: #69f0ae !important;
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.75) !important;
+    transform: translateY(-2px);
+  }
+  .blockable-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(0, 230, 118, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #00e676;
+    font-weight: 600;
+  }
+  .card.attacking {
+    border-color: #ff1744 !important;
+    box-shadow: 0 0 14px rgba(255, 23, 68, 0.6) !important;
+    animation: attack-pulse 1.8s infinite ease-in-out;
+  }
+  @keyframes attack-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 23, 68, 0.45);
+      border-color: #ff1744;
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 23, 68, 0.85);
+      border-color: #ff5252;
+    }
+  }
+  .attacking-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(255, 23, 68, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #ff5252;
+    font-weight: bold;
+    letter-spacing: 0.5px;
   }
   .playable-badge {
     margin-top: 6px;
@@ -334,7 +398,19 @@
     padding: 1px 4px;
     border-radius: 3px;
   }
-  .hand-options {
+  .core-move-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(2, 136, 209, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #29b6f6;
+    font-weight: 600;
+  }
+  .hand-options, .field-options {
     background: #0f151d;
     border: 1px solid #0288d1;
     border-top: 1px dashed rgba(2, 136, 209, 0.4);
@@ -345,7 +421,7 @@
     margin-top: -1px;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
   }
-  .hand-options.is-best {
+  .hand-options.is-best, .field-options.is-best {
     border-color: #00e676;
     border-top: 1px dashed rgba(0, 230, 118, 0.4);
   }
@@ -1315,11 +1391,11 @@ function currentViewer() {
 }
 
 async function api(path, body) {
+  const viewerToUse = (body && body.viewer !== undefined) ? body.viewer : currentViewer();
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // サーバーは視点ごとに見せる情報を変えるので、必ず viewer を送る
-    body: JSON.stringify({ ...body, viewer: currentViewer() }),
+    body: JSON.stringify({ ...body, viewer: viewerToUse }),
   });
   const data = await res.json();
   if (data.error) {
@@ -1363,6 +1439,143 @@ let activePlayContext = null;
  * `renderHand()` はこれを見て、該当カードのアコーディオンを開いた状態で再構築する。
  */
 let openHandCardNo = null;
+
+/**
+ * 現在開いているフィールドカード（コア移動先スピリット）のアコーディオン (card.id)。
+ * `render()` による再描画時にも開いていたアコーディオンを復元する。
+ */
+let openFieldCardId = null;
+
+/**
+ * フィールドカードの通し番号マップ (id -> 連番)。
+ * 召喚時(フィールドに置かれる)ごとに重複しない通し番号を付与・表示する。
+ */
+const fieldCardSeqMap = new Map();
+let nextFallbackCardSeq = 1;
+
+function getCardSeq(card) {
+  if (!card) return 0;
+  if (card.seq != null && card.seq > 0) {
+    fieldCardSeqMap.set(card.id, card.seq);
+    return card.seq;
+  }
+  if (!fieldCardSeqMap.has(card.id)) {
+    const m = String(card.id).match(/_(\d+)$/);
+    if (m) {
+      const parsed = parseInt(m[1], 10);
+      if (!isNaN(parsed) && parsed > 0 && !Array.from(fieldCardSeqMap.values()).includes(parsed)) {
+        fieldCardSeqMap.set(card.id, parsed);
+        nextFallbackCardSeq = Math.max(nextFallbackCardSeq, parsed + 1);
+        return parsed;
+      }
+    }
+    fieldCardSeqMap.set(card.id, nextFallbackCardSeq++);
+  }
+  return fieldCardSeqMap.get(card.id);
+}
+
+function escapeRegex(s) {
+  return String(s).replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * 選択肢テキスト中のスピリット名に通し番号（フィールド番号 #1, #2...）を補完・付与する。
+ */
+function formatWithFieldSeq(text, coreEffects = null, targetId = null) {
+  if (!text || typeof text !== "string") return text;
+
+  // 1. コア移動・交換カテゴリ (例: "🔷【コア移動】 パッファー ➔ ガリザロト")
+  const moveMatch = text.match(/^((?:🔷|🔄)【コア(?:移動|交換)】\s*)(.*?)\s*([➔⇄])\s*(.*)$/u);
+  if (moveMatch) {
+    const prefix = moveMatch[1];
+    let srcLabel = moveMatch[2].trim();
+    const arrow = moveMatch[3];
+    let dstLabel = moveMatch[4].trim();
+
+    const fromEff = coreEffects?.find(e => e.direction === "from");
+    const toEff = coreEffects?.find(e => e.direction === "to");
+
+    if (fromEff && fromEff.source_id !== "Reserve") {
+      const seq = getCardSeq({ id: fromEff.source_id, name: fromEff.label });
+      if (seq && !srcLabel.includes("#")) srcLabel = `#${seq} ${srcLabel}`;
+    }
+    if (toEff && toEff.source_id !== "Reserve") {
+      const seq = getCardSeq({ id: toEff.source_id, name: toEff.label });
+      if (seq && !dstLabel.includes("#")) dstLabel = `#${seq} ${dstLabel}`;
+    }
+
+    // core_effects が渡されていない場合のフィールドカード名マッチによるフォールバック
+    if (current) {
+      const allFieldCards = [
+        ...(current.player?.field || []),
+        ...(current.opponent?.field || [])
+      ];
+      for (const c of allFieldCards) {
+        if (!c.name) continue;
+        const seq = getCardSeq(c);
+        if (seq) {
+          if (!srcLabel.includes("#") && srcLabel === c.name) srcLabel = `#${seq} ${srcLabel}`;
+          if (!dstLabel.includes("#") && dstLabel === c.name) dstLabel = `#${seq} ${dstLabel}`;
+        }
+      }
+    }
+    return prefix + srcLabel + " " + arrow + " " + dstLabel;
+  }
+
+  // 2. アタック・ブロックカテゴリ (例: "🗡️【アタック】 パッファー", "🛡️【ブロック】 ガリザロト")
+  const actionMatch = text.match(/^((?:🗡️|🛡️)【(?:アタック|ブロック)】\s*)(.*)$/u);
+  if (actionMatch && targetId) {
+    const seq = fieldCardSeqMap.get(targetId);
+    if (seq && !actionMatch[2].includes("#")) {
+      return `${actionMatch[1]}#${seq} ${actionMatch[2]}`;
+    }
+  }
+
+  // 3. 一般テキスト (core_effects からの特定)
+  let res = text;
+  if (coreEffects && Array.isArray(coreEffects)) {
+    for (const e of coreEffects) {
+      if (!e.source_id || e.source_id === "Reserve" || !e.label) continue;
+      const seq = getCardSeq({ id: e.source_id, name: e.label });
+      if (seq) {
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(e.label)}`, "g");
+        res = res.replace(re, `#${seq} ${e.label}`);
+      }
+    }
+  }
+
+  if (targetId) {
+    const seq = fieldCardSeqMap.get(targetId);
+    if (seq) {
+      const chooser = current?.choosing_player || current?.active_player || 1;
+      const p = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
+      const opp = (current?.player?.player_id === chooser) ? current?.opponent : current?.player;
+      const card = p?.field?.find(c => c.id === targetId) || opp?.field?.find(c => c.id === targetId);
+      if (card) {
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(card.name)}`, "g");
+        res = res.replace(re, `#${seq} ${card.name}`);
+      }
+    }
+  }
+
+  // 4. フィールドに存在するカード名が含まれている場合の補完
+  if (current) {
+    const allFieldCards = [
+      ...(current.player?.field || []),
+      ...(current.opponent?.field || [])
+    ];
+    for (const c of allFieldCards) {
+      if (!c.name) continue;
+      const seq = getCardSeq(c);
+      if (seq) {
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(c.name)}`, "g");
+        res = res.replace(re, `#${seq} ${c.name}`);
+      }
+    }
+  }
+
+  return res;
+}
 
 function parseDetailSources(detail) {
   // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
@@ -1616,33 +1829,248 @@ function renderTrash(side, cards) {
   renderField($(side + "-trash"), list, false);
 }
 
-function renderField(el, field, isMyField) {
+function getCoreMoveGroupsForCard(card, groups) {
+  if (!groups || !groups.length) return [];
+  return groups.filter(g => {
+    if (!g.category || (!g.category.includes("【コア移動】") && !g.category.includes("【コア交換】"))) return false;
+    if (g.target_instance_id != null && g.target_instance_id === card.id) return true;
+    const hasToEffect = g.options && g.options.some(o =>
+      o.core_effects && o.core_effects.some(e =>
+        e.direction === "to" && (e.source_id === card.id || e.label === card.name)
+      )
+    );
+    if (hasToEffect) return true;
+    const m = g.category.match(/(?:➔|⇄)\s*(.+?)$/);
+    if (m && m[1].trim() === card.name) return true;
+    return false;
+  });
+}
+
+function renderCoreMoveGroupList(container, groups, maxEval, isNearBest) {
+  for (const g of groups) {
+    const isTop = (!g.all_forbidden && isNearBest && isNearBest(g.best_eval, maxEval));
+    const isSingle = g.options.length === 1;
+
+    const sgDiv = document.createElement("div");
+    sgDiv.className = "cost-subgroup" + (isTop ? " is-best" : "");
+
+    let srcLabel = g.category.replace(/^[🔷🔄]【コア(?:移動|交換)】\s*/, "");
+    const arrowMatch = srcLabel.match(/^(.*?)\s*(?:➔|⇄)\s*(.*)$/);
+    if (arrowMatch) {
+      srcLabel = `${arrowMatch[1]} から`;
+    }
+    srcLabel = formatWithFieldSeq(srcLabel, g.options?.[0]?.core_effects, g.target_instance_id);
+
+    const head = document.createElement("button");
+    head.className = "cost-subgroup-head";
+    const patternCountStr = g.options.length > 1 ? ` (${g.options.length})` : "";
+    const bestBadge = g.best_eval != null ? getEvalBadge(g.best_eval, isTop) : "";
+    const headIcon = isSingle ? `<span class="exec-icon" title="クリックで実行">⏎</span>` : `<span class="arrow-icon">▶</span>`;
+
+    head.innerHTML = `<span class="cost-title">${headIcon}${esc(srcLabel)}${patternCountStr}</span>${bestBadge}`;
+    if (isSingle) {
+      head.disabled = g.options[0].forbidden;
+      bindCoreEffectPreview(head, g.options[0]);
+    }
+
+    const optsDiv = document.createElement("div");
+    optsDiv.className = "cost-subgroup-opts hidden";
+
+    for (const o of g.options) {
+      const isOptBest = (!o.forbidden && isNearBest && isNearBest(o.eval, maxEval));
+      const btn = document.createElement("button");
+      btn.className = "source-opt-btn" + (isOptBest ? " best-option" : "") + (o.repeats_position ? " repeats-position" : "");
+      btn.setAttribute("data-act-idx", o.index);
+      btn.disabled = o.forbidden;
+      btn.title = optionStatusTitle(o, o.detail);
+      const prefix = optionStatusPrefix(o);
+      const execIcon = o.forbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`;
+      const optDetail = formatWithFieldSeq(o.detail, o.core_effects, g.target_instance_id);
+      btn.innerHTML = `<span class="detail-text">${execIcon}${prefix}${esc(optDetail)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        doAct(o.index);
+      };
+      bindCoreEffectPreview(btn, o);
+      optsDiv.appendChild(btn);
+    }
+
+    head.onclick = (e) => {
+      e.stopPropagation();
+      if (isSingle) {
+        if (!g.options[0].forbidden) doAct(g.options[0].index);
+        return;
+      }
+      const isOpening = optsDiv.classList.contains("hidden");
+      container.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+        if (el !== optsDiv) el.classList.add("hidden");
+      });
+      container.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+        arr.textContent = "▶";
+      });
+      if (isOpening) {
+        optsDiv.classList.remove("hidden");
+        const arr = head.querySelector(".arrow-icon");
+        if (arr) arr.textContent = "▼";
+      } else {
+        optsDiv.classList.add("hidden");
+        const arr = head.querySelector(".arrow-icon");
+        if (arr) arr.textContent = "▶";
+      }
+    };
+
+    sgDiv.appendChild(head);
+    sgDiv.appendChild(optsDiv);
+    container.appendChild(sgDiv);
+  }
+}
+
+function renderField(el, field, isMyField, blockActionsMap = null, attackingCardId = null, coreMoveContext = null) {
   el.innerHTML = "";
   if (!field.length) {
     el.innerHTML = '<div class="empty">(なし)</div>';
     return;
   }
+
+  const { isMainStep, groups, maxEval, isNearBest } = coreMoveContext || {};
+
   for (const o of field) {
+    const isAttacking = (o.is_attacking === true) ||
+      (attackingCardId != null && (o.id === attackingCardId || o.name === attackingCardId));
+    const blockAction = blockActionsMap ? (blockActionsMap.get(o.id) ?? blockActionsMap.get(o.name)) : null;
+
+    // メインステップで自分のフィールドのスピリット/カードへのコア移動グループ
+    const matchedCoreGroups = (isMyField && isMainStep && groups) ? getCoreMoveGroupsForCard(o, groups) : [];
+    const hasCoreMove = matchedCoreGroups.length > 0 && matchedCoreGroups.some(g => !g.all_forbidden);
+
+    let cardBestEval = null;
+    if (hasCoreMove) {
+      matchedCoreGroups.forEach(g => {
+        if (g.best_eval != null && (cardBestEval == null || g.best_eval > cardBestEval)) {
+          cardBestEval = g.best_eval;
+        }
+      });
+    }
+    const isTopCoreMove = (hasCoreMove && isNearBest && isNearBest(cardBestEval, maxEval));
+
+    const wrap = document.createElement("div");
+    if (hasCoreMove) {
+      wrap.className = "field-card-wrapper";
+    }
+
     const div = document.createElement("div");
-    div.className = "card" + (o.exhausted ? " exhausted" : "");
-    if (isMyField) {
+    let cardClass = "card" + (o.exhausted ? " exhausted" : "");
+    if (hasCoreMove) {
+      cardClass += " core-targetable" + (isTopCoreMove ? " is-best" : "");
+    }
+    div.className = cardClass;
+
+    if (isAttacking) {
+      div.classList.add("attacking");
+      div.title = `⚔️ ${o.name} アタック中`;
+    }
+
+    if (blockAction) {
+      div.classList.add("blockable");
+      div.title = `🛡️ クリックして ${o.name} でブロック`;
+      div.onclick = (e) => {
+        e.stopPropagation();
+        doAct(blockAction.index);
+      };
+    } else if (isMyField) {
       div.setAttribute("data-obj-id", o.id);
       div.setAttribute("data-obj-name", o.name);
-      div.onclick = (e) => {
-        if (activePlayContext) {
-          e.stopPropagation();
-          handleSourceCoreClick(o.id, 'normal');
+
+      if (hasCoreMove) {
+        const shouldReopen = (o.id === openFieldCardId);
+        const optsDiv = document.createElement("div");
+        optsDiv.className = "field-options" + (shouldReopen ? "" : " hidden") + (isTopCoreMove ? " is-best" : "");
+
+        renderCoreMoveGroupList(optsDiv, matchedCoreGroups, maxEval, isNearBest);
+
+        if (shouldReopen) {
+          div.classList.add("open");
         }
-      };
+
+        div.onclick = (e) => {
+          if (activePlayContext) {
+            e.stopPropagation();
+            handleSourceCoreClick(o.id, 'normal');
+            return;
+          }
+          e.stopPropagation();
+          const isHidden = optsDiv.classList.toggle("hidden");
+          div.classList.toggle("open", !isHidden);
+          const arrowEl = div.querySelector(".core-move-arrow");
+          if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+          if (!isHidden) {
+            openFieldCardId = o.id;
+            // 他の field-card-wrapper を閉じる
+            document.querySelectorAll(".field-card-wrapper").forEach(w => {
+              if (w !== wrap) {
+                const otherOpts = w.querySelector(".field-options");
+                const otherCard = w.querySelector(".card");
+                if (otherOpts) otherOpts.classList.add("hidden");
+                if (otherCard) {
+                  otherCard.classList.remove("open");
+                  const arr = otherCard.querySelector(".core-move-arrow");
+                  if (arr) arr.textContent = "▶";
+                }
+              }
+            });
+            // 手札のアコーディオンも閉じる
+            document.querySelectorAll(".hand-card-wrapper .hand-options").forEach(ho => ho.classList.add("hidden"));
+            document.querySelectorAll(".hand-card-wrapper .card").forEach(hc => hc.classList.remove("open"));
+          } else {
+            if (openFieldCardId === o.id) openFieldCardId = null;
+          }
+        };
+
+        wrap.appendChild(div);
+        wrap.appendChild(optsDiv);
+      } else {
+        div.onclick = (e) => {
+          if (activePlayContext) {
+            e.stopPropagation();
+            handleSourceCoreClick(o.id, 'normal');
+          }
+        };
+      }
     }
+
     const symGems = formatReductionGems(o.symbols);
     const symHtml = symGems ? `${symGems} ` : "";
     const bpHtml = o.bp ? `, BP${o.bp}` : "";
     const sourceIdForField = isMyField ? o.id : null;
-    div.innerHTML = `<div class="nm">${esc(o.name)}</div>` +
-      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}${bpHtml}</div>`;
+    let badgeHtml = "";
+    if (isAttacking) {
+      badgeHtml = `<div class="attacking-badge">⚔️ アタック中</div>`;
+    } else if (blockAction) {
+      const evalBadge = getEvalBadge(blockAction.eval, blockAction.isBest);
+      badgeHtml = `<div class="blockable-badge"><span>🛡️ ブロック</span>${evalBadge}</div>`;
+    } else if (hasCoreMove) {
+      const evalBadge = cardBestEval != null ? getEvalBadge(cardBestEval, isTopCoreMove) : "";
+      const shouldReopen = (o.id === openFieldCardId);
+      const arrowIcon = shouldReopen ? "▼" : "▶";
+      badgeHtml = `<div class="core-move-badge"><span><span class="core-move-arrow">${arrowIcon}</span> 🔷 移動</span>${evalBadge}</div>`;
+    }
+
+    const isFieldArea = !el.id.includes("trash") && !el.id.includes("hand");
+    const seq = isFieldArea ? getCardSeq(o) : null;
+    const seqBadgeHtml = seq ? `<span class="card-seq">#${seq}</span>` : "";
+
+    div.innerHTML = `<div class="nm">${seqBadgeHtml}${esc(o.name)}</div>` +
+      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}${bpHtml}</div>` +
+      badgeHtml;
+
     if (o.image_url) bindCardPreview(div, o.name, o.image_url);
-    el.appendChild(div);
+
+    if (hasCoreMove) {
+      el.appendChild(wrap);
+    } else {
+      el.appendChild(div);
+    }
   }
 }
 
@@ -1709,7 +2137,8 @@ function renderOptionsHierarchy(container, options, maxEval, isNearBest) {
       ? (terminalForbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`)
       : `<span class="arrow-icon">▶</span>`;
 
-    head.innerHTML = `<span class="cost-title">${headIcon}${statusPrefix}${esc(sg.costPlacement)}${patternCountStr}</span>${bestBadge}`;
+    const formattedCostPlacement = formatWithFieldSeq(sg.costPlacement, sg.options?.[0]?.core_effects);
+    head.innerHTML = `<span class="cost-title">${headIcon}${statusPrefix}${esc(formattedCostPlacement)}${patternCountStr}</span>${bestBadge}`;
     if (isTerminalSg) head.classList.toggle("repeats-position", terminalRepeats);
     // 真に選べない(forbidden)ときだけボタンを無効化する。onclick内で弾くだけでは、
     // クリックできる見た目のまま何も起きないボタンになってしまい紛らわしい。
@@ -1737,7 +2166,8 @@ function renderOptionsHierarchy(container, options, maxEval, isNearBest) {
       const prefix = optionStatusPrefix(o);
       // ここが最終選択肢。forbidden でなければクリックで即実行される(repeats_positionでも実行可)
       const execIcon = o.forbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`;
-      btn.innerHTML = `<span class="detail-text">${execIcon}${prefix}${esc(o.sourcesLabel || o.detail)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
+      const optLabel = formatWithFieldSeq(o.sourcesLabel || o.detail, o.core_effects);
+      btn.innerHTML = `<span class="detail-text">${execIcon}${prefix}${esc(optLabel)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
       btn.onclick = (e) => {
         e.stopPropagation();
         doAct(o.index);
@@ -1882,6 +2312,13 @@ function renderHand(el, hand, groups, maxEval) {
           });
           activePlayContext = { card: c, groups: matchedGroups, alloc: {}, wrapEl: wrap, optsDiv: optsDiv };
           openHandCardNo = c.card_no;
+          openFieldCardId = null;
+          document.querySelectorAll(".field-card-wrapper .field-options").forEach(fo => fo.classList.add("hidden"));
+          document.querySelectorAll(".field-card-wrapper .card").forEach(fc => {
+            fc.classList.remove("open");
+            const arr = fc.querySelector(".core-move-arrow");
+            if (arr) arr.textContent = "▶";
+          });
         } else {
           activePlayContext = null;
           openHandCardNo = null;
@@ -1932,7 +2369,8 @@ function renderGroups(groups, maxEval) {
       ? `<span class="cnt" id="cnt-${idx}">▶</span>`
       : `<span class="cnt exec" title="クリックで実行">⏎</span>`;
 
-    head.innerHTML = `<span class="cat">${forbidden}${esc(g.category)}</span>${cntHtml}` +
+    const formattedCategory = formatWithFieldSeq(g.category, g.options?.[0]?.core_effects, g.target_instance_id);
+    head.innerHTML = `<span class="cat">${forbidden}${esc(formattedCategory)}</span>${cntHtml}` +
       `${getEvalBadge(g.best_eval, isTop)}`;
     if (onlyOpt && onlyOpt.repeats_position) head.classList.add("repeats-position");
 
@@ -2001,11 +2439,16 @@ function render(data) {
   current = data;
   sessionId = data.session;
 
-  // カード名から画像URLへのマップを更新
+  // カード名から画像URLへのマップを更新、およびフィールドカード通し番号の事前確定
   cardImageMap = {};
   [data.player, data.opponent].forEach(p => {
     if (p && p.hand) p.hand.forEach(c => { if (c.image_url) cardImageMap[c.name] = c.image_url; });
-    if (p && p.field) p.field.forEach(o => { if (o.image_url) cardImageMap[o.name] = o.image_url; });
+    if (p && p.field) {
+      p.field.forEach(o => {
+        if (o.image_url) cardImageMap[o.name] = o.image_url;
+        getCardSeq(o);
+      });
+    }
   });
 
   $("turn").textContent = data.turn;
@@ -2026,8 +2469,15 @@ function render(data) {
   const p1Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(1) : "w3_w4.kann.weight";
   const p2Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(2) : "w3_w4.kann.weight";
 
-  $("p1-title").textContent = `プレイヤー1[${p1Weight}]` + (p1IsActive ? "（手番）" : "") + (p1Chooses ? " ⬅ 選択中" : "");
-  $("p2-title").textContent = `プレイヤー2[${p2Weight}]` + (p2IsActive ? "（手番）" : "") + (p2Chooses ? " ⬅ 選択中" : "");
+  const p1IsAuto = $("auto-p1")?.checked || false;
+  const p2IsAuto = $("auto-p2")?.checked || false;
+  const chooserIsAuto = (chooser === 1 && p1IsAuto) || (chooser === 2 && p2IsAuto);
+
+  const p1StatusSuffix = p1Chooses ? (p1IsAuto ? " 🤖 自動選択中..." : " ⬅ 選択中") : "";
+  const p2StatusSuffix = p2Chooses ? (p2IsAuto ? " 🤖 自動選択中..." : " ⬅ 選択中") : "";
+
+  $("p1-title").textContent = `プレイヤー1[${p1Weight}]` + (p1IsActive ? "（手番）" : "") + p1StatusSuffix;
+  $("p2-title").textContent = `プレイヤー2[${p2Weight}]` + (p2IsActive ? "（手番）" : "") + p2StatusSuffix;
 
   // 選択を行うプレイヤーをミドリ枠
   const p1Panel = $("p1-panel");
@@ -2040,46 +2490,6 @@ function render(data) {
   const targetActions = p1IsActive ? $("p1-actions") : $("p2-actions");
   if (nBtn && targetActions && nBtn.parentElement !== targetActions) {
     targetActions.appendChild(nBtn);
-  }
-
-  // プレイヤー1 (上段) レンダリング
-  $("p1-life").innerHTML = lifeStr(p1.life);
-  $("p1-reserve").innerHTML = formatCoresDisplay(p1.reserve, p1Chooses ? "Reserve" : null);
-  $("p1-trash-cores").innerHTML = formatCoresDisplay(p1.trash_cores);
-  $("p1-count").innerHTML = formatCountDisplay(p1.count);
-  $("p1-hand-count").textContent = p1.hand_count;
-  $("p1-deck-count").textContent = p1.deck_count;
-  renderField($("p1-field"), p1.field, p1Chooses);
-  renderTrash("p1", p1.trash_cards);
-
-  const resBoxP1 = $("p1-reserve-box");
-  if (resBoxP1) {
-    resBoxP1.onclick = (e) => {
-      if (activePlayContext && p1Chooses) {
-        e.stopPropagation();
-        handleSourceCoreClick("Reserve");
-      }
-    };
-  }
-
-  // プレイヤー2 (下段) レンダリング
-  $("p2-life").innerHTML = lifeStr(p2.life);
-  $("p2-reserve").innerHTML = formatCoresDisplay(p2.reserve, p2Chooses ? "Reserve" : null);
-  $("p2-trash-cores").innerHTML = formatCoresDisplay(p2.trash_cores);
-  $("p2-count").innerHTML = formatCountDisplay(p2.count);
-  $("p2-hand-count").textContent = p2.hand_count;
-  $("p2-deck-count").textContent = p2.deck_count;
-  renderField($("p2-field"), p2.field, p2Chooses);
-  renderTrash("p2", p2.trash_cards);
-
-  const resBoxP2 = $("p2-reserve-box");
-  if (resBoxP2) {
-    resBoxP2.onclick = (e) => {
-      if (activePlayContext && p2Chooses) {
-        e.stopPropagation();
-        handleSourceCoreClick("Reserve");
-      }
-    };
   }
 
   // 全体での最高評価値 (groups および n_eval) を算出
@@ -2099,6 +2509,120 @@ function render(data) {
     if (v == null || maxV == null) return false;
     return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
   };
+
+  // ブロック宣言時のブロック可能スピリットマップ (カードIDまたはカード名 -> アクション情報)
+  const isBlockDeclaration = !!(data.phase && data.phase.includes("ブロック宣言") && data.can_act !== false);
+  const blockActionsMap = new Map();
+  if (isBlockDeclaration && data.groups) {
+    for (const g of data.groups) {
+      if (g.category && g.category.includes("【ブロック】") && !g.category.includes("ブロックしない")) {
+        const selectableOpt = g.options.find(o => !o.forbidden);
+        if (selectableOpt) {
+          const isBest = isNearBest(selectableOpt.eval, maxEval);
+          const blockInfo = {
+            index: selectableOpt.index,
+            eval: selectableOpt.eval,
+            isBest: isBest,
+            detail: selectableOpt.detail
+          };
+          if (g.target_instance_id) {
+            blockActionsMap.set(g.target_instance_id, blockInfo);
+          }
+          const rawName = g.category.replace(/^🛡️【ブロック】\s*/, "").trim();
+          if (rawName && !blockActionsMap.has(rawName)) {
+            blockActionsMap.set(rawName, blockInfo);
+          }
+        }
+      }
+    }
+  }
+
+  // アタック中のカードID特定 (バトル中)
+  // 1. data.attacking_card_id があれば最優先
+  // 2. ブロック宣言フェーズ中であれば、アタック側(active_player)フィールドのアタッカーを特定
+  let attackingCardId = data.attacking_card_id || null;
+  if (!attackingCardId && isBlockDeclaration) {
+    const attackerOwner = (data.active_player === 1) ? p1 : p2;
+    let targetCardName = null;
+    if (data.groups) {
+      for (const g of data.groups) {
+        if (g.category && g.category.includes("【ブロック】") && !g.category.includes("ブロックしない")) {
+          for (const opt of g.options) {
+            const m = (opt.detail || "").match(/→\s*(.+?)を破壊/);
+            if (m) {
+              targetCardName = m[1].trim();
+              break;
+            }
+          }
+          if (targetCardName) break;
+        }
+      }
+    }
+    if (targetCardName && attackerOwner && attackerOwner.field) {
+      const matchCard = attackerOwner.field.find(c => c.name === targetCardName && c.exhausted);
+      if (matchCard) attackingCardId = matchCard.id;
+    }
+    if (!attackingCardId && attackerOwner && attackerOwner.field) {
+      const exhaustedCards = attackerOwner.field.filter(c => c.exhausted);
+      if (exhaustedCards.length === 1) {
+        attackingCardId = exhaustedCards[0].id;
+      }
+    }
+  }
+
+  const p1AttackingId = (data.active_player === 1) ? attackingCardId : null;
+  const p2AttackingId = (data.active_player === 2) ? attackingCardId : null;
+
+  const isMainStep = !!(data.phase && data.phase.includes("メインステップ") && data.can_act !== false);
+  if (!isMainStep) {
+    openFieldCardId = null;
+  }
+  const coreMoveContext = {
+    isMainStep: isMainStep,
+    groups: data.groups,
+    maxEval: maxEval,
+    isNearBest: isNearBest
+  };
+
+  // プレイヤー1 (上段) レンダリング
+  $("p1-life").innerHTML = lifeStr(p1.life);
+  $("p1-reserve").innerHTML = formatCoresDisplay(p1.reserve, p1Chooses ? "Reserve" : null);
+  $("p1-trash-cores").innerHTML = formatCoresDisplay(p1.trash_cores);
+  $("p1-count").innerHTML = formatCountDisplay(p1.count);
+  $("p1-hand-count").textContent = p1.hand_count;
+  $("p1-deck-count").textContent = p1.deck_count;
+  renderField($("p1-field"), p1.field, p1Chooses, p1Chooses ? blockActionsMap : null, p1AttackingId, p1Chooses ? coreMoveContext : null);
+  renderTrash("p1", p1.trash_cards);
+
+  const resBoxP1 = $("p1-reserve-box");
+  if (resBoxP1) {
+    resBoxP1.onclick = (e) => {
+      if (activePlayContext && p1Chooses) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
+
+  // プレイヤー2 (下段) レンダリング
+  $("p2-life").innerHTML = lifeStr(p2.life);
+  $("p2-reserve").innerHTML = formatCoresDisplay(p2.reserve, p2Chooses ? "Reserve" : null);
+  $("p2-trash-cores").innerHTML = formatCoresDisplay(p2.trash_cores);
+  $("p2-count").innerHTML = formatCountDisplay(p2.count);
+  $("p2-hand-count").textContent = p2.hand_count;
+  $("p2-deck-count").textContent = p2.deck_count;
+  renderField($("p2-field"), p2.field, p2Chooses, p2Chooses ? blockActionsMap : null, p2AttackingId, p2Chooses ? coreMoveContext : null);
+  renderTrash("p2", p2.trash_cards);
+
+  const resBoxP2 = $("p2-reserve-box");
+  if (resBoxP2) {
+    resBoxP2.onclick = (e) => {
+      if (activePlayContext && p2Chooses) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
 
   // 手札のレンダリング (P1手札: 上段 / P2手札: 下段)
   const p1Hand = p1.hand || [];
@@ -2327,6 +2851,9 @@ async function startNewGame() {
   saveDeckSettings();
   activePlayContext = null;
   openHandCardNo = null;
+  openFieldCardId = null;
+  fieldCardSeqMap.clear();
+  nextFallbackCardSeq = 1;
   updateCoreAllocationUI();
   try {
     const seedEl = $("seed");
@@ -2361,6 +2888,9 @@ async function restartGame() {
   isActing = true;
   activePlayContext = null;
   openHandCardNo = null;
+  openFieldCardId = null;
+  fieldCardSeqMap.clear();
+  nextFallbackCardSeq = 1;
   updateCoreAllocationUI();
   try {
     const data = await api("/api/restart", { session: sessionId });
