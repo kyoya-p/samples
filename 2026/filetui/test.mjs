@@ -9,6 +9,10 @@ import os from 'node:os';
 import {
   state, loadDir, current, visibleEntries, handleKey, decodeKeys, render, dispWidth, fit, uniqueDest, isInside,
   parseDropPayload, handleExternalDrop, rowIndexAt,
+  parseSshTarget, escapePosix, connectSsh, loadDirRemote, uniqueRemoteDest,
+  setSshRunner, setSshBinaryRunner, setScpRunner,
+  createPane, buildTree, toggleExpand,
+  saveSessionState, loadSessionState,
 } from './filetui.mjs';
 
 let pass = 0, fail = 0;
@@ -354,5 +358,261 @@ await fsp.rm(outside, { recursive: true, force: true });
 eq(await uniqueDest(path.join(tmp, 'notexist.txt')), path.join(tmp, 'notexist.txt'), 'uniqueDest 未使用名はそのまま');
 await fsp.rm(tmp, { recursive: true, force: true });
 
+// ------------------------------ SSH / リモート機能 ------------------------------
+
+log('\n## SSH / リモート機能');
+
+eq(parseSshTarget('user@host:/var/log'), { user: 'user', host: 'host', port: null, path: '/var/log', target: 'user@host' }, 'parseSshTarget user@host:path');
+eq(parseSshTarget('ub2311:/etc'), { user: null, host: 'ub2311', port: null, path: '/etc', target: 'ub2311' }, 'parseSshTarget host:path');
+eq(parseSshTarget('ub2311:'), { user: null, host: 'ub2311', port: null, path: null, target: 'ub2311' }, 'parseSshTarget host: (コロンのみ)');
+eq(parseSshTarget('user@192.168.1.50'), { user: 'user', host: '192.168.1.50', port: null, path: null, target: 'user@192.168.1.50' }, 'parseSshTarget user@ip');
+eq(parseSshTarget('ssh://sharp@example.com:2222/opt/app'), { user: 'sharp', host: 'example.com', port: 2222, path: '/opt/app', target: 'sharp@example.com' }, 'parseSshTarget URL形式');
+eq(parseSshTarget('//server/share'), null, 'スラッシュ形式UNCパスはSSHと判定しない');
+eq(parseSshTarget('ub2311', true), { user: null, host: 'ub2311', port: null, path: null, target: 'ub2311' }, 'parseSshTarget プロンプトからのホスト名');
+eq(parseSshTarget('C:\\Windows\\System32'), null, 'Windows ドライブ文字はSSHと判定しない');
+eq(parseSshTarget('D:/work/file.txt'), null, 'Windows スラッシュパスはSSHと判定しない');
+eq(parseSshTarget('\\\\server\\share'), null, 'Windows UNCパスはSSHと判定しない');
+eq(parseSshTarget('/var/log'), null, '通常指定時のPOSIX絶対パスはローカル優先');
+
+eq(escapePosix('hello "world" $var \\ `pwd`'), 'hello \\"world\\" \\$var \\\\ \\`pwd\\`', 'escapePosix 特殊記号のエスケープ');
+ok(isInside('/home/user', '/home/user/documents', true), 'isInside POSIX 配下判定');
+ok(!isInside('/home/user/documents', '/home/user', true), 'isInside POSIX 非配下判定');
+
+// リモート状態とナビゲーションのヘッドレステスト
+const prevLocalCwd = state.cwd;
+state.remote = { target: 'test-remote', host: 'test-remote', user: null, port: null };
+state.cwd = '/home/testuser/project';
+state.entries = [
+  { name: 'src', full: '/home/testuser/project/src', isDir: true, isLink: false, broken: false, size: 4096, mtime: Date.now() },
+  { name: 'README.md', full: '/home/testuser/project/README.md', isDir: false, isLink: false, broken: false, size: 1200, mtime: Date.now() },
+  { name: 'run.sh', full: '/home/testuser/project/run.sh', isDir: false, isLink: false, broken: false, size: 500, mtime: Date.now() },
+];
+state.index = 0;
+state.offset = 0;
+state.marks.clear();
+
+// リモートモックの登録
+setSshRunner(async (remote, cmd) => {
+  if (cmd.includes('__ft_auth_ok__')) return { stdout: '__ft_auth_ok__', stderr: '', code: 0 };
+  if (cmd.includes('mkdir') || cmd.includes('touch') || cmd.includes('mv') || cmd.includes('rm')) {
+    return { stdout: '', stderr: '', code: 0 };
+  }
+  // loadDirRemote コマンド: 対象ディレクトリの抽出
+  let targetPath = state.cwd;
+  const match = /python3 - "([^"]+)"/.exec(cmd) || /D="([^"]+)"/.exec(cmd);
+  if (match) targetPath = match[1];
+  return {
+    stdout: JSON.stringify({
+      cwd: targetPath,
+      entries: [
+        { name: 'sub', isDir: true, isLink: false, broken: false, size: 4096, mtime: 1700000000000 },
+        { name: 'remote.txt', isDir: false, isLink: false, broken: false, size: 1234, mtime: 1700000000000 },
+      ],
+    }),
+    stderr: '',
+    code: 0,
+  };
+});
+
+setSshBinaryRunner(async () => ({
+  buffer: Buffer.from('remote file line 1\nremote file line 2\n'),
+  stderr: '',
+  code: 0,
+}));
+
+let scpCalls = [];
+setScpRunner(async (args) => {
+  scpCalls.push(args);
+  return true;
+});
+
+// リモート描画ヘッダ
+render();
+ok(lastFrame.includes('[SSH: test-remote] /home/testuser/project'), 'リモートヘッダの描画にSSHホスト名とPOSIXパス');
+
+// リモートでの親ディレクトリ移動
+await press('h');
+eq(state.cwd, '/home/testuser', 'リモートでの親ディレクトリ移動 (POSIX path)');
+await press('h');
+eq(state.cwd, '/home', 'リモートでのさらに親');
+await press('h');
+eq(state.cwd, '/', 'リモートルート');
+await press('h');
+eq(state.cwd, '/', 'リモートルート以上は上がらない');
+eq(state.msgKind, 'warn', 'ルート到達警告');
+
+// リモートでのenter移動
+await press('enter');
+eq(state.cwd, '/sub', 'リモートでの子ディレクトリへ侵入');
+
+// リモートでのテキストビューア
+await press('down');
+await press('v');
+eq(state.mode, 'view', 'リモートファイルのビューア起動');
+ok(state.viewer.lines.length >= 2, 'リモートファイル内容がビューアにロード');
+await press('q');
+eq(state.mode, 'browse', 'ビューア終了');
+
+// C キーでSSH接続プロンプト
+await press('C');
+eq(state.mode, 'prompt', 'C でSSH接続先入力プロンプト起動');
+eq(state.prompt.label.includes('SSH'), true, 'プロンプトラベル');
+await press('escape');
+eq(state.mode, 'browse', 'Esc でプロンプト中止');
+
+// プロンプトでのカーソル移動・インライン編集テスト
+await press('C');
+eq(state.mode, 'prompt', '編集用プロンプト起動');
+state.prompt.value = '/var/log';
+state.prompt.cursor = 8;
+await press('left');
+eq(state.prompt.cursor, 7, 'left でカーソル左移動');
+await press('left');
+eq(state.prompt.cursor, 6, 'left でカーソル左移動');
+await press('1');
+eq(state.prompt.value, '/var/l1og', 'インライン文字挿入');
+eq(state.prompt.cursor, 7, '文字挿入後のカーソル位置');
+await press('backspace');
+eq(state.prompt.value, '/var/log', 'backspace でカーソル前文字削除');
+eq(state.prompt.cursor, 6, '削除後のカーソル位置');
+await press('home');
+eq(state.prompt.cursor, 0, 'Home で先頭移動');
+await press('delete');
+eq(state.prompt.value, 'var/log', 'Delete でカーソル位置文字削除');
+eq(state.prompt.cursor, 0, 'Delete 後のカーソル位置保持');
+await press('end');
+eq(state.prompt.cursor, 7, 'End で末尾移動');
+await press('escape');
+eq(state.mode, 'browse', 'Esc でプロンプト終了');
+
+// パスバークリックでのパス編集起動テスト
+await handleKey({ mouse: true, press: true, drag: false, wheel: null, button: 0, x: 10, y: 1 });
+eq(state.mode, 'prompt', 'パスバー行(y=1)のクリックでパス編集プロンプト起動');
+ok(state.prompt.value.length > 0, 'プロンプトにカレントパスが入力されている');
+await press('escape');
+eq(state.mode, 'browse', 'Esc でパス編集中止');
+
+// セッション保存と復元のテスト
+const origActive = state.activePane;
+state.activePane = 1;
+saveSessionState();
+const loadedState = loadSessionState();
+ok(loadedState !== null, 'セッション状態の読み込み成功');
+eq(loadedState.activePane, 1, '保存された activePane が 1');
+eq(loadedState.panes.length, 2, '保存されたペイン数が 2');
+state.activePane = origActive;
+saveSessionState();
+
+// 空入力でローカルへの切り替え
+state.localCwd = prevLocalCwd;
+await connectSsh('');
+eq(state.remote, null, 'connectSsh 空入力でリモート解除');
+eq(state.cwd, prevLocalCwd, 'ローカルのカレントディレクトリに復帰');
+
+// パス直接入力によるローカル/UNC移動のテスト
+const testLocalTarget = path.join(os.tmpdir(), 'filetui-unc-test-' + Date.now());
+await fsp.mkdir(testLocalTarget, { recursive: true });
+await connectSsh(testLocalTarget);
+eq(state.remote, null, 'ローカルパス指定時はリモート解除');
+eq(state.cwd, testLocalTarget, '指定したローカルパスへ移動');
+await fsp.rm(testLocalTarget, { recursive: true, force: true });
+
+// リモートクリップボードの記録
+state.remote = { target: 'remote1', host: 'remote1', user: null, port: null };
+state.cwd = '/var/www';
+state.entries = [{ name: 'index.html', full: '/var/www/index.html', isDir: false, isLink: false, broken: false, size: 100, mtime: Date.now() }];
+state.index = 0;
+await press('c');
+eq(state.clipboard.op, 'copy', 'リモートファイルのコピー登録');
+eq(state.clipboard.remote.target, 'remote1', 'クリップボードにリモート情報が記録される');
+eq(state.clipboard.files, ['/var/www/index.html'], 'リモートファイルパス');
+
+// リモートからローカルへの貼り付け (SCPダウンロード呼び出し検証)
+await connectSsh('');
+state.cwd = prevLocalCwd;
+await press('p');
+ok(scpCalls.length > 0, 'リモート→ローカルの貼り付けでSCPが実行される');
+
+// モック解除
+setSshRunner(null);
+setSshBinaryRunner(null);
+setScpRunner(null);
+
+// ------------------------------ 左右2ペイン & ツリー機能 ------------------------------
+
+log('\n## 左右2ペイン & ツリー機能');
+
+// 初期ペイン構造の確認
+eq(state.panes.length, 2, 'state.panes が左右2個存在');
+eq(state.activePane, 0, '初期アクティブペインは左(0)');
+
+// Tab キーで左右ペイン切り替え
+await press('tab');
+eq(state.activePane, 1, 'Tab で右ペイン(1)に切替');
+await press('tab');
+eq(state.activePane, 0, '再度 Tab で左ペイン(0)に切替');
+
+// ツリー展開と折りたたみのテスト用ディレクトリ作成
+const treeTmp = await fsp.mkdtemp(path.join(os.tmpdir(), 'filetui-tree-'));
+const dirA = path.join(treeTmp, 'dirA');
+const dirB = path.join(treeTmp, 'dirB');
+const subFile = path.join(dirA, 'child.txt');
+await fsp.mkdir(dirA);
+await fsp.mkdir(dirB);
+await fsp.writeFile(subFile, 'hello child');
+await fsp.writeFile(path.join(treeTmp, 'root.txt'), 'hello root');
+
+// 左ペインにツリーディレクトリをロード
+await loadDir(treeTmp, null, state.panes[0]);
+eq(state.panes[0].tree.length, 3, '初期展開前はルート直下の3件');
+
+// カーソルを dirA に合わせて 'right' (展開)
+state.panes[0].index = state.panes[0].tree.findIndex((e) => e.name === 'dirA');
+const dirAEntry = state.panes[0].tree[state.panes[0].index];
+ok(dirAEntry.isDir, 'dirA はディレクトリ');
+eq(dirAEntry.expanded, false, '初期は未展開');
+
+await press('right');
+eq(state.panes[0].expandedDirs.has(dirA), true, 'right で expandedDirs に登録');
+eq(state.panes[0].tree.some((e) => e.name === 'child.txt'), true, '子要素 child.txt がツリーに出現');
+eq(state.panes[0].tree.find((e) => e.name === 'child.txt').depth, 1, '子要素の階層深さは 1');
+
+// 'left' で折りたたみ
+state.panes[0].index = state.panes[0].tree.findIndex((e) => e.name === 'dirA');
+await press('left');
+eq(state.panes[0].expandedDirs.has(dirA), false, 'left で折りたたみ');
+eq(state.panes[0].tree.some((e) => e.name === 'child.txt'), false, 'ツリーから子要素が非表示化');
+
+// 左右ペイン間のドラッグ＆ドロップシミュレーション
+// 右ペインを dirB に設定
+await loadDir(dirB, null, state.panes[1]);
+eq(state.panes[1].cwd, dirB, '右ペインのカレントは dirB');
+
+// 左ペインの root.txt を右ペインへドラッグ
+state.activePane = 0;
+state.panes[0].index = state.panes[0].tree.findIndex((e) => e.name === 'root.txt');
+const rootFile = path.join(treeTmp, 'root.txt');
+
+// ドラッグ開始 (左ペイン、x=10, y=3+index)
+const rootRow = 3 + state.panes[0].index;
+await handleKey({ mouse: true, press: true, drag: false, wheel: null, button: 0, x: 10, y: rootRow });
+// 右ペイン側 (x=60, y=3) へドラッグ移動
+await handleKey({ mouse: true, press: true, drag: true, wheel: null, button: 0, x: 60, y: 3 });
+ok(state.drag !== null, 'ドラッグ状態成立');
+eq(state.drag.srcPaneIdx, 0, 'ドラッグ元は左ペイン');
+eq(state.drag.overPaneIdx, 1, 'ドロップ対象は右ペイン');
+
+// 解放 (ドロップ)
+await handleKey({ mouse: true, press: false, drag: false, wheel: null, button: 0, x: 60, y: 3 });
+eq(state.mode, 'choose', '右ペインへのドロップでコピー/移動選択モード');
+// 'c' でコピー実行
+await press('c');
+ok(await exists(path.join(dirB, 'root.txt')), '右ペインディレクトリに root.txt がコピーされた');
+ok(await exists(rootFile), '元ファイルは残存 (コピー)');
+
+// クリーンアップ
+await fsp.rm(treeTmp, { recursive: true, force: true });
+
 log(`\n# 結果: ${pass} pass / ${fail} fail\n`);
 process.exit(fail ? 1 : 0);
+
