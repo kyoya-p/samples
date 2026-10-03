@@ -155,6 +155,8 @@ const state = {
   lastClick: null,         // {paneIdx, index, at}
   message: '起動完了。Tab:左右切替 マウスドラッグ対応 ? でヘルプ',
   msgKind: 'info',
+  // パンくずセパレータ: 描画時に更新。{xStart, xEnd, parentPath, paneIdx, isRemote, remote}[]
+  breadcrumbSeps: [],
 };
 
 const getActivePane = () => state.panes[state.activePane];
@@ -837,22 +839,105 @@ function renderBrowse() {
   const leftW = Math.max(10, dividerX);
   const rightW = Math.max(10, cols - 1 - leftW);
 
-  // 1行目: パスヘッダ (アクティブペインを強調表示)
-  const p0 = state.panes[0], p1 = state.panes[1];
-  const loc0 = p0.remote ? `[SSH: ${p0.remote.target}] ${p0.cwd}` : p0.cwd;
-  const loc1 = p1.remote ? `[SSH: ${p1.remote.target}] ${p1.cwd}` : p1.cwd;
+  // --- パンくずリスト生成 ---
+  // parts: [{label, fullPath}] のリストを返す (ローカル/リモート共通)
+  function makeCrumbs(pane) {
+    if (pane.remote) {
+      // リモート: "[SSH: host] /a/b/c" → SSH prefix + POSIXパーツ
+      const prefix = `[SSH: ${pane.remote.target}]`;
+      const parts = [{ label: prefix, fullPath: null }]; // SSH prefix はセパレータなし
+      const segments = pane.cwd.split('/').filter(Boolean);
+      let built = '';
+      for (const seg of segments) {
+        built += '/' + seg;
+        parts.push({ label: seg, fullPath: built });
+      }
+      if (parts.length === 1) parts.push({ label: '/', fullPath: '/' });
+      return parts;
+    } else {
+      // ローカル: Windows (C:\a\b) / POSIX (/a/b)
+      const parts = [];
+      const sep = path.sep;
+      const segments = pane.cwd.split(sep).filter(Boolean);
+      // Windows: 最初のセグメントはドライブ "C:"
+      // POSIX: 先頭 '/' を root として追加
+      if (pane.cwd.startsWith(sep) || pane.cwd.startsWith('/')) {
+        parts.push({ label: '/', fullPath: '/' });
+      }
+      let built = '';
+      for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        built = built ? path.join(built, seg) : (pane.cwd.startsWith(sep) ? path.join(sep, seg) : seg + sep);
+        parts.push({ label: seg, fullPath: built });
+      }
+      return parts;
+    }
+  }
+
+  // パンくず文字列を生成しつつ、セパレータ座標を収集する
+  // xOffset: このペインの描画開始x (1-indexed)
+  function renderCrumb(pane, paneIdx, width, xOffset) {
+    const crumbs = makeCrumbs(pane);
+    const SEP = ' ▶ ';  // セパレータ文字
+    const SEP_W = dispWidth(SEP);
+
+    // 描画文字列を組み立てながらセパレータ位置を記録
+    const seps = [];  // {xStart, xEnd, parentPath}
+    let raw = '';     // ANSI なしの論理文字列 (幅計算用)
+    let colored = ''; // ANSIあり
+
+    const active = paneIdx === state.activePane;
+
+    for (let i = 0; i < crumbs.length; i++) {
+      const { label, fullPath } = crumbs[i];
+      const isLast = i === crumbs.length - 1;
+
+      // パーツ描画
+      if (isLast) {
+        colored += active ? `${C.bold}${label}${C.reset}` : label;
+      } else {
+        colored += `${C.dim}${label}${C.reset}`;
+      }
+      raw += label;
+
+      if (!isLast) {
+        // セパレータ
+        const xStart = xOffset + dispWidth(' ') + dispWidth(raw);
+        const xEnd = xStart + SEP_W - 1;
+        seps.push({ xStart, xEnd, parentPath: fullPath, paneIdx, isRemote: Boolean(pane.remote), remote: pane.remote });
+        colored += active ? `${C.yellow}${SEP}${C.reset}` : `${C.dim}${SEP}${C.reset}`;
+        raw += SEP;
+      }
+    }
+
+    // 先頭スペース追加
+    const line = ` ${colored}`;
+    const lineRaw = ` ${raw}`;
+
+    // 幅に収める (末尾切り詰め or パディング)
+    const fitted = dispWidth(lineRaw) <= width ? line + ' '.repeat(width - dispWidth(lineRaw)) : line;
+
+    return { fitted, seps };
+  }
+
+  // セパレータリストをリセットして両ペイン分を収集
+  state.breadcrumbSeps = [];
+
+  const c0 = renderCrumb(state.panes[0], 0, leftW, 1);
+  const c1 = renderCrumb(state.panes[1], 1, rightW, leftW + 2); // +2: divider '│' + 1-indexed
+  state.breadcrumbSeps.push(...c0.seps, ...c1.seps);
 
   const h0 = state.activePane === 0
-    ? `${C.rev}${C.bold}${fit(` ${loc0}`, leftW)}${C.reset}`
-    : `${C.dim}${fit(` ${loc0}`, leftW)}${C.reset}`;
-
+    ? `${C.rev}${C.bold}${c0.fitted}${C.reset}`
+    : `${C.dim}${c0.fitted}${C.reset}`;
   const h1 = state.activePane === 1
-    ? `${C.rev}${C.bold}${fit(` ${loc1}`, rightW)}${C.reset}`
-    : `${C.dim}${fit(` ${loc1}`, rightW)}${C.reset}`;
+    ? `${C.rev}${C.bold}${c1.fitted}${C.reset}`
+    : `${C.dim}${c1.fitted}${C.reset}`;
 
   const head = h0 + `${C.dim}│${C.reset}` + h1;
 
   // 2行目: 情報バー
+  const p0 = state.panes[0], p1 = state.panes[1];
   const vis0 = visibleEntries(p0), vis1 = visibleEntries(p1);
   const sub0 = `${C.dim}${fit(` ${vis0.length}/${p0.tree.length}件${p0.marks.size ? ` | 選択${p0.marks.size}` : ''} | sort:${p0.sortKey}${p0.sortAsc ? '↑' : '↓'}`, leftW)}${C.reset}`;
   const sub1 = `${C.dim}${fit(` ${vis1.length}/${p1.tree.length}件${p1.marks.size ? ` | 選択${p1.marks.size}` : ''} | Tab:切替 C:SSH ?:ヘルプ`, rightW)}${C.reset}`;
@@ -871,6 +956,7 @@ function renderBrowse() {
   lines.push(statusLine(cols));
   return lines;
 }
+
 
 const HELP = [
   ['左右ペイン / ツリー操作', ''],
@@ -1533,15 +1619,76 @@ async function handleMouse(ev) {
   // --- 押下 ---
   state.activePane = targetPaneIdx;
 
-  // パスバー行 (y=1) のクリックでパス編集プロンプト起動
+  // パスバー行 (y=1) のクリック
   if (ev.button === 0 && ev.y === 1) {
-    const promptVal = targetPane.remote ? (targetPane.remote.target + (targetPane.remote.path ? ':' + targetPane.remote.path : '')) : targetPane.cwd;
+    // セパレータ ▶ のクリック判定
+    const hitSep = state.breadcrumbSeps.find(
+      (s) => s.paneIdx === targetPaneIdx && ev.x >= s.xStart && ev.x <= s.xEnd
+    );
+
+    if (hitSep) {
+      // セパレータがクリックされた → その親フォルダ直下のサブフォルダ一覧をサブメニューへ
+      const sepPane = state.panes[hitSep.paneIdx];
+      const parentPath = hitSep.parentPath;
+
+      // サブフォルダ一覧を非同期で取得してから choose モードを起動
+      (async () => {
+        let siblings;
+        try {
+          if (hitSep.isRemote) {
+            siblings = await fetchChildren(sepPane, parentPath);
+          } else {
+            siblings = await fetchChildren(sepPane, parentPath);
+          }
+        } catch {
+          siblings = [];
+        }
+
+        const dirs = siblings.filter((e) => e.isDir && !e.broken);
+        if (!dirs.length) {
+          setMsg(`サブフォルダなし: ${parentPath}`, 'warn');
+          render();
+          return;
+        }
+
+        // choose モードのラベルとアクションを構築
+        // キーは 1-9, a-z の順に割り当て
+        const keyChars = '123456789abcdefghijklmnopqrstuvwxyz';
+        const actions = {};
+        const labelParts = [`${parentPath} のサブフォルダ:`];
+        dirs.slice(0, keyChars.length).forEach((dir, idx) => {
+          const k = keyChars[idx];
+          const name = hitSep.isRemote
+            ? dir.name
+            : path.basename(dir.full);
+          labelParts.push(`  ${k}:${name}`);
+          actions[k] = async () => {
+            await loadDir(dir.full, null, sepPane);
+            setMsg(`移動: ${dir.full}`, 'ok');
+          };
+        });
+
+        state.mode = 'choose';
+        state.choose = {
+          label: labelParts.join('  ') + '  Esc:中止',
+          actions,
+        };
+        render();
+      })();
+      return;
+    }
+
+    // セパレータ以外のパスバークリック → パス編集プロンプト
+    const promptVal = targetPane.remote
+      ? (targetPane.remote.target + (targetPane.remote.path ? ':' + targetPane.remote.path : ''))
+      : targetPane.cwd;
     askPrompt('パス / SSH接続先 (例: \\\\server\\share, /path, user@host:/path, 空で戻る): ',
       promptVal, async (v) => {
         await connectSsh(v, targetPane);
       });
     return;
   }
+
 
   if (ev.button === 2) {                              // 右クリック: 選択トグル
     if (i >= 0) { targetPane.index = i; toggleMark(vis[i], targetPane); }

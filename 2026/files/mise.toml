@@ -1,0 +1,10 @@
+[tasks.tui]
+description = "Launch mouse-enabled TUI file manager"
+run = "node files.mjs"
+
+[tasks.test]
+description = "Run tests for files TUI"
+run = "node test.mjs"
+
+[tools]
+rust = "latest"
