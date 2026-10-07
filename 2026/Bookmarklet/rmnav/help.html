@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redmine Graph Navigator ヘルプ</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Yu Gothic UI", sans-serif; color: #1e293b; max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; line-height: 1.7; background: #f8fafc; }
+  h1 { font-size: 24px; border-bottom: 3px solid #2563eb; padding-bottom: 8px; }
+  h2 { font-size: 18px; margin-top: 32px; border-left: 4px solid #2563eb; padding-left: 8px; }
+  code, kbd { background: #e2e8f0; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; }
+  th, td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; vertical-align: top; font-size: 14px; }
+  th { background: #f1f5f9; }
+  .line { display: inline-block; width: 36px; vertical-align: middle; margin-right: 6px; }
+  .note { background: #fef9c3; border: 1px solid #fde047; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>🕸️ Redmine Graph Navigator</h1>
+<p>Redmine のチケットの親子・関連を、別ウィンドウのグラフで可視化・探索するブックマークレット。</p>
+
+<h2>起動</h2>
+<ol>
+  <li>Redmine のチケット詳細ページ (<code>/issues/123</code>) でブックマークレットをクリック → そのチケットを起点にグラフ表示</li>
+  <li>チケット詳細以外のページでクリック → <b>前回閉じた時と同じグラフ</b>を復元 (保存が無い場合は履歴サイドバーを表示)</li>
+  <li>既にナビウィンドウが開いている状態でチケット詳細以外からクリック → 画面は変えず前面に表示</li>
+</ol>
+<p class="note">初回はブラウザのポップアップブロック解除が必要な場合があります。</p>
+
+<h2>前回状態の復元</h2>
+<ul>
+  <li>ノード、エッジ、ノード配置、拡大率/表示位置、関連フィルタ、レイアウト、選択中チケットを <code>localStorage</code> に自動保存 (ウィンドウを閉じた時・操作後)</li>
+  <li>保存先は Redmine と同一オリジンのブラウザ内のみ。サーバー送信なし</li>
+  <li>チケット詳細ページから起動した場合は、その起点チケットで新規に描画 (前回状態は上書き)</li>
+</ul>
+
+<h2>ツールバー</h2>
+<table>
+  <tr><th>ボタン</th><th>機能</th></tr>
+  <tr><td>チケット# / ➕ 追加</td><td>番号を指定してグラフにチケットを追加</td></tr>
+  <tr><td>🔄 関連展開</td><td>選択中ノードの関連チケットを展開</td></tr>
+  <tr><td>🎯 フィット</td><td>グラフ全体を画面に収める</td></tr>
+  <tr><td>自由配置 / ツリー(上下) / ツリー(左右)</td><td>レイアウト切替</td></tr>
+  <tr><td>⚡ 物理演算</td><td>力学シミュレーションの ON/OFF</td></tr>
+  <tr><td>ℹ️ 凡例</td><td>線種・色の凡例を表示</td></tr>
+  <tr><td>💬 ホバー情報</td><td>ノードにマウスを乗せた時の詳細表示 ON/OFF（既定は OFF。詳細はクリックで右サイドバーに表示）</td></tr>
+  <tr><td>🕐 履歴</td><td>起点として表示したチケット履歴 (最大200件、サーバー別/最大10サーバー) を開閉</td></tr>
+  <tr><td>❓ ヘルプ</td><td>このページを開く</td></tr>
+</table>
+
+<h2>関連の種類</h2>
+<table>
+  <tr><td><span class="line" style="border-bottom:2px dashed #64748b"></span>親子タスク</td><td>点線 / 灰</td></tr>
+  <tr><td><span class="line" style="border-bottom:2px solid #ef4444"></span>ブロック</td><td>赤</td></tr>
+  <tr><td><span class="line" style="border-bottom:2px solid #0284c7"></span>先行・後続</td><td>青</td></tr>
+  <tr><td><span class="line" style="border-bottom:2px solid #10b981"></span>関連</td><td>緑</td></tr>
+  <tr><td><span class="line" style="border-bottom:2px solid #f59e0b"></span>重複</td><td>橙</td></tr>
+  <tr><td><span class="line" style="border-bottom:2px dashed #8b5cf6"></span>コピー</td><td>点線 / 紫</td></tr>
+</table>
+<p>上部のチェックボックスで関連ごとに表示/非表示を切替。「全選択」「全解除」で一括操作。</p>
+
+<h2>ノード操作</h2>
+<ul>
+  <li><b>クリック</b>: 右サイドバーに詳細表示 (「Redmineで開く」「関連展開」「除外」)</li>
+  <li><b>ダブルクリック</b>: 関連を芋づる式に展開</li>
+  <li><b>ドラッグ</b>: 位置調整</li>
+  <li>金色の太枠: 起点チケット / 灰色: 完了系ステータス / トラッカー別に色分け</li>
+</ul>
+
+<h2>履歴</h2>
+<ul>
+  <li>起点として表示したチケットを自動記録。一覧クリックで別チケットを起点に再表示</li>
+  <li>他サーバーの履歴にはサーバー名バッジを表示</li>
+  <li>「🗑️ 履歴をクリア」: OK で全サーバー、キャンセルで現在のサーバーのみ削除</li>
+</ul>
+
+<h2>データ取得と注意</h2>
+<ul>
+  <li>通常は Redmine REST API (<code>/issues/:id.json?include=relations,children</code>)。API 無効環境では開いているチケットページの DOM から取得</li>
+  <li>Vis.js を CDN (cdnjs / unpkg) から読み込むため、CDN へ接続できる環境が必要</li>
+  <li>ブックマークレット本体は、このサイトの <code>redmine-navi.js</code> を読み込む小さなローダー。更新はサイト側の差し替えのみで全利用者に反映</li>
+  <li>Redmine の CSP (Content-Security-Policy) が外部スクリプトを禁止している場合は読み込みに失敗します</li>
+</ul>
+</body>
+</html>

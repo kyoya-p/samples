@@ -1,0 +1,3 @@
+[tasks."rmnav-deploy"]
+description = "redmine-navi.js / help.html / index.html を rmnav 配布先へコピー (deploy.mjs 参照)"
+run = "node deploy.mjs"

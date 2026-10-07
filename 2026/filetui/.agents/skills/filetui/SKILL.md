@@ -22,6 +22,7 @@ description: >-
 | `test.mjs` | TTY 不要のヘッドレステストスイート (全 176 項目) |
 | `mise.toml` | `mise run tui`, `mise run test` タスク定義 |
 | `Readme.md` | ユーザー向けドキュメント |
+| `HISTORY.md` | 実装・機能追加の作業ログ (Work Log) |
 
 動作要件: Node.js >= 20、OpenSSH (`ssh.exe`, `scp.exe`)
 
@@ -92,7 +93,7 @@ TTY 無しで内部状態・2ペイン切替・ツリー展開・ペイン間D&D
 ### 2. SSH / リモート Linux 連携
 
 - **対象解析 (`parseSshTarget`)**:
-  `ssh://...`、`user@host:path`、`host:path`、`user@host`、およびプロンプト経由のホストエイリアス (`ub2311`) を判定。UNCパス (`\\server\share`, `//server/share`) やローカルPOSIXパス (`/var/log`)、Windowsドライブ文字パスと安全に弁別。Windows ドライブ文字 (`C:\`) や UNC パス (`\\server\...`) と安全に弁別。
+  `ssh://...`、`user@host:path`、`host:path`、`user@host`、およびプロンプト経由のホストエイリアス (`ub2311`) を判定。UNCパス (`\\server\share`, `//server/share`) やローカルPOSIXパス (`/var/log`)、Windowsドライブ文字パス (`C:\`) と安全に弁別。
 - **事前認証確認 (`ensureSshAuth`)**:
   初回は `BatchMode=yes` で非対話確認。パスワードやホスト鍵確認が必要な場合は一時的に TUI (`leaveTui()`) を中断してコンソール直接対話入力を行い、完了後に TUI を安全に復帰。
 - **リモートディレクトリ取得 (`loadDirRemote`)**:
@@ -115,7 +116,16 @@ Windows Terminal / conhost が stdin に送出するパス文字列トークン�
 - ローカル表示時: 現ローカルディレクトリへのコピー/移動選択
 - リモート表示時: リモート Linux ディレクトリへの **SCP アップロード** 選択
 
-### 5. 安全機能
+### 5. パス編集とナビゲーション
+- **パスバー直接クリック (y=1)**: 左右どちらのペインでも、最上段のパスバーをクリックすることで直接インライン編集プロンプトが起動。
+- **ショートカット `C` キー**: 現在のパス（ローカル、UNC、SSHパス）を事前入力した状態で入力・編集し、Enter で即座にジャンプ可能（空入力でローカル復帰）。
+- **UNC / POSIX / ドライブ文字判定**: `\\server\share`, `//server/share`, `/var/log`, `C:\...` 等のパス種別を自動判定し、ローカル・UNC・リモートをシームレスに遷移。
+
+### 6. セッション状態の永続化
+- **状態保存 (`saveSessionState`)**: 終了時やディレクトリ移動時に、左右ペインのパス・SSHリモート情報およびアクティブペインを `~/.filetui-state.json` へ自動保存。
+- **自動復元 (`loadSessionState`)**: コマンドライン引数なしで起動された場合、前回の左右ペイン状態とアクティブペインをそのまま復元。
+
+### 7. 安全機能
 
 - 削除操作は常に `[y/N]` 確認プロンプトを表示 (`askDelete`)
 - 同名衝突時は上書きせず `name (2).ext` 形式で自動リネーム (`uniqueDest`, `uniqueRemoteDest`)

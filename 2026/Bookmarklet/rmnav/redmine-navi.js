@@ -3,7 +3,10 @@
  *
  * Redmine上でチケットのリンク関係（親子、ブロック、先行後続、関連、重複等）を
  * 別ウィンドウでVis.jsを使ってグラフィカルに可視化・探索するBookmarklet。
- * 最近表示したチケットを200件までlocalStorageに保存し、起動時にメニュー表示。
+ * 最近表示したチケットを200件までlocalStorageに保存。
+ * 閉じた時のグラフ状態(ノード/エッジ/配置/表示位置)も保存し、再起動時に復元する。
+ * 本ファイルは http://c6303002l.win.sharp.co.jp/gantt-tool/rmnav/ に配置され、
+ * ブックマークレット(ローダー)から読み込まれる。
  */
 (function () {
   var origin = window.location.origin;
@@ -13,6 +16,8 @@
   var initialIssueId = match ? match[2] : null;
 
   var baseUrl = origin + basePath;
+  var APP_BASE = "http://c6303002l.win.sharp.co.jp/gantt-tool/rmnav";
+  var HELP_URL = APP_BASE + "/help.html";
 
   // ===================== サーバー管理 =====================
   var SERVERS_KEY = "redmine_navi_servers";
@@ -88,11 +93,39 @@
     alert("ポップアップウィンドウの表示がブロックされました。ブラウザのアドレスバー等でポップアップを許可してください。");
     return;
   }
+  // 既に開いているナビウィンドウがあり、起点チケット指定が無ければ画面を維持して前面表示のみ
+  try {
+    if (!initialIssueId && win.document && win.document.getElementById("network")) {
+      win.focus();
+      return;
+    }
+  } catch (e) {}
 
   // ポップアップウィンドウ内で動作するアプリケーション本体
-  function popupApp(initialId, baseUrlParam, histData, allHistory) {
+  function popupApp(initialId, baseUrlParam, histData, allHistory, helpUrl) {
     // baseUrl はサーバー切替のため変数として管理
     var baseUrl = baseUrlParam;
+
+    // 初期化失敗時に原因を画面表示 (スピナーのまま固まるのを防ぐ)
+    function showFatal(msg) {
+      var sp = document.querySelector("#loading .spinner");
+      if (sp) sp.style.display = "none";
+      var t = document.getElementById("loading-text");
+      if (t) {
+        t.style.color = "#dc2626";
+        t.style.whiteSpace = "pre-wrap";
+        t.textContent = msg;
+      }
+      var l = document.getElementById("loading");
+      if (l) l.style.display = "flex";
+    }
+    window.addEventListener("error", function(e) {
+      showFatal("エラー: " + (e && e.message ? e.message : e));
+    });
+    if (typeof vis === "undefined") {
+      showFatal("Vis.js を読み込めません。\ncdnjs.cloudflare.com / unpkg.com への接続を確認してください。");
+      return;
+    }
 
     if (initialId) {
       document.getElementById("origin-issue-link").href = baseUrl + "/issues/" + initialId;
@@ -269,6 +302,10 @@
     var currentLayout = "free";
     var physicsEnabled = true;
 
+    // ホバー時のツールチップは邪魔になるため既定でOFF (ツールバーで切替)
+    var TOOLTIP_OFF = 2147483000;
+    var tooltipEnabled = false;
+
     var baseOptions = {
       nodes: {
         shape: "box",
@@ -310,7 +347,7 @@
       },
       interaction: {
         hover: true,
-        tooltipDelay: 150,
+        tooltipDelay: TOOLTIP_OFF,
         navigationButtons: true,
         keyboard: true
       }
@@ -525,15 +562,27 @@
     async function fetchIssueData(id) {
       id = String(id);
       try {
-        var res = await fetch(baseUrl + "/issues/" + id + ".json?include=relations,children", {
-          credentials: "include"
-        });
+        // 応答が無い場合に固まらないよう8秒でタイムアウト
+        var ctrl = new AbortController();
+        var tm = setTimeout(function() { ctrl.abort(); }, 8000);
+        var t0 = Date.now();
+        var res;
+        try {
+          res = await fetch(baseUrl + "/issues/" + id + ".json?include=relations,children", {
+            credentials: "include",
+            signal: ctrl.signal
+          });
+        } finally {
+          clearTimeout(tm);
+        }
+        updateStatus("API応答 #" + id + ": HTTP " + res.status + " (" + (Date.now() - t0) + "ms)");
         if (res.ok) {
           var json = await res.json();
           return json.issue;
         }
       } catch (err) {
         console.warn("API fetch error for #" + id, err);
+        updateStatus("API取得エラー #" + id + ": " + (err && err.message ? err.message : err));
       }
 
       if (window.opener && window.opener.document) {
@@ -784,6 +833,12 @@
       }
     };
 
+    document.getElementById("btn-tooltip").onclick = function() {
+      tooltipEnabled = !tooltipEnabled;
+      this.classList.toggle("active", tooltipEnabled);
+      network.setOptions({ interaction: { tooltipDelay: tooltipEnabled ? 300 : TOOLTIP_OFF } });
+    };
+
     document.getElementById("btn-legend").onclick = function() {
       var modal = document.getElementById("legend-modal");
       modal.style.display = modal.style.display === "block" ? "none" : "block";
@@ -859,6 +914,106 @@
       renderHistoryMenu();
     };
 
+    document.getElementById("btn-help").onclick = function() {
+      window.open(helpUrl, "redmine_navi_help");
+    };
+
+    // ===================== 最終状態の保存/復元 =====================
+    var STATE_KEY = "redmine_navi_last_state";
+    var restoring = false;
+    var saveTimer = null;
+
+    function saveState() {
+      if (restoring || nodes.length === 0) return;
+      try {
+        var pos = network.getPositions();
+        var ns = nodes.get().map(function(n) {
+          var p = pos[n.id];
+          if (p) { n.x = p.x; n.y = p.y; }
+          return n;
+        });
+        var link = document.getElementById("origin-issue-link");
+        window.localStorage.setItem(STATE_KEY, JSON.stringify({
+          v: 1,
+          ts: Date.now(),
+          baseUrl: baseUrl,
+          originHref: link.getAttribute("href"),
+          originText: link.textContent,
+          nodes: ns,
+          edges: edges.get(),
+          cache: issuesCache,
+          filter: filterState,
+          layout: currentLayout,
+          physics: physicsEnabled,
+          selected: selectedIssueId,
+          view: { position: network.getViewPosition(), scale: network.getScale() }
+        }));
+      } catch(e) {}
+    }
+
+    function scheduleSave() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveState, 500);
+    }
+
+    function restoreState() {
+      var st;
+      try { st = JSON.parse(window.localStorage.getItem(STATE_KEY) || "null"); } catch(e) { st = null; }
+      if (!st || !st.nodes || !st.nodes.length) return false;
+      restoring = true;
+      baseUrl = st.baseUrl || baseUrl;
+      issuesCache = st.cache || {};
+      if (st.filter) {
+        Object.keys(st.filter).forEach(function(k) { filterState[k] = st.filter[k]; });
+        relCheckboxes.forEach(function(chk) {
+          var t = chk.getAttribute("data-rel");
+          if (t && filterState[t] === false) chk.checked = false;
+        });
+      }
+      var link = document.getElementById("origin-issue-link");
+      link.href = st.originHref || "#";
+      link.textContent = st.originText || "---";
+      physicsEnabled = st.physics !== false;
+      document.getElementById("btn-physics").classList.toggle("active", physicsEnabled);
+      // 保存済みの配置を維持するため、復元中は物理演算を止める
+      network.setOptions({ physics: { enabled: false } });
+      nodes.add(st.nodes);
+      edges.add(st.edges || []);
+      if (st.layout && st.layout !== "free") {
+        setLayout(st.layout);
+      } else {
+        currentLayout = "free";
+        if (st.view && st.view.position) {
+          network.moveTo({ position: st.view.position, scale: st.view.scale, animation: false });
+        } else {
+          network.fit();
+        }
+      }
+      restoring = false;
+      if (currentLayout === "free" && physicsEnabled) {
+        setTimeout(function() { network.setOptions({ physics: { enabled: true } }); }, 500);
+      }
+      if (st.selected && nodes.get(st.selected)) showSidebarDetails(st.selected);
+      // 読み込み中のまま保存されたノードを補完
+      nodes.get().forEach(function(n) {
+        if (!issuesCache[n.id] || !issuesCache[n.id].status) {
+          fetchIssueData(n.id).then(function(detail) {
+            if (detail) { addOrUpdateIssueNode(detail, false); updateStatus(); }
+          });
+        }
+      });
+      updateStatus("前回終了時のグラフを復元しました");
+      return true;
+    }
+
+    nodes.on("*", scheduleSave);
+    edges.on("*", scheduleSave);
+    network.on("dragEnd", scheduleSave);
+    network.on("zoom", scheduleSave);
+    network.on("click", scheduleSave);
+    window.addEventListener("pagehide", saveState);
+    window.addEventListener("beforeunload", saveState);
+
     // 初期化実行
     renderHistoryMenu();
     if (initialId) {
@@ -872,10 +1027,12 @@
         alert("チケットデータの取得中にエラーが発生しました: " + err);
       });
     } else {
-      // Redmineチケットページ以外から起動: 履歴パネルを開いてチケット選択を促す
       hideLoading();
-      document.getElementById("history-sidebar").classList.remove("collapsed");
-      updateStatus("履歴からチケットを選択してグラフを表示してください");
+      if (!restoreState()) {
+        // 保存状態が無い場合: 履歴パネルを開いてチケット選択を促す
+        document.getElementById("history-sidebar").classList.remove("collapsed");
+        updateStatus("履歴からチケットを選択してグラフを表示してください");
+      }
     }
   }
 
@@ -1237,6 +1394,7 @@
 '      border-top: 1px solid #e2e8f0;\n' +
 '      background: #f8fafc;\n' +
 '    }\n' +
+'    .vis-tooltip { pointer-events: none !important; }\n' +
 '  </style>\n' +
 '  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>\n' +
 '  <script>\n' +
@@ -1264,8 +1422,10 @@
 '      <button id="btn-physics" class="btn active" title="物理シミュレーションON/OFF">⚡ 物理演算</button>\n' +
 '      <span style="color:#475569;">|</span>\n' +
 '      <button id="btn-legend" class="btn" title="凡例を表示">ℹ️ 凡例</button>\n' +
+'      <button id="btn-tooltip" class="btn" title="ノードにマウスを乗せた時の詳細表示 ON/OFF">💬 ホバー情報</button>\n' +
 '      <span style="color:#475569;">|</span>\n' +
 '      <button id="btn-history" class="btn" title="最近表示したチケット履歴">🕐 履歴</button>\n' +
+'      <button id="btn-help" class="btn" title="機能説明をWebで表示">❓ ヘルプ</button>\n' +
 '    </div>\n' +
 '  </header>\n' +
 '\n' +
@@ -1346,7 +1506,7 @@
 '  </div>\n' +
 '\n' +
 '  <script>\n' +
-'    (' + popupApp.toString() + ')(' + JSON.stringify(initialIssueId) + ', ' + JSON.stringify(baseUrl) + ', ' + JSON.stringify(loadHistoryForServer(baseUrl)) + ', ' + JSON.stringify(allHistory) + ');\n' +
+'    (' + popupApp.toString() + ')(' + JSON.stringify(initialIssueId) + ', ' + JSON.stringify(baseUrl) + ', ' + JSON.stringify(loadHistoryForServer(baseUrl)) + ', ' + JSON.stringify(allHistory) + ', ' + JSON.stringify(HELP_URL) + ');\n' +
 '  </script>\n' +
 '</body>\n' +
 '</html>';

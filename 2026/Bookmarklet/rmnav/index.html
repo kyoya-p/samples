@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redmine Graph Navigator 導入</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "Yu Gothic UI", sans-serif; color: #1e293b; max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; line-height: 1.7; background: #f8fafc; }
+  h1 { font-size: 24px; border-bottom: 3px solid #2563eb; padding-bottom: 8px; }
+  a.bm { display: inline-block; padding: 10px 20px; background: #2563eb; color: #fff; border-radius: 8px; text-decoration: none; font-weight: bold; cursor: grab; }
+  button { padding: 6px 14px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; cursor: pointer; }
+  textarea { width: 100%; height: 90px; font-family: monospace; font-size: 12px; }
+  .note { background: #fef9c3; border: 1px solid #fde047; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>🕸️ Redmine Graph Navigator 導入</h1>
+
+<h2>方法1: ドラッグ&ドロップ</h2>
+<p>下のボタンをブラウザの<b>ブックマークバーへドラッグ</b>（バーが非表示なら <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>）。</p>
+<p><a id="bm" class="bm" href="#">Redmine Navi</a></p>
+
+<h2>方法2: コードをコピーして手動登録</h2>
+<p>ブックマークを新規作成し、URL 欄に貼り付け。</p>
+<textarea id="code" readonly></textarea><br>
+<button id="copy">📋 コピー</button> <span id="msg"></span>
+
+<h2>使い方</h2>
+<ul>
+  <li>Redmine のチケット詳細ページでブックマークをクリック → グラフ表示</li>
+  <li>それ以外のページでクリック → 前回閉じた時のグラフを復元</li>
+  <li>詳細は <a href="help.html">ヘルプ</a></li>
+</ul>
+<p class="note">ポップアップのブロック解除が必要な場合があります。本体はこのサイトの <code>redmine-navi.js</code> を読み込むため、更新時の再登録は不要です。</p>
+
+<script>
+  // 自己署名証明書のhttpsではスクリプトを読み込めないため、httpで固定
+  var base = "http://c6303002l.win.sharp.co.jp/gantt-tool/rmnav";
+  var code = '(function(){var s=document.createElement("script");s.src="' + base + '/redmine-navi.js?t="+Date.now();' +
+    's.onerror=function(){alert("redmine-navi: スクリプトを読み込めません");};' +
+    '(document.head||document.documentElement).appendChild(s);})();';
+  var url = "javascript:" + code;
+  document.getElementById("bm").href = url;
+  document.getElementById("code").value = url;
+  document.getElementById("copy").onclick = function() {
+    var ta = document.getElementById("code");
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) {}
+    document.getElementById("msg").textContent = ok ? "コピーしました" : "手動でコピーしてください";
+  };
+</script>
+</body>
+</html>
