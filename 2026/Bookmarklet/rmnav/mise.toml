@@ -1,3 +1,5 @@
-[tasks."rmnav-deploy"]
-description = "redmine-navi.js / help.html / index.html を rmnav 配布先へコピー (deploy.mjs 参照)"
-run = "node deploy.mjs"
+[tasks]
+rmnav-deploy = "Copy-Item redmine-navi.js, help.html, index.html '\\\\c6303002l.win.sharp.co.jp\\web\\gantt-tool\\rmnav' -Force"
+rmnav = "Start-Process 'http://c6303002l.win.sharp.co.jp/gantt-tool/rmnav/index.html'"
+rmnav-test = "start ./index.html"
+
