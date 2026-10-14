@@ -36,7 +36,13 @@ if (!session || !week) { console.error('parse failed:\n' + out); process.exit(1)
 const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
 // 前回記録の時刻（無ければ 0）から今回まで
 const lines = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').trim().split('\n').filter(Boolean) : [];
-const prevTs = lines.length ? Date.parse(JSON.parse(lines[lines.length - 1]).ts) : 0;
+const prev = lines.length ? JSON.parse(lines[lines.length - 1]) : null;
+const prevTs = prev ? Date.parse(prev.ts) : 0;
+// フック経由（USAGE_GATE）では、前回記録から10分未満かつ使用率が減っていない（リセットでない）なら追記しない
+if (process.env.USAGE_GATE && prev) {
+  const dropped = Number(session[1]) < prev.sessionPct || Number(week[1]) < prev.weekPct;
+  if (!dropped && Date.now() - prevTs < 10 * 60 * 1000) { console.log('skipped'); process.exit(0); }
+}
 const sample = {
   ts: new Date().toISOString(),
   sessionPct: Number(session[1]), sessionResets: session[2].trim(),

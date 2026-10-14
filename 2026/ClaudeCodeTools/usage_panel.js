@@ -54,7 +54,9 @@ if (lastS) {
     // 1時間以上前で最も新しく、同一枠(リセット表記が一致)かつ使用率が現在値より小さいサンプル
     // 同一枠の判定はリセット時刻の一致（表記は分単位で揺れるため15分以内を同一とみなす）
     const sameWindow = s => Math.abs(parseReset(s[resetKey] || '', year) - reset) < 15 * 60000;
-    const base = [...samples].reverse().find(s => Date.parse(s.ts) <= ts - 3600000 && sameWindow(s) && s[pctKey] < pct);
+    // 1時間以上前の記録が無い場合は、同一枠で1時間以内の最も古い記録（現在値より小さいもの）を起点にする（5時間枠・週次とも）
+    const base = [...samples].reverse().find(s => Date.parse(s.ts) <= ts - 3600000 && sameWindow(s) && s[pctKey] < pct)
+      || samples.find(s => Date.parse(s.ts) > ts - 3600000 && Date.parse(s.ts) < ts && sameWindow(s) && s[pctKey] < pct);
     const rate1h = base ? (pct - base[pctKey]) / (ts - Date.parse(base.ts)) : 0; // %/ms
     proj[key] = {
       ts, pct, start, reset,
@@ -114,7 +116,7 @@ const fmt = n => n.toLocaleString('ja-JP');
 const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
 function usageChart() {
   const S = D.samples, DAYS = D.byDay.filter(d => d.key !== 'unknown');
-  const W = 640, H = 220, P = 30;
+  const W = 640, H = 200, P = 30;
   // 時間軸: 最初の日の0時(UTC) 〜 最新の記録または最新の日の末尾
   const dayMs = 86400000;
   const firstDay = Date.parse(DAYS[0].key + 'T00:00:00Z');
@@ -163,9 +165,10 @@ function usageChart() {
   }).join('') : '';
   // 5時間枠・週次を別グラフで描画。1時間前基準が出せない場合は理由を図内に表示
   const p = c.p, col = c.col;
+  // 現在の枠（開始〜更新時刻）の背景。グラフ色をごく薄く
+  const band = p && p.start && p.reset ? '<g clip-path="url(#plotArea)"><rect x="' + x(p.start).toFixed(1) + '" y="' + P + '" width="' + Math.max(0, x(p.reset) - x(p.start)).toFixed(1) + '" height="' + (H - 2 * P) + '" fill="' + col + '" fill-opacity="0.08"><title>現在の枠 ' + fmtT(p.start) + '〜' + fmtT(p.reset) + '</title></rect></g>' : '';
   const plot = '<g clip-path="url(#plotArea)">' + line(c.key, col) + projLine(p, col) + projLine1h(p, col) + resetLine(p, col, c.label) + nowLine + hit100(p, col) + '</g>';
-  const reasonText = p && p.h1Reason ? '<text x="' + P + '" y="' + (P + 12) + '" font-size="10" fill="var(--mut)">1h前基準なし・' + p.h1Reason + '</text>' : '';
-  document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img">' + clip + grid + plot + xLabels + reasonText + '</svg>';
+  document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img">' + clip + band + grid + plot + xLabels + '</svg>';
   };
   // 範囲メニュー（グラフごと）: 左端 = 現在の N 時間前、右端 = 次の更新(リセット)時刻。選択は閲覧者のブラウザに保存し、再読込（F5）後も維持
   const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
@@ -218,7 +221,7 @@ function cumChart() {
   }
   const fin = pts[pts.length - 1];
   document.getElementById('now-cum').textContent = k(fin.tot);
-  const W = 640, H = 220, P = 30, PL = 46;
+  const W = 640, H = 180, P = 30, PL = 46;
   const pad = n => String(n).padStart(2, '0');
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
   const draw = hours => {
