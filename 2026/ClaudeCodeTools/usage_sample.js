@@ -1,13 +1,20 @@
 // `claude -p "/usage"` の出力から 5時間枠(Current session)と週次(Current week)の使用率を読み取り、usage_samples.jsonl に1行追記する
 // 同じ行に、前回記録から今回までのモデル別トークン使用量（区間の増加分 byModel）も含める
 // 出力形式: "Current session: 25% used · resets Oct 13, 11:49am (Asia/Tokyo)" / "Current week (all models): 5% used · resets Oct 19, 6:59am (Asia/Tokyo)"
-const fs = require('fs'), path = require('path');
+const fs = require('fs'), path = require('path'), os = require('os');
 const { execSync } = require('child_process');
-const root = 'C:/Users/sharp/.claude/projects';
+const root = path.join(os.homedir(), '.claude', 'projects');
 // セッションログから期間 (fromMs, toMs] のモデル別使用量を集計（重複除外・synthetic除外は usage_panel.js と同一）
 function modelUsage(fromMs, toMs) {
   const files = [];
-  (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.jsonl')) files.push(p); } })(root);
+  (function walk(d) {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.jsonl')) files.push(p);
+    }
+  })(root);
   const seen = new Set(), byModel = {};
   for (const f of files) for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
     if (!line.includes('"usage"')) continue;

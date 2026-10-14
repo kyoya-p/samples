@@ -52,7 +52,7 @@ Claude Code の使用率（5時間枠・週次）とモデル別トークン使�
 
 ```json
 "Stop": [
-  { "hooks": [ { "type": "command", "command": "node C:/Users/sharp/dev/projs/samples/2026/ClaudeCodeTools/usage_hook.js", "timeout": 300, "async": true } ] }
+  { "hooks": [ { "type": "command", "command": "node <path-to-ClaudeCodeTools>/usage_hook.js", "timeout": 300, "async": true } ] }
 ]
 ```
 
@@ -65,7 +65,7 @@ Claude Code に次のように指示する（パスは環境に合わせて置�
 
 ```text
 ~/.claude/settings.json の hooks.Stop に、次のコマンドを async で追加して。
-  node C:/Users/sharp/dev/projs/samples/2026/ClaudeCodeTools/usage_hook.js
+  node <path-to-ClaudeCodeTools>/usage_hook.js
 timeout は 300。既存の Stop フックは残すこと。
 usage_sample.js を直接登録しないこと（claude -p が Stop を再発火して無限再帰になるため）。
 追加後、JSON として読めることと、参照先ファイルが存在することを確認して。

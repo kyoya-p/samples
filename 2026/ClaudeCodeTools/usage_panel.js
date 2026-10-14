@@ -1,9 +1,16 @@
 // セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(claude-panel.html)を出力する
 // 集計ロジックは usage_dashboard.js と同一(重複除外・synthetic除外)
-const fs = require('fs'), path = require('path');
-const root = 'C:/Users/sharp/.claude/projects';
+const fs = require('fs'), path = require('path'), os = require('os');
+const root = path.join(os.homedir(), '.claude', 'projects');
 const files = [];
-(function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.jsonl')) files.push(p); } })(root);
+(function walk(d) {
+  if (!fs.existsSync(d)) return;
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) walk(p);
+    else if (e.name.endsWith('.jsonl')) files.push(p);
+  }
+})(root);
 const seen = new Set(); const rows = [];
 for (const f of files) for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
   if (!line.includes('"usage"')) continue;
@@ -88,7 +95,7 @@ const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta n
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
 h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0 0 10px}
 .mut{color:var(--mut);font-size:12px}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:14px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(640px,1fr));margin-top:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
 .row{display:grid;grid-template-columns:minmax(90px,1.2fr) 2fr 70px;gap:8px;align-items:center;padding:5px 0;font-size:13px}
 .row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -108,7 +115,7 @@ h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0 0 10px}
 <div class="grid" style="margin-top:12px">
   <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--bar)"></i>5時間枠 使用率の推移（%）</span><span class="rt"><b class="now" id="now-5h" style="color:var(--bar)"></b><span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span></span></h2><div id="usage-chart-5h"></div></div>
   <div class="card"><h2 class="ch"><span><i class="sw" style="background:#d08c4a"></i>週次 使用率の推移（%）</span><span class="rt"><b class="now" id="now-1w" style="color:#d08c4a"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span></span></h2><div id="usage-chart-1w"></div></div>
-  <div class="card" style="grid-column:1/-1"><h2 class="ch"><span>累積トークン使用量（モデル別・合計）</span><span class="rt"><b class="now" id="now-cum" style="color:var(--fg)"></b><span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span></span></h2><div id="cum-chart"></div><div class="mlg" id="cum-legend"></div></div>
+  <div class="card"><h2 class="ch"><span>累積トークン使用量（モデル別・合計）</span><span class="rt"><b class="now" id="now-cum" style="color:var(--fg)"></b><span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span></span></h2><div id="cum-chart"></div><div class="mlg" id="cum-legend"></div></div>
 </div>
 <script>
 const D = ${JSON.stringify(data)};
@@ -148,7 +155,7 @@ function usageChart() {
   // 100% 到達予測の破線（推定）と、リセット(更新)時刻の縦線
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
   // 予測線は枠開始から引くが、記録より前（最初の記録時刻より前）は描かない。傾きは同じで、記録開始時刻から切り詰める
-  const projLine = (p, col) => p && p.t100 ? (() => { const cs = Math.max(p.start, sampleTs[0] || 0), cv = 100 * (cs - p.start) / (p.t100 - p.start); return '<line x1="' + x(cs).toFixed(1) + '" y1="' + yPct(cv).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>100%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>'; })() : '';
+  const projLine = (p, col) => p && p.t100 ? (() => { const cs = p.start, cv = 0; return '<line x1="' + x(cs).toFixed(1) + '" y1="' + yPct(cv).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>100%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>'; })() : '';
   // 1時間前基準の予測（点線）。起点は基準サンプル(1時間前の記録)、現在値を通り100%へ延長
   const projLine1h = (p, col) => p && p.h1 && p.h1.t100 ? '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>100%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>' : '';
   const resetLine = (p, col, label) => p ? '<line x1="' + x(p.reset).toFixed(1) + '" x2="' + x(p.reset).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="' + col + '" stroke-width="1"><title>' + label + ' ' + fmtT(p.reset) + '</title></line><text x="' + (x(p.reset) + (x(p.reset) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (P + (label.startsWith('5') ? 10 : 22)) + '" font-size="10" text-anchor="' + (x(p.reset) > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + label + ' ' + fmtT(p.reset) + '</text>' : '';
