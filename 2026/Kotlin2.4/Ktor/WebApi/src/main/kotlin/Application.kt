@@ -7,8 +7,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.flow
+import io.ktor.http.*
+import io.ktor.utils.io.*
 
 fun main() {
     embeddedServer(CIO, port = 8080, module = Application::module1).start(wait = true)
@@ -24,12 +24,13 @@ fun Application.module1() {
             get("query/") { call.respondText("/${call.request.queryParameters.toMap()}") }
             post("post") { call.respondText(call.receiveText()) }
             post("stream") {
-                //TODO
-
-                flow<ByteArray> {val rcv=call.receiveChannel()
+                // 受信した行を逐次エコー
+                val rcv = call.receiveChannel()
+                call.respondTextWriter(ContentType.Text.Plain) {
                     while (!rcv.isClosedForRead) {
-                        val r=call.receiveChannel().readPacket(5)
-
+                        val line = rcv.readLine() ?: break
+                        write("$line\n")
+                        flush()
                     }
                 }
             }

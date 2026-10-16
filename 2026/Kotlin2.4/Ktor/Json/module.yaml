@@ -1,0 +1,27 @@
+product: jvm/app
+layout: maven-like
+
+settings:
+  kotlin:
+    version: 2.4.20
+    serialization: enabled
+  ktor:
+    enabled: true
+    version: 3.6.0
+    applyBom: true
+  jvm:
+    mainClass: ServerKt
+
+dependencies:
+  - io.ktor:ktor-serialization-kotlinx-json
+  - io.ktor:ktor-client-core
+  - io.ktor:ktor-client-cio
+  - io.ktor:ktor-client-content-negotiation
+  - io.ktor:ktor-client-logging
+  - io.ktor:ktor-server-cio
+  - io.ktor:ktor-server-content-negotiation
+  - ch.qos.logback:logback-classic:1.5.18
+
+test-dependencies:
+  - io.ktor:ktor-server-test-host
+  - io.ktor:ktor-client-mock

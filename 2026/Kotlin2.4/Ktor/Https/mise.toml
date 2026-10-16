@@ -1,0 +1,37 @@
+[tools]
+java = "21" # keytool 用 (store file の生成)
+kotlin = "2.4.20"
+
+# 環境変数で上書き可。既定は build/storefiles 配下
+[env]
+KEYSTORE_PATH = "{{ get_env(name='KEYSTORE_PATH', default=config_root ~ '/build/storefiles/keystore.p12') }}" # サーバの鍵 + 証明書
+KEYSTORE_PASS = "{{ get_env(name='KEYSTORE_PASS', default='123456') }}"
+TRUSTSTORE_PATH = "{{ get_env(name='TRUSTSTORE_PATH', default=config_root ~ '/build/storefiles/truststore.p12') }}" # クライアントが信頼する CA 証明書
+TRUSTSTORE_PASS = "{{ get_env(name='TRUSTSTORE_PASS', default='123456') }}"
+
+[tasks.gen-stores-init]
+description = "store file の出力先を初期化 (gen-stores から呼ばれる)"
+hide = true
+run = 'rm "{{env.KEYSTORE_PATH}}" "{{env.TRUSTSTORE_PATH}}" && mkdir -p "{{env.KEYSTORE_PATH | dirname}}" "{{env.TRUSTSTORE_PATH | dirname}}"'
+run_windows = '''powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build/stores, '{{env.KEYSTORE_PATH}}', '{{env.TRUSTSTORE_PATH}}'; New-Item -ItemType Directory -Force build/stores, '{{env.KEYSTORE_PATH | dirname}}', '{{env.TRUSTSTORE_PATH | dirname}}' | Out-Null; exit 0"'''
+
+# CA (ca.p12 / cacert.pem) は build/stores に作る中間ファイル。CA のパスワードは KEYSTORE_PASS
+[tasks.gen-stores]
+description = "server・clientそれぞれのstore file を生成"
+depends = ["gen-stores-init"]
+run = [
+    # 1. CA (有効期間 10年)
+    'keytool -genkeypair -alias sampleCA -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=Sample CA, OU=OrgUnit, O=Org, C=JP" -ext bc:c -ext ku:c=keyCertSign,cRLSign -keystore build/stores/ca.p12 -storetype PKCS12 -storepass "{{env.KEYSTORE_PASS}}"',
+    'keytool -exportcert -rfc -alias sampleCA -keystore build/stores/ca.p12 -storepass "{{env.KEYSTORE_PASS}}" -file build/stores/cacert.pem',
+    # 2. サーバの鍵ペアと CSR
+    'keytool -genkeypair -alias sampleAlias -keyalg RSA -keysize 2048 -validity 3650 -dname "CN=127.0.0.1, OU=OrgUnit, O=Org, C=JP" -ext "san=dns:localhost,dns:127.0.0.1,dns:0.0.0.0,ip:127.0.0.1" -keystore "{{env.KEYSTORE_PATH}}" -storetype PKCS12 -storepass "{{env.KEYSTORE_PASS}}"',
+    'keytool -certreq -alias sampleAlias -keystore "{{env.KEYSTORE_PATH}}" -storepass "{{env.KEYSTORE_PASS}}" -ext "san=dns:localhost,dns:127.0.0.1,dns:0.0.0.0,ip:127.0.0.1" -file build/stores/server.csr',
+    # 3. CA で署名
+    'keytool -gencert -alias sampleCA -keystore build/stores/ca.p12 -storepass "{{env.KEYSTORE_PASS}}" -infile build/stores/server.csr -outfile build/stores/server.crt -rfc -validity 3650 -ext "san=dns:localhost,dns:127.0.0.1,dns:0.0.0.0,ip:127.0.0.1" -ext eku=serverAuth',
+    # 4. 署名済み証明書を取り込む (チェーン構築のため CA を一時的に信頼済みとして入れ、取り込み後に削除)
+    'keytool -importcert -alias sampleCA -file build/stores/cacert.pem -keystore "{{env.KEYSTORE_PATH}}" -storepass "{{env.KEYSTORE_PASS}}" -noprompt',
+    'keytool -importcert -alias sampleAlias -file build/stores/server.crt -keystore "{{env.KEYSTORE_PATH}}" -storepass "{{env.KEYSTORE_PASS}}"',
+    'keytool -delete -alias sampleCA -keystore "{{env.KEYSTORE_PATH}}" -storepass "{{env.KEYSTORE_PASS}}"',
+    # 5. クライアント用 truststore (CA 証明書のみ)
+    'keytool -importcert -alias sampleCA -file build/stores/cacert.pem -keystore "{{env.TRUSTSTORE_PATH}}" -storetype PKCS12 -storepass "{{env.TRUSTSTORE_PASS}}" -noprompt',
+]

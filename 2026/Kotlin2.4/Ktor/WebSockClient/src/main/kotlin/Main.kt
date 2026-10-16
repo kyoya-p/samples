@@ -23,7 +23,7 @@ suspend fun main() {
         launch {
             runCatching {
                 while (true) {
-                    val message = readLine() ?: ""
+                    val message = readlnOrNull() ?: ""
                     if (message.equals("exit", true)) return@launch
                     send(message)
                 }

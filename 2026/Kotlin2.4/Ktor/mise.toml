@@ -1,0 +1,42 @@
+# Kotlin Toolchain (module.yaml) 方式。Windows では .\kotlin.bat を使う
+# (mise の kotlin shim と衝突するため PATH の kotlin ではなくプロジェクト内のラッパーを実行)
+
+[tasks]
+# --- build ---
+build-https = { description = "Https ビルド", dir = "Https", run = '.\kotlin.bat build' }
+build-json = { description = "Json ビルド", dir = "Json", run = '.\kotlin.bat build' }
+build-xml = { description = "Xml ビルド", dir = "Xml", run = '.\kotlin.bat build' }
+build-streamingecho = { description = "StreamingEcho ビルド", dir = "StreamingEcho", run = '.\kotlin.bat build' }
+build-webapi = { description = "WebApi ビルド", dir = "WebApi", run = '.\kotlin.bat build' }
+build-websockserver = { description = "WebSockServer ビルド", dir = "WebSockServer", run = '.\kotlin.bat build' }
+build-websockclient = { description = "WebSockClient ビルド", dir = "WebSockClient", run = '.\kotlin.bat build' }
+build-revproxy = { description = "revProxy ビルド", dir = "revProxy", run = '.\kotlin.bat build' }
+build-all = { description = "全JVMプロジェクトをビルド", depends = [
+    "build-http", "build-https", "build-json", "build-xml", "build-streamingecho",
+    "build-webapi", "build-websockserver", "build-websockclient", "build-revproxy",
+] }
+
+# --- test (テストのあるプロジェクトのみ) ---
+test-json = { description = "Json テスト", dir = "Json", run = '.\kotlin.bat test' }
+test-xml = { description = "Xml テスト", dir = "Xml", run = '.\kotlin.bat test' }
+test-streamingecho = { description = "StreamingEcho テスト (約20秒)", dir = "StreamingEcho", run = '.\kotlin.bat test' }
+test-webapi = { description = "WebApi テスト", dir = "WebApi", run = '.\kotlin.bat test' }
+test-websockserver = { description = "WebSockServer テスト", dir = "WebSockServer", run = '.\kotlin.bat test' }
+test-all = { description = "全テスト実行", depends = [
+    "test-http", "test-json", "test-xml", "test-streamingecho", "test-webapi", "test-websockserver",
+] }
+
+# --- run ---
+https = { description = "Https サーバ起動 (:8080 / :8443)", dir = "Https", run = '.\kotlin.bat run' }
+json = { description = "Json サーバ起動 (:8080)", dir = "Json", run = '.\kotlin.bat run' }
+xml = { description = "Xml サーバ起動 (:8080)", dir = "Xml", run = '.\kotlin.bat run' }
+streamingecho = { description = "StreamingEcho サーバ起動 (:8080)", dir = "StreamingEcho", run = '.\kotlin.bat run' }
+webapi = { description = "WebApi サーバ起動 (:8080)", dir = "WebApi", run = '.\kotlin.bat run' }
+websockserver = { description = "WebSockServer 起動 (:8080)", dir = "WebSockServer", run = '.\kotlin.bat run' }
+websockclient = { description = "WebSockClient 起動", dir = "WebSockClient", run = '.\kotlin.bat run' }
+revproxy = { description = "revProxy 起動 (パス:8180 / 対象:8181 / Cookie:8380)", dir = "revProxy", run = '.\kotlin.bat run' }
+
+# --- Http は Http/mise.toml に定義 ---
+build-http = { description = "Http ビルド", run = "mise -C Http run build" }
+test-http = { description = "Http テスト", run = "mise -C Http run test" }
+http = { description = "Http サーバ起動 (:8080)", run = "mise -C Http run run" }

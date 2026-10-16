@@ -1,0 +1,19 @@
+product: jvm/app
+layout: maven-like
+
+settings:
+  kotlin:
+    version: 2.4.20
+  ktor:
+    enabled: true
+    version: 3.6.0
+    applyBom: true
+  jvm:
+    mainClass: MainKt
+
+dependencies:
+  - io.ktor:ktor-client-core
+  - io.ktor:ktor-client-cio
+  - io.ktor:ktor-client-websockets
+  - ch.qos.logback:logback-classic:1.5.18
+

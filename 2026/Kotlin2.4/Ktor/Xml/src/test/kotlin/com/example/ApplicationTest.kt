@@ -1,6 +1,6 @@
 import io.ktor.http.HttpStatusCode.Companion.Created
 import io.ktor.server.testing.*
-import org.junit.Test
+import kotlin.test.Test
 
 class ApplicationTest {
     @Test

@@ -8,8 +8,8 @@ import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.datetime.Clock
-import org.junit.Test
+import kotlin.time.Clock
+import kotlin.test.Test
 import java.io.File
 
 import kotlinx.coroutines.channels.produce
@@ -51,15 +51,16 @@ class ApplicationTest {
                 }
             }
             launch {
-                while (!r.content.isClosedForRead) {
-                    println(r.content.readUTF8Line())
+                val content = r.bodyAsChannel()
+                while (!content.isClosedForRead) {
+                    println(content.readLine() ?: break)
                 }
             }
             println("sending..")
             launch {
                 ch.writeStringUtf8("123\n")
                 ch.flush()
-                ch.close()
+                ch.flushAndClose()
             }
         }
     }

@@ -7,9 +7,10 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
+import kotlinx.io.readString
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.flow
-import kotlinx.datetime.Clock.System.now
+import kotlin.time.Clock.System.now
 
 import kotlin.time.Duration.Companion.seconds
 
@@ -20,7 +21,7 @@ fun main() {
 fun Application.module() = routing {
     post("/") {
         val readChannel = call.receiveChannel()
-        val text = readChannel.readRemaining().readText()
+        val text = readChannel.readBuffer().readString()
 //        call.respondText(text)
         call.respondTextWriter(ContentType.Text.Plain, HttpStatusCode.OK) {
             // 受信済みテキストの先頭3バイトを、5秒間隔で1バイトずつ返す
@@ -35,7 +36,7 @@ fun Application.module() = routing {
         val channel = call.receiveChannel()
         call.respondTextWriter(ContentType.Text.Plain) {
             while (!channel.isClosedForRead) {
-                val line = channel.readUTF8Line() ?: break
+                val line = channel.readLine() ?: break
                 write("[$line]\n")
                 flush()
             }
@@ -52,7 +53,7 @@ fun Application.module2() {
                     flow {
                         val recv = call.receiveChannel()
                         while (!recv.isClosedForRead) {
-                            emit(recv.readUTF8Line() ?: break)
+                            emit(recv.readLine() ?: break)
                         }
                     }.collect { channel.send("$it\n") }
                     channel.close()
@@ -70,7 +71,7 @@ fun Application.module2() {
                 flow {
                     val recv = call.receiveChannel()
                     while (!recv.isClosedForRead) {
-                        val r = recv.readUTF8Line() ?: break
+                        val r = recv.readLine() ?: break
                         emit(r.toLong())
                         delay(0.5.seconds)
                     }
@@ -87,7 +88,7 @@ fun Application.module2() {
                 val recv = call.receiveChannel()
                 while (!recv.isClosedForRead) {
                     println("Recv: ---")
-                    val r = recv.readUTF8Line() ?: break
+                    val r = recv.readLine() ?: break
                     println("Recv: ${r}")
                     val n = r.toLongOrNull()
                     if (n == null) {

@@ -8,6 +8,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.cio.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
+import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import java.security.cert.X509Certificate
@@ -50,13 +51,13 @@ fun Application.pathProxyModule() {
     intercept(ApplicationCallPipeline.Call) {
         val rqUrl = Url(call.request.uri)
         call.request.queryParameters["url"]?.let { url -> return@intercept call.respondRedirect("/url/${url.encodeURLPathPart()}/") }
-        if (!(rqUrl.pathSegments.size >= 3 && rqUrl.pathSegments[1] == "url")) {
+        if (!(rqUrl.rawSegments.size >= 3 && rqUrl.rawSegments[1] == "url")) {
             return@intercept call.respondText("<h1>Error!</h1>", ContentType.Text.Html, HttpStatusCode.NotAcceptable)
         }
 
-        val tgUrlHost = rqUrl.pathSegments[2]
+        val tgUrlHost = rqUrl.rawSegments[2]
         val tgUrl = URLBuilder(tgUrlHost).apply {
-            val rqPath = rqUrl.pathSegments
+            val rqPath = rqUrl.rawSegments
             pathSegments += rqPath.drop(3)
             parameters.appendAll(rqUrl.parameters)
         }.build()
@@ -93,7 +94,7 @@ suspend fun ApplicationCall.proxyTo(tgUrl: Url) {
     val skipHeaders = listOf(
         HttpHeaders.ContentType, HttpHeaders.ContentLength, HttpHeaders.TransferEncoding,
         // hop-by-hop
-        HttpHeaders.Connection, HttpHeaders.KeepAlive, HttpHeaders.Upgrade, HttpHeaders.TE,
+        HttpHeaders.Connection, "Keep-Alive", HttpHeaders.Upgrade, HttpHeaders.TE,
         HttpHeaders.Trailer, HttpHeaders.ProxyAuthenticate, HttpHeaders.ProxyAuthorization,
     )
     fun Headers.myBuilder() = Headers.build {
@@ -126,7 +127,7 @@ suspend fun ApplicationCall.proxyTo(tgUrl: Url) {
         override val headers: Headers = proxiedHeaders.myBuilder()
         override val status: HttpStatusCode = response.status
         override suspend fun writeTo(channel: ByteWriteChannel) {
-            if (noBody) channel.close() else response.bodyAsChannel().copyAndClose(channel)
+            if (noBody) channel.flushAndClose() else response.bodyAsChannel().copyAndClose(channel)
         }
     })
 }
