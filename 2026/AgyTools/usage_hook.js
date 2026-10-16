@@ -4,6 +4,9 @@
 const fs = require('fs'), path = require('path');
 const { execFileSync } = require('child_process');
 
+process.stdin.resume();
+process.stdout.write('{"decision":""}\n');
+
 if (process.env.AGY_USAGE_SAMPLING) process.exit(0);
 
 const dir = __dirname;
@@ -29,3 +32,5 @@ try {
 } finally {
   try { fs.unlinkSync(lock); } catch { /* ignore */ }
 }
+process.exit(0);
+

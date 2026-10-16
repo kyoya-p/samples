@@ -1,178 +1,411 @@
-<!doctype html>
-<html lang="ja">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Antigravity Usage Panel</title>
-  <style>
-    :root {
-      --bg: #fafaf7;
-      --card: #ffffff;
-      --fg: #1d1d1b;
-      --mut: #6b6b65;
-      --bar: #1a73e8;
-      --bar-claude: #d08c4a;
-      --line: #e3e2dc;
-      --green: #1e8e3e;
-      --yellow: #f9ab00;
-      --red: #d93025;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #171816;
-        --card: #20211d;
-        --fg: #ecebe6;
-        --mut: #9a9a92;
-        --bar: #8ab4f8;
-        --bar-claude: #f09d5c;
-        --line: #34352f;
-      }
-    }
-    body {
-      margin: 0;
-      padding: 16px;
-      background: var(--bg);
-      color: var(--fg);
-      font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    }
-    h1 { font-size: 20px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
-    .mut { color: var(--mut); font-size: 12px; }
-    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 14px; }
-    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-    .ch { display: flex; justify-content: space-between; align-items: center; margin: 0 0 12px; }
-    .title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-    .rt { display: flex; align-items: baseline; gap: 6px; }
-    .now { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .remain-label { font-size: 11px; color: var(--mut); }
-    .badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-    .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-    .track { background: var(--line); border-radius: 4px; height: 10px; overflow: hidden; margin-top: 6px; }
-    .fill { height: 100%; border-radius: 4px; transition: width .3s; }
-    .reset-info { font-size: 12px; color: var(--mut); margin-top: 8px; display: flex; justify-content: space-between; }
-    .range-select { font: 12px system-ui; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--fg); }
-    svg text { font-family: system-ui, sans-serif; }
-  </style>
-</head>
-<body>
-  <h1><span>⚡ Antigravity Usage Panel</span></h1>
-  <div class="mut">最終更新: <span id="gen-time"></span></div>
-
-  <div class="grid">
-    <!-- Gemini 5h -->
-    <div class="card">
-      <div class="ch">
-        <span class="title"><i class="sw" style="background:var(--bar)"></i>Gemini Models (5時間枠)</span>
-        <div class="rt">
-          <span class="remain-label">残量:</span>
-          <b class="now" id="val-gemini-5h" style="color:var(--bar)">--%</b>
-        </div>
-      </div>
-      <div class="track"><div class="fill" id="bar-gemini-5h" style="background:var(--bar); width:0%"></div></div>
-      <div class="reset-info"><span>リセット予定:</span><b id="rst-gemini-5h">--</b></div>
-      <div style="margin-top:14px;" id="chart-gemini-5h"></div>
-    </div>
-
-    <!-- Gemini Weekly -->
-    <div class="card">
-      <div class="ch">
-        <span class="title"><i class="sw" style="background:var(--bar)"></i>Gemini Models (週次)</span>
-        <div class="rt">
-          <span class="remain-label">残量:</span>
-          <b class="now" id="val-gemini-week" style="color:var(--bar)">--%</b>
-        </div>
-      </div>
-      <div class="track"><div class="fill" id="bar-gemini-week" style="background:var(--bar); width:0%"></div></div>
-      <div class="reset-info"><span>リセット予定:</span><b id="rst-gemini-week">--</b></div>
-      <div style="margin-top:14px;" id="chart-gemini-week"></div>
-    </div>
-
-    <!-- Claude & GPT 5h -->
-    <div class="card">
-      <div class="ch">
-        <span class="title"><i class="sw" style="background:var(--bar-claude)"></i>Claude & GPT (5時間枠)</span>
-        <div class="rt">
-          <span class="remain-label">残量:</span>
-          <b class="now" id="val-claude-5h" style="color:var(--bar-claude)">--%</b>
-        </div>
-      </div>
-      <div class="track"><div class="fill" id="bar-claude-5h" style="background:var(--bar-claude); width:0%"></div></div>
-      <div class="reset-info"><span>リセット予定:</span><b id="rst-claude-5h">--</b></div>
-      <div style="margin-top:14px;" id="chart-claude-5h"></div>
-    </div>
-
-    <!-- Claude & GPT Weekly -->
-    <div class="card">
-      <div class="ch">
-        <span class="title"><i class="sw" style="background:var(--bar-claude)"></i>Claude & GPT (週次)</span>
-        <div class="rt">
-          <span class="remain-label">残量:</span>
-          <b class="now" id="val-claude-week" style="color:var(--bar-claude)">--%</b>
-        </div>
-      </div>
-      <div class="track"><div class="fill" id="bar-claude-week" style="background:var(--bar-claude); width:0%"></div></div>
-      <div class="reset-info"><span>リセット予定:</span><b id="rst-claude-week">--</b></div>
-      <div style="margin-top:14px;" id="chart-claude-week"></div>
-    </div>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Antigravity Usage Panel</title>
+<style>
+:root{--bg:#fafaf7;--card:#ffffff;--fg:#1d1d1b;--mut:#6b6b65;--bar:#3c6fb4;--bar2:#9bb8df;--line:#e3e2dc;--s1:#2a78d6;--s2:#1baf7a;--s3:#eb6834;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s0:#8a8a84}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s0:#77776f}}
+:root[data-theme="dark"]{--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s0:#77776f}
+body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
+h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0}
+.mut{color:var(--mut);font-size:12px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));margin-top:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.mlg-head{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-size:13px;font-weight:500}
+.mlg-head .it{display:inline-flex;align-items:center;gap:3px}
+.mlg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}
+.mlg .it{display:inline-flex;align-items:center}
+.mlg .v{font-weight:600;font-variant-numeric:tabular-nums;margin-left:4px}
+.cl-toggle{display:inline-flex;align-items:center;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;font:12px system-ui,sans-serif;color:var(--mut);cursor:pointer;user-select:none;transition:all .15s ease}
+.cl-toggle:hover{background:var(--card);border-color:var(--line);color:var(--fg)}
+.cl-toggle.expanded{background:var(--card);border-color:var(--line);color:var(--fg)}
+.cl-toggle.collapsed{opacity:0.65}
+.rem-badge{font-size:12px;font-weight:400;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}
+.ch{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.rt{display:flex;align-items:center;gap:10px}
+.now{font-size:24px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.range{display:flex}
+.range select{font:12px system-ui,sans-serif;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+</style></head><body>
+<h1>Antigravity Usage Panel</h1>
+<div class="grid" style="margin-top:12px">
+  <div class="card">
+    <h2 class="ch">
+      <span>5時間枠 使用率（%）<span class="rem-badge" id="rem-5h"></span></span>
+      <span class="rt">
+        <span class="mlg-head" id="head-5h"></span>
+        <span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span>
+      </span>
+    </h2>
+    <div id="usage-chart-5h"></div>
+    <div class="mlg" id="legend-5h"></div>
   </div>
-
+  <div class="card">
+    <h2 class="ch">
+      <span>週次 使用率（%）<span class="rem-badge" id="rem-7d"></span></span>
+      <span class="rt">
+        <span class="mlg-head" id="head-7d"></span>
+        <span class="range"><select id="range-7d" aria-label="週次の表示範囲"></select></span>
+      </span>
+    </h2>
+    <div id="usage-chart-7d"></div>
+    <div class="mlg" id="legend-7d"></div>
+  </div>
+  <div class="card">
+    <h2 class="ch">
+      <span id="cum-title">累積トークン使用量 / トークン使用速度</span>
+      <span class="rt">
+        <b class="now" id="now-cum" style="color:var(--fg)"></b>
+        <span class="range"><select id="mode-cum" aria-label="表示の切り替え"></select></span>
+        <span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span>
+      </span>
+    </h2>
+    <div id="cum-chart"></div>
+    <div class="mlg" id="cum-legend"></div>
+  </div>
+</div>
 <script>
-  const D = {"generated":"2026-10-14T23:33:17.658Z","samples":[{"ts":"2026-10-14T23:32:42.529Z","from":"1970-01-01T00:00:00.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":98,"reset":"2026-10-20T00:50:59Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"reset":"2026-10-15T04:30:05Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"reset":"2026-10-21T19:26:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"reset":"2026-10-15T04:32:41Z"}},"tokens":{"total":27972451,"input":4965998,"cacheRead":22835212,"output":171241,"req":597}}],"lastSample":{"ts":"2026-10-14T23:32:42.529Z","from":"1970-01-01T00:00:00.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":98,"reset":"2026-10-20T00:50:59Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"reset":"2026-10-15T04:30:05Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"reset":"2026-10-21T19:26:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"reset":"2026-10-15T04:32:41Z"}},"tokens":{"total":27972451,"input":4965998,"cacheRead":22835212,"output":171241,"req":597}}};
-  const S = D.samples || [];
+const D = {"generated":"2026-10-16T08:35:00.637Z","files":142,"samples":[{"ts":"2026-10-14T23:32:42.529Z","from":"1970-01-01T00:00:00.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":98,"reset":"2026-10-20T00:50:59Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"reset":"2026-10-15T04:30:05Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"reset":"2026-10-21T19:26:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"reset":"2026-10-15T04:32:41Z"}},"tokens":{"total":27972451,"input":4965998,"cacheRead":22835212,"output":171241,"req":597},"byModel":{"Gemini 3.8 Flash":{"req":3643,"total":494253087,"input":50360555,"cacheRead":442666973,"output":1225559,"effort":{"Low":494253087}},"Gemini 3.7 Flash":{"req":98,"total":12620902,"input":1110678,"cacheRead":11461043,"output":49181,"effort":{"Low":12620902}},"Claude Sonnet 5.5":{"req":10,"total":3000935,"input":896102,"cacheRead":2094766,"output":10067,"effort":{"Medium":3000935}},"Gemini 3.6 Flash":{"req":83,"total":12979741,"input":4968581,"cacheRead":7998864,"output":12296,"effort":{"Low":12979741}}}},{"ts":"2026-10-16T01:16:07.732Z","from":"2026-10-14T23:32:42.529Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:15:44Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:15:44Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":69,"usedPct":31,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":134959169,"input":4444877,"cacheRead":130313329,"output":200963,"req":943},"byModel":{"Gemini 4 Argon":{"req":55,"total":5601724,"input":439587,"cacheRead":5126199,"output":35938,"effort":{"Medium":5601724}},"Gemini 3.8 Flash":{"req":877,"total":127048671,"input":3961591,"cacheRead":122948191,"output":138889,"effort":{"Low":63240924,"High":63807747}},"Gemini 3.7 Flash":{"req":11,"total":2308774,"input":43699,"cacheRead":2238939,"output":26136,"effort":{"Medium":2308774}}}},{"ts":"2026-10-16T01:18:19.000Z","from":"2026-10-16T01:16:07.732Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:17:56Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:17:56Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":58,"usedPct":42,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":1801196,"input":283494,"cacheRead":1511546,"output":6156,"req":8},"byModel":{"Gemini 4 Argon":{"req":5,"total":1112946,"input":273122,"cacheRead":836882,"output":2942,"effort":{"Medium":881702,"Low":231244}},"Gemini 3.7 Flash":{"req":3,"total":688250,"input":10372,"cacheRead":674664,"output":3214,"effort":{"Medium":688250}}}},{"ts":"2026-10-16T01:23:00.730Z","from":"2026-10-16T01:18:19.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:22:37Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:22:37Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":52,"usedPct":48,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":1964263,"input":217513,"cacheRead":1736483,"output":10267,"req":32},"byModel":{"Gemini 3.8 Flash":{"req":19,"total":397167,"input":119677,"cacheRead":271636,"output":5854,"effort":{"Medium":397167}},"Gemini 4 Argon":{"req":13,"total":1567096,"input":97836,"cacheRead":1464847,"output":4413,"effort":{"Medium":1334268,"Low":232828}}}},{"ts":"2026-10-16T01:40:53.346Z","from":"2026-10-16T01:23:00.730Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":98,"usedPct":2,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:40:30Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:40:30Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":42,"usedPct":58,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":2444094,"input":221210,"cacheRead":2159243,"output":63641,"req":35},"byModel":{"Gemini 3.8 Flash":{"req":30,"total":1697790,"input":153492,"cacheRead":1512929,"output":31369,"effort":{"Medium":1697790}},"Gemini 4 Argon":{"req":5,"total":746304,"input":67718,"cacheRead":646314,"output":32272,"effort":{"Medium":746304}}}},{"ts":"2026-10-16T01:52:31.591Z","from":"2026-10-16T01:40:53.346Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:52:08Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:52:08Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":26,"usedPct":74,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":9011552,"input":532946,"cacheRead":8440752,"output":37854,"req":58},"byModel":{"Gemini 3.8 Flash":{"req":40,"total":5628108,"input":132184,"cacheRead":5465234,"output":30690,"effort":{"Medium":5628108}},"Gemini 4 Argon":{"req":18,"total":3383444,"input":400762,"cacheRead":2975518,"output":7164,"effort":{"Medium":3383444}}}},{"ts":"2026-10-16T02:02:58.668Z","from":"2026-10-16T01:52:31.591Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":97,"usedPct":3,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":91,"usedPct":9,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:02:35Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:02:35Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":17638439,"input":420532,"cacheRead":17155976,"output":61931,"req":96},"byModel":{"Gemini 3.8 Flash":{"req":90,"total":16776820,"input":304261,"cacheRead":16436445,"output":36114,"effort":{"Medium":16776820}},"Gemini 4 Argon":{"req":6,"total":861619,"input":116271,"cacheRead":719531,"output":25817,"effort":{"Medium":861619}}}},{"ts":"2026-10-16T02:22:52.482Z","from":"2026-10-16T02:02:58.668Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":87,"usedPct":13,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:22:29Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:22:29Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":11755830,"input":327608,"cacheRead":11387157,"output":41065,"req":110},"byModel":{"Gemini 3.8 Flash":{"req":110,"total":11755830,"input":327608,"cacheRead":11387157,"output":41065,"effort":{"Medium":11755830}}}},{"ts":"2026-10-16T02:35:37.125Z","from":"2026-10-16T02:22:52.482Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":95,"usedPct":5,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:35:14Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:35:14Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":5176554,"input":576534,"cacheRead":4583477,"output":16543,"req":37},"byModel":{"Gemini 3.8 Flash":{"req":37,"total":5176554,"input":576534,"cacheRead":4583477,"output":16543,"effort":{"Medium":5176554}}}},{"ts":"2026-10-16T02:52:11.033Z","from":"2026-10-16T02:35:37.125Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":94,"usedPct":6,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":80,"usedPct":20,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:51:48Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:51:48Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":10263692,"input":424556,"cacheRead":9815988,"output":23148,"req":57},"byModel":{"Gemini 3.8 Flash":{"req":57,"total":10263692,"input":424556,"cacheRead":9815988,"output":23148,"effort":{"Medium":10263692}}}},{"ts":"2026-10-16T03:04:36.425Z","from":"2026-10-16T02:52:11.033Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":93,"usedPct":7,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":76,"usedPct":24,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T03:04:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T08:04:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":7061859,"input":677621,"cacheRead":6361123,"output":23115,"req":46},"byModel":{"Gemini 3.8 Flash":{"req":46,"total":7061859,"input":677621,"cacheRead":6361123,"output":23115,"effort":{"Medium":7061859}}}},{"ts":"2026-10-16T03:18:20.517Z","from":"2026-10-16T03:04:36.425Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":92,"usedPct":8,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":70,"usedPct":30,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T03:17:57Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T08:17:57Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":14671155,"input":691883,"cacheRead":13944615,"output":34657,"req":137},"byModel":{"Gemini 3.8 Flash":{"req":137,"total":14671155,"input":691883,"cacheRead":13944615,"output":34657,"effort":{"Medium":14671155}}}},{"ts":"2026-10-16T04:53:11.879Z","from":"2026-10-16T03:18:20.517Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":91,"usedPct":9,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":68,"usedPct":32,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T04:52:49Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T09:52:49Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":7442749,"input":313625,"cacheRead":7115555,"output":13569,"req":39},"byModel":{"Gemini 3.8 Flash":{"req":39,"total":7442749,"input":313625,"cacheRead":7115555,"output":13569,"effort":{"Medium":7442749}}}},{"ts":"2026-10-16T06:05:36.199Z","from":"2026-10-16T04:53:11.879Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":90,"usedPct":10,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":98,"usedPct":2,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:05:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:05:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":8191323,"input":369499,"cacheRead":7812547,"output":9277,"req":52},"byModel":{"Gemini 3.8 Flash":{"req":52,"total":8191323,"input":369499,"cacheRead":7812547,"output":9277,"effort":{"Medium":8191323}}}},{"ts":"2026-10-16T06:18:35.537Z","from":"2026-10-16T06:05:36.199Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":89,"usedPct":11,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:18:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:18:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":3448013,"input":222560,"cacheRead":3206735,"output":18718,"req":52},"byModel":{"Gemini 3.8 Flash":{"req":52,"total":3448013,"input":222560,"cacheRead":3206735,"output":18718,"effort":{"Medium":3448013}}}},{"ts":"2026-10-16T06:39:56.520Z","from":"2026-10-16T06:18:35.537Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":89,"usedPct":11,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":94,"usedPct":6,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:39:34Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:39:34Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":6964209,"input":254861,"cacheRead":6696739,"output":12609,"req":57},"byModel":{"Gemini 3.8 Flash":{"req":57,"total":6964209,"input":254861,"cacheRead":6696739,"output":12609,"effort":{"Medium":6964209}}}},{"ts":"2026-10-16T06:52:13.603Z","from":"2026-10-16T06:39:56.520Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":87,"usedPct":13,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":88,"usedPct":12,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:51:51Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:51:51Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":18074595,"input":366694,"cacheRead":17672168,"output":35733,"req":122},"byModel":{"Gemini 3.8 Flash":{"req":122,"total":18074595,"input":366694,"cacheRead":17672168,"output":35733,"effort":{"Medium":18074595}}}},{"ts":"2026-10-16T07:04:28.326Z","from":"2026-10-16T06:52:13.603Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":86,"usedPct":14,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":85,"usedPct":15,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:04:05Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:04:05Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":9126798,"input":245372,"cacheRead":8852655,"output":28771,"req":70},"byModel":{"Gemini 3.8 Flash":{"req":70,"total":9126798,"input":245372,"cacheRead":8852655,"output":28771,"effort":{"Medium":9126798}}}},{"ts":"2026-10-16T07:15:01.256Z","from":"2026-10-16T07:04:28.326Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":85,"usedPct":15,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":80,"usedPct":20,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:14:38Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:14:38Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":13677031,"input":209342,"cacheRead":13440793,"output":26896,"req":73},"byModel":{"Gemini 3.8 Flash":{"req":73,"total":13677031,"input":209342,"cacheRead":13440793,"output":26896,"effort":{"Medium":13677031}}}},{"ts":"2026-10-16T07:39:48.641Z","from":"2026-10-16T07:15:01.256Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":78,"usedPct":22,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:39:26Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:39:26Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":3171822,"input":506640,"cacheRead":2656318,"output":8864,"req":13},"byModel":{"Gemini 3.8 Flash":{"req":13,"total":3171822,"input":506640,"cacheRead":2656318,"output":8864,"effort":{"Medium":3171822}}}},{"ts":"2026-10-16T08:07:28.726Z","from":"2026-10-16T07:39:48.641Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":77,"usedPct":23,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:07:06Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:07:06Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":2968285,"input":377629,"cacheRead":2582137,"output":8519,"req":23},"byModel":{"Gemini 3.8 Flash":{"req":23,"total":2968285,"input":377629,"cacheRead":2582137,"output":8519,"effort":{"Medium":2968285}}}},{"ts":"2026-10-16T08:20:11.804Z","from":"2026-10-16T08:07:28.726Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":83,"usedPct":17,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":74,"usedPct":26,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:19:49Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:19:49Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":8973954,"input":151794,"cacheRead":8808987,"output":13173,"req":55},"byModel":{"Gemini 3.8 Flash":{"req":55,"total":8973954,"input":151794,"cacheRead":8808987,"output":13173,"effort":{"Medium":8973954}}}},{"ts":"2026-10-16T08:34:59.053Z","from":"2026-10-16T08:20:11.804Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":82,"usedPct":18,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":71,"usedPct":29,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:34:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:34:36Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":4399371,"input":450593,"cacheRead":3930686,"output":18092,"req":66},"byModel":{"Gemini 3.8 Flash":{"req":66,"total":4399371,"input":450593,"cacheRead":3930686,"output":18092,"effort":{"Medium":4399371}}}}],"modelSamples":[{"ts":"2026-10-14T23:32:42.529Z","from":"1970-01-01T00:00:00.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":98,"reset":"2026-10-20T00:50:59Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"reset":"2026-10-15T04:30:05Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"reset":"2026-10-21T19:26:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"reset":"2026-10-15T04:32:41Z"}},"tokens":{"total":27972451,"input":4965998,"cacheRead":22835212,"output":171241,"req":597},"byModel":{"Gemini 3.8 Flash":{"req":3643,"total":494253087,"input":50360555,"cacheRead":442666973,"output":1225559,"effort":{"Low":494253087}},"Gemini 3.7 Flash":{"req":98,"total":12620902,"input":1110678,"cacheRead":11461043,"output":49181,"effort":{"Low":12620902}},"Claude Sonnet 5.5":{"req":10,"total":3000935,"input":896102,"cacheRead":2094766,"output":10067,"effort":{"Medium":3000935}},"Gemini 3.6 Flash":{"req":83,"total":12979741,"input":4968581,"cacheRead":7998864,"output":12296,"effort":{"Low":12979741}}}},{"ts":"2026-10-16T01:16:07.732Z","from":"2026-10-14T23:32:42.529Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:15:44Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:15:44Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":69,"usedPct":31,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":134959169,"input":4444877,"cacheRead":130313329,"output":200963,"req":943},"byModel":{"Gemini 4 Argon":{"req":55,"total":5601724,"input":439587,"cacheRead":5126199,"output":35938,"effort":{"Medium":5601724}},"Gemini 3.8 Flash":{"req":877,"total":127048671,"input":3961591,"cacheRead":122948191,"output":138889,"effort":{"Low":63240924,"High":63807747}},"Gemini 3.7 Flash":{"req":11,"total":2308774,"input":43699,"cacheRead":2238939,"output":26136,"effort":{"Medium":2308774}}}},{"ts":"2026-10-16T01:18:19.000Z","from":"2026-10-16T01:16:07.732Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:17:56Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:17:56Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":58,"usedPct":42,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":1801196,"input":283494,"cacheRead":1511546,"output":6156,"req":8},"byModel":{"Gemini 4 Argon":{"req":5,"total":1112946,"input":273122,"cacheRead":836882,"output":2942,"effort":{"Medium":881702,"Low":231244}},"Gemini 3.7 Flash":{"req":3,"total":688250,"input":10372,"cacheRead":674664,"output":3214,"effort":{"Medium":688250}}}},{"ts":"2026-10-16T01:23:00.730Z","from":"2026-10-16T01:18:19.000Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:22:37Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:22:37Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":52,"usedPct":48,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":1964263,"input":217513,"cacheRead":1736483,"output":10267,"req":32},"byModel":{"Gemini 3.8 Flash":{"req":19,"total":397167,"input":119677,"cacheRead":271636,"output":5854,"effort":{"Medium":397167}},"Gemini 4 Argon":{"req":13,"total":1567096,"input":97836,"cacheRead":1464847,"output":4413,"effort":{"Medium":1334268,"Low":232828}}}},{"ts":"2026-10-16T01:40:53.346Z","from":"2026-10-16T01:23:00.730Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":98,"usedPct":2,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:40:30Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:40:30Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":42,"usedPct":58,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":2444094,"input":221210,"cacheRead":2159243,"output":63641,"req":35},"byModel":{"Gemini 3.8 Flash":{"req":30,"total":1697790,"input":153492,"cacheRead":1512929,"output":31369,"effort":{"Medium":1697790}},"Gemini 4 Argon":{"req":5,"total":746304,"input":67718,"cacheRead":646314,"output":32272,"effort":{"Medium":746304}}}},{"ts":"2026-10-16T01:52:31.591Z","from":"2026-10-16T01:40:53.346Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":99,"usedPct":1,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T01:52:08Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T06:52:08Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":26,"usedPct":74,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":9011552,"input":532946,"cacheRead":8440752,"output":37854,"req":58},"byModel":{"Gemini 3.8 Flash":{"req":40,"total":5628108,"input":132184,"cacheRead":5465234,"output":30690,"effort":{"Medium":5628108}},"Gemini 4 Argon":{"req":18,"total":3383444,"input":400762,"cacheRead":2975518,"output":7164,"effort":{"Medium":3383444}}}},{"ts":"2026-10-16T02:02:58.668Z","from":"2026-10-16T01:52:31.591Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":97,"usedPct":3,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":91,"usedPct":9,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:02:35Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:02:35Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":17638439,"input":420532,"cacheRead":17155976,"output":61931,"req":96},"byModel":{"Gemini 3.8 Flash":{"req":90,"total":16776820,"input":304261,"cacheRead":16436445,"output":36114,"effort":{"Medium":16776820}},"Gemini 4 Argon":{"req":6,"total":861619,"input":116271,"cacheRead":719531,"output":25817,"effort":{"Medium":861619}}}},{"ts":"2026-10-16T02:22:52.482Z","from":"2026-10-16T02:02:58.668Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":87,"usedPct":13,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:22:29Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:22:29Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":11755830,"input":327608,"cacheRead":11387157,"output":41065,"req":110},"byModel":{"Gemini 3.8 Flash":{"req":110,"total":11755830,"input":327608,"cacheRead":11387157,"output":41065,"effort":{"Medium":11755830}}}},{"ts":"2026-10-16T02:35:37.125Z","from":"2026-10-16T02:22:52.482Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":95,"usedPct":5,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:35:14Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:35:14Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":5176554,"input":576534,"cacheRead":4583477,"output":16543,"req":37},"byModel":{"Gemini 3.8 Flash":{"req":37,"total":5176554,"input":576534,"cacheRead":4583477,"output":16543,"effort":{"Medium":5176554}}}},{"ts":"2026-10-16T02:52:11.033Z","from":"2026-10-16T02:35:37.125Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":94,"usedPct":6,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":80,"usedPct":20,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T02:51:48Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T07:51:48Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":10263692,"input":424556,"cacheRead":9815988,"output":23148,"req":57},"byModel":{"Gemini 3.8 Flash":{"req":57,"total":10263692,"input":424556,"cacheRead":9815988,"output":23148,"effort":{"Medium":10263692}}}},{"ts":"2026-10-16T03:04:36.425Z","from":"2026-10-16T02:52:11.033Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":93,"usedPct":7,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":76,"usedPct":24,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T03:04:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T08:04:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":7061859,"input":677621,"cacheRead":6361123,"output":23115,"req":46},"byModel":{"Gemini 3.8 Flash":{"req":46,"total":7061859,"input":677621,"cacheRead":6361123,"output":23115,"effort":{"Medium":7061859}}}},{"ts":"2026-10-16T03:18:20.517Z","from":"2026-10-16T03:04:36.425Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":92,"usedPct":8,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":70,"usedPct":30,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T03:17:57Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T08:17:57Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":14671155,"input":691883,"cacheRead":13944615,"output":34657,"req":137},"byModel":{"Gemini 3.8 Flash":{"req":137,"total":14671155,"input":691883,"cacheRead":13944615,"output":34657,"effort":{"Medium":14671155}}}},{"ts":"2026-10-16T04:53:11.879Z","from":"2026-10-16T03:18:20.517Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":91,"usedPct":9,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":68,"usedPct":32,"reset":"2026-10-16T05:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T04:52:49Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T09:52:49Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":7442749,"input":313625,"cacheRead":7115555,"output":13569,"req":39},"byModel":{"Gemini 3.8 Flash":{"req":39,"total":7442749,"input":313625,"cacheRead":7115555,"output":13569,"effort":{"Medium":7442749}}}},{"ts":"2026-10-16T06:05:36.199Z","from":"2026-10-16T04:53:11.879Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":90,"usedPct":10,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":98,"usedPct":2,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:05:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:05:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":8191323,"input":369499,"cacheRead":7812547,"output":9277,"req":52},"byModel":{"Gemini 3.8 Flash":{"req":52,"total":8191323,"input":369499,"cacheRead":7812547,"output":9277,"effort":{"Medium":8191323}}}},{"ts":"2026-10-16T06:18:35.537Z","from":"2026-10-16T06:05:36.199Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":89,"usedPct":11,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":96,"usedPct":4,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:18:13Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:18:13Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":3448013,"input":222560,"cacheRead":3206735,"output":18718,"req":52},"byModel":{"Gemini 3.8 Flash":{"req":52,"total":3448013,"input":222560,"cacheRead":3206735,"output":18718,"effort":{"Medium":3448013}}}},{"ts":"2026-10-16T06:39:56.520Z","from":"2026-10-16T06:18:35.537Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":89,"usedPct":11,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":94,"usedPct":6,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:39:34Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:39:34Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":6964209,"input":254861,"cacheRead":6696739,"output":12609,"req":57},"byModel":{"Gemini 3.8 Flash":{"req":57,"total":6964209,"input":254861,"cacheRead":6696739,"output":12609,"effort":{"Medium":6964209}}}},{"ts":"2026-10-16T06:52:13.603Z","from":"2026-10-16T06:39:56.520Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":87,"usedPct":13,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":88,"usedPct":12,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T06:51:51Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T11:51:51Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":18074595,"input":366694,"cacheRead":17672168,"output":35733,"req":122},"byModel":{"Gemini 3.8 Flash":{"req":122,"total":18074595,"input":366694,"cacheRead":17672168,"output":35733,"effort":{"Medium":18074595}}}},{"ts":"2026-10-16T07:04:28.326Z","from":"2026-10-16T06:52:13.603Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":86,"usedPct":14,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":85,"usedPct":15,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:04:05Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:04:05Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":9126798,"input":245372,"cacheRead":8852655,"output":28771,"req":70},"byModel":{"Gemini 3.8 Flash":{"req":70,"total":9126798,"input":245372,"cacheRead":8852655,"output":28771,"effort":{"Medium":9126798}}}},{"ts":"2026-10-16T07:15:01.256Z","from":"2026-10-16T07:04:28.326Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":85,"usedPct":15,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":80,"usedPct":20,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:14:38Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:14:38Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":13677031,"input":209342,"cacheRead":13440793,"output":26896,"req":73},"byModel":{"Gemini 3.8 Flash":{"req":73,"total":13677031,"input":209342,"cacheRead":13440793,"output":26896,"effort":{"Medium":13677031}}}},{"ts":"2026-10-16T07:39:48.641Z","from":"2026-10-16T07:15:01.256Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":78,"usedPct":22,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T07:39:26Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T12:39:26Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":3171822,"input":506640,"cacheRead":2656318,"output":8864,"req":13},"byModel":{"Gemini 3.8 Flash":{"req":13,"total":3171822,"input":506640,"cacheRead":2656318,"output":8864,"effort":{"Medium":3171822}}}},{"ts":"2026-10-16T08:07:28.726Z","from":"2026-10-16T07:39:48.641Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":84,"usedPct":16,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":77,"usedPct":23,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:07:06Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:07:06Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":2968285,"input":377629,"cacheRead":2582137,"output":8519,"req":23},"byModel":{"Gemini 3.8 Flash":{"req":23,"total":2968285,"input":377629,"cacheRead":2582137,"output":8519,"effort":{"Medium":2968285}}}},{"ts":"2026-10-16T08:20:11.804Z","from":"2026-10-16T08:07:28.726Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":83,"usedPct":17,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":74,"usedPct":26,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:19:49Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:19:49Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":8973954,"input":151794,"cacheRead":8808987,"output":13173,"req":55},"byModel":{"Gemini 3.8 Flash":{"req":55,"total":8973954,"input":151794,"cacheRead":8808987,"output":13173,"effort":{"Medium":8973954}}}},{"ts":"2026-10-16T08:34:59.053Z","from":"2026-10-16T08:20:11.804Z","limits":{"gemini_week":{"group":"Gemini Models","type":"Weekly Limit Remaining","pct":82,"usedPct":18,"reset":"2026-10-23T00:57:45Z"},"gemini_5h":{"group":"Gemini Models","type":"Five Hour Limit Remaining","pct":71,"usedPct":29,"reset":"2026-10-16T10:57:45Z"},"claude_gpt_week":{"group":"Claude and GPT models","type":"Weekly Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-23T08:34:36Z"},"claude_gpt_5h":{"group":"Claude and GPT models","type":"Five Hour Limit Remaining","pct":100,"usedPct":0,"reset":"2026-10-16T13:34:36Z"},"gemini_argon_week":{"group":"Gemini 4 Argon","type":"Gemini 4 Argon Weekly Limit","pct":14,"usedPct":86,"reset":"2026-10-23T00:56:44Z"}},"tokens":{"total":4399371,"input":450593,"cacheRead":3930686,"output":18092,"req":66},"byModel":{"Gemini 3.8 Flash":{"req":66,"total":4399371,"input":450593,"cacheRead":3930686,"output":18092,"effort":{"Medium":4399371}}}}],"proj":{"gemini_5h":{"ts":1792139699053,"pct":29,"remainPct":71,"start":1792130265000,"reset":1792148265000,"t100":1792162796217,"h1":{"ts0":1792134901256,"pct0":20,"t100":1792177548340},"h1Reason":null},"gemini_week":{"ts":1792139699053,"pct":18,"remainPct":82,"start":1792112265000,"reset":1792717065000,"t100":1792264676406,"h1":{"ts0":1792134901256,"pct0":15,"t100":1792270838838},"h1Reason":null},"gemini_argon_week":{"ts":1792139699053,"pct":86,"remainPct":14,"start":1792112204000,"reset":1792717004000,"t100":1792144174992,"h1":{"ts0":1792115551591,"pct0":74,"t100":1792167871092},"h1Reason":null},"claude_gpt_5h":{"ts":1792139699053,"pct":0,"remainPct":100,"start":1792139676000,"reset":1792157676000,"t100":null,"h1":null,"h1Reason":"枠開始から1時間未満"},"claude_gpt_week":{"ts":1792139699053,"pct":0,"remainPct":100,"start":1792139676000,"reset":1792744476000,"t100":null,"h1":null,"h1Reason":"枠開始から1時間未満"}},"total":{"req":6020,"total":827010478,"input":69649130,"cacheRead":755310306,"output":2051042},"byModel":[{"key":"Gemini 3.8 Flash","req":5710,"total":781568250,"input":61203538,"cacheRead":718563008,"output":1801704},{"key":"Gemini 3.7 Flash","req":113,"total":15843661,"input":1167342,"cacheRead":14597723,"output":78596},{"key":"Gemini 4 Argon","req":104,"total":13617891,"input":1413567,"cacheRead":12055945,"output":148379},{"key":"Gemini 3.6 Flash","req":83,"total":12979741,"input":4968581,"cacheRead":7998864,"output":12296},{"key":"Claude Sonnet 5.5","req":10,"total":3000935,"input":896102,"cacheRead":2094766,"output":10067}],"byModelEffort":[{"key":"Gemini 3.8 Flash / Low","req":4138,"total":557494011,"input":52466568,"cacheRead":503746585,"output":1280858},{"key":"Gemini 3.8 Flash / Medium","req":1190,"total":160266492,"input":6881392,"cacheRead":152947844,"output":437256},{"key":"Gemini 3.8 Flash / High","req":382,"total":63807747,"input":1855578,"cacheRead":61868579,"output":83590},{"key":"Gemini 4 Argon / Medium","req":102,"total":13153819,"input":1179213,"cacheRead":11826999,"output":147607},{"key":"Gemini 3.6 Flash / Low","req":83,"total":12979741,"input":4968581,"cacheRead":7998864,"output":12296},{"key":"Gemini 3.7 Flash / Low","req":98,"total":12620902,"input":1110678,"cacheRead":11461043,"output":49181},{"key":"Gemini 3.7 Flash / Medium","req":15,"total":3222759,"input":56664,"cacheRead":3136680,"output":29415},{"key":"Claude Sonnet 5.5 / Medium","req":10,"total":3000935,"input":896102,"cacheRead":2094766,"output":10067},{"key":"Gemini 4 Argon / Low","req":2,"total":464072,"input":234354,"cacheRead":228946,"output":772}],"byDay":[{"key":"2026-10-07","req":3228,"total":435878234,"input":47045288,"cacheRead":387698946,"output":1134000},{"key":"2026-10-08","req":544,"total":76309688,"input":9437065,"cacheRead":66744975,"output":127648},{"key":"2026-10-13","req":62,"total":10666743,"input":853563,"cacheRead":9777725,"output":35455},{"key":"2026-10-15","req":877,"total":127048671,"input":3961591,"cacheRead":122948191,"output":138889},{"key":"2026-10-16","req":1309,"total":177107142,"input":8351623,"cacheRead":168140469,"output":615050}]};
+const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
+const usedOf = (s, key) => {
+  const lim = s?.limits?.[key];
+  if (!lim) return null;
+  return typeof lim.usedPct === 'number' ? lim.usedPct : (100 - (lim.pct ?? 100));
+};
+
+function usageChart() {
+  const S = D.samples || [], DAYS = (D.byDay || []).filter(d => d.key !== 'unknown');
+  const W = 640, H = 210, P = 30;
+  const dayMs = 86400000;
+  const firstDay = DAYS.length ? Date.parse(DAYS[0].key + 'T00:00:00Z') : Date.now() - dayMs;
+  const lastDay = DAYS.length ? Date.parse(DAYS[DAYS.length - 1].key + 'T00:00:00Z') + dayMs : Date.now();
+  const sampleTs = S.map(s => new Date(s.ts).getTime());
+  const PR = D.proj || {};
+  const resets = Object.values(PR).map(p => p?.reset).filter(Boolean);
+  const full = { t0: Math.min(firstDay, ...sampleTs), t1: Math.max(lastDay, ...sampleTs, Date.now(), ...resets) };
+
   const pad = n => String(n).padStart(2, '0');
-  const fmtD = d => pad(d.getMonth()+1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 
-  if (D.generated) {
-    document.getElementById('gen-time').textContent = new Date(D.generated).toLocaleString('ja-JP');
-  }
+  const isSeriesVisible = (s, c) => {
+    let saved = null;
+    try { saved = localStorage.getItem('agyUsageShow:' + s.key); } catch (e) {}
+    if (saved !== null) return saved === '1';
+    return Boolean(s.defaultShow);
+  };
+  const setSeriesVisible = (s, val) => {
+    try { localStorage.setItem('agyUsageShow:' + s.key, val ? '1' : '0'); } catch (e) {}
+  };
 
-  const targets = [
-    { key: 'gemini_5h', valId: 'val-gemini-5h', barId: 'bar-gemini-5h', rstId: 'rst-gemini-5h', chartId: 'chart-gemini-5h', col: 'var(--bar)' },
-    { key: 'gemini_week', valId: 'val-gemini-week', barId: 'bar-gemini-week', rstId: 'rst-gemini-week', chartId: 'chart-gemini-week', col: 'var(--bar)' },
-    { key: 'claude_gpt_5h', valId: 'val-claude-5h', barId: 'bar-claude-5h', rstId: 'rst-claude-5h', chartId: 'chart-claude-5h', col: 'var(--bar-claude)' },
-    { key: 'claude_gpt_week', valId: 'val-claude-week', barId: 'bar-claude-week', rstId: 'rst-claude-week', chartId: 'chart-claude-week', col: 'var(--bar-claude)' },
+  const draw = c => {
+    const visibleSeries = c.series.filter(s => isSeriesVisible(s, c));
+    const { t0, t1 } = c.view;
+    const x = ms => P + ((ms - t0) / (t1 - t0)) * (W - 2 * P);
+    const yPct = v => H - P - (v / 100) * (H - 2 * P);
+    const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + v + '%</text>').join('');
+    const span = t1 - t0;
+    const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 8) || 43200;
+    const step = stepMin * 60000;
+    let xLabels = '';
+    for (let ms = Math.ceil(t0 / step) * step; ms <= t1; ms += step) {
+      const d = new Date(ms);
+      const date = pad(d.getMonth() + 1) + '/' + pad(d.getDate());
+      const txt = stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date;
+      xLabels += '<line x1="' + x(ms).toFixed(1) + '" x2="' + x(ms).toFixed(1) + '" y1="' + (H - P) + '" y2="' + (H - P + 3) + '" stroke="var(--mut)"/><text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + txt + '</text>';
+    }
+
+    const clipId = 'plotArea-' + c.nm;
+    const clip = '<clipPath id="' + clipId + '"><rect x="' + P + '" y="0" width="' + (W - 2 * P) + '" height="' + (H - P) + '"/></clipPath>';
+
+    const bands = visibleSeries.map(s => {
+      const p = s.p;
+      if (!p || !p.start || !p.reset) return '';
+      const x1 = Math.max(P, x(p.start)), x2 = Math.min(W - P, x(p.reset));
+      if (x2 <= x1) return '';
+      return '<rect x="' + x1.toFixed(1) + '" y="' + P + '" width="' + (x2 - x1).toFixed(1) + '" height="' + (H - 2 * P) + '" fill="' + s.col + '" fill-opacity="0.05"><title>' + s.label + ' 現在の枠 ' + fmtT(p.start) + '〜' + fmtT(p.reset) + '</title></rect>';
+    }).join('');
+
+    const linesAndDots = visibleSeries.map(s => {
+      const pts = S.map((sm, i) => ({ ts: sampleTs[i], iso: sm.ts, v: usedOf(sm, s.key) })).filter(pt => pt.v !== null);
+      const pl = pts.length > 0 ? '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + pts.map(pt => x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1)).join(' ') + '"/>' : '';
+      const dots = pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
+      return pl + dots;
+    }).join('');
+
+    const projLines = visibleSeries.map(s => {
+      const p = s.p, col = s.col;
+      let out = '';
+      if (p && p.t100) {
+        out += '<line x1="' + x(p.start).toFixed(1) + '" y1="' + yPct(0).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>' + s.shortLabel + ' 100%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
+      }
+      if (p && p.h1 && p.h1.t100) {
+        out += '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>' + s.shortLabel + ' 100%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
+      }
+      return out;
+    }).join('');
+
+    const hitMarkers = visibleSeries.map(s => {
+      const p = s.p, col = s.col;
+      if (!p) return '';
+      return [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, '1時間前基準', 1]].map(([t, nm, i]) => {
+        if (!t) return '';
+        const cx = x(t), cy = yPct(100), r = 5;
+        return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 100%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
+          '<text x="' + (cx + (cx > W / 2 ? -7 : 7)).toFixed(1) + '" y="' + (cy - 7 - i * 11).toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (cx > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
+      }).join('');
+    }).join('');
+
+    const resetLines = visibleSeries.map((s, idx) => {
+      const p = s.p;
+      if (!p || !p.reset) return '';
+      const rx = x(p.reset), isRight = rx > W / 2;
+      const yText = P + 10 + idx * 12;
+      return '<line x1="' + rx.toFixed(1) + '" x2="' + rx.toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="' + s.col + '" stroke-width="1" stroke-dasharray="3 2"><title>' + s.label + ' 更新 ' + fmtT(p.reset) + '</title></line>' +
+        '<text x="' + (rx + (isRight ? -4 : 4)).toFixed(1) + '" y="' + yText + '" font-size="10" text-anchor="' + (isRight ? 'end' : 'start') + '" fill="' + s.col + '">' + s.shortLabel + '更新 ' + fmtT(p.reset) + '</text>';
+    }).join('');
+
+    const now = Date.now();
+    const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - P - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
+
+    const plot = '<g clip-path="url(#' + clipId + ')">' + bands + linesAndDots + projLines + resetLines + nowLine + hitMarkers + '</g>';
+    document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img">' + clip + grid + plot + xLabels + '</svg>';
+  };
+
+  const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
+  const charts = [
+    {
+      id: 'usage-chart-5h',
+      nm: '5h',
+      title: '5時間枠 使用率（%）',
+      def: '24h',
+      isWeek: false,
+      series: [
+        { key: 'gemini_5h', label: 'Gemini Models (5h)', shortLabel: 'Gemini', col: 'var(--bar)', p: PR.gemini_5h, defaultShow: true },
+        { key: 'claude_gpt_5h', label: 'Claude & GPT (5h)', shortLabel: 'Claude & GPT', col: '#d08c4a', p: PR.claude_gpt_5h, defaultShow: false, collapsible: true },
+      ]
+    },
+    {
+      id: 'usage-chart-7d',
+      nm: '7d',
+      title: '週次 使用率（%）',
+      def: '7d',
+      isWeek: true,
+      series: [
+        { key: 'gemini_argon_week', label: 'Gemini 4 Argon (週次)', shortLabel: 'Argon', col: 'var(--s2)', p: PR.gemini_argon_week, defaultShow: true },
+        { key: 'gemini_week', label: 'Gemini Models (週次)', shortLabel: 'Gemini', col: 'var(--s1)', p: PR.gemini_week, defaultShow: true },
+        { key: 'claude_gpt_week', label: 'Claude & GPT (週次)', shortLabel: 'Claude & GPT', col: 'var(--s3)', p: PR.claude_gpt_week, defaultShow: false, collapsible: true },
+      ]
+    }
   ];
 
-  const last = D.lastSample?.limits || {};
+  const lastS = S[S.length - 1];
+  charts.forEach(c => {
+    c.view = { ...full };
+    const menu = document.getElementById('range-' + c.nm);
+    const applyRange = label => {
+      const [, hours] = ranges.find(([l]) => l === label) || ranges.find(([l]) => l === c.def);
+      const now = Date.now();
+      const vis = c.series.filter(s => isSeriesVisible(s, c));
+      const maxReset = Math.max(...vis.map(s => s.p?.reset || 0));
+      c.view.t1 = maxReset > now ? maxReset : now + hours * 3600000 / 2;
+      c.view.t0 = now - hours * 3600000;
+    };
 
-  targets.forEach(t => {
-    const item = last[t.key];
-    if (!item) return;
-    const pct = item.pct;
-    document.getElementById(t.valId).textContent = pct + '%';
-    document.getElementById(t.barId).style.width = pct + '%';
-    if (item.reset) {
-      document.getElementById(t.rstId).textContent = new Date(item.reset).toLocaleString('ja-JP');
-    }
-  });
+    const updateUI = () => {
+      const headEl = document.getElementById('head-' + c.nm);
+      const legEl = document.getElementById('legend-' + c.nm);
+      const remEl = document.getElementById('rem-' + c.nm);
 
-  // 簡易折れ線グラフのレンダリング
-  function renderMiniChart(t) {
-    const el = document.getElementById(t.chartId);
-    if (!el || S.length === 0) return;
-    const W = 320, H = 100, P = 24;
-    const pts = S.map(s => {
-      return { t: Date.parse(s.ts), v: s.limits?.[t.key]?.pct ?? 100 };
+      // パネル全体で1箇所に残り時間を表示
+      const vis = c.series.filter(s => isSeriesVisible(s, c));
+      const targetS = vis.length ? vis[0] : c.series[0];
+      const remain = targetS?.p?.reset ? Math.max(0, targetS.p.reset - Date.now()) / 3600000 : null;
+      const remStr = remain === null ? '' : (c.isWeek ? Math.floor(remain / 24) + 'd' + Math.floor(remain % 24) + 'h' : remain.toFixed(1) + 'h');
+      if (remEl) {
+        remEl.textContent = remStr ? '残り ' + remStr : '';
+        remEl.style.display = remStr ? '' : 'none';
+        if (targetS?.p?.reset) remEl.title = '更新予定: ' + fmtT(targetS.p.reset);
+      }
+
+      let headHtml = '', legHtml = '';
+
+      c.series.forEach(s => {
+        const isVis = isSeriesVisible(s, c);
+        const curUsed = lastS ? usedOf(lastS, s.key) : null;
+        const usedStr = curUsed !== null ? curUsed + '%' : '-';
+        const title = (lastS ? new Date(lastS.ts).toLocaleString('ja-JP') : '') + ' ' + s.label + ' 使用率: ' + usedStr;
+
+        if (isVis) {
+          headHtml += '<span class="it" title="' + title + '"><i class="sw" style="background:' + s.col + '"></i><span style="color:var(--mut)">' + s.shortLabel + ':</span><b style="color:' + s.col + '">' + usedStr + '</b></span>';
+          legHtml += '<button type="button" class="cl-toggle expanded" data-key="' + s.key + '" title="クリックして ' + s.label + ' を非表示"><i class="sw" style="background:' + s.col + '"></i><span>' + s.label + '</span><span class="v" style="color:' + s.col + '">' + usedStr + '</span></button>';
+        } else {
+          legHtml += '<button type="button" class="cl-toggle collapsed" data-key="' + s.key + '" title="クリックして ' + s.label + ' を表示"><i class="sw" style="background:' + s.col + ';opacity:0.35"></i><span style="color:var(--mut)">' + s.label + '</span></button>';
+        }
+      });
+
+      if (headEl) headEl.innerHTML = headHtml;
+      if (legEl) {
+        legEl.innerHTML = legHtml;
+        legEl.querySelectorAll('.cl-toggle').forEach(btn => {
+          btn.addEventListener('click', e => {
+            e.preventDefault();
+            const key = btn.dataset.key;
+            const targetSeries = c.series.find(s => s.key === key);
+            if (targetSeries) {
+              const cur = isSeriesVisible(targetSeries, c);
+              setSeriesVisible(targetSeries, !cur);
+              applyRange(menu.value);
+              draw(c);
+              updateUI();
+            }
+          });
+        });
+      }
+    };
+
+    let saved = c.def;
+    try { saved = localStorage.getItem('agyUsageRange:' + c.id) || c.def; } catch (e) {}
+    menu.innerHTML = ranges.map(([label]) => '<option value="' + label + '"' + (label === saved ? ' selected' : '') + '>' + label + '</option>').join('');
+    menu.addEventListener('change', () => {
+      try { localStorage.setItem('agyUsageRange:' + c.id, menu.value); } catch (e) {}
+      applyRange(menu.value);
+      draw(c);
     });
+    applyRange(menu.value);
+    draw(c);
+    updateUI();
+  });
+}
+usageChart();
 
-    const minT = Math.min(...pts.map(p => p.t));
-    const maxT = Math.max(...pts.map(p => p.t), Date.now());
-    const spanT = Math.max(1, maxT - minT);
+function cumChart() {
+  const MS = (D.modelSamples || []).slice().sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+  const el = document.getElementById('cum-chart'), lg = document.getElementById('cum-legend');
+  if (!MS.length) { el.closest('.card').style.display = 'none'; return; }
+  const order = D.byModel.map(m => m.key).filter(kk => MS.some(s => s.byModel[kk])).slice(0, 7);
+  const colOf = kk => { const i = order.indexOf(kk); return i < 0 ? 'var(--s0)' : 'var(--s' + (i + 1) + ')'; };
+  const keys = [...order, 'その他'];
+  const keyOf = m => order.includes(m) ? m : 'その他';
+  const sumV = v => Object.values(v).reduce((acc, n) => acc + n, 0);
 
-    const x = ms => P + ((ms - minT) / spanT) * (W - 2 * P);
-    const y = v => H - P - (v / 100) * (H - 2 * P);
-
-    const polyPoints = pts.map(p => x(p.t).toFixed(1) + ',' + y(p.v).toFixed(1)).join(' ');
-    const lineSvg = '<polyline fill="none" stroke="' + t.col + '" stroke-width="2" points="' + polyPoints + '"/>';
-    const circlesSvg = pts.map(p => '<circle cx="' + x(p.t).toFixed(1) + '" cy="' + y(p.v).toFixed(1) + '" r="2" fill="' + t.col + '"/>').join('');
-
-    const gridSvg = [0, 50, 100].map(v => 
-      '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (y(v) + 3) + '" font-size="9" text-anchor="end" fill="var(--mut)">' + v + '%</text>'
-    ).join('');
-
-    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%">' + gridSvg + lineSvg + circlesSvg + '</svg>';
+  const cumPts = [], run = {};
+  for (const s of MS) {
+    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); run[kk] = (run[kk] || 0) + a.total; }
+    cumPts.push({ t: Date.parse(s.ts), v: Object.assign({}, run) });
   }
+  const rateOf = s => {
+    const hrs = (Date.parse(s.ts) - Date.parse(s.from)) / 3600000;
+    if (!(hrs > 0)) return null;
+    const r = {};
+    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); r[kk] = (r[kk] || 0) + a.total / hrs; }
+    return r;
+  };
+  const ratePts = [];
+  let prevEnd = null;
+  for (const s of MS) {
+    const r = rateOf(s); if (!r) continue;
+    const a = Date.parse(s.from), b = Date.parse(s.ts);
+    if (prevEnd === null) ratePts.push({ t: a, v: {} });
+    else if (a > prevEnd) ratePts.push({ t: prevEnd, v: {} }, { t: a, v: {} });
+    ratePts.push({ t: a, v: r }, { t: b, v: r });
+    prevEnd = b;
+  }
+  const finCum = cumPts[cumPts.length - 1].v;
 
-  targets.forEach(renderMiniChart);
-</script>
-</body>
-</html>
+  const modes = [['cum', '累積'], ['rate', '時間あたり']];
+  const titles = { cum: '累積トークン使用量（モデル別・合計）', rate: 'トークン使用速度（モデル別・トークン/時）' };
+  const modeMenu = document.getElementById('mode-cum');
+  let mode = 'cum';
+  try { mode = localStorage.getItem('agyUsageMode:cum-chart') || 'cum'; } catch (e) {}
+  if (!titles[mode]) mode = 'cum';
+  modeMenu.innerHTML = modes.map(([v, l]) => '<option value="' + v + '"' + (v === mode ? ' selected' : '') + '>' + l + '</option>').join('');
+  const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
+  const rangeMenu = document.getElementById('range-cum');
+  let savedRange = '7d';
+  try { savedRange = localStorage.getItem('agyUsageRange:cum-chart') || '7d'; } catch (e) {}
+  rangeMenu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === savedRange ? ' selected' : '') + '>' + l + '</option>').join('');
+  let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
+
+  const isModelVis = kk => {
+    let saved = null;
+    try { saved = localStorage.getItem('agyUsageShowModel:' + kk); } catch (e) {}
+    return saved !== null ? saved === '1' : true;
+  };
+  const setModelVis = (kk, val) => {
+    try { localStorage.setItem('agyUsageShowModel:' + kk, val ? '1' : '0'); } catch (e) {}
+  };
+
+  const W = 640, H = 180, P = 30, PL = 46;
+  const pad = n => String(n).padStart(2, '0');
+  const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  const draw = () => {
+    const isRate = mode === 'rate';
+    const pts = isRate ? ratePts : cumPts;
+    const now = Date.now(), t0 = now - hours * 3600000;
+    let i0 = -1; pts.forEach((p, i) => { if (p.t < t0) i0 = i; });
+    let win;
+    if (i0 < 0) win = [{ t: t0, v: {} }, { t: pts[0].t, v: {} }].concat(pts.filter(p => p.t <= now));
+    else win = [{ t: t0, v: pts[i0].v }].concat(pts.slice(i0 + 1).filter(p => p.t <= now));
+    const last = win[win.length - 1];
+    if (isRate) win.push({ t: last.t, v: {} }, { t: now, v: {} });
+    else win.push({ t: now, v: last.v });
+    if (win.length === 0) return;
+    const max = Math.max(1, ...win.map(p => sumV(p.v)));
+    const x = ms => PL + ((Math.min(Math.max(ms, t0), now) - t0) / (now - t0)) * (W - PL - P);
+    const y = v => H - P - (v / max) * (H - 2 * P);
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(f => '<line x1="' + PL + '" x2="' + (W - P) + '" y1="' + y(max * f) + '" y2="' + y(max * f) + '" stroke="var(--line)"/><text x="' + (PL - 4) + '" y="' + (y(max * f) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + k(Math.round(max * f)) + '</text>').join('');
+    const span = now - t0;
+    const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080].find(m => span / (m * 60000) <= 8) || 10080;
+    const step = stepMin * 60000;
+    const edge = (ms, anchor) => '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="' + anchor + '" fill="var(--mut)">' + fmtT(ms) + '</text>';
+    let xl = edge(t0, 'start') + edge(now, 'end');
+    for (let ms = Math.ceil(t0 / step) * step; ms <= now; ms += step) {
+      if (Math.abs(x(ms) - PL) < 60 || Math.abs(x(ms) - (W - P)) < 60) continue;
+      const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate());
+      xl += '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>';
+    }
+    const stackKeys = keys.filter(kk => isModelVis(kk) && win.some(p => p.v[kk]));
+    const bnd = (p, n) => stackKeys.slice(0, n).reduce((acc, kk) => acc + (p.v[kk] || 0), 0);
+    const series = stackKeys.map((kk, idx) => {
+      const top = win.map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx + 1)).toFixed(1));
+      const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
+      return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk + '</title></polygon>';
+    }).join('');
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titles[mode] + '">' + grid + series + xl + '</svg>';
+    document.getElementById('cum-title').textContent = titles[mode];
+    const unit = isRate ? '/時' : '';
+    const avg = {};
+    if (isRate) for (const rec of MS) {
+      const a = Date.parse(rec.from), b = Date.parse(rec.ts);
+      const ov = Math.max(0, Math.min(b, now) - Math.max(a, t0));
+      if (!(b > a) || ov <= 0) continue;
+      const f = ov / (b - a);
+      for (const [m, x] of Object.entries(rec.byModel)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + x.total * f; }
+    }
+    const shown = isRate ? keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk] / hours]) : keys.filter(kk => finCum[kk]).map(kk => [kk, finCum[kk]]);
+    const headTot = isRate
+      ? shown.filter(([kk]) => isModelVis(kk)).reduce((acc, [, v]) => acc + v, 0)
+      : keys.filter(kk => isModelVis(kk)).reduce((acc, kk) => acc + (finCum[kk] || 0), 0);
+    document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
+    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' +
+      shown.map(([kk, v]) => {
+        const vis = isModelVis(kk);
+        return vis
+          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + kk + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + kk + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+          : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + kk + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + kk + '</span></button>';
+      }).join('');
+
+    lg.querySelectorAll('button[data-model]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const kk = btn.dataset.model;
+        setModelVis(kk, !isModelVis(kk));
+        draw();
+      });
+    });
+  };
+  modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('agyUsageMode:cum-chart', mode); } catch (e) {} draw(); });
+  rangeMenu.addEventListener('change', () => { hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (e) {} draw(); });
+  draw();
+}
+cumChart();
+</script></body></html>

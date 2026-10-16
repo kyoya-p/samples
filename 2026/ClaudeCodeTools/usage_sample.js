@@ -36,26 +36,69 @@ function modelUsage(fromMs, toMs) {
   }
   return byModel;
 }
-const out = execSync('claude -p "/usage"', { encoding: 'utf8', timeout: 120000 });
-const session = out.match(/Current session:\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/);
-const week = out.match(/Current week \(all models\):\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/);
-if (!session || !week) { console.error('parse failed:\n' + out); process.exit(1); }
 const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
-// 前回記録の時刻（無ければ 0）から今回まで
+// 過去サンプルから直近の各枠の既知値と最新時刻を取得
 const lines = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').trim().split('\n').filter(Boolean) : [];
 const prev = lines.length ? JSON.parse(lines[lines.length - 1]) : null;
 const prevTs = prev ? Date.parse(prev.ts) : 0;
+
+const lastKnown = {};
+for (let i = lines.length - 1; i >= 0; i--) {
+  try {
+    const s = JSON.parse(lines[i]);
+    if (lastKnown.sessionPct === undefined && typeof s.sessionPct === 'number') {
+      lastKnown.sessionPct = s.sessionPct;
+      lastKnown.sessionResets = s.sessionResets || '';
+    }
+    if (lastKnown.weekPct === undefined && typeof s.weekPct === 'number') {
+      lastKnown.weekPct = s.weekPct;
+      lastKnown.weekResets = s.weekResets || '';
+    }
+    if (lastKnown.sessionPct !== undefined && lastKnown.weekPct !== undefined) break;
+  } catch { /* skip */ }
+}
+
+let out = '';
+try {
+  out = execSync('claude -p "/usage"', { encoding: 'utf8', timeout: 120000 });
+} catch (e) {
+  out = (e.stdout || '').toString();
+  console.warn('claude -p "/usage" execution failed or timed out:', e.message);
+}
+
+const session = out.match(/Current session:\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/i);
+const week = out.match(/Current week(?:\s*\(all models\))?:\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/i);
+
+// 今回の /usage に情報がない枠（usage）は、前回の最後の値を継続しているものとして引き継ぐ
+const sessionPct = session ? Number(session[1]) : (lastKnown.sessionPct ?? null);
+const sessionResets = session ? session[2].trim() : (lastKnown.sessionResets ?? '');
+const weekPct = week ? Number(week[1]) : (lastKnown.weekPct ?? null);
+const weekResets = week ? week[2].trim() : (lastKnown.weekResets ?? '');
+
+if (sessionPct === null && weekPct === null) {
+  console.error('Failed to parse claude /usage and no prior samples:\n' + out);
+  process.exit(1);
+}
+
 // フック経由（USAGE_GATE）では、前回記録から10分未満かつ使用率が減っていない（リセットでない）なら追記しない
 if (process.env.USAGE_GATE && prev) {
-  const dropped = Number(session[1]) < prev.sessionPct || Number(week[1]) < prev.weekPct;
-  if (!dropped && Date.now() - prevTs < 10 * 60 * 1000) { console.log('skipped'); process.exit(0); }
+  const dropped = (session && typeof prev.sessionPct === 'number' && sessionPct < prev.sessionPct) ||
+                  (week && typeof prev.weekPct === 'number' && weekPct < prev.weekPct);
+  if (!dropped && Date.now() - prevTs < 10 * 60 * 1000) {
+    console.log('skipped');
+    process.exit(0);
+  }
 }
+
 const sample = {
   ts: new Date().toISOString(),
-  sessionPct: Number(session[1]), sessionResets: session[2].trim(),
-  weekPct: Number(week[1]), weekResets: week[2].trim(),
+  sessionPct,
+  sessionResets,
+  weekPct,
+  weekResets,
   from: new Date(prevTs).toISOString(),
   byModel: modelUsage(prevTs, Date.parse(new Date().toISOString())),
 };
+
 fs.appendFileSync(samplesPath, JSON.stringify(sample) + '\n', 'utf8');
 console.log('appended', JSON.stringify(sample));

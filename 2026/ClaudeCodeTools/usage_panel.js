@@ -29,6 +29,24 @@ const days = group(r => r.day || 'unknown').sort((a, b) => a.key.localeCompare(b
 // usage_sample.js が記録した使用率（5時間枠・週次）
 const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
 const samples = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)) : [];
+
+// 過去サンプルで枠情報が欠損している場合、直前の値を引き継ぐ（チャートの連続性確保）
+let lastRunning = {};
+for (const s of samples) {
+  if (typeof s.sessionPct !== 'number' && typeof lastRunning.sessionPct === 'number') {
+    s.sessionPct = lastRunning.sessionPct;
+    s.sessionResets = lastRunning.sessionResets || '';
+  }
+  if (typeof s.weekPct !== 'number' && typeof lastRunning.weekPct === 'number') {
+    s.weekPct = lastRunning.weekPct;
+    s.weekResets = lastRunning.weekResets || '';
+  }
+  if (typeof s.sessionPct === 'number') lastRunning.sessionPct = s.sessionPct;
+  if (s.sessionResets) lastRunning.sessionResets = s.sessionResets;
+  if (typeof s.weekPct === 'number') lastRunning.weekPct = s.weekPct;
+  if (s.weekResets) lastRunning.weekResets = s.weekResets;
+}
+
 // usage_samples.jsonl のうち、モデル別の区間値（byModel）を持つ記録だけを使う
 const modelSamples = samples.filter(s => s.byModel);
 // 週次上限の推定（推定値）: 最新の週次使用率 = 週ウィンドウ内トークン ÷ 上限 から逆算。使用率は整数丸めのため誤差あり
@@ -95,7 +113,7 @@ const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta n
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
 h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0 0 10px}
 .mut{color:var(--mut);font-size:12px}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(640px,1fr));margin-top:14px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(360px,640px));justify-content:start;margin-top:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
 .row{display:grid;grid-template-columns:minmax(90px,1.2fr) 2fr 70px;gap:8px;align-items:center;padding:5px 0;font-size:13px}
 .row .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -115,7 +133,7 @@ h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0 0 10px}
 <div class="grid" style="margin-top:12px">
   <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--bar)"></i>5時間枠 使用率の推移（%）</span><span class="rt"><b class="now" id="now-5h" style="color:var(--bar)"></b><span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span></span></h2><div id="usage-chart-5h"></div></div>
   <div class="card"><h2 class="ch"><span><i class="sw" style="background:#d08c4a"></i>週次 使用率の推移（%）</span><span class="rt"><b class="now" id="now-1w" style="color:#d08c4a"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span></span></h2><div id="usage-chart-1w"></div></div>
-  <div class="card"><h2 class="ch"><span>累積トークン使用量（モデル別・合計）</span><span class="rt"><b class="now" id="now-cum" style="color:var(--fg)"></b><span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span></span></h2><div id="cum-chart"></div><div class="mlg" id="cum-legend"></div></div>
+  <div class="card"><h2 class="ch"><span id="cum-title"></span><span class="rt"><b class="now" id="now-cum" style="color:var(--fg)"></b><span class="range"><select id="mode-cum" aria-label="表示の切り替え"></select></span><span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span></span></h2><div id="cum-chart"></div><div class="mlg" id="cum-legend"></div></div>
 </div>
 <script>
 const D = ${JSON.stringify(data)};
@@ -211,42 +229,77 @@ function usageChart() {
   });
 }
 usageChart();
-// 累積トークン使用量: 記録区間を時刻順に加算した累積値（モデル別 + 合計）。値は全期間の累積（表示範囲で0に戻さない）
+// モデル別トークン: 累積（記録の加算）と時間あたり（区間ごとのトークン/時）を切り替えて積み上げエリアで表示
 function cumChart() {
-  const MS = D.modelSamples || [], el = document.getElementById('cum-chart'), lg = document.getElementById('cum-legend');
+  const MS = (D.modelSamples || []).slice().sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+  const el = document.getElementById('cum-chart'), lg = document.getElementById('cum-legend');
   if (!MS.length) { el.closest('.card').style.display = 'none'; return; }
-  // 色はモデルごとに固定（modelChart と同じ割り当て）
+  // 色はモデルごとに固定（全期間トークン順に7色、それ以外は「その他」）
   const order = D.byModel.map(m => m.key).filter(kk => MS.some(s => s.byModel[kk])).slice(0, 7);
   const colOf = kk => { const i = order.indexOf(kk); return i < 0 ? 'var(--s0)' : 'var(--s' + (i + 1) + ')'; };
   const keys = [...order, 'その他'];
-  // 累積点: 起点は最初の区間の開始時刻（累積0）。各記録時刻で区間分を加算
-  const run = {}; let tot = 0;
-  const pts = [];
-  for (const s of MS.slice().sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts))) {
-    for (const [m, a] of Object.entries(s.byModel)) { const kk = order.includes(m) ? m : 'その他'; run[kk] = (run[kk] || 0) + a.total; tot += a.total; }
-    pts.push({ t: Date.parse(s.ts), cum: Object.assign({}, run), tot: tot });
+  const keyOf = m => order.includes(m) ? m : 'その他';
+  const sumV = v => Object.values(v).reduce((acc, n) => acc + n, 0);
+  // 累積: 記録区間を時刻順に加算した値（各記録時刻）
+  const cumPts = [], run = {};
+  for (const s of MS) {
+    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); run[kk] = (run[kk] || 0) + a.total; }
+    cumPts.push({ t: Date.parse(s.ts), v: Object.assign({}, run) });
   }
-  const fin = pts[pts.length - 1];
-  document.getElementById('now-cum').textContent = k(fin.tot);
+  // 時間あたり: 区間の総量 ÷ 区間の時間（トークン/時）。段状に持ち、区間の間は0
+  const rateOf = s => {
+    const hrs = (Date.parse(s.ts) - Date.parse(s.from)) / 3600000;
+    if (!(hrs > 0)) return null;
+    const r = {};
+    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); r[kk] = (r[kk] || 0) + a.total / hrs; }
+    return r;
+  };
+  const ratePts = [];
+  let prevEnd = null;
+  for (const s of MS) {
+    const r = rateOf(s); if (!r) continue;
+    const a = Date.parse(s.from), b = Date.parse(s.ts);
+    if (prevEnd === null) ratePts.push({ t: a, v: {} });
+    else if (a > prevEnd) ratePts.push({ t: prevEnd, v: {} }, { t: a, v: {} });
+    ratePts.push({ t: a, v: r }, { t: b, v: r });
+    prevEnd = b;
+  }
+  const finCum = cumPts[cumPts.length - 1].v;
+  const finRate = rateOf(MS[MS.length - 1]) || {};
+
+  // 表示切り替え・表示範囲（どちらも閲覧者のブラウザに保存）
+  const modes = [['cum', '累積'], ['rate', '時間あたり']];
+  const titles = { cum: '累積トークン使用量（モデル別・合計）', rate: 'トークン使用速度（モデル別・トークン/時）' };
+  const modeMenu = document.getElementById('mode-cum');
+  let mode = 'cum';
+  try { mode = localStorage.getItem('usageMode:cum-chart') || 'cum'; } catch (e) { /* 保存不可の環境では既定値 */ }
+  if (!titles[mode]) mode = 'cum';
+  modeMenu.innerHTML = modes.map(([v, l]) => '<option value="' + v + '"' + (v === mode ? ' selected' : '') + '>' + l + '</option>').join('');
+  const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
+  const rangeMenu = document.getElementById('range-cum');
+  let savedRange = '7d';
+  try { savedRange = localStorage.getItem('usageRange:cum-chart') || '7d'; } catch (e) { /* 保存不可の環境では既定値 */ }
+  rangeMenu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === savedRange ? ' selected' : '') + '>' + l + '</option>').join('');
+  let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
+
   const W = 640, H = 180, P = 30, PL = 46;
   const pad = n => String(n).padStart(2, '0');
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
-  const draw = hours => {
-    // 左端は記録開始時刻まで。記録より前は描かない（起点の累積面を7日前から塗らないため）
+  const draw = () => {
+    const isRate = mode === 'rate';
+    const pts = isRate ? ratePts : cumPts;
     const now = Date.now(), t0 = now - hours * 3600000;
-    // 窓の左端は、その時点の累積値から開始（窓内の記録 + 現在時刻まで最新値で延長）
+    // 左端より前の最後の点を起点にする。左端より前の記録が無ければ、最初の記録まで0で縦に立ち上げる
+    let i0 = -1; pts.forEach((p, i) => { if (p.t < t0) i0 = i; });
     let win;
-    if (t0 < pts[0].t) {
-      // 表示範囲の左端が記録開始より前: 開始時刻まで0のまま、開始時刻で縦に立ち上げる
-      win = [{ t: t0, cum: {}, tot: 0 }, { t: pts[0].t, cum: {}, tot: 0 }].concat(pts.filter(p => p.t <= now));
-    } else {
-      let i0 = 0; while (i0 + 1 < pts.length && pts[i0 + 1].t <= t0) i0++;
-      const base = pts[i0];
-      win = [{ t: t0, cum: base.cum, tot: base.tot }].concat(pts.slice(i0 + 1).filter(p => p.t <= now));
-    }
-    const lastP = win[win.length - 1];
-    win.push({ t: now, cum: lastP.cum, tot: lastP.tot });
-    const max = Math.max(1, ...win.map(p => p.tot));
+    if (i0 < 0) win = [{ t: t0, v: {} }, { t: pts[0].t, v: {} }].concat(pts.filter(p => p.t <= now));
+    else win = [{ t: t0, v: pts[i0].v }].concat(pts.slice(i0 + 1).filter(p => p.t <= now));
+    // 末尾: 累積は最新値を現在時刻まで延長、時間あたりは区間の終わりで0に落とす
+    const last = win[win.length - 1];
+    if (isRate) win.push({ t: last.t, v: {} }, { t: now, v: {} });
+    else win.push({ t: now, v: last.v });
+    if (win.length === 0) return;
+    const max = Math.max(1, ...win.map(p => sumV(p.v)));
     const x = ms => PL + ((Math.min(Math.max(ms, t0), now) - t0) / (now - t0)) * (W - PL - P);
     const y = v => H - P - (v / max) * (H - 2 * P);
     const grid = [0, 0.25, 0.5, 0.75, 1].map(f => '<line x1="' + PL + '" x2="' + (W - P) + '" y1="' + y(max * f) + '" y2="' + y(max * f) + '" stroke="var(--line)"/><text x="' + (PL - 4) + '" y="' + (y(max * f) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + k(Math.round(max * f)) + '</text>').join('');
@@ -256,28 +309,36 @@ function cumChart() {
     const edge = (ms, anchor) => '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="' + anchor + '" fill="var(--mut)">' + fmtT(ms) + '</text>';
     let xl = edge(t0, 'start') + edge(now, 'end');
     for (let ms = Math.ceil(t0 / step) * step; ms <= now; ms += step) { if (Math.abs(x(ms) - PL) < 60 || Math.abs(x(ms) - (W - P)) < 60) continue; const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate()); xl += '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>'; }
-    const line = (get, col, width) => '<polyline fill="none" stroke="' + col + '" stroke-width="' + width + '" points="' + win.map(p => x(p.t).toFixed(1) + ',' + y(get(p)).toFixed(1)).join(' ') + '"/>';
-    // 積み上げエリア: 下からモデル順に、各層の上端 = その時点までの累積合計。最上端が合計線
-    const stackKeys = keys.filter(kk => win.some(p => p.cum[kk]));
-    const bnd = (p, n) => stackKeys.slice(0, n).reduce((acc, kk) => acc + (p.cum[kk] || 0), 0);
+    // 積み上げエリア: 下からモデル順。各層の上端 = その時点までの値の合計
+    const stackKeys = keys.filter(kk => win.some(p => p.v[kk]));
+    const bnd = (p, n) => stackKeys.slice(0, n).reduce((acc, kk) => acc + (p.v[kk] || 0), 0);
     const series = stackKeys.map((kk, idx) => {
       const top = win.map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx + 1)).toFixed(1));
       const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
       return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk.replace(/^claude-/, '') + '</title></polygon>';
     }).join('');
-    // 記録時点ごとのホバー点（最後の延長点は除く）
-    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="累積トークン使用量">' + grid + series + xl + '</svg>';
-    // 凡例: 色 + 名前 + 全期間の累積（色だけに頼らない）
-    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(fin.tot) + '</span></span>' + keys.filter(kk => fin.cum[kk]).map(kk => '<span><i class="sw" style="background:' + colOf(kk) + '"></i>' + kk.replace(/^claude-/, '') + '<span class="v">' + k(fin.cum[kk]) + '</span></span>').join('');
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titles[mode] + '">' + grid + series + xl + '</svg>';
+    document.getElementById('cum-title').textContent = titles[mode];
+    // 見出し・凡例: 累積は合計、時間あたりは直近区間の速度（色だけに頼らない）
+    const unit = isRate ? '/時' : '';
+    // 時間あたり: 表示範囲内で各モデルが最後に値を持った速度を凡例にする（直近区間だけのモデルに絞らない）
+    // 時間あたり: 表示範囲の平均 = 範囲内に含まれるトークン量 ÷ 範囲の時間（区間は範囲に重なる分だけ按分）
+    const avg = {};
+    if (isRate) for (const rec of MS) {
+      const a = Date.parse(rec.from), b = Date.parse(rec.ts);
+      const ov = Math.max(0, Math.min(b, now) - Math.max(a, t0));
+      if (!(b > a) || ov <= 0) continue;
+      const f = ov / (b - a);
+      for (const [m, x] of Object.entries(rec.byModel)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + x.total * f; }
+    }
+    const shown = isRate ? keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk] / hours]) : keys.filter(kk => finCum[kk]).map(kk => [kk, finCum[kk]]);
+    const headTot = isRate ? shown.reduce((acc, [, v]) => acc + v, 0) : sumV(finCum);
+    document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
+    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' + shown.map(([kk, v]) => '<span><i class="sw" style="background:' + colOf(kk) + '"></i>' + kk.replace(/^claude-/, '') + '<span class="v">' + k(Math.round(v)) + unit + '</span></span>').join('');
   };
-  const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
-  const menu = document.getElementById('range-cum');
-  let saved = '7d';
-  try { saved = localStorage.getItem('usageRange:cum-chart') || '7d'; } catch (e) { /* 保存不可の環境では既定値 */ }
-  menu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === saved ? ' selected' : '') + '>' + l + '</option>').join('');
-  const hoursOf = l => (ranges.find(([r]) => r === l) || ranges[5])[1];
-  menu.addEventListener('change', () => { try { localStorage.setItem('usageRange:cum-chart', menu.value); } catch (e) { /* 保存不可の環境では保存しない */ } draw(hoursOf(menu.value)); });
-  draw(hoursOf(menu.value));
+  modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('usageMode:cum-chart', mode); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
+  rangeMenu.addEventListener('change', () => { hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('usageRange:cum-chart', rangeMenu.value); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
+  draw();
 }
 cumChart();
 </script></body></html>`;
