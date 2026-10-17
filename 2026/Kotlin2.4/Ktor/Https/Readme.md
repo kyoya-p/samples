@@ -12,7 +12,7 @@
 
 | ファイル | 内容 |
 |---|---|
-| `src/main/kotlin/server_storefile.kt` | keystore (`KEYSTORE_PATH`) を読み込んで起動する Netty サーバ (8080: HTTP / 8443: HTTPS)。第1引数で別ファイルを指定可 |
+| `src/main/kotlin/server_storefile.kt` | keystore (`KEYSTORE_PATH`) を読み込んで起動する Netty サーバ (8081: HTTP / 8443: HTTPS)。第1引数で別ファイルを指定可 |
 | `src/main/kotlin/server_embedded.kt` | 証明書・秘密鍵をソースに内蔵した版 (store file 不要)。起動時に CA 証明書を `truststore_embedded.p12` (`TRUSTSTORE_PATH` と同じディレクトリ) へ書き出す。ポートは server_storefile と同じなので同時起動不可 |
 | `src/main/kotlin/client_insecure.kt` | 証明書検証なし (開発・検証専用) |
 | `src/main/kotlin/client_secure.kt` | truststore (`TRUSTSTORE_PATH`) の CA 証明書だけを信頼して検証する。第1引数で別ファイルを指定可 |

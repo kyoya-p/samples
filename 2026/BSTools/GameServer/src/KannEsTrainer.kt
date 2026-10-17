@@ -139,14 +139,17 @@ private fun fmtScore(v: Double): String {
  * [logger]が指定されている場合、全手の選択肢・評価値・採択結果をログファイルに書き出す。
  */
 private fun playoutGameKann(
-    net: KannValueNetwork,
-    weightsByPlayer: Map<Int, FloatArray>,
+    netsByPlayer: Map<Int, KannValueNetwork>,
+    weightsByPlayer: Map<Int, FloatArray> = emptyMap(),
     seed: Long,
     maxSteps: Int,
     logger: MatchLogger? = null,
-    playerNames: Map<Int, String> = emptyMap()
+    playerNames: Map<Int, String> = emptyMap(),
+    deck1Name: String = "deck-kogyo.yaml",
+    deck2Name: String = "deck-kogyo.yaml",
+    format: GameFormat = GameFormat.STANDARD
 ): KannPlayoutResult {
-    val state = createInitialGameState(seed = seed)
+    val state = createInitialGameState(deck1Name = deck1Name, deck2Name = deck2Name, seed = seed, format = format)
     repeat(maxSteps) { step ->
         if (state.winner != null) {
             if (logger != null) {
@@ -159,8 +162,6 @@ private fun playoutGameKann(
         EsDiag.stepInGame = step.toLong()
         EsDiag.totalSteps++
         EsDiag.distinctPositionsSeen.add(positionHash(state))
-        // 5手ごとに進捗を書き出す(毎手だとI/Oが増えすぎるため間引く)。stepInGame/totalSteps
-        // が単調増加し続けているかどうかで、対局が本当に進行しているかを外部から診断できる。
         if (step % 5 == 0) writeEsHeartbeat()
 
         val choosingId = state.choosingPlayerId
@@ -173,7 +174,8 @@ private fun playoutGameKann(
             logger.log("    P2: ${formatPlayerSummary(state.player2)}")
         }
 
-        net.setWeights(weightsByPlayer[choosingId] ?: return@repeat)
+        val net = netsByPlayer[choosingId] ?: return@repeat
+        weightsByPlayer[choosingId]?.let { net.setWeights(it) }
         val actions = enumerateActions(state)
         val messages = mutableListOf<String>()
         // repeatsPosition(同一局面へ戻る手)はmarkRepetitions([model/src/Rules.kt])が
@@ -243,15 +245,27 @@ private fun playoutGameKann(
 }
 
 /** candidate 側の勝率を baseline との自己対戦で測る。先攻/後攻を交互に入れ替えて先手有利を打ち消す */
-private fun evaluateCandidateKann(net: KannValueNetwork, candidate: FloatArray, baseline: FloatArray, games: Int, rng: Random, maxSteps: Int): Double {
+private fun evaluateCandidateKann(
+    net: KannValueNetwork,
+    candidate: FloatArray,
+    baseline: FloatArray,
+    games: Int,
+    rng: Random,
+    maxSteps: Int,
+    deck1Name: String = "deck-kogyo.yaml",
+    deck2Name: String = "deck-kogyo.yaml"
+): Double {
     var score = 0.0
     var draws = 0
     repeat(games) { i ->
         EsDiag.gameIndex = i + 1
         val seed = rng.nextLong()
         val candidateIsP1 = i % 2 == 0
-        val weightsByPlayer = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
-        val res = playoutGameKann(net, weightsByPlayer, seed, maxSteps)
+        val nets = mapOf(1 to net, 2 to net)
+        val weights = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
+        val d1 = if (candidateIsP1) deck1Name else deck2Name
+        val d2 = if (candidateIsP1) deck2Name else deck1Name
+        val res = playoutGameKann(nets, weights, seed, maxSteps, deck1Name = d1, deck2Name = d2)
         val winner = res.winner
         if (winner == null) draws++
         score += when {
@@ -287,7 +301,7 @@ private fun endStepMargin(net: KannValueNetwork, state: GameState): Double {
  * 局所解対策として、学習前にこの探索を1回だけ行う。
  */
 @OptIn(ExperimentalForeignApi::class)
-private fun findGoodInitNet(trySeeds: Int, baseSeed: Long): KannValueNetwork {
+private fun findGoodInitNet(trySeeds: Int, baseSeed: Long, config: KannArchConfig = KannArchConfig()): KannValueNetwork {
     val state = createInitialGameState()
     var bestNet: KannValueNetwork? = null
     var bestMargin = Double.NEGATIVE_INFINITY
@@ -295,7 +309,7 @@ private fun findGoodInitNet(trySeeds: Int, baseSeed: Long): KannValueNetwork {
     for (i in 0 until trySeeds) {
         val seed = baseSeed + i
         kad_srand(null, seed.toULong())
-        val net = KannValueNetwork()
+        val net = KannValueNetwork(config)
         val margin = endStepMargin(net, state)
         if (margin > bestMargin) {
             bestMargin = margin
@@ -367,10 +381,11 @@ fun extractModelName(path: String?): String {
 
 /**
  * 命名規則 `<派生元の名>_<派生先の名>.<NNタイプ>.weight` に基づくウェイトファイル名を生成する。
+ * 出力先は `./weights/` ディレクトリに固定される。
  */
 fun buildWeightFilename(srcName: String, dstName: String, nnType: String = "kann", cycleSuffix: String = ""): String {
     val suffix = if (cycleSuffix.isNotEmpty()) "-$cycleSuffix" else ""
-    return "${srcName}_${dstName}${suffix}.${nnType}.weight"
+    return "$WEIGHTS_DIR/${srcName}_${dstName}${suffix}.${nnType}.weight"
 }
 
 /**
@@ -409,16 +424,24 @@ fun runKannEsTraining(args: Array<String>) {
     val games = intArg("--games", 12)
     val sigma = doubleArg("--sigma", 0.05).toFloat()
     val seed = intArg("--seed", 1)
-    // 実測: 手数上限80では自己対戦が決着せず全局引き分けになり、勝率が常に50.0%に
-    // 固着して学習が進まなかった。300なら安定して決着することを確認済み ([Tuner.kt]の
-    // 自作GRU版ESと同じデフォルト300に揃える)。
     val maxSteps = intArg("--max-steps", 300)
     val initSearch = intArg("--init-search", 30)
+    val deck1 = strArg("--deck1") ?: strArg("--deck") ?: "deck-kogyo.yaml"
+    val deck2 = strArg("--deck2") ?: strArg("--deck") ?: "deck-kogyo.yaml"
 
     val resumeIdx = args.indexOf("--resume")
     val resumePath = if (resumeIdx >= 0 && resumeIdx + 1 < args.size) args[resumeIdx + 1] else null
     val nnType = strArg("--nn-type") ?: "kann"
     val srcName = strArg("--source-name") ?: extractModelName(resumePath)
+
+    val hiddenDim = intArg("--hidden-dim", RNN_HIDDEN_DIM)
+    val denseDim = intArg("--dense-dim", RNN_DENSE_DIM)
+    val numDenseLayers = intArg("--dense-layers", 1)
+    val archConfig = KannArchConfig(
+        hiddenDim = hiddenDim,
+        denseDim = denseDim,
+        numDenseLayers = numDenseLayers
+    )
 
     val targetArg = strArg("--target-name") ?: strArg("--name")
     val dstName = targetArg ?: run {
@@ -435,7 +458,8 @@ fun runKannEsTraining(args: Array<String>) {
 
     val outIdx = args.indexOf("--out")
     val outPath = if (outIdx >= 0 && outIdx + 1 < args.size) {
-        args[outIdx + 1]
+        val p = args[outIdx + 1]
+        if (!p.contains('/') && !p.contains('\\')) "$WEIGHTS_DIR/$p" else p
     } else {
         buildWeightFilename(srcName, dstName, nnType)
     }
@@ -444,12 +468,12 @@ fun runKannEsTraining(args: Array<String>) {
     val net: KannValueNetwork
     var champion: FloatArray
     if (resumePath != null) {
-        net = KannValueNetwork()
-        champion = loadWeightsFromFile(resumePath)
-        if (champion.size != net.nVar) error("重みファイルのパラメータ数(${champion.size})がネットワーク構成(${net.nVar})と一致しません: $resumePath")
-        net.setWeights(champion)
+        val loaded = KannValueNetwork.load(resumePath)
+            ?: error("重みファイルを読み込めません: $resumePath")
+        net = loaded
+        champion = net.getWeights()
     } else {
-        net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
+        net = findGoodInitNet(initSearch, seed.toLong() * 1000003L, archConfig)
         champion = net.getWeights()
     }
 
@@ -477,7 +501,7 @@ fun runKannEsTraining(args: Array<String>) {
             EsDiag.generation = gen
             EsDiag.adoptedCount = adoptedCount
             val candidate = mutateWeights(champion, rng, sigma)
-            val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps)
+            val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps, deck1Name = deck1, deck2Name = deck2)
             val adopted = winRate > 0.5
             val prefix = if (cycles > 1) "[Cycle $cycle/$cycles] " else ""
             println("${prefix}世代$gen: 候補勝率=${pct(winRate)} ${if (adopted) "→ 採用" else "→ 棄却"}")
@@ -519,7 +543,7 @@ fun runKannEsTraining(args: Array<String>) {
             println("=== スナップショット保存: $snapshotPath ===")
 
             println("--- サイクル $cycle 検証: サイクル開始時重み vs 最新重み (10局公平対戦) ---")
-            val evalWinRate = evaluateCandidateKann(net, champion, cycleStartChampion, 10, rng, maxSteps)
+            val evalWinRate = evaluateCandidateKann(net, champion, cycleStartChampion, 10, rng, maxSteps, deck1Name = deck1, deck2Name = deck2)
             println("  -> 最新重みの対開始時勝率: ${pct(evalWinRate)}")
             println()
         }
@@ -581,6 +605,8 @@ fun runKannMatch(args: Array<String>) {
     val initSearch = intArg("--init-search", 30)
     val p1Path = strArg("--p1-weights")
     val p2Path = strArg("--p2-weights")
+    val deck1 = strArg("--deck1") ?: strArg("--deck") ?: "deck-kogyo.yaml"
+    val deck2 = strArg("--deck2") ?: strArg("--deck") ?: "deck-kogyo.yaml"
     val alternate = !args.contains("--fixed-turn")
 
     val logArg = strArg("--log") ?: strArg("--log-file")
@@ -589,12 +615,8 @@ fun runKannMatch(args: Array<String>) {
     val logger = logPath?.let { MatchLogger(it) }
 
     val rng = Random(seed)
-    val net = findGoodInitNet(initSearch, seed.toLong() * 1000003L)
-    val w1 = p1Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
-    val w2 = p2Path?.let { loadWeightsFromFile(it) } ?: net.getWeights()
-    if ((p1Path != null || p2Path != null) && (w1.size != net.nVar || w2.size != net.nVar)) {
-        error("重みファイルのパラメータ数(${w1.size}/${w2.size})がネットワーク構成(${net.nVar})と一致しません")
-    }
+    val net1 = p1Path?.let { KannValueNetwork.load(it) } ?: findGoodInitNet(initSearch, seed.toLong() * 1000003L)
+    val net2 = p2Path?.let { KannValueNetwork.load(it) } ?: findGoodInitNet(initSearch, seed.toLong() * 1000003L + 1L)
 
     val name1 = p1Path ?: "未学習初期重み(model1)"
     val name2 = p2Path ?: "未学習初期重み(model2)"
@@ -649,7 +671,6 @@ fun runKannMatch(args: Array<String>) {
     for (g in 1..games) {
         val gameSeed = rng.nextLong()
         val m1IsP1 = if (alternate) (g % 2 != 0) else true
-        val weightsByPlayer = if (m1IsP1) mapOf(1 to w1, 2 to w2) else mapOf(1 to w2, 2 to w1)
         val p1Name = if (m1IsP1) name1 else name2
         val p2Name = if (m1IsP1) name2 else name1
 
@@ -669,8 +690,11 @@ fun runKannMatch(args: Array<String>) {
             logger.log("-----------------------------------------------------------------")
         }
 
+        val d1 = if (m1IsP1) deck1 else deck2
+        val d2 = if (m1IsP1) deck2 else deck1
         val playerNames = mapOf(1 to "P1($p1Name)", 2 to "P2($p2Name)")
-        val res = playoutGameKann(net, weightsByPlayer, gameSeed, maxSteps, logger, playerNames)
+        val netsByPlayer = if (m1IsP1) mapOf(1 to net1, 2 to net2) else mapOf(1 to net2, 2 to net1)
+        val res = playoutGameKann(netsByPlayer, seed = gameSeed, maxSteps = maxSteps, logger = logger, playerNames = playerNames, deck1Name = d1, deck2Name = d2)
         totalTurns += res.turn
         totalSteps += res.steps
 
@@ -712,6 +736,9 @@ fun runKannMatch(args: Array<String>) {
 
         println("対戦 $g/$games [シード: $gameSeed]: 勝者=$winnerStr | 決着: ${res.turn}ターン / ${res.steps}手 (先手: $p1Name, 後手: $p2Name)")
     }
+
+    net1.delete()
+    net2.delete()
 
     val avgTurn = if (games > 0) (totalTurns.toDouble() / games) else 0.0
     val avgSteps = if (games > 0) (totalSteps.toDouble() / games) else 0.0
@@ -766,6 +793,4 @@ fun runKannMatch(args: Array<String>) {
         logger.close()
         println("対戦選択ログを保存しました: $logPath")
     }
-
-    net.delete()
 }

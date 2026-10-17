@@ -1,8 +1,9 @@
 [tools]
 java = "21" # keytool 用 (store file の生成)
 kotlin = "2.4.20"
+"conda:openssl" = "3" # 証明書の生成 (gen-make-rootca)
+coreutils = "latest" # uutils coreutils (aqua:uutils/coreutils)。rm / mkdir を OS 共通で使う
 
-# 環境変数で上書き可。既定は build/storefiles 配下
 [env]
 KEYSTORE_PATH = "{{ get_env(name='KEYSTORE_PATH', default=config_root ~ '/build/storefiles/keystore.p12') }}" # サーバの鍵 + 証明書
 KEYSTORE_PASS = "{{ get_env(name='KEYSTORE_PASS', default='123456') }}"
@@ -12,10 +13,11 @@ TRUSTSTORE_PASS = "{{ get_env(name='TRUSTSTORE_PASS', default='123456') }}"
 [tasks.gen-stores-init]
 description = "store file の出力先を初期化 (gen-stores から呼ばれる)"
 hide = true
-run = 'rm "{{env.KEYSTORE_PATH}}" "{{env.TRUSTSTORE_PATH}}" && mkdir -p "{{env.KEYSTORE_PATH | dirname}}" "{{env.TRUSTSTORE_PATH | dirname}}"'
-run_windows = '''powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue build/stores, '{{env.KEYSTORE_PATH}}', '{{env.TRUSTSTORE_PATH}}'; New-Item -ItemType Directory -Force build/stores, '{{env.KEYSTORE_PATH | dirname}}', '{{env.TRUSTSTORE_PATH | dirname}}' | Out-Null; exit 0"'''
+run = [
+    'coreutils rm -rf build/stores "{{env.KEYSTORE_PATH}}" "{{env.TRUSTSTORE_PATH}}"',
+    'coreutils mkdir -p build/stores "{{env.KEYSTORE_PATH | dirname}}" "{{env.TRUSTSTORE_PATH | dirname}}"',
+]
 
-# CA (ca.p12 / cacert.pem) は build/stores に作る中間ファイル。CA のパスワードは KEYSTORE_PASS
 [tasks.gen-stores]
 description = "server・clientそれぞれのstore file を生成"
 depends = ["gen-stores-init"]
@@ -34,4 +36,35 @@ run = [
     'keytool -delete -alias sampleCA -keystore "{{env.KEYSTORE_PATH}}" -storepass "{{env.KEYSTORE_PASS}}"',
     # 5. クライアント用 truststore (CA 証明書のみ)
     'keytool -importcert -alias sampleCA -file build/stores/cacert.pem -keystore "{{env.TRUSTSTORE_PATH}}" -storetype PKCS12 -storepass "{{env.TRUSTSTORE_PASS}}" -noprompt',
+    # 6. 中間ファイル (CA 秘密鍵・CSR 等) を削除し、store file のみ残す
+    { task = "gen-stores-clean" },
+]
+
+[tasks.gen-stores-clean]
+description = "中間ファイル (build/stores) を削除"
+hide = true
+run = 'coreutils rm -rf build/stores'
+
+# ルート CA 証明書 (自己署名) を openssl で生成する。gen-stores の使い捨て CA (build/stores) とは別に、build/rootca に残す
+#   ROOTCA_PEM     : ルート CA の秘密鍵 (PEM、暗号化なし)。非公開
+#   ROOTCA_P12     : ルート CA の秘密鍵 + 証明書 (PKCS12、alias rootCA)。パスワードは ROOTCA_P12_PASS。非公開
+#   ROOTCA_CERT    : ルート CA 証明書 (PEM、公開)。クライアントの信頼ストアや curl --cacert に使える
+#   RSA 4096、SHA-384、有効期間 20年 (7300日)、basicConstraints=CA:TRUE,pathlen:1 (中間 CA を1段まで発行可)、keyUsage=keyCertSign,cRLSign
+#   実行のたびに作り直す。openssl は [tools] の conda:openssl、rm / mkdir は coreutils (uutils) を使う
+[tasks.gen-make-rootca]
+description = "ルート CA 証明書 (自己署名) を openssl で生成 (ROOTCA_PEM / ROOTCA_P12 / ROOTCA_CERT)"
+env = {
+    ROOTCA_PEM = "./build/rootca/private-rootca.pem",
+    ROOTCA_P12 = "./build/rootca/private-rootca.p12",
+    ROOTCA_P12_PASS = "123456",
+    ROOTCA_CERT = "./build/rootca/rootca.pem"
+}
+run = [
+    # 0. 出力先を初期化
+    'coreutils rm -f "{{env.ROOTCA_PEM}}" "{{env.ROOTCA_P12}}" "{{env.ROOTCA_CERT}}"',
+    'coreutils mkdir -p "{{env.ROOTCA_PEM | dirname}}" "{{env.ROOTCA_P12 | dirname}}" "{{env.ROOTCA_CERT | dirname}}"',
+    # 1. 秘密鍵 (PEM) と自己署名証明書 (PEM)
+    'openssl req -x509 -newkey rsa:4096 -sha384 -days 7300 -noenc -keyout "{{env.ROOTCA_PEM}}" -out "{{env.ROOTCA_CERT}}" -subj "/CN=Sample Root CA/OU=OrgUnit/O=Org/C=JP" -addext "basicConstraints=critical,CA:TRUE,pathlen:1" -addext "keyUsage=critical,keyCertSign,cRLSign" -addext "subjectKeyIdentifier=hash"',
+    # 2. 秘密鍵 + 証明書を PKCS12 にまとめる
+    'openssl pkcs12 -export -inkey "{{env.ROOTCA_PEM}}" -in "{{env.ROOTCA_CERT}}" -name rootCA -out "{{env.ROOTCA_P12}}" -passout "pass:{{env.ROOTCA_P12_PASS}}"',
 ]

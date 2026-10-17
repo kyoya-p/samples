@@ -1,3 +1,10 @@
+---
+name: bstools-standard-playmat
+description: >-
+  BSTools Playmat (WebUI) およびルールエンジンの運用・保守ガイドライン。
+  常時接続SSEリアルタイム同期、GodMode/PlayMode視点分離、Rules.ktによるルール判定、Playwrightテスト環境の運用時に参照する。
+---
+
 # Skill: BSTools Playmat & Rule Engine
 
 このスキルは、Kotlin/Native (Amper) によるバトルスピリッツ（**スタンダード／エターナル両フォーマット**）の盤面シミュレーション・Playmats WebUI・常時接続SSEリアルタイム同期・**GodMode/PlayMode視点分離**・RuleAPI・GameServer連携・Playwrightテスト環境の運用と保守を行うための標準ガイドラインである。

@@ -9,7 +9,7 @@ import java.security.cert.CertificateFactory
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 
-// 証明書・秘密鍵をソースに内蔵したサーバ (ファイル不要。server_storefile.kt と同じポート 8080/8443 を使うため同時起動不可)
+// 証明書・秘密鍵をソースに内蔵したサーバ (ファイル不要。server_storefile.kt と同じポート 8081/8443 を使うため同時起動不可)
 //
 // 警告: 以下の秘密鍵はサンプル用に公開している。このサンプル以外では絶対に使わないこと
 // CA 証明書 (EMBEDDED_CA_PEM) は、起動時に TRUSTSTORE_PATH と同じディレクトリの truststore_embedded.p12
@@ -107,6 +107,6 @@ fun main() {
             keyStorePassword = { KEYSTORE_PASS.toCharArray() },
             privateKeyPassword = { KEYSTORE_PASS.toCharArray() }
         ) { port = 8443 }
-        connector { port = 8080 } // 非SSL用ポート
+        connector { port = 8081 } // 非SSL用ポート
     }) { myApplication() }.start(wait = true)
 }

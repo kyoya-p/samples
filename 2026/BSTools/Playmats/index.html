@@ -378,6 +378,52 @@
     font-weight: bold;
     letter-spacing: 0.5px;
   }
+  .card.attackable {
+    border-color: #ff9100 !important;
+    box-shadow: 0 0 12px rgba(255, 145, 0, 0.55) !important;
+    cursor: pointer !important;
+    animation: attackable-pulse 2s infinite ease-in-out;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card.attackable:hover {
+    border-color: #ffab40 !important;
+    box-shadow: 0 0 18px rgba(255, 145, 0, 0.85) !important;
+    transform: translateY(-2px);
+  }
+  .card.attackable.is-best {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 14px rgba(0, 230, 118, 0.6) !important;
+  }
+  .card.attackable.is-best:hover {
+    border-color: #69f0ae !important;
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.9) !important;
+  }
+  @keyframes attackable-pulse {
+    0%, 100% {
+      box-shadow: 0 0 8px rgba(255, 145, 0, 0.4);
+      border-color: #ff9100;
+    }
+    50% {
+      box-shadow: 0 0 16px rgba(255, 145, 0, 0.8);
+      border-color: #ffd180;
+    }
+  }
+  .attackable-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(255, 145, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #ff9100;
+    font-weight: 600;
+  }
+  .card.attackable.is-best .attackable-badge {
+    border-top-color: rgba(0, 230, 118, 0.4);
+    color: #00e676;
+  }
   .playable-badge {
     margin-top: 6px;
     padding-top: 4px;
@@ -1925,7 +1971,7 @@ function renderCoreMoveGroupList(container, groups, maxEval, isNearBest) {
   }
 }
 
-function renderField(el, field, isMyField, blockActionsMap = null, attackingCardId = null, coreMoveContext = null) {
+function renderField(el, field, isMyField, blockActionsMap = null, attackingCardId = null, coreMoveContext = null, attackActionsMap = null) {
   el.innerHTML = "";
   if (!field.length) {
     el.innerHTML = '<div class="empty">(なし)</div>';
@@ -1938,6 +1984,7 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
     const isAttacking = (o.is_attacking === true) ||
       (attackingCardId != null && (o.id === attackingCardId || o.name === attackingCardId));
     const blockAction = blockActionsMap ? (blockActionsMap.get(o.id) ?? blockActionsMap.get(o.name)) : null;
+    const attackActionInfo = (isMyField && attackActionsMap) ? (attackActionsMap.get(o.id) ?? attackActionsMap.get(o.name)) : null;
 
     // メインステップで自分のフィールドのスピリット/カードへのコア移動グループ
     const matchedCoreGroups = (isMyField && isMainStep && groups) ? getCoreMoveGroupsForCard(o, groups) : [];
@@ -1953,8 +2000,11 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
     }
     const isTopCoreMove = (hasCoreMove && isNearBest && isNearBest(cardBestEval, maxEval));
 
+    const hasMultiAttack = attackActionInfo && attackActionInfo.actions && attackActionInfo.actions.length > 1;
+    const isTopAttack = attackActionInfo && attackActionInfo.isBest;
+
     const wrap = document.createElement("div");
-    if (hasCoreMove) {
+    if (hasCoreMove || hasMultiAttack) {
       wrap.className = "field-card-wrapper";
     }
 
@@ -1962,6 +2012,9 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
     let cardClass = "card" + (o.exhausted ? " exhausted" : "");
     if (hasCoreMove) {
       cardClass += " core-targetable" + (isTopCoreMove ? " is-best" : "");
+    }
+    if (attackActionInfo) {
+      cardClass += " attackable" + (isTopAttack ? " is-best" : "");
     }
     div.className = cardClass;
 
@@ -1977,6 +2030,74 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
         e.stopPropagation();
         doAct(blockAction.index);
       };
+    } else if (attackActionInfo && !hasMultiAttack) {
+      // 単一アタックアクション: カードクリックで即座にアタック宣言
+      const act = attackActionInfo.actions[0];
+      div.title = `⚔️ クリックして ${o.name} でアタック宣言 (BP${o.bp || '-'})`;
+      div.onclick = (e) => {
+        e.stopPropagation();
+        doAct(act.index);
+      };
+    } else if (attackActionInfo && hasMultiAttack) {
+      // ガリザロト等の対象指定アタック: アコーディオンで対象選択肢を展開
+      div.setAttribute("data-obj-id", o.id);
+      div.setAttribute("data-obj-name", o.name);
+      div.title = `⚔️ クリックしてアタック時の指定対象を選択`;
+
+      const shouldReopen = (o.id === openFieldCardId);
+      const optsDiv = document.createElement("div");
+      optsDiv.className = "field-options" + (shouldReopen ? "" : " hidden") + (isTopAttack ? " is-best" : "");
+
+      for (const act of attackActionInfo.actions) {
+        const btn = document.createElement("button");
+        btn.className = "hand-opt-btn" + (act.isBest ? " best-option" : "");
+        let label = act.detail;
+        const matchTarget = label.match(/指定[:：]\s*(.+?)(?:\s*\(|$)/);
+        if (matchTarget) {
+          label = `🎯 指定: ${matchTarget[1]}`;
+        } else if (label.includes("指定なし")) {
+          label = "⚔️ 指定なしでアタック";
+        }
+        btn.innerHTML = `<span class="detail-text">${esc(label)}</span>${getEvalBadge(act.eval, act.isBest)}`;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          doAct(act.index);
+        };
+        optsDiv.appendChild(btn);
+      }
+
+      if (shouldReopen) {
+        div.classList.add("open");
+      }
+
+      div.onclick = (e) => {
+        e.stopPropagation();
+        const isHidden = optsDiv.classList.toggle("hidden");
+        div.classList.toggle("open", !isHidden);
+        const arrowEl = div.querySelector(".attack-arrow");
+        if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+        if (!isHidden) {
+          openFieldCardId = o.id;
+          document.querySelectorAll(".field-card-wrapper").forEach(w => {
+            if (w !== wrap) {
+              const otherOpts = w.querySelector(".field-options");
+              const otherCard = w.querySelector(".card");
+              if (otherOpts) otherOpts.classList.add("hidden");
+              if (otherCard) {
+                otherCard.classList.remove("open");
+                const arr = otherCard.querySelector(".attack-arrow, .core-move-arrow");
+                if (arr) arr.textContent = "▶";
+              }
+            }
+          });
+        } else {
+          if (openFieldCardId === o.id) openFieldCardId = null;
+        }
+      };
+
+      wrap.appendChild(div);
+      wrap.appendChild(optsDiv);
     } else if (isMyField) {
       div.setAttribute("data-obj-id", o.id);
       div.setAttribute("data-obj-name", o.name);
@@ -2049,6 +2170,12 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
     } else if (blockAction) {
       const evalBadge = getEvalBadge(blockAction.eval, blockAction.isBest);
       badgeHtml = `<div class="blockable-badge"><span>🛡️ ブロック</span>${evalBadge}</div>`;
+    } else if (attackActionInfo) {
+      const evalBadge = attackActionInfo.bestEval != null ? getEvalBadge(attackActionInfo.bestEval, attackActionInfo.isBest) : "";
+      const shouldReopen = (o.id === openFieldCardId);
+      const arrowIcon = shouldReopen ? "▼" : "▶";
+      const labelText = hasMultiAttack ? `<span><span class="attack-arrow">${arrowIcon}</span> ⚔️ アタック (${attackActionInfo.actions.length}択)</span>` : `<span>⚔️ アタック</span>`;
+      badgeHtml = `<div class="attackable-badge">${labelText}${evalBadge}</div>`;
     } else if (hasCoreMove) {
       const evalBadge = cardBestEval != null ? getEvalBadge(cardBestEval, isTopCoreMove) : "";
       const shouldReopen = (o.id === openFieldCardId);
@@ -2066,7 +2193,7 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
 
     if (o.image_url) bindCardPreview(div, o.name, o.image_url);
 
-    if (hasCoreMove) {
+    if (hasCoreMove || hasMultiAttack) {
       el.appendChild(wrap);
     } else {
       el.appendChild(div);
@@ -2537,6 +2664,43 @@ function render(data) {
     }
   }
 
+  // アタック宣言ステップ時のアタック可能スピリットマップ (カードIDまたはカード名 -> アクション情報)
+  const isAttackDeclaration = !!(data.phase && data.phase.includes("アタック宣言") && data.can_act !== false);
+  const attackActionsMap = new Map();
+  if (isAttackDeclaration && data.groups) {
+    for (const g of data.groups) {
+      if (g.category && g.category.includes("【アタック】")) {
+        const selectableOpts = g.options.filter(o => !o.forbidden);
+        if (selectableOpts.length > 0) {
+          const rawName = g.category.replace(/^🗡️【アタック】\s*/, "").replace(/\s*➔\s*指定:.*$/, "").replace(/\s*\(指定:.*\)$/, "").trim();
+          const targetId = g.target_instance_id;
+          
+          let entry = (targetId && attackActionsMap.get(targetId)) || (rawName && attackActionsMap.get(rawName));
+          if (!entry) {
+            entry = {
+              actions: [],
+              bestEval: -Infinity,
+              isBest: false
+            };
+            if (targetId) attackActionsMap.set(targetId, entry);
+            if (rawName && !attackActionsMap.has(rawName)) attackActionsMap.set(rawName, entry);
+          }
+          for (const opt of selectableOpts) {
+            const isBest = isNearBest(opt.eval, maxEval);
+            if (isBest) entry.isBest = true;
+            if (opt.eval > entry.bestEval) entry.bestEval = opt.eval;
+            entry.actions.push({
+              index: opt.index,
+              eval: opt.eval,
+              isBest: isBest,
+              detail: opt.detail
+            });
+          }
+        }
+      }
+    }
+  }
+
   // アタック中のカードID特定 (バトル中)
   // 1. data.attacking_card_id があれば最優先
   // 2. ブロック宣言フェーズ中であれば、アタック側(active_player)フィールドのアタッカーを特定
@@ -2574,7 +2738,7 @@ function render(data) {
   const p2AttackingId = (data.active_player === 2) ? attackingCardId : null;
 
   const isMainStep = !!(data.phase && data.phase.includes("メインステップ") && data.can_act !== false);
-  if (!isMainStep) {
+  if (!isMainStep && !isAttackDeclaration) {
     openFieldCardId = null;
   }
   const coreMoveContext = {
@@ -2591,7 +2755,7 @@ function render(data) {
   $("p1-count").innerHTML = formatCountDisplay(p1.count);
   $("p1-hand-count").textContent = p1.hand_count;
   $("p1-deck-count").textContent = p1.deck_count;
-  renderField($("p1-field"), p1.field, p1Chooses, p1Chooses ? blockActionsMap : null, p1AttackingId, p1Chooses ? coreMoveContext : null);
+  renderField($("p1-field"), p1.field, p1Chooses, p1Chooses ? blockActionsMap : null, p1AttackingId, p1Chooses ? coreMoveContext : null, p1Chooses ? attackActionsMap : null);
   renderTrash("p1", p1.trash_cards);
 
   const resBoxP1 = $("p1-reserve-box");
@@ -2611,7 +2775,7 @@ function render(data) {
   $("p2-count").innerHTML = formatCountDisplay(p2.count);
   $("p2-hand-count").textContent = p2.hand_count;
   $("p2-deck-count").textContent = p2.deck_count;
-  renderField($("p2-field"), p2.field, p2Chooses, p2Chooses ? blockActionsMap : null, p2AttackingId, p2Chooses ? coreMoveContext : null);
+  renderField($("p2-field"), p2.field, p2Chooses, p2Chooses ? blockActionsMap : null, p2AttackingId, p2Chooses ? coreMoveContext : null, p2Chooses ? attackActionsMap : null);
   renderTrash("p2", p2.trash_cards);
 
   const resBoxP2 = $("p2-reserve-box");

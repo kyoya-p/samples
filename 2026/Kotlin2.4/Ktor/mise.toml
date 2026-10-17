@@ -27,7 +27,7 @@ test-all = { description = "全テスト実行", depends = [
 ] }
 
 # --- run ---
-https = { description = "Https サーバ起動 (:8080 / :8443)", dir = "Https", run = '.\kotlin.bat run' }
+https = { description = "Https サーバ起動 (:8081 / :8443)", dir = "Https", run = '.\kotlin.bat run' }
 json = { description = "Json サーバ起動 (:8080)", dir = "Json", run = '.\kotlin.bat run' }
 xml = { description = "Xml サーバ起動 (:8080)", dir = "Xml", run = '.\kotlin.bat run' }
 streamingecho = { description = "StreamingEcho サーバ起動 (:8080)", dir = "StreamingEcho", run = '.\kotlin.bat run' }

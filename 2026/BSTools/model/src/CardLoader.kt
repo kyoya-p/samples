@@ -153,7 +153,51 @@ object CardLoader {
             return card
         }
 
-        // フォールバック
+        // カード個別マスタが見つからない場合の既知カードフォールバック辞書
+        val known = when (cardNo) {
+            // [26RSD03] 翆海ノ甲魚
+            "26RSD03-X01" -> CardData(cardNo, "甲手スクィード", 5, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(5000, 9000))
+            "26RSD03-X02" -> CardData(cardNo, "深巣ダンテクレオ", 6, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 4), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(7000, 11000))
+            "26RSD03-001" -> CardData(cardNo, "フラッティ", 2, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(2000, 3000))
+            "26RSD03-002" -> CardData(cardNo, "パッファー", 3, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(3000, 5000))
+            "26RSD03-003" -> CardData(cardNo, "ラスヘッド", 3, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.GREEN), listOf("海緑", "甲魚"), lvBps = listOf(3000, 4000))
+            "26RSD03-004" -> CardData(cardNo, "ストラレイ", 3, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.GREEN), listOf("海緑", "甲魚"), lvBps = listOf(3000, 5000))
+            "26RSD03-005" -> CardData(cardNo, "モラモーラ", 4, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("海緑", "甲魚"), lvBps = listOf(4000, 6000))
+            "26RSD03-006" -> CardData(cardNo, "海幻コエラ＝カンサス", 5, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(5000, 8000))
+            "26RSD03-007" -> CardData(cardNo, "ガリザロト", 5, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(5000, 7000))
+            "26RSD03-008" -> CardData(cardNo, "重顎ドロゴリアス", 5, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(6000, 9000))
+            "26RSD03-009" -> CardData(cardNo, "透笠オリンディアス", 6, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN, CardColor.GREEN), CardCategory.SPIRIT, listOf(1, 4), listOf(CardColor.GREEN), listOf("甲魚"), lvBps = listOf(7000, 10000))
+            "26RSD03-010" -> CardData(cardNo, "最奥：緑淵深", 3, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.NEXUS, listOf(0, 2), listOf(CardColor.GREEN), listOf("甲魚"))
+            "26RSD03-011" -> CardData(cardNo, "水泡群域", 4, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.NEXUS, listOf(0, 2), listOf(CardColor.GREEN), listOf("甲魚"))
+            "26RSD03-012" -> CardData(cardNo, "ハンドモルト", 4, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.MAGIC, listOf(0), emptyList(), listOf("甲魚"))
+            "26RSD03-013" -> CardData(cardNo, "ボルテクスシェイブ", 4, listOf(CardColor.GREEN), listOf(CardColor.GREEN, CardColor.GREEN), CardCategory.MAGIC, listOf(0), emptyList(), listOf("甲魚"))
+            "26RSD03-014" -> CardData(cardNo, "テンタクルアタック", 3, listOf(CardColor.GREEN), listOf(CardColor.GREEN), CardCategory.MAGIC, listOf(0), emptyList(), listOf("甲魚"))
+
+            // [26RSD05] 煌陽ノ雷竜
+            "26RSD05-X01" -> CardData(cardNo, "雷噴ペールクアール", 6, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(6000, 10000))
+            "26RSD05-X02" -> CardData(cardNo, "雷術ルクーナス", 5, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(5000, 8000))
+            "26RSD05-001" -> CardData(cardNo, "クイール", 2, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(2000, 3000))
+            "26RSD05-002" -> CardData(cardNo, "アマール", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(3000, 4000))
+            "26RSD05-003" -> CardData(cardNo, "ラニラヤ", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 2), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(3000, 5000))
+            "26RSD05-004" -> CardData(cardNo, "ディヴァエス", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(3000, 5000))
+            "26RSD05-005" -> CardData(cardNo, "ルクアンス", 4, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(4000, 6000))
+            "26RSD05-006" -> CardData(cardNo, "セマローグ", 4, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(4000, 7000))
+            "26RSD05-007" -> CardData(cardNo, "雷探ペルボーグ", 4, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(4000, 6000))
+            "26RSD05-008" -> CardData(cardNo, "雷天拳ウィーギル", 5, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.SPIRIT, listOf(1, 3), listOf(CardColor.YELLOW), listOf("雷竜"), lvBps = listOf(5000, 8000))
+            "26RSD05-009" -> CardData(cardNo, "雷坑道", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW), CardCategory.NEXUS, listOf(0, 2), listOf(CardColor.YELLOW), listOf("雷竜"))
+            "26RSD05-010" -> CardData(cardNo, "最奥：大雷山嶺", 4, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.NEXUS, listOf(0, 2), listOf(CardColor.YELLOW), listOf("雷竜"))
+            "26RSD05-011" -> CardData(cardNo, "ファイアピラー", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW), CardCategory.MAGIC, listOf(0), emptyList(), listOf("雷竜"))
+            "26RSD05-012" -> CardData(cardNo, "リバースサンダー", 3, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.MAGIC, listOf(0), emptyList(), listOf("雷竜"))
+            "26RSD05-013" -> CardData(cardNo, "ネストリング", 4, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.MAGIC, listOf(0), emptyList(), listOf("雷竜"))
+            "26RSD05-014" -> CardData(cardNo, "トリプルサンダー", 5, listOf(CardColor.YELLOW), listOf(CardColor.YELLOW, CardColor.YELLOW), CardCategory.MAGIC, listOf(0), emptyList(), listOf("雷竜"))
+            else -> null
+        }
+        if (known != null) {
+            cardCache[cardNo] = known
+            return known
+        }
+
+        // 汎用フォールバック
         val fallback = CardData(
             cardNo = cardNo,
             name = cardNo,
@@ -206,13 +250,18 @@ object CardLoader {
             }
 
             if (inCards && line.contains(":")) {
+                val commentName = if (line.contains("#")) line.substringAfter("#").trim() else ""
                 val cleanLine = if (line.contains("#")) line.substringBefore("#").trim() else line
                 val parts = cleanLine.split(":")
                 if (parts.size >= 2) {
                     val cardNo = parts[0].trim().trim('"', '\'')
                     val count = parts[1].trim().toIntOrNull() ?: 1
                     if (cardNo.isNotEmpty()) {
-                        val card = loadCard(cardNo)
+                        var card = loadCard(cardNo)
+                        if (commentName.isNotEmpty() && (card.name == cardNo || card.name.isEmpty())) {
+                            card = card.copy(name = commentName)
+                            cardCache[cardNo] = card
+                        }
                         repeat(count) {
                             deckCards.add(card)
                         }

@@ -167,7 +167,8 @@ data class FieldCard(
     /** Lvごとの基本BP (lvCosts と同じ並び) */
     var lvBps: List<Int> = emptyList(),
     /** フィールドに置かれた通し番号 (重複しない一意の番号) */
-    var seq: Int = 0
+    var seq: Int = 0,
+    var cost: Int = 3
 ) {
     /** 現在のLvに対応するBP。BPはLvによって変わる (総合ルール 2-8-4) */
     val currentBp: Int
@@ -217,6 +218,7 @@ data class GameState(
     val player2: PlayerState = PlayerState(2, "Player 2"),
     var attackingCardId: String? = null,
     var blockingCardId: String? = null,
+    var mustBlockInstanceId: String? = null,
     var winner: Int? = null,
     var format: GameFormat = GameFormat.STANDARD,
     var seed: Long = 42L,

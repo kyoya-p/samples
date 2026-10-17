@@ -175,9 +175,9 @@ const data = {
 const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Antigravity Usage Panel</title>
 <style>
-:root{--bg:#fafaf7;--card:#ffffff;--fg:#1d1d1b;--mut:#6b6b65;--bar:#3c6fb4;--bar2:#9bb8df;--line:#e3e2dc;--s1:#2a78d6;--s2:#1baf7a;--s3:#eb6834;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s0:#8a8a84}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s0:#77776f}}
-:root[data-theme="dark"]{--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s0:#77776f}
+:root{--bg:#fafaf7;--card:#ffffff;--fg:#1d1d1b;--mut:#6b6b65;--bar:#3c6fb4;--bar2:#9bb8df;--line:#e3e2dc;--s1:#2a78d6;--s2:#1baf7a;--s3:#eb6834;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#17a2b8;--s9:#8c564b;--s10:#6c757d;--s0:#8a8a84}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#2bc4db;--s9:#b07d72;--s10:#9aa0a6;--s0:#77776f}}
+:root[data-theme="dark"]{--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#2bc4db;--s9:#b07d72;--s10:#9aa0a6;--s0:#77776f}
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
 h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0}
 .mut{color:var(--mut);font-size:12px}
@@ -229,6 +229,7 @@ h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0}
       <span id="cum-title">累積トークン使用量 / トークン使用速度</span>
       <span class="rt">
         <b class="now" id="now-cum" style="color:var(--fg)"></b>
+        <span class="range"><select id="split-cum" aria-label="集計単位の切り替え"></select></span>
         <span class="range"><select id="mode-cum" aria-label="表示の切り替え"></select></span>
         <span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span>
       </span>
@@ -301,7 +302,7 @@ function usageChart() {
     const linesAndDots = visibleSeries.map(s => {
       const pts = S.map((sm, i) => ({ ts: sampleTs[i], iso: sm.ts, v: usedOf(sm, s.key) })).filter(pt => pt.v !== null);
       const pl = pts.length > 0 ? '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + pts.map(pt => x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1)).join(' ') + '"/>' : '';
-      const dots = pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
+      const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
       return pl + dots;
     }).join('');
 
@@ -455,42 +456,35 @@ function cumChart() {
   const MS = (D.modelSamples || []).slice().sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
   const el = document.getElementById('cum-chart'), lg = document.getElementById('cum-legend');
   if (!MS.length) { el.closest('.card').style.display = 'none'; return; }
-  const order = D.byModel.map(m => m.key).filter(kk => MS.some(s => s.byModel[kk])).slice(0, 7);
-  const colOf = kk => { const i = order.indexOf(kk); return i < 0 ? 'var(--s0)' : 'var(--s' + (i + 1) + ')'; };
-  const keys = [...order, 'その他'];
-  const keyOf = m => order.includes(m) ? m : 'その他';
   const sumV = v => Object.values(v).reduce((acc, n) => acc + n, 0);
 
-  const cumPts = [], run = {};
-  for (const s of MS) {
-    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); run[kk] = (run[kk] || 0) + a.total; }
-    cumPts.push({ t: Date.parse(s.ts), v: Object.assign({}, run) });
-  }
-  const rateOf = s => {
-    const hrs = (Date.parse(s.ts) - Date.parse(s.from)) / 3600000;
-    if (!(hrs > 0)) return null;
-    const r = {};
-    for (const [m, a] of Object.entries(s.byModel)) { const kk = keyOf(m); r[kk] = (r[kk] || 0) + a.total / hrs; }
-    return r;
+  const entriesOf = (s, sp) => {
+    const out = [];
+    for (const [m, a] of Object.entries(s.byModel || {})) {
+      if (sp === 'model') {
+        out.push([m, a.total || 0]);
+      } else {
+        const effs = a.effort && Object.keys(a.effort).length ? Object.entries(a.effort) : [['unknown', a.total || 0]];
+        for (const [e, tok] of effs) {
+          out.push([sp === 'effort' ? e : (m + ' / ' + e), tok || 0]);
+        }
+      }
+    }
+    return out;
   };
-  const ratePts = [];
-  let prevEnd = null;
-  for (const s of MS) {
-    const r = rateOf(s); if (!r) continue;
-    const a = Date.parse(s.from), b = Date.parse(s.ts);
-    if (prevEnd === null) ratePts.push({ t: a, v: {} });
-    else if (a > prevEnd) ratePts.push({ t: prevEnd, v: {} }, { t: a, v: {} });
-    ratePts.push({ t: a, v: r }, { t: b, v: r });
-    prevEnd = b;
-  }
-  const finCum = cumPts[cumPts.length - 1].v;
+
+  const splits = [['model', 'モデル別'], ['effort', 'Effort別'], ['model_effort', 'モデル×Effort別']];
+  const splitMenu = document.getElementById('split-cum');
+  let split = 'model';
+  try { split = localStorage.getItem('agyUsageSplit:cum-chart') || 'model'; } catch (e) {}
+  if (!splits.some(([v]) => v === split)) split = 'model';
+  splitMenu.innerHTML = splits.map(([v, l]) => '<option value="' + v + '"' + (v === split ? ' selected' : '') + '>' + l + '</option>').join('');
 
   const modes = [['cum', '累積'], ['rate', '時間あたり']];
-  const titles = { cum: '累積トークン使用量（モデル別・合計）', rate: 'トークン使用速度（モデル別・トークン/時）' };
   const modeMenu = document.getElementById('mode-cum');
   let mode = 'cum';
   try { mode = localStorage.getItem('agyUsageMode:cum-chart') || 'cum'; } catch (e) {}
-  if (!titles[mode]) mode = 'cum';
+  if (!modes.some(([v]) => v === mode)) mode = 'cum';
   modeMenu.innerHTML = modes.map(([v, l]) => '<option value="' + v + '"' + (v === mode ? ' selected' : '') + '>' + l + '</option>').join('');
   const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
   const rangeMenu = document.getElementById('range-cum');
@@ -499,19 +493,55 @@ function cumChart() {
   rangeMenu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === savedRange ? ' selected' : '') + '>' + l + '</option>').join('');
   let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
 
+  const storageKeyOf = kk => split === 'model' ? 'agyUsageShowModel:' + kk : 'agyUsageShowModel:' + split + ':' + kk;
   const isModelVis = kk => {
     let saved = null;
-    try { saved = localStorage.getItem('agyUsageShowModel:' + kk); } catch (e) {}
+    try { saved = localStorage.getItem(storageKeyOf(kk)); } catch (e) {}
     return saved !== null ? saved === '1' : true;
   };
   const setModelVis = (kk, val) => {
-    try { localStorage.setItem('agyUsageShowModel:' + kk, val ? '1' : '0'); } catch (e) {}
+    try { localStorage.setItem(storageKeyOf(kk), val ? '1' : '0'); } catch (e) {}
   };
 
   const W = 640, H = 180, P = 30, PL = 46;
   const pad = n => String(n).padStart(2, '0');
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
   const draw = () => {
+    const totals = {};
+    for (const s of MS) {
+      for (const [k, tok] of entriesOf(s, split)) {
+        if (tok > 0) totals[k] = (totals[k] || 0) + tok;
+      }
+    }
+    const order = Object.keys(totals).sort((a, b) => totals[b] - totals[a]).slice(0, 10);
+    const colOf = kk => { const i = order.indexOf(kk); return i < 0 ? 'var(--s0)' : 'var(--s' + (i + 1) + ')'; };
+    const keys = [...order, 'その他'];
+    const keyOf = m => order.includes(m) ? m : 'その他';
+
+    const cumPts = [], run = {};
+    for (const s of MS) {
+      for (const [m, tok] of entriesOf(s, split)) { const kk = keyOf(m); run[kk] = (run[kk] || 0) + tok; }
+      cumPts.push({ t: Date.parse(s.ts), v: Object.assign({}, run) });
+    }
+    const rateOf = s => {
+      const hrs = (Date.parse(s.ts) - Date.parse(s.from)) / 3600000;
+      if (!(hrs > 0)) return null;
+      const r = {};
+      for (const [m, tok] of entriesOf(s, split)) { const kk = keyOf(m); r[kk] = (r[kk] || 0) + tok / hrs; }
+      return r;
+    };
+    const ratePts = [];
+    let prevEnd = null;
+    for (const s of MS) {
+      const r = rateOf(s); if (!r) continue;
+      const a = Date.parse(s.from), b = Date.parse(s.ts);
+      if (prevEnd === null) ratePts.push({ t: a, v: {} });
+      else if (a > prevEnd) ratePts.push({ t: prevEnd, v: {} }, { t: a, v: {} });
+      ratePts.push({ t: a, v: r }, { t: b, v: r });
+      prevEnd = b;
+    }
+    const finCum = cumPts[cumPts.length - 1].v;
+
     const isRate = mode === 'rate';
     const pts = isRate ? ratePts : cumPts;
     const now = Date.now(), t0 = now - hours * 3600000;
@@ -544,8 +574,10 @@ function cumChart() {
       const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
       return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk + '</title></polygon>';
     }).join('');
-    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titles[mode] + '">' + grid + series + xl + '</svg>';
-    document.getElementById('cum-title').textContent = titles[mode];
+    const splitLabel = (splits.find(([v]) => v === split) || splits[0])[1];
+    const titleText = isRate ? 'トークン使用速度（' + splitLabel + '・トークン/時）' : '累積トークン使用量（' + splitLabel + '・合計）';
+    el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titleText + '">' + grid + series + xl + '</svg>';
+    document.getElementById('cum-title').textContent = titleText;
     const unit = isRate ? '/時' : '';
     const avg = {};
     if (isRate) for (const rec of MS) {
@@ -553,7 +585,7 @@ function cumChart() {
       const ov = Math.max(0, Math.min(b, now) - Math.max(a, t0));
       if (!(b > a) || ov <= 0) continue;
       const f = ov / (b - a);
-      for (const [m, x] of Object.entries(rec.byModel)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + x.total * f; }
+      for (const [m, tok] of entriesOf(rec, split)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + tok * f; }
     }
     const shown = isRate ? keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk] / hours]) : keys.filter(kk => finCum[kk]).map(kk => [kk, finCum[kk]]);
     const headTot = isRate
@@ -577,11 +609,28 @@ function cumChart() {
       });
     });
   };
+  splitMenu.addEventListener('change', () => { split = splitMenu.value; try { localStorage.setItem('agyUsageSplit:cum-chart', split); } catch (e) {} draw(); });
   modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('agyUsageMode:cum-chart', mode); } catch (e) {} draw(); });
   rangeMenu.addEventListener('change', () => { hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (e) {} draw(); });
   draw();
 }
 cumChart();
+
+// アクティブ時（画面表示中）に定期リフレッシュ（30秒間隔）
+(() => {
+  const INTERVAL_MS = 30 * 1000;
+  const loadTime = Date.now();
+  setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      location.reload();
+    }
+  }, INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - loadTime >= INTERVAL_MS) {
+      location.reload();
+    }
+  });
+})();
 </script></body></html>`;
 
 fs.writeFileSync(path.join(__dirname, 'agy-panel.html'), html, 'utf8');

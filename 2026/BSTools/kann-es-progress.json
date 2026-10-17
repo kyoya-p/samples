@@ -1,1 +1,1 @@
-{"active":true,"generation":0,"totalGenerations":0,"games":0,"adoptedCount":0,"outPath":"","updatedAtMs":1790552634000,"stepInGame":50,"totalSteps":462,"evaluatedPositions":13229,"distinctPositionsSeen":462}
+{"active":false,"generation":10,"totalGenerations":10,"games":6,"adoptedCount":0,"outPath":"weights/std1_std2_adv.kann.weight","updatedAtMs":1792208528000,"gameIndex":6,"stepInGame":40,"totalSteps":2558,"evaluatedPositions":92560,"distinctPositionsSeen":2558}

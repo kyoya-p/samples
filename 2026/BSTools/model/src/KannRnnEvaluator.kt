@@ -26,8 +26,19 @@ import kotlinx.cinterop.*
  * (`kann_rnn_start`/`kann_apply1`相当)はトークンを1個処理するたびにグラフ全体を
  * 評価するため、実装を単純にするためトークンと同じタイミングで(同じ値を)毎回供給する。
  */
+data class KannArchConfig(
+    val tokenDim: Int = RNN_TOKEN_DIM,
+    val hiddenDim: Int = RNN_HIDDEN_DIM,
+    val globalDim: Int = RNN_GLOBAL_DIM,
+    val denseDim: Int = RNN_DENSE_DIM,
+    val numDenseLayers: Int = 1
+)
+
 @OptIn(ExperimentalForeignApi::class)
-class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
+class KannValueNetwork private constructor(
+    private val ann: CPointer<kann_t>,
+    val config: KannArchConfig = KannArchConfig()
+) {
     private val tokenLabel = 0
     private val globalLabel = 1
 
@@ -40,8 +51,8 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
      */
     private val rmsMemory: CPointer<FloatVar> = nativeHeap.allocArray(nVar) { value = 0f }
 
-    /** 未学習のランダム初期化で新規グラフを構築する既定コンストラクタ */
-    constructor() : this(buildGraph())
+    /** 未学習のランダム初期化で新規グラフを構築するコンストラクタ */
+    constructor(config: KannArchConfig = KannArchConfig()) : this(buildGraph(config), config)
 
     /**
      * `kann_unroll_array` で展開した学習用ネットワーク一式(展開後のグラフ本体＋そこに
@@ -182,7 +193,8 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
 
     /** KANN組み込みのモデルI/O(`kann_save`)で学習済み重みをバイナリファイルに保存する */
     fun save(path: String) {
-        kann_save(path, ann)
+        val targetPath = if (!path.contains('/') && !path.contains('\\')) "$WEIGHTS_DIR/$path" else path
+        kann_save(targetPath, ann)
     }
 
     fun delete() {
@@ -203,37 +215,42 @@ class KannValueNetwork private constructor(private val ann: CPointer<kann_t>) {
          * 保存されているため、[KannValueNetwork] を新規構築する代わりにこれを使う。
          */
         fun load(path: String): KannValueNetwork? {
-            val loaded = kann_load(path) ?: return null
+            val targetPath = resolveWeightPath(path)
+            val loaded = kann_load(targetPath) ?: return null
             return KannValueNetwork(loaded)
         }
 
         /**
          * 未学習のグラフを構築する。
-         * トークン入力(RNN_TOKEN_DIM, 手番ごとに供給) → GRU(RNN_HIDDEN_DIM)
-         * 大域特徴入力(RNN_GLOBAL_DIM, 毎ステップ同じ値を供給) → [GRU出力と結合]
-         * → Dense(RNN_DENSE_DIM) → tanh → kann_layer_cost が内部で Dense(1)+tanh を追加し、
+         * トークン入力(config.tokenDim, 手番ごとに供給) → GRU(config.hiddenDim)
+         * 大域特徴入力(config.globalDim, 毎ステップ同じ値を供給) → [GRU出力と結合]
+         * → Dense(config.denseDim) × numDenseLayers → tanh → kann_layer_cost が内部で Dense(1)+tanh を追加し、
          *   KANN_C_CEB_NEG (tanhベースの二値交差エントロピー) で学習可能な形にする。
          */
-        private fun buildGraph(): CPointer<kann_t> {
-            val tokIn = kann_layer_input(RNN_TOKEN_DIM)
+        private fun buildGraph(config: KannArchConfig = KannArchConfig()): CPointer<kann_t> {
+            val tokIn = kann_layer_input(config.tokenDim)
                 ?: error("kann_layer_input(token) failed")
-            val h = kann_layer_gru(tokIn, RNN_HIDDEN_DIM, KANN_RNN_VAR_H0)
+            val h = kann_layer_gru(tokIn, config.hiddenDim, KANN_RNN_VAR_H0)
                 ?: error("kann_layer_gru failed")
-            val globIn = kann_layer_input(RNN_GLOBAL_DIM)
+            val globIn = kann_layer_input(config.globalDim)
                 ?: error("kann_layer_input(global) failed")
             globIn.pointed.ext_label = 1
 
-            val combined = memScoped {
+            var current = memScoped {
                 val parts = allocArray<CPointerVar<kad_node_t>>(2)
                 parts[0] = h
                 parts[1] = globIn
                 kad_concat_array(1, 2, parts)
             } ?: error("kad_concat_array failed")
 
-            val dense = kann_layer_dense(combined, RNN_DENSE_DIM)
-                ?: error("kann_layer_dense failed")
-            val act = kad_tanh(dense) ?: error("kad_tanh failed")
-            val costNode = kann_layer_cost(act, 1, KANN_C_CEB_NEG)
+            val layers = maxOf(1, config.numDenseLayers)
+            for (l in 0 until layers) {
+                val dense = kann_layer_dense(current, config.denseDim)
+                    ?: error("kann_layer_dense failed (layer $l)")
+                current = kad_tanh(dense) ?: error("kad_tanh failed (layer $l)")
+            }
+
+            val costNode = kann_layer_cost(current, 1, KANN_C_CEB_NEG)
                 ?: error("kann_layer_cost failed")
 
             return kann_new(costNode, 0) ?: error("kann_new failed")

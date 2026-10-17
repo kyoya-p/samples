@@ -240,11 +240,39 @@ class RnnParams(
 }
 
 /**
- * 学習済みRNN重みの既定の保存先。GameServer/Playmats いずれのカレントディレクトリからも
- * 同じ相対パスで見つかるよう、プロジェクトルート直下に置く運用を想定する。
+ * 重みファイルを格納・探索する専用ディレクトリ。
+ * すべてのウェイトファイル（KANN .weight / .bin、RNN .pb）はこのディレクトリに集約管理する。
+ */
+const val WEIGHTS_DIR = "weights"
+
+/**
+ * 学習済みRNN重みの既定の保存先。
  * Protocol Buffers形式のバイナリなので拡張子は `.pb`。
  */
-const val RNN_WEIGHTS_DEFAULT_PATH = "rnn-weights.pb"
+const val RNN_WEIGHTS_DEFAULT_PATH = "$WEIGHTS_DIR/rnn-weights.pb"
+
+/**
+ * 重みファイル格納ディレクトリ(`weights`)を基準にパスを解決する。
+ * - 指定されたパスがそのまま開ける場合はそのパスを使用する。
+ * - `weights/<path>` で開ける場合はそちらを使用する。
+ * - 存在しないファイル（新規保存先など）でディレクトリが含まれていない場合は `weights/<path>` を返す。
+ */
+@OptIn(ExperimentalForeignApi::class)
+fun resolveWeightPath(path: String): String {
+    if (path.isEmpty()) return path
+    val f = fopen(path, "rb")
+    if (f != null) {
+        fclose(f)
+        return path
+    }
+    val inWeights = if (path.startsWith("$WEIGHTS_DIR/") || path.startsWith("$WEIGHTS_DIR\\")) path else "$WEIGHTS_DIR/$path"
+    val fw = fopen(inWeights, "rb")
+    if (fw != null) {
+        fclose(fw)
+        return inWeights
+    }
+    return if (path.contains('/') || path.contains('\\')) path else inWeights
+}
 
 /** [RnnParams.flatten] の結果をProtocol Buffersでシリアライズするためのラッパー */
 @Serializable
@@ -257,7 +285,8 @@ private data class RnnWeightsProto(val flat: List<Double>)
  */
 @OptIn(ExperimentalForeignApi::class, ExperimentalSerializationApi::class)
 fun saveRnnParams(params: RnnParams, path: String = RNN_WEIGHTS_DEFAULT_PATH): Boolean {
-    val f = fopen(path, "wb") ?: return false
+    val targetPath = if (!path.contains('/') && !path.contains('\\')) "$WEIGHTS_DIR/$path" else path
+    val f = fopen(targetPath, "wb") ?: return false
     val bytes = ProtoBuf.encodeToByteArray(RnnWeightsProto(params.flatten().toList()))
     bytes.usePinned { pinned -> fwrite(pinned.addressOf(0), 1u, bytes.size.convert(), f) }
     fclose(f)
@@ -272,7 +301,8 @@ fun saveRnnParams(params: RnnParams, path: String = RNN_WEIGHTS_DEFAULT_PATH): B
  */
 @OptIn(ExperimentalForeignApi::class, ExperimentalSerializationApi::class)
 fun loadRnnParams(path: String = RNN_WEIGHTS_DEFAULT_PATH): RnnParams? {
-    val f = fopen(path, "rb") ?: return null
+    val targetPath = resolveWeightPath(path)
+    val f = fopen(targetPath, "rb") ?: return null
     fseek(f, 0, SEEK_END)
     val size = ftell(f)
     fseek(f, 0, SEEK_SET)
@@ -522,23 +552,26 @@ fun applyEvalConfig(mode: String, weightsPathP1: String?, weightsPathP2: String?
 }
 
 /**
- * 作業ディレクトリ直下にある重みファイル(`.bin`=KANN [KannValueNetwork.save]形式、
- * `.pb`=RNN [saveRnnParams]形式)を列挙する。GUIの設定ダイアログがテキスト入力ではなく
- * 選択メニューで重みファイルを選べるようにするため(`/api/weight-files`)に使う。
+ * 重みファイル格納ディレクトリ(`weights`)および作業ディレクトリにある重みファイル(`.weight`, `.bin`, `.pb`)を列挙する。
+ * GUIの設定ダイアログがテキスト入力ではなく選択メニューで重みファイルを選べるようにするため(`/api/weight-files`)に使う。
  * Kotlin/NativeにはJVMの`java.io.File`が無いため、POSIXの`opendir`/`readdir`で列挙する。
  */
 @OptIn(ExperimentalForeignApi::class)
 fun listWeightFiles(): List<String> {
-    val result = mutableListOf<String>()
-    val dir = opendir(".") ?: return result
-    try {
-        while (true) {
-            val entry = readdir(dir) ?: break
-            val name = entry.pointed.d_name.toKString()
-            if (name.endsWith(".weight") || name.endsWith(".bin") || name.endsWith(".pb")) result.add(name)
+    val result = mutableSetOf<String>()
+    for (dPath in listOf(WEIGHTS_DIR, ".")) {
+        val dir = opendir(dPath) ?: continue
+        try {
+            while (true) {
+                val entry = readdir(dir) ?: break
+                val name = entry.pointed.d_name.toKString()
+                if (name.endsWith(".weight") || name.endsWith(".bin") || name.endsWith(".pb")) {
+                    result.add(name)
+                }
+            }
+        } finally {
+            closedir(dir)
         }
-    } finally {
-        closedir(dir)
     }
     return result.sorted()
 }

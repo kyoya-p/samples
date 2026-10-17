@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
             keyStorePassword = { KEYSTORE_PASS.toCharArray() },
             privateKeyPassword = { KEYSTORE_PASS.toCharArray() }
         ) { port = 8443 }
-        connector { port = 8080 } // 非SSL用ポート
+        connector { port = 8081 } // 非SSL用ポート
     }) { myApplication() }.start(wait = true)
 }
 

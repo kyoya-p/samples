@@ -19,7 +19,7 @@ suspend fun main(args: Array<String>) {
     // 引数で truststore を指定可 (パスワードは TRUSTSTORE_PASS)。既定は TRUSTSTORE_PATH
     val trustFile = args.getOrNull(0) ?: TRUSTSTORE_PATH
     val client = HttpClient(CIO)
-    println("http:// ${client.get("http://localhost:8080").bodyAsText()}")
+    println("http:// ${client.get("http://localhost:8081").bodyAsText()}")
 
     val clientHttps = HttpClient(CIO) {
         engine {

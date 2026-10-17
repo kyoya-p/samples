@@ -1,5 +1,6 @@
 package bstools.model
 
+import bstools.model.effects.CardScriptRegistry
 import kotlinx.serialization.Serializable
 
 /**
@@ -171,7 +172,9 @@ data class GameAction(
      * ルール上は合法な手であり選択は妨げない (`forbidden` にはしない) が、盤面は進まないため
      * 評価値は0にし、UIでは必ず「同一局面」であることを明記する。
      */
-    val repeatsPosition: Boolean = false
+    val repeatsPosition: Boolean = false,
+    /** アタック時効果等の対象インスタンスID (例: ガリザロトの疲労ブロック強制対象) */
+    val effectTargetId: String? = null
 )
 
 /**
@@ -599,6 +602,14 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
                 eval += w.attackLethalBonus
             }
 
+            // カード固有アタック効果 (例: ガリザロトの疲労ブロック強制指定など) の列挙
+            val script = CardScriptRegistry.get(fc.cardNo)
+            val customAttacks = script?.enumerateAttackActions(state, fc, opponent, eval) { idx++ }
+            if (!customAttacks.isNullOrEmpty()) {
+                acts.addAll(customAttacks)
+                continue
+            }
+
             acts.add(
                 GameAction(
                     index = idx++,
@@ -623,46 +634,69 @@ private fun enumerateRawActions(state: GameState): List<GameAction> {
         // 「ブロックしなければ致死か」は自分のライフ(常に自分から見える情報)だけで判定できる
         val wouldBeLethal = lifeLoss >= p.life
 
-        for (fc in p.field) {
-            if (fc.isExhausted || fc.level <= 0 || fc.category != CardCategory.SPIRIT) continue
-            // BPが低い方が破壊される。同じなら相打ち (総合ルール 8-1-6-1)
+        val mustBlockId = state.mustBlockInstanceId
+        val forcedBlocker = p.field.find { it.instanceId == mustBlockId && it.level > 0 && it.category == CardCategory.SPIRIT }
+
+        if (forcedBlocker != null) {
+            // ガリザロト等の効果により「疲労状態でもブロックしなければならない」スピリットが存在する場合:
+            // そのスピリットによるブロックのみが合法手となり、PASS_BLOCKや他スピリットでのブロックは選べない
             val outcome = when {
-                fc.currentBp > attackerBp -> "${attackerName}を破壊"
-                fc.currentBp < attackerBp -> "${fc.displayName}が破壊される"
+                forcedBlocker.currentBp > attackerBp -> "${attackerName}を破壊"
+                forcedBlocker.currentBp < attackerBp -> "${forcedBlocker.displayName}が破壊される"
                 else -> "相打ち"
             }
-            var eval = if (fc.currentBp > attackerBp) w.blockWinEval
-            else if (fc.currentBp == attackerBp) w.blockTieEval
-            else w.blockLoseEval
-            // 致死を防げるなら、BPで負ける手であっても大きく加点する
-            if (wouldBeLethal) eval += w.blockLethalPreventionBonus
-
             acts.add(
                 GameAction(
                     index = idx++,
                     type = "BLOCK",
-                    category = "🛡️【ブロック】 ${fc.displayName}",
-                    detail = "${fc.displayName} でブロック (BP${fc.currentBp} vs BP${attackerBp} → $outcome)",
-                    eval = eval,
-                    targetInstanceId = fc.instanceId
+                    category = "🛡️【強制ブロック】 ${forcedBlocker.displayName}",
+                    detail = "${forcedBlocker.displayName} でブロック (疲労強制ブロック, BP${forcedBlocker.currentBp} vs BP${attackerBp} → $outcome)",
+                    eval = 1.0,
+                    targetInstanceId = forcedBlocker.instanceId
+                )
+            )
+        } else {
+            for (fc in p.field) {
+                if (fc.isExhausted || fc.level <= 0 || fc.category != CardCategory.SPIRIT) continue
+                // BPが低い方が破壊される。同じなら相打ち (総合ルール 8-1-6-1)
+                val outcome = when {
+                    fc.currentBp > attackerBp -> "${attackerName}を破壊"
+                    fc.currentBp < attackerBp -> "${fc.displayName}が破壊される"
+                    else -> "相打ち"
+                }
+                var eval = if (fc.currentBp > attackerBp) w.blockWinEval
+                else if (fc.currentBp == attackerBp) w.blockTieEval
+                else w.blockLoseEval
+                // 致死を防げるなら、BPで負ける手であっても大きく加点する
+                if (wouldBeLethal) eval += w.blockLethalPreventionBonus
+
+                acts.add(
+                    GameAction(
+                        index = idx++,
+                        type = "BLOCK",
+                        category = "🛡️【ブロック】 ${fc.displayName}",
+                        detail = "${fc.displayName} でブロック (BP${fc.currentBp} vs BP${attackerBp} → $outcome)",
+                        eval = eval,
+                        targetInstanceId = fc.instanceId
+                    )
+                )
+            }
+
+            // ブロックしない場合の損失は、自分の残りライフに占める割合が大きいほど、
+            // また致死になるならなおさら悪い手だと評価する
+            var passEval = w.passBlockEval - (w.passBlockLifeFactor * (lifeLoss.toDouble() / maxOf(1, p.life)))
+            if (wouldBeLethal) passEval -= w.passBlockLethalPenalty
+
+            acts.add(
+                GameAction(
+                    index = idx++,
+                    type = "PASS_BLOCK",
+                    category = "💔【ブロックしない】",
+                    detail = "ライフでアタックを受ける (ライフ-${coreIcons(lifeLoss, 0)})",
+                    eval = passEval
                 )
             )
         }
-
-        // ブロックしない場合の損失は、自分の残りライフに占める割合が大きいほど、
-        // また致死になるならなおさら悪い手だと評価する
-        var passEval = w.passBlockEval - (w.passBlockLifeFactor * (lifeLoss.toDouble() / maxOf(1, p.life)))
-        if (wouldBeLethal) passEval -= w.passBlockLethalPenalty
-
-        acts.add(
-            GameAction(
-                index = idx++,
-                type = "PASS_BLOCK",
-                category = "💔【ブロックしない】",
-                detail = "ライフでアタックを受ける (ライフ-${coreIcons(lifeLoss, 0)})",
-                eval = passEval
-            )
-        )
     }
 
     return acts
@@ -832,7 +866,8 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
                     baseSymbols = card.symbols,
                     lvBps = card.lvBps,
                     systems = card.systems,
-                    seq = seq
+                    seq = seq,
+                    cost = card.cost
                 )
             )
 
@@ -891,8 +926,12 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             // アタック宣言でアタックするスピリットを疲労させ、ブロック宣言へ進む (総合ルール 8-1-1-1)
             attacker.isExhausted = true
             state.attackingCardId = attacker.instanceId
+            state.mustBlockInstanceId = null
             state.step = Step.BLOCK_DECLARATION
             messages.add("🗡️ 「${attacker.name}」がアタック宣言 (BP${attacker.currentBp})")
+
+            // カード固有アタック時効果の解決 (例: ガリザロトの疲労ブロック強制指定など)
+            CardScriptRegistry.get(attacker.cardNo)?.onAttack(state, attacker, action, messages)
         }
 
         "BLOCK" -> {
@@ -916,6 +955,7 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             }
             // ブロックが成立したのでライフは減らない
             state.attackingCardId = null
+            state.mustBlockInstanceId = null
             state.step = Step.ATTACK_DECLARATION
         }
 
@@ -935,6 +975,7 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
                 messages.add("🏁 プレイヤー${p.playerId} のライフが0になりました")
             }
             state.attackingCardId = null
+            state.mustBlockInstanceId = null
             state.step = Step.ATTACK_DECLARATION
         }
 
