@@ -11,28 +11,38 @@ Google Antigravity (`agy`) の使用状況（5時間枠・週次・別枠の Gem
 
 ## ディレクトリ構成
 - リポジトリ: `AgyTools`
-- [usage_hook.js](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/usage_hook.js): Stop フック入口（`{"decision":""}` の標準出力、10分間隔／リセット時のみ追記判定、パネル再生成、`process.exit(0)` による確実な終了）
-- [usage_sample.js](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/usage_sample.js): `agy -p "/usage"` の結果および `~/.gemini/antigravity-cli/brain` ログを集計し追記（欠損枠は直近の既知値を自動継承）
-- [usage_panel.js](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/usage_panel.js): 集計データを HTML パネル (`agy-panel.html`) にレンダリング（3パネル構成、全系列トグル表示、欠損値 forward-fill）
-- [usage_samples.jsonl](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/usage_samples.jsonl): 採取データ（1行 = 1サンプリング）
-- [agy-panel.html](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/agy-panel.html): 生成される HTML パネル
-- [README.md](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/README.md): 仕様・フック設定手順
-- [LOG.md](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/LOG.md): 作業履歴・更新ログ
-- [TASK.md](file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/TASK.md): タスク状況・今後の課題
+- [usage_hook.js](~/projs/samples/2026/AgyTools/usage_hook.js): Stop フック入口（`{"decision":""}` の標準出力、10分間隔／リセット時のみ追記判定、パネル再生成、`process.exit(0)` による確実な終了）
+- [usage_sample.js](~/projs/samples/2026/AgyTools/usage_sample.js): `agy -p "/usage"` の結果および `~/.gemini/antigravity-cli/brain` ログを集計し追記（欠損枠は直近の既知値を自動継承）
+- [usage_panel.js](~/projs/samples/2026/AgyTools/usage_panel.js): 集計データを HTML パネル (`agy-panel.html`) にレンダリング（3パネル構成、全系列トグル表示、欠損値 forward-fill）
+- [usage_samples.jsonl](~/projs/samples/2026/AgyTools/usage_samples.jsonl): 採取データ（1行 = 1サンプリング）
+- [agy-panel.html](~/projs/samples/2026/AgyTools/agy-panel.html): 生成される HTML パネル
+- [README.md](~/projs/samples/2026/AgyTools/README.md): 仕様・フック設定手順
+- [LOG.md](~/projs/samples/2026/AgyTools/LOG.md): 作業履歴・更新ログ
+- [TASK.md](~/projs/samples/2026/AgyTools/TASK.md): タスク状況・今後の課題
 
 ## パネル仕様（3パネル構成）
 1. **5時間枠 使用率（%）**
-   - 系列: `Gemini Models (5h)`（デフォルト表示）、`Claude & GPT (5h)`（デフォルト非表示）
+   - 系列: `Gemini Models`（デフォルト表示）、`Claude & GPT`（デフォルト非表示）
    - 残り時間バッジ: カードヘッダーに集約配置（個別凡例の冗長表記は排除）
    - 凡例クリックで各系列の表示／非表示をトグル可能（`localStorage` に保存）
 2. **週次 使用率（%）**
-   - 系列: `Gemini 4 Argon (週次)`（デフォルト表示）、`Gemini Models (週次)`（デフォルト表示）、`Claude & GPT (週次)`（デフォルト非表示）
+   - 系列: `Gemini 4 Argon`（デフォルト表示）、`Gemini Models`（デフォルト表示）、`Claude & GPT`（デフォルト非表示）
    - 残り時間バッジ: カードヘッダーに集約配置
    - 凡例クリックで各系列の表示／非表示をトグル可能（`localStorage` に保存）
 3. **累積トークン使用量 / トークン使用速度**
    - モデル別積み上げエリアグラフ（「累積」と「時間あたり」の切り替え）
    - 凡例の各モデル名クリックで表示／非表示をトグル可能
 - **自動更新**: 画面アクティブ時（表示中）に 30 秒間隔で定期自動リフレッシュ（非アクティブ時は停止、復帰時に自動更新）。
+
+## 表示仕様（チャート共通）
+- **編集先**: `agy-panel.html` は生成物。修正は `usage_panel.js` のテンプレートに行い、`node usage_panel.js` で再生成する。
+- **配色**: ライトのみ（ダーク定義なし）。色は `:root` のトークン（`--s1`〜、週次系は `--wk`）を使い、直書きしない。
+- **表示範囲**: 幅は選択値（`5h` なら 5 時間）に固定。現在時刻を x 軸の 30〜70% に収めつつ、次の更新時刻を右端に寄せる。更新時刻が無い／未採取の枠は現在 = 50%。
+- **折れ線**: 値が下がった点（リセット）で線を分割し、枠をまたぐ補間線を引かない。
+- **リセット済み枠**: 更新時刻を過ぎて未採取の枠は、背景帯・予測線・100% 到達マーカーを描かず、バッジは `更新済・未採取`。
+- **残り時間**: 1 時間未満は分（`33m`）表示。
+- **アクセシビリティ**: チャート SVG に `aria-label`、button/select に `:focus-visible`、`prefers-reduced-motion` 対応、`touch-action: manipulation`。
+- **確認**: ヘッドレス Edge のスクリーンショットで表示を確認する。
 
 ## 枠情報の継続・欠損補完
 - `agy -p "/usage"` の出力に特定モデル（例: 未使用モデルや別枠の `Gemini 4 Argon` 等）が含まれない場合、直近の過去サンプルから最後に記録された既知値（`lastKnownLimits`）を自動的に引き継いで保存する。
@@ -61,10 +71,11 @@ node usage_hook.js
 - 排他制御: `.usage_hook.lock`
 - エラーログ: `usage_hook.log`
 - 再帰防止フラグ: `AGY_USAGE_SAMPLING=1`
+- 発火条件: Stop は応答ターン完了ごと。承認待ちのまま終了するなどターンが完了しない場合は採取されない（フック失敗ではない）。ログは `~/.gemini/antigravity-cli/log/cli-*.log` で確認
 
 ### 4. ブラウザでの表示・確認（Orca）
 ```bash
-orca goto --url "file:///C:/Users/sharp/dev/projs/samples/2026/AgyTools/agy-panel.html"
+orca goto --url "~/projs/samples/2026/AgyTools/agy-panel.html"
 ```
 
 ## 実装・運用上の重要事項

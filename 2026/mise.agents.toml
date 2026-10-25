@@ -1,0 +1,35 @@
+# Google Antigravity (agy) & Claude Code 関連タスク
+
+["agy-panel"]
+description = "AgyTools の使用率パネル (agy-panel.html) を更新してブラウザで開く"
+dir = "AgyTools"
+run = [
+    "node usage_panel.js",
+    'cmd /c start "" "agy-panel.html"',
+]
+
+["claude-panel"]
+description = "ClaudeCodeTools の使用率パネル (claude-panel.html) を更新してブラウザで開く"
+dir = "ClaudeCodeTools"
+run = [
+    "node usage_panel.js",
+    'cmd /c start "" "claude-panel.html"',
+]
+
+[panels]
+description = "AgyTools・ClaudeCodeTools 両方のパネルをブラウザで開く"
+depends = ["agy-panel", "claude-panel"]
+
+["agy-hook"]
+description = "Antigravity (~/.gemini/config/hooks.json) に AgyTools の Stop フックを登録"
+dir = "AgyTools"
+run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path'),f=p.join(os.homedir(),'.gemini','config','hooks.json'),cmd='node '+p.join(process.cwd(),'usage_hook.js'),j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j['agy-usage']={Stop:[{type:'command',command:cmd,timeout:300}]};fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered agy-usage Stop hook in',f);"'''
+
+["claude-hook"]
+description = "Claude Code (~/.claude/settings.json) に ClaudeCodeTools の Stop フックを登録"
+dir = "ClaudeCodeTools"
+run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path'),f=p.join(os.homedir(),'.claude','settings.json'),cmd='node '+p.join(process.cwd(),'usage_hook.js').replace(/\\/g,'/'),j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j.hooks=j.hooks||{};j.hooks.Stop=(j.hooks.Stop||[]).filter(x=>!JSON.stringify(x).includes('usage_hook.js'));j.hooks.Stop.unshift({hooks:[{type:'command',command:cmd,timeout:300,async:true}]});fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered ClaudeCodeTools Stop hook in',f);"'''
+
+["setup-hooks"]
+description = "Antigravity・Claude Code 両方の Stop フックを一括登録"
+depends = ["agy-hook", "claude-hook"]

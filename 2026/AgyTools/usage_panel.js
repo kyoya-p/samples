@@ -173,38 +173,42 @@ const data = {
 };
 
 const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#fafaf7">
 <title>Antigravity Usage Panel</title>
 <style>
-:root{--bg:#fafaf7;--card:#ffffff;--fg:#1d1d1b;--mut:#6b6b65;--bar:#3c6fb4;--bar2:#9bb8df;--line:#e3e2dc;--s1:#2a78d6;--s2:#1baf7a;--s3:#eb6834;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#17a2b8;--s9:#8c564b;--s10:#6c757d;--s0:#8a8a84}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#2bc4db;--s9:#b07d72;--s10:#9aa0a6;--s0:#77776f}}
-:root[data-theme="dark"]{--bg:#171816;--card:#20211d;--fg:#ecebe6;--mut:#9a9a92;--bar:#7aa6e0;--bar2:#3f5d86;--line:#34352f;--s1:#3987e5;--s2:#199e70;--s3:#d95926;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#2bc4db;--s9:#b07d72;--s10:#9aa0a6;--s0:#77776f}
+:root{--bg:#fafaf7;--card:#ffffff;--fg:#1d1d1b;--mut:#6b6b65;--bar:#3c6fb4;--bar2:#9bb8df;--line:#e3e2dc;--s1:#2a78d6;--s2:#1baf7a;--s3:#eb6834;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#17a2b8;--s9:#8c564b;--s10:#6c757d;--s0:#8a8a84;--wk:#d08c4a}
+:root{color-scheme:light}
+button,select{touch-action:manipulation}
+button:focus-visible,select:focus-visible{outline:2px solid var(--bar);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 body{margin:0;padding:16px;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Segoe UI",sans-serif}
-h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0}
+h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:0}
 .mut{color:var(--mut);font-size:12px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));margin-top:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(360px,640px));justify-content:start;margin-top:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.mlg-head{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-size:13px;font-weight:500}
+.mlg-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;font-weight:500}
 .mlg-head .it{display:inline-flex;align-items:center;gap:3px}
-.mlg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;margin-top:8px;padding-top:6px;border-top:1px solid var(--line)}
+.mlg{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 .mlg .it{display:inline-flex;align-items:center}
 .mlg .v{font-weight:600;font-variant-numeric:tabular-nums;margin-left:4px}
-.cl-toggle{display:inline-flex;align-items:center;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;font:12px system-ui,sans-serif;color:var(--mut);cursor:pointer;user-select:none;transition:all .15s ease}
+.cl-toggle{display:inline-flex;align-items:center;background:none;border:1px solid transparent;border-radius:6px;padding:2px 8px;font:12px system-ui,sans-serif;color:var(--mut);cursor:pointer;user-select:none;transition:all .15s ease}
 .cl-toggle:hover{background:var(--card);border-color:var(--line);color:var(--fg)}
 .cl-toggle.expanded{background:var(--card);border-color:var(--line);color:var(--fg)}
 .cl-toggle.collapsed{opacity:0.65}
 .rem-badge{font-size:12px;font-weight:400;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}
 .ch{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-.rt{display:flex;align-items:center;gap:10px}
+.rt{display:flex;align-items:center;gap:8px}
 .now{font-size:24px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .range{display:flex}
-.range select{font:12px system-ui,sans-serif;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
+svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:round}
+.range select{font:12px system-ui,sans-serif;padding:2px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}
 </style></head><body>
 <h1>Antigravity Usage Panel</h1>
 <div class="grid" style="margin-top:12px">
   <div class="card">
     <h2 class="ch">
-      <span>5時間枠 使用率（%）<span class="rem-badge" id="rem-5h"></span></span>
+      <span>使用率推移/5h<span class="rem-badge" id="rem-5h"></span></span>
       <span class="rt">
         <span class="mlg-head" id="head-5h"></span>
         <span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span>
@@ -215,7 +219,7 @@ h1{font-size:18px;margin:0 0 2px} h2{font-size:14px;margin:0}
   </div>
   <div class="card">
     <h2 class="ch">
-      <span>週次 使用率（%）<span class="rem-badge" id="rem-7d"></span></span>
+      <span>使用率推移/7d<span class="rem-badge" id="rem-7d"></span></span>
       <span class="rt">
         <span class="mlg-head" id="head-7d"></span>
         <span class="range"><select id="range-7d" aria-label="週次の表示範囲"></select></span>
@@ -249,7 +253,7 @@ const usedOf = (s, key) => {
 
 function usageChart() {
   const S = D.samples || [], DAYS = (D.byDay || []).filter(d => d.key !== 'unknown');
-  const W = 640, H = 210, P = 30;
+  const W = 640, H = 200, P = 30;
   const dayMs = 86400000;
   const firstDay = DAYS.length ? Date.parse(DAYS[0].key + 'T00:00:00Z') : Date.now() - dayMs;
   const lastDay = DAYS.length ? Date.parse(DAYS[DAYS.length - 1].key + 'T00:00:00Z') + dayMs : Date.now();
@@ -261,6 +265,7 @@ function usageChart() {
   const pad = n => String(n).padStart(2, '0');
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 
+  const livep = p => p && !(p.reset && p.reset < Date.now()) ? p : null;
   const isSeriesVisible = (s, c) => {
     let saved = null;
     try { saved = localStorage.getItem('agyUsageShow:' + s.key); } catch (e) {}
@@ -272,7 +277,8 @@ function usageChart() {
   };
 
   const draw = c => {
-    const visibleSeries = c.series.filter(s => isSeriesVisible(s, c));
+    // リセット済みの枠（未採取）は帯・予測を描かない。更新線は s.p を使う
+    const visibleSeries = c.series.filter(s => isSeriesVisible(s, c)).map(s => ({ ...s, rp: s.p, p: livep(s.p) }));
     const { t0, t1 } = c.view;
     const x = ms => P + ((ms - t0) / (t1 - t0)) * (W - 2 * P);
     const yPct = v => H - P - (v / 100) * (H - 2 * P);
@@ -301,7 +307,9 @@ function usageChart() {
 
     const linesAndDots = visibleSeries.map(s => {
       const pts = S.map((sm, i) => ({ ts: sampleTs[i], iso: sm.ts, v: usedOf(sm, s.key) })).filter(pt => pt.v !== null);
-      const pl = pts.length > 0 ? '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + pts.map(pt => x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1)).join(' ') + '"/>' : '';
+      // 値の低下（リセット）で線を分割し、枠をまたぐ補間線を描かない
+      const segs = pts.reduce((a, pt, i) => { if (!i || pt.v < pts[i - 1].v) a.push([]); a[a.length - 1].push(x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1)); return a; }, []);
+      const pl = segs.map(sg => '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + sg.join(' ') + '"/>').join('');
       const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
       return pl + dots;
     }).join('');
@@ -322,7 +330,7 @@ function usageChart() {
       const p = s.p, col = s.col;
       if (!p) return '';
       return [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, '1時間前基準', 1]].map(([t, nm, i]) => {
-        if (!t) return '';
+        if (!t || t > t1) return '';
         const cx = x(t), cy = yPct(100), r = 5;
         return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 100%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
           '<text x="' + (cx + (cx > W / 2 ? -7 : 7)).toFixed(1) + '" y="' + (cy - 7 - i * 11).toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (cx > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
@@ -330,8 +338,8 @@ function usageChart() {
     }).join('');
 
     const resetLines = visibleSeries.map((s, idx) => {
-      const p = s.p;
-      if (!p || !p.reset) return '';
+      const p = s.rp;
+      if (!p || !p.reset || p.reset > t1) return '';
       const rx = x(p.reset), isRight = rx > W / 2;
       const yText = P + 10 + idx * 12;
       return '<line x1="' + rx.toFixed(1) + '" x2="' + rx.toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="' + s.col + '" stroke-width="1" stroke-dasharray="3 2"><title>' + s.label + ' 更新 ' + fmtT(p.reset) + '</title></line>' +
@@ -342,7 +350,7 @@ function usageChart() {
     const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - P - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
 
     const plot = '<g clip-path="url(#' + clipId + ')">' + bands + linesAndDots + projLines + resetLines + nowLine + hitMarkers + '</g>';
-    document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img">' + clip + grid + plot + xLabels + '</svg>';
+    document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + c.title + '">' + clip + grid + plot + xLabels + '</svg>';
   };
 
   const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
@@ -350,24 +358,24 @@ function usageChart() {
     {
       id: 'usage-chart-5h',
       nm: '5h',
-      title: '5時間枠 使用率（%）',
+      title: '使用率推移/5h',
       def: '24h',
       isWeek: false,
       series: [
-        { key: 'gemini_5h', label: 'Gemini Models (5h)', shortLabel: 'Gemini', col: 'var(--bar)', p: PR.gemini_5h, defaultShow: true },
-        { key: 'claude_gpt_5h', label: 'Claude & GPT (5h)', shortLabel: 'Claude & GPT', col: '#d08c4a', p: PR.claude_gpt_5h, defaultShow: false, collapsible: true },
+        { key: 'gemini_5h', label: 'Gemini Models', shortLabel: 'Gemini', col: 'var(--bar)', p: PR.gemini_5h, defaultShow: true },
+        { key: 'claude_gpt_5h', label: 'Claude & GPT', shortLabel: 'Claude & GPT', col: 'var(--wk)', p: PR.claude_gpt_5h, defaultShow: false, collapsible: true },
       ]
     },
     {
       id: 'usage-chart-7d',
       nm: '7d',
-      title: '週次 使用率（%）',
+      title: '使用率推移/7d',
       def: '7d',
       isWeek: true,
       series: [
-        { key: 'gemini_argon_week', label: 'Gemini 4 Argon (週次)', shortLabel: 'Argon', col: 'var(--s2)', p: PR.gemini_argon_week, defaultShow: true },
-        { key: 'gemini_week', label: 'Gemini Models (週次)', shortLabel: 'Gemini', col: 'var(--s1)', p: PR.gemini_week, defaultShow: true },
-        { key: 'claude_gpt_week', label: 'Claude & GPT (週次)', shortLabel: 'Claude & GPT', col: 'var(--s3)', p: PR.claude_gpt_week, defaultShow: false, collapsible: true },
+        { key: 'gemini_argon_week', label: 'Gemini 4 Argon', shortLabel: 'Argon', col: 'var(--s2)', p: PR.gemini_argon_week, defaultShow: true },
+        { key: 'gemini_week', label: 'Gemini Models', shortLabel: 'Gemini', col: 'var(--s1)', p: PR.gemini_week, defaultShow: true },
+        { key: 'claude_gpt_week', label: 'Claude & GPT', shortLabel: 'Claude & GPT', col: 'var(--s3)', p: PR.claude_gpt_week, defaultShow: false, collapsible: true },
       ]
     }
   ];
@@ -380,9 +388,13 @@ function usageChart() {
       const [, hours] = ranges.find(([l]) => l === label) || ranges.find(([l]) => l === c.def);
       const now = Date.now();
       const vis = c.series.filter(s => isSeriesVisible(s, c));
-      const maxReset = Math.max(...vis.map(s => s.p?.reset || 0));
-      c.view.t1 = maxReset > now ? maxReset : now + hours * 3600000 / 2;
-      c.view.t0 = now - hours * 3600000;
+      const seriesList = vis.length ? vis : c.series;
+      // 幅 = 選択した範囲固定。現在時刻が x 軸の 30〜70% に入る範囲で、次の更新時刻を右端に寄せる（更新が無ければ現在 = 50%）
+      const w = hours * 3600000;
+      const next = seriesList.map(s => s.p?.reset || 0).filter(t => t > now);
+      const reset = next.length ? Math.min(...next) : 0;
+      c.view.t0 = reset ? Math.min(Math.max(reset - w, now - w * 0.7), now - w * 0.3) : now - w / 2;
+      c.view.t1 = c.view.t0 + w;
     };
 
     const updateUI = () => {
@@ -394,9 +406,9 @@ function usageChart() {
       const vis = c.series.filter(s => isSeriesVisible(s, c));
       const targetS = vis.length ? vis[0] : c.series[0];
       const remain = targetS?.p?.reset ? Math.max(0, targetS.p.reset - Date.now()) / 3600000 : null;
-      const remStr = remain === null ? '' : (c.isWeek ? Math.floor(remain / 24) + 'd' + Math.floor(remain % 24) + 'h' : remain.toFixed(1) + 'h');
+      const remStr = remain === null ? '' : remain === 0 ? '更新済・未採取' : (remain < 1 ? Math.round(remain * 60) + 'm' : c.isWeek ? Math.floor(remain / 24) + 'd' + Math.floor(remain % 24) + 'h' : remain.toFixed(1) + 'h');
       if (remEl) {
-        remEl.textContent = remStr ? '残り ' + remStr : '';
+        remEl.textContent = remStr ? (remain === 0 ? remStr : '残り ' + remStr) : '';
         remEl.style.display = remStr ? '' : 'none';
         if (targetS?.p?.reset) remEl.title = '更新予定: ' + fmtT(targetS.p.reset);
       }
@@ -574,8 +586,7 @@ function cumChart() {
       const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
       return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk + '</title></polygon>';
     }).join('');
-    const splitLabel = (splits.find(([v]) => v === split) || splits[0])[1];
-    const titleText = isRate ? 'トークン使用速度（' + splitLabel + '・トークン/時）' : '累積トークン使用量（' + splitLabel + '・合計）';
+    const titleText = isRate ? 'トークン使用速度' : '累積トークン使用量';
     el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titleText + '">' + grid + series + xl + '</svg>';
     document.getElementById('cum-title').textContent = titleText;
     const unit = isRate ? '/時' : '';

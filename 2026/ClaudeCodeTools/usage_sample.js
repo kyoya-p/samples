@@ -66,14 +66,14 @@ try {
   console.warn('claude -p "/usage" execution failed or timed out:', e.message);
 }
 
-const session = out.match(/Current session:\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/i);
-const week = out.match(/Current week(?:\s*\(all models\))?:\s*(\d+)% used\s*·\s*resets\s*([^\n]+)/i);
+const session = out.match(/Current session:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
+const week = out.match(/Current week(?:\s*\(all models\))?:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
 
 // 今回の /usage に情報がない枠（usage）は、前回の最後の値を継続しているものとして引き継ぐ
 const sessionPct = session ? Number(session[1]) : (lastKnown.sessionPct ?? null);
-const sessionResets = session ? session[2].trim() : (lastKnown.sessionResets ?? '');
+const sessionResets = session ? (session[2] ? session[2].trim() : '') : (lastKnown.sessionResets ?? '');
 const weekPct = week ? Number(week[1]) : (lastKnown.weekPct ?? null);
-const weekResets = week ? week[2].trim() : (lastKnown.weekResets ?? '');
+const weekResets = week ? (week[2] ? week[2].trim() : '') : (lastKnown.weekResets ?? '');
 
 if (sessionPct === null && weekPct === null) {
   console.error('Failed to parse claude /usage and no prior samples:\n' + out);
