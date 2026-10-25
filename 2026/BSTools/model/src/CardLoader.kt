@@ -213,7 +213,11 @@ object CardLoader {
         return fallback
     }
 
+    private val deckCache = mutableMapOf<String, List<CardData>>()
+
     fun loadDeck(deckPath: String): List<CardData> {
+        deckCache[deckPath]?.let { return it }
+
         val candidates = listOf(
             deckPath,
             "decks/$deckPath",
@@ -270,6 +274,8 @@ object CardLoader {
             }
         }
 
-        return deckCards
+        val immutableDeck = deckCards.toList()
+        deckCache[deckPath] = immutableDeck
+        return immutableDeck
     }
 }

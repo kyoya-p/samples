@@ -1,23 +1,27 @@
 package bstools.model
 
-import bstools.kann.kann_layer_input
-import bstools.kann.kann_layer_dense
-import bstools.kann.kann_layer_cost
-import bstools.kann.KANN_C_MSE
-import kotlinx.cinterop.ExperimentalForeignApi
+import bstools.kann.*
+import kotlinx.cinterop.*
 
 /**
- * cinterop経由でKANN(C言語のNNライブラリ)を実際にリンクできているかを確認する
- * 最小限のスモークテスト。入力層→全結合層→コスト層のグラフを組み立て、
- * 生成されたノードがnullでないことだけを確認する(学習・推論はまだ行わない)。
+ * cinterop経由でKANN(C言語のNNライブラリ)を実際にリンクできているか、および
+ * `KannValueNetwork.trainStep` (BPTT誤差逆伝播) がクラッシュせず安定動作するかを確認するテスト。
  */
 @OptIn(ExperimentalForeignApi::class)
 fun kannSmokeTest(): String {
-    val input = kann_layer_input(4)
-        ?: return "NG: kann_layer_input returned null"
-    val dense = kann_layer_dense(input, 3)
-        ?: return "NG: kann_layer_dense returned null"
-    val cost = kann_layer_cost(dense, 3, KANN_C_MSE)
-        ?: return "NG: kann_layer_cost returned null"
-    return "OK: input=$input dense=$dense cost=$cost"
+    val net = KannValueNetwork()
+    val state = createInitialGameState(seed = 1L)
+    val tokens = buildTokenSequence(state.player1, state.player2)
+    val globals = buildGlobalFeatures(state, state.player1, state.player2)
+
+    val beforeEval = net.evaluate(tokens, globals)
+    var lastCost = 0f
+    for (step in 1..100) {
+        lastCost = net.trainStep(tokens, globals, label = 1.0, lr = 0.01f)
+    }
+    val afterEval = net.evaluate(tokens, globals)
+    net.delete()
+    return "OK: BPTT 100 steps completed! eval: $beforeEval -> $afterEval (lastCost=$lastCost)"
 }
+
+

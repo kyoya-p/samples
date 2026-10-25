@@ -229,7 +229,9 @@ data class GameState(
      */
     var visitedPositions: MutableSet<Long> = mutableSetOf(),
     /** フィールドに置かれるカードの通し番号カウンタ */
-    var nextCardSeq: Int = 1
+    var nextCardSeq: Int = 1,
+    /** ゲーム開始から評価・推論計算を行った累計局面数 */
+    var evaluatedCount: Long = 0L
 ) {
     val activePlayer: PlayerState get() = if (activePlayerId == 1) player1 else player2
     val opponentPlayer: PlayerState get() = if (activePlayerId == 1) player2 else player1

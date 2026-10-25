@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BSToolsCla 強化学習の仕様</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+  body { margin:0; background:#151d20; color:#C5D1CE; font-family:'IBM Plex Sans JP', Arial, sans-serif; }
+  header { max-width:1600px; margin:0 auto; padding:24px 16px 8px; font-size:14px; }
+  header h1 { margin:0 0 4px; font-size:20px; color:#F5F3EE; }
+  .slide { max-width:1600px; margin:0 auto 32px; padding:0 16px; }
+  .frame { position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; border-radius:8px; box-shadow:0 4px 24px rgba(0,0,0,.35); }
+  .frame > section { position:absolute; left:0; top:0; width:1920px; height:1080px; box-sizing:border-box; overflow:hidden; transform-origin:0 0; }
+  .frame section * { margin:0; box-sizing:border-box; }
+  .frame section p, .frame section h1, .frame section h2, .frame section h3 { margin:0; }
+  .frame section table { border-collapse:collapse; width:100%; }
+  .frame section td, .frame section th { border:1px solid rgba(31,42,46,.18); padding:.35em .6em; text-align:left; vertical-align:top; }
+  .frame section th { font-weight:700; }
+  .frame section a { color:inherit; text-decoration:underline; text-underline-offset:4px; }
+  .frame section .xs { flex:none; display:block; }
+  .meta { display:flex; gap:16px; align-items:baseline; padding:8px 4px; font-size:14px; }
+  .meta details { flex:1; }
+  .meta summary { cursor:pointer; }
+  .meta p { margin:8px 0 0; line-height:1.7; }
+</style>
+</head>
+<body>
+<header><h1>BSToolsCla 強化学習の仕様</h1>全28枚 ・ ← → キーでスライド移動 ・ リンクは別タブで開く</header>
+<div class="slide" id="s-cover">
+<div class="frame"><section id="cover" data-transition="fade" style="background:#1F2A2E;color:#F5F3EE;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:center;gap:40px">
+<p style="font-size:32px;font-weight:700;color:#5EC4B6;letter-spacing:4px">BSToolsCla / valuerl</p>
+<h1 style="font-size:120px;font-weight:700;line-height:1.1;color:#F5F3EE">強化学習の仕様</h1>
+<p style="font-size:40px;line-height:1.5;color:#C5D1CE">GRU価値ネットワークと自己対戦：仕組み・パラメータ・現在の状態・改善案</p>
+<div style="position:absolute;left:128px;top:880px;width:1664px;height:4px;background:#5EC4B6"></div>
+
+</section></div>
+<div class="meta"><span class="no">1 / 28</span><details><summary>発表者メモ</summary><p>BSToolsCla の valuerl における強化学習の現行仕様。各スライドの下段「用語メモ」で、そのスライドに出てくる用語を説明する。全用語の一覧は末尾の用語集。</p></details></div>
+</div>
+<div class="slide" id="s-overview">
+<div class="frame"><section id="overview" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">全体像</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">価値ネットワークで手を選び、自己対戦の勝敗で鍛える</h2>
+<div style="display:flex;flex-direction:row;align-items:center;gap:20px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">見る</p>
+<p style="font-size:28px;line-height:1.5">盤面をカードごとの数値の列と、盤面全体の数値に変換する</p>
+</div>
+<svg class="xs" width="44" height="22" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">評価する</p>
+<p style="font-size:28px;line-height:1.5"><b>価値ネットワーク</b>が勝ちやすさ <b>V</b> を −1〜+1 で答える</p>
+</div>
+<svg class="xs" width="44" height="22" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E3F1EE;padding:36px;border:2px solid #0F766E;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">学ぶ</p>
+<p style="font-size:28px;line-height:1.5"><b>自己対戦</b>の勝敗を答えにして V を修正する</p>
+</div>
+</div>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">手書きの評価式は使わない。手の良し悪しはすべて価値ネットワークの予測で決まる</p>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>価値ネットワーク</b>：局面を見て「このまま進むと勝てそうか」を数値で答えるニューラルネットワーク</p>
+<p style="font-size:24px;line-height:1.45"><b>V</b>：その評価値。+1 に近いほど勝ち、−1 に近いほど負けを予想</p>
+<p style="font-size:24px;line-height:1.45"><b>自己対戦</b>：同じ AI 同士で対局させ、その対局を教材にする方法</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">2 / 28</span><details><summary>発表者メモ</summary><p>このデッキ全体の地図。左から右へ、盤面の読み取り、評価、学習の3段階。</p></details></div>
+</div>
+<div class="slide" id="s-flow">
+<div class="frame"><section id="flow" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">学習の流れ</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">1反復 = 対局 → 答え合わせ → 修正、5反復ごとに評価</h2>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">1　対局</p>
+<p style="font-size:26px;line-height:1.5">現行モデル同士で16局を並列に指す。<b>ε-greedy</b> でときどきランダムに指す</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">2　答え合わせ</p>
+<p style="font-size:26px;line-height:1.5">勝敗から各局面の目標値 <b>λ-return</b> を作る</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">3　修正</p>
+<p style="font-size:26px;line-height:1.5"><b>リプレイバッファ</b>から32局面ずつ取り出し、200回更新</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E3F1EE;padding:32px;border:2px solid #0F766E;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">4　評価</p>
+<p style="font-size:26px;line-height:1.5">5反復ごとに対戦して強くなったか判定</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>ε-greedy</b>：確率 ε でわざとランダムな手を指す工夫。同じ手ばかりだと新しい経験が増えないため</p>
+<p style="font-size:24px;line-height:1.45"><b>λ-return</b>：最終的な勝敗と、次の局面での予測を混ぜた目標値。λ が大きいほど勝敗を重視</p>
+<p style="font-size:24px;line-height:1.45"><b>リプレイバッファ</b>：その反復の局面と目標値をためる箱。無作為に取り出し、更新が終わったら空にする</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">3 / 28</span><details><summary>発表者メモ</summary><p>1反復で16局（--games）を指し、そこで出てきた局面に目標値を付けて学習する。対局は CPU の数だけ同時に進める。ε は 0.15 から 0.03 へ徐々に下げる。深さ2以上で読むときは、目標値の「次の局面の予測」に対局中の探索値を使う。</p></details></div>
+</div>
+<div class="slide" id="s-choose">
+<div class="frame"><section id="choose" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">手の選び方</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">1手先読みで上位 k 手に絞り、N 手先まで読んだ値が最大の手を選ぶ</h2>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">絞って読む</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">候補手とステップ終了を仮に指して V で並べ、評価が高い順に <b>幅 k</b> 個だけを<b>ミニマックス</b>で N 手先まで読む。その中で最大の手を選ぶ。決着する手は勝ち +1 / 負け −1</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">候補を作る</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552"><b>Lv単位の列挙</b>で、メインステップの候補を平均 6.0 手にする（実測）</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">選ぶ余地がなければ進む</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552"><b>自動進行</b>：候補が1つだけなら評価せず指し、学習データにも入れない</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>ミニマックス</b>：自分の番では値が最大、相手の番では最小になる手を選ぶと仮定して先を読む方法</p>
+<p style="font-size:24px;line-height:1.45"><b>Lv単位の列挙</b>：プレイはリザーブ払い、コアは「カードのLvを変える」「ソウルコアを動かす」で表す候補の作り方</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">4 / 28</span><details><summary>発表者メモ</summary><p>深さ N は --depth（既定 1 = 1手先読み）、幅 k は --width（既定 1 = 最善の1手だけ深く読む、0 = 制限なし）。例：幅3・深さ2なら、1手先読みの上位3手だけを2手先まで読み直し、その中で最大の手を選ぶ（上位の外の手は選ばれない）。深さ1では全候補を評価するので幅は効かない。途中の局面でも、手番側にとって評価が高い順に k 手だけ展開する。評価対局では序盤4ターンだけ温度付きで選び、以降は値が最大の手を選ぶ。学習中の対局では ε の確率でランダムな手を選ぶ。</p></details></div>
+</div>
+<div class="slide" id="s-enum">
+<div class="frame"><section id="enum" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:88px 128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">候補の作り方</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">コアは配置の全組み合わせではなく、Lv の変更として並べる</h2>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:16px">
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:22%;color:#F5F3EE;padding:10px 20px">--actions</th><th style="width:56%;color:#F5F3EE">中身</th><th style="width:22%;color:#F5F3EE">候補数（平均）</th></tr>
+<tr style="background:#E3F1EE"><td>level（既定）</td><td>プレイはリザーブ払い・Lvの境目の配置。コアはカードの <b>Lv変更</b> と <b>ソウルコア移動</b>（各対象、プレイの間に1回）</td><td>6.0</td></tr>
+<tr style="background:#FBFAF7"><td>all</td><td>支払い・配置の全組み合わせと、コアの <b>一括再配置</b></td><td>1,223（場所5以下）</td></tr>
+<tr style="background:#F5F3EE"><td>compact</td><td>支払いは1通り、コア移動は意味のある組み替えだけ</td><td>7.9</td></tr>
+</table>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">level でも、各カードの Lv（または消滅）とソウルコアの場所の組み合わせにはすべて届く。同じ対象を続けて動かさないので、コアを動かし続ける循環は起きない</p>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:12px;background:#1F2A2E;padding:36px;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#5EC4B6">一括再配置の数 = N × C(X+N−2, N−1)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;font-weight:700;line-height:1.1;color:#F0B574">86,632</p>
+<p style="font-size:24px;line-height:1.45;color:#C5D1CE">場所7・コア12 のとき</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;font-weight:700;line-height:1.1;color:#F0B574">930,240</p>
+<p style="font-size:24px;line-height:1.45;color:#C5D1CE">場所8・コア15 のとき。終盤は全件を並べられない</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>Lv変更</b>：カードのコアを、そのLvにちょうど必要な数にする手。差分はリザーブとやりとりする</p>
+<p style="font-size:24px;line-height:1.45"><b>一括再配置</b>：コアの最終的な置き方を1手で選ぶ手。N は場所の数（リザーブ＋カード）、X はコアの数</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">5 / 28</span><details><summary>発表者メモ</summary><p>候補数の平均は selftest の実測（level・compact は144局面、all は場所5以下の130局面）。Lv の境目を超える余りのコアはリザーブに置く形にそろえる。カード効果が未実装の今のルールでは、カード上の余りとリザーブのコアは支払い・Lvアップ・破壊時の行き先のどれでも同じ扱いなので、結果は変わらない。all で学習するとメモリが 13GB を超え、実用にならなかった。</p></details></div>
+</div>
+<div class="slide" id="s-credit">
+<div class="frame"><section id="credit" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">各選択肢の評価値</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">選ぶときは V で比べ、終局後に勝敗で V を直す</h2>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF7;padding:32px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">対局中（手を選ぶとき）</p>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:center;background:#E3F1EE;padding:10px 20px;border-radius:8px">
+<p style="font-size:26px;flex:1">候補 A を指した後の局面</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;font-weight:700;color:#0F766E">V = +0.42　選択</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:center;background:#F1EFE9;padding:10px 20px;border-radius:8px">
+<p style="font-size:26px;flex:1">候補 B を指した後の局面</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#4A5552">V = +0.18</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:16px;align-items:center;background:#F1EFE9;padding:10px 20px;border-radius:8px">
+<p style="font-size:26px;flex:1">ステップ終了後の局面</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#4A5552">V = −0.05</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF7;padding:32px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">終局後（学習するとき）</p>
+<p style="font-size:26px;line-height:1.5">実際に選んだ手の結果の局面だけを並べ、勝敗 z から逆向きに目標値 G を付ける</p>
+<p style="font-size:26px;line-height:1.5">勝った局で選んだ手の V は上がり、負けた局の手の V は下がる</p>
+</div>
+</div>
+<p style="font-size:26px;line-height:1.5;color:#9A4508">選ばなかった手には<b>教師信号</b>が届かない。その評価は<b>汎化</b>と ε によるランダムな手の経験に頼る</p>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>教師信号</b>：学習で「正解」として使う値。ここでは最終的な勝敗</p>
+<p style="font-size:24px;line-height:1.45"><b>汎化</b>：学習した局面に似た、まだ見ていない局面でもうまく評価できること</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">6 / 28</span><details><summary>発表者メモ</summary><p>評価値の数字（+0.42 など）は説明用の例で、実測値ではない。勝敗という1つの結果を、その局で選んだ各手へ配るのが目標値 G の役割。</p></details></div>
+</div>
+<div class="slide" id="s-reward">
+<div class="frame"><section id="reward" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">報酬と目標値</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">報酬は終局の結果だけ</h2>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:24px;background:#FBFAF7;padding:24px 32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;color:#0F766E">+1</p><p style="font-size:28px;font-weight:700">勝ち</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:24px;background:#FBFAF7;padding:24px 32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;color:#1F2A2E">−1</p><p style="font-size:28px;font-weight:700">負け</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:24px;background:#FBF0E4;padding:24px 32px;border:2px solid #B45309;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:44px;font-weight:700;color:#9A4508">−0.1〜−0.9</p><p style="font-size:28px;font-weight:700"><b>手数上限引き分け</b></p>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px;background:#1F2A2E;padding:24px 40px;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#F5F3EE">G[最後] = z（終局の報酬）</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#F5F3EE">G[t] = 0.3·V(s[t+1]) + 0.7·G[t+1]　（λ = 0.7）</p>
+</div>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">予測 V と目標値 G の<b>損失</b> 0.5·(V − G)² を小さくするよう重みを直す</p>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>手数上限引き分け</b>：決着しないまま手数上限（既定1500手）に達した対局。報酬 = −min(0.9, 0.1 + 0.8 × 引き分け率)。引き分けが多いほど強く罰する</p>
+<p style="font-size:24px;line-height:1.45"><b>損失</b>：予測と目標値のずれの大きさ。小さいほど予測が正確。強さそのものではない</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">7 / 28</span><details><summary>発表者メモ</summary><p>引き分け率は自己対戦1局ごとに更新する指数移動平均（係数 0.1）。引き分け率 0% なら −0.1、70% なら −0.66。途中の手には報酬がない。目標値 G は、そのプレイヤーが選んだ手の結果の局面を、終局から逆にたどって計算する。</p></details></div>
+</div>
+<div class="slide" id="s-network">
+<div class="frame"><section id="network" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:88px 128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">価値ネットワークの構成</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">カード列を GRU で要約し、盤面全体の数値と合わせて評価</h2>
+<table style="font-size:26px;color:#1F2A2E;font-variant-numeric:tabular-nums">
+<tr style="background:#1F2A2E"><th style="width:18%;color:#F5F3EE;padding:10px 28px">層</th><th style="width:60%;color:#F5F3EE">構成</th><th style="width:22%;color:#F5F3EE;text-align:right">パラメータ数</th></tr>
+<tr style="background:#FBFAF7"><td>埋め込み</td><td>カード番号 → 8個の数値（256枠 × 8）</td><td style="text-align:right">2,048</td></tr>
+<tr style="background:#F1EFE9"><td>入力</td><td>トークン 24個（能力値 16 + 埋め込み 8）× カード枚数、大域特徴 20個</td><td style="text-align:right">—</td></tr>
+<tr style="background:#FBFAF7"><td>GRU</td><td>カード列を 32個の数値に要約</td><td style="text-align:right">5,472</td></tr>
+<tr style="background:#F1EFE9"><td>全結合</td><td>(32 + 20) → 32、tanh</td><td style="text-align:right">1,696</td></tr>
+<tr style="background:#FBFAF7"><td>出力</td><td>32 → 1、tanh で −1〜+1</td><td style="text-align:right">33</td></tr>
+<tr style="background:#E3F1EE"><td>合計</td><td></td><td style="text-align:right">9,249</td></tr>
+</table>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>埋め込み</b>：カード番号を学習で決まる8個の数値に置き換えたもの。効果の違いを表す</p>
+<p style="font-size:24px;line-height:1.45"><b>トークン</b>：カード1枚分の入力。場所・コスト・BP・Lv・コア数など16個と埋め込み8個</p>
+<p style="font-size:24px;line-height:1.45"><b>大域特徴</b>：ライフ、リザーブ、手札の枚数、ターンなど、盤面全体を表す20個の数値</p>
+<p style="font-size:24px;line-height:1.45"><b>全結合</b>：すべての入力とすべての出力を重み付きでつなぐ層</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">8 / 28</span><details><summary>発表者メモ</summary><p>カード番号は効果と結び付くため、入力に必須。番号はハッシュで256個の枠に割り当てるので、新しいカードにもそのまま対応できる。入力は評価する側のプレイヤー視点で、相手の手札の中身と両者のデッキの中身は使わない。</p></details></div>
+</div>
+<div class="slide" id="s-input">
+<div class="frame"><section id="input" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:72px 128px;display:flex;flex-direction:column;gap:20px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">入力の詳細</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">カード1枚を24個の数値で表し、盤面全体を20個で補う</h2>
+<div style="display:flex;flex-direction:row;gap:28px">
+<table style="flex:3;font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:26%;color:#F5F3EE;padding:8px 18px">カードの数値</th><th style="width:46%;color:#F5F3EE">内容</th><th style="width:28%;color:#F5F3EE">場／手札・トラッシュ</th></tr>
+<tr style="background:#FBFAF7"><td>所在・コスト（6）</td><td>手札・自分の場・相手の場・自分と相手のトラッシュ、コスト ÷ 10</td><td>どちらも</td></tr>
+<tr style="background:#FBFAF7"><td>BP・Lv（2）</td><td>現在の BP ÷ 10000、Lv ÷ 3</td><td>場のみ</td></tr>
+<tr style="background:#F1EFE9"><td>コア・疲労（3）</td><td>コアの総数 ÷ 10、ソウルコアの有無、疲労していれば 1</td><td>場のみ</td></tr>
+<tr style="background:#F1EFE9"><td>シンボル（2）</td><td>シンボル数 ÷ 3、軽減シンボル数 ÷ 3</td><td>場は前者、手札は両方</td></tr>
+<tr style="background:#FBFAF7"><td>種別（3）</td><td>スピリット・ネクサス・その他</td><td>どちらも</td></tr>
+<tr style="background:#E3F1EE"><td>カード番号（8）</td><td><b>埋め込み</b>：番号から決まる、学習される8個の数値</td><td>どちらも</td></tr>
+</table>
+<div style="flex:2;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:28px 32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">盤面全体（20個）</p>
+<p style="font-size:24px;line-height:1.45">ライフ、リザーブとトラッシュのコア数、ソウルコアの有無、手札とデッキの枚数（相手の手札は枚数のみ）、場のシンボル数、ターン、手番、いまのステップ</p>
+<p style="font-size:24px;line-height:1.45;color:#9A4508">入っていない：効果テキスト、系統、色の種類、アタック中のカード、コアの内訳</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>埋め込み</b>：カード番号を、学習で決まる8個の数値に置き換えたもの。効果の違いを表す</p>
+<p style="font-size:24px;line-height:1.45"><b>one-hot</b>：選択肢のうち該当する1つだけを 1、ほかを 0 にする表し方</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">9 / 28</span><details><summary>発表者メモ</summary><p>数値は 0〜1 程度に収まるよう、10 や 10000 などで割って規格化している。カードの並びは「相手トラッシュ → 自分トラッシュ → 相手の場 → 自分の場 → 手札」の固定順。非公開情報（相手の手札の中身、両者のデッキの中身）は使わない。実装は rl/src/Features.kt。</p></details></div>
+</div>
+<div class="slide" id="s-gru">
+<div class="frame"><section id="gru" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">GRU の仕組み</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">カードを1枚ずつ読み、覚え方を調整しながら要約する</h2>
+<div style="display:flex;flex-direction:row;align-items:center;gap:12px">
+<p style="font-size:26px;background:#E3F1EE;padding:10px 20px;border-radius:8px">カード 1</p>
+<svg class="xs" width="36" height="18" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<p style="font-size:26px;background:#E3F1EE;padding:10px 20px;border-radius:8px">カード 2</p>
+<svg class="xs" width="36" height="18" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<p style="font-size:26px;color:#4A5552">…</p>
+<svg class="xs" width="36" height="18" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<p style="font-size:26px;background:#E3F1EE;padding:10px 20px;border-radius:8px">カード T</p>
+<svg class="xs" width="36" height="18" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<p style="font-size:26px;font-weight:700;color:#F5F3EE;background:#1F2A2E;padding:10px 20px;border-radius:8px">隠れ状態 h（32個の数値）</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#1F2A2E;padding:28px 36px;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#F5F3EE">z = σ(Wz·x + Uz·h + bz)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#F5F3EE">r = σ(Wr·x + Ur·h + br)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#F5F3EE">n = tanh(Wn·x + Un·(r⊙h) + bn)</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#F0B574">h′ = (1 − z)⊙h + z⊙n</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:26px;line-height:1.5"><b>更新ゲート z</b>：前の記憶を新しい内容にどれだけ書き換えるか</p>
+<p style="font-size:26px;line-height:1.5"><b>リセットゲート r</b>：新しい内容を作るとき、前の記憶をどれだけ参考にするか</p>
+<p style="font-size:26px;line-height:1.5">読む順番で結果が変わるため、カードはいつも同じゾーン順で並べる</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>隠れ状態</b>：それまでに読んだカードの内容を要約した数値の組。1枚読むごとに更新される</p>
+<p style="font-size:24px;line-height:1.45"><b>ゲート</b>：0〜1 の値をとる調整弁。σ（シグモイド関数）で 0〜1 に収める。⊙ は要素ごとの掛け算</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">10 / 28</span><details><summary>発表者メモ</summary><p>GRU は RNN の一種。LSTM と比べてゲートが2つと少なく、軽い。入力 x はカード1枚分のトークン（能力値16個 + カード番号の埋め込み8個 = 24個）。パラメータは 3 × (32×24 + 32×32 + 32) = 5,472 個。</p></details></div>
+</div>
+<div class="slide" id="s-scale">
+<div class="frame"><section id="scale" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">ネットワークの規模</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">パラメータ 9,249 個の小さなネットワーク</h2>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FBFAF7;padding:28px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;font-weight:700;line-height:1.1;color:#0F766E">9,249</p>
+<p style="font-size:26px;line-height:1.5;color:#4A5552"><b>パラメータ</b>の数（GRU 5,472 + 埋め込み 2,048 + 全結合 1,696 + 出力 33）</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FBFAF7;padding:28px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;font-weight:700;line-height:1.1;color:#0F766E">約 72KB</p>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">重みファイルの大きさ（1個 8バイト × 9,249）</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FBFAF7;padding:28px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:64px;font-weight:700;line-height:1.1;color:#0F766E">5.4k × T</p>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">1局面の評価に必要な<b>積和</b>の回数（T = カード枚数）</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#1F2A2E;padding:24px 40px;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#5EC4B6">幅を変えたときのパラメータ数（H = GRU、D = 全結合、E = 埋め込み次元、B = 枠数）</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#F5F3EE">3·((16+E)H + H² + H) + (H+20)·D + 2D + 1 + B·E</p>
+<p style="font-size:26px;line-height:1.5;color:#C5D1CE">H = D = 32、E = 8、B = 256 で 9,249 個（現在）。H = D = 64 なら 24,641 個</p>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>パラメータ</b>：学習で調整される数値（重み）。多いほど複雑な判断を表せるが、学習に時間がかかる</p>
+<p style="font-size:24px;line-height:1.45"><b>積和</b>：掛け算して足し合わせる計算1回分。計算量の目安</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">11 / 28</span><details><summary>発表者メモ</summary><p>計算量の大半は GRU で、カード1枚ごとに約5,400回の積和がかかる。埋め込みは表を引くだけなので計算量はほぼ増えない。幅（--hidden / --dense / --emb-dim / --emb-buckets）は新しく作るときだけ変えられる。埋め込みのない旧形式の重みは、読み込み時に埋め込みを追加して使える（評価値は変わらない）。</p></details></div>
+</div>
+<div class="slide" id="s-update">
+<div class="frame"><section id="update" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">重みの直し方</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">ずれを測り、さかのぼって原因を求め、少しずつ直す</h2>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">1　ずれを測る</p>
+<p style="font-size:26px;line-height:1.5">損失 0.5·(V − G)² を32局面分平均</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">2　原因を求める</p>
+<p style="font-size:26px;line-height:1.5"><b>BPTT</b> で各重みの<b>勾配</b>を計算</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">3　暴れを抑える</p>
+<p style="font-size:26px;line-height:1.5"><b>勾配ノルムクリップ</b>で大きさを 1.0 までに</p>
+</div>
+<svg class="xs" width="40" height="20" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,15 60,15 60,0 100,25 60,50 60,35 0,35" fill="#0F766E"/></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E3F1EE;padding:32px;border:2px solid #0F766E;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">4　直す</p>
+<p style="font-size:26px;line-height:1.5"><b>Adam</b> で重みを更新（学習率 0.001）</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>勾配</b>：重みを少し動かしたとき損失がどれだけ変わるか。重みを直す方向の手がかり</p>
+<p style="font-size:24px;line-height:1.45"><b>BPTT</b>：GRU が読んだ順番を逆にたどって勾配を求める方法。最後のカードから最初へさかのぼる</p>
+<p style="font-size:24px;line-height:1.45"><b>勾配ノルムクリップ</b>：勾配が大きすぎるときに縮める安全装置。1回の更新で重みが壊れるのを防ぐ</p>
+<p style="font-size:24px;line-height:1.45"><b>Adam</b>：勾配の平均と大きさの履歴を見て、重みごとに動かす幅を自動で調整する更新方法</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">12 / 28</span><details><summary>発表者メモ</summary><p>1回の更新で32局面を使い、1反復で200回更新する。BPTT は手書きで実装しており、セルフテストで数値微分と照合済み（相対誤差 1e-5）。</p></details></div>
+</div>
+<div class="slide" id="s-parallel">
+<div class="frame"><section id="parallel" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">並列化</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">独立した対局を、CPU の数だけ同時に指す</h2>
+<div style="display:flex;flex-direction:row;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">対象</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">自己対戦・評価対局・リーグ戦・match・league の各局。<b>スレッド</b>数は --threads（既定は論理プロセッサ数）</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:36px;border:2px solid #D9D5CB;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">安全に分ける</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">ネットは読むだけ、エージェントは局ごとに複製、カードは先に読み込む。重みの更新は全局が終わってから</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#E3F1EE;padding:36px;border:2px solid #0F766E;border-radius:16px">
+<h3 style="font-size:34px;font-weight:700;line-height:1.25">同じ結果</h3>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">乱数の種を局ごとに先に決めるので、スレッド数を変えても勝敗・手数は同じ（<b>再現性</b>を selftest で確認）</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px;align-items:center">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:72px;font-weight:700;line-height:1.1;color:#0F766E">4.0秒 → 1.5秒</p>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">12局の対戦（Lv単位の列挙・深さ1）。1スレッドから6スレッドで約 2.7倍</p>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>スレッド</b>：1つのプログラムの中で同時に動く処理の流れ。CPU のコアごとに別の対局を進められる</p>
+<p style="font-size:24px;line-height:1.45"><b>再現性</b>：同じ設定で動かせば、何度・どの環境でも同じ結果になること</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">13 / 28</span><details><summary>発表者メモ</summary><p>Kotlin/Native の Worker を使う（rl/src/Parallel.kt）。計測環境は論理プロセッサ6個。学習の1反復（自己対戦32局＋5反復ごとの評価）は約1〜1.3分。</p></details></div>
+</div>
+<div class="slide" id="s-judge">
+<div class="frame"><section id="judge" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">強くなったかの判定</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">2つの条件を両方満たしたときだけ最良を更新</h2>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">評価対局は5反復ごと。序盤4ターンは<b>温度</b>付き、以降は<b>貪欲</b>に指し、<b>先後交互</b>で対戦して<b>スコア</b>で比べる</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">条件 1　直接対戦</p>
+<h3 style="font-size:36px;font-weight:700;line-height:1.3">今の最良に 20局で 55% 以上</h3>
+<p style="font-size:24px;line-height:1.45;color:#4A5552">全局引き分けなら問わない</p>
+</div>
+<p style="font-size:36px;font-weight:700;color:#0F766E">かつ</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF7;padding:32px 36px;border:2px solid #D9D5CB;border-radius:16px">
+<p style="font-size:24px;font-weight:700;color:#0F766E">条件 2　リーグ</p>
+<h3 style="font-size:36px;font-weight:700;line-height:1.3">リーグで測った Elo が最良を上回る</h3>
+</div>
+</div>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">更新したモデルは<b>スナップショット</b>として保存し、リーグに加える</p>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>温度</b>：手の選び方のばらつき。0 なら最善手のみ</p>
+<p style="font-size:24px;line-height:1.45"><b>貪欲</b>：評価が一番高い手だけを指すこと</p>
+<p style="font-size:24px;line-height:1.45"><b>先後交互</b>：1局ごとに先手と後手を入れ替えること</p>
+<p style="font-size:24px;line-height:1.45"><b>スコア</b>：勝ち1点・引き分け0.5点の平均。50% で互角</p>
+<p style="font-size:24px;line-height:1.45"><b>スナップショット</b>：最良を更新した時点の重みを保存したもの</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">14 / 28</span><details><summary>発表者メモ</summary><p>条件1は直前の最良との比較、条件2は歴代の相手全体との比較。両方を求めることで、特定の相手にだけ強いモデルの昇格を防ぐ。直接対戦が全局引き分けのときは判定材料がないため、条件2だけで判定する。序盤の温度は毎局同じ指し回しになって決着しないのを防ぐためで、比べる両者とリーグ全員に同じ設定を使う。</p></details></div>
+</div>
+<div class="slide" id="s-league">
+<div class="frame"><section id="league" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">リーグと Elo</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">歴代の最良モデル全員と戦い、強さを1つの数値にする</h2>
+<div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:16px">
+<p style="font-size:26px;font-weight:700;background:#1F2A2E;color:#F5F3EE;padding:10px 28px;border-radius:999px">ランダムに指す AI　Elo 0（基準）</p>
+<p style="font-size:26px;background:#FBFAF7;padding:10px 28px;border-radius:999px;border:2px solid #D9D5CB">開始時点のモデル</p>
+<p style="font-size:26px;background:#FBFAF7;padding:10px 28px;border-radius:999px;border:2px solid #D9D5CB">歴代の最良 p1, p2, …</p>
+<p style="font-size:26px;background:#FBFAF7;color:#4A5552;padding:10px 28px;border-radius:999px;border:2px dashed #9AA5A2">最大 8人</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:48px;align-items:start">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<div style="background:#1F2A2E;padding:24px 32px;border-radius:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;line-height:1.5;color:#F5F3EE">予想スコア = 1 / (1 + 10^(−差/400))</p>
+</div>
+<p style="font-size:26px;line-height:1.5;color:#4A5552">Elo の差が 0 で 50%、+100 で約 64%、+200 で約 76%、+400 で約 91%</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:26px;line-height:1.5">各メンバーと 10局ずつ対戦する</p>
+<p style="font-size:26px;line-height:1.5">メンバーの Elo は固定し、今のモデルの Elo だけを<b>最尤推定</b>で求める</p>
+<p style="font-size:26px;line-height:1.5">全勝や全敗でも値が飛ばないよう、相手ごとに「0.5勝の仮想1局」を足す</p>
+</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;flex-direction:row;gap:32px;background:#E7E2D6;padding:24px 32px;border-radius:12px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;white-space:nowrap">用語メモ</p>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px 32px">
+<p style="font-size:24px;line-height:1.45"><b>Elo</b>：強さを表す数値。値そのものより差に意味があり、差から予想勝率が決まる</p>
+<p style="font-size:24px;line-height:1.45"><b>最尤推定</b>：実際の対戦成績が一番起こりやすくなるように、未知の値を決める方法</p>
+</div>
+</div>
+
+</section></div>
+<div class="meta"><span class="no">15 / 28</span><details><summary>発表者メモ</summary><p>リーグが8人を超えたら、ランダムに指す AI 以外で最も古いメンバーを外す。ランダムに指す AI に10局全勝したときの Elo は約529で、リーグが育つまでの実質的な上限になる。</p></details></div>
+</div>
+<div class="slide" id="s-params-learn">
+<div class="frame"><section id="params-learn" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">パラメータ 1/4　学習</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15">経験の量・目標値・更新の強さを決める</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:22%;color:#F5F3EE;padding:12px 24px">パラメータ</th><th style="width:12%;color:#F5F3EE">既定</th><th style="width:66%;color:#F5F3EE">存在意義</th></tr>
+<tr style="background:#FBFAF7"><td>--iters</td><td>50</td><td>学習の総量。反復ごとに重みを保存し、評価の区切りにもなる</td></tr>
+<tr style="background:#F5F3EE"><td>--games</td><td>16</td><td>1反復で集める経験の量。多いほど目標値のばらつきが減るが、1反復が長くなる</td></tr>
+<tr style="background:#FBFAF7"><td>--lambda</td><td>0.7</td><td>目標値で終局結果と次局面の予測を混ぜる比率。1 に近いほど結果重視（ばらつき大）、0 に近いほど予測重視（偏り大）</td></tr>
+<tr style="background:#F5F3EE"><td>--lr</td><td>0.001</td><td>1回の更新で重みを動かす幅。大きいと不安定、小さいと学習が遅い</td></tr>
+<tr style="background:#FBFAF7"><td>--updates</td><td>200</td><td>1反復あたりの更新回数。集めた経験をどれだけ学習に使うか</td></tr>
+<tr style="background:#F5F3EE"><td>--batch</td><td>32</td><td>1回の更新に使うサンプル数。勾配のばらつきを抑える</td></tr>
+<tr style="background:#FBFAF7"><td>--eps-start / --eps-end</td><td>0.15 / 0.03</td><td>探索率 ε の始点と終点（線形に減らす）。序盤は多様な局面を経験し、終盤は本来の指し方に近づける</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">16 / 28</span><details><summary>発表者メモ</summary><p>いずれも valuerl train のオプション。ほかに --self-temp（既定 0）で自己対戦にも温度を使える（0 なら ε-greedy のみ）。--lambda はバイアスと分散のトレードオフ、--lr と --updates と --batch は更新の強さと安定性を決める。</p></details></div>
+</div>
+<div class="slide" id="s-params-eval">
+<div class="frame"><section id="params-eval" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">パラメータ 2/4　評価</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15">判定の頻度・精度・厳しさを決める</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 24px">パラメータ</th><th style="width:12%;color:#F5F3EE">既定</th><th style="width:64%;color:#F5F3EE">存在意義</th></tr>
+<tr style="background:#FBFAF7"><td>--eval-every</td><td>5</td><td>評価の頻度。評価は対局数が多く重いため、間隔で計算量を調整する</td></tr>
+<tr style="background:#F5F3EE"><td>--eval-games</td><td>20</td><td>直接対戦の局数。多いほど判定の誤差が小さい（20局で標準誤差 約 ±11%）</td></tr>
+<tr style="background:#FBFAF7"><td>--promote</td><td>0.55</td><td>昇格に必要な直接対戦スコア。50% より高くして偶然の勝ち越しを弾く。全局引き分けなら問わない</td></tr>
+<tr style="background:#F5F3EE"><td>--eval-temp</td><td>0.05</td><td>評価対局の温度。毎局同じ指し回しになって決着しないのを防ぐ</td></tr>
+<tr style="background:#FBFAF7"><td>--eval-temp-turns</td><td>4</td><td>温度を使うターン数。序盤だけ散らし、それ以降は最善手で実力を測る</td></tr>
+<tr style="background:#F5F3EE"><td>--league-games</td><td>10</td><td>リーグの各メンバーとの局数。Elo の推定精度を決める</td></tr>
+<tr style="background:#FBFAF7"><td>--league-size</td><td>8</td><td>リーグの最大人数（ランダムに指す AI を含む）。多いほど偏りに強いが、評価が重くなる</td></tr>
+<tr style="background:#F5F3EE"><td>--pool</td><td>なし</td><td>既存の重みを開始時にリーグへ加え、学習の続きでも比較相手を引き継ぐ</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">17 / 28</span><details><summary>発表者メモ</summary><p>評価のコストは、直接対戦の局数 + リーグ人数 × リーグ局数 で決まる。既定ではリーグが満員のとき 1回の評価で最大 20 + 80 = 100局。</p></details></div>
+</div>
+<div class="slide" id="s-params-game">
+<div class="frame"><section id="params-game" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">パラメータ 3/4　対局・ネットワーク・実行</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15">対局の打ち切り、モデルの大きさ、再現性</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:26%;color:#F5F3EE;padding:10px 24px">パラメータ</th><th style="width:16%;color:#F5F3EE">既定</th><th style="width:58%;color:#F5F3EE">存在意義</th></tr>
+<tr style="background:#FBFAF7"><td>--max-steps</td><td>1500</td><td>1局の手数上限。終わらない対局を打ち切る。デッキ切れで決着する前に切れないよう、1ターン約12手 × 約70ターンより大きくする</td></tr>
+<tr style="background:#F5F3EE"><td>--draw-base / --draw-gain / --draw-max</td><td>0.1 / 0.8 / 0.9</td><td>引き分けの報酬 = −min(max, base + gain × 引き分け率)。引き分けが多いほど引き延ばしを強く罰する</td></tr>
+<tr style="background:#FBFAF7"><td>--draw-ema</td><td>0.1</td><td>引き分け率の移動平均の係数。大きいほど直近の対局に素早く反応する</td></tr>
+<tr style="background:#FBFAF7"><td>--hidden / --dense</td><td>32 / 32</td><td>GRU と全結合層の幅。表現力と計算量の兼ね合い（新規作成時のみ）</td></tr>
+<tr style="background:#F5F3EE"><td>--emb-buckets / --emb-dim</td><td>256 / 8</td><td>カード番号の埋め込みの枠数と次元。枠が少ないと別のカードが同じ枠を共有する（新規作成時のみ）</td></tr>
+<tr style="background:#FBFAF7"><td>--seed</td><td>1</td><td>乱数の種。同じ設定なら同じ結果を再現できる</td></tr>
+<tr style="background:#F5F3EE"><td>--resume / --out</td><td>なし / 自動</td><td>学習を始める重みと出力名（例：g1_g2）。旧形式の重みも読める</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">18 / 28</span><details><summary>発表者メモ</summary><p>重みファイルは weights/ 配下。最良モデルには -best、リーグ加入時のスナップショットには -p番号 が付く。デッキは --deck1 / --deck2（既定 deck-kogyo.yaml）。</p></details></div>
+</div>
+<div class="slide" id="s-params-search">
+<div class="frame"><section id="params-search" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">パラメータ 4/4　候補・探索・並列</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15">候補の作り方、読む深さと幅、同時に指す数</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:22%;color:#F5F3EE;padding:10px 24px">パラメータ</th><th style="width:16%;color:#F5F3EE">既定</th><th style="width:62%;color:#F5F3EE">存在意義</th></tr>
+<tr style="background:#FBFAF7"><td>--actions</td><td>level</td><td>候補手の作り方。level は全配置に届く小さな候補、all は全合法手（終盤は件数が爆発）、compact は絞った候補</td></tr>
+<tr style="background:#F5F3EE"><td>--depth</td><td>1</td><td>何手先まで読むか。自己対戦・評価対局・リーグ戦で共通。1つ深くすると計算は約10倍</td></tr>
+<tr style="background:#FBFAF7"><td>--width</td><td>1</td><td>深く読む手を1手先読みの上位 k 手に絞る（1 = 最善の1手だけ、0 = 制限なし）。深さを上げても計算が増えすぎないようにする</td></tr>
+<tr style="background:#F5F3EE"><td>--threads</td><td>論理プロセッサ数</td><td>同時に指す局数。多いほど速いが、ほかの作業の CPU を奪う</td></tr>
+<tr style="background:#FBFAF7"><td>--step-penalty</td><td>0</td><td>1手ごとの報酬 −c。長い手順を不利にするが、長い引き分けが負けと同じ値になる副作用があるため既定は無効</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">19 / 28</span><details><summary>発表者メモ</summary><p>Playmat でも --actions・--depth・--width を起動時に指定でき、深さと幅は画面の設定からも変えられる。match は --depth-a / --depth-b / --width-a / --width-b で両者に別の設定を与えられる。</p></details></div>
+</div>
+<div class="slide" id="s-fixed">
+<div class="frame"><section id="fixed" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">固定値（コマンドラインでは変更不可）</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15">学習と推定を安定させる内部定数</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:28%;color:#F5F3EE;padding:12px 24px">項目</th><th style="width:14%;color:#F5F3EE">値</th><th style="width:58%;color:#F5F3EE">存在意義</th></tr>
+<tr style="background:#FBFAF7"><td>リプレイバッファ</td><td>1反復分</td><td>その反復の局面をすべて保持し、更新後に破棄。目標値を作ったネットワークでだけ学習に使う</td></tr>
+<tr style="background:#F5F3EE"><td>Adam β1 / β2</td><td>0.9 / 0.999</td><td>勾配とその二乗の移動平均の減衰率。更新の方向と幅を安定させる</td></tr>
+<tr style="background:#FBFAF7"><td>Adam ε</td><td>1e-8</td><td>更新幅の計算でゼロ除算を防ぐ微小値</td></tr>
+<tr style="background:#F5F3EE"><td>勾配ノルムクリップ</td><td>1.0</td><td>大きすぎる勾配で重みが一度に壊れるのを防ぐ</td></tr>
+<tr style="background:#FBFAF7"><td>出力層の初期値</td><td>±0.01</td><td>未学習時の評価を 0 付近に揃え、特定の手への偏りを防ぐ</td></tr>
+<tr style="background:#F5F3EE"><td>Elo の仮想対局</td><td>0.5勝 / 1局</td><td>全勝・全敗でも Elo が発散しないようにする</td></tr>
+<tr style="background:#FBFAF7"><td>ランダム方策の Elo</td><td>0</td><td>Elo の基準点。リーグから外さない</td></tr>
+<tr style="background:#F5F3EE"><td>圧縮列挙の代替手数</td><td>最大 4</td><td>リザーブだけで払えない召喚でも、フィールドのコアを使う手を候補に残す</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">20 / 28</span><details><summary>発表者メモ</summary><p>これらはソースコード内の定数。変更にはビルドが必要。</p></details></div>
+</div>
+<div class="slide" id="s-status">
+<div class="frame"><section id="status" data-transition="fade" style="background:#1F2A2E;color:#F5F3EE;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:24px;font-weight:700;color:#5EC4B6;letter-spacing:2px">現在の状態　学習 g2_g3（g1_g2-best から60反復）</p>
+<h2 style="font-size:60px;font-weight:700;line-height:1.15;color:#F5F3EE">旧最良 g1_g2-best より強いモデルを2つ得た</h2>
+<table style="font-size:26px;color:#1F2A2E">
+<tr style="background:#2A383D"><th style="width:28%;color:#F5F3EE;padding:12px 24px">モデル</th><th style="width:36%;color:#F5F3EE">深さ1・幅1（各200局）</th><th style="width:36%;color:#F5F3EE">深さ2・幅2（各200局）</th></tr>
+<tr style="background:#E3F1EE"><td>g2_g3-p1</td><td>130勝43敗27分（71.8%）</td><td>130勝69敗1分（65.2%）</td></tr>
+<tr style="background:#E3F1EE"><td>g2_g3-p2</td><td>131勝69敗（65.5%）</td><td>112勝85敗3分（56.8%）</td></tr>
+<tr style="background:#FBFAF7"><td>g2_g3-p3（参考）</td><td>151勝49敗（75.5%）</td><td>98勝102敗（49.0%）</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.5;color:#C5D1CE">対 g1_g2-best の結果。p1 と p2 は2つの設定のどちらでも勝ち越した。p3 は深さ1でだけ強い</p>
+
+</section></div>
+<div class="meta"><span class="no">21 / 28</span><details><summary>発表者メモ</summary><p>数値は valuerl match / league の実測。学習は Lv単位の列挙・深さ1・手数上限1500・並列6スレッド。リーグ（深さ2・幅2、総当たり各200局）の Elo は p1 60 > p3 36 > p2 25 > g1_g2-best −11 > g2_g3 最終 −22 > init_h1-best −88。</p></details></div>
+</div>
+<div class="slide" id="s-improve">
+<div class="frame"><section id="improve" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">判定と学習の改善案</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">評価対局を決着させ、引き分けで判定を止めない</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:26%;color:#F5F3EE;padding:10px 24px">案</th><th style="width:56%;color:#F5F3EE">中身</th><th style="width:18%;color:#F5F3EE">状況</th></tr>
+<tr style="background:#E3F1EE"><td>1. 評価対局の序盤を散らす</td><td>序盤4ターンを温度付きで指し、毎局ちがう展開にする</td><td>実装済み・効果未検証</td></tr>
+<tr style="background:#E3F1EE"><td>2. 引き分けを状況に応じて罰する</td><td>引き分け率が高いほど引き分けの報酬を下げる（−0.1〜−0.9）</td><td>実装済み・効果未検証</td></tr>
+<tr style="background:#E3F1EE"><td>3. 全引き分け時の判定</td><td>直接対戦が全局引き分けなら、リーグ Elo だけで昇格を判定する</td><td>実装済み</td></tr>
+<tr style="background:#FBFAF7"><td>4. 手数上限の見直し</td><td>上限到達前にデッキ切れで決着するかを確かめ、必要なら上限を上げる</td><td>未実装</td></tr>
+<tr style="background:#F5F3EE"><td>5. 学習相手を混ぜる</td><td>自己対戦の一部をリーグのメンバー相手にし、偏った指し方に慣れすぎない</td><td>未実装</td></tr>
+<tr style="background:#FBFAF7"><td>6. 探索を残す</td><td>ε を 0.03 まで下げず、新しい局面の経験を集め続ける</td><td>未実装</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">22 / 28</span><details><summary>発表者メモ</summary><p>案1〜3は今回実装した。試走（2反復）では評価対局6局のうち1〜2局が決着し、以前の全局引き分けからは改善したが、本格的な学習での効果は未検証。案4は、選択肢が1つしかない手も手数に数えているため、デッキ切れの前に上限へ達している可能性がある（推定、未確認）。</p></details></div>
+</div>
+<div class="slide" id="s-evalfn">
+<div class="frame"><section id="evalfn" data-transition="fade" style="background:#ECE9E1;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">より良い評価関数の案（案1と案6の一部を実装済み）</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">入力・構造・学習の3方向から評価を強くする</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:22%;color:#F5F3EE;padding:12px 24px">案</th><th style="width:48%;color:#F5F3EE">中身</th><th style="width:30%;color:#F5F3EE">期待する効果</th></tr>
+<tr style="background:#E3F1EE"><td>1. カードの個性を入力（実装済み）</td><td>カード番号ごとに学習する数値（埋め込み 8個）を加える</td><td>能力値が同じでも効果の違いを評価できる</td></tr>
+<tr style="background:#F5F3EE"><td>2. 並び順に依存しない読み方</td><td>GRU の代わりに、カードを同じ変換にかけて足し合わせる方式や注意機構を使う</td><td>並べ方の影響が消え、少ない対局で学べる</td></tr>
+<tr style="background:#FBFAF7"><td>3. 盤面情報を増やす</td><td>アタック中のスピリット、ブロックできる数、シンボルの色などを入力に加える</td><td>戦闘中の局面を正しく区別できる</td></tr>
+<tr style="background:#F5F3EE"><td>4. 補助の予測も学ぶ</td><td>勝敗に加えて、数手後のライフ差なども同時に予測させる</td><td>勝敗だけより学習の手がかりが増える</td></tr>
+<tr style="background:#FBFAF7"><td>5. 手を直接評価する出力</td><td>局面の価値に加えて、各候補手の選びやすさ（方策）も出力する</td><td>選ばなかった手にも学習信号が届く</td></tr>
+<tr style="background:#E3F1EE"><td>6. 先読みを深くする（一部実装済み）</td><td>N手先までのミニマックス（αβ枝刈り・幅）は実装済み。深さ2以上では探索値を目標値に使う。MCTS は未実装</td><td>評価の粗さを探索で補い、質の高い目標値を作れる</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">23 / 28</span><details><summary>発表者メモ</summary><p>案1はカード番号の埋め込みとして実装済み。案6は深さ N のミニマックス（--depth / --width）として一部実装済み。それ以外は未実装。案1と案3は入力、案2と案5は構造、案4と案6は学習方法の改善。用語（埋め込み、注意機構、方策、MCTS、ミニマックス）は末尾の用語集を参照。</p></details></div>
+</div>
+<div class="slide" id="s-terms1">
+<div class="frame"><section id="terms1" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">用語集 1/5</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">学習の仕組み</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 20px">用語</th><th style="width:76%;color:#F5F3EE">説明</th></tr>
+<tr style="background:#FBFAF7"><td>自己対戦</td><td>同じ AI 同士で対局させ、その対局を教材にする方法</td></tr>
+<tr style="background:#F1EFE9"><td>価値ネットワーク</td><td>局面を見て「このまま進むと勝てそうか」を −1〜+1 で答えるニューラルネットワーク</td></tr>
+<tr style="background:#FBFAF7"><td>afterstate</td><td>手を指した直後の局面。「この手を指したらこうなる」という結果の盤面</td></tr>
+<tr style="background:#F1EFE9"><td>1手先読み</td><td>候補手をすべて仮に指し、結果の局面の評価が一番高い手を選ぶ方法</td></tr>
+<tr style="background:#FBFAF7"><td>ε-greedy</td><td>確率 ε でわざとランダムな手を指す工夫。新しい経験を集めるため</td></tr>
+<tr style="background:#F1EFE9"><td>λ-return</td><td>最終的な勝敗と、次の局面での予測を混ぜた目標値。λ が大きいほど勝敗を重視</td></tr>
+<tr style="background:#FBFAF7"><td>リプレイバッファ</td><td>その反復の局面と目標値をためる箱。無作為に取り出して偏りを防ぎ、ネットワーク更新後に空にする</td></tr>
+<tr style="background:#F1EFE9"><td>教師信号</td><td>学習で「正解」として使う値。ここでは最終的な勝敗</td></tr>
+<tr style="background:#FBFAF7"><td>汎化</td><td>学習した局面に似た、まだ見ていない局面でもうまく評価できること</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">24 / 28</span><details><summary>発表者メモ</summary><p>各スライド下段の用語メモに出てくる用語の一覧。</p></details></div>
+</div>
+<div class="slide" id="s-terms2">
+<div class="frame"><section id="terms2" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:88px 128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">用語集 2/5</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">手の選び方・報酬・重みの直し方</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 20px">用語</th><th style="width:76%;color:#F5F3EE">説明</th></tr>
+<tr style="background:#FBFAF7"><td>圧縮選択肢列挙</td><td>コアの払い方を1通りに決め、コア移動も意味のある組み替えに絞った候補の作り方</td></tr>
+<tr style="background:#F1EFE9"><td>自動進行</td><td>候補が1つしかない局面を評価せずに進め、学習データにも入れない処理</td></tr>
+<tr style="background:#FBFAF7"><td>手数上限引き分け</td><td>決着しないまま手数上限（既定1500手）に達した対局。引き分け率に応じて −0.1〜−0.9 を両者に与える</td></tr>
+<tr style="background:#F1EFE9"><td>指数移動平均</td><td>新しい値ほど重く、古い値ほど軽く扱う平均。引き分け率の計算に使う</td></tr>
+<tr style="background:#FBFAF7"><td>温度</td><td>評価値の差をどれだけ重視して手を選ぶかの度合い。0 なら最善手のみ、大きいほどばらける</td></tr>
+<tr style="background:#F1EFE9"><td>損失</td><td>予測と目標値のずれの大きさ。小さいほど予測が正確。強さそのものではない</td></tr>
+<tr style="background:#FBFAF7"><td>勾配</td><td>重みを少し動かしたとき損失がどれだけ変わるか。重みを直す方向の手がかり</td></tr>
+<tr style="background:#F1EFE9"><td>BPTT</td><td>GRU が読んだ順番を逆にたどって勾配を求める方法</td></tr>
+<tr style="background:#FBFAF7"><td>Adam</td><td>勾配の平均と大きさの履歴を見て、重みごとに動かす幅を自動で調整する更新方法</td></tr>
+<tr style="background:#F1EFE9"><td>勾配ノルムクリップ</td><td>勾配が大きすぎるときに縮める安全装置。1回の更新で重みが壊れるのを防ぐ</td></tr>
+<tr style="background:#FBFAF7"><td>パラメータ</td><td>学習で調整される数値（重み）。多いほど複雑な判断を表せるが学習が遅くなる</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">25 / 28</span><details><summary>発表者メモ</summary><p>各スライド下段の用語メモに出てくる用語の一覧。</p></details></div>
+</div>
+<div class="slide" id="s-terms3">
+<div class="frame"><section id="terms3" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">用語集 3/5</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">ネットワーク</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 20px">用語</th><th style="width:76%;color:#F5F3EE">説明</th></tr>
+<tr style="background:#FBFAF7"><td>トークン</td><td>カード1枚分の入力。能力値16個（場所、コスト、BP、Lv、コア数など）と埋め込み8個</td></tr>
+<tr style="background:#F1EFE9"><td>大域特徴</td><td>ライフ、リザーブ、手札の枚数、ターンなど、盤面全体を表す20個の数値</td></tr>
+<tr style="background:#FBFAF7"><td>GRU</td><td>カードを1枚ずつ読み、覚える・忘れるを調整しながら内容を要約する仕組み</td></tr>
+<tr style="background:#F1EFE9"><td>隠れ状態</td><td>それまでに読んだカードの内容を要約した数値の組。1枚読むごとに更新される</td></tr>
+<tr style="background:#FBFAF7"><td>ゲート</td><td>GRU の中の 0〜1 の調整弁。記憶をどれだけ書き換えるかを決める</td></tr>
+<tr style="background:#F1EFE9"><td>全結合</td><td>すべての入力とすべての出力を重み付きでつなぐ層</td></tr>
+<tr style="background:#FBFAF7"><td>tanh</td><td>数値を −1〜+1 の範囲になめらかに収める関数</td></tr>
+<tr style="background:#F1EFE9"><td>積和</td><td>掛け算して足し合わせる計算1回分。計算量の目安</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">26 / 28</span><details><summary>発表者メモ</summary><p>各スライド下段の用語メモに出てくる用語の一覧。</p></details></div>
+</div>
+<div class="slide" id="s-terms4">
+<div class="frame"><section id="terms4" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:88px 128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">用語集 4/5</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">評価・改善案</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 20px">用語</th><th style="width:76%;color:#F5F3EE">説明</th></tr>
+<tr style="background:#FBFAF7"><td>貪欲</td><td>ランダムな手を混ぜず、評価が一番高い手だけを指すこと</td></tr>
+<tr style="background:#F1EFE9"><td>先後交互</td><td>1局ごとに先手と後手を入れ替え、先手・後手の有利不利を打ち消すこと</td></tr>
+<tr style="background:#FBFAF7"><td>スコア</td><td>勝ちを1点、引き分けを0.5点として局数で割った値。50% なら互角</td></tr>
+<tr style="background:#F1EFE9"><td>リーグ</td><td>歴代の最良モデルとランダムに指す AI を集めた対戦相手の一覧</td></tr>
+<tr style="background:#FBFAF7"><td>Elo</td><td>強さを表す数値。差から予想勝率が決まり、差 400 で約 91%</td></tr>
+<tr style="background:#F1EFE9"><td>最尤推定</td><td>実際の対戦成績が一番起こりやすくなるように、未知の値を決める方法</td></tr>
+<tr style="background:#FBFAF7"><td>スナップショット</td><td>最良が更新された時点の重みを別ファイル（-p番号）に保存したもの</td></tr>
+<tr style="background:#F1EFE9"><td>埋め込み</td><td>カード番号を、学習で決まる8個の数値に置き換えて入力する方法。効果の違いを表す</td></tr>
+<tr style="background:#FBFAF7"><td>注意機構</td><td>入力どうしの関係の強さを計算し、重要なものほど強く反映させる仕組み</td></tr>
+<tr style="background:#F1EFE9"><td>方策</td><td>各候補手をどれくらいの確率で選ぶかを表すもの</td></tr>
+<tr style="background:#FBFAF7"><td>MCTS</td><td>有望な手を優先して何度も試し打ちし、その結果で手を選ぶ探索方法</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">27 / 28</span><details><summary>発表者メモ</summary><p>各スライド下段の用語メモと、評価関数の改善案に出てくる用語の一覧。</p></details></div>
+</div>
+<div class="slide" id="s-terms5">
+<div class="frame"><section id="terms5" data-transition="fade" style="background:#F5F3EE;color:#1F2A2E;font-family:'IBM Plex Sans JP', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:24px;font-weight:700;color:#0F766E;letter-spacing:2px">用語集 5/5</p>
+<h2 style="font-size:56px;font-weight:700;line-height:1.15">探索・候補の作り方・並列化</h2>
+<table style="font-size:24px;color:#1F2A2E">
+<tr style="background:#1F2A2E"><th style="width:24%;color:#F5F3EE;padding:10px 20px">用語</th><th style="width:76%;color:#F5F3EE">説明</th></tr>
+<tr style="background:#FBFAF7"><td>ミニマックス</td><td>自分の番では値が最大、相手の番では最小になる手を選ぶと仮定して先を読む方法</td></tr>
+<tr style="background:#F1EFE9"><td>αβ枝刈り</td><td>ミニマックスで、結果に影響しないと分かった枝を読まずに省く工夫。答えは変わらない</td></tr>
+<tr style="background:#FBFAF7"><td>探索の幅</td><td>深く読む手を、1手先読みの評価が高い上位 k 手に限ること。速くなるが、上位の外の良い手は読み落とす</td></tr>
+<tr style="background:#F1EFE9"><td>Lv変更</td><td>カードのコアを、そのLvにちょうど必要な数にする手。プレイなどの間に各カード1回まで</td></tr>
+<tr style="background:#FBFAF7"><td>一括再配置</td><td>コアの最終的な置き方を1手で選ぶ手。置き方の数が多すぎて終盤は全件を並べられない</td></tr>
+<tr style="background:#F1EFE9"><td>組み合わせ爆発</td><td>場所やコアが少し増えるだけで、組み合わせの数が急激に（掛け算で）増えること</td></tr>
+<tr style="background:#FBFAF7"><td>スレッド</td><td>1つのプログラムの中で同時に動く処理の流れ。CPU のコアごとに別の対局を進められる</td></tr>
+<tr style="background:#F1EFE9"><td>再現性</td><td>同じ設定で動かせば、何度・どの環境でも同じ結果になること</td></tr>
+<tr style="background:#FBFAF7"><td>有意</td><td>偶然では説明しにくいほど差が大きいこと。ここでは勝ち数と負け数の差が誤差の約2倍を超えること</td></tr>
+</table>
+
+</section></div>
+<div class="meta"><span class="no">28 / 28</span><details><summary>発表者メモ</summary><p>手の選び方・候補の作り方・並列化・現在の状態のスライドに出てくる用語。</p></details></div>
+</div>
+<script>
+  // 表は1つのセルに指定した padding を全セルに適用する (スライド形式の仕様)
+  document.querySelectorAll('.frame table').forEach(t => {
+    const c = [...t.querySelectorAll('th,td')].find(x => x.style.padding);
+    if (c) t.querySelectorAll('th,td').forEach(x => { x.style.padding = c.style.padding; });
+  });
+  function fit() {
+    document.querySelectorAll('.frame').forEach(f => {
+      const s = f.querySelector('section');
+      if (s) s.style.transform = 'scale(' + (f.clientWidth / 1920) + ')';
+    });
+  }
+  window.addEventListener('resize', fit); fit();
+  const list = [...document.querySelectorAll('.slide')];
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'PageDown' && e.key !== 'PageUp') return;
+    const y = window.scrollY + 1;
+    const cur = list.findIndex((el, i) => i === list.length - 1 || list[i + 1].offsetTop > y);
+    const next = (e.key === 'ArrowRight' || e.key === 'PageDown') ? Math.min(list.length - 1, cur + 1) : Math.max(0, cur - 1);
+    list[next].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    e.preventDefault();
+  });
+</script>
+</body>
+</html>

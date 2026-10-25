@@ -225,11 +225,13 @@ fun GameState.snapshot(): GameState = GameState(
     player2 = player2.snapshot(),
     attackingCardId = attackingCardId,
     blockingCardId = blockingCardId,
+    mustBlockInstanceId = mustBlockInstanceId,
     winner = winner,
     format = format,
     seed = seed,
     visitedPositions = visitedPositions,
-    nextCardSeq = nextCardSeq
+    nextCardSeq = nextCardSeq,
+    evaluatedCount = evaluatedCount
 )
 
 private fun PlayerState.snapshot(): PlayerState = PlayerState(
@@ -533,6 +535,7 @@ fun enumerateActions(state: GameState): List<GameAction> {
             if (a.repeatsPosition) a else a.copy(eval = evaluateActionWithKann(state, a, kann))
         }
     }
+    state.evaluatedCount += actions.size
     return actions
 }
 

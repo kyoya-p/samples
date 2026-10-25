@@ -129,7 +129,9 @@ data class WebGameStateDto(
     val winner: Int? = null,
     val messages: List<String> = emptyList(),
     val seed: Long? = null,
-    val attacking_card_id: String? = null
+    val attacking_card_id: String? = null,
+    val evaluated_count: Long = 0L,
+    val visited_count: Int = 0
 )
 
 fun coreEffectsOf(action: GameAction): List<CoreEffectDto> {
@@ -338,7 +340,9 @@ fun buildWebGameStateDto(
             listOf("【ターン ${state.turn}】 手番: プレイヤー${state.activePlayerId} (${state.step.displayName})")
         },
         seed = state.seed,
-        attacking_card_id = state.attackingCardId
+        attacking_card_id = state.attackingCardId,
+        evaluated_count = state.evaluatedCount,
+        visited_count = state.visitedPositions.size
     )
 }
 

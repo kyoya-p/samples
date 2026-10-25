@@ -1,27 +1,21 @@
 import bstools.model.*
 import bstools.kann.kad_srand
 import kotlinx.cinterop.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import platform.posix.*
 import kotlin.random.Random
 
 /**
- * KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワークを、進化戦略(ES)による
- * 自己対戦で強化学習する。
+ * KANN(cinterop連携したC言語のNNライブラリ)のGRU価値ネットワークを、
+ * 序盤〜終盤の全局面BPTT誤差修正 + 進化戦略(ES)による自己対戦で強化学習する。
  *
- * `KannValueNetwork.trainStep`(kann_unroll_arrayを使ったBPTT)は繰り返し呼び出すと
- * 実測で約17〜19回目に確実にクラッシュする既知の不具合があり(KANN側`kad_unroll_helper`の
- * 実装依存の問題と見られ、cinterop越しにこちらから修正できない)、実用に耐えない。
- * このファイルは**その不具合のあるパスを一切使わず**、既に安定動作を確認済みの
- * [KannValueNetwork.evaluate](連続フィード方式、unrollを使わない)のみを使う。
- *
- * 設計は `Tuner.kt` の `tuneRnnWeights`/`evaluateCandidateRnn`(自作GRU版のES)と同じ
- * (1+1)型山登り法。対局は評価値greedy(自分の重みで最良の手を選ぶ)の自己対戦で行い、
- * 勝率を報酬とする — 「ランダムプレイでラベル付けしてBPTTで回帰する」設計とは異なり、
- * 重み自体が対局の意思決定に使われるため、ES(勝率を直接最適化)と自然に噛み合う。
- *
- * KANNの`ann`(kann_t*)はインスタンスごとに1つの計算グラフを共有するため、複数スレッドから
- * 同時に`evaluate`/`setWeights`すると競合してクラッシュしうる(cinterop連携は
- * `@ThreadLocal`のような仕組みを持たない)。安定性を優先し、あえて単一スレッドで実装する。
+ * 並列化設計:
+ * `KannValueNetwork.cloneNet()` (`kann_clone`) により対局スロットごとに完全に独立した
+ * C側計算グラフ(`kann_t*`)および永続バッファを確保し、`Dispatchers.Default` 上の
+ * `async`/`awaitAll` で全対局をマルチスレッド並列実行する。
  */
 
 // 1手先読み評価(evaluateActionWithKann)とステップ終了の基準値(kannStepEndEval)は
@@ -84,19 +78,74 @@ private fun writeEsHeartbeat(winRate: Double? = null, adopted: Boolean? = null) 
 }
 
 /**
- * 自己対戦1局の結果。
+ * 対局中の1状態(序盤の選択〜終盤の決着まで)の記録。
+ * 意思決定前の状態、および行動適用直後の状態(行動したプレイヤー視点)の両方を記録し、
+ * 最終結果(勝敗)確定後に [KannValueNetwork.trainStep] (BPTT誤差逆伝播) で序盤を含む全局面を一括誤差修正する。
+ */
+data class KannStateRecord(
+    val tokens: List<DoubleArray>,
+    val globals: DoubleArray,
+    val playerId: Int,
+    val turn: Int,
+    val stepIndex: Int
+)
+
+/**
+ * 自己対戦1局の結果と、序盤から終盤までの全状態の記録。
  */
 data class KannPlayoutResult(
     val winner: Int?,
     val turn: Int,
-    val steps: Int
+    val steps: Int,
+    val trajectory: List<KannStateRecord> = emptyList(),
+    val evaluatedCount: Long = 0L,
+    val visitedHashes: Set<Long> = emptySet()
 )
+
+/**
+ * 1局の序盤から終盤までのすべての記録状態 [trajectory] を入力し、
+ * 最終結果 [winner] (勝=1.0, 負=0.0, 引き分け未決着=0.0) を教師ラベルとして
+ * [KannValueNetwork.trainStep] (BPTT + RMSprop) により序盤の局面評価値も含め誤差修正を行う。
+ *
+ * 時系列順のまま連続更新すると直近の手番プレイヤーの勝敗ラベル(1.0または0.0)へ出力が偏るため、
+ * [rng] で全状態をシャッフルし、勝者視点(正例)と敗者視点(負例)を均等に混ぜて誤差修正する。
+ *
+ * @return 平均コスト(誤差)
+ */
+fun trainTrajectoryWithOutcome(
+    net: KannValueNetwork,
+    trajectory: List<KannStateRecord>,
+    winner: Int?,
+    lr: Float,
+    rng: Random? = null,
+    targetPlayerId: Int? = null
+): Double {
+    if (trajectory.isEmpty() || lr <= 0f) return 0.0
+    val filtered = if (targetPlayerId != null) {
+        trajectory.filter { it.playerId == targetPlayerId }
+    } else {
+        trajectory
+    }
+    if (filtered.isEmpty()) return 0.0
+    val samples = if (rng != null) filtered.shuffled(rng) else filtered
+    var costSum = 0.0
+    for (rec in samples) {
+        // 最終結果(勝敗): 勝者=1.0 (tanh +1.0), 敗者または手数切れ引き分け=0.0 (tanh -1.0)
+        val label = when {
+            winner == null -> 0.0
+            winner == rec.playerId -> 1.0
+            else -> 0.0
+        }
+        costSum += net.trainStep(rec.tokens, rec.globals, label, lr)
+    }
+    return costSum / samples.size
+}
 
 /**
  * 対戦中の各手の選択肢・評価値・採択結果を記録するファイルロガー。
  */
 @OptIn(ExperimentalForeignApi::class)
-private class MatchLogger(private val filePath: String) {
+class MatchLogger(private val filePath: String) {
     private var file: CPointer<FILE>? = null
 
     fun open(): Boolean {
@@ -134,11 +183,12 @@ private fun fmtScore(v: Double): String {
 }
 
 /**
- * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)と決着ターン数・手数を返す。
- * 手数上限に達しても決着しない場合は winner = null (引き分け扱い)。
+ * 手番ごとにnetの重みを差し替えながら1局最後まで自己対戦させ、勝者(1 or 2)と決着ターン数・手数、
+ * および序盤から終盤までの全状態記録([KannStateRecord]のリスト)を返す。
+ * 手数上限に達しても決着しない場合は winner = null (引き分け＝両者敗北扱い)。
  * [logger]が指定されている場合、全手の選択肢・評価値・採択結果をログファイルに書き出す。
  */
-private fun playoutGameKann(
+fun playoutGameKann(
     netsByPlayer: Map<Int, KannValueNetwork>,
     weightsByPlayer: Map<Int, FloatArray> = emptyMap(),
     seed: Long,
@@ -147,25 +197,62 @@ private fun playoutGameKann(
     playerNames: Map<Int, String> = emptyMap(),
     deck1Name: String = "deck-kogyo.yaml",
     deck2Name: String = "deck-kogyo.yaml",
-    format: GameFormat = GameFormat.STANDARD
+    format: GameFormat = GameFormat.STANDARD,
+    recordTrajectory: Boolean = true,
+    exploreEpsilon: Double = 0.0,
+    explorePlayers: Set<Int> = emptySet(),
+    rng: Random? = null,
+    parallelSafe: Boolean = false
 ): KannPlayoutResult {
     val state = createInitialGameState(deck1Name = deck1Name, deck2Name = deck2Name, seed = seed, format = format)
+    val trajectory = if (recordTrajectory) ArrayList<KannStateRecord>(maxSteps * 2) else emptyList<KannStateRecord>()
+    var localEvaluated = 0L
+    val localVisited = if (parallelSafe) HashSet<Long>() else null
+
     repeat(maxSteps) { step ->
         if (state.winner != null) {
             if (logger != null) {
                 val winnerName = playerNames[state.winner] ?: "Player ${state.winner}"
                 logger.log("  【決着】 勝者: $winnerName (${state.turn}ターン / $step 手)")
             }
-            return KannPlayoutResult(state.winner, state.turn, step)
+            return KannPlayoutResult(
+                winner = state.winner,
+                turn = state.turn,
+                steps = step,
+                trajectory = trajectory,
+                evaluatedCount = localEvaluated,
+                visitedHashes = localVisited ?: emptySet()
+            )
         }
 
-        EsDiag.stepInGame = step.toLong()
-        EsDiag.totalSteps++
-        EsDiag.distinctPositionsSeen.add(positionHash(state))
-        if (step % 5 == 0) writeEsHeartbeat()
+        val h = positionHash(state)
+        if (parallelSafe) {
+            localVisited?.add(h)
+        } else {
+            EsDiag.stepInGame = step.toLong()
+            EsDiag.totalSteps++
+            EsDiag.distinctPositionsSeen.add(h)
+            if (step % 5 == 0) writeEsHeartbeat()
+        }
 
         val choosingId = state.choosingPlayerId
         val choosingName = playerNames[choosingId] ?: "Player $choosingId"
+        val currentTurn = state.turn
+
+        // ① 意思決定(選択)前の状態を記録 (序盤のTurn 1からすべて記録)
+        if (recordTrajectory && trajectory is MutableList) {
+            val pBefore = if (choosingId == 1) state.player1 else state.player2
+            val oppBefore = if (choosingId == 1) state.player2 else state.player1
+            trajectory.add(
+                KannStateRecord(
+                    tokens = buildTokenSequence(pBefore, oppBefore),
+                    globals = buildGlobalFeatures(state, pBefore, oppBefore),
+                    playerId = choosingId,
+                    turn = currentTurn,
+                    stepIndex = step
+                )
+            )
+        }
 
         if (logger != null) {
             logger.log("Turn ${state.turn} | 手数 $step | 手番: $choosingName | ${state.step.displayName}")
@@ -178,15 +265,12 @@ private fun playoutGameKann(
         weightsByPlayer[choosingId]?.let { net.setWeights(it) }
         val actions = enumerateActions(state)
         val messages = mutableListOf<String>()
-        // repeatsPosition(同一局面へ戻る手)はmarkRepetitions([model/src/Rules.kt])が
-        // eval=-1.0にして選ばれにくくしているだけで、候補から除外はしていない。
-        // KANNのtanh出力は極端に変異した個体だとfloat32で正確に-1.0へ飽和しうるため、
-        // 「他のどの選択肢よりも低い」という前提が崩れると、過去にRNN評価器で実際に発生した
-        // 「同一局面に戻る手を選び続けて300手ずっと停止する」無限ループ(Rules.ktのコメント参照)が
-        // KANNでも再発しうる。評価値の大小に依存せず、ここで明示的に除外して確実に回避する。
         val candidates = actions.filterNot { it.forbidden || it.repeatsPosition }
         val scored = candidates.map { it to evaluateActionWithKann(state, it, net) }
-        EsDiag.evaluatedPositions += candidates.size
+        localEvaluated += candidates.size
+        if (!parallelSafe) {
+            EsDiag.evaluatedPositions += candidates.size
+        }
         val best = scored.maxByOrNull { it.second }
 
         if (logger != null) {
@@ -197,12 +281,22 @@ private fun playoutGameKann(
             }
         }
 
+        val doExplore = exploreEpsilon > 0.0 && rng != null &&
+            (explorePlayers.isEmpty() || choosingId in explorePlayers) &&
+            rng.nextDouble() < exploreEpsilon
+
         if (state.step == Step.BLOCK_DECLARATION) {
-            if (best != null) {
+            val chosen = if (doExplore && candidates.isNotEmpty()) {
+                val pick = candidates.random(rng)
+                scored.find { it.first == pick } ?: best
+            } else {
+                best
+            }
+            if (chosen != null) {
                 if (logger != null) {
-                    logger.log("  => 選択: ${best.first.type} | ${best.first.detail} (eval: ${fmtScore(best.second)})")
+                    logger.log("  => 選択: ${chosen.first.type} | ${chosen.first.detail} (eval: ${fmtScore(chosen.second)})")
                 }
-                applyActionAndRecord(state, best.first, messages)
+                applyActionAndRecord(state, chosen.first, messages)
             } else {
                 if (logger != null) {
                     logger.log("  => 選択: ブロック可能な候補なし (スルー)")
@@ -210,11 +304,26 @@ private fun playoutGameKann(
             }
         } else {
             val endEval = kannStepEndEval(state, net)
-            EsDiag.evaluatedPositions++
+            localEvaluated++
+            if (!parallelSafe) {
+                EsDiag.evaluatedPositions++
+            }
             if (logger != null) {
                 logger.log("  ステップ終了評価: ${fmtScore(endEval)}")
             }
-            if (best != null && best.second > endEval) {
+            if (doExplore && candidates.isNotEmpty()) {
+                // 探索時: 評価値上位3件の合法手 + ステップ終了 の中からランダムに選択し、
+                // 無意味な自滅手(スピリットLv0消滅)を避けつつ多様な序盤・中盤の有力選択を経験させる
+                val topCandidates = scored.sortedByDescending { it.second }.take(3).map { it.first }
+                val pickIdx = rng.nextInt(topCandidates.size + 1)
+                if (pickIdx < topCandidates.size) {
+                    val chosenAct = topCandidates[pickIdx]
+                    applyActionAndRecord(state, chosenAct, messages)
+                } else {
+                    advanceStep(state, messages)
+                    state.visitedPositions.add(positionHash(state))
+                }
+            } else if (best != null && best.second > endEval) {
                 if (logger != null) {
                     logger.log("  => 選択: ${best.first.type} | ${best.first.detail} (eval: ${fmtScore(best.second)} > 終了評価 ${fmtScore(endEval)})")
                 }
@@ -229,6 +338,22 @@ private fun playoutGameKann(
             }
         }
 
+        // ② 意思決定(選択)適用直後の状態を、選択したプレイヤー(choosingId)視点で記録
+        // (evaluateActionWithKann / kannStepEndEval が参照する状態そのものを最終勝敗で誤差修正するため)
+        if (recordTrajectory && trajectory is MutableList) {
+            val pAfter = if (choosingId == 1) state.player1 else state.player2
+            val oppAfter = if (choosingId == 1) state.player2 else state.player1
+            trajectory.add(
+                KannStateRecord(
+                    tokens = buildTokenSequence(pAfter, oppAfter),
+                    globals = buildGlobalFeatures(state, pAfter, oppAfter),
+                    playerId = choosingId,
+                    turn = currentTurn,
+                    stepIndex = step
+                )
+            )
+        }
+
         if (logger != null) {
             if (messages.isNotEmpty()) {
                 for (msg in messages) {
@@ -241,12 +366,98 @@ private fun playoutGameKann(
     if (logger != null) {
         logger.log("  【決着】 引き分け (手数上限 $maxSteps 手に到達)")
     }
-    return KannPlayoutResult(state.winner, state.turn, maxSteps)
+    return KannPlayoutResult(
+        winner = state.winner,
+        turn = state.turn,
+        steps = maxSteps,
+        trajectory = trajectory,
+        evaluatedCount = localEvaluated,
+        visitedHashes = localVisited ?: emptySet()
+    )
 }
 
-/** candidate 側の勝率を baseline との自己対戦で測る。先攻/後攻を交互に入れ替えて先手有利を打ち消す */
-private fun evaluateCandidateKann(
+/**
+ * 自己対戦(探索率 [exploreEpsilon])を全CPUコアで並列実行して序盤〜終盤のすべての状態(選択前・選択後)を記録し、
+ * 最終結果(勝敗)に応じて [candidate] の重みを BPTT (誤差逆伝播) で直接誤差修正する学習フェーズ。
+ */
+private fun trainCandidateByBptt(
     net: KannValueNetwork,
+    workerNets: List<KannValueNetwork>,
+    candidate: FloatArray,
+    baseline: FloatArray,
+    trainGames: Int,
+    rng: Random,
+    maxSteps: Int,
+    bpttLr: Float,
+    exploreEpsilon: Double,
+    deck1Name: String = "deck-kogyo.yaml",
+    deck2Name: String = "deck-kogyo.yaml"
+) {
+    if (bpttLr <= 0f || trainGames <= 0) return
+    val gameSeeds = LongArray(trainGames) { rng.nextLong() }
+    val exploreSeeds = LongArray(trainGames) { rng.nextLong() }
+
+    val results = runBlocking(Dispatchers.Default) {
+        (0 until trainGames).map { i ->
+            async {
+                val workerNet = workerNets[i % workerNets.size]
+                val candidateIsP1 = i % 2 == 0
+                val nets = mapOf(1 to workerNet, 2 to workerNet)
+                val weights = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
+                val d1 = if (candidateIsP1) deck1Name else deck2Name
+                val d2 = if (candidateIsP1) deck2Name else deck1Name
+                playoutGameKann(
+                    netsByPlayer = nets,
+                    weightsByPlayer = weights,
+                    seed = gameSeeds[i],
+                    maxSteps = maxSteps,
+                    deck1Name = d1,
+                    deck2Name = d2,
+                    recordTrajectory = true,
+                    exploreEpsilon = exploreEpsilon,
+                    rng = Random(exploreSeeds[i]),
+                    parallelSafe = true
+                )
+            }
+        }.awaitAll()
+    }
+
+    val pooledSamples = ArrayList<Pair<KannStateRecord, Double>>(trainGames * maxSteps)
+    for (res in results) {
+        EsDiag.totalSteps += res.steps
+        EsDiag.evaluatedPositions += res.evaluatedCount
+        EsDiag.distinctPositionsSeen.addAll(res.visitedHashes)
+        for (rec in res.trajectory) {
+            val label = when {
+                res.winner == null -> 0.0
+                res.winner == rec.playerId -> 1.0
+                else -> 0.0
+            }
+            pooledSamples.add(rec to label)
+        }
+    }
+    writeEsHeartbeat()
+
+    if (pooledSamples.isEmpty()) return
+    val shuffled = pooledSamples.shuffled(rng)
+    net.setWeights(candidate)
+    var costAccum = 0.0
+    for ((rec, label) in shuffled) {
+        costAccum += net.trainStep(rec.tokens, rec.globals, label, bpttLr)
+    }
+    val updated = net.getWeights()
+    for (k in candidate.indices) candidate[k] = updated[k]
+    val avgC = costAccum / shuffled.size
+    println("  [BPTT誤差修正(並列)] 学習対局=$trainGames 局, 誤差修正状態数=${shuffled.size} (序盤〜終盤全状態), 平均誤差=${fmtMargin(avgC)}")
+}
+
+/**
+ * 誤差修正済みの [candidate] 側の勝率を [baseline] との公平自己対戦(探索なし・重み固定)で全CPUコア並列測定する。
+ * 先攻/後攻を交互に入れ替えて先手有利を打ち消す。
+ * 手数上限引き分け(winner == null)は 0.0 点(両者敗北)として扱い、パス戦略を淘汰する。
+ */
+private fun evaluateCandidateKann(
+    workerNets: List<KannValueNetwork>,
     candidate: FloatArray,
     baseline: FloatArray,
     games: Int,
@@ -255,27 +466,54 @@ private fun evaluateCandidateKann(
     deck1Name: String = "deck-kogyo.yaml",
     deck2Name: String = "deck-kogyo.yaml"
 ): Double {
+    val gameSeeds = LongArray(games) { rng.nextLong() }
+    val results = runBlocking(Dispatchers.Default) {
+        (0 until games).map { i ->
+            async {
+                val workerNet = workerNets[i % workerNets.size]
+                val candidateIsP1 = i % 2 == 0
+                val nets = mapOf(1 to workerNet, 2 to workerNet)
+                val weights = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
+                val d1 = if (candidateIsP1) deck1Name else deck2Name
+                val d2 = if (candidateIsP1) deck2Name else deck1Name
+                playoutGameKann(
+                    netsByPlayer = nets,
+                    weightsByPlayer = weights,
+                    seed = gameSeeds[i],
+                    maxSteps = maxSteps,
+                    deck1Name = d1,
+                    deck2Name = d2,
+                    recordTrajectory = false,
+                    exploreEpsilon = 0.0,
+                    parallelSafe = true
+                )
+            }
+        }.awaitAll()
+    }
+
     var score = 0.0
     var draws = 0
-    repeat(games) { i ->
-        EsDiag.gameIndex = i + 1
-        val seed = rng.nextLong()
+    for (i in 0 until games) {
+        val res = results[i]
         val candidateIsP1 = i % 2 == 0
-        val nets = mapOf(1 to net, 2 to net)
-        val weights = if (candidateIsP1) mapOf(1 to candidate, 2 to baseline) else mapOf(1 to baseline, 2 to candidate)
-        val d1 = if (candidateIsP1) deck1Name else deck2Name
-        val d2 = if (candidateIsP1) deck2Name else deck1Name
-        val res = playoutGameKann(nets, weights, seed, maxSteps, deck1Name = d1, deck2Name = d2)
+        EsDiag.gameIndex = i + 1
+        EsDiag.stepInGame = res.steps.toLong()
+        EsDiag.totalSteps += res.steps
+        EsDiag.evaluatedPositions += res.evaluatedCount
+        EsDiag.distinctPositionsSeen.addAll(res.visitedHashes)
         val winner = res.winner
         if (winner == null) draws++
         score += when {
-            winner == null -> 0.5
+            winner == null -> 0.0
             candidateIsP1 && winner == 1 -> 1.0
             !candidateIsP1 && winner == 2 -> 1.0
             else -> 0.0
         }
     }
-    if (draws > 0) println("  (診断: $games 局中 $draws 局が引き分け=決着せず)")
+    writeEsHeartbeat()
+    if (draws > 0) {
+        println("  (診断: 評価対局 $games 局中 $draws 局が引き分け=0.0点敗北扱い)")
+    }
     return score / games
 }
 
@@ -422,7 +660,9 @@ fun runKannEsTraining(args: Array<String>) {
     val maxGenerations = intArg("--max-generations", if (targetAdoptions > 0) 500 else generations)
     val effectiveGenerations = if (targetAdoptions > 0 && !args.contains("--generations")) maxGenerations else generations
     val games = intArg("--games", 12)
-    val sigma = doubleArg("--sigma", 0.05).toFloat()
+    val sigma = doubleArg("--sigma", 0.02).toFloat()
+    val bpttLr = doubleArg("--lr", 0.0005).toFloat()
+    val exploreEpsilon = doubleArg("--epsilon", 0.15)
     val seed = intArg("--seed", 1)
     val maxSteps = intArg("--max-steps", 300)
     val initSearch = intArg("--init-search", 30)
@@ -464,6 +704,11 @@ fun runKannEsTraining(args: Array<String>) {
         buildWeightFilename(srcName, dstName, nnType)
     }
 
+    // 並列実行前にメインスレッドでデッキ・カードマスタのキャッシュをウォームアップし、
+    // ワーカースレッドからの読み取り専用アクセスを保証する
+    CardLoader.loadDeck(deck1)
+    CardLoader.loadDeck(deck2)
+
     val rng = Random(seed)
     val net: KannValueNetwork
     var champion: FloatArray
@@ -477,9 +722,14 @@ fun runKannEsTraining(args: Array<String>) {
         champion = net.getWeights()
     }
 
-    println("=== KANN価値ネットワーク: 進化戦略(ES)による自己対戦学習開始 (目的関数: 勝率) ===")
+    val population = intArg("--population", 3).coerceAtLeast(1)
+    val trainGames = intArg("--train-games", maxOf(2, games / 2))
+    val poolSize = maxOf(population * games, population * trainGames, 12)
+    val workerNets = List(poolSize) { net.cloneNet() }
+
+    println("=== KANN価値ネットワーク: 全局面BPTT誤差修正 + 進化戦略(ES) マルチスレッド並列自己対戦学習開始 ===")
     val genDesc = if (targetAdoptions > 0) "目標改善数=$targetAdoptions 回 (上限 $effectiveGenerations 世代)" else "1サイクル世代数=$generations"
-    println("パラメータ数=${net.nVar}, サイクル数=$cycles, $genDesc, 1世代対戦数=$games, 摂動幅=$sigma, 手数上限=$maxSteps")
+    println("パラメータ数=${net.nVar}, サイクル数=$cycles, $genDesc, 1世代候補数(λ)=$population, 1候補対戦数=$games (最大${poolSize}並列), 摂動幅=$sigma, BPTT学習率=$bpttLr, 探索率=$exploreEpsilon, 手数上限=$maxSteps")
     println(if (resumePath != null) "初期チャンピオン: $resumePath から続きを学習" else "初期チャンピオン: 新規探索(未学習)")
     println()
 
@@ -500,13 +750,161 @@ fun runKannEsTraining(args: Array<String>) {
         for (gen in 1..effectiveGenerations) {
             EsDiag.generation = gen
             EsDiag.adoptedCount = adoptedCount
-            val candidate = mutateWeights(champion, rng, sigma)
-            val winRate = evaluateCandidateKann(net, candidate, champion, games, rng, maxSteps, deck1Name = deck1, deck2Name = deck2)
-            val adopted = winRate > 0.5
+
+            val candidates = List(population) { mutateWeights(champion, rng, sigma) }
+
+            // 1. 全候補(population × trainGames 局)の探索付き自己対戦を全CPUコアで一括並列実行し、
+            //    序盤〜終盤の全状態と勝敗を収集して各候補をBPTT誤差修正する
+            if (bpttLr > 0f && trainGames > 0) {
+                val totalTrainTasks = population * trainGames
+                val trainGameSeeds = LongArray(totalTrainTasks) { rng.nextLong() }
+                val trainExploreSeeds = LongArray(totalTrainTasks) { rng.nextLong() }
+                val trainResults = runBlocking(Dispatchers.Default) {
+                    (0 until totalTrainTasks).map { taskIdx ->
+                        async {
+                            val candIdx = taskIdx / trainGames
+                            val gameIdx = taskIdx % trainGames
+                            val workerNet = workerNets[taskIdx % workerNets.size]
+                            val cand = candidates[candIdx]
+                            val candidateIsP1 = gameIdx % 2 == 0
+                            val nets = mapOf(1 to workerNet, 2 to workerNet)
+                            val weights = if (candidateIsP1) mapOf(1 to cand, 2 to champion) else mapOf(1 to champion, 2 to cand)
+                            val d1 = if (candidateIsP1) deck1 else deck2
+                            val d2 = if (candidateIsP1) deck2 else deck1
+                            playoutGameKann(
+                                netsByPlayer = nets,
+                                weightsByPlayer = weights,
+                                seed = trainGameSeeds[taskIdx],
+                                maxSteps = maxSteps,
+                                deck1Name = d1,
+                                deck2Name = d2,
+                                recordTrajectory = true,
+                                exploreEpsilon = exploreEpsilon,
+                                rng = Random(trainExploreSeeds[taskIdx]),
+                                parallelSafe = true
+                            )
+                        }
+                    }.awaitAll()
+                }
+
+                var totalTrainedStates = 0
+                var costAccumAll = 0.0
+                for (candIdx in 0 until population) {
+                    val cand = candidates[candIdx]
+                    val pooled = ArrayList<Pair<KannStateRecord, Double>>(trainGames * maxSteps)
+                    for (gIdx in 0 until trainGames) {
+                        val res = trainResults[candIdx * trainGames + gIdx]
+                        EsDiag.totalSteps += res.steps
+                        EsDiag.evaluatedPositions += res.evaluatedCount
+                        EsDiag.distinctPositionsSeen.addAll(res.visitedHashes)
+                        for (rec in res.trajectory) {
+                            val label = when {
+                                res.winner == null -> 0.0
+                                res.winner == rec.playerId -> 1.0
+                                else -> 0.0
+                            }
+                            pooled.add(rec to label)
+                        }
+                    }
+                    if (pooled.isNotEmpty()) {
+                        val shuffled = pooled.shuffled(rng)
+                        net.resetRmsMemory()
+                        net.setWeights(cand)
+                        for ((rec, label) in shuffled) {
+                            costAccumAll += net.trainStep(rec.tokens, rec.globals, label, bpttLr)
+                        }
+                        val updated = net.getWeights()
+                        for (k in cand.indices) cand[k] = updated[k]
+                        totalTrainedStates += shuffled.size
+                    }
+                }
+                writeEsHeartbeat()
+                val avgC = if (totalTrainedStates > 0) costAccumAll / totalTrainedStates else 0.0
+                println("  [BPTT誤差修正(並列)] 候補数=$population, 学習対局=${population * trainGames} 局, 誤差修正状態数=$totalTrainedStates (序盤〜終盤全状態), 平均誤差=${fmtMargin(avgC)}")
+            }
+
+            // 2. 誤差修正済みの全候補(population × games 局)の評価自己対戦を全CPUコアで一括並列実行する
+            val totalEvalTasks = population * games
+            val evalSeeds = LongArray(totalEvalTasks) { rng.nextLong() }
+            val evalResults = runBlocking(Dispatchers.Default) {
+                (0 until totalEvalTasks).map { taskIdx ->
+                    async {
+                        val candIdx = taskIdx / games
+                        val gameIdx = taskIdx % games
+                        val workerNet = workerNets[taskIdx % workerNets.size]
+                        val cand = candidates[candIdx]
+                        val candidateIsP1 = gameIdx % 2 == 0
+                        val nets = mapOf(1 to workerNet, 2 to workerNet)
+                        val weights = if (candidateIsP1) mapOf(1 to cand, 2 to champion) else mapOf(1 to champion, 2 to cand)
+                        val d1 = if (candidateIsP1) deck1 else deck2
+                        val d2 = if (candidateIsP1) deck2 else deck1
+                        playoutGameKann(
+                            netsByPlayer = nets,
+                            weightsByPlayer = weights,
+                            seed = evalSeeds[taskIdx],
+                            maxSteps = maxSteps,
+                            deck1Name = d1,
+                            deck2Name = d2,
+                            recordTrajectory = false,
+                            exploreEpsilon = 0.0,
+                            parallelSafe = true
+                        )
+                    }
+                }.awaitAll()
+            }
+
+            var bestCandIdx = 0
+            var bestWinRate = -1.0
+            val winRates = DoubleArray(population)
+            for (candIdx in 0 until population) {
+                var score = 0.0
+                for (gIdx in 0 until games) {
+                    val res = evalResults[candIdx * games + gIdx]
+                    val candidateIsP1 = gIdx % 2 == 0
+                    EsDiag.gameIndex = gIdx + 1
+                    EsDiag.stepInGame = res.steps.toLong()
+                    EsDiag.totalSteps += res.steps
+                    EsDiag.evaluatedPositions += res.evaluatedCount
+                    EsDiag.distinctPositionsSeen.addAll(res.visitedHashes)
+                    val winner = res.winner
+                    score += when {
+                        winner == null -> 0.0
+                        candidateIsP1 && winner == 1 -> 1.0
+                        !candidateIsP1 && winner == 2 -> 1.0
+                        else -> 0.0
+                    }
+                }
+                val wr = score / games
+                winRates[candIdx] = wr
+                if (wr > bestWinRate) {
+                    bestWinRate = wr
+                    bestCandIdx = candIdx
+                }
+            }
+
+            // 1次評価で勝ち越した候補は、独立シードの2次検証対戦(12局並列)でも勝ち越した場合のみ「真の最強ウェイト」として採用する(偶然の上振れによる劣化防止)
+            var verifyWinRate = 0.0
+            val adopted = if (bestWinRate > 0.5) {
+                verifyWinRate = evaluateCandidateKann(
+                    workerNets = workerNets,
+                    candidate = candidates[bestCandIdx],
+                    baseline = champion,
+                    games = 12,
+                    rng = rng,
+                    maxSteps = maxSteps,
+                    deck1Name = deck1,
+                    deck2Name = deck2
+                )
+                verifyWinRate > 0.5
+            } else {
+                false
+            }
             val prefix = if (cycles > 1) "[Cycle $cycle/$cycles] " else ""
-            println("${prefix}世代$gen: 候補勝率=${pct(winRate)} ${if (adopted) "→ 採用" else "→ 棄却"}")
+            val allRatesStr = winRates.joinToString(", ") { pct(it) }
+            val verifyStr = if (bestWinRate > 0.5) " (2次検証勝率=${pct(verifyWinRate)})" else ""
+            println("${prefix}世代$gen: 候補勝率=[$allRatesStr] 最大=${pct(bestWinRate)}$verifyStr ${if (adopted) "→ 採用" else "→ 棄却"}")
             if (adopted) {
-                champion = candidate
+                champion = candidates[bestCandIdx]
                 adoptedCount++
                 net.setWeights(champion)
                 net.save(outPath)
@@ -516,7 +914,7 @@ fun runKannEsTraining(args: Array<String>) {
                 }
             }
             EsDiag.adoptedCount = adoptedCount
-            writeEsHeartbeat(winRate = winRate, adopted = adopted)
+            writeEsHeartbeat(winRate = bestWinRate, adopted = adopted)
         }
 
         println()
@@ -541,10 +939,6 @@ fun runKannEsTraining(args: Array<String>) {
             }
             net.save(snapshotPath)
             println("=== スナップショット保存: $snapshotPath ===")
-
-            println("--- サイクル $cycle 検証: サイクル開始時重み vs 最新重み (10局公平対戦) ---")
-            val evalWinRate = evaluateCandidateKann(net, champion, cycleStartChampion, 10, rng, maxSteps, deck1Name = deck1, deck2Name = deck2)
-            println("  -> 最新重みの対開始時勝率: ${pct(evalWinRate)}")
             println()
         }
 
@@ -575,6 +969,7 @@ fun runKannEsTraining(args: Array<String>) {
     } else {
         println("=== 学習済みモデルを保存: $outPath ===")
     }
+    for (wn in workerNets) wn.delete()
     net.delete()
 }
 

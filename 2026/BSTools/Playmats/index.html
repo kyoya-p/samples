@@ -1120,6 +1120,8 @@
         <span>ターン: <b id="turn">-</b></span>
         <span>手番: <b id="active">-</b></span>
         <span class="phase" id="phase">ゲーム未開始</span>
+        <span>到達局面数: <b id="visited-count">-</b></span>
+        <span>計算局面数: <b id="evaluated-count">-</b></span>
         <div class="status-actions">
           <button id="btn-auto-next" class="btn-auto" title="次の選択を自動で行う" disabled>⚡ 次の選択を自動で行う</button>
           <button id="btn-auto-step" class="btn-auto" title="ステップ終了まで自動で行う" disabled>⏭ ステップ終了まで自動で行う</button>
@@ -2581,6 +2583,10 @@ function render(data) {
   $("turn").textContent = data.turn;
   $("active").textContent = `プレイヤー${data.active_player}`;
   $("phase").textContent = data.phase;
+  const evalCountEl = $("evaluated-count");
+  if (evalCountEl) evalCountEl.textContent = (data.evaluated_count || 0).toLocaleString();
+  const visitedCountEl = $("visited-count");
+  if (visitedCountEl) visitedCountEl.textContent = (data.visited_count || 0).toLocaleString();
 
   // プレイヤー1(上段) と プレイヤー2(下段) のデータを固定配置
   const p1 = (data.player.player_id === 1) ? data.player : data.opponent;

@@ -1,0 +1,3990 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSToolsCla Playmat</title>
+<style>
+  :root {
+    --bg: #101418;
+    --panel: #1a2027;
+    --panel2: #222a33;
+    --border: #333d48;
+    --text: #e8edf2;
+    --muted: #9aa7b4;
+    --accent: #4fc3f7;
+    --danger: #ef5350;
+    --ok: #66bb6a;
+    --warn: #ffb74d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px;
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+    font-size: 14px;
+  }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  .hidden { display: none !important; }
+  .layout { display: grid; grid-template-columns: 1fr 440px; gap: 16px; max-width: 1360px; margin: 0 auto; }
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  /* 領域ラベル（フィールド／手札）。下線を引くと直下のカードと切り離されて見えるので線は引かず、
+     ラベルを中身に寄せてひとかたまりに見せる */
+  .zone-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 12px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .zone-label::before {
+    content: "";
+    width: 3px;
+    height: 11px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .toolbar input, .toolbar select {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 6px 8px; font-size: 13px;
+  }
+  .toolbar input { width: 170px; }
+  .toolbar select { cursor: pointer; }
+  .auto-toggle {
+    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+    font-size: 13px; color: var(--muted); user-select: none;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px;
+  }
+  .auto-toggle input { cursor: pointer; }
+  .auto-toggle:has(input:checked) { color: #00e676; border-color: #00e676; }
+  #training-banner {
+    background: linear-gradient(90deg, #1b3a2e, #142833);
+    border: 1px solid #00e676; border-radius: 8px;
+    padding: 8px 14px; margin-bottom: 12px;
+    font-size: 13px; color: #baffd9;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #training-banner .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #00e676;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  #training-banner .bar {
+    flex: 1; max-width: 240px; height: 6px; background: #0f2018;
+    border-radius: 3px; overflow: hidden;
+  }
+  #training-banner .bar-fill { height: 100%; background: #00e676; transition: width 0.3s ease; }
+  #settings-dialog {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0; width: min(460px, 92vw);
+  }
+  #settings-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+  #settings-dialog h2 {
+    font-size: 15px; margin: 0; padding: 14px 16px; color: var(--accent);
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .settings-row { display: flex; flex-direction: column; gap: 4px; }
+  .settings-row label { font-size: 12px; color: var(--muted); }
+  .settings-row input, .settings-row select {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 7px 9px; font-size: 13px; width: 100%;
+  }
+  .settings-row.pair { flex-direction: row; gap: 10px; }
+  .settings-row.pair > div { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .settings-section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted);
+    margin-top: 4px; border-top: 1px solid var(--border); padding-top: 10px;
+  }
+  .settings-footer {
+    display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 14px; cursor: pointer; font-size: 13px;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: #114d66; border-color: var(--accent); }
+  button.best-btn { background: #133824; border-color: #00e676; color: #00e676; font-weight: 600; }
+  button.best-btn:hover:not(:disabled) { background: #1b4d32; border-color: #66ffa6; color: #ffffff; box-shadow: 0 0 8px rgba(0, 230, 118, 0.4); }
+  button#btn-n { display: inline-flex; align-items: center; gap: 8px; font-weight: bold; padding: 6px 14px; }
+  button#btn-n.is-best { background: #133824; border-color: #00e676; color: #ffffff; box-shadow: 0 0 10px rgba(0, 230, 118, 0.35); }
+  .btn-history {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-history:not(:disabled) {
+    background: #0f2744;
+    border-color: #2563eb;
+    color: #60a5fa;
+  }
+  .btn-history:hover:not(:disabled) {
+    background: #1d4ed8;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.5);
+  }
+  .btn-history:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .btn-auto {
+    background: #1e293b;
+    border: 1px solid #0284c7;
+    color: #38bdf8;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+  }
+  .btn-auto:hover:not(:disabled) {
+    background: #0369a1;
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+  }
+  .btn-auto:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: #334155;
+    color: #64748b;
+  }
+  .btn-auto.running {
+    background: #7f1d1d !important;
+    border-color: #ef4444 !important;
+    color: #fca5a5 !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+  }
+  .eval-info-badge {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38bdf8;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+  .eval-info-badge:hover {
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38bdf8;
+  }
+  .statusline { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .statusline .phase { color: var(--warn); font-weight: bold; }
+  .status-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+  .side { margin-bottom: 4px; transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease; }
+  .side.active-turn {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.25) !important;
+    background: linear-gradient(180deg, rgba(0, 230, 118, 0.04), var(--panel)) !important;
+  }
+  /* 緑にするのはパネル見出し(自分/相手)だけ。フィールド・手札の小見出しまで染めない */
+  .side.active-turn > h2:first-child,
+  .side.active-turn > .side-head h2 {
+    color: #00e676 !important;
+  }
+  /* パネル見出しの行。区切り線は行全体に引き、見出しの右にステップ終了ボタンを置く */
+  .side-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+  }
+  .side-head h2 {
+    flex: 1;
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .side-head button { flex-shrink: 0; }
+  .life { display: inline-flex; align-items: center; gap: 4px; }
+  .core-icons, .life-cores { letter-spacing: -4px; margin-right: 5px; font-size: 14px; display: inline-block; }
+  .cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 34px; align-items: flex-start; }
+  .card {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 10px; line-height: 1.5; cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  .card .nm { font-weight: bold; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .card-seq {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    color: #90caf9;
+    font-family: monospace;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 0 4px;
+    border-radius: 3px;
+    margin-right: 5px;
+    vertical-align: 1px;
+    border: 1px solid rgba(144, 202, 249, 0.25);
+  }
+  .card.exhausted { opacity: 0.55; border-style: dashed; }
+  .card.exhausted .nm::after { content: " [疲労]"; color: var(--warn); font-weight: normal; font-size: 12px; }
+  .empty { color: #556; padding: 6px 0; }
+
+  /* 実際のカード風 コスト＆軽減シンボルバー */
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cost-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 6px 2px 2px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+  }
+  .cost-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ffe57f, #ffd700 50%, #b8860b 85%, #5c4300);
+    color: #1a1200;
+    font-weight: 900;
+    font-size: 12.5px;
+    font-family: 'Arial Black', Impact, sans-serif;
+    line-height: 1;
+    border: 1.5px solid #fff9db;
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+  }
+  .reduction-gems {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    font-size: 11px;
+    letter-spacing: -2px;
+  }
+
+  /* プレイ可能な手札カードおよび展開選択肢スタイル */
+  .hand-card-wrapper, .field-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-width: 170px;
+    max-width: 280px;
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+  .card.playable, .card.core-targetable {
+    border-color: #0288d1;
+    background: linear-gradient(180deg, #182230, #131a24);
+    cursor: pointer;
+  }
+  .card.playable:hover, .card.core-targetable:hover {
+    border-color: #29b6f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(2, 136, 209, 0.35);
+  }
+  .card.playable.is-best, .card.core-targetable.is-best {
+    border-color: #00e676;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.25);
+  }
+  .card.playable.is-best:hover, .card.core-targetable.is-best:hover {
+    border-color: #69f0ae;
+    box-shadow: 0 0 14px rgba(0, 230, 118, 0.45);
+  }
+  .card.playable.open, .card.core-targetable.open {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom-color: transparent;
+  }
+  .card.blockable {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.45) !important;
+    cursor: pointer !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card.blockable:hover {
+    border-color: #69f0ae !important;
+    box-shadow: 0 0 16px rgba(0, 230, 118, 0.75) !important;
+    transform: translateY(-2px);
+  }
+  .blockable-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(0, 230, 118, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #00e676;
+    font-weight: 600;
+  }
+  .card.attacking {
+    border-color: #ff1744 !important;
+    box-shadow: 0 0 14px rgba(255, 23, 68, 0.6) !important;
+    animation: attack-pulse 1.8s infinite ease-in-out;
+  }
+  @keyframes attack-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(255, 23, 68, 0.45);
+      border-color: #ff1744;
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(255, 23, 68, 0.85);
+      border-color: #ff5252;
+    }
+  }
+  .attacking-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(255, 23, 68, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #ff5252;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .card.attackable {
+    border-color: #ff9100 !important;
+    box-shadow: 0 0 12px rgba(255, 145, 0, 0.55) !important;
+    cursor: pointer !important;
+    animation: attackable-pulse 2s infinite ease-in-out;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card.attackable:hover {
+    border-color: #ffab40 !important;
+    box-shadow: 0 0 18px rgba(255, 145, 0, 0.85) !important;
+    transform: translateY(-2px);
+  }
+  .card.attackable.is-best {
+    border-color: #00e676 !important;
+    box-shadow: 0 0 14px rgba(0, 230, 118, 0.6) !important;
+  }
+  .card.attackable.is-best:hover {
+    border-color: #69f0ae !important;
+    box-shadow: 0 0 20px rgba(0, 230, 118, 0.9) !important;
+  }
+  @keyframes attackable-pulse {
+    0%, 100% {
+      box-shadow: 0 0 8px rgba(255, 145, 0, 0.4);
+      border-color: #ff9100;
+    }
+    50% {
+      box-shadow: 0 0 16px rgba(255, 145, 0, 0.8);
+      border-color: #ffd180;
+    }
+  }
+  .attackable-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(255, 145, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #ff9100;
+    font-weight: 600;
+  }
+  .card.attackable.is-best .attackable-badge {
+    border-top-color: rgba(0, 230, 118, 0.4);
+    color: #00e676;
+  }
+  .playable-badge {
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .playable-badge .top-tag {
+    color: #00e676;
+    font-weight: bold;
+    font-size: 10.5px;
+    background: rgba(0, 230, 118, 0.15);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .core-move-badge {
+    margin-top: 5px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(2, 136, 209, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 11px;
+    color: #29b6f6;
+    font-weight: 600;
+  }
+  /* コア移動の見出し行は、そのカードを選択して (メニューを開いて) いるときだけ出す。
+     メインステップでは自分のスピリット全員にコア移動があるため、常時出すとメニューが開いているように見える */
+  .card:not(.open) > .core-move-badge { display: none; }
+  .hand-options, .field-options {
+    background: #0f151d;
+    border: 1px solid #0288d1;
+    border-top: 1px dashed rgba(2, 136, 209, 0.4);
+    border-radius: 0 0 6px 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-top: -1px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  }
+  .hand-options.is-best, .field-options.is-best {
+    border-color: #00e676;
+    border-top: 1px dashed rgba(0, 230, 118, 0.4);
+  }
+  .hand-opt-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent;
+    text-align: left;
+    font-size: 11.5px;
+    color: #cfd8dc;
+    width: 100%;
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .hand-opt-btn .detail-text::before {
+    content: "└ ";
+    color: var(--muted);
+    margin-right: 3px;
+    font-family: monospace;
+  }
+  .hand-opt-btn:last-child {
+    border-bottom: none;
+  }
+  .hand-opt-btn:hover:not(:disabled) {
+    background: #1e293b;
+    color: #fff;
+  }
+  .hand-opt-btn.best-option {
+    background: rgba(0, 230, 118, 0.12);
+    border-left: 3px solid #00e676;
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .hand-opt-btn.best-option .detail-text::before {
+    color: #00e676;
+    font-weight: bold;
+  }
+  
+  /* カード画像プレビュー（ウィンドウの幅・高さのうち大きい方の40%を上限として、画像に直接かける。
+     max(100vw, 100vh) でウィンドウの長辺を求め、その40%を正方形の上限ボックスとして
+     幅・高さ両方に同じ値を適用する（縦横比は object-fit: contain で維持される）。
+     枠(パディング・カード名ラベル)は画像サイズに合わせて自動調整され、上限には含めない） */
+  .card-preview {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #141a22;
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    transition: opacity 0.15s ease;
+  }
+  .card-preview img {
+    max-width: calc(max(100vw, 100vh) * 0.4);
+    max-height: calc(max(100vw, 100vh) * 0.4);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    background: #0f141c;
+  }
+  .card-preview .name {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* アクション一覧・階層リスト */
+  .group {
+    border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; overflow: hidden;
+    background: var(--panel2);
+  }
+  .group > .head {
+    width: 100%; text-align: left; border: none; border-radius: 0;
+    padding: 9px 12px; background: var(--panel2); display: flex; gap: 8px; align-items: center;
+  }
+  .group > .head .cat { flex: 1; font-weight: 500; font-size: 13px; }
+  .group.forbidden > .head { opacity: 0.45; }
+  /* 選択は可能だが、選んでも既訪問の局面に戻るだけの手。disabledの見た目にはしない(選べるため)、
+     ただし「進まない手」だと分かるよう波線の下線と控えめな警告色で示す */
+  .repeats-position {
+    color: #ffb74d !important;
+    text-decoration: underline wavy #ffb74d;
+    text-underline-offset: 3px;
+  }
+  .group.single-best > .head,
+  .group.closed-best > .head {
+    background: linear-gradient(90deg, rgba(0, 230, 118, 0.18), rgba(26, 32, 39, 0.9));
+    border-left: 4px solid #00e676;
+  }
+  .group.single-best > .head .cat,
+  .group.closed-best > .head .cat {
+    color: #ffffff;
+    font-weight: 600;
+  }
+  
+  .eval-badge {
+    font-size: 12px; font-weight: bold; padding: 2px 7px; border-radius: 4px; white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .eval-badge.is-best {
+    background: #00e676 !important;
+    color: #002b11 !important;
+    border: 1px solid #00e676 !important;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.6) !important;
+    font-weight: 800 !important;
+  }
+  .eval-high { background: rgba(102, 187, 106, 0.25); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); }
+  .eval-mid { background: rgba(79, 195, 247, 0.2); color: #4fc3f7; border: 1px solid rgba(79, 195, 247, 0.4); }
+  .eval-low { background: rgba(255, 183, 77, 0.2); color: #ffb74d; border: 1px solid rgba(255, 183, 77, 0.4); }
+  .eval-neg { background: rgba(239, 83, 80, 0.2); color: #ef5350; border: 1px solid rgba(239, 83, 80, 0.4); }
+  
+  .cnt {
+    color: var(--accent); font-size: 11px; white-space: nowrap; font-weight: 500;
+    padding: 2px 6px; background: rgba(79, 195, 247, 0.12); border-radius: 4px;
+  }
+  /* ▶ / ▼ = さらに選択肢が開く。⏎ = これ以上分岐せず、クリックで即実行される最終選択肢 */
+  .cnt.exec {
+    color: #00e676;
+    background: rgba(0, 230, 118, 0.14);
+  }
+  .exec-icon {
+    color: #00e676;
+    font-size: 10px;
+    margin-right: 4px;
+    font-weight: bold;
+  }
+  .opts {
+    border-top: 1px solid var(--border);
+    background: #141a22;
+  }
+  .opts button {
+    display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; border: none; border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05); background: transparent; padding: 8px 12px 8px 20px;
+    font-size: 12.5px; color: #cfd8dc; transition: background 0.15s ease;
+  }
+  .opts button .detail-text::before {
+    content: "└ ";
+    color: var(--muted);
+    margin-right: 4px;
+    font-family: monospace;
+  }
+  .opts button:last-child { border-bottom: none; }
+  .opts button:hover:not(:disabled) { background: #1f2732; color: #fff; }
+  
+  /* 最適選択肢ボタンの強調スタイル */
+  .opts button.best-option {
+    background: rgba(0, 230, 118, 0.12);
+    border-left: 4px solid #00e676;
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .opts button.best-option .detail-text::before {
+    color: #00e676;
+    font-weight: bold;
+  }
+  #messages { max-height: 160px; overflow-y: auto; font-size: 12px; color: var(--muted); }
+  #messages div { padding: 2px 0; border-bottom: 1px dotted #2a333d; }
+  #messages div.err { color: var(--danger); }
+  .winner-banner {
+    background: #1b3a1e; border: 1px solid var(--ok); color: var(--ok);
+    border-radius: 8px; padding: 14px; font-size: 16px; font-weight: bold;
+    text-align: center; margin-bottom: 12px;
+  }
+  .hidden { display: none; }
+  .sysbtns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* コア提供元インタラクティブハイライトスタイル */
+  .reserve-box {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+  .core-source-interactive {
+    outline: 2px dashed #00e676 !important;
+    outline-offset: 2px;
+    cursor: pointer !important;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.45);
+    animation: pulseHighlight 1.5s infinite alternate;
+  }
+  @keyframes pulseHighlight {
+    0% { outline-color: #00e676; }
+    100% { outline-color: #69f0ae; }
+  }
+  .core-source-interactive:hover {
+    background: rgba(0, 230, 118, 0.18) !important;
+  }
+  .core-icon-group {
+    display: inline-block;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 0 1px;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .core-icon-group:hover {
+    transform: scale(1.25);
+    filter: drop-shadow(0 0 5px #00e676);
+  }
+  .soul-core-btn {
+    display: inline-block;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease;
+  }
+  .soul-core-btn:hover {
+    transform: scale(1.35);
+    filter: drop-shadow(0 0 6px #ff9800);
+  }
+  /* 選択肢ホバー時: そのプレイで動くコアの移動元(橙) と 移動先(緑) をマークする */
+  .core-fx-from, .core-fx-to {
+    position: relative;
+    border-radius: 4px;
+    transition: box-shadow 0.12s ease, outline-color 0.12s ease;
+  }
+  .core-fx-from {
+    outline: 2px solid #ff9800 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.45);
+    background: rgba(255, 152, 0, 0.10);
+  }
+  .core-fx-to {
+    outline: 2px solid #00e676 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.45);
+    background: rgba(0, 230, 118, 0.10);
+  }
+  /* 交換のように出入り両方がある場所は、どちらの色でもない破線で示す */
+  .core-fx-from.core-fx-to {
+    outline: 2px dashed #ffd54f !important;
+    box-shadow: 0 0 10px rgba(255, 213, 79, 0.5);
+    background: rgba(255, 213, 79, 0.10);
+  }
+  .core-fx-badges {
+    position: absolute;
+    top: -9px;
+    right: -8px;
+    display: inline-flex;
+    gap: 3px;
+    z-index: 20;
+    pointer-events: none;
+  }
+  .core-fx-badge {
+    font-size: 10.5px;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 10px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  }
+  .core-fx-badge.from { background: #ff9800; color: #2b1500; }
+  .core-fx-badge.to { background: #00e676; color: #05140b; }
+
+  .core-source-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #00e676;
+    color: #05140b;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    z-index: 10;
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .core-source-badge.has-soul {
+    background: linear-gradient(135deg, #00e676, #ff9800);
+    color: #000;
+  }
+  .core-alloc-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #15222e;
+    border: 1px solid #00e676;
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .core-alloc-bar .info {
+    color: #00e676;
+    font-weight: bold;
+    font-size: 11px;
+    word-break: break-all;
+  }
+  .core-alloc-bar .actions {
+    display: flex;
+    gap: 6px;
+  }
+  .core-alloc-bar button.btn-confirm {
+    flex: 1;
+    background: #00e676;
+    color: #05140b;
+    font-weight: bold;
+    border: none;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+  }
+  .core-alloc-bar button.btn-confirm:disabled {
+    background: #2a3b32;
+    color: #666;
+    cursor: not-allowed;
+  }
+  .core-alloc-bar button.btn-reset {
+    background: #2a3440;
+    color: #aaa;
+    border: 1px solid #445566;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .hand-opt-btn.matched-option,
+  .source-opt-btn.matched-option {
+    background: rgba(0, 230, 118, 0.25) !important;
+    border: 2px solid #00e676 !important;
+    color: #ffffff !important;
+    font-weight: bold;
+    box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+  }
+
+  /* 階層表示: 1. コスト・配置コア サブグループ */
+  .cost-subgroup {
+    margin-bottom: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(18, 24, 32, 0.7);
+  }
+  .cost-subgroup.is-best {
+    border-color: rgba(0, 230, 118, 0.35);
+  }
+  .rearrange-list { display: flex; flex-direction: column; }
+  .rearrange-more { margin: 4px 8px; padding: 3px; font-size: 11px; background: #192330; border: 1px dashed rgba(2, 136, 209, 0.5); color: #81d4fa; border-radius: 4px; cursor: pointer; }
+  /* 「全選択肢」タブ */
+  .all-options { max-height: 480px; overflow-y: auto; font-size: 11.5px; }
+  .ao-summary { padding: 4px 2px 6px; color: #cbd5e1; }
+  .ao-section { margin-top: 8px; padding: 3px 4px; color: #81d4fa; font-weight: 600; border-bottom: 1px solid rgba(2, 136, 209, 0.35); }
+  .ao-sub { margin-top: 4px; padding: 2px 4px; color: #94a3b8; }
+  .ao-row {
+    width: 100%; display: flex; align-items: center; gap: 6px; text-align: left;
+    padding: 2px 4px 2px 12px; background: transparent; border: none; border-radius: 3px; color: inherit; cursor: pointer;
+  }
+  .ao-row:hover:not([disabled]) { background: #192330; }
+  .ao-row[disabled] { opacity: 0.45; cursor: default; }
+  .ao-idx { color: #64748b; min-width: 34px; font-family: monospace; }
+  .ao-text { flex: 1; }
+  .ao-mark { color: #ffb74d; font-size: 10px; margin-left: 4px; }
+  .core-move-section {
+    padding: 4px 8px 2px;
+    font-size: 11px;
+    color: #81d4fa;
+    background: #0b1118;
+    border-top: 1px solid rgba(2, 136, 209, 0.25);
+  }
+  .cost-subgroup-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: #192330;
+    border: none;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+  }
+  .cost-subgroup-head:hover:not(:disabled) {
+    background: #223042;
+  }
+  .cost-subgroup-head:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .cost-subgroup-head .cost-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cost-subgroup-head .arrow-icon {
+    font-size: 9px;
+    color: #00e676;
+    margin-right: 2px;
+  }
+  .cost-subgroup-opts {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 4px 6px;
+    background: rgba(11, 16, 23, 0.85);
+  }
+  .source-opt-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: #151e2a;
+    border: 1px solid #273546;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: #cbd5e1;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+  }
+  .source-opt-btn:hover:not(:disabled) {
+    background: #1e2c3c;
+    border-color: #00e676;
+    color: #fff;
+  }
+  .source-opt-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .source-opt-btn.best-option {
+    border-left: 3px solid #00e676;
+    background: rgba(0, 230, 118, 0.08);
+  }
+  .source-opt-btn .detail-text {
+    flex: 1;
+    overflow: visible;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 1.35;
+  }
+  .winner-banner {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.3));
+    border: 2px solid #2ecc71;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .winner-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #2ecc71;
+    margin-bottom: 10px;
+  }
+  .winner-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+  /* ログタブ & 選択ログ(JSON)スタイル */
+  .log-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+  .log-tab-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .log-tab-btn.active {
+    background: #1e293b;
+    border-color: #3b82f6;
+    color: #fff;
+    font-weight: bold;
+  }
+  .json-path-box {
+    background: #0b1017;
+    border: 1px solid #1e293b;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 10px;
+    color: #e2e8f0;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+  }
+  .json-path-box code {
+    font-family: monospace;
+    color: #38bdf8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+  .replay-step-item {
+    background: #151e2a;
+    border: 1px solid #273546;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .replay-step-item:hover {
+    background: #1e2c3c;
+    border-color: #3b82f6;
+  }
+  .replay-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #94a3b8;
+    margin-bottom: 3px;
+  }
+  .replay-step-badge {
+    background: #2563eb;
+    color: #fff;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 9.5px;
+  }
+  .replay-step-detail {
+    color: #f1f5f9;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .replay-step-meta {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .replay-step-json {
+    margin-top: 6px;
+    padding: 6px;
+    background: #0b1017;
+    border: 1px solid #1e293b;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 10px;
+    color: #a5f3fc;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+<h1 id="main-title">⚔ BSToolsCla Playmat（GRU価値ネットワーク）</h1>
+
+<div id="training-banner" class="hidden"></div>
+
+<div class="toolbar">
+  <button id="btn-settings" class="secondary" title="フォーマット・シード・表示モード・GameServer URL・評価方式・重みファイルを設定">⚙ 設定</button>
+  <button id="btn-new" class="primary">新規ゲーム開始</button>
+  <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
+  <button id="btn-undo" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
+  <button id="btn-redo" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
+  <label class="auto-toggle" title="player1の手番になったら、評価値が最良の選択肢を自動的に選び続ける">
+    <input type="checkbox" id="auto-p1"> P1自動
+  </label>
+  <label class="auto-toggle" title="player2の手番になったら、評価値が最良の選択肢を自動的に選び続ける">
+    <input type="checkbox" id="auto-p2"> P2自動
+  </label>
+</div>
+
+<dialog id="settings-dialog">
+  <h2>⚙ 設定</h2>
+  <div class="settings-body">
+    <div class="settings-row pair">
+      <div>
+        <label for="format">フォーマット</label>
+        <select id="format">
+          <option value="standard">スタンダード</option>
+          <option value="eternal">エターナル</option>
+        </select>
+      </div>
+      <div>
+        <label for="seed">シード</label>
+        <input id="seed" type="number" placeholder="42" title="乱数シード (指定時は固定、未入力時はランダム生成)">
+      </div>
+    </div>
+    <div class="settings-row pair">
+      <div>
+        <label for="deck1">デッキ1</label>
+        <input id="deck1" value="deck-kogyo.yaml">
+      </div>
+      <div>
+        <label for="deck2">デッキ2</label>
+        <input id="deck2" value="deck-kogyo.yaml">
+      </div>
+    </div>
+    <div class="settings-row">
+      <label for="viewer" title="GodMode=全情報を参照・両者を操作 / プレイヤー視点=公開情報と自分の手札のみ">表示モード</label>
+      <select id="viewer">
+        <option value="0">GodMode（全情報）</option>
+        <option value="1">プレイヤー1 視点</option>
+        <option value="2">プレイヤー2 視点</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label for="game-server-url">GameServer URL</label>
+      <input id="game-server-url" value="http://localhost:8081" title="GameServer API 接続URL">
+    </div>
+
+    <div class="settings-section-label">評価方式</div>
+    <div class="settings-row">
+      <label for="eval-mode" title="局面の評価に使うモデル。GRU=BSToolsCla の価値ネットワーク (weights/*.gru.weight) / 評価なし=評価値を表示しない">方式</label>
+      <select id="eval-mode">
+        <option value="GRU" selected>GRU (BSToolsCla)</option>
+        <option value="NONE">評価なし</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label for="eval-depth" title="選択肢を何手先までミニマックスで読んで評価するか。1=その手を指した直後の局面だけを評価。1つ深くするごとに計算時間は約10倍">探索の深さ</label>
+      <select id="eval-depth">
+        <option value="1" selected>1 (1手先読み)</option>
+        <option value="2">2</option>
+        <option value="3">3 (1手 約0.2秒)</option>
+        <option value="4">4 (1手 数秒〜数十秒)</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label for="eval-width" title="深さ2以上で、各局面で深く読む手を1手先読みの評価の上位何手に絞るか。制限なし=すべての手を読む。絞るほど速いが、上位の外の良い手を読み落とす">探索の幅</label>
+      <select id="eval-width">
+        <option value="1" selected>1 (最善の1手のみ。深さは1だけ)</option>
+        <option value="0">制限なし</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="8">8</option>
+      </select>
+    </div>
+    <div class="settings-row pair">
+      <div>
+        <label for="eval-weights-p1" title="player1の手番を評価する重みファイル。(未指定/共有)ならデフォルトまたはplayer2と同じ重みを使う">player1 重みファイル</label>
+        <select id="eval-weights-p1">
+          <option value="">(未指定/共有)</option>
+        </select>
+      </div>
+      <div>
+        <label for="eval-weights-p2" title="player2の手番を評価する重みファイル。(未指定/共有)ならデフォルトまたはplayer1と同じ重みを使う">player2 重みファイル</label>
+        <select id="eval-weights-p2">
+          <option value="">(未指定/共有)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="settings-footer">
+    <button id="btn-close-settings" class="primary">閉じる</button>
+  </div>
+</dialog>
+
+<div class="layout">
+  <div id="board">
+    <div id="winner" class="winner-banner hidden"></div>
+
+    <div class="panel">
+      <div class="statusline">
+        <span>ターン: <b id="turn">-</b></span>
+        <span>手番: <b id="active">-</b></span>
+        <span class="phase" id="phase">ゲーム未開始</span>
+        <span>到達局面数: <b id="visited-count">-</b></span>
+        <span>計算局面数: <b id="evaluated-count">-</b></span>
+        <div class="status-actions">
+          <button id="btn-auto-next" class="btn-auto" title="次の選択を自動で行う" disabled>⚡ 次の選択を自動で行う</button>
+          <button id="btn-auto-step" class="btn-auto" title="ステップ終了まで自動で行う" disabled>⏭ ステップ終了まで自動で行う</button>
+          <button id="btn-auto-turn" class="btn-auto" title="ターン終了まで自動で行う" disabled>⏩ ターン終了まで自動で行う</button>
+          <button id="btn-undo-board" class="btn-history" title="1手前の局面に戻す (Ctrl+Z)" disabled>◀ 戻る</button>
+          <button id="btn-redo-board" class="btn-history" title="1手先の局面へ進める (Ctrl+Y)" disabled>進む ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- プレイヤー1 パネル (上) -->
+    <div class="panel side" id="p1-panel">
+      <div class="side-head">
+        <h2 id="p1-title">プレイヤー1[g1_g2-best.gru.weight]</h2>
+        <div id="p1-actions" class="side-actions">
+          <button id="btn-n">ステップ終了</button>
+        </div>
+      </div>
+      <div class="meta">
+        <span>L: <span class="life" id="p1-life"></span></span>
+        <span id="p1-reserve-box" class="reserve-box">R: <b id="p1-reserve">-</b></span>
+        <span>T: <b id="p1-trash-cores">-</b></span>
+        <span>カウント: <b id="p1-count">-</b></span>
+        <span>手札: <b id="p1-hand-count">-</b>枚</span>
+        <span>山札: <b id="p1-deck-count">-</b>枚</span>
+      </div>
+      <h3 class="zone-label">フィールド</h3>
+      <div class="cards" id="p1-field"></div>
+      <h3 class="zone-label" id="p1-hand-label">手札</h3>
+      <div class="cards" id="p1-hand"></div>
+      <h3 class="zone-label" id="p1-trash-label" hidden>トラッシュ</h3>
+      <div class="cards" id="p1-trash" hidden></div>
+    </div>
+
+    <!-- プレイヤー2 パネル (下) -->
+    <div class="panel side" id="p2-panel">
+      <div class="side-head">
+        <h2 id="p2-title">プレイヤー2[g1_g2-best.gru.weight]</h2>
+        <div id="p2-actions" class="side-actions"></div>
+      </div>
+      <div class="meta">
+        <span>L: <span class="life" id="p2-life"></span></span>
+        <span id="p2-reserve-box" class="reserve-box">R: <b id="p2-reserve">-</b></span>
+        <span>T: <b id="p2-trash-cores">-</b></span>
+        <span>カウント: <b id="p2-count">-</b></span>
+        <span>手札: <b id="p2-hand-count">-</b>枚</span>
+        <span>山札: <b id="p2-deck-count">-</b>枚</span>
+      </div>
+      <h3 class="zone-label">フィールド</h3>
+      <div class="cards" id="p2-field"></div>
+      <h3 class="zone-label" id="p2-hand-label">手札</h3>
+      <div class="cards" id="p2-hand"></div>
+      <h3 class="zone-label" id="p2-trash-label" hidden>トラッシュ</h3>
+      <div class="cards" id="p2-trash" hidden></div>
+    </div>
+  </div>
+
+  <div id="sidebar">
+    <div class="panel">
+      <h2>選択可能なアクション</h2>
+      <div id="groups"><div class="empty">「新規ゲーム開始」を押してください</div></div>
+    </div>
+    <div class="panel">
+      <div class="log-tabs">
+        <button id="tab-messages" class="log-tab-btn active" onclick="switchLogTab('messages')">📝 メッセージ</button>
+        <button id="tab-replay" class="log-tab-btn" onclick="switchLogTab('replay')">📊 選択ログ (JSON)</button>
+        <button id="tab-rawjson" class="log-tab-btn" onclick="switchLogTab('rawjson')">📄 生JSON</button>
+        <button id="tab-alloptions" class="log-tab-btn" onclick="switchLogTab('alloptions')">📋 全選択肢</button>
+      </div>
+      <div id="json-path-info" class="json-path-box">
+        <span>📁 ログ保存先: <code id="json-path-label">./temp/... (ゲーム終了時に自動出力)</code></span>
+        <button class="secondary" style="padding:2px 6px; font-size:10px;" onclick="copyReplayJson()">📋 JSONコピー</button>
+      </div>
+      <div id="messages-tab-content">
+        <div id="messages"></div>
+      </div>
+      <div id="replay-tab-content" class="hidden">
+        <div id="replay-steps-list"><div class="empty">選択ログはまだありません</div></div>
+      </div>
+      <div id="rawjson-tab-content" class="hidden">
+        <textarea id="raw-json-viewer" readonly style="width:100%; height:260px; background:#0b1017; color:#38bdf8; font-family:monospace; font-size:10.5px; border:1px solid #1e293b; border-radius:4px; padding:6px; resize:vertical;"></textarea>
+      </div>
+      <div id="alloptions-tab-content" class="hidden">
+        <div id="all-options-list" class="all-options"><div class="empty">選択肢はありません</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- カード画像プレビュー ポップアップ -->
+<div id="card-preview" class="card-preview hidden">
+  <img id="card-preview-img" src="" alt="カード画像">
+  <div id="card-preview-name" class="name"></div>
+</div>
+
+<script>
+// タブごとのゲームセッション。URL の ?session=ID で指定すれば、そのゲームを複数タブで共有・観戦できる。
+// 指定がなければタブ固有のIDを作る (sessionStorage に保存するので再読み込みしても同じゲームのまま)。
+const TAB_SESSION = (() => {
+  const q = new URLSearchParams(location.search).get("session");
+  if (q && /^[A-Za-z0-9_-]{1,64}$/.test(q)) return q;
+  let id = null;
+  try { id = sessionStorage.getItem("bs_tab_session"); } catch (e) {}
+  if (!id) {
+    id = "t" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    try { sessionStorage.setItem("bs_tab_session", id); } catch (e) {}
+  }
+  return id;
+})();
+let sessionId = TAB_SESSION;
+let current = null;
+let autoRunType = null; // null | 'step' | 'turn'
+let autoRunAbort = false;
+
+const $ = (id) => document.getElementById(id);
+
+function updatePreviewPosition(e) {
+  const preview = $("card-preview");
+  // マウスカーソルの反対側にプレビューを出す(カーソルに隠れない・常に遠い場所へ)。
+  // 左右だけでなく上下も見て、マウスが右半分なら左、上半分なら下、というように
+  // 縦横それぞれ独立に判定する。
+  const isRightHalf = e ? e.clientX > (window.innerWidth / 2) : false;
+  const isTopHalf = e ? e.clientY < (window.innerHeight / 2) : false;
+  if (isRightHalf) {
+    preview.style.left = "16px";
+    preview.style.right = "auto";
+  } else {
+    preview.style.left = "auto";
+    preview.style.right = "16px";
+  }
+  if (isTopHalf) {
+    preview.style.top = "auto";
+    preview.style.bottom = "16px";
+  } else {
+    preview.style.top = "16px";
+    preview.style.bottom = "auto";
+  }
+}
+
+// 現在プレビューを表示させている要素。盤面の再描画で要素が消えたことを検知するために保持する
+let previewOwner = null;
+
+function hideCardPreview() {
+  previewOwner = null;
+  $("card-preview").classList.add("hidden");
+}
+
+function bindCardPreview(el, name, imgUrl) {
+  if (!imgUrl) return;
+  el.addEventListener("mouseenter", (e) => {
+    const preview = $("card-preview");
+    const previewImg = $("card-preview-img");
+    const previewName = $("card-preview-name");
+
+    previewOwner = el;
+
+    const show = () => {
+      // 読み込み完了までにマウスが離れた／再描画で要素が消えた場合は表示しない
+      if (previewOwner !== el || !el.isConnected) return;
+      updatePreviewPosition(e);
+      preview.classList.remove("hidden");
+    };
+
+    // ロード完了するまで非表示を維持
+    preview.classList.add("hidden");
+    previewImg.onload = show;
+    previewImg.onerror = () => {
+      if (previewOwner === el) hideCardPreview();
+    };
+    previewImg.src = imgUrl;
+    previewName.textContent = name;
+
+    if (previewImg.complete && previewImg.naturalWidth > 0) show();
+  });
+  el.addEventListener("mouseleave", () => {
+    if (previewOwner === el) hideCardPreview();
+  });
+}
+
+// mouseleave は要素がDOMから削除されたときには発火しないため、
+// 盤面の再描画でプレビューが消え残らないよう保険をかける
+document.addEventListener("mouseover", (e) => {
+  if (previewOwner && (!previewOwner.isConnected || !previewOwner.contains(e.target))) {
+    hideCardPreview();
+  }
+});
+document.addEventListener("mouseleave", hideCardPreview);
+
+// ===== 選択肢ホバー時のコア移動プレビュー =====
+
+// source_id から、盤面上の対応する要素を探す
+// 選択肢の状態（真に選べない/選べるが局面が進まない）を表すプレフィックスとツールチップ。
+// repeats_position は forbidden と違い選択自体は妨げない — GUI上は選べるが、
+// 選んでも局面が進まないことを必ず明記する。
+function optionStatusPrefix(o) {
+  if (o.forbidden) return `🚫[${esc(o.forbidden_reason || "選択不可")}] `;
+  if (o.repeats_position) return `🔁[同一局面] `;
+  return "";
+}
+function optionStatusTitle(o, fallback) {
+  if (o.forbidden) return o.forbidden_reason || "選択不可";
+  if (o.repeats_position) return "選択すると既に見た局面に戻ります（盤面は進みません）";
+  return fallback;
+}
+
+function coreSourceElement(sourceId) {
+  const chooser = current?.choosing_player || current?.active_player || 1;
+  if (sourceId === "Reserve") return $(`p${chooser}-reserve-box`);
+  return document.querySelector(`#p${chooser}-field .card[data-obj-id="${CSS.escape(sourceId)}"]`);
+}
+
+function clearCoreEffectPreview() {
+  document.querySelectorAll(".core-fx-from, .core-fx-to").forEach(el => {
+    el.classList.remove("core-fx-from", "core-fx-to");
+  });
+  document.querySelectorAll(".core-fx-badges").forEach(el => el.remove());
+}
+
+function showCoreEffectPreview(effects) {
+  clearCoreEffectPreview();
+  if (!effects || !effects.length) return;
+
+  for (const fx of effects) {
+    const el = coreSourceElement(fx.source_id);
+    if (!el) continue;
+
+    const isFrom = fx.direction === "from";
+    el.classList.add(isFrom ? "core-fx-from" : "core-fx-to");
+
+    // 交換では同じ場所に出入り両方が付くので、バッジは重ねず横に並べる
+    let box = el.querySelector(":scope > .core-fx-badges");
+    if (!box) {
+      box = document.createElement("span");
+      box.className = "core-fx-badges";
+      el.appendChild(box);
+    }
+
+    const parts = [];
+    if (fx.normal > 0) parts.push(`${fx.normal}🔷`);
+    if (fx.soul > 0) parts.push(`${fx.soul}🔶`);
+    const badge = document.createElement("span");
+    badge.className = "core-fx-badge " + (isFrom ? "from" : "to");
+    // 方向は枠の色(橙=出る/緑=入る)で示すので、記号は付けず個数だけを出す
+    badge.textContent = parts.join(" ");
+    box.appendChild(badge);
+  }
+}
+
+/** 選択肢ボタンに、ホバーで移動元・移動先をマークする挙動を付ける */
+function bindCoreEffectPreview(el, option) {
+  if (!option || !option.core_effects || !option.core_effects.length) return;
+  el.addEventListener("mouseenter", () => showCoreEffectPreview(option.core_effects));
+  el.addEventListener("mouseleave", clearCoreEffectPreview);
+}
+
+function formatCoresDisplay(str, sourceId) {
+  if (str == null || str === "" || str === "0" || str === 0 || str === "-") return "-";
+  const s = String(str);
+  const hasSoul = s.endsWith("s");
+  const total = parseInt(s, 10) || 0;
+  const soulCount = hasSoul ? 1 : 0;
+  const normalCount = Math.max(0, total - soulCount);
+
+  let normalHtml = "";
+  if (normalCount > 0) {
+    const clickAttr = sourceId ? `onclick="event.stopPropagation(); handleSourceCoreClick('${sourceId}', 'normal');"` : "";
+    normalHtml = `<span class="core-icon-group normal-core-btn" ${clickAttr} title="通常コア (${normalCount}個)">${"🔷".repeat(normalCount)}</span>`;
+  }
+  let soulHtml = "";
+  if (soulCount > 0) {
+    const clickAttr = sourceId ? `onclick="event.stopPropagation(); handleSourceCoreClick('${sourceId}', 'soul');"` : "";
+    soulHtml = `<span class="core-icon-group soul-core-btn" ${clickAttr} title="ソウルコア (1個)">🔶</span>`;
+  }
+  if (normalCount === 0 && soulCount === 0) return "-";
+  return `<span class="core-icons">${normalHtml}${soulHtml}</span>`;
+}
+
+function formatCountDisplay(count) {
+  const n = Math.max(0, parseInt(count, 10) || 0);
+  if (n === 0) return "-";
+  return `<span class="core-icons">${"🔷".repeat(n)}</span>`;
+}
+
+function lifeStr(n) {
+  const count = Math.max(0, parseInt(n, 10) || 0);
+  if (count === 0) return `<span class="life-cores">💀</span>`;
+  const icons = "🔷".repeat(count);
+  return `<span class="life-cores">${icons}</span>`;
+}
+
+function getEvalBadge(v, isBest = false) {
+  if (v == null) return "";
+  const winRate = ((v + 1.0) / 2.0 * 100).toFixed(1);
+  let cls = "eval-mid";
+  if (v >= 0.6) cls = "eval-high";
+  else if (v >= 0.2) cls = "eval-mid";
+  else if (v >= -0.2) cls = "eval-low";
+  else cls = "eval-neg";
+  const bestClass = isBest ? " is-best" : "";
+  return `<span class="eval-badge ${cls}${bestClass}">${winRate}%</span>`;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function addMessages(msgs, isError = false) {
+  const box = $("messages");
+  for (const m of msgs) {
+    const first = box.firstElementChild;
+    if (first && first.dataset.rawText === m && !isError && !first.classList.contains("err")) {
+      const count = (parseInt(first.dataset.count, 10) || 1) + 1;
+      first.dataset.count = count;
+      first.textContent = `${m} (×${count})`;
+    } else {
+      const div = document.createElement("div");
+      div.textContent = m;
+      div.dataset.rawText = m;
+      div.dataset.count = 1;
+      if (isError) div.className = "err";
+      box.prepend(div);
+    }
+  }
+}
+
+// 現在の視点。0 = GodMode(全情報)、1/2 = そのプレイヤー視点(公開情報 + 自分の手札のみ)
+function currentViewer() {
+  const el = $("viewer");
+  return el ? parseInt(el.value, 10) || 0 : 0;
+}
+
+async function api(path, body) {
+  const viewerToUse = (body && body.viewer !== undefined) ? body.viewer : currentViewer();
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, session: TAB_SESSION, viewer: viewerToUse }),
+  });
+  const data = await res.json();
+  if (data.error) {
+    addMessages([data.error], true);
+    if (data.error.includes("セッションが見つかりません") && path !== "/api/new") {
+      addMessages(["ℹ️ 有効なゲームセッションを自動再初期化しています..."]);
+      setTimeout(() => startNewGame(), 100);
+    }
+    return null;
+  }
+  return data;
+}
+
+function formatReductionGems(redStr) {
+  if (!redStr) return "";
+  const gemMap = {
+    "赤": "🔴",
+    "紫": "🟣",
+    "緑": "🟢",
+    "白": "⚪",
+    "黄": "🟡",
+    "青": "🔵"
+  };
+  let gems = "";
+  for (const [col, icon] of Object.entries(gemMap)) {
+    const match = redStr.match(new RegExp(`${col}(\\d+)`));
+    if (match) {
+      const count = parseInt(match[1], 10);
+      gems += icon.repeat(count);
+    }
+  }
+  return gems ? `<span class="reduction-gems" title="軽減: ${esc(redStr)}">${gems}</span>` : "";
+}
+
+let activePlayContext = null;
+
+/**
+ * 現在開いている手札カードのアコーディオン (card_no)。`render()` は毎回DOMを作り直すため、
+ * これが無いと自分の操作以外の再描画(他クライアントの操作によるSSE配信、自分の操作に対する
+ * SSE自己エコー等)が届くたびに開いていたアコーディオンが勝手に閉じてしまう。
+ * `renderHand()` はこれを見て、該当カードのアコーディオンを開いた状態で再構築する。
+ */
+let openHandCardNo = null;
+
+/**
+ * 現在開いているフィールドカード（コア移動先スピリット）のアコーディオン (card.id)。
+ * `render()` による再描画時にも開いていたアコーディオンを復元する。
+ */
+let openFieldCardId = null;
+
+/**
+ * フィールドカードの通し番号マップ (id -> 連番)。
+ * 召喚時(フィールドに置かれる)ごとに重複しない通し番号を付与・表示する。
+ */
+const fieldCardSeqMap = new Map();
+let nextFallbackCardSeq = 1;
+
+function getCardSeq(card) {
+  if (!card) return 0;
+  if (card.seq != null && card.seq > 0) {
+    fieldCardSeqMap.set(card.id, card.seq);
+    return card.seq;
+  }
+  if (!fieldCardSeqMap.has(card.id)) {
+    const m = String(card.id).match(/_(\d+)$/);
+    if (m) {
+      const parsed = parseInt(m[1], 10);
+      if (!isNaN(parsed) && parsed > 0 && !Array.from(fieldCardSeqMap.values()).includes(parsed)) {
+        fieldCardSeqMap.set(card.id, parsed);
+        nextFallbackCardSeq = Math.max(nextFallbackCardSeq, parsed + 1);
+        return parsed;
+      }
+    }
+    fieldCardSeqMap.set(card.id, nextFallbackCardSeq++);
+  }
+  return fieldCardSeqMap.get(card.id);
+}
+
+function escapeRegex(s) {
+  return String(s).replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * 選択肢テキスト中のスピリット名に通し番号（フィールド番号 #1, #2...）を補完・付与する。
+ */
+function formatWithFieldSeq(text, coreEffects = null, targetId = null) {
+  if (!text || typeof text !== "string") return text;
+
+  // 1. コア移動・交換カテゴリ (例: "🔷【コア移動】 パッファー ➔ ガリザロト")
+  const moveMatch = text.match(/^((?:🔷|🔄)【コア(?:移動|交換)】\s*)(.*?)\s*([➔⇄])\s*(.*)$/u);
+  if (moveMatch) {
+    const prefix = moveMatch[1];
+    let srcLabel = moveMatch[2].trim();
+    const arrow = moveMatch[3];
+    let dstLabel = moveMatch[4].trim();
+
+    const fromEff = coreEffects?.find(e => e.direction === "from");
+    const toEff = coreEffects?.find(e => e.direction === "to");
+
+    if (fromEff && fromEff.source_id !== "Reserve") {
+      const seq = getCardSeq({ id: fromEff.source_id, name: fromEff.label });
+      if (seq && !srcLabel.includes("#")) srcLabel = `#${seq} ${srcLabel}`;
+    }
+    if (toEff && toEff.source_id !== "Reserve") {
+      const seq = getCardSeq({ id: toEff.source_id, name: toEff.label });
+      if (seq && !dstLabel.includes("#")) dstLabel = `#${seq} ${dstLabel}`;
+    }
+
+    // core_effects が渡されていない場合のフィールドカード名マッチによるフォールバック
+    if (current) {
+      const allFieldCards = [
+        ...(current.player?.field || []),
+        ...(current.opponent?.field || [])
+      ];
+      for (const c of allFieldCards) {
+        if (!c.name) continue;
+        const seq = getCardSeq(c);
+        if (seq) {
+          if (!srcLabel.includes("#") && srcLabel === c.name) srcLabel = `#${seq} ${srcLabel}`;
+          if (!dstLabel.includes("#") && dstLabel === c.name) dstLabel = `#${seq} ${dstLabel}`;
+        }
+      }
+    }
+    return prefix + srcLabel + " " + arrow + " " + dstLabel;
+  }
+
+  // 2. アタック・ブロックカテゴリ (例: "🗡️【アタック】 パッファー", "🛡️【ブロック】 ガリザロト")
+  const actionMatch = text.match(/^((?:🗡️|🛡️)【(?:アタック|ブロック)】\s*)(.*)$/u);
+  if (actionMatch && targetId) {
+    const seq = fieldCardSeqMap.get(targetId);
+    if (seq && !actionMatch[2].includes("#")) {
+      return `${actionMatch[1]}#${seq} ${actionMatch[2]}`;
+    }
+  }
+
+  // 3. 一般テキスト (core_effects からの特定)
+  let res = text;
+  if (coreEffects && Array.isArray(coreEffects)) {
+    for (const e of coreEffects) {
+      if (!e.source_id || e.source_id === "Reserve" || !e.label) continue;
+      const seq = getCardSeq({ id: e.source_id, name: e.label });
+      if (seq) {
+        // サーバーの表示名は「#1 フラッティ」のように番号付きのことがある。番号を除いた名前で照合しないと
+        // 「#1 #1 フラッティ」と二重に付く
+        const name = e.label.replace(/^#\d+\s*/u, "");
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(name)}`, "g");
+        res = res.replace(re, `#${seq} ${name}`);
+      }
+    }
+  }
+
+  if (targetId) {
+    const seq = fieldCardSeqMap.get(targetId);
+    if (seq) {
+      const chooser = current?.choosing_player || current?.active_player || 1;
+      const p = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
+      const opp = (current?.player?.player_id === chooser) ? current?.opponent : current?.player;
+      const card = p?.field?.find(c => c.id === targetId) || opp?.field?.find(c => c.id === targetId);
+      if (card) {
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(card.name)}`, "g");
+        res = res.replace(re, `#${seq} ${card.name}`);
+      }
+    }
+  }
+
+  // 4. フィールドに存在するカード名が含まれている場合の補完
+  if (current) {
+    const allFieldCards = [
+      ...(current.player?.field || []),
+      ...(current.opponent?.field || [])
+    ];
+    for (const c of allFieldCards) {
+      if (!c.name) continue;
+      const seq = getCardSeq(c);
+      if (seq) {
+        const re = new RegExp(`(?<!#\\d+\\s*)${escapeRegex(c.name)}`, "g");
+        res = res.replace(re, `#${seq} ${c.name}`);
+      }
+    }
+  }
+
+  return res;
+}
+
+function parseDetailSources(detail) {
+  // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
+  const sources = {};
+  const match = detail.match(/\(([^)]+)\)$/);
+  if (!match) return sources;
+  const inner = match[1];
+  // 文字クラスに絵文字を入れてはいけない。u フラグなしの [💲📥] は上位サロゲート \uD83D を含み、
+  // 同じ \uD83D で始まる 🔷(U+1F537)/🔶(U+1F536) まで壊してコア数が数えられなくなる。
+  // 必ず「選択肢の並び」として書き、u フラグを付けること。
+  const cleaned = inner.replace(/(?:支払|配置|移動|💲|📥|\$)[:：]?/gu, '');
+  const parts = cleaned.split(/[,、]/);
+  for (const part of parts) {
+    const p = part.trim();
+    if (!p) continue;
+    const colonIdx = p.lastIndexOf(':');
+    if (colonIdx !== -1) {
+      let name = p.substring(0, colonIdx).trim();
+      if (name === "リザーブ") name = "R";
+      const countStr = p.substring(colonIdx + 1).trim();
+      let normal = (countStr.match(/🔷/g) || []).length;
+      let soul = (countStr.match(/🔶/g) || []).length;
+      if (normal === 0 && soul === 0 && countStr !== "0") {
+        const hasSoul = countStr.endsWith("s");
+        const total = parseInt(countStr, 10) || 0;
+        soul = hasSoul ? 1 : 0;
+        normal = Math.max(0, total - soul);
+      }
+      if (name) {
+        if (!sources[name]) sources[name] = { normal: 0, soul: 0 };
+        sources[name].normal += normal;
+        sources[name].soul += soul;
+      }
+    }
+  }
+  return sources;
+}
+
+function updateCoreAllocationUI() {
+  document.querySelectorAll(".core-source-interactive").forEach(el => el.classList.remove("core-source-interactive"));
+  document.querySelectorAll(".core-source-badge").forEach(el => el.remove());
+  document.querySelectorAll(".hand-opt-btn.matched-option").forEach(el => el.classList.remove("matched-option"));
+
+  if (!activePlayContext) {
+    const existingBar = document.querySelector(".core-alloc-bar");
+    if (existingBar) existingBar.remove();
+    return;
+  }
+
+  const chooser = current?.choosing_player || current?.active_player || 1;
+
+  // 1. リザーブ(R)のハイライトとバッジ
+  const reserveBox = $(`p${chooser}-reserve-box`);
+  if (reserveBox) {
+    reserveBox.classList.add("core-source-interactive");
+    const resAlloc = activePlayContext.alloc["Reserve"] || { normal: 0, soul: 0 };
+    if (resAlloc.normal > 0 || resAlloc.soul > 0) {
+      const b = document.createElement("span");
+      b.className = "core-source-badge" + (resAlloc.soul > 0 ? " has-soul" : "");
+      let text = "";
+      if (resAlloc.normal > 0) text += `${resAlloc.normal}🔷`;
+      if (resAlloc.soul > 0) text += `${text ? ' ' : ''}${resAlloc.soul}🔶`;
+      b.textContent = text;
+      reserveBox.appendChild(b);
+    }
+  }
+
+  // 2. 選択中プレイヤーのフィールドカードのハイライトとバッジ
+  const chooserFieldCards = document.querySelectorAll(`#p${chooser}-field .card`);
+  chooserFieldCards.forEach(cardEl => {
+    const srcId = cardEl.getAttribute("data-obj-id");
+    if (srcId) {
+      cardEl.classList.add("core-source-interactive");
+      const objAlloc = activePlayContext.alloc[srcId] || { normal: 0, soul: 0 };
+      if (objAlloc.normal > 0 || objAlloc.soul > 0) {
+        const b = document.createElement("span");
+        b.className = "core-source-badge" + (objAlloc.soul > 0 ? " has-soul" : "");
+        let text = "";
+        if (objAlloc.normal > 0) text += `${objAlloc.normal}🔷`;
+        if (objAlloc.soul > 0) text += `${text ? ' ' : ''}${objAlloc.soul}🔶`;
+        b.textContent = text;
+        cardEl.appendChild(b);
+      }
+    }
+  });
+
+  // 3. マッチする選択肢を探索
+  const allOpts = [];
+  activePlayContext.groups.forEach(g => {
+    g.options.forEach(o => allOpts.push(o));
+  });
+
+  // alloc 内訳（名前ベース: Reserve -> "R", obj_id -> obj.name）
+  const allocByName = {};
+  const chooserData = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
+  for (const [srcId, counts] of Object.entries(activePlayContext.alloc)) {
+    if ((counts.normal || 0) <= 0 && (counts.soul || 0) <= 0) continue;
+    let name = srcId;
+    if (srcId === "Reserve") {
+      name = "R";
+    } else if (chooserData && chooserData.field) {
+      const obj = chooserData.field.find(o => o.id === srcId);
+      if (obj) name = obj.name;
+    }
+    allocByName[name] = { normal: counts.normal || 0, soul: counts.soul || 0 };
+  }
+
+  let matchedOpt = null;
+  const hasAlloc = Object.values(allocByName).some(v => v.normal > 0 || v.soul > 0);
+  if (hasAlloc) {
+    matchedOpt = allOpts.find(o => {
+      if (o.forbidden) return false;
+      const parsed = parseDetailSources(o.detail);
+      const parsedKeys = Object.keys(parsed).filter(k => (parsed[k].normal || 0) > 0 || (parsed[k].soul || 0) > 0);
+      const allocKeys = Object.keys(allocByName).filter(k => (allocByName[k].normal || 0) > 0 || (allocByName[k].soul || 0) > 0);
+      if (parsedKeys.length !== allocKeys.length) return false;
+      return allocKeys.every(k => {
+        const p = parsed[k] || { normal: 0, soul: 0 };
+        const a = allocByName[k] || { normal: 0, soul: 0 };
+        return p.normal === a.normal && p.soul === a.soul;
+      });
+    });
+  }
+
+  // マッチしたボタンをハイライト & 親のアコーディオンを自動展開
+  if (matchedOpt) {
+    const btn = activePlayContext.optsDiv.querySelector(`button[data-act-idx="${matchedOpt.index}"]`);
+    if (btn) {
+      btn.classList.add("matched-option");
+      const parentOpts = btn.closest(".cost-subgroup-opts");
+      if (parentOpts) {
+        // 他を閉じて該当を展開
+        activePlayContext.optsDiv.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+          if (el !== parentOpts) el.classList.add("hidden");
+        });
+        activePlayContext.optsDiv.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+          arr.textContent = "▶";
+        });
+        parentOpts.classList.remove("hidden");
+        const parentHead = parentOpts.previousElementSibling;
+        if (parentHead) {
+          const arrowEl = parentHead.querySelector(".arrow-icon");
+          if (arrowEl) arrowEl.textContent = "▼";
+        }
+      }
+    }
+  }
+
+  // 4. コア配分バーの更新
+  let bar = activePlayContext.optsDiv.querySelector(".core-alloc-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.className = "core-alloc-bar";
+    activePlayContext.optsDiv.insertBefore(bar, activePlayContext.optsDiv.firstChild);
+  }
+
+  const allocStrs = Object.entries(allocByName).map(([k, v]) => {
+    let s = `${k}: `;
+    let p = [];
+    if (v.normal > 0) p.push(`${v.normal}🔷`);
+    if (v.soul > 0) p.push(`${v.soul}🔶`);
+    return s + p.join(" ");
+  });
+  const allocText = allocStrs.length ? allocStrs.join(", ") : "R/カードのコア(🔷/🔶)をクリックして配分";
+
+  let confirmHtml = "";
+  if (matchedOpt) {
+    const winRate = matchedOpt.eval != null ? ` (${((matchedOpt.eval + 1.0) / 2.0 * 100).toFixed(1)}%)` : "";
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm">この配分でプレイ${winRate}</button>`;
+  } else if (hasAlloc) {
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm" disabled title="一致する合法支払・配置パターンがありません">一致する手なし</button>`;
+  } else {
+    confirmHtml = `<button class="btn-confirm" id="btn-alloc-confirm" disabled>配分を選択</button>`;
+  }
+
+  bar.innerHTML = `<span class="info">💎 選択コア: ${allocText}</span>` +
+    `<div class="actions">${confirmHtml}<button class="btn-reset" id="btn-alloc-reset">クリア</button></div>`;
+
+  const confBtn = bar.querySelector("#btn-alloc-confirm");
+  if (confBtn && matchedOpt) {
+    confBtn.onclick = (e) => {
+      e.stopPropagation();
+      doAct(matchedOpt.index);
+    };
+  }
+  const resetBtn = bar.querySelector("#btn-alloc-reset");
+  if (resetBtn) {
+    resetBtn.onclick = (e) => {
+      e.stopPropagation();
+      activePlayContext.alloc = {};
+      updateCoreAllocationUI();
+    };
+  }
+}
+
+function handleSourceCoreClick(sourceId, coreType = 'normal') {
+  if (!activePlayContext) return;
+  if (!activePlayContext.alloc[sourceId]) {
+    activePlayContext.alloc[sourceId] = { normal: 0, soul: 0 };
+  }
+
+  let maxNormal = 0;
+  let maxSoul = 0;
+  const chooser = current?.choosing_player || current?.active_player || 1;
+  const chooserData = (current?.player?.player_id === chooser) ? current?.player : current?.opponent;
+  if (sourceId === "Reserve") {
+    const s = String(chooserData?.reserve || "0");
+    const hasSoul = s.endsWith("s");
+    const total = parseInt(s, 10) || 0;
+    maxSoul = hasSoul ? 1 : 0;
+    maxNormal = Math.max(0, total - maxSoul);
+  } else if (chooserData?.field) {
+    const obj = chooserData.field.find(o => o.id === sourceId);
+    if (obj) {
+      const s = String(obj.cores || "0");
+      const hasSoul = s.endsWith("s");
+      const total = parseInt(s, 10) || 0;
+      maxSoul = hasSoul ? 1 : 0;
+      maxNormal = Math.max(0, total - maxSoul);
+    }
+  }
+
+  if (coreType === 'soul') {
+    if (maxSoul > 0) {
+      activePlayContext.alloc[sourceId].soul = (activePlayContext.alloc[sourceId].soul > 0) ? 0 : 1;
+    }
+  } else {
+    // 通常コアまたは "R" / カード本体クリック: 通常コア+1、最大到達でソウルコア+1
+    const curNormal = activePlayContext.alloc[sourceId].normal || 0;
+    const curSoul = activePlayContext.alloc[sourceId].soul || 0;
+
+    if (curNormal < maxNormal) {
+      activePlayContext.alloc[sourceId].normal = curNormal + 1;
+    } else if (maxSoul > 0 && curSoul === 0) {
+      activePlayContext.alloc[sourceId].soul = 1;
+    } else {
+      activePlayContext.alloc[sourceId].normal = 0;
+      activePlayContext.alloc[sourceId].soul = 0;
+    }
+  }
+
+  updateCoreAllocationUI();
+}
+
+// トラッシュは公開領域なので両者の内容を出す (総合ルール 4-4-2)
+function renderTrash(side, cards) {
+  const list = cards || [];
+  $(side + "-trash-label").hidden = list.length === 0;
+  $(side + "-trash").hidden = list.length === 0;
+  // 0枚のときも必ず描画し直す。前回の内容を残したままにしない
+  renderField($(side + "-trash"), list, false);
+}
+
+/**
+ * そのカードに関係するコア移動・交換グループをすべて集め、役割ごとに分ける。
+ *   from: 自身 ➔ 別の場所 (リザーブ・他のカード) / to: 別の場所 ➔ 自身 / swap: 別の場所とのソウルコア⇄コアの交換
+ * カードの照合は instance id (core_effects の source_id) で行う (同名カードが複数あっても取り違えない)。
+ * 各グループには相手側の表示名 (#通し番号付き) を menuLabel として付ける。
+ */
+function getCoreMoveGroupsForCard(card, groups) {
+  const out = [];
+  if (!groups || !groups.length) return out;
+  // コアの一括再配置: このカードの最終的なコア (通常・ソウルの数) ごとにまとめる。
+  // 見出し「🔷🔷🔶 にする (Lv2)」の中に、その値になる配置 (他の場所の配置違い) を評価値の高い順に並べる
+  const rearr = groups.find(g => (g.category || "").includes("【コア再配置】"));
+  if (rearr) {
+    const byValue = new Map();
+    for (const o of rearr.options) {
+      const t = (o.core_target || []).find(c => c.source_id === card.id);
+      if (!t) continue;
+      const cur = parseCoreString(card.cores);
+      if (t.normal === cur.normal && t.soul === cur.soul) continue; // このカードは変わらない配置
+      const key = `${t.normal},${t.soul}`;
+      if (!byValue.has(key)) byValue.set(key, { normal: t.normal, soul: t.soul, label: t.label, options: [] });
+      byValue.get(key).options.push(o);
+    }
+    const values = [...byValue.values()].sort((a, b) => (b.normal + b.soul) - (a.normal + a.soul) || b.soul - a.soul);
+    for (const v of values) {
+      v.options.sort((a, b) => (b.repeats_position ? -9 : b.eval) - (a.repeats_position ? -9 : a.eval));
+      const selectable = v.options.filter(o => !o.forbidden && !o.repeats_position);
+      const icons = "🔷".repeat(v.normal) + "🔶".repeat(v.soul);
+      // detail は「#1 フラッティ:🔷🔶(Lv2) / …」の形式。このカードの (Lv/消滅) を拾う
+      const lvMatch = (v.options[0].detail || "").match(new RegExp(`${escapeRegex(v.label)}:[🔷🔶0]*\\(([^)]+)\\)`, "u"));
+      out.push({
+        category: rearr.category, role: "target", options: v.options,
+        best_eval: selectable.length ? Math.max(...selectable.map(o => o.eval)) : null,
+        all_forbidden: selectable.length === 0,
+        menuLabel: `${icons || "0個"} にする${lvMatch ? ` (${lvMatch[1]})` : ""}`
+      });
+    }
+  }
+  // Lv単位の列挙: このカードの「Lv変更」と、このカードが関わる「ソウルコアの移動」(1手ずつ、クリックで実行)
+  for (const g of groups) {
+    const cat = g.category || "";
+    if (cat.includes("【Lv変更】") && g.target_instance_id === card.id) {
+      for (const o of g.options) {
+        out.push({ ...g, options: [o], best_eval: o.eval, all_forbidden: !!o.forbidden, role: "level", menuLabel: o.detail });
+      }
+    } else if (cat.includes("【ソウルコア移動】")) {
+      for (const o of g.options) {
+        const effs = o.core_effects || [];
+        if (!effs.some(e => e.source_id === card.id)) continue;
+        out.push({ ...g, options: [o], best_eval: o.eval, all_forbidden: !!o.forbidden, role: "soul", menuLabel: o.detail });
+      }
+    }
+  }
+  for (const g of groups) {
+    if (!g.category) continue;
+    const isSwap = g.category.includes("【コア交換】");
+    if (!isSwap && !g.category.includes("【コア移動】")) continue;
+    const effs = g.options?.[0]?.core_effects || [];
+    const isFrom = effs.some(e => e.direction === "from" && e.source_id === card.id);
+    const isTo = effs.some(e => e.direction === "to" && e.source_id === card.id);
+    if (!isFrom && !isTo) continue;
+    const m = formatWithFieldSeq(g.category, effs, g.target_instance_id).match(/【コア(?:移動|交換)】\s*(.*?)\s*[➔⇄]\s*(.*)$/u);
+    const src = m ? m[1] : "?";
+    const dst = m ? m[2] : "?";
+    if (isSwap) {
+      // 交換のカテゴリは「ソウルコアのある側 ⇄ 通常コアのある側」の順
+      const selfHasSoul = effs.some(e => e.direction === "from" && e.source_id === card.id && e.soul > 0);
+      out.push({ ...g, role: "swap", menuLabel: `🔄 ${selfHasSoul ? dst : src} と交換` });
+    } else if (isFrom) {
+      out.push({ ...g, role: "from", menuLabel: `➔ ${dst} へ` });
+    } else {
+      out.push({ ...g, role: "to", menuLabel: `${src} から ➔` });
+    }
+  }
+  return out;
+}
+
+/** 盤面のコア表記 ("3s" = ソウルコア1を含む3個, "2", "-") を通常・ソウルの数にする */
+function parseCoreString(s) {
+  const str = String(s || "0");
+  const total = parseInt(str, 10) || 0;
+  const soul = str.endsWith("s") && total > 0 ? 1 : 0;
+  return { normal: total - soul, soul };
+}
+
+/** カードのコア移動メニュー: 「自身から」「自身へ」「交換」の見出しごとに並べる */
+function renderCardCoreMoveMenu(container, groups, maxEval, isNearBest) {
+  const sections = [
+    ["level", "🔷 Lv変更 (このカードのコアをLvの境目の数にする)"],
+    ["soul", "🔶 ソウルコアの移動"],
+    ["target", "🔷 このカードのコアを変える (一括再配置)"],
+    ["from", "🔷 このカードから移動"],
+    ["to", "🔷 このカードへ移動"],
+    ["swap", "🔄 ソウルコアの交換"]
+  ];
+  for (const [role, title] of sections) {
+    const list = groups.filter(g => g.role === role);
+    if (!list.length) continue;
+    const h = document.createElement("div");
+    h.className = "core-move-section";
+    h.textContent = title;
+    container.appendChild(h);
+    renderCoreMoveGroupList(container, list, maxEval, isNearBest);
+  }
+}
+
+function renderCoreMoveGroupList(container, groups, maxEval, isNearBest) {
+  for (const g of groups) {
+    const isTop = (!g.all_forbidden && isNearBest && isNearBest(g.best_eval, maxEval));
+    const isSingle = g.options.length === 1;
+
+    const sgDiv = document.createElement("div");
+    sgDiv.className = "cost-subgroup" + (isTop ? " is-best" : "");
+
+    let srcLabel = g.menuLabel;
+    if (!srcLabel) {
+      srcLabel = g.category.replace(/^[🔷🔄]【コア(?:移動|交換)】\s*/u, "");
+      const arrowMatch = srcLabel.match(/^(.*?)\s*(?:➔|⇄)\s*(.*)$/);
+      if (arrowMatch) {
+        srcLabel = `${arrowMatch[1]} から`;
+      }
+      srcLabel = formatWithFieldSeq(srcLabel, g.options?.[0]?.core_effects, g.target_instance_id);
+    }
+
+    const head = document.createElement("button");
+    head.className = "cost-subgroup-head";
+    const patternCountStr = g.options.length > 1 ? ` (${g.options.length})` : "";
+    const bestBadge = g.best_eval != null ? getEvalBadge(g.best_eval, isTop) : "";
+    const headIcon = isSingle ? `<span class="exec-icon" title="クリックで実行">⏎</span>` : `<span class="arrow-icon">▶</span>`;
+
+    head.innerHTML = `<span class="cost-title">${headIcon}${esc(srcLabel)}${patternCountStr}</span>${bestBadge}`;
+    if (isSingle) {
+      head.disabled = g.options[0].forbidden;
+      bindCoreEffectPreview(head, g.options[0]);
+    }
+
+    const optsDiv = document.createElement("div");
+    optsDiv.className = "cost-subgroup-opts hidden";
+
+    for (const o of g.options) {
+      const isOptBest = (!o.forbidden && isNearBest && isNearBest(o.eval, maxEval));
+      const btn = document.createElement("button");
+      btn.className = "source-opt-btn" + (isOptBest ? " best-option" : "") + (o.repeats_position ? " repeats-position" : "");
+      btn.setAttribute("data-act-idx", o.index);
+      btn.disabled = o.forbidden;
+      btn.title = optionStatusTitle(o, o.detail);
+      const prefix = optionStatusPrefix(o);
+      const execIcon = o.forbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`;
+      const optDetail = formatWithFieldSeq(o.detail, o.core_effects, g.target_instance_id);
+      btn.innerHTML = `<span class="detail-text">${execIcon}${prefix}${esc(optDetail)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        doAct(o.index);
+      };
+      bindCoreEffectPreview(btn, o);
+      optsDiv.appendChild(btn);
+    }
+
+    head.onclick = (e) => {
+      e.stopPropagation();
+      if (isSingle) {
+        if (!g.options[0].forbidden) doAct(g.options[0].index);
+        return;
+      }
+      const isOpening = optsDiv.classList.contains("hidden");
+      container.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+        if (el !== optsDiv) el.classList.add("hidden");
+      });
+      container.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+        arr.textContent = "▶";
+      });
+      if (isOpening) {
+        optsDiv.classList.remove("hidden");
+        const arr = head.querySelector(".arrow-icon");
+        if (arr) arr.textContent = "▼";
+      } else {
+        optsDiv.classList.add("hidden");
+        const arr = head.querySelector(".arrow-icon");
+        if (arr) arr.textContent = "▶";
+      }
+    };
+
+    sgDiv.appendChild(head);
+    sgDiv.appendChild(optsDiv);
+    container.appendChild(sgDiv);
+  }
+}
+
+function renderField(el, field, isMyField, blockActionsMap = null, attackingCardId = null, coreMoveContext = null, attackActionsMap = null) {
+  el.innerHTML = "";
+  if (!field.length) {
+    el.innerHTML = '<div class="empty">(なし)</div>';
+    return;
+  }
+
+  const { isMainStep, groups, maxEval, isNearBest } = coreMoveContext || {};
+
+  for (const o of field) {
+    const isAttacking = (o.is_attacking === true) ||
+      (attackingCardId != null && (o.id === attackingCardId || o.name === attackingCardId));
+    const blockAction = blockActionsMap ? (blockActionsMap.get(o.id) ?? blockActionsMap.get(o.name)) : null;
+    const attackActionInfo = (isMyField && attackActionsMap) ? (attackActionsMap.get(o.id) ?? attackActionsMap.get(o.name)) : null;
+
+    // メインステップで自分のフィールドのスピリット/カードへのコア移動グループ
+    const matchedCoreGroups = (isMyField && isMainStep && groups) ? getCoreMoveGroupsForCard(o, groups) : [];
+    const hasCoreMove = matchedCoreGroups.length > 0 && matchedCoreGroups.some(g => !g.all_forbidden);
+
+    let cardBestEval = null;
+    if (hasCoreMove) {
+      matchedCoreGroups.forEach(g => {
+        if (g.best_eval != null && (cardBestEval == null || g.best_eval > cardBestEval)) {
+          cardBestEval = g.best_eval;
+        }
+      });
+    }
+    const isTopCoreMove = (hasCoreMove && isNearBest && isNearBest(cardBestEval, maxEval));
+
+    const hasMultiAttack = attackActionInfo && attackActionInfo.actions && attackActionInfo.actions.length > 1;
+    const isTopAttack = attackActionInfo && attackActionInfo.isBest;
+
+    const wrap = document.createElement("div");
+    if (hasCoreMove || hasMultiAttack) {
+      wrap.className = "field-card-wrapper";
+    }
+
+    const div = document.createElement("div");
+    let cardClass = "card" + (o.exhausted ? " exhausted" : "");
+    if (hasCoreMove) {
+      cardClass += " core-targetable" + (isTopCoreMove ? " is-best" : "");
+    }
+    if (attackActionInfo) {
+      cardClass += " attackable" + (isTopAttack ? " is-best" : "");
+    }
+    div.className = cardClass;
+
+    if (isAttacking) {
+      div.classList.add("attacking");
+      div.title = `⚔️ ${o.name} アタック中`;
+    }
+
+    if (blockAction) {
+      div.classList.add("blockable");
+      div.title = `🛡️ クリックして ${o.name} でブロック`;
+      div.onclick = (e) => {
+        e.stopPropagation();
+        doAct(blockAction.index);
+      };
+    } else if (attackActionInfo && !hasMultiAttack) {
+      // 単一アタックアクション: カードクリックで即座にアタック宣言
+      const act = attackActionInfo.actions[0];
+      div.title = `⚔️ クリックして ${o.name} でアタック宣言 (BP${o.bp || '-'})`;
+      div.onclick = (e) => {
+        e.stopPropagation();
+        doAct(act.index);
+      };
+    } else if (attackActionInfo && hasMultiAttack) {
+      // ガリザロト等の対象指定アタック: アコーディオンで対象選択肢を展開
+      div.setAttribute("data-obj-id", o.id);
+      div.setAttribute("data-obj-name", o.name);
+      div.title = `⚔️ クリックしてアタック時の指定対象を選択`;
+
+      const shouldReopen = (o.id === openFieldCardId);
+      const optsDiv = document.createElement("div");
+      optsDiv.className = "field-options" + (shouldReopen ? "" : " hidden") + (isTopAttack ? " is-best" : "");
+
+      for (const act of attackActionInfo.actions) {
+        const btn = document.createElement("button");
+        btn.className = "hand-opt-btn" + (act.isBest ? " best-option" : "");
+        let label = act.detail;
+        const matchTarget = label.match(/指定[:：]\s*(.+?)(?:\s*\(|$)/);
+        if (matchTarget) {
+          label = `🎯 指定: ${matchTarget[1]}`;
+        } else if (label.includes("指定なし")) {
+          label = "⚔️ 指定なしでアタック";
+        }
+        btn.innerHTML = `<span class="detail-text">${esc(label)}</span>${getEvalBadge(act.eval, act.isBest)}`;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          doAct(act.index);
+        };
+        optsDiv.appendChild(btn);
+      }
+
+      if (shouldReopen) {
+        div.classList.add("open");
+      }
+
+      div.onclick = (e) => {
+        e.stopPropagation();
+        const isHidden = optsDiv.classList.toggle("hidden");
+        div.classList.toggle("open", !isHidden);
+        const arrowEl = div.querySelector(".attack-arrow");
+        if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+        if (!isHidden) {
+          openFieldCardId = o.id;
+          document.querySelectorAll(".field-card-wrapper").forEach(w => {
+            if (w !== wrap) {
+              const otherOpts = w.querySelector(".field-options");
+              const otherCard = w.querySelector(".card");
+              if (otherOpts) otherOpts.classList.add("hidden");
+              if (otherCard) {
+                otherCard.classList.remove("open");
+                const arr = otherCard.querySelector(".attack-arrow, .core-move-arrow");
+                if (arr) arr.textContent = "▶";
+              }
+            }
+          });
+        } else {
+          if (openFieldCardId === o.id) openFieldCardId = null;
+        }
+      };
+
+      wrap.appendChild(div);
+      wrap.appendChild(optsDiv);
+    } else if (isMyField) {
+      div.setAttribute("data-obj-id", o.id);
+      div.setAttribute("data-obj-name", o.name);
+
+      if (hasCoreMove) {
+        const shouldReopen = (o.id === openFieldCardId);
+        const optsDiv = document.createElement("div");
+        optsDiv.className = "field-options" + (shouldReopen ? "" : " hidden") + (isTopCoreMove ? " is-best" : "");
+
+        renderCardCoreMoveMenu(optsDiv, matchedCoreGroups, maxEval, isNearBest);
+
+        if (shouldReopen) {
+          div.classList.add("open");
+        }
+
+        div.onclick = (e) => {
+          if (activePlayContext) {
+            e.stopPropagation();
+            handleSourceCoreClick(o.id, 'normal');
+            return;
+          }
+          e.stopPropagation();
+          const isHidden = optsDiv.classList.toggle("hidden");
+          div.classList.toggle("open", !isHidden);
+          const arrowEl = div.querySelector(".core-move-arrow");
+          if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+          if (!isHidden) {
+            openFieldCardId = o.id;
+            // 他の field-card-wrapper を閉じる
+            document.querySelectorAll(".field-card-wrapper").forEach(w => {
+              if (w !== wrap) {
+                const otherOpts = w.querySelector(".field-options");
+                const otherCard = w.querySelector(".card");
+                if (otherOpts) otherOpts.classList.add("hidden");
+                if (otherCard) {
+                  otherCard.classList.remove("open");
+                  const arr = otherCard.querySelector(".core-move-arrow");
+                  if (arr) arr.textContent = "▶";
+                }
+              }
+            });
+            // 手札のアコーディオンも閉じる
+            document.querySelectorAll(".hand-card-wrapper .hand-options").forEach(ho => ho.classList.add("hidden"));
+            document.querySelectorAll(".hand-card-wrapper .card").forEach(hc => hc.classList.remove("open"));
+          } else {
+            if (openFieldCardId === o.id) openFieldCardId = null;
+          }
+        };
+
+        wrap.appendChild(div);
+        wrap.appendChild(optsDiv);
+      } else {
+        div.onclick = (e) => {
+          if (activePlayContext) {
+            e.stopPropagation();
+            handleSourceCoreClick(o.id, 'normal');
+          }
+        };
+      }
+    }
+
+    const symGems = formatReductionGems(o.symbols);
+    const symHtml = symGems ? `${symGems} ` : "";
+    const bpHtml = o.bp ? `, BP${o.bp}` : "";
+    const sourceIdForField = isMyField ? o.id : null;
+    let badgeHtml = "";
+    if (isAttacking) {
+      badgeHtml = `<div class="attacking-badge">⚔️ アタック中</div>`;
+    } else if (blockAction) {
+      const evalBadge = getEvalBadge(blockAction.eval, blockAction.isBest);
+      badgeHtml = `<div class="blockable-badge"><span>🛡️ ブロック</span>${evalBadge}</div>`;
+    } else if (attackActionInfo) {
+      const evalBadge = attackActionInfo.bestEval != null ? getEvalBadge(attackActionInfo.bestEval, attackActionInfo.isBest) : "";
+      const shouldReopen = (o.id === openFieldCardId);
+      const arrowIcon = shouldReopen ? "▼" : "▶";
+      const labelText = hasMultiAttack ? `<span><span class="attack-arrow">${arrowIcon}</span> ⚔️ アタック (${attackActionInfo.actions.length}択)</span>` : `<span>⚔️ アタック</span>`;
+      badgeHtml = `<div class="attackable-badge">${labelText}${evalBadge}</div>`;
+    } else if (hasCoreMove) {
+      const evalBadge = cardBestEval != null ? getEvalBadge(cardBestEval, isTopCoreMove) : "";
+      const shouldReopen = (o.id === openFieldCardId);
+      const arrowIcon = shouldReopen ? "▼" : "▶";
+      badgeHtml = `<div class="core-move-badge"><span><span class="core-move-arrow">${arrowIcon}</span> 🔷 移動</span>${evalBadge}</div>`;
+    }
+
+    const isFieldArea = !el.id.includes("trash") && !el.id.includes("hand");
+    const seq = isFieldArea ? getCardSeq(o) : null;
+    const seqBadgeHtml = seq ? `<span class="card-seq">#${seq}</span>` : "";
+
+    div.innerHTML = `<div class="nm">${seqBadgeHtml}${esc(o.name)}</div>` +
+      `<div class="sub">${symHtml}コア:${formatCoresDisplay(o.cores, sourceIdForField)}, Lv${o.lv}${bpHtml}</div>` +
+      badgeHtml;
+
+    if (o.image_url) bindCardPreview(div, o.name, o.image_url);
+
+    if (hasCoreMove || hasMultiAttack) {
+      el.appendChild(wrap);
+    } else {
+      el.appendChild(div);
+    }
+  }
+}
+
+function splitOptionDetail(detail) {
+  // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
+  const match = detail.match(/^(.*?)[,、]?\s*(\(([^)]+)\))$/);
+  if (match) {
+    return {
+      costPlacement: match[1].trim(),
+      sourcesLabel: match[2].trim(),
+      innerSources: match[3].trim()
+    };
+  }
+  return {
+    costPlacement: detail.trim(),
+    sourcesLabel: detail.trim(),
+    innerSources: ""
+  };
+}
+
+function groupOptionsByCostPlacement(options) {
+  const map = new Map();
+  for (const o of options) {
+    const { costPlacement, sourcesLabel, innerSources } = splitOptionDetail(o.detail);
+    if (!map.has(costPlacement)) {
+      map.set(costPlacement, {
+        costPlacement,
+        options: []
+      });
+    }
+    map.get(costPlacement).options.push({
+      ...o,
+      costPlacement,
+      sourcesLabel,
+      innerSources
+    });
+  }
+  return Array.from(map.values());
+}
+
+function renderOptionsHierarchy(container, options, maxEval, isNearBest) {
+  const subGroups = groupOptionsByCostPlacement(options);
+
+  subGroups.forEach((sg) => {
+    const validEvals = sg.options.filter(o => !o.forbidden).map(o => o.eval).filter(e => e != null);
+    const bestInSg = validEvals.length ? validEvals.reduce((m, v) => Math.max(m, v), -Infinity) : null;
+    const isSgBest = (bestInSg != null && isNearBest(bestInSg, maxEval));
+
+    const sgDiv = document.createElement("div");
+    sgDiv.className = "cost-subgroup" + (isSgBest ? " is-best" : "");
+
+    // 1段目: 必要コア（コスト、配置コア）選択見出し（初期状態は閉じた状態）
+    const head = document.createElement("button");
+    head.className = "cost-subgroup-head";
+    // パターンが1つだけなら中間層を挟まず、見出しクリックで即実行する
+    const isTerminalSg = sg.options.length === 1;
+    const terminalForbidden = isTerminalSg && sg.options[0].forbidden;
+    const terminalRepeats = isTerminalSg && sg.options[0].repeats_position;
+    const patternCountStr = sg.options.length > 1 ? ` (${sg.options.length}パターン)` : "";
+    const bestBadge = bestInSg != null ? getEvalBadge(bestInSg, isSgBest) : "";
+    const statusPrefix = isTerminalSg ? optionStatusPrefix(sg.options[0]) : "";
+    // forbidden(=選択自体が不可)のときだけ実行アイコンを消す。repeats_position は選択可能なので⏎を残す
+    const headIcon = isTerminalSg
+      ? (terminalForbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`)
+      : `<span class="arrow-icon">▶</span>`;
+
+    const formattedCostPlacement = formatWithFieldSeq(sg.costPlacement, sg.options?.[0]?.core_effects);
+    head.innerHTML = `<span class="cost-title">${headIcon}${statusPrefix}${esc(formattedCostPlacement)}${patternCountStr}</span>${bestBadge}`;
+    if (isTerminalSg) head.classList.toggle("repeats-position", terminalRepeats);
+    // 真に選べない(forbidden)ときだけボタンを無効化する。onclick内で弾くだけでは、
+    // クリックできる見た目のまま何も起きないボタンになってしまい紛らわしい。
+    // repeats_position は選択できる仕様なので disabled にはしない
+    if (terminalForbidden) {
+      head.disabled = true;
+    }
+    head.title = isTerminalSg ? optionStatusTitle(sg.options[0], null) || "" : "";
+
+    // 単一パターンの見出しはクリックで即実行されるので、ホバーで動くコアを示す
+    if (isTerminalSg) bindCoreEffectPreview(head, sg.options[0]);
+
+    // 2段目: コア確保パターン選択肢一覧
+    const optsDiv = document.createElement("div");
+    optsDiv.className = "cost-subgroup-opts hidden";
+
+    for (const o of sg.options) {
+      const isOptBest = (!o.forbidden && isNearBest(o.eval, maxEval));
+      const btn = document.createElement("button");
+      btn.className = "source-opt-btn" + (isOptBest ? " best-option" : "") + (o.repeats_position ? " repeats-position" : "");
+      btn.setAttribute("data-act-idx", o.index);
+      // 真に選べない(forbidden)ときだけ無効化する。repeats_position は選択可能
+      btn.disabled = o.forbidden;
+      btn.title = optionStatusTitle(o, o.detail);
+      const prefix = optionStatusPrefix(o);
+      // ここが最終選択肢。forbidden でなければクリックで即実行される(repeats_positionでも実行可)
+      const execIcon = o.forbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`;
+      const optLabel = formatWithFieldSeq(o.sourcesLabel || o.detail, o.core_effects);
+      btn.innerHTML = `<span class="detail-text">${execIcon}${prefix}${esc(optLabel)}</span> ${getEvalBadge(o.eval, isOptBest)}`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        doAct(o.index);
+      };
+      bindCoreEffectPreview(btn, o);
+      optsDiv.appendChild(btn);
+    }
+
+    head.onclick = (e) => {
+      e.stopPropagation();
+      if (isTerminalSg) {
+        const only = sg.options[0];
+        if (!only.forbidden) doAct(only.index);
+        return;
+      }
+      const isNowOpening = optsDiv.classList.contains("hidden");
+
+      // 他のサブグループを閉じる（アコーディオン）
+      container.querySelectorAll(".cost-subgroup-opts").forEach(el => {
+        if (el !== optsDiv) el.classList.add("hidden");
+      });
+      container.querySelectorAll(".cost-subgroup-head .arrow-icon").forEach(arr => {
+        arr.textContent = "▶";
+      });
+
+      if (isNowOpening) {
+        optsDiv.classList.remove("hidden");
+        const arrowEl = head.querySelector(".arrow-icon");
+        if (arrowEl) arrowEl.textContent = "▼";
+      } else {
+        optsDiv.classList.add("hidden");
+        const arrowEl = head.querySelector(".arrow-icon");
+        if (arrowEl) arrowEl.textContent = "▶";
+      }
+    };
+
+    sgDiv.appendChild(head);
+    sgDiv.appendChild(optsDiv);
+    container.appendChild(sgDiv);
+  });
+}
+
+function renderHand(el, hand, groups, maxEval) {
+  el.innerHTML = "";
+  if (!hand.length) {
+    el.innerHTML = '<div class="empty">(なし)</div>';
+    return;
+  }
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
+  for (const c of hand) {
+    const wrap = document.createElement("div");
+    wrap.className = "hand-card-wrapper";
+
+    // card_no による厳密一致。以前はカード名の部分文字列一致(g.category.includes(c.name))で、
+    // 同名カードが手札とフィールドに同時に存在すると無関係なグループ(フィールド側のコア移動等)
+    // まで誤って拾ってしまうバグがあった。
+    const matchedGroups = (groups || []).filter(g => g.card_no != null && g.card_no === c.card_no);
+    const isPlayable = matchedGroups.length > 0 && matchedGroups.some(g => !g.all_forbidden);
+
+    let cardBestEval = null;
+    matchedGroups.forEach(g => {
+      if (g.best_eval != null) {
+        if (cardBestEval == null || g.best_eval > cardBestEval) {
+          cardBestEval = g.best_eval;
+        }
+      }
+    });
+
+    const isTop = (isPlayable && isNearBest(cardBestEval, maxEval));
+
+    const cardDiv = document.createElement("div");
+    let cardClass = "card";
+    if (isPlayable) cardClass += " playable";
+    if (isTop) cardClass += " is-best";
+    cardDiv.className = cardClass;
+
+    const redGems = formatReductionGems(c.reduction);
+    const costBarHtml = `<div class="cost-bar" title="コスト:${c.cost}${c.reduction ? ', 軽減:' + esc(c.reduction) : ''}"><span class="cost-circle">${c.cost}</span>${redGems}</div>`;
+
+    let playBadgeHtml = "";
+    if (isPlayable) {
+      playBadgeHtml = `<div class="playable-badge"><span class="hand-arrow">▶</span> ${getEvalBadge(cardBestEval, isTop)}</div>`;
+    }
+
+    cardDiv.innerHTML = `<div class="card-top">${costBarHtml}<div class="nm">${esc(c.name)}</div></div>` +
+      playBadgeHtml;
+
+    if (c.image_url) bindCardPreview(cardDiv, c.name, c.image_url);
+
+    wrap.appendChild(cardDiv);
+
+    if (isPlayable) {
+      // 再描画のたびにDOMを作り直すため、直前まで開いていたアコーディオンは
+      // openHandCardNo を見て開いた状態で復元する (他クライアントの操作によるSSE配信や
+      // 自分の操作に対するSSE自己エコーで再描画されても、開いていたアコーディオンが
+      // 勝手に閉じないようにするため)
+      const shouldReopen = (c.card_no === openHandCardNo);
+
+      const optsDiv = document.createElement("div");
+      optsDiv.className = "hand-options" + (shouldReopen ? "" : " hidden") + (isTop ? " is-best" : "");
+
+      const allHandOpts = [];
+      matchedGroups.forEach(g => {
+        g.options.forEach(o => allHandOpts.push(o));
+      });
+
+      renderOptionsHierarchy(optsDiv, allHandOpts, maxEval, isNearBest);
+
+      wrap.appendChild(optsDiv);
+
+      if (shouldReopen) {
+        cardDiv.classList.add("open");
+        const arrowEl = cardDiv.querySelector(".hand-arrow");
+        if (arrowEl) arrowEl.textContent = "▼";
+        activePlayContext = { card: c, groups: matchedGroups, alloc: {}, wrapEl: wrap, optsDiv: optsDiv };
+      }
+
+      cardDiv.onclick = (e) => {
+        e.stopPropagation();
+        const isHidden = optsDiv.classList.toggle("hidden");
+        cardDiv.classList.toggle("open", !isHidden);
+        const arrowEl = cardDiv.querySelector(".hand-arrow");
+        if (arrowEl) arrowEl.textContent = isHidden ? "▶" : "▼";
+
+        if (!isHidden) {
+          el.querySelectorAll(".hand-card-wrapper").forEach(w => {
+            if (w !== wrap) {
+              const otherOpts = w.querySelector(".hand-options");
+              const otherCard = w.querySelector(".card");
+              if (otherOpts) otherOpts.classList.add("hidden");
+              if (otherCard) {
+                otherCard.classList.remove("open");
+                const otherArrow = otherCard.querySelector(".hand-arrow");
+                if (otherArrow) otherArrow.textContent = "▶";
+              }
+            }
+          });
+          activePlayContext = { card: c, groups: matchedGroups, alloc: {}, wrapEl: wrap, optsDiv: optsDiv };
+          openHandCardNo = c.card_no;
+          openFieldCardId = null;
+          document.querySelectorAll(".field-card-wrapper .field-options").forEach(fo => fo.classList.add("hidden"));
+          document.querySelectorAll(".field-card-wrapper .card").forEach(fc => {
+            fc.classList.remove("open");
+            const arr = fc.querySelector(".core-move-arrow");
+            if (arr) arr.textContent = "▶";
+          });
+        } else {
+          activePlayContext = null;
+          openHandCardNo = null;
+        }
+        updateCoreAllocationUI();
+      };
+    }
+
+    el.appendChild(wrap);
+  }
+
+  // 直前に開いていたカードが召喚済み・支払不能等で手札から無くなった場合、
+  // 古い card_no を残したままにしない (次にたまたま同じ card_no のカードが手札に来たときに
+  // 勝手に開いてしまうのを防ぐ)
+  if (openHandCardNo != null && !activePlayContext) {
+    openHandCardNo = null;
+  }
+}
+
+function renderGroups(groups, maxEval) {
+  const box = $("groups");
+  box.innerHTML = "";
+  if (!groups.length) {
+    box.innerHTML = '<div class="empty">選択可能なアクションはありません</div>';
+    return;
+  }
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
+  // コア移動・交換は件数が多いので、最初は「🔷【コア移動】」1行だけを出し、開くと個々の移動を並べる
+  const isCoreGroup = g => /【(?:コア(?:移動|交換|再配置)|Lv変更|ソウルコア移動)】/u.test(g.category || "");
+  const coreGroups = groups.filter(isCoreGroup);
+  let coreBody = null;
+  let coreWrap = null;
+  if (coreGroups.length) {
+    const selectable = coreGroups.filter(g => !g.all_forbidden);
+    const coreBest = selectable.length ? Math.max(...selectable.map(g => g.best_eval ?? -Infinity)) : null;
+    const isTop = coreBest != null && isNearBest(coreBest, maxEval);
+    const wrap = document.createElement("div");
+    wrap.className = "group core-all";
+    const head = document.createElement("button");
+    head.className = "head";
+    const count = coreGroups.reduce((n, g) => n + g.options.length, 0);
+    const coreTitle = coreGroups.some(g => g.category.includes("【コア再配置】")) ? "🔷【コア再配置】"
+      : coreGroups.some(g => /【(?:Lv変更|ソウルコア移動)】/u.test(g.category)) ? "🔷【Lv変更・ソウルコア移動】" : "🔷【コア移動】";
+    head.innerHTML = `<span class="cat">${coreTitle} (${count})</span><span class="cnt core-all-cnt">${coreListOpen ? "▼" : "▶"}</span>` +
+      `${coreBest != null ? getEvalBadge(coreBest, isTop) : ""}`;
+    coreBody = document.createElement("div");
+    coreBody.className = "core-all-body" + (coreListOpen ? "" : " hidden");
+    head.onclick = () => {
+      coreListOpen = coreBody.classList.toggle("hidden") === false;
+      head.querySelector(".core-all-cnt").textContent = coreListOpen ? "▼" : "▶";
+    };
+    wrap.appendChild(head);
+    wrap.appendChild(coreBody);
+    // 他の選択肢 (召喚・マジック等) の後ろに置く
+    groups = groups.filter(g => !isCoreGroup(g)).concat(coreGroups);
+    coreWrap = wrap;
+  }
+
+  groups.forEach((g, idx) => {
+    const target = (coreBody && isCoreGroup(g)) ? coreBody : box;
+    if (coreWrap && target === coreBody && !coreWrap.isConnected) box.appendChild(coreWrap);
+    if ((g.category || "").includes("【コア再配置】")) {
+      renderRearrangeList(target, g, maxEval, isNearBest);
+      return;
+    }
+    const isTop = (!g.all_forbidden && isNearBest(g.best_eval, maxEval));
+    const isSingleBest = (isTop && g.options.length === 1);
+    const div = document.createElement("div");
+    div.className = "group" + (g.all_forbidden ? " forbidden" : "") + (isSingleBest ? " single-best" : "");
+
+    const head = document.createElement("button");
+    head.className = "head";
+    // 選択肢が1つだけのグループでは、そのオプション自体の状態(forbidden/repeats_position)を見出しに出す
+    const onlyOpt = g.options.length === 1 ? g.options[0] : null;
+    const forbidden = onlyOpt ? optionStatusPrefix(onlyOpt) : (g.all_forbidden ? `🚫[${esc(g.forbidden_reason || "選択不可")}] ` : "");
+
+    // 選択肢が1つだけのグループは見出しクリックで即実行されるため、展開(▶)ではなく実行(⏎)を示す
+    const hasSub = g.options.length > 1;
+    const cntHtml = hasSub
+      ? `<span class="cnt" id="cnt-${idx}">▶</span>`
+      : `<span class="cnt exec" title="クリックで実行">⏎</span>`;
+
+    const formattedCategory = formatWithFieldSeq(g.category, g.options?.[0]?.core_effects, g.target_instance_id);
+    head.innerHTML = `<span class="cat">${forbidden}${esc(formattedCategory)}</span>${cntHtml}` +
+      `${getEvalBadge(g.best_eval, isTop)}`;
+    if (onlyOpt && onlyOpt.repeats_position) head.classList.add("repeats-position");
+
+    for (const [cName, cImg] of Object.entries(cardImageMap)) {
+      if (g.category.includes(cName)) {
+        bindCardPreview(head, cName, cImg);
+        break;
+      }
+    }
+
+    div.appendChild(head);
+
+    if (onlyOpt) {
+      // 真に選べない(forbidden)ときだけ無効化する。repeats_position は選択可能
+      head.disabled = onlyOpt.forbidden;
+      head.title = optionStatusTitle(onlyOpt, null) || "";
+      head.onclick = () => doAct(onlyOpt.index);
+      bindCoreEffectPreview(head, onlyOpt);
+    } else {
+      const opts = document.createElement("div");
+      // 初期状態は常に閉じた状態にし、スピリット一覧のみをコンパクトに表示
+      opts.className = "opts hidden";
+
+      renderOptionsHierarchy(opts, g.options, maxEval, isNearBest);
+      div.appendChild(opts);
+      
+      head.onclick = () => {
+        const isNowOpening = opts.classList.contains("hidden");
+
+        // 他のグループをすべて閉じる（アコーディオン）
+        box.querySelectorAll(".opts").forEach(el => {
+          if (el !== opts) el.classList.add("hidden");
+        });
+        box.querySelectorAll(".cnt:not(.core-all-cnt):not(.exec)").forEach(cnt => {
+          cnt.textContent = "▶";
+        });
+
+        if (isNowOpening) {
+          opts.classList.remove("hidden");
+          const cntEl = $(`cnt-${idx}`);
+          if (cntEl) cntEl.textContent = "▼";
+        } else {
+          opts.classList.add("hidden");
+          const cntEl = $(`cnt-${idx}`);
+          if (cntEl) cntEl.textContent = "▶";
+        }
+      };
+    }
+
+    target.appendChild(div);
+  });
+}
+
+/**
+ * コアの一括再配置の一覧: 最終配置ごとの手を評価値の高い順に並べる。件数が多いので最初は上位
+ * REARRANGE_PAGE 件だけ出し、「さらに表示」で追加する。同一局面に戻る配置は末尾。
+ */
+const REARRANGE_PAGE = 30;
+function renderRearrangeList(container, g, maxEval, isNearBest) {
+  const sorted = [...g.options].sort((a, b) =>
+    (a.repeats_position - b.repeats_position) || ((b.eval ?? -9) - (a.eval ?? -9)));
+  const list = document.createElement("div");
+  list.className = "rearrange-list";
+  let shown = 0;
+  const more = document.createElement("button");
+  more.className = "rearrange-more";
+  const addPage = () => {
+    for (const o of sorted.slice(shown, shown + REARRANGE_PAGE)) {
+      const isBest = !o.forbidden && !o.repeats_position && isNearBest(o.eval, maxEval);
+      const btn = document.createElement("button");
+      btn.className = "source-opt-btn" + (isBest ? " best-option" : "") + (o.repeats_position ? " repeats-position" : "");
+      btn.disabled = o.forbidden;
+      btn.title = optionStatusTitle(o, o.detail);
+      btn.innerHTML = `<span class="detail-text"><span class="exec-icon">⏎</span>${optionStatusPrefix(o)}${esc(formatWithFieldSeq(o.detail, o.core_effects))}</span> ${getEvalBadge(o.eval, isBest)}`;
+      btn.onclick = (e) => { e.stopPropagation(); doAct(o.index); };
+      bindCoreEffectPreview(btn, o);
+      list.insertBefore(btn, more);
+    }
+    shown = Math.min(sorted.length, shown + REARRANGE_PAGE);
+    more.textContent = `さらに表示 (残り ${sorted.length - shown})`;
+    more.hidden = shown >= sorted.length;
+  };
+  more.onclick = (e) => { e.stopPropagation(); addPage(); };
+  list.appendChild(more);
+  addPage();
+  container.appendChild(list);
+}
+
+/** プレイヤー見出しの状態表示を除いた部分 (評価の途中経過で状態表示だけを書き換えるため) */
+const playerTitleBase = { 1: "", 2: "" };
+
+/** 評価の途中経過を、そのプレイヤーが自動選択中なら見出しに「選択肢数:x/X」として出す */
+function showEvalProgress(player, done, total) {
+  if (!$(`auto-p${player}`)?.checked || !playerTitleBase[player]) return;
+  $(`p${player}-title`).textContent = `${playerTitleBase[player]} 🤖 自動選択中...選択肢数:${done}/${total}`;
+}
+
+/** 右の一覧の「🔷【コア移動】」をまとめた行が開いているか (再描画をまたいで保持、手を指したら閉じる) */
+let coreListOpen = false;
+
+let cardImageMap = {};
+
+let lastRenderData = null;
+
+function render(data) {
+  lastRenderData = data;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  // 再描画で手札・フィールドの要素が作り直されるため、プレビューの持ち主も無効になる
+  hideCardPreview();
+  clearCoreEffectPreview();
+
+  current = data;
+  sessionId = data.session;
+
+  // カード名から画像URLへのマップを更新、およびフィールドカード通し番号の事前確定
+  cardImageMap = {};
+  [data.player, data.opponent].forEach(p => {
+    if (p && p.hand) p.hand.forEach(c => { if (c.image_url) cardImageMap[c.name] = c.image_url; });
+    if (p && p.field) {
+      p.field.forEach(o => {
+        if (o.image_url) cardImageMap[o.name] = o.image_url;
+        getCardSeq(o);
+      });
+    }
+  });
+
+  $("turn").textContent = data.turn;
+  $("active").textContent = `プレイヤー${data.active_player}`;
+  $("phase").textContent = data.phase;
+  const evalCountEl = $("evaluated-count");
+  if (evalCountEl) evalCountEl.textContent = (data.evaluated_count || 0).toLocaleString();
+  const visitedCountEl = $("visited-count");
+  if (visitedCountEl) visitedCountEl.textContent = (data.visited_count || 0).toLocaleString();
+
+  // プレイヤー1(上段) と プレイヤー2(下段) のデータを固定配置
+  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
+  const p2 = (data.player.player_id === 2) ? data.player : data.opponent;
+
+  // 選択を行うプレイヤー (choosing_player)
+  const chooser = data.choosing_player || data.active_player || 1;
+  const p1Chooses = (chooser === 1);
+  const p2Chooses = (chooser === 2);
+  const p1IsActive = (data.active_player === 1);
+  const p2IsActive = (data.active_player === 2);
+
+  const p1Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(1) : "g1_g2-best.gru.weight";
+  const p2Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(2) : "g1_g2-best.gru.weight";
+
+  const p1IsAuto = $("auto-p1")?.checked || false;
+  const p2IsAuto = $("auto-p2")?.checked || false;
+  const chooserIsAuto = (chooser === 1 && p1IsAuto) || (chooser === 2 && p2IsAuto);
+
+  // 選択肢数 x/X: X は現局面で評価する選択肢の数 (同一局面に戻る手以外 + ステップ終了)、x は評価済みの数。
+  // 盤面が届いた時点で評価は終わっているので x = X。評価中の途中経過は SSE の progress イベントで更新する
+  // (相手視点では groups が空になるため、サーバーが視点に関係なく数えた eval_option_count を使う)
+  const total = data.eval_option_count ?? 0;
+  const autoLabel = ` 🤖 自動選択中...選択肢数:${total}/${total}`;
+  const p1StatusSuffix = p1Chooses ? (p1IsAuto ? autoLabel : " ⬅ 選択中") : "";
+  const p2StatusSuffix = p2Chooses ? (p2IsAuto ? autoLabel : " ⬅ 選択中") : "";
+
+  playerTitleBase[1] = `プレイヤー1[${p1Weight}]` + (p1IsActive ? "（手番）" : "");
+  playerTitleBase[2] = `プレイヤー2[${p2Weight}]` + (p2IsActive ? "（手番）" : "");
+  $("p1-title").textContent = playerTitleBase[1] + p1StatusSuffix;
+  $("p2-title").textContent = playerTitleBase[2] + p2StatusSuffix;
+
+  // 選択を行うプレイヤーをミドリ枠
+  const p1Panel = $("p1-panel");
+  const p2Panel = $("p2-panel");
+  if (p1Panel) p1Panel.classList.toggle("active-turn", p1Chooses);
+  if (p2Panel) p2Panel.classList.toggle("active-turn", p2Chooses);
+
+  // ステップ終了ボタンを手番プレイヤーのパネルヘッダーへ配置
+  const nBtn = $("btn-n");
+  const targetActions = p1IsActive ? $("p1-actions") : $("p2-actions");
+  if (nBtn && targetActions && nBtn.parentElement !== targetActions) {
+    targetActions.appendChild(nBtn);
+  }
+
+  // 全体での最高評価値 (groups および n_eval) を算出
+  let maxEval = -Infinity;
+  if (!data.n_forbidden && data.n_eval != null) {
+    maxEval = data.n_eval;
+  }
+  if (data.groups) {
+    data.groups.forEach(g => {
+      if (!g.all_forbidden && g.best_eval != null && g.best_eval > maxEval) {
+        maxEval = g.best_eval;
+      }
+    });
+  }
+
+  const isNearBest = (v, maxV) => {
+    if (v == null || maxV == null) return false;
+    return Math.abs(v - maxV) < 0.002 || ((v + 1.0) / 2.0 * 100).toFixed(1) === ((maxV + 1.0) / 2.0 * 100).toFixed(1);
+  };
+
+  // ブロック宣言時のブロック可能スピリットマップ (カードIDまたはカード名 -> アクション情報)
+  const isBlockDeclaration = !!(data.phase && data.phase.includes("ブロック宣言") && data.can_act !== false);
+  const blockActionsMap = new Map();
+  if (isBlockDeclaration && data.groups) {
+    for (const g of data.groups) {
+      if (g.category && g.category.includes("【ブロック】") && !g.category.includes("ブロックしない")) {
+        const selectableOpt = g.options.find(o => !o.forbidden);
+        if (selectableOpt) {
+          const isBest = isNearBest(selectableOpt.eval, maxEval);
+          const blockInfo = {
+            index: selectableOpt.index,
+            eval: selectableOpt.eval,
+            isBest: isBest,
+            detail: selectableOpt.detail
+          };
+          if (g.target_instance_id) {
+            blockActionsMap.set(g.target_instance_id, blockInfo);
+          }
+          const rawName = g.category.replace(/^🛡️【ブロック】\s*/, "").trim();
+          if (rawName && !blockActionsMap.has(rawName)) {
+            blockActionsMap.set(rawName, blockInfo);
+          }
+        }
+      }
+    }
+  }
+
+  // アタック宣言ステップ時のアタック可能スピリットマップ (カードIDまたはカード名 -> アクション情報)
+  const isAttackDeclaration = !!(data.phase && data.phase.includes("アタック宣言") && data.can_act !== false);
+  const attackActionsMap = new Map();
+  if (isAttackDeclaration && data.groups) {
+    for (const g of data.groups) {
+      if (g.category && g.category.includes("【アタック】")) {
+        const selectableOpts = g.options.filter(o => !o.forbidden);
+        if (selectableOpts.length > 0) {
+          const rawName = g.category.replace(/^🗡️【アタック】\s*/, "").replace(/\s*➔\s*指定:.*$/, "").replace(/\s*\(指定:.*\)$/, "").trim();
+          const targetId = g.target_instance_id;
+          
+          let entry = (targetId && attackActionsMap.get(targetId)) || (rawName && attackActionsMap.get(rawName));
+          if (!entry) {
+            entry = {
+              actions: [],
+              bestEval: -Infinity,
+              isBest: false
+            };
+            if (targetId) attackActionsMap.set(targetId, entry);
+            if (rawName && !attackActionsMap.has(rawName)) attackActionsMap.set(rawName, entry);
+          }
+          for (const opt of selectableOpts) {
+            const isBest = isNearBest(opt.eval, maxEval);
+            if (isBest) entry.isBest = true;
+            if (opt.eval > entry.bestEval) entry.bestEval = opt.eval;
+            entry.actions.push({
+              index: opt.index,
+              eval: opt.eval,
+              isBest: isBest,
+              detail: opt.detail
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // アタック中のカードID特定 (バトル中)
+  // 1. data.attacking_card_id があれば最優先
+  // 2. ブロック宣言フェーズ中であれば、アタック側(active_player)フィールドのアタッカーを特定
+  let attackingCardId = data.attacking_card_id || null;
+  if (!attackingCardId && isBlockDeclaration) {
+    const attackerOwner = (data.active_player === 1) ? p1 : p2;
+    let targetCardName = null;
+    if (data.groups) {
+      for (const g of data.groups) {
+        if (g.category && g.category.includes("【ブロック】") && !g.category.includes("ブロックしない")) {
+          for (const opt of g.options) {
+            const m = (opt.detail || "").match(/→\s*(.+?)を破壊/);
+            if (m) {
+              targetCardName = m[1].trim();
+              break;
+            }
+          }
+          if (targetCardName) break;
+        }
+      }
+    }
+    if (targetCardName && attackerOwner && attackerOwner.field) {
+      const matchCard = attackerOwner.field.find(c => c.name === targetCardName && c.exhausted);
+      if (matchCard) attackingCardId = matchCard.id;
+    }
+    if (!attackingCardId && attackerOwner && attackerOwner.field) {
+      const exhaustedCards = attackerOwner.field.filter(c => c.exhausted);
+      if (exhaustedCards.length === 1) {
+        attackingCardId = exhaustedCards[0].id;
+      }
+    }
+  }
+
+  const p1AttackingId = (data.active_player === 1) ? attackingCardId : null;
+  const p2AttackingId = (data.active_player === 2) ? attackingCardId : null;
+
+  const isMainStep = !!(data.phase && data.phase.includes("メインステップ") && data.can_act !== false);
+  if (!isMainStep && !isAttackDeclaration) {
+    openFieldCardId = null;
+  }
+  const coreMoveContext = {
+    isMainStep: isMainStep,
+    groups: data.groups,
+    maxEval: maxEval,
+    isNearBest: isNearBest
+  };
+
+  // プレイヤー1 (上段) レンダリング
+  $("p1-life").innerHTML = lifeStr(p1.life);
+  $("p1-reserve").innerHTML = formatCoresDisplay(p1.reserve, p1Chooses ? "Reserve" : null);
+  $("p1-trash-cores").innerHTML = formatCoresDisplay(p1.trash_cores);
+  $("p1-count").innerHTML = formatCountDisplay(p1.count);
+  $("p1-hand-count").textContent = p1.hand_count;
+  $("p1-deck-count").textContent = p1.deck_count;
+  renderField($("p1-field"), p1.field, p1Chooses, p1Chooses ? blockActionsMap : null, p1AttackingId, p1Chooses ? coreMoveContext : null, p1Chooses ? attackActionsMap : null);
+  renderTrash("p1", p1.trash_cards);
+
+  const resBoxP1 = $("p1-reserve-box");
+  if (resBoxP1) {
+    resBoxP1.onclick = (e) => {
+      if (activePlayContext && p1Chooses) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
+
+  // プレイヤー2 (下段) レンダリング
+  $("p2-life").innerHTML = lifeStr(p2.life);
+  $("p2-reserve").innerHTML = formatCoresDisplay(p2.reserve, p2Chooses ? "Reserve" : null);
+  $("p2-trash-cores").innerHTML = formatCoresDisplay(p2.trash_cores);
+  $("p2-count").innerHTML = formatCountDisplay(p2.count);
+  $("p2-hand-count").textContent = p2.hand_count;
+  $("p2-deck-count").textContent = p2.deck_count;
+  renderField($("p2-field"), p2.field, p2Chooses, p2Chooses ? blockActionsMap : null, p2AttackingId, p2Chooses ? coreMoveContext : null, p2Chooses ? attackActionsMap : null);
+  renderTrash("p2", p2.trash_cards);
+
+  const resBoxP2 = $("p2-reserve-box");
+  if (resBoxP2) {
+    resBoxP2.onclick = (e) => {
+      if (activePlayContext && p2Chooses) {
+        e.stopPropagation();
+        handleSourceCoreClick("Reserve");
+      }
+    };
+  }
+
+  // 手札のレンダリング (P1手札: 上段 / P2手札: 下段)
+  const p1Hand = p1.hand || [];
+  if (p1Hand.length === 0 && p1.hand_count > 0 && currentViewer() === 2) {
+    $("p1-hand-label").textContent = `手札 (${p1.hand_count}枚・非公開)`;
+    $("p1-hand").innerHTML = '<div class="empty">非公開</div>';
+  } else {
+    $("p1-hand-label").textContent = "手札";
+    if (p1Chooses) {
+      renderHand($("p1-hand"), p1Hand, data.groups, maxEval);
+    } else {
+      renderField($("p1-hand"), p1Hand, false);
+    }
+  }
+
+  const p2Hand = p2.hand || [];
+  if (p2Hand.length === 0 && p2.hand_count > 0 && currentViewer() === 1) {
+    $("p2-hand-label").textContent = `手札 (${p2.hand_count}枚・非公開)`;
+    $("p2-hand").innerHTML = '<div class="empty">非公開</div>';
+  } else {
+    $("p2-hand-label").textContent = "手札";
+    if (p2Chooses) {
+      renderHand($("p2-hand"), p2Hand, data.groups, maxEval);
+    } else {
+      renderField($("p2-hand"), p2Hand, false);
+    }
+  }
+
+  if (data.can_act === false && data.winner == null) {
+    $("groups").innerHTML =
+      '<div class="empty">⏳ プレイヤー' + data.choosing_player + ' の選択を待っています</div>';
+  } else {
+    renderGroups(data.groups, maxEval);
+  }
+  updateCoreAllocationUI();
+
+  const isNBest = (!data.n_forbidden && isNearBest(data.n_eval, maxEval));
+  nBtn.classList.toggle("is-best", isNBest);
+  const nLabel = esc(data.n_label || "ステップ終了");
+  const nForbiddenPrefix = data.n_forbidden ? `🚫[${esc(data.n_forbidden_reason || "選択不可")}] ` : "";
+  nBtn.innerHTML = `<span>${nForbiddenPrefix}${nLabel}</span> ${getEvalBadge(data.n_eval, isNBest)}`;
+  nBtn.disabled = data.n_index == null || data.n_forbidden || data.winner != null;
+  nBtn.title = data.n_forbidden ? (data.n_forbidden_reason || "選択不可") : "";
+  // ブロック宣言中や決着後は進めるステップがない。「自分」の枠内に無効ボタンを残すと、
+  // 相手宛ての指示が自分側に出ているように見えるので消す
+  nBtn.hidden = data.n_index == null;
+
+  if ($("btn-undo")) $("btn-undo").disabled = !data.can_undo;
+  if ($("btn-redo")) $("btn-redo").disabled = !data.can_redo;
+  if ($("btn-undo-board")) $("btn-undo-board").disabled = !data.can_undo;
+  if ($("btn-redo-board")) $("btn-redo-board").disabled = !data.can_redo;
+  updateAutoButtons();
+
+  renderReplaySteps(data);
+  if (currentTab === 'rawjson') {
+    loadRawJson();
+  }
+  if (currentTab === 'alloptions') {
+    renderAllOptions(data);
+  }
+
+  const banner = $("winner");
+  if (data.winner != null) {
+    banner.innerHTML = `<div class="winner-title">🏆 ゲーム終了: プレイヤー${data.winner} の勝利！</div>` +
+      `<div class="winner-actions">` +
+      `<button class="primary" onclick="restartGame()">🔄 同じ条件でリスタート</button>` +
+      `<button class="secondary" onclick="startNewGame()">✨ 新規ゲーム開始</button>` +
+      `</div>`;
+    banner.classList.remove("hidden");
+  } else {
+    banner.classList.add("hidden");
+  }
+
+  if (data.messages && data.messages.length) addMessages(data.messages);
+
+  if (data.seed != null) {
+    const seedEl = $("seed");
+    if (seedEl) {
+      seedEl.placeholder = String(data.seed);
+    }
+  }
+
+  maybeAutoPlay(data);
+}
+
+/**
+ * サーバー側の評価値greedy方策(playoutGameKannのplayoutGame等)と同じ選び方で、
+ * 現局面の最良の選択肢のindexを返す。ステップ終了(n_index)は「他のどの選択肢もこれを
+ * 上回っていない」場合にだけ選ぶ(厳密な超過が必要、KannEsTrainer.ktのkannStepEndEval比較と
+ * 同じ)。ブロック宣言などn_indexが無い局面(BLOCK_DECLARATION)ではgroups内の最良を単純に選ぶ。
+ */
+function pickBestActionIndex(data) {
+  let bestIndex = null;
+  let bestEval = -Infinity;
+  if (!data.n_forbidden && data.n_eval != null && data.n_index != null) {
+    bestIndex = data.n_index;
+    bestEval = data.n_eval;
+  }
+  for (const g of (data.groups || [])) {
+    for (const o of g.options) {
+      if (o.forbidden || o.eval == null) continue;
+      if (o.eval > bestEval) {
+        bestEval = o.eval;
+        bestIndex = o.index;
+      }
+    }
+  }
+  return bestIndex;
+}
+
+// P1自動/P2自動チェックボックス。有効なプレイヤーの手番になるたび、評価値が最良の
+// 選択肢を自動で選び続ける(自己対戦をGUI上で観戦できるようにする)。
+let autoPlayTimer = null;
+function maybeAutoPlay(data) {
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
+  }
+  if (autoRunType) return;
+  if (!data || data.winner != null || isActing) return;
+  const chooser = data.choosing_player;
+  const cb = $(chooser === 1 ? "auto-p1" : "auto-p2");
+  if (!cb || !cb.checked) return;
+  if (data.can_act === false) {
+    // 表示モードが相手プレイヤーの視点だと、この画面のデータには選択肢が無い。
+    // 選ぶ側の視点で盤面を取り直して選ぶ (画面の表示は SSE で自分の視点のまま更新される)
+    autoPlayTimer = setTimeout(() => autoActAs(chooser), 350);
+    return;
+  }
+  const idx = pickBestActionIndex(data);
+  if (idx == null) return;
+  // 即座に連打すると盤面が読めないので、少し間を置いてから選ぶ
+  autoPlayTimer = setTimeout(() => doAct(idx), 350);
+}
+
+/** 選ぶ側 (viewer) の視点で盤面を取得し、評価値が最良の手をその視点で指す。応答は描画しない (相手の手札を表示しないため) */
+async function autoActAs(viewer) {
+  if (isActing || autoRunType) return;
+  isActing = true;
+  try {
+    const st = await (await fetch('/api/state?viewer=' + viewer + '&session=' + TAB_SESSION)).json();
+    if (st.winner != null || st.choosing_player !== viewer) return;
+    const idx = pickBestActionIndex(st);
+    if (idx == null) return;
+    await api('/api/act', { session: sessionId, index: idx, viewer });
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+let currentTab = 'messages';
+
+function switchLogTab(tabName) {
+  currentTab = tabName;
+  ['messages', 'replay', 'rawjson', 'alloptions'].forEach(t => {
+    $(`tab-${t}`).classList.toggle('active', t === tabName);
+    $(`${t}-tab-content`).classList.toggle('hidden', t !== tabName);
+  });
+  if (tabName === 'rawjson') {
+    loadRawJson();
+  }
+  if (tabName === 'alloptions' && current) {
+    renderAllOptions(current);
+  }
+}
+
+/**
+ * 「全選択肢」タブ: 現局面の選択肢をすべて一覧にする。
+ *   プレイ (カードごと) / 場所 (リザーブ・各カード) ごとのコア移動「自身から」「自身へ」「交換」/ ステップ終了
+ * コア移動は移動元と移動先の両方の欄に出る (同じ手が2回出る)。合計は重複なしで数える。
+ * 行をクリックするとその手を指す。
+ */
+function renderAllOptions(data) {
+  const box = $("all-options-list");
+  if (!box) return;
+  const groups = data.groups || [];
+  if (!groups.length && data.n_index == null) {
+    box.innerHTML = `<div class="empty">${data.can_act === false ? "選択中のプレイヤーの視点 (または神視点) で表示されます" : "選択肢はありません"}</div>`;
+    return;
+  }
+  const me = (data.player?.player_id === data.choosing_player) ? data.player : data.opponent;
+  const isLevel = g => /【(?:Lv変更|ソウルコア移動)】/u.test(g.category || "");
+  const isCore = g => /【コア(?:移動|交換|再配置)】/u.test(g.category || "") || isLevel(g);
+  const all = groups.flatMap(g => g.options);
+  const repeats = all.filter(o => o.repeats_position).length;
+  const html = [];
+  const row = (o, label) => {
+    const mark = (o.repeats_position ? ' <span class="ao-mark">同一局面</span>' : "") + (o.forbidden ? ' <span class="ao-mark">選択不可</span>' : "");
+    return `<button class="ao-row${o.repeats_position ? " repeats-position" : ""}" data-act-idx="${o.index}" ${o.forbidden ? "disabled" : ""}>` +
+      `<span class="ao-idx">#${o.index}</span><span class="ao-text">${esc(label)}${mark}</span>${o.repeats_position ? "" : getEvalBadge(o.eval, false)}</button>`;
+  };
+  html.push(`<div class="ao-summary">選択肢 ${all.length} + ステップ終了 ${data.n_index != null ? 1 : 0} = ${all.length + (data.n_index != null ? 1 : 0)}` +
+    `（同一局面 ${repeats}、評価する選択肢 ${data.eval_option_count ?? "-"}）</div>`);
+
+  const plays = groups.filter(g => !isCore(g));
+  if (plays.length) {
+    html.push(`<div class="ao-section">■ ${/メイン/.test(data.phase || "") ? "プレイ" : "選択肢"} (${plays.reduce((n, g) => n + g.options.length, 0)})</div>`);
+    for (const g of plays) {
+      html.push(`<div class="ao-sub">${esc(formatWithFieldSeq(g.category, g.options?.[0]?.core_effects, g.target_instance_id))} (${g.options.length})</div>`);
+      for (const o of g.options) html.push(row(o, formatWithFieldSeq(o.detail, o.core_effects, g.target_instance_id)));
+    }
+  }
+
+  const levelGroups = groups.filter(isLevel);
+  if (levelGroups.length) {
+    // Lv単位の列挙: カードごとのLv変更とソウルコアの移動
+    html.push(`<div class="ao-section">■ Lv変更・ソウルコア移動 (${levelGroups.reduce((n, g) => n + g.options.length, 0)})</div>`);
+    for (const g of levelGroups) {
+      html.push(`<div class="ao-sub">${esc(formatWithFieldSeq(g.category, g.options?.[0]?.core_effects, g.target_instance_id))} (${g.options.length})</div>`);
+      for (const o of g.options) html.push(row(o, formatWithFieldSeq(o.detail, o.core_effects, g.target_instance_id)));
+    }
+  }
+  const rearr = groups.find(g => (g.category || "").includes("【コア再配置】"));
+  if (rearr) {
+    // 一括再配置: 最終配置ごとの手 (評価値の高い順、同一局面は末尾)
+    const sorted = [...rearr.options].sort((a, b) => (a.repeats_position - b.repeats_position) || ((b.eval ?? -9) - (a.eval ?? -9)));
+    html.push(`<div class="ao-section">■ コア再配置 (${sorted.length})</div>`);
+    for (const o of sorted) html.push(row(o, formatWithFieldSeq(o.detail, o.core_effects)));
+  }
+  const coreGroups = groups.filter(g => isCore(g) && !isLevel(g) && g !== rearr);
+  if (coreGroups.length) {
+    const places = [{ id: "Reserve", name: `R（${me?.reserve ?? "-"}）` },
+      ...((me?.field) || []).map(c => ({ id: c.id, name: `#${getCardSeq(c)} ${c.name}（${c.cores || "-"}）` }))];
+    html.push(`<div class="ao-section">■ コア移動・交換 (${coreGroups.reduce((n, g) => n + g.options.length, 0)})</div>`);
+    for (const p of places) {
+      const rel = coreGroups.map(g => ({ g, e: g.options?.[0]?.core_effects || [] }));
+      const swap = g => g.category.includes("【コア交換】");
+      const from = rel.filter(({ g, e }) => !swap(g) && e.some(x => x.direction === "from" && x.source_id === p.id));
+      const to = rel.filter(({ g, e }) => !swap(g) && e.some(x => x.direction === "to" && x.source_id === p.id));
+      const sw = rel.filter(({ g, e }) => swap(g) && e.some(x => x.source_id === p.id));
+      const cnt = list => list.reduce((n, x) => n + x.g.options.length, 0);
+      html.push(`<div class="ao-sub">${esc(p.name)}: 自身から ${cnt(from)} / 自身へ ${cnt(to)} / 交換 ${cnt(sw)}</div>`);
+      for (const [title, list] of [["自身から", from], ["自身へ", to], ["交換", sw]]) {
+        for (const { g } of list) {
+          const cat = formatWithFieldSeq(g.category, g.options?.[0]?.core_effects, g.target_instance_id).replace(/^\S+\s*/u, "");
+          for (const o of g.options) html.push(row(o, `[${title}] ${cat}: ${o.detail}`));
+        }
+      }
+    }
+  }
+
+  if (data.n_index != null) {
+    html.push(`<div class="ao-section">■ ステップ終了</div>`);
+    html.push(row({ index: data.n_index, eval: data.n_eval, forbidden: data.n_forbidden }, data.n_label || "ステップ終了"));
+  }
+  box.innerHTML = html.join("");
+  box.querySelectorAll(".ao-row").forEach(b => {
+    b.onclick = (e) => { e.stopPropagation(); doAct(Number(b.getAttribute("data-act-idx"))); };
+  });
+}
+
+function renderReplaySteps(data) {
+  const container = $("replay-steps-list");
+  const pathLabel = $("json-path-label");
+  if (data.replay_file) {
+    pathLabel.textContent = data.replay_file;
+    pathLabel.title = data.replay_file;
+  } else {
+    const d1 = ($("deck1").value || "deck1").replace(/\.[^/.]+$/, "");
+    const d2 = ($("deck2").value || "deck2").replace(/\.[^/.]+$/, "");
+    pathLabel.textContent = `./temp/${d1}-${d2}.YYMMDD-HHMMSS.${TAB_SESSION}.json (ゲーム終了時に自動保存)`;
+  }
+
+  if (!data.replay_steps || data.replay_steps.length === 0) {
+    container.innerHTML = `<div class="empty">選択ログはまだありません</div>`;
+    return;
+  }
+
+  container.innerHTML = data.replay_steps.map((st, idx) => {
+    const evalStr = st.chosen_action_eval != null ? st.chosen_action_eval.toFixed(3) : '-';
+    const jsonPreview = JSON.stringify({
+      step: st.step_index,
+      turn: st.turn,
+      player: st.active_player,
+      phase: st.phase,
+      action_category: st.chosen_action_category,
+      action_kind: st.chosen_action_kind,
+      action_detail: st.chosen_action_detail,
+      eval: st.chosen_action_eval,
+      available_actions: st.available_action_count,
+      snapshot: st.state_snapshot
+    }, null, 2);
+
+    return `
+      <div class="replay-step-item" onclick="toggleStepJson(${idx})">
+        <div class="replay-step-header">
+          <span class="replay-step-badge">#${st.step_index}</span>
+          <span>Turn ${st.turn} [P${st.active_player}] ${esc(st.phase)}</span>
+        </div>
+        <div class="replay-step-detail">
+          <b>${esc(st.chosen_action_category || st.chosen_action_kind)}</b>: ${esc(st.chosen_action_detail)}
+        </div>
+        <div class="replay-step-meta">
+          <span>評価値: <b>${evalStr}</b></span>
+          <span>選択肢数: ${st.available_action_count}</span>
+          <span style="color:#38bdf8;">▼ JSON詳細</span>
+        </div>
+        <div id="step-json-${idx}" class="replay-step-json hidden">${esc(jsonPreview)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleStepJson(idx) {
+  const el = $(`step-json-${idx}`);
+  if (el) el.classList.toggle('hidden');
+}
+
+async function loadRawJson() {
+  if (!sessionId) return;
+  try {
+    const replayData = await api("/api/replay", { session: sessionId });
+    if (replayData) {
+      $("raw-json-viewer").value = JSON.stringify(replayData, null, 2);
+    }
+  } catch (e) {
+    $("raw-json-viewer").value = "JSON取得エラー: " + e;
+  }
+}
+
+async function copyReplayJson() {
+  if (!sessionId) return;
+  try {
+    const replayData = await api("/api/replay", { session: sessionId });
+    if (replayData) {
+      await navigator.clipboard.writeText(JSON.stringify(replayData, null, 2));
+      alert("✅ リプレイログ JSON をクリップボードにコピーしました！");
+    }
+  } catch (e) {
+    alert("コピーに失敗しました: " + e);
+  }
+}
+
+let isActing = false;
+
+async function startNewGame() {
+  if (isActing) return;
+  isActing = true;
+  saveDeckSettings();
+  activePlayContext = null;
+  openHandCardNo = null;
+  openFieldCardId = null;
+  fieldCardSeqMap.clear();
+  nextFallbackCardSeq = 1;
+  updateCoreAllocationUI();
+  try {
+    const seedEl = $("seed");
+    const seedVal = seedEl ? seedEl.value.trim() : "";
+    const reqSeed = seedVal ? parseInt(seedVal, 10) : undefined;
+    const data = await api("/api/new", {
+      deck1: $("deck1").value.trim(),
+      deck2: $("deck2").value.trim(),
+      format: $("format").value,
+      seed: isNaN(reqSeed) ? undefined : reqSeed,
+    });
+    if (data) {
+      if (data.seed != null && seedEl) {
+        seedEl.placeholder = String(data.seed);
+      }
+      $("messages").innerHTML = "";
+      render(data);
+    }
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+async function restartGame() {
+  if (!sessionId) {
+    await startNewGame();
+    return;
+  }
+  if (isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  openHandCardNo = null;
+  openFieldCardId = null;
+  fieldCardSeqMap.clear();
+  nextFallbackCardSeq = 1;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/restart", { session: sessionId });
+    if (data) {
+      $("messages").innerHTML = "";
+      render(data);
+    }
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+async function undo() {
+  if (!sessionId || isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/undo", { session: sessionId });
+    if (data) render(data);
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+async function redo() {
+  if (!sessionId || isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/redo", { session: sessionId });
+    if (data) render(data);
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+async function doAct(index) {
+  if (!sessionId) {
+    await startNewGame();
+    return;
+  }
+  if (isActing) return;
+  isActing = true;
+  activePlayContext = null;
+  coreListOpen = false;
+  updateCoreAllocationUI();
+  try {
+    const data = await api("/api/act", { session: sessionId, index });
+    if (data) render(data);
+  } finally {
+    isActing = false;
+    updateAutoButtons();
+    maybeAutoPlay(current);
+  }
+}
+
+// 自動実行ロジック（1. 次の選択を自動 / 2. ステップ終了まで自動 / 3. ターン終了まで自動）
+function stopAutoRun() {
+  autoRunAbort = true;
+}
+
+function updateAutoButtons() {
+  const btnNext = $("btn-auto-next");
+  const btnStep = $("btn-auto-step");
+  const btnTurn = $("btn-auto-turn");
+  if (!btnNext || !btnStep || !btnTurn) return;
+
+  const canAct = current && current.winner == null && current.can_act !== false;
+
+  if (autoRunType === 'step') {
+    btnNext.disabled = true;
+    btnStep.disabled = false;
+    btnStep.classList.add("running");
+    btnStep.innerHTML = "⏹ 停止";
+    btnTurn.disabled = true;
+  } else if (autoRunType === 'turn') {
+    btnNext.disabled = true;
+    btnStep.disabled = true;
+    btnTurn.disabled = false;
+    btnTurn.classList.add("running");
+    btnTurn.innerHTML = "⏹ 停止";
+  } else {
+    btnNext.disabled = !canAct;
+    btnNext.classList.remove("running");
+    btnNext.innerHTML = "⚡ 次の選択を自動で行う";
+
+    btnStep.disabled = !canAct;
+    btnStep.classList.remove("running");
+    btnStep.innerHTML = "⏭ ステップ終了まで自動で行う";
+
+    btnTurn.disabled = !canAct;
+    btnTurn.classList.remove("running");
+    btnTurn.innerHTML = "⏩ ターン終了まで自動で行う";
+  }
+}
+
+async function handleAutoNext() {
+  if (autoRunType) {
+    stopAutoRun();
+    return;
+  }
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+  const idx = pickBestActionIndex(current);
+  if (idx != null) {
+    await doAct(idx);
+  }
+}
+
+async function handleAutoStep() {
+  if (autoRunType === 'step') {
+    stopAutoRun();
+    return;
+  }
+  if (autoRunType) return;
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+
+  autoRunType = 'step';
+  autoRunAbort = false;
+  updateAutoButtons();
+
+  const startPhase = current.phase;
+  const startTurn = current.turn;
+  let safetyCount = 0;
+
+  try {
+    while (!autoRunAbort && safetyCount < 100) {
+      if (!current || current.winner != null || current.can_act === false) break;
+      if (current.phase !== startPhase || current.turn !== startTurn) break;
+      const idx = pickBestActionIndex(current);
+      if (idx == null) break;
+
+      await doAct(idx);
+      safetyCount++;
+      await new Promise(r => setTimeout(r, 200));
+    }
+  } finally {
+    autoRunType = null;
+    autoRunAbort = false;
+    updateAutoButtons();
+    // 実行中は P1自動/P2自動 を止めているので、終わったら再開する (相手に手番が移っていれば自動で指し始める)
+    maybeAutoPlay(current);
+  }
+}
+
+async function handleAutoTurn() {
+  if (autoRunType === 'turn') {
+    stopAutoRun();
+    return;
+  }
+  if (autoRunType) return;
+  if (!current || current.winner != null || current.can_act === false || isActing) return;
+
+  autoRunType = 'turn';
+  autoRunAbort = false;
+  updateAutoButtons();
+
+  const startTurn = current.turn;
+  let safetyCount = 0;
+
+  try {
+    while (!autoRunAbort && safetyCount < 300) {
+      if (!current || current.winner != null || current.can_act === false) break;
+      if (current.turn !== startTurn) break;
+      const idx = pickBestActionIndex(current);
+      if (idx == null) break;
+
+      await doAct(idx);
+      safetyCount++;
+      await new Promise(r => setTimeout(r, 200));
+    }
+  } finally {
+    autoRunType = null;
+    autoRunAbort = false;
+    updateAutoButtons();
+    // 実行中は P1自動/P2自動 を止めているので、終わったら再開する (相手に手番が移っていれば自動で指し始める)
+    maybeAutoPlay(current);
+  }
+}
+
+function updateFormatTitle() {
+  $("main-title").textContent = "⚔ BSToolsCla Playmat（GRU価値ネットワーク）";
+}
+
+function saveDeckSettings() {
+  const d1 = $("deck1").value.trim();
+  const d2 = $("deck2").value.trim();
+  const fmt = $("format").value;
+  if (d1) localStorage.setItem("bs_deck1", d1);
+  if (d2) localStorage.setItem("bs_deck2", d2);
+  if (fmt) localStorage.setItem("bs_format", fmt);
+  localStorage.setItem("bs_viewer", String(currentViewer()));
+  updateFormatTitle();
+}
+
+function loadDeckSettings() {
+  const d1 = localStorage.getItem("bs_deck1");
+  const d2 = localStorage.getItem("bs_deck2");
+  const fmt = localStorage.getItem("bs_format");
+  if (d1) $("deck1").value = d1;
+  if (d2) $("deck2").value = d2;
+  if (fmt) $("format").value = fmt;
+  const viewer = localStorage.getItem("bs_viewer");
+  if (viewer && $("viewer")) $("viewer").value = viewer;
+  updateFormatTitle();
+}
+
+async function loadCurrentState() {
+  try {
+    const res = await fetch('/api/state?viewer=' + currentViewer() + '&session=' + TAB_SESSION);
+    if (res.ok) {
+      const data = await res.json();
+      if (data) render(data);
+    }
+  } catch (err) {
+    console.error('Failed to load current state:', err);
+  }
+}
+
+// ページ初期化時に保存済みデッキ設定を復元し、現在の共有盤面状態をロード
+loadDeckSettings();
+loadCurrentState();
+
+$("deck1").addEventListener("change", saveDeckSettings);
+$("deck1").addEventListener("input", saveDeckSettings);
+$("deck2").addEventListener("change", saveDeckSettings);
+$("deck2").addEventListener("input", saveDeckSettings);
+$("format").addEventListener("change", saveDeckSettings);
+if ($("viewer")) {
+  $("viewer").addEventListener("change", () => {
+    saveDeckSettings();
+    // 視点ごとに見える情報が違うので、購読を張り直してから取得し直す
+    setupSubscription();
+    loadCurrentState();
+  });
+}
+const bUrlInput = $("game-server-url");
+if (bUrlInput) {
+  bUrlInput.addEventListener("change", () => {
+    fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameServerUrl: bUrlInput.value.trim() })
+    });
+  });
+}
+
+// 設定ダイアログの開閉。<dialog>のshowModal()はネイティブモーダル
+// (背面を暗くし、背面要素の操作・タブ移動を無効化、Escキーでも閉じる)。
+const settingsDialog = $("settings-dialog");
+if (settingsDialog) {
+  $("btn-settings").addEventListener("click", () => {
+    // 開くたびに最新の重みファイル一覧を取り直す(手動更新ボタンを廃止した代わり)
+    refreshWeightFileOptions();
+    settingsDialog.showModal();
+  });
+  $("btn-close-settings").addEventListener("click", () => settingsDialog.close());
+  // 背景(::backdrop)をクリックしても閉じる。dialog要素自体は画面いっぱいに広がるため、
+  // クリックされたのが dialog 自身(=中の要素ではなく背景の余白)かどうかで判定する
+  settingsDialog.addEventListener("click", (e) => {
+    if (e.target === settingsDialog) settingsDialog.close();
+  });
+}
+
+// 評価方式(線形/RNN/KANN)と player1/player2 それぞれの重みファイル。
+// localStorageで次回起動時も復元する。自由入力でのファイルパス指定、
+// およびGameServerから列挙されたファイル一覧からのドロップダウン選択の両方に対応。
+function saveEvalSettings() {
+  localStorage.setItem("bs_eval_mode", $("eval-mode").value);
+  localStorage.setItem("bs_eval_weights_p1", $("eval-weights-p1").value);
+  localStorage.setItem("bs_eval_weights_p2", $("eval-weights-p2").value);
+}
+function loadEvalSettings() {
+  const mode = localStorage.getItem("bs_eval_mode");
+  if (mode) $("eval-mode").value = mode;
+  if (!$("eval-mode").value) $("eval-mode").value = "GRU"; // 存在しない方式が保存されていた場合
+  // 重みファイルの選択値は refreshWeightFileOptions() がメニューを埋めた後に復元する
+}
+
+async function refreshWeightFileOptions() {
+  const savedP1 = localStorage.getItem("bs_eval_weights_p1") || "";
+  const savedP2 = localStorage.getItem("bs_eval_weights_p2") || "";
+  let files = [];
+  try {
+    const res = await fetch('/api/weight-files');
+    if (res.ok) files = await res.json();
+  } catch (err) {
+    console.error('Failed to load weight file list:', err);
+  }
+  for (const [selId, saved] of [["eval-weights-p1", savedP1], ["eval-weights-p2", savedP2]]) {
+    const sel = $(selId);
+    if (!sel) continue;
+    sel.innerHTML = '<option value="">(未指定/共有)</option>' +
+      files.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    if (saved && files.includes(saved)) {
+      sel.value = saved;
+    } else if (!saved && files.includes("g1_g2-best.gru.weight")) {
+      sel.value = "g1_g2-best.gru.weight";
+    }
+  }
+  updateEvalInfoDisplay();
+}
+
+function getPlayerWeightLabel(playerId) {
+  const mode = $("eval-mode") ? $("eval-mode").value : "GRU";
+  if (mode === "NONE") return "評価なし";
+  const defaultWeight = "g1_g2-best.gru.weight";
+  const p1 = $("eval-weights-p1") ? $("eval-weights-p1").value.trim() : "";
+  const p2 = $("eval-weights-p2") ? $("eval-weights-p2").value.trim() : "";
+  if (playerId === 1) {
+    return p1 || defaultWeight;
+  } else {
+    return p2 || p1 || defaultWeight;
+  }
+}
+
+function updateEvalInfoDisplay() {
+  const badge = $("eval-info-text");
+  const mode = $("eval-mode") ? $("eval-mode").value : "GRU";
+  const d1 = getPlayerWeightLabel(1);
+  const d2 = getPlayerWeightLabel(2);
+
+  if (badge) {
+    if (mode === "GRU") {
+      const depth = $("eval-depth") ? $("eval-depth").value : "1";
+      const width = $("eval-width") ? $("eval-width").value : "0";
+      const search = `深さ${depth}` + (width !== "0" ? `・幅${width}` : "");
+      if (d1 === d2) {
+        badge.textContent = `GRU: ${d1} (${search})`;
+      } else {
+        badge.textContent = `GRU: P1[${d1}] / P2[${d2}] (${search})`;
+      }
+    } else {
+      badge.textContent = "評価なし";
+    }
+  }
+
+  // プレイヤータイトルのNNウェイト表示を更新
+  if (current) {
+    render(current);
+  } else {
+    const p1Title = $("p1-title");
+    const p2Title = $("p2-title");
+    if (p1Title) p1Title.textContent = `プレイヤー1[${d1}]`;
+    if (p2Title) p2Title.textContent = `プレイヤー2[${d2}]`;
+  }
+}
+
+/**
+ * 評価方式・player1/player2の重みファイルを即座にサーバーへ反映する。
+ * `/api/eval-config`が成功すると Playmats 側で broadcastState() が呼ばれ、
+ * SSE(常時接続)経由でこのタブを含む全クライアントの画面が自動的に再描画される。
+ */
+async function applyEvalConfigNow() {
+  saveEvalSettings();
+  updateEvalInfoDisplay();
+  const mode = $("eval-mode").value;
+  const weightsPathP1 = $("eval-weights-p1").value.trim();
+  const weightsPathP2 = $("eval-weights-p2").value.trim();
+  try {
+    const res = await fetch('/api/eval-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode,
+        depth: Number($("eval-depth").value),
+        width: Number($("eval-width").value),
+        weightsPathP1: weightsPathP1 || undefined,
+        weightsPathP2: weightsPathP2 || undefined
+      })
+    });
+    const data = await res.json();
+    if (data.status === "ok") {
+      const reached = data.gameServerReached ? "" : " (GameServerには未反映: 到達できません)";
+      if (data.depth) $("eval-depth").value = String(data.depth);
+      if (data.width !== undefined) setWidthSelect(data.width);
+      updateEvalInfoDisplay();
+      addMessages([`評価方式を ${mode} (探索の深さ ${data.depth ?? "?"}・幅 ${data.width ? data.width : "制限なし"}) に切り替えました${reached}`]);
+      await loadCurrentState();
+    } else {
+      if (data.depth) $("eval-depth").value = String(data.depth);
+      if (data.width !== undefined) setWidthSelect(data.width);
+      updateEvalInfoDisplay();
+      addMessages([`評価方式の切り替えに失敗: ${data.message || "unknown error"}`], true);
+    }
+  } catch (err) {
+    addMessages([`評価方式の切り替えに失敗: ${err}`], true);
+  }
+}
+
+loadEvalSettings();
+refreshWeightFileOptions();
+updateEvalInfoDisplay();
+/** 幅のメニューにない値 (起動時の --width 7 等) はその場で項目を足して選ぶ */
+function setWidthSelect(w) {
+  const sel = $("eval-width");
+  const v = String(w || 0);
+  if (![...sel.options].some(o => o.value === v)) sel.add(new Option(v, v));
+  sel.value = v;
+}
+// 探索の深さ・幅はサーバーの現在値 (起動時の --depth / --width か、最後に設定した値) を表示する
+fetch(`/api/eval-config`).then(r => r.json()).then(d => {
+  if (d.depth) $("eval-depth").value = String(d.depth);
+  if (d.width !== undefined) setWidthSelect(d.width);
+  updateEvalInfoDisplay();
+}).catch(() => {});
+for (const id of ["eval-mode", "eval-depth", "eval-width", "eval-weights-p1", "eval-weights-p2"]) {
+  $(id).addEventListener("change", applyEvalConfigNow);
+}
+$("eval-info-badge")?.addEventListener("click", () => {
+  refreshWeightFileOptions();
+  settingsDialog?.showModal();
+});
+
+/**
+ * `--kann-es-train`(別プロセスのCLI)の学習進捗を2秒間隔でポーリングして表示する。
+ * 学習プロセスはGUIサーバーと直接通信しないため、進捗ファイル(kann-es-progress.json)
+ * 経由の間接参照になる ([readEsTrainingProgress]参照)。非アクティブ時はバナーを隠す。
+ */
+// 直前にポーリングした {distinct}(重複除去済み局面数)。今回の値と比べて増えていなければ
+// 「対局が本当にハングしている」疑いを画面上で分かるようにする(単調増加チェック)。
+let lastPolledTotalSteps = null;
+
+async function pollTrainingStatus() {
+  try {
+    const res = await fetch('/api/training-status');
+    if (res.ok) {
+      const s = await res.json();
+      const banner = $("training-banner");
+      if (s && s.active) {
+        const pct = Math.round((s.generation / s.totalGenerations) * 100);
+        const winPct = s.winRate != null ? `${Math.round(s.winRate * 1000) / 10}%` : "-";
+        const adoptedLabel = s.adopted ? "採用" : "棄却";
+        // distinctPositionsSeen(重複除去済みの累計局面数)が一番強い指標: 手数や評価局面数が
+        // 増えていても同じ局面を行き来しているだけなら増えない。これが止まっていれば
+        // 真のハング(または実質進んでいない)と判定する。
+        const stalled = lastPolledTotalSteps != null && s.distinctPositionsSeen === lastPolledTotalSteps.distinct;
+        lastPolledTotalSteps = { distinct: s.distinctPositionsSeen };
+        const progressLabel = stalled
+          ? `⚠️ 進行停止(新規局面が増えていません)`
+          : `対局 ${s.gameIndex}/${s.games} ・ ${s.stepInGame}手目 ・ 通算${s.totalSteps}手 / ${s.evaluatedPositions}局面評価 / 重複除去${s.distinctPositionsSeen}局面`;
+        banner.innerHTML =
+          `<span class="dot" style="${stalled ? 'background:#ff5252;animation:none;' : ''}"></span>` +
+          `<span>ES学習中: 世代 ${s.generation}/${s.totalGenerations} (候補勝率 ${winPct} → ${adoptedLabel}, 累計採用 ${s.adoptedCount}) → ${esc(s.outPath)} / ${progressLabel}</span>` +
+          `<span class="bar"><span class="bar-fill" style="width:${pct}%"></span></span>`;
+        banner.classList.remove("hidden");
+      } else {
+        lastPolledTotalSteps = null;
+        banner.classList.add("hidden");
+      }
+    }
+  } catch (err) {
+    // GameServer/Playmats のどちらも到達できない一時的な状態は無視して次回に回す
+  }
+}
+pollTrainingStatus();
+setInterval(pollTrainingStatus, 2000);
+
+for (const id of ["auto-p1", "auto-p2"]) {
+  if ($(id)) $(id).addEventListener("change", () => maybeAutoPlay(lastRenderData));
+}
+
+$("btn-new").onclick = startNewGame;
+$("btn-restart").onclick = restartGame;
+$("btn-undo").onclick = undo;
+$("btn-redo").onclick = redo;
+if ($("btn-undo-board")) $("btn-undo-board").onclick = undo;
+if ($("btn-redo-board")) $("btn-redo-board").onclick = redo;
+if ($("btn-auto-next")) $("btn-auto-next").onclick = handleAutoNext;
+if ($("btn-auto-step")) $("btn-auto-step").onclick = handleAutoStep;
+if ($("btn-auto-turn")) $("btn-auto-turn").onclick = handleAutoTurn;
+
+$("btn-n").onclick = () => {
+  activePlayContext = null;
+  updateCoreAllocationUI();
+  if (current && current.n_index != null) doAct(current.n_index);
+};
+
+// キーボードショートカット (Ctrl+Z: 戻る, Ctrl+Y / Ctrl+Shift+Z: 進む)
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    if (e.shiftKey) {
+      redo();
+    } else {
+      undo();
+    }
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
+    e.preventDefault();
+    redo();
+  }
+});
+
+/** 手札・フィールドのカードのメニュー (アコーディオン) をすべて閉じ、コア配分の選択も解除する */
+function closeAllCardMenus() {
+  document.querySelectorAll(".hand-options, .field-options").forEach(el => el.classList.add("hidden"));
+  document.querySelectorAll(".card.open").forEach(el => {
+    el.classList.remove("open");
+    el.querySelectorAll(".hand-arrow, .attack-arrow, .core-move-arrow").forEach(a => { a.textContent = "▶"; });
+  });
+  activePlayContext = null;
+  openHandCardNo = null;
+  openFieldCardId = null;
+  updateCoreAllocationUI();
+}
+
+// メニューの外をクリックしたらメニューを閉じる。
+// メニュー自身とその持ち主のカード (wrapper 内) のクリックは対象外。
+// コア配分中は、支払い元として選ぶリザーブ・フィールドのクリックでも閉じない
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  if (t.closest(".hand-card-wrapper, .field-card-wrapper")) return;
+  if (activePlayContext && (t.closest(".reserve-box") || t.closest('[id$="-field"]'))) return;
+  const anyOpen = activePlayContext || document.querySelector(".hand-options:not(.hidden), .field-options:not(.hidden)");
+  if (anyOpen) closeAllCardMenus();
+});
+
+// 常時接続 (SSE: Server-Sent Events) による即時盤面反映
+let evtSource = null;
+function setupSubscription() {
+  if (evtSource) {
+    evtSource.close();
+  }
+  evtSource = new EventSource('/api/events?viewer=' + currentViewer() + '&session=' + TAB_SESSION);
+  evtSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data) {
+        render(data);
+      }
+    } catch (err) {
+      console.error('SSE parse error:', err);
+    }
+  };
+  // 評価の途中経過 (サーバーが1局面の評価中に送る): 自動選択中の表示を「選択肢数:x/X」に更新する
+  evtSource.addEventListener("progress", (event) => {
+    try {
+      const p = JSON.parse(event.data);
+      showEvalProgress(p.player, p.done, p.total);
+    } catch (err) {
+      console.error('SSE progress parse error:', err);
+    }
+  });
+  evtSource.onerror = () => {
+    setTimeout(setupSubscription, 1000);
+  };
+}
+setupSubscription();
+if (window.location.hash === '#settings' || window.location.search.includes('settings')) {
+  setTimeout(() => {
+    refreshWeightFileOptions();
+    settingsDialog?.showModal();
+  }, 100);
+}
+</script>
+</body>
+</html>

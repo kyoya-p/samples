@@ -56,30 +56,82 @@ class KannValueNetwork private constructor(
 
     /**
      * `kann_unroll_array` で展開した学習用ネットワーク一式(展開後のグラフ本体＋そこに
-     * bind する入力バッファ)を展開長ごとに束ねたもの。バッファも [nativeHeap] で永続化し、
-     * 呼び出しごとに使い回す(内容だけ上書きする) — [trainStep] 内で毎回 `memScoped` の
-     * 一時バッファを bind すると、そのバッファは関数を抜けると解放されるのに対し、
-     * 展開ネットワーク側の feed ノードは同じポインタを次の呼び出しまで保持し続けるため、
-     * 呼び出し間でダングリングポインタを指したままになる(実際にこれが原因とみられる
-     * クラッシュを確認した)。バッファ自体も展開ネットワークと同じ寿命で永続化することで
-     * この期間を無くす。
+     * bind する永続入力バッファ)を展開長ごとに束ねたもの。
      */
-    private val unrolledCache = mutableMapOf<Int, CPointer<kann_t>>()
-
-    private fun unrolledFor(len: Int): CPointer<kann_t> = unrolledCache.getOrPut(len) {
-        memScoped {
-            val lenArr = allocArray<IntVar>(1)
-            lenArr[0] = len
-            val ua = kann_unroll_array(ann, lenArr) ?: error("kann_unroll_array failed (len=$len)")
-            kad_sync_dim(ua.pointed.n, ua.pointed.v, 1)
-            ua
+    private class UnrolledBundle(
+        val ua: CPointer<kann_t>,
+        val iLastCost: Int,
+        val tokBufs: Array<CPointer<FloatVar>>,
+        val globBuf: CPointer<FloatVar>,
+        val truthBuf: CPointer<FloatVar>,
+        val xArr: CPointer<CPointerVar<FloatVar>>,
+        val gArr: CPointer<CPointerVar<FloatVar>>,
+        val yArr: CPointer<CPointerVar<FloatVar>>
+    ) {
+        fun freeBuffers() {
+            for (buf in tokBufs) nativeHeap.free(buf)
+            nativeHeap.free(globBuf)
+            nativeHeap.free(truthBuf)
+            nativeHeap.free(xArr)
+            nativeHeap.free(gArr)
+            nativeHeap.free(yArr)
         }
     }
 
+    private val unrolledCache = mutableMapOf<Int, UnrolledBundle>()
+
+    // evaluate() 用の永続バッファ (memScoped のダングリングポインタ防止・高速化)
+    private val evalTokBuf: CPointer<FloatVar> = nativeHeap.allocArray(RNN_TOKEN_DIM) { value = 0f }
+    private val evalGlobBuf: CPointer<FloatVar> = nativeHeap.allocArray(RNN_GLOBAL_DIM) { value = 0f }
+    private val evalTokPtrArr: CPointer<CPointerVar<FloatVar>> = nativeHeap.allocArray<CPointerVar<FloatVar>>(1).also {
+        it[0] = evalTokBuf
+    }
+    private val evalGlobPtrArr: CPointer<CPointerVar<FloatVar>> = nativeHeap.allocArray<CPointerVar<FloatVar>>(1).also {
+        it[0] = evalGlobBuf
+    }
+
+    private fun unrolledFor(len: Int): UnrolledBundle = unrolledCache.getOrPut(len) {
+        val ua = memScoped {
+            val lenArr = allocArray<IntVar>(1)
+            lenArr[0] = len
+            val u = kann_unroll_array(ann, lenArr) ?: error("kann_unroll_array failed (len=$len)")
+            kad_sync_dim(u.pointed.n, u.pointed.v, 1)
+            u
+        }
+        // ピボットノード(ua->v[ua->n - 1], kad_avg)の最後の子が最終時刻(t = len - 1)のコストノード。
+        // evaluate() は全トークンを読み終えた最終時刻の出力のみを局面評価値 V(s) として使うため、
+        // 学習時も途中時刻の平均コストではなく最終時刻のコストノードのみから逆伝播する。
+        val nNodes = ua.pointed.n
+        val vNodes = ua.pointed.v!!
+        val pivot = vNodes[nNodes - 1]!!
+        val lastChildPtr = pivot.pointed.child!![len - 1]
+        var iLastCost = nNodes - 2
+        for (idx in nNodes - 1 downTo 0) {
+            if (vNodes[idx] == lastChildPtr) {
+                iLastCost = idx
+                break
+            }
+        }
+
+        val tokBufs = Array(len) { nativeHeap.allocArray<FloatVar>(RNN_TOKEN_DIM) { value = 0f } }
+        val globBuf = nativeHeap.allocArray<FloatVar>(RNN_GLOBAL_DIM) { value = 0f }
+        val truthBuf = nativeHeap.allocArray<FloatVar>(1).also { it[0] = 0f }
+        val xArr = nativeHeap.allocArray<CPointerVar<FloatVar>>(len)
+        val gArr = nativeHeap.allocArray<CPointerVar<FloatVar>>(len)
+        val yArr = nativeHeap.allocArray<CPointerVar<FloatVar>>(len)
+        for (i in 0 until len) {
+            xArr[i] = tokBufs[i]
+            gArr[i] = globBuf
+            yArr[i] = truthBuf
+        }
+        bindFeedExact(ua, KANN_F_IN.convert(), tokenLabel, xArr)
+        bindFeedExact(ua, KANN_F_IN.convert(), globalLabel, gArr)
+        bindFeedExact(ua, KANN_F_TRUTH.convert(), 0, yArr)
+        UnrolledBundle(ua, iLastCost, tokBufs, globBuf, truthBuf, xArr, gArr, yArr)
+    }
+
     /**
-     * 重み配列(`ann->x`、サイズ[nVar])のコピーを取得する。ESによる重み最適化
-     * ([RnnParams] と同じ発想)で使う。`trainStep`(BPTT)は既知の不具合で不安定なため、
-     * こちらはBPTTを一切使わず[evaluate]のみに依存する経路。
+     * 重み配列(`ann->x`、サイズ[nVar])のコピーを取得する。
      */
     fun getWeights(): FloatArray = FloatArray(nVar) { ann.pointed.x!![it] }
 
@@ -90,35 +142,50 @@ class KannValueNetwork private constructor(
     }
 
     /**
+     * KANNの `kann_feed_bind` は `ext_label == 0` を「全ラベル一致(ワイルドカード)」として扱う仕様
+     * (`#define chk_lbl(label, query) ((query) == 0 || (label) == (query))`) があるため、
+     * `tokenLabel = 0` を渡すと `globIn (ext_label = 1)` にまでマッチして配列外参照(クラッシュ)を引き起こす。
+     * これを防ぐため、`ext_label` の厳密一致でフィードノードにバインドする。
+     */
+    private fun bindFeedExact(
+        a: CPointer<kann_t>,
+        extFlag: UInt,
+        extLabel: Int,
+        x: CPointer<CPointerVar<FloatVar>>
+    ): Int {
+        var k = 0
+        val n = a.pointed.n
+        val v = a.pointed.v ?: return 0
+        for (i in 0 until n) {
+            val node = v[i] ?: continue
+            val isFeed = node.pointed.n_child == 0 && (node.pointed.flag.toInt() and (KAD_VAR or KAD_CONST)) == 0
+            if (isFeed && (node.pointed.ext_flag and extFlag) != 0u && node.pointed.ext_label == extLabel) {
+                node.pointed.x = x[k++]
+            }
+        }
+        return k
+    }
+
+    /**
      * トークン列(可変長)と大域特徴を与えて V(state) を1回のRNN連続フィードで評価する。
-     * [kann_apply1] は単一入力しか扱えないため、2入力(トークン/大域特徴)を自前で
-     * bind して都度 [kad_eval_at] で出力ノードだけ評価する、同等の処理を手書きする。
      */
     fun evaluate(tokens: List<DoubleArray>, globalFeatures: DoubleArray): Double {
         if (tokens.isEmpty()) return 0.0
         kann_rnn_start(ann)
         var result = 0.0
-        memScoped {
-            val tokBuf = allocArray<FloatVar>(RNN_TOKEN_DIM)
-            val globBuf = allocArray<FloatVar>(RNN_GLOBAL_DIM)
-            for (j in globalFeatures.indices) globBuf[j] = globalFeatures[j].toFloat()
+        for (j in globalFeatures.indices) evalGlobBuf[j] = globalFeatures[j].toFloat()
 
-            val tokPtrArr = allocArray<CPointerVar<FloatVar>>(1)
-            tokPtrArr[0] = tokBuf
-            val globPtrArr = allocArray<CPointerVar<FloatVar>>(1)
-            globPtrArr[0] = globBuf
+        val iOut = kann_find(ann, KANN_F_OUT.convert(), 0)
+        if (iOut < 0) error("kann_find(KANN_F_OUT) failed: $iOut")
 
-            val iOut = kann_find(ann, KANN_F_OUT.convert(), 0)
-            if (iOut < 0) error("kann_find(KANN_F_OUT) failed: $iOut")
+        kad_sync_dim(ann.pointed.n, ann.pointed.v, 1)
+        bindFeedExact(ann, KANN_F_IN.convert(), tokenLabel, evalTokPtrArr)
+        bindFeedExact(ann, KANN_F_IN.convert(), globalLabel, evalGlobPtrArr)
 
-            for (tok in tokens) {
-                for (j in tok.indices) tokBuf[j] = tok[j].toFloat()
-                kad_sync_dim(ann.pointed.n, ann.pointed.v, 1)
-                kann_feed_bind(ann, KANN_F_IN.convert(), tokenLabel, tokPtrArr)
-                kann_feed_bind(ann, KANN_F_IN.convert(), globalLabel, globPtrArr)
-                val outPtr = kad_eval_at(ann.pointed.n, ann.pointed.v, iOut)
-                result = outPtr?.get(0)?.toDouble() ?: 0.0
-            }
+        for (tok in tokens) {
+            for (j in tok.indices) evalTokBuf[j] = tok[j].toFloat()
+            val outPtr = kad_eval_at(ann.pointed.n, ann.pointed.v, iOut)
+            result = outPtr?.get(0)?.toDouble() ?: 0.0
         }
         kann_rnn_end(ann)
         return result
@@ -126,69 +193,48 @@ class KannValueNetwork private constructor(
 
     /**
      * トークン列1件分について、真の勝敗ラベル(勝=1.0 / 負=0.0 / 引分=0.5、後で[-1,1]へ再変換)で
-     * 1ステップ学習する (BPTT: `kann_unroll_array` で時刻数ぶん展開→`kann_cost`でforward+backward
+     * 1ステップ学習する (BPTT: `kann_unroll_array` で時刻数ぶん展開→最終時刻コストノードでforward+backward
      * →`kann_RMSprop`で重み更新)。展開後のネットワークは重み配列(x/g)を元の[ann]と共有するため、
      * ここでの更新がそのまま[ann]（延いては[evaluate]）に反映される。
-     *
-     * KANNの`kann_layer_gru`は「pivot」として特別扱いされ、展開してもコスト/出力ノードは
-     * 単一のまま保たれる(`kann_find`で一意に見つかる) — 公式サンプル `rnn-bit.c` と同じ挙動。
-     * 大域特徴は各時刻に同じ値を、正解ラベルも各時刻に同じ値を与える
-     * (最終時刻だけを重視したいが、KANNの逐次コスト設計では時刻ごとに与える必要があるため)。
-     *
-     * **展開ネットワークは削除しない・使い回す** (詳細は[unrolledFor]参照):
-     * `kad_delete` は展開後の配列に含まれるノードを無条件に `free()` するが、RNNの重み(葉)
-     * ノードは展開前後で「複製」ではなく元の[ann]と共有(同一ポインタ)されているため、
-     * 展開ネットワークを削除すると[ann]側の重みノードまで解放されてしまい、次回の学習
-     * 呼び出しでクラッシュする(実際に踏んだ)。また、同じ展開長であっても呼び出しのたびに
-     * 新規展開するとヒープが壊れ、数十回目の呼び出しで確実にクラッシュすることも実測で
-     * 確認した。KANN公式サンプル `rnn-bit.c` の「学習中は一度だけ展開して使い回す」設計
-     * 通りに、[unrolledFor] で展開長ごとにキャッシュして再利用する。
-     *
-     * **`kann_unroll_array` は展開長9以上で不定動作(クラッシュ)することも実測で確認した**
-     * (`--kann-train-debug` での二分探索により長さ8までは安定・9以上で確実にクラッシュ)。
-     * 原因はKANN側の`kad_unroll_helper`(kautodiff.c)内の実装依存の不具合と見られ、
-     * こちら側では修正できないため、学習時のみトークン列を直近[MAX_TRAIN_UNROLL_LEN]件に
-     * 切り詰めて回避する。[evaluate]（連続フィード方式、unrollを使わない）はこの制限を
-     * 受けず、長さ30程度まで実測で問題なく動作することを確認済み。
      *
      * @return このステップのコスト(小さいほど正解に近い)
      */
     fun trainStep(tokens: List<DoubleArray>, globals: DoubleArray, label: Double, lr: Float): Float {
         if (tokens.isEmpty()) return 0f
-        val tokens = if (tokens.size > MAX_TRAIN_UNROLL_LEN) tokens.takeLast(MAX_TRAIN_UNROLL_LEN) else tokens
-        val len = tokens.size
+        val effectiveTokens = if (tokens.size > MAX_TRAIN_UNROLL_LEN) tokens.takeLast(MAX_TRAIN_UNROLL_LEN) else tokens
+        val len = effectiveTokens.size
         // ラベル(勝=1.0/負=0.0/引分=0.5)を出力層の tanh 値域[-1,1]に合わせて再スケールする
         val truthValue = (label * 2.0 - 1.0).toFloat()
-        val ua = unrolledFor(len)
+        val bundle = unrolledFor(len)
 
-        return memScoped {
-            val tokBufs = Array(len) { i ->
-                allocArray<FloatVar>(RNN_TOKEN_DIM).also { buf ->
-                    for (j in 0 until RNN_TOKEN_DIM) buf[j] = tokens[i][j].toFloat()
-                }
-            }
-            val globBuf = allocArray<FloatVar>(RNN_GLOBAL_DIM)
-            for (j in globals.indices) globBuf[j] = globals[j].toFloat()
-            val truthBuf = allocArray<FloatVar>(1)
-            truthBuf[0] = truthValue
-
-            val xArr = allocArray<CPointerVar<FloatVar>>(len)
-            val gArr = allocArray<CPointerVar<FloatVar>>(len)
-            val yArr = allocArray<CPointerVar<FloatVar>>(len)
-            for (i in 0 until len) {
-                xArr[i] = tokBufs[i]
-                gArr[i] = globBuf
-                yArr[i] = truthBuf
-            }
-
-            kann_feed_bind(ua, KANN_F_IN.convert(), tokenLabel, xArr)
-            kann_feed_bind(ua, KANN_F_IN.convert(), globalLabel, gArr)
-            kann_feed_bind(ua, KANN_F_TRUTH.convert(), 0, yArr)
-            kann_switch(ua, 1)
-            val cost = kann_cost(ua, 0, 1)
-            kann_RMSprop(nVar, lr, null, 0.9f, ann.pointed.g, ann.pointed.x, rmsMemory)
-            cost
+        for (i in 0 until len) {
+            val src = effectiveTokens[i]
+            val dst = bundle.tokBufs[i]
+            for (j in 0 until RNN_TOKEN_DIM) dst[j] = src[j].toFloat()
         }
+        for (j in globals.indices) bundle.globBuf[j] = globals[j].toFloat()
+        bundle.truthBuf[0] = truthValue
+
+        kann_switch(bundle.ua, 1)
+        val costPtr = kad_eval_at(bundle.ua.pointed.n, bundle.ua.pointed.v, bundle.iLastCost)
+        val cost = costPtr?.get(0) ?: 0f
+        kad_grad(bundle.ua.pointed.n, bundle.ua.pointed.v, bundle.iLastCost)
+        kann_RMSprop(nVar, lr, null, 0.9f, ann.pointed.g, ann.pointed.x, rmsMemory)
+        return cost
+    }
+
+    /** 別の候補重みを学習する前にRMSpropの移動平均バッファをゼロクリアする */
+    fun resetRmsMemory() {
+        for (i in 0 until nVar) rmsMemory[i] = 0f
+    }
+
+    /**
+     * 複数スレッドでの並列自己対戦・並列評価用に、このネットワークと同一構造かつ独立した
+     * C側計算グラフ(`kann_t*`)・重みバッファを持つクローンを生成する。
+     */
+    fun cloneNet(): KannValueNetwork {
+        val cloned = kann_clone(ann, 0) ?: error("kann_clone failed")
+        return KannValueNetwork(cloned, config)
     }
 
     /** KANN組み込みのモデルI/O(`kann_save`)で学習済み重みをバイナリファイルに保存する */
@@ -198,17 +244,26 @@ class KannValueNetwork private constructor(
     }
 
     fun delete() {
+        for (bundle in unrolledCache.values) {
+            bundle.freeBuffers()
+            kann_delete_unrolled(bundle.ua)
+        }
+        unrolledCache.clear()
+        nativeHeap.free(evalTokBuf)
+        nativeHeap.free(evalGlobBuf)
+        nativeHeap.free(evalTokPtrArr)
+        nativeHeap.free(evalGlobPtrArr)
         nativeHeap.free(rmsMemory)
         kann_delete(ann)
     }
 
     companion object {
         /**
-         * [trainStep] で `kann_unroll_array` に渡す展開長の上限。実測でこれを超えると
-         * (9以上)KANN側の実装依存の不具合でクラッシュするため、超える場合は直近の
-         * トークンだけに切り詰める。[evaluate] はこの上限を受けない。
+         * [trainStep] で `kann_unroll_array` に渡す展開長の上限。
+         * `bindFeedExact` により `ext_label=0` のワイルドカード問題が解消されたため、
+         * 1局面の全カードトークン列(手札+自陣+敵陣)をそのまま入力できる十分な長さを確保する。
          */
-        const val MAX_TRAIN_UNROLL_LEN = 8
+        const val MAX_TRAIN_UNROLL_LEN = 64
 
         /**
          * [save] で保存したファイルを読み込む。グラフ構造ごとKANN組み込みの形式で
@@ -277,6 +332,7 @@ fun evaluateStateWithKann(net: KannValueNetwork, state: GameState, forPlayerId: 
  * KannEsTrainer.kt のES自己対戦の両方から使う共通実装(重複させない、[stepEndEval]のコメント参照)。
  */
 fun evaluateActionWithKann(state: GameState, action: GameAction, net: KannValueNetwork): Double {
+    state.evaluatedCount++
     val trial = state.snapshot()
     val messages = mutableListOf<String>()
     if (action.type == "END_STEP") advanceStep(trial, messages) else applyAction(trial, action, messages)

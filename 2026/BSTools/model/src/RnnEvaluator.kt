@@ -460,6 +460,7 @@ fun evaluateStateWithRnn(params: RnnParams, state: GameState, forPlayerId: Int):
  * 召喚・コア移動・アタック・ブロックのすべてを同じ評価器で扱えるのが線形モデルとの違い。
  */
 fun evaluateActionWithRnn(state: GameState, action: GameAction, params: RnnParams): Double {
+    state.evaluatedCount++
     val trial = state.snapshot()
     val messages = mutableListOf<String>()
     if (action.type == "END_STEP") {
