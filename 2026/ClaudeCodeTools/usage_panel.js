@@ -161,7 +161,9 @@ function usageChart() {
   // 使用率（折れ線・左軸 %）
   // 値の低下（リセット）で線を分割し、枠をまたぐ補間線を描かない
   const segs = key => S.reduce((a, s, i) => { if (!i || s[key] < S[i - 1][key]) a.push([]); a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1)); return a; }, []);
-  const line = (key, col) => segs(key).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + pts.join(' ') + '"/>').join('') +
+  // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
+  const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
+  const line = (key, col) => segs(key).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
     (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' ' + s[key] + '%</title></circle>').join(''));
   const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + v + '%</text>').join('');
   // x軸目盛り: 表示範囲の幅に応じて間隔を選ぶ（目盛りは最大8本）。間隔が1日未満なら時刻も表示（ローカル時刻）
@@ -186,7 +188,7 @@ function usageChart() {
   // 現在日時の縦線（ページ表示時点のローカル時刻）
   const now = Date.now();
   const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - P - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
-  const clip = '<clipPath id="plotArea"><rect x="' + P + '" y="0" width="' + (W - 2 * P) + '" height="' + (H - P) + '"/></clipPath>';
+  const clip = '<clipPath id="plotArea"><rect x="' + P + '" y="0" width="' + (W - 2 * P) + '" height="' + H + '"/></clipPath>';
   // 100%到達点（予測線と100%の交点）に ✕ と日時。枠開始基準・1時間前基準の2本分。表示範囲外は描画されない
   const hit100 = (p, col) => p ? [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, '1時間前基準', 1]].map(([t, nm, i]) => {
     if (!t || t > t1) return '';
@@ -229,6 +231,24 @@ function usageChart() {
     };
     let saved = c.def;
     try { saved = localStorage.getItem('usageRange:' + c.id) || c.def; } catch (e) { /* 保存不可の環境では既定値 */ }
+    // ドラッグで横スクロール: 表示幅を保ったまま全体範囲の内側で移動する
+    const el = document.getElementById(c.id);
+    let drag = null;
+    el.style.touchAction = 'pan-y';
+    el.style.userSelect = 'none';
+    el.addEventListener('selectstart', e => e.preventDefault());
+    el.style.cursor = 'grab';
+    el.addEventListener('pointerdown', e => { drag = { x: e.clientX, t0: c.view.t0, span: c.view.t1 - c.view.t0 }; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
+    el.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const shift = -(e.clientX - drag.x) / el.getBoundingClientRect().width * drag.span;
+      const t0 = Math.min(Math.max(drag.t0 + shift, full.t0), full.t1 - drag.span);
+      c.view = { t0, t1: t0 + drag.span };
+      draw(c);
+    });
+    const endDrag = () => { drag = null; el.style.cursor = 'grab'; };
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
     menu.innerHTML = ranges.map(([label]) => '<option value="' + label + '"' + (label === saved ? ' selected' : '') + '>' + label + '</option>').join('');
     menu.addEventListener('change', () => {
       try { localStorage.setItem('usageRange:' + c.id, menu.value); } catch (e) { /* 保存不可の環境では保存しない */ }
@@ -270,7 +290,7 @@ function cumChart() {
   if (!splits.some(([v]) => v === split)) split = 'model';
   splitMenu.innerHTML = splits.map(([v, l]) => '<option value="' + v + '"' + (v === split ? ' selected' : '') + '>' + l + '</option>').join('');
 
-  const modes = [['cum', '累積'], ['rate', '時間あたり']];
+  const modes = [['cum', '累積'], ['rate', '/時']];
   const modeMenu = document.getElementById('mode-cum');
   let mode = 'cum';
   try { mode = localStorage.getItem('usageMode:cum-chart') || 'cum'; } catch (e) { /* 保存不可の環境では既定値 */ }
@@ -355,7 +375,7 @@ function cumChart() {
       const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
       return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk.replace(/^claude-/, '') + '</title></polygon>';
     }).join('');
-    const titleText = isRate ? 'トークン使用速度' : '累積トークン使用量';
+    const titleText = 'トークン使用量';
     el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titleText + '">' + grid + series + xl + '</svg>';
     document.getElementById('cum-title').textContent = titleText;
     // 見出し・凡例: 累積は合計、時間あたりは表示範囲の平均速度

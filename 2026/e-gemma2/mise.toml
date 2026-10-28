@@ -1,0 +1,32 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+MODEL_REPO = "bartowski/gemma-2-2b-it-GGUF"
+MODEL_FILE = "gemma-2-2b-it-Q4_K_M.gguf"
+MODEL_DIR = "models"
+HOST = "127.0.0.1"
+PORT = "8080"
+
+[tasks.setup]
+description = "Python仮想環境を作成し llama-cpp-python と huggingface_hub を導入する"
+run = "uv venv --python 3.12 .venv && uv pip install --python .venv llama-cpp-python[server] huggingface_hub"
+
+[tasks.model]
+description = "Gemma 2 (GGUF, Q4_K_M) をモデルディレクトリへダウンロードする"
+depends = ["setup"]
+run = "uv run --python .venv python -c \"from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='{{env.MODEL_REPO}}', filename='{{env.MODEL_FILE}}', local_dir='{{env.MODEL_DIR}}')\""
+
+[tasks.serve]
+description = "Gemma 2 を組み込み向けローカル推論サーバとして起動する (OpenAI互換API)"
+depends = ["model"]
+run = "uv run --python .venv python -m llama_cpp.server --model {{env.MODEL_DIR}}/{{env.MODEL_FILE}} --host {{env.HOST}} --port {{env.PORT}} --n_ctx 2048"
+
+[tasks.chat]
+description = "起動中のサーバへ簡易質問を送信する (引数: prompt)"
+run = "uv run --python .venv python -c \"import json,sys,urllib.request as u; r=u.Request('http://{{env.HOST}}:{{env.PORT}}/v1/chat/completions', data=json.dumps({'messages':[{'role':'user','content':sys.argv[1]}]}).encode(), headers={'Content-Type':'application/json'}); print(json.load(u.urlopen(r))['choices'][0]['message']['content'])\" \"{{arg(name='prompt', default='こんにちは')}}\""
+
+[tasks.clean]
+description = "仮想環境とモデルを削除する"
+run = "uv run --python 3 python -c \"import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ['.venv','{{env.MODEL_DIR}}']]\""
