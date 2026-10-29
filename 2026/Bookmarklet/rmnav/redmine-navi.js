@@ -461,7 +461,8 @@
       precedes: true,
       relates: true,
       duplicates: true,
-      copied_to: true
+      copied_to: true,
+      mentions: true
     };
 
     function updateEdgeVisibility() {
@@ -490,11 +491,44 @@
           relationType: type,
           label: label,
           color: { color: color, highlight: color, hover: color },
-          dashes: !!dashes,
+          dashes: Array.isArray(dashes) ? dashes : !!dashes,
           hidden: !isVisible,
           arrows: { to: { enabled: hasArrow !== false, scaleFactor: 0.7 } }
         });
       }
+    }
+
+    // 本文・コメントに書かれたチケット番号を抽出する。対象は #123 / #123-4(コメント指定) / 同じサーバの .../issues/123
+    function findIssueRefs(text) {
+      var ids = [];
+      if (!text) return ids;
+      // リンク記法 [表示](URL) / "表示":URL は表示文字を捨てて URL で判定する(別サーバへのリンクの "#123" を拾わない)
+      text = text.replace(/\[([^\]]*)\]\(([^)\s]+)\)/g, function(_, t, u) { return " " + u + " "; })
+                 .replace(/"([^"\r\n]*)":(\S+)/g, function(_, t, u) { return " " + u + " "; });
+      var m;
+      var reUrl = /(https?:\/\/[^\s"'<>()\[\]]+?)\/issues\/(\d+)/g;
+      while ((m = reUrl.exec(text)) !== null) {
+        if (m[1].replace(/\/$/, "").toLowerCase() === baseUrl.replace(/\/$/, "").toLowerCase()) ids.push(m[2]);
+      }
+      var reHash = /(^|[\s(\[,.、。:：「『（])#(\d{3,7})(?![\w])/g;
+      while ((m = reHash.exec(text)) !== null) ids.push(m[2]);
+      return ids;
+    }
+
+    // 参照先 ID → 記載箇所("本文" / "note-N")の一覧
+    function collectMentions(issue) {
+      var map = {};
+      function add(ids, where) {
+        ids.forEach(function(id) {
+          if (id === String(issue.id)) return;
+          if (!map[id]) map[id] = [];
+          if (map[id].indexOf(where) < 0) map[id].push(where);
+        });
+      }
+      add(findIssueRefs(issue.description), "本文");
+      (issue.journals || []).forEach(function(j, idx) { add(findIssueRefs(j.notes), "note-" + (idx + 1)); });
+      (issue.mentionRefs || []).forEach(function(r) { add([r.id], r.where); });
+      return map;
     }
 
     function parseFromOpenerDOM(doc, targetId) {
@@ -542,6 +576,24 @@
           }
         });
 
+        // 本文・コメント中のチケットへのリンク(Redmine が #123 を変換した a 要素)。同じサーバのものだけ
+        var mentionRefs = [];
+        function pushLinks(root, where) {
+          if (!root) return;
+          root.querySelectorAll("a[href*='/issues/']").forEach(function(a) {
+            var h = a.href || "";
+            if (h.indexOf(baseUrl + "/issues/") !== 0) return;
+            var lm = h.substring(baseUrl.length).match(/^\/issues\/(\d+)/);
+            if (lm) mentionRefs.push({ id: lm[1], where: where });
+          });
+        }
+        pushLinks(doc.querySelector("div.issue div.description div.wiki"), "本文");
+        doc.querySelectorAll("#history div.journal").forEach(function(j) {
+          var na = j.querySelector("a[href*='#note-']");
+          var nm = na ? (na.getAttribute("href") || "").match(/#note-(\d+)/) : null;
+          pushLinks(j.querySelector("div.wiki"), nm ? "note-" + nm[1] : "コメント");
+        });
+
         return {
           id: targetId,
           subject: subject || "チケット #" + targetId,
@@ -551,7 +603,8 @@
           priority: priorityEl ? { name: priorityEl.textContent.trim() } : null,
           parent: parentId ? { id: parentId } : null,
           children: children,
-          relations: relations
+          relations: relations,
+          mentionRefs: mentionRefs
         };
       } catch (e) {
         console.error("DOM parse error:", e);
@@ -568,7 +621,7 @@
         var t0 = Date.now();
         var res;
         try {
-          res = await fetch(baseUrl + "/issues/" + id + ".json?include=relations,children", {
+          res = await fetch(baseUrl + "/issues/" + id + ".json?include=relations,children,journals", {
             credentials: "include",
             signal: ctrl.signal
           });
@@ -658,6 +711,16 @@
           }
         });
       }
+
+      // 本文・コメントに書かれた参照先へのリンク(記載元 → 参照先)
+      var mentions = collectMentions(issue);
+      Object.keys(mentions).forEach(function(mid) {
+        var where = mentions[mid];
+        var label = "記載 " + (where.length > 3 ? where.slice(0, 3).join(",") + "…" : where.join(","));
+        addPlaceholderNode(mid);
+        if (!issuesCache[mid]) pendingIds.push(mid);
+        addRelationEdge(issue.id, mid, "mentions", label, "#d946ef", [2, 4], true);
+      });
 
       updateStatus("チケット #" + issueId + " を読み込みました");
 
@@ -1437,6 +1500,7 @@
 '    <label class="filter-label"><input type="checkbox" id="chk-rel-relates" data-rel="relates" checked><span class="filter-badge" style="background:#10b981;"></span>関連</label>\n' +
 '    <label class="filter-label"><input type="checkbox" id="chk-rel-duplicates" data-rel="duplicates" checked><span class="filter-badge" style="background:#f59e0b;"></span>重複</label>\n' +
 '    <label class="filter-label"><input type="checkbox" id="chk-rel-copied" data-rel="copied_to" checked><span class="filter-badge dashed" style="border-bottom-color:#8b5cf6;"></span>コピー</label>\n' +
+'    <label class="filter-label"><input type="checkbox" id="chk-rel-mentions" data-rel="mentions" checked><span class="filter-badge dashed" style="border-bottom-style:dotted;border-bottom-color:#d946ef;"></span>記載</label>\n' +
 '    <div style="margin-left:auto;display:flex;gap:4px;">\n' +
 '      <button id="btn-filter-all" class="btn" style="padding:2px 8px;font-size:11px;">全選択</button>\n' +
 '      <button id="btn-filter-none" class="btn" style="padding:2px 8px;font-size:11px;">全解除</button>\n' +
