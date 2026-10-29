@@ -1,5 +1,0 @@
-modules:
-  - engine
-  - rl
-  - valuerl
-  - playmat

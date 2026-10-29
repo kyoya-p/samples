@@ -1,7 +1,0 @@
-/build/
-/.idea/
-/.kotlin/
-*.log
-/build-release/
-/build-tools/
-/weights/

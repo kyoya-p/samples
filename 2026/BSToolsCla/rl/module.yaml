@@ -1,6 +1,0 @@
-product:
-  type: lib
-  platforms: [ mingwX64 ]
-
-dependencies:
-  - ../engine

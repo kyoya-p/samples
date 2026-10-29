@@ -1,4 +1,2 @@
 [task_config]
-includes = [
-    "mise.agents.toml",
-]
+includes = ["mise.agents.toml", ]

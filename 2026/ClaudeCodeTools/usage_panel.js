@@ -28,7 +28,7 @@ const group = (keyFn) => { const g = {}; for (const r of rows) { const k = keyFn
 const days = group(r => r.day || 'unknown').sort((a, b) => a.key.localeCompare(b.key));
 // usage_sample.js が記録した使用率（5時間枠・週次）
 const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
-const samples = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)) : [];
+const samples = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)) : [];
 
 // 過去サンプルで枠情報が欠損している場合、直前の値を引き継ぐ（チャートの連続性確保）
 let lastRunning = {};
@@ -255,6 +255,18 @@ function usageChart() {
       applyRange(menu.value);
       draw(c);
     });
+    // ホイール: 右端（終端時刻）は変えず、表示範囲を隣の選択肢に切り替える（下=広く、上=狭く）
+    el.addEventListener('wheel', e => {
+      e.preventDefault();
+      const i = ranges.findIndex(([l]) => l === menu.value);
+      const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
+      if (j === i) return;
+      const t1 = c.view.t1;
+      menu.value = ranges[j][0];
+      try { localStorage.setItem('usageRange:' + c.id, menu.value); } catch (err) {}
+      c.view = { t0: t1 - ranges[j][1] * 3600000, t1 };
+      draw(c);
+    }, { passive: false });
     applyRange(menu.value);
     draw(c);
   });
@@ -302,6 +314,7 @@ function cumChart() {
   try { savedRange = localStorage.getItem('usageRange:cum-chart') || '7d'; } catch (e) { /* 保存不可の環境では既定値 */ }
   rangeMenu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === savedRange ? ' selected' : '') + '>' + l + '</option>').join('');
   let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
+  let view = null; // 横ドラッグ中の終端時刻（null = 現在に追従）
 
   const W = 640, H = 180, P = 30, PL = 46;
   const pad = n => String(n).padStart(2, '0');
@@ -346,35 +359,66 @@ function cumChart() {
 
     const isRate = mode === 'rate';
     const pts = isRate ? ratePts : cumPts;
-    const now = Date.now(), t0 = now - hours * 3600000;
+    const now = Date.now(), t1 = view ? view.t1 : now, t0 = t1 - hours * 3600000;
     // 左端より前の最後の点を起点にする。左端より前の記録が無ければ、最初の記録まで0で縦に立ち上げる
     let i0 = -1; pts.forEach((p, i) => { if (p.t < t0) i0 = i; });
     let win;
-    if (i0 < 0) win = [{ t: t0, v: {} }, { t: pts[0].t, v: {} }].concat(pts.filter(p => p.t <= now));
-    else win = [{ t: t0, v: pts[i0].v }].concat(pts.slice(i0 + 1).filter(p => p.t <= now));
+    if (i0 < 0) win = [{ t: t0, v: {} }, { t: pts[0].t, v: {} }].concat(pts.filter(p => p.t <= t1));
+    else win = [{ t: t0, v: pts[i0].v }].concat(pts.slice(i0 + 1).filter(p => p.t <= t1));
     // 末尾: 累積は最新値を現在時刻まで延長、時間あたりは区間の終わりで0に落とす
     const last = win[win.length - 1];
-    if (isRate) win.push({ t: last.t, v: {} }, { t: now, v: {} });
-    else win.push({ t: now, v: last.v });
+    if (isRate) win.push({ t: last.t, v: {} }, { t: t1, v: {} });
+    else win.push({ t: t1, v: last.v });
     if (win.length === 0) return;
     const max = Math.max(1, ...win.map(p => sumV(p.v)));
-    const x = ms => PL + ((Math.min(Math.max(ms, t0), now) - t0) / (now - t0)) * (W - PL - P);
+    const x = ms => PL + ((Math.min(Math.max(ms, t0), t1) - t0) / (t1 - t0)) * (W - PL - P);
     const y = v => H - P - (v / max) * (H - 2 * P);
     const grid = [0, 0.25, 0.5, 0.75, 1].map(f => '<line x1="' + PL + '" x2="' + (W - P) + '" y1="' + y(max * f) + '" y2="' + y(max * f) + '" stroke="var(--line)"/><text x="' + (PL - 4) + '" y="' + (y(max * f) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + k(Math.round(max * f)) + '</text>').join('');
-    const span = now - t0;
+    const span = t1 - t0;
     const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080].find(m => span / (m * 60000) <= 8) || 10080;
     const step = stepMin * 60000;
     const edge = (ms, anchor) => '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="' + anchor + '" fill="var(--mut)">' + fmtT(ms) + '</text>';
-    let xl = edge(t0, 'start') + edge(now, 'end');
-    for (let ms = Math.ceil(t0 / step) * step; ms <= now; ms += step) { if (Math.abs(x(ms) - PL) < 60 || Math.abs(x(ms) - (W - P)) < 60) continue; const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate()); xl += '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>'; }
+    let xl = edge(t0, 'start') + edge(t1, 'end');
+    for (let ms = Math.ceil(t0 / step) * step; ms <= t1; ms += step) { if (Math.abs(x(ms) - PL) < 90 || Math.abs(x(ms) - (W - P)) < 90) continue; const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate()); xl += '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>'; }
     // 積み上げエリア: 下からモデル順。各層の上端 = その時点までの値の合計
     const stackKeys = keys.filter(kk => win.some(p => p.v[kk]));
-    const bnd = (p, n) => stackKeys.slice(0, n).reduce((acc, kk) => acc + (p.v[kk] || 0), 0);
-    const series = stackKeys.map((kk, idx) => {
-      const top = win.map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx + 1)).toFixed(1));
-      const bot = win.slice().reverse().map(p => x(p.t).toFixed(1) + ',' + y(bnd(p, idx)).toFixed(1));
-      return '<polygon points="' + top.concat(bot).join(' ') + '" fill="' + colOf(kk) + '" fill-opacity="0.85" stroke="var(--card)" stroke-width="1"><title>' + kk.replace(/^claude-/, '') + '</title></polygon>';
+    // /時: 各サンプル区間(from〜ts)の平均レートを積み上げ棒にする。区間が前の区間と重なる場合は終端から描く。
+    // 次の区間まで GAP 以内の隙間は次の棒まで伸ばし、連続して見えるようにする（長い隙間はデータなしとして空ける）
+    const GAP = 10 * 60000;
+    const bars = [];
+    let barEnd = -Infinity;
+    for (const rec of MS) {
+      const r = rateOf(rec);
+      const a = Math.max(Date.parse(rec.from), barEnd), b = Date.parse(rec.ts);
+      barEnd = Math.max(barEnd, b);
+      if (r && b > a && b >= t0 && a <= t1) bars.push({ a, b, r });
+    }
+    const barSeries = bars.map((bar, i) => {
+      const next = bars[i + 1];
+      const end = next && next.a - bar.b <= GAP ? next.a : bar.b;
+      const x1 = x(bar.a), w = Math.max(x(end) - x1, 1) + 0.5; // 境目の隙間を防ぐため0.5px重ねる
+      let acc = 0;
+      return stackKeys.map(kk => {
+        const v = bar.r[kk] || 0;
+        if (!v) return '';
+        const yt = y(acc + v), yb = y(acc);
+        acc += v;
+        return '<rect x="' + x1.toFixed(1) + '" y="' + yt.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (yb - yt).toFixed(1) + '" fill="' + colOf(kk) + '" fill-opacity="1" shape-rendering="crispEdges"><title>' + kk.replace(/^claude-/, '') + ' ' + k(Math.round(v)) + '/時</title></rect>';
+      }).join('');
     }).join('');
+    // 累積: 各区間(win の隣接点)の累積値を積み上げ棒にする。区間の長さが棒の幅
+    const cumBars = win.slice(0, -1).map((p, i) => {
+      const x1 = x(p.t), w = Math.max(x(win[i + 1].t) - x1, 1) + 0.5;
+      let acc = 0;
+      return stackKeys.map(kk => {
+        const v = p.v[kk] || 0;
+        if (!v) return '';
+        const yt = y(acc + v), yb = y(acc);
+        acc += v;
+        return '<rect x="' + x1.toFixed(1) + '" y="' + yt.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (yb - yt).toFixed(1) + '" fill="' + colOf(kk) + '" fill-opacity="1" shape-rendering="crispEdges"><title>' + kk.replace(/^claude-/, '') + ' 累積 ' + k(Math.round(v)) + '</title></rect>';
+      }).join('');
+    }).join('');
+    const series = isRate ? barSeries : cumBars;
     const titleText = 'トークン使用量';
     el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="' + titleText + '">' + grid + series + xl + '</svg>';
     document.getElementById('cum-title').textContent = titleText;
@@ -383,19 +427,55 @@ function cumChart() {
     const avg = {};
     if (isRate) for (const rec of MS) {
       const a = Date.parse(rec.from), b = Date.parse(rec.ts);
-      const ov = Math.max(0, Math.min(b, now) - Math.max(a, t0));
+      const ov = Math.max(0, Math.min(b, t1) - Math.max(a, t0));
       if (!(b > a) || ov <= 0) continue;
       const f = ov / (b - a);
       for (const [m, tok] of entriesOf(rec, split)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + tok * f; }
     }
     const shown = isRate ? keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk] / hours]) : keys.filter(kk => finCum[kk]).map(kk => [kk, finCum[kk]]);
     const headTot = isRate ? shown.reduce((acc, [, v]) => acc + v, 0) : sumV(finCum);
-    document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
+    document.getElementById('t1-cum').textContent = k(Math.round(headTot)) + unit;
     lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' + shown.map(([kk, v]) => '<span><i class="sw" style="background:' + colOf(kk) + '"></i>' + kk.replace(/^claude-/, '') + '<span class="v">' + k(Math.round(v)) + unit + '</span></span>').join('');
   };
   splitMenu.addEventListener('change', () => { split = splitMenu.value; try { localStorage.setItem('usageSplit:cum-chart', split); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
   modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('usageMode:cum-chart', mode); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
-  rangeMenu.addEventListener('change', () => { hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('usageRange:cum-chart', rangeMenu.value); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
+  rangeMenu.addEventListener('change', () => { view = null; hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('usageRange:cum-chart', rangeMenu.value); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
+  // ドラッグで横スクロール: 表示幅を保ったまま、データ範囲内で移動。現在まで戻すと追従に戻る
+  let drag = null;
+  el.style.touchAction = 'pan-y';
+  el.style.cursor = 'grab';
+  el.style.userSelect = 'none';
+  el.addEventListener('selectstart', e => e.preventDefault());
+  el.addEventListener('pointerdown', e => {
+    drag = { x: e.clientX, t1: view ? view.t1 : Date.now(), span: hours * 3600000 };
+    el.setPointerCapture(e.pointerId);
+    el.style.cursor = 'grabbing';
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const now = Date.now();
+    const first = Math.min(...MS.map(s => Date.parse(s.from)));
+    const shift = -(e.clientX - drag.x) / el.getBoundingClientRect().width * drag.span;
+    const t1 = Math.min(Math.max(drag.t1 + shift, first + drag.span), now);
+    view = t1 >= now - 1000 ? null : { t1 };
+    draw();
+  });
+  const endDrag = () => { drag = null; el.style.cursor = 'grab'; };
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+  // ホイール: 右端（終端時刻）は変えず、表示範囲を隣の選択肢に切り替える（下=広く、上=狭く）
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    const i = ranges.findIndex(([l]) => l === rangeMenu.value);
+    const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
+    if (j === i) return;
+    const t1 = view ? view.t1 : Date.now();
+    rangeMenu.value = ranges[j][0];
+    try { localStorage.setItem('usageRange:cum-chart', rangeMenu.value); } catch (err) {}
+    hours = ranges[j][1];
+    view = { t1 };
+    draw();
+  }, { passive: false });
   draw();
 }
 cumChart();
