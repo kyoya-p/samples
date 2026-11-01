@@ -1,0 +1,2402 @@
+{
+    "version": 1,
+    "session": "default",
+    "deck1": "deck-kogyo.yaml",
+    "deck2": "deck-kogyo.yaml",
+    "savedAt": "261031-095640",
+    "state": {
+        "turn": 1,
+        "activePlayerId": 1,
+        "step": "MAIN",
+        "player1": {
+            "playerId": 1,
+            "name": "Player 1 (甲魚)",
+            "life": 5,
+            "reserve": {
+                "normal": 3,
+                "soul": 1
+            },
+            "trash": {
+                "normal": 0,
+                "soul": 0
+            },
+            "deckCount": 36,
+            "hand": [
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X02",
+                    "name": "深巣ダンテクレオ",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        4
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《継召》トラッシュのEXシンボルを除外し軽減できる。\n[Lv1-2]『召喚時』系統：「甲魚」を持つ自分のスピリット2体までを指定する。このターン中、それらをBP+3000する。\n[Lv2]《真界放》『自分のアタックステップ』【起動：フラッシュ】〔ターン1回〕このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定する。それを回復させる。",
+                    "lvBps": [
+                        6000,
+                        9000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-X01",
+                    "name": "甲手スクィード",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』疲労状態の相手のスピリット1体を指定できる。それを重疲労させる。\n[Lv2]『アタック中』〔ターン1回〕バトル終了時、このスピリットを回復できる。",
+                    "lvBps": [
+                        5000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                }
+            ],
+            "deck": [
+                {
+                    "cardNo": "26RSD03-X02",
+                    "name": "深巣ダンテクレオ",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        4
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《継召》トラッシュのEXシンボルを除外し軽減できる。\n[Lv1-2]『召喚時』系統：「甲魚」を持つ自分のスピリット2体までを指定する。このターン中、それらをBP+3000する。\n[Lv2]《真界放》『自分のアタックステップ』【起動：フラッシュ】〔ターン1回〕このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定する。それを回復させる。",
+                    "lvBps": [
+                        6000,
+                        9000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-014",
+                    "name": "テンタクルアタック",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《ソウルマジック：緑》自分の緑シンボルがあればだけで使用できる。\n[フラッシュ]相手のスピリット1体を指定する。それを重疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X01",
+                    "name": "甲手スクィード",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』疲労状態の相手のスピリット1体を指定できる。それを重疲労させる。\n[Lv2]『アタック中』〔ターン1回〕バトル終了時、このスピリットを回復できる。",
+                    "lvBps": [
+                        5000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                }
+            ],
+            "field": [],
+            "trashCards": []
+        },
+        "player2": {
+            "playerId": 2,
+            "name": "Player 2 (甲魚)",
+            "life": 5,
+            "reserve": {
+                "normal": 3,
+                "soul": 1
+            },
+            "trash": {
+                "normal": 0,
+                "soul": 0
+            },
+            "deckCount": 37,
+            "hand": [
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-014",
+                    "name": "テンタクルアタック",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《ソウルマジック：緑》自分の緑シンボルがあればだけで使用できる。\n[フラッシュ]相手のスピリット1体を指定する。それを重疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X01",
+                    "name": "甲手スクィード",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』疲労状態の相手のスピリット1体を指定できる。それを重疲労させる。\n[Lv2]『アタック中』〔ターン1回〕バトル終了時、このスピリットを回復できる。",
+                    "lvBps": [
+                        5000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                }
+            ],
+            "deck": [
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X01",
+                    "name": "甲手スクィード",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』疲労状態の相手のスピリット1体を指定できる。それを重疲労させる。\n[Lv2]『アタック中』〔ターン1回〕バトル終了時、このスピリットを回復できる。",
+                    "lvBps": [
+                        5000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-008",
+                    "name": "重顎ドロゴリアス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック中』系統：「甲魚」を持つ自分のスピリット1体につき、このスピリットをBP+1000する。\n[Lv2]『アタック時』コスト3以下の相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-013",
+                    "name": "ボルテクスシェイブ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "MAGIC",
+                    "lvCosts": [
+                        0
+                    ],
+                    "symbols": [],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]相手のスピリット1体を指定する。それを疲労させる。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-001",
+                    "name": "フラッティ",
+                    "cost": 2,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[フラッシュ]『相手のアタックステップ』手札のこのカードは、召喚コストの支払いと上に置くコアをリザーブから使用して召喚できる。",
+                    "lvBps": [
+                        1000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-010",
+                    "name": "最奥：緑淵深",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『自分のアタックステップ』アタックしている系統：「甲魚」を持つ自分のスピリットすべてをBP+1000する。\n[Lv2]《真界放》【起動：メイン】〔ターン1回〕自分の手札のコスト4以下で系統：「甲魚」を持つカード1枚を相手に見せる。それをデッキの下に戻す▶1枚ドローする。",
+                    "lvBps": [],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X02",
+                    "name": "深巣ダンテクレオ",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        4
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《継召》トラッシュのEXシンボルを除外し軽減できる。\n[Lv1-2]『召喚時』系統：「甲魚」を持つ自分のスピリット2体までを指定する。このターン中、それらをBP+3000する。\n[Lv2]《真界放》『自分のアタックステップ』【起動：フラッシュ】〔ターン1回〕このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定する。それを回復させる。",
+                    "lvBps": [
+                        6000,
+                        9000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-005",
+                    "name": "モラモーラ",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        5000,
+                        8000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-X02",
+                    "name": "深巣ダンテクレオ",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        4
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "《継召》トラッシュのEXシンボルを除外し軽減できる。\n[Lv1-2]『召喚時』系統：「甲魚」を持つ自分のスピリット2体までを指定する。このターン中、それらをBP+3000する。\n[Lv2]《真界放》『自分のアタックステップ』【起動：フラッシュ】〔ターン1回〕このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定する。それを回復させる。",
+                    "lvBps": [
+                        6000,
+                        9000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-011",
+                    "name": "水泡群域",
+                    "cost": 4,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "NEXUS",
+                    "lvCosts": [
+                        0,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『配置時』相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]『自分のメインステップ開始時』疲労状態の系統：「甲魚」を持つ自分のスピリットが2体以上いるなら、ボイドからコア1個を自分のリザーブに置く。",
+                    "lvBps": [],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-004",
+                    "name": "ストラレイ",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "",
+                    "lvBps": [
+                        4000,
+                        7000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-006",
+                    "name": "海幻コエラ＝カンサス",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』このスピリット以外の系統：「甲魚」を持つ自分のスピリット1体を指定できる。ボイドからコア1個をそれに置く。その後、疲労状態の系統：「甲魚」を持つ自分のスピリットがいるなら、自分のスピリット1体を指定できる。それを回復させる。",
+                    "lvBps": [
+                        4000,
+                        6000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-007",
+                    "name": "ガリザロト",
+                    "cost": 5,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        5000,
+                        6000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-002",
+                    "name": "パッファー",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』ボイドからコア1個を自分のトラッシュに置く。",
+                    "lvBps": [
+                        2000,
+                        3000
+                    ],
+                    "shinkai": false
+                },
+                {
+                    "cardNo": "26RSD03-003",
+                    "name": "ラスヘッド",
+                    "cost": 3,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        3
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "海緑",
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』コスト4以下の相手のスピリット1体を指定できる。それを疲労させる。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+                    "lvBps": [
+                        3000,
+                        5000
+                    ],
+                    "shinkai": true
+                },
+                {
+                    "cardNo": "26RSD03-009",
+                    "name": "透笠オリンディアス",
+                    "cost": 6,
+                    "colors": [
+                        "GREEN"
+                    ],
+                    "reductionSymbols": [
+                        "GREEN",
+                        "GREEN",
+                        "GREEN"
+                    ],
+                    "category": "SPIRIT",
+                    "lvCosts": [
+                        1,
+                        2
+                    ],
+                    "symbols": [
+                        "GREEN"
+                    ],
+                    "systems": [
+                        "甲魚"
+                    ],
+                    "effect": "[Lv1-2]『召喚時』自分のデッキの上から3枚をオープンする。その中のコスト3以下で系統：「甲魚」を持つカード1枚を召喚/配置できる。残りは好きな順でデッキの下に戻す。\n[Lv2]『ブロック時』相手のスピリット1体を指定できる。それを疲労させる。",
+                    "lvBps": [
+                        6000,
+                        7000
+                    ],
+                    "shinkai": false
+                }
+            ],
+            "field": [],
+            "trashCards": []
+        },
+        "attackingCardId": null,
+        "blockingCardId": null,
+        "mustBlockInstanceId": null,
+        "winner": null,
+        "format": "STANDARD",
+        "seed": 725468,
+        "visitedPositions": [
+            7346709149368918587
+        ],
+        "nextCardSeq": 1,
+        "evaluatedCount": 0,
+        "coreWindow": []
+    }
+}
