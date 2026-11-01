@@ -124,8 +124,13 @@ h1{font-size:20px;margin:0 0 2px} h2{font-size:14px;margin:0 0 10px}
 .track{background:var(--line);border-radius:4px;height:8px;overflow:hidden}
 .fill{background:var(--bar);height:100%;border-radius:4px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.mlg{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;margin-top:8px}
-.mlg .v{color:var(--mut);font-variant-numeric:tabular-nums;margin-left:4px}
+.mlg{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.mlg .v{font-weight:600;font-variant-numeric:tabular-nums;margin-left:4px}
+.cl-toggle{display:inline-flex;align-items:center;background:none;border:1px solid transparent;border-radius:6px;padding:2px 8px;font:12px system-ui,sans-serif;color:var(--mut);cursor:pointer;user-select:none;transition:all .15s ease}
+.cl-toggle:hover{background:var(--card);border-color:var(--line);color:var(--fg)}
+.cl-toggle.expanded{background:var(--card);border-color:var(--line);color:var(--fg)}
+.cl-toggle.collapsed{opacity:0.65}
+.rem-badge{font-size:12px;font-weight:400;color:var(--mut);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}
 .ch{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rt{display:flex;align-items:center;gap:8px}
 .now{font-size:24px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -135,8 +140,8 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
 </style></head><body>
 <h1>Claude Usage Panel</h1>
 <div class="grid" style="margin-top:12px">
-  <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--bar)"></i>使用率推移/5h</span><span class="rt"><b class="now" id="now-5h" style="color:var(--bar)"></b><span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span></span></h2><div id="usage-chart-5h"></div></div>
-  <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--wk)"></i>使用率推移/7d</span><span class="rt"><b class="now" id="now-1w" style="color:var(--wk)"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span></span></h2><div id="usage-chart-1w"></div></div>
+  <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--bar)"></i>使用率推移/5h<span class="rem-badge" id="rem-5h"></span></span><span class="rt"><b class="now" id="now-5h" style="color:var(--bar)"></b><span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span></span></h2><div id="usage-chart-5h"></div></div>
+  <div class="card"><h2 class="ch"><span><i class="sw" style="background:var(--wk)"></i>使用率推移/7d<span class="rem-badge" id="rem-1w"></span></span><span class="rt"><b class="now" id="now-1w" style="color:var(--wk)"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span></span></h2><div id="usage-chart-1w"></div></div>
   <div class="card"><h2 class="ch"><span id="cum-title"></span><span class="rt"><b class="now" id="now-cum" style="color:var(--fg)"></b><span class="range"><select id="split-cum" aria-label="集計単位の切り替え"></select></span><span class="range"><select id="mode-cum" aria-label="表示の切り替え"></select></span><span class="range"><select id="range-cum" aria-label="累積グラフの表示範囲"></select></span></span></h2><div id="cum-chart"></div><div class="mlg" id="cum-legend"></div></div>
 </div>
 <script>
@@ -219,9 +224,16 @@ function usageChart() {
   charts.forEach(c => {
     // 現在値 / 更新までの残り時間（ページ表示時点）。週次は日+時間
     const nowEl = document.getElementById('now-' + c.nm);
+    const remEl = document.getElementById('rem-' + c.nm);
     const remain = c.p && c.p.reset ? Math.max(0, c.p.reset - Date.now()) / 3600000 : null;
-    nowEl.innerHTML = (lastS ? lastS[c.key] + '%' : '-') + (remain === null ? '' : '<span style="font-size:.6em;font-weight:500;color:var(--mut)">/' + (remain < 1 ? Math.round(remain * 60) + 'm' : c.key === 'weekPct' ? Math.floor(remain / 24) + 'd' + Math.floor(remain % 24) + 'h' : remain.toFixed(1) + 'h') + '</span>');
-    if (lastS) nowEl.title = new Date(lastS.ts).toLocaleString('ja-JP') + ' 時点の使用率 / 更新までの残り時間';
+    const remStr = remain === null ? '' : remain === 0 ? '更新済・未採取' : (remain < 1 ? Math.round(remain * 60) + 'm' : c.key === 'weekPct' ? Math.floor(remain / 24) + 'd' + Math.floor(remain % 24) + 'h' : remain.toFixed(1) + 'h');
+    if (remEl) {
+      remEl.textContent = remStr ? (remain === 0 ? remStr : '残り ' + remStr) : '';
+      remEl.style.display = remStr ? '' : 'none';
+      if (c.p && c.p.reset) remEl.title = '更新予定: ' + new Date(c.p.reset).toLocaleString('ja-JP');
+    }
+    nowEl.textContent = lastS ? lastS[c.key] + '%' : '-';
+    if (lastS) nowEl.title = new Date(lastS.ts).toLocaleString('ja-JP') + ' 時点の使用率';
     c.view = { ...full };
     const menu = document.getElementById('range-' + c.nm);
     const applyRange = label => {
@@ -316,6 +328,16 @@ function cumChart() {
   let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
   let view = null; // 横ドラッグ中の終端時刻（null = 現在に追従）
 
+  const storageKeyOf = kk => split === 'model' ? 'usageShowModel:' + kk : 'usageShowModel:' + split + ':' + kk;
+  const isModelVis = kk => {
+    let saved = null;
+    try { saved = localStorage.getItem(storageKeyOf(kk)); } catch (e) {}
+    return saved !== null ? saved === '1' : true;
+  };
+  const setModelVis = (kk, val) => {
+    try { localStorage.setItem(storageKeyOf(kk), val ? '1' : '0'); } catch (e) {}
+  };
+
   const W = 640, H = 180, P = 30, PL = 46;
   const pad = n => String(n).padStart(2, '0');
   const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
@@ -381,7 +403,7 @@ function cumChart() {
     let xl = edge(t0, 'start') + edge(t1, 'end');
     for (let ms = Math.ceil(t0 / step) * step; ms <= t1; ms += step) { if (Math.abs(x(ms) - PL) < 90 || Math.abs(x(ms) - (W - P)) < 90) continue; const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate()); xl += '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>'; }
     // 積み上げエリア: 下からモデル順。各層の上端 = その時点までの値の合計
-    const stackKeys = keys.filter(kk => win.some(p => p.v[kk]));
+    const stackKeys = keys.filter(kk => isModelVis(kk) && win.some(p => p.v[kk]));
     // /時: 各サンプル区間(from〜ts)の平均レートを積み上げ棒にする。区間が前の区間と重なる場合は終端から描く。
     // 次の区間まで GAP 以内の隙間は次の棒まで伸ばし、連続して見えるようにする（長い隙間はデータなしとして空ける）
     const GAP = 10 * 60000;
@@ -433,9 +455,26 @@ function cumChart() {
       for (const [m, tok] of entriesOf(rec, split)) { const kk = keyOf(m); avg[kk] = (avg[kk] || 0) + tok * f; }
     }
     const shown = isRate ? keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk] / hours]) : keys.filter(kk => finCum[kk]).map(kk => [kk, finCum[kk]]);
-    const headTot = isRate ? shown.reduce((acc, [, v]) => acc + v, 0) : sumV(finCum);
-    document.getElementById('t1-cum').textContent = k(Math.round(headTot)) + unit;
-    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' + shown.map(([kk, v]) => '<span><i class="sw" style="background:' + colOf(kk) + '"></i>' + kk.replace(/^claude-/, '') + '<span class="v">' + k(Math.round(v)) + unit + '</span></span>').join('');
+    const headTot = isRate
+      ? shown.filter(([kk]) => isModelVis(kk)).reduce((acc, [, v]) => acc + v, 0)
+      : keys.filter(kk => isModelVis(kk)).reduce((acc, kk) => acc + (finCum[kk] || 0), 0);
+    document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
+    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' +
+      shown.map(([kk, v]) => {
+        const vis = isModelVis(kk);
+        const label = kk.replace(/^claude-/, '');
+        return vis
+          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+          : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + label + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + label + '</span></button>';
+      }).join('');
+    lg.querySelectorAll('button[data-model]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const kk = btn.dataset.model;
+        setModelVis(kk, !isModelVis(kk));
+        draw();
+      });
+    });
   };
   splitMenu.addEventListener('change', () => { split = splitMenu.value; try { localStorage.setItem('usageSplit:cum-chart', split); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });
   modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('usageMode:cum-chart', mode); } catch (e) { /* 保存不可の環境では保存しない */ } draw(); });

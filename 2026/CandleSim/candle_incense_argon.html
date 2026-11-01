@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゆらぐ 煙の芸術 — 熱源浮力プルーム＆時間拡散ラグランジュ煙膜シミュレーション</title>
+<style>
+  :root {
+    --gold: #c8a86b;
+    --gold-bright: #e8cfa0;
+    --bg-deep: #040406;
+    --panel-bg: rgba(10, 11, 15, 0.78);
+    --panel-border: rgba(200, 168, 107, 0.24);
+    --text-main: #e8e4dc;
+    --text-muted: rgba(215, 210, 200, 0.54);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-deep);
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "MS PMincho", Georgia, serif;
+    color: var(--text-main);
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: default;
+  }
+
+  .header-overlay {
+    position: absolute;
+    top: 28px;
+    left: 36px;
+    pointer-events: none;
+    z-index: 10;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.95);
+  }
+
+  .header-overlay h1 {
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: 0.28em;
+    color: rgba(238, 234, 226, 0.88);
+    margin-bottom: 6px;
+  }
+
+  .header-overlay p {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  }
+
+  .regime-badge {
+    position: absolute;
+    top: 28px;
+    right: 36px;
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 10;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(215, 226, 242, 0.75);
+    background: rgba(12, 14, 20, 0.62);
+    border: 1px solid rgba(200, 168, 107, 0.25);
+    padding: 7px 16px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    transition: all 0.22s ease;
+  }
+
+  .regime-badge:hover {
+    border-color: var(--gold-bright);
+    color: #fff;
+  }
+
+  .ui-bar {
+    position: absolute;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 26px;
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 999px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 14px 44px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    z-index: 10;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  }
+
+  .btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(200, 168, 107, 0.30);
+    color: var(--text-main);
+    padding: 6px 15px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    white-space: nowrap;
+  }
+
+  .btn:hover {
+    background: rgba(200, 168, 107, 0.15);
+    border-color: var(--gold-bright);
+  }
+
+  .btn.active {
+    background: rgba(200, 168, 107, 0.22);
+    border-color: var(--gold);
+    color: #fff8eb;
+    box-shadow: 0 0 14px rgba(200, 168, 107, 0.22);
+  }
+
+  .divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(200, 168, 107, 0.18);
+  }
+
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  .slider-group input[type="range"] {
+    width: 84px;
+    height: 4px;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="canvas"></canvas>
+
+  <div class="header-overlay">
+    <h1>ゆらぐ — 線香の煙・熱源浮力プルーム＆時間拡散シミュレーション</h1>
+    <p>火種を熱源とする上昇気流（距離とともに減衰・拡散） ｜ マウス通過で局所双極子渦を誘起</p>
+  </div>
+
+  <div id="regimeBadge" class="regime-badge">気流状態：自律ゆらぎ（クリックで切替）</div>
+
+  <div class="ui-bar">
+    <button id="btnField" class="btn">熱源・気流場：非表示</button>
+    <div class="divider"></div>
+    <div class="slider-group">
+      <span>室内対流</span>
+      <input type="range" id="convectionRange" min="0" max="100" value="42" title="0：完全無風 〜 100：活発な自然対流">
+    </div>
+    <div class="slider-group">
+      <span>横風</span>
+      <input type="range" id="windRange" min="-100" max="100" value="0">
+    </div>
+    <div class="slider-group">
+      <span>燃焼速</span>
+      <input type="range" id="speedRange" min="1" max="20" value="2">
+    </div>
+    <div class="divider"></div>
+    <button id="btnReset" class="btn">新しく供える</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/**
+ * ============================================================================
+ * 1. 3次元連続カールノイズ場 (Curl Noise — 非圧縮マルチスケール微細渦)
+ * ============================================================================
+ */
+class CurlNoise3D {
+  constructor(seed = 20261101) {
+    this.p = new Uint8Array(512);
+    const perm = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) perm[i] = i;
+    let s = seed;
+    for (let i = 255; i > 0; i--) {
+      s = (s * 16807) % 2147483647;
+      const j = s % (i + 1);
+      const t = perm[i]; perm[i] = perm[j]; perm[j] = t;
+    }
+    for (let i = 0; i < 512; i++) this.p[i] = perm[i & 255];
+  }
+
+  fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+  lerp(t, a, b) { return a + t * (b - a); }
+  grad(hash, x, y, z) {
+    const h = hash & 15;
+    const u = h < 8 ? x : y;
+    const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
+    return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+  }
+
+  noise(x, y, z) {
+    const p = this.p;
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+    x -= Math.floor(x);
+    y -= Math.floor(y);
+    z -= Math.floor(z);
+    const u = this.fade(x), v = this.fade(y), w = this.fade(z);
+    const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z;
+    const B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+    return this.lerp(w,
+      this.lerp(v,
+        this.lerp(u, this.grad(p[AA], x, y, z), this.grad(p[BA], x - 1, y, z)),
+        this.lerp(u, this.grad(p[AB], x, y - 1, z), this.grad(p[BB], x - 1, y - 1, z))
+      ),
+      this.lerp(v,
+        this.lerp(u, this.grad(p[AA + 1], x, y, z - 1), this.grad(p[BA + 1], x - 1, y, z - 1)),
+        this.lerp(u, this.grad(p[AB + 1], x, y - 1, z - 1), this.grad(p[BB + 1], x - 1, y - 1, z - 1))
+      )
+    );
+  }
+
+  fbm(x, y, z) {
+    return this.noise(x, y, z) * 0.58
+         + this.noise(x * 2.07 + 14.3, y * 2.07 - 8.7, z * 1.85) * 0.28
+         + this.noise(x * 4.19 - 23.1, y * 4.19 + 15.9, z * 3.10) * 0.14;
+  }
+
+  curl2D(x, y, z) {
+    const e = 0.014;
+    const dΨdy = (this.fbm(x, y + e, z) - this.fbm(x, y - e, z)) / (2 * e);
+    const dΨdx = (this.fbm(x + e, y, z) - this.fbm(x - e, y, z)) / (2 * e);
+    return { vx: dΨdy, vy: -dΨdx };
+  }
+}
+
+/**
+ * ============================================================================
+ * 2. 線香の火種（点熱源）による熱浮力プルーム・モデル (Morton-Taylor-Turner Plume)
+ * ============================================================================
+ * 物理法則:
+ *  - 上昇気流は画面全体に一様に存在するのではなく、線香の火種 (heatX, heatY) を熱源として発生する。
+ *  - 熱源直上では温度が高く強い上昇流 (vy ≈ -2.65 px/frame) と周囲空気の引き込み（コアンダ収束）が生じる。
+ *  - 熱源から上方へ離れるにつれて周囲の冷たい空気を巻き込んで冷却・減速し (vy ∝ (1 + Δy/H)^-0.62)、
+ *    非圧縮連続の式 (∂vx/∂x = -∂vy/∂y > 0) により減速分が横方向への自然な広がり（熱プルーム開角膨張）を生む。
+ *  - また、マウス外乱や風によって熱源のプルーム軸から横方向または下方へ離れた煙は、
+ *    熱源からの上昇気流の影響をほとんど受けなくなり、空中にふわりと滞留しながら時間とともに大きく拡散する。
+ */
+function sampleThermalPlume(px, py, heatX, heatY, windX) {
+  const dy = heatY - py; // 熱源からの高さ (上が正)
+  const dist3D = Math.hypot(px - heatX, dy);
+
+  // 火種より下方に押し下げられた領域では熱源の上昇気流は届かない
+  if (dy < -18) {
+    return { vx: 0, vy: 0, plumeFactor: 0 };
+  }
+
+  const effDy = Math.max(0, dy);
+
+  // 横風によって熱プルームの中心軸自体が上空ほど風下へ緩やかに湾曲する
+  const axisX = heatX + 1.0 + windX * Math.pow(effDy / 42, 1.28) * 14.0;
+  const dx = px - axisX;
+
+  // プルーム半径 R(y): 火種付近では極細 (22px)、上空へ向かうにつれ周囲空気を巻き込んで円錐状に拡大
+  const plumeRadius = 22.0 + effDy * 0.22;
+  const rNormSq = (dx * dx) / (plumeRadius * plumeRadius);
+
+  if (rNormSq > 5.0) {
+    return { vx: 0, vy: 0, plumeFactor: 0 };
+  }
+
+  const radialGauss = Math.exp(-rNormSq);
+
+  // 熱源からの距離に応じた中心上昇速度の減衰 (熱源に近いほど強く、離れるほど弱まる)
+  const heightDecay = Math.pow(1.0 + effDy / 155.0, -0.62);
+  const nearTipBoost = Math.exp(-effDy / 48.0) * 0.55;
+  const vyCenter = -(2.15 * heightDecay + nearTipBoost);
+
+  const vy = vyCenter * radialGauss;
+
+  // 連続の式 (∇・u = 0) に基づく水平速度成分:
+  // ・火種直近 (effDy < 36px) では加速上昇に伴う周囲空気の引き込み（中心軸への収束）
+  // ・それより上空 (effDy >= 36px) では上昇気流の減速に伴い、空気が外側へ押し広げられる（熱プルーム膨張）
+  let vx = 0;
+  if (effDy < 36) {
+    const pinch = (1.0 - effDy / 36.0) * 0.08 * radialGauss;
+    vx = -dx * pinch;
+  } else {
+    // 減速勾配 d(vy)/dy に比例した外側への自然な広がり
+    const divergeRate = 0.0042 * heightDecay * radialGauss;
+    vx = dx * divergeRate;
+  }
+
+  return {
+    vx,
+    vy,
+    plumeFactor: radialGauss * heightDecay
+  };
+}
+
+/**
+ * ============================================================================
+ * 3. 非圧縮 Lamb-Oseen 双極子渦ウェイク・ソルバー (Mouse & Room Air Wakes)
+ * ============================================================================
+ */
+class VortexDipoleField {
+  constructor() {
+    this.dipoles = [];
+    this.maxDipoles = 110;
+  }
+
+  clear() {
+    this.dipoles.length = 0;
+  }
+
+  spawnDipole(x, y, vx, vy, radius = 78, maxAge = 180, isMouse = false) {
+    const speed = Math.hypot(vx, vy);
+    if (speed < 0.015) return;
+    const dirX = vx / speed;
+    const dirY = vy / speed;
+
+    this.dipoles.push({
+      x,
+      y,
+      dirX,
+      dirY,
+      normX: -dirY,
+      normY: dirX,
+      strength: speed,
+      initRadius: radius,
+      radius: radius,
+      age: 0,
+      maxAge: maxAge,
+      isMouse: isMouse,
+      asymmetry: (Math.random() - 0.5) * 0.25
+    });
+
+    if (this.dipoles.length > this.maxDipoles) {
+      this.dipoles.shift();
+    }
+  }
+
+  update(ambientWindX) {
+    for (let i = this.dipoles.length - 1; i >= 0; i--) {
+      const d = this.dipoles[i];
+      d.age++;
+      if (d.age >= d.maxAge || d.strength < 0.008) {
+        this.dipoles.splice(i, 1);
+        continue;
+      }
+
+      // 自己誘導速度による前進と粘性拡散による渦半径の拡大 R(t) = sqrt(R0^2 + 4νt)
+      const selfAdvect = d.strength * 0.42;
+      d.x += d.dirX * selfAdvect + ambientWindX * 0.35;
+      d.y += d.dirY * selfAdvect;
+
+      d.radius = Math.sqrt(d.initRadius * d.initRadius + d.age * 48);
+      d.strength *= 0.968;
+    }
+  }
+
+  sample(px, py) {
+    let totalVx = 0;
+    let totalVy = 0;
+    let totalShear = 0;
+    let mouseShear = 0;
+
+    const len = this.dipoles.length;
+    for (let i = 0; i < len; i++) {
+      const d = this.dipoles[i];
+      const dx = px - d.x;
+      const dy = py - d.y;
+      const rSq = dx * dx + dy * dy;
+      const cutoffSq = d.radius * d.radius * 3.8;
+      if (rSq > cutoffSq) continue;
+
+      const s = dx * d.dirX + dy * d.dirY;
+      const n = dx * d.normX + dy * d.normY;
+
+      const invR2 = 1.0 / (d.radius * d.radius);
+      const sNorm2 = s * s * invR2 * 0.85;
+      const nNorm2 = n * n * invR2 * 1.15;
+      const expTerm = Math.exp(-(sNorm2 + nNorm2));
+
+      const lifeRatio = d.age / d.maxAge;
+      const env = Math.min(1.0, d.age / 2.5) * (1.0 - lifeRatio * lifeRatio) * expTerm;
+      const U = d.strength * env;
+
+      const us = U * (1.0 - 2.2 * nNorm2 + d.asymmetry * (n * Math.sqrt(invR2)));
+      const un = U * (1.75 * s * n * invR2);
+
+      totalVx += us * d.dirX + un * d.normX;
+      totalVy += us * d.dirY + un * d.normY;
+
+      const localVort = Math.abs(U) * Math.sqrt(invR2) * (1.0 + Math.abs(n) * Math.sqrt(invR2) * 2.2);
+      totalShear += localVort;
+      if (d.isMouse) {
+        mouseShear += localVort;
+      }
+    }
+
+    return { vx: totalVx, vy: totalVy, shear: totalShear, mouseShear: mouseShear };
+  }
+}
+
+/**
+ * ============================================================================
+ * 4. 時間拡散3Dラグランジュ煙膜（7ストランド連続シート）＆ 散乱煙霧クラウド・エンジン
+ * ============================================================================
+ * 改善ポイント:
+ *  1) 「上昇気流は線香の火を熱源として発生し、熱源から遠ければ影響が減る」:
+ *     固定の定数上昇速度を撤廃し、各頂点が `sampleThermalPlume(x, y, heatX, heatY)` から
+ *     熱源距離に応じた浮力を受け取る。火種から遠く離れた煙や横に吹き飛ばされた煙は上昇力を失い、
+ *     空中にゆったりと漂う。
+ *  2) 「時間とともにもっと広がる」:
+ *     人為的な横幅クランプ (85px制限) や描画距離カットオフを撤廃。
+ *     経過時間 (age) とともにフィック拡散・乱流渦拡散 (Eddy Diffusivity ∝ age^0.85) が連続的に働き、
+ *     最初は 1px の鋭い白筋だった煙が、中空で 40〜80px の絹ベールへ、さらに時間が経つにつれて
+ *     180px〜360px 以上の広大で柔らかなチンダル散乱雲へと空間いっぱいに広がりながら薄れていく。
+ */
+class SmokeSheetEngine {
+  constructor() {
+    this.rows = [];
+    this.maxRows = 320;
+    this.numCols = 7;
+    this.puffs = [];
+    this.maxPuffs = 180;
+  }
+
+  clear() {
+    this.rows.length = 0;
+    this.puffs.length = 0;
+  }
+
+  emitRow(originX, originY, tipX, tipY, phase, chirality) {
+    const cols = [];
+    for (let c = 0; c < this.numCols; c++) {
+      const uNorm = (c / (this.numCols - 1)) * 2.0 - 1.0; // -1.0 〜 +1.0
+      const angle = uNorm * Math.PI * 0.85 + phase;
+      const r0 = 0.18;
+      cols.push({
+        x: originX + Math.cos(angle) * r0,
+        y: originY + Math.sin(angle) * r0 * 0.2,
+        z: Math.sin(angle) * r0,
+        vx: (tipX - originX) * 0.14,
+        vy: -2.4,
+        vz: 0,
+        uNorm,
+        angle0: angle
+      });
+    }
+
+    this.rows.unshift({
+      age: 0,
+      maxAge: 300,
+      originX,
+      originY,
+      tipX,
+      tipY,
+      chirality,
+      phase,
+      cols,
+      unravel: 0.0,     // 0.0: 鋭い1本の層流白筋 ➔ 1.0: 3D展開ベール
+      unravelAge: 0,    // ほどけ始めてからの経過フレーム数（拡散膨張＆急速希釈用）
+      rollPhase: phase,
+      integrity: 1.0
+    });
+
+    if (this.rows.length > this.maxRows) {
+      this.rows.pop();
+    }
+  }
+
+  spawnMistPuff(x, y, vx, vy, radius, alpha) {
+    if (this.puffs.length >= this.maxPuffs) return;
+    this.puffs.push({
+      x,
+      y,
+      vx,
+      vy,
+      radius,
+      growRate: 0.65 + Math.random() * 0.45,
+      alpha: Math.min(0.055, alpha),
+      age: 0,
+      maxAge: 65 + Math.floor(Math.random() * 35)
+    });
+  }
+
+  update(dipoleField, curlNoise, env) {
+    const { time, convectionLevel, windX, critHeight, heatX, heatY } = env;
+    const numCols = this.numCols;
+    const midCol = (numCols - 1) >> 1;
+
+    // ----------------------------------------------------------------------
+    // 1. ラグランジュ煙シート各行・各ストランド頂点の移流と時間拡散
+    // ----------------------------------------------------------------------
+    for (let r = this.rows.length - 1; r >= 0; r--) {
+      const row = this.rows[r];
+      const center = row.cols[midCol];
+
+      const rise = Math.max(0, heatY - center.y);
+      const wakeCenter = dipoleField.sample(center.x, center.y);
+
+      // 層流時は通常速度(1.0)で加齢し、ほどけて拡散・乱流混合が始まると空気との希釈で加齢（消散）が加速する
+      row.age += 1.0 + row.unravel * 1.15 + Math.min(2.2, wakeCenter.shear * 3.5);
+
+      if (row.age > row.maxAge || row.unravelAge > 135 || center.y < -120 || center.y > row.originY + 180 || row.integrity < 0.01) {
+        this.rows.splice(r, 1);
+        continue;
+      }
+
+      // --------------------------------------------------------------------
+      // A. 層流から乱流・拡散ベールへの遷移 (unravel) と拡散経過時間 (unravelAge)
+      // --------------------------------------------------------------------
+      // 熱源の中心軸から大きく横に外れた場合も層流の束ねが解けて拡散が始まる
+      const horizOffsetFromSource = Math.abs(center.x - (heatX + 1.0));
+      const offAxisUnravel = horizOffsetFromSource > 38 ? (horizOffsetFromSource - 38) * 0.0012 : 0;
+
+      let unravelStep = wakeCenter.mouseShear * 1.55 + offAxisUnravel;
+      if (rise > critHeight) {
+        const excess = (rise - critHeight) / 65;
+        unravelStep += (0.015 + convectionLevel * 0.024 + wakeCenter.shear * 0.4) * Math.min(3.0, Math.pow(excess, 1.1));
+      } else if (wakeCenter.mouseShear < 0.0005 && offAxisUnravel === 0 && convectionLevel < 0.01 && Math.abs(windX) < 0.01) {
+        unravelStep = -0.025;
+      }
+
+      row.unravel = Math.max(0.0, Math.min(1.0, row.unravel + unravelStep));
+      const u = row.unravel;
+      const uSmooth = u * u * (3.0 - 2.0 * u);
+
+      if (u > 0.02) {
+        row.unravelAge++;
+      }
+
+      // 時間が経つにつれて乱流拡散係数 (Eddy Diffusivity) が増大し、空間へ大きく広がっていく
+      const timeSpreadFactor = Math.pow(row.unravelAge / 90.0, 0.78);
+
+      row.rollPhase += (0.042 + convectionLevel * 0.038 + wakeCenter.shear * 0.7) * (0.35 + uSmooth * 1.1) * row.chirality;
+
+      // 大域的な空気塊の移流（時間が経って広がった煙ほど大きなスケールのうねりに乗る）
+      const macroCurl = curlNoise.curl2D(
+        center.x * 0.0020,
+        center.y * 0.0020 - time * 0.06,
+        time * 0.08
+      );
+      const swayWeight = Math.min(1.0, rise / 60) * convectionLevel * 0.30 + uSmooth * (1.1 + timeSpreadFactor * 0.9);
+
+      const coandaTargetX = heatX + 1.0;
+
+      // --------------------------------------------------------------------
+      // B. 7本のストランド頂点それぞれの移流（熱源距離減衰プルーム ＋ 時間拡散膨張）
+      // --------------------------------------------------------------------
+      for (let c = 0; c < numCols; c++) {
+        const pt = row.cols[c];
+        const uNorm = pt.uNorm; // -1.0 〜 +1.0
+
+        // (1) 線香の火種 (heatX, heatY) を熱源とする上昇気流場（熱源から遠いほど減衰）
+        const thermal1 = sampleThermalPlume(pt.x, pt.y, heatX, heatY, windX);
+
+        // 煙粒子自体が持つごくわずかな残留温かさ（これも時間 row.age とともに冷めて 0 になる）
+        const residualBuoyancyVy = -0.22 * Math.exp(-row.age / 240.0);
+
+        // (2) 頂点位置での非圧縮双極子渦速度（マウス外乱・室内渦パケット）
+        const w1 = dipoleField.sample(pt.x, pt.y);
+
+        // (3) ストランドごとのメソ・ミクロ3Dカールノイズ渦
+        //     時間が経つほどノイズの空間スケールが大きくなり、大きな渦で周囲へ広がる
+        const freq = Math.max(0.0032, 0.0075 - timeSpreadFactor * 0.0022);
+        const mesoCurl = curlNoise.curl2D(
+          pt.x * freq + pt.z * 0.012 + uNorm * 0.22,
+          pt.y * freq - time * 0.13,
+          time * 0.18 + c * 0.27
+        );
+        const zNoise = curlNoise.noise(
+          pt.x * freq,
+          pt.y * freq - time * 0.11,
+          time * 0.22 + uNorm * 1.5
+        );
+
+        // (4) 3D渦ロール ＋ 時間とともに外側へ広がり続ける乱流フィック拡散速度 (outwardDriftVx)
+        const rollAngle = row.rollPhase + uNorm * Math.PI * 0.92;
+        const spreadDrive = uSmooth * (0.68 + convectionLevel * 0.65 + timeSpreadFactor * 1.35 + Math.min(2.5, w1.shear * 14.0));
+
+        // ★時間拡散の核心：振動する cos(rollAngle) だけでなく、経過時間に伴って各ストランドが
+        //   それぞれの uNorm 方向および中心からの放射方向へ持続的に広がり続ける成分を持つ
+        const dxFromCenter = pt.x - center.x;
+        const dyFromCenter = pt.y - center.y;
+        const distFromCenter = Math.hypot(dxFromCenter, dyFromCenter) + 0.1;
+        const radialUnitX = dxFromCenter / distFromCenter;
+        const radialUnitY = dyFromCenter / distFromCenter;
+
+        // 経過時間とともにストランド間の間隔を押し広げる拡散速度
+        const outwardDiffusionVx = (uNorm * (0.38 + timeSpreadFactor * 0.52) + radialUnitX * timeSpreadFactor * 0.28) * uSmooth * (0.45 + convectionLevel * 0.75);
+        const outwardDiffusionVy = (radialUnitY * timeSpreadFactor * 0.16) * uSmooth * (0.45 + convectionLevel * 0.75);
+
+        const vortRollVx = (Math.cos(rollAngle) * uNorm * 0.62 + mesoCurl.vx * 1.65) * spreadDrive + outwardDiffusionVx;
+        const vortRollVy = (Math.sin(rollAngle) * Math.abs(uNorm) * 0.34 + mesoCurl.vy * 1.05) * spreadDrive + outwardDiffusionVy;
+        const vortRollVz = (-Math.sin(rollAngle) * uNorm * 0.75 + zNoise * 1.45) * spreadDrive;
+
+        // RK2 Step 1 合成速度
+        const vx1 = thermal1.vx
+                  + windX * (0.35 + uSmooth * 0.95)
+                  + macroCurl.vx * 0.92 * swayWeight
+                  + vortRollVx
+                  + w1.vx;
+        const vy1 = thermal1.vy * (1.0 - uSmooth * 0.22)
+                  + residualBuoyancyVy
+                  + macroCurl.vy * 0.55 * uSmooth
+                  + vortRollVy
+                  + w1.vy;
+
+        // RK2 Step 2 中間点評価
+        const midX = pt.x + vx1 * 0.5;
+        const midY = pt.y + vy1 * 0.5;
+        const thermal2 = sampleThermalPlume(midX, midY, heatX, heatY, windX);
+        const w2 = dipoleField.sample(midX, midY);
+
+        const vx2 = thermal2.vx
+                  + windX * (0.35 + uSmooth * 0.95)
+                  + macroCurl.vx * 0.92 * swayWeight
+                  + vortRollVx
+                  + w2.vx;
+        const vy2 = thermal2.vy * (1.0 - uSmooth * 0.22)
+                  + residualBuoyancyVy
+                  + macroCurl.vy * 0.55 * uSmooth
+                  + vortRollVy
+                  + w2.vy;
+
+        pt.vx = pt.vx * 0.22 + vx2 * 0.78;
+        pt.vy = pt.vy * 0.22 + vy2 * 0.78;
+        pt.vz = pt.vz * 0.60 + vortRollVz * 0.40;
+
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.z += pt.vz;
+
+        // 火種直後 (rise < 22px) のコアンダ収束（熱源のすぐ上でのみ働く）
+        if (rise < 22 && thermal2.plumeFactor > 0.5 && w1.mouseShear < 0.01) {
+          const coandaPull = (1.0 - rise / 22) * 0.28 * (1.0 - uSmooth);
+          pt.x += (coandaTargetX - pt.x) * coandaPull;
+        }
+      }
+
+      // --------------------------------------------------------------------
+      // C. 層流直柱区間 (uSmooth < 0.01) のみ微細な中心揃えを行い、
+      //    ほどけた後はクランプせず時間とともにどこまでも自然に広がらせる
+      // --------------------------------------------------------------------
+      const cx = center.x;
+      const cy = center.y;
+      let maxHalfSpan = 0;
+
+      for (let c = 0; c < numCols; c++) {
+        const pt = row.cols[c];
+        if (uSmooth < 0.008) {
+          pt.x += (cx + pt.uNorm * 0.16 - pt.x) * 0.5;
+          pt.y += (cy - pt.y) * 0.5;
+        }
+        const d = Math.hypot(pt.x - cx, pt.y - cy);
+        if (d > maxHalfSpan) maxHalfSpan = d;
+      }
+
+      // 前の行との距離
+      let rowGap = 0;
+      if (r > 0) {
+        const prevCenter = this.rows[r - 1].cols[midCol];
+        rowGap = Math.hypot(cx - prevCenter.x, cy - prevCenter.y);
+      }
+
+      // 時間経過・大拡散時およびマウス強風時のボリューメトリック煙霧クラウド生成
+      if (rowGap > 20 || wakeCenter.mouseShear > 0.05 || (row.unravelAge > 110 && Math.random() < 0.08)) {
+        const tearRate = Math.max(0, (rowGap - 20) * 0.012) + Math.max(0, (wakeCenter.mouseShear - 0.05) * 1.1);
+        row.integrity = Math.max(0, row.integrity - tearRate);
+
+        if (row.integrity > 0.05 && (tearRate > 0.005 || row.unravelAge > 110)) {
+          if (Math.random() < Math.min(0.7, tearRate * 7.0 + 0.06)) {
+            const randCol = row.cols[Math.floor(Math.random() * numCols)];
+            this.spawnMistPuff(
+              randCol.x + (Math.random() - 0.5) * 12,
+              randCol.y + (Math.random() - 0.5) * 12,
+              randCol.vx * 0.9,
+              randCol.vy * 0.9,
+              18 + maxHalfSpan * 0.55 + row.unravelAge * 0.15,
+              0.048 * row.integrity * (1.0 - row.age / row.maxAge)
+            );
+          }
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 2. 連続区間のC2曲線平滑化（縦方向 ＆ 横断ストランド方向の2次元曲面平滑化）
+    // ----------------------------------------------------------------------
+    for (let r = 1; r < this.rows.length - 1; r++) {
+      const prev = this.rows[r - 1];
+      const curr = this.rows[r];
+      const next = this.rows[r + 1];
+
+      const d0 = Math.hypot(curr.cols[midCol].x - prev.cols[midCol].x, curr.cols[midCol].y - prev.cols[midCol].y);
+      const d1 = Math.hypot(curr.cols[midCol].x - next.cols[midCol].x, curr.cols[midCol].y - next.cols[midCol].y);
+
+      if (d0 < 22 && d1 < 22) {
+        for (let c = 0; c < numCols; c++) {
+          curr.cols[c].x = curr.cols[c].x * 0.78 + (prev.cols[c].x + next.cols[c].x) * 0.11;
+          curr.cols[c].y = curr.cols[c].y * 0.80 + (prev.cols[c].y + next.cols[c].y) * 0.10;
+        }
+      }
+
+      if (curr.unravel > 0.04) {
+        for (let c = 1; c < numCols - 1; c++) {
+          const leftP = curr.cols[c - 1];
+          const midP = curr.cols[c];
+          const rightP = curr.cols[c + 1];
+          midP.x = midP.x * 0.76 + (leftP.x + rightP.x) * 0.12;
+          midP.y = midP.y * 0.78 + (leftP.y + rightP.y) * 0.11;
+          midP.z = midP.z * 0.76 + (leftP.z + rightP.z) * 0.12;
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 3. ボリューメトリック煙霧パフの移流更新（熱源プルームの影響も距離に応じて受ける）
+    // ----------------------------------------------------------------------
+    for (let i = this.puffs.length - 1; i >= 0; i--) {
+      const p = this.puffs[i];
+      p.age++;
+      if (p.age >= p.maxAge) {
+        this.puffs.splice(i, 1);
+        continue;
+      }
+      const th = sampleThermalPlume(p.x, p.y, heatX, heatY, windX);
+      const w = dipoleField.sample(p.x, p.y);
+      const c = curlNoise.curl2D(p.x * 0.004, p.y * 0.004 - time * 0.09, time * 0.14 + i * 0.1);
+      p.vx = p.vx * 0.88 + (th.vx + windX * 0.65 + w.vx + c.vx * 0.65) * 0.12;
+      p.vy = p.vy * 0.88 + (th.vy * 0.75 - 0.12 + w.vy + c.vy * 0.55) * 0.12;
+      p.x += p.vx;
+      p.y += p.vy;
+      // 時間とともに一定の拡散率で広がり続ける
+      p.radius += p.growRate;
+    }
+  }
+
+  /**
+   * 煙の芸術レンダリング（時間とともに広がるチンダル散乱雲 ＋ 3Dコースティクス絹ベール ＋ 層流コア）
+   */
+  draw(ctx) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+
+    // ----------------------------------------------------------------------
+    // Pass 1: ボリューメトリック煙霧パフ
+    // ----------------------------------------------------------------------
+    for (let i = 0; i < this.puffs.length; i++) {
+      const p = this.puffs[i];
+      const life = p.age / p.maxAge;
+      const fade = Math.sin(Math.min(1.0, p.age / 6) * Math.PI * 0.5) * Math.pow(Math.max(0, 1.0 - life), 2.2);
+      // 半径拡大に伴う体積希釈で速やかに薄まる
+      const a = p.alpha * fade;
+      if (a <= 0.001) continue;
+
+      const g = ctx.createRadialGradient(p.x, p.y, p.radius * 0.04, p.x, p.y, p.radius);
+      g.addColorStop(0.0, `rgba(198, 214, 244, ${a.toFixed(4)})`);
+      g.addColorStop(0.5, `rgba(184, 202, 236, ${(a * 0.42).toFixed(4)})`);
+      g.addColorStop(1.0, 'rgba(175, 195, 232, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const rows = this.rows;
+    if (rows.length < 3) {
+      ctx.restore();
+      return;
+    }
+
+    const numCols = this.numCols;
+    const midCol = (numCols - 1) >> 1;
+
+    // ----------------------------------------------------------------------
+    // Pass 2: 時間とともに大きく広がりながら急速に希釈・消散するチンダル雲 ＆ 3D絹ベール
+    // ----------------------------------------------------------------------
+    for (let r = 0; r < rows.length - 1; r++) {
+      const r0 = rows[r];
+      const r1 = rows[r + 1];
+
+      const life0 = r0.age / r0.maxAge;
+      // 拡散経過時間 unravelAge に応じた指数関数的な希釈減衰を加え、広がった煙がいつまでも残らないようにする
+      const unravelDecay0 = Math.exp(-r0.unravelAge / 58.0);
+      const env0 = Math.pow(Math.max(0, 1.0 - life0), 1.85) * Math.min(1.0, r0.age / 4) * r0.integrity * unravelDecay0;
+      if (env0 <= 0.0015) continue;
+
+      const c0 = r0.cols[midCol];
+      const c1 = r1.cols[midCol];
+      const gap = Math.hypot(c1.x - c0.x, c1.y - c0.y);
+      if (gap > 52) continue;
+      const gapFade = gap > 16 ? Math.max(0, 1.0 - (gap - 16) / 36) : 1.0;
+
+      const u0 = r0.unravel;
+
+      // (a) 時間とともに広がる散乱ベール（広がるほど 1/R^2 に近く濃度が薄まりスッと消える）
+      if (u0 > 0.02 && (r & 1) === 0) {
+        const left = r0.cols[0];
+        const right = r0.cols[numCols - 1];
+        const span = Math.hypot(right.x - left.x, right.y - left.y) * 0.5;
+        const rad = Math.max(6, span * 1.15 + u0 * 14 + Math.pow(r0.unravelAge, 0.88) * 0.65);
+        const dilution = 1.0 / (1.0 + rad * 0.045 + r0.unravelAge * 0.025);
+        const mistA = env0 * gapFade * Math.min(0.044, u0 * 0.042) * dilution;
+
+        if (mistA > 0.001) {
+          const rCol = Math.round(198 - life0 * 30);
+          const gCol = Math.round(215 - life0 * 22);
+          const bCol = Math.round(246 - life0 * 8);
+          const mx = (left.x + right.x) * 0.5;
+          const my = (left.y + right.y) * 0.5;
+          const grad = ctx.createRadialGradient(mx, my, rad * 0.04, mx, my, rad);
+          grad.addColorStop(0.0, `rgba(${rCol}, ${gCol}, ${bCol}, ${mistA.toFixed(4)})`);
+          grad.addColorStop(0.48, `rgba(${rCol - 10}, ${gCol - 6}, ${bCol}, ${(mistA * 0.44).toFixed(4)})`);
+          grad.addColorStop(1.0, `rgba(${rCol - 18}, ${gCol - 12}, ${bCol}, 0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(mx, my, rad, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // (b) ストランド間の半透明3Dリボン膜
+      if (u0 > 0.01) {
+        const rCol = Math.round(214 - life0 * 34);
+        const gCol = Math.round(228 - life0 * 26);
+        const bCol = Math.round(252 - life0 * 8);
+        const timeSoften = Math.exp(-r0.unravelAge / 52.0);
+
+        for (let c = 0; c < numCols - 1; c++) {
+          const p00 = r0.cols[c];
+          const p01 = r0.cols[c + 1];
+          const p10 = r1.cols[c];
+          const p11 = r1.cols[c + 1];
+
+          const dx2D = Math.hypot(p01.x - p00.x, p01.y - p00.y);
+          const dz3D = Math.abs(p01.z - p00.z);
+          const caustic = 1.0 + Math.min(1.85, (dz3D / (dx2D + 1.5)) * 1.25);
+          const edgeWeight = (c === 0 || c === numCols - 2) ? 1.22 : 0.78;
+          const widthDilution = 1.0 / (1.0 + dx2D * 0.055);
+          const quadA = env0 * gapFade * Math.min(1.0, u0 * 1.7) * 0.044 * edgeWeight * caustic * timeSoften * widthDilution;
+          if (quadA <= 0.001) continue;
+
+          ctx.fillStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${quadA.toFixed(4)})`;
+          ctx.beginPath();
+          ctx.moveTo(p00.x, p00.y);
+          ctx.lineTo(p01.x, p01.y);
+          ctx.lineTo(p11.x, p11.y);
+          ctx.lineTo(p10.x, p10.y);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // Pass 3: 層流コア白筋 ＆ 時間とともに太く柔らかく拡散して消えるフィラメント描画
+    // ----------------------------------------------------------------------
+    for (let c = 0; c < numCols; c++) {
+      const isCore = (c === midCol);
+      const isOuter = (c === 0 || c === numCols - 1);
+
+      for (let r = 0; r < rows.length - 2; r++) {
+        const r0 = rows[r];
+        const r1 = rows[r + 1];
+        const r2 = rows[r + 2];
+
+        const u1 = r1.unravel;
+        if (!isCore && u1 < 0.01) continue;
+
+        const p0 = r0.cols[c];
+        const p1 = r1.cols[c];
+        const p2 = r2.cols[c];
+
+        const d01 = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+        const d12 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        if (d01 > 44 || d12 > 44) continue;
+
+        const stretchFade = Math.max(0, 1.0 - Math.max(0, Math.max(d01, d12) - 12) / 32);
+        const life1 = r1.age / r1.maxAge;
+        const env1 = Math.pow(Math.max(0, 1.0 - life1), 1.75) * Math.min(1.0, r1.age / 3) * r1.integrity * stretchFade;
+
+        let alpha, lineW;
+        if (u1 < 0.01) {
+          // 【層流直柱】：火種から立ち昇る極細1本柱
+          alpha = 0.88 * env1;
+          lineW = 1.25;
+        } else {
+          // 【時間拡散フィラメント】：広がるとともに速やかに希釈・フェードアウト
+          const emerge = Math.min(1.0, u1 * 4.5);
+          const timeDissolve = Math.exp(-r1.unravelAge / 42.0);
+          const dissolve = Math.pow(Math.max(0.0, 1.0 - u1 * 0.78), 1.45) * timeDissolve;
+          const wBase = isCore ? 0.50 : (isOuter ? 0.42 * emerge : 0.24 * emerge);
+          alpha = Math.min(0.85, wBase * dissolve * env1);
+          lineW = (isCore ? 1.20 : (isOuter ? 1.05 : 0.85)) + u1 * 2.5 + r1.unravelAge * 0.04;
+        }
+
+        if (alpha <= 0.0015) continue;
+
+        const mx0 = (p0.x + p1.x) * 0.5;
+        const my0 = (p0.y + p1.y) * 0.5;
+        const mx1 = (p1.x + p2.x) * 0.5;
+        const my1 = (p1.y + p2.y) * 0.5;
+
+        const rCol = Math.round(234 - life1 * 34);
+        const gCol = Math.round(243 - life1 * 24);
+        const bCol = 255;
+
+        ctx.beginPath();
+        if (r === 0) {
+          ctx.moveTo(p0.x, p0.y);
+        } else {
+          ctx.moveTo(mx0, my0);
+        }
+        ctx.quadraticCurveTo(p1.x, p1.y, mx1, my1);
+        ctx.strokeStyle = `rgba(${rCol}, ${gCol}, ${bCol}, ${alpha.toFixed(4)})`;
+        ctx.lineWidth = lineW;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
+/**
+ * ============================================================================
+ * 5. メインステージ・マウス双極子渦注入・レンダリング統合
+ * ============================================================================
+ */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const curlNoise = new CurlNoise3D(20261101);
+const dipoleField = new VortexDipoleField();
+const smokeEngine = new SmokeSheetEngine();
+
+let W = 0, H = 0;
+function onResize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+const state = {
+  showField: false,
+  convectionLevel: 0.42,
+  windX: 0.0,
+  speed: 2,
+  time: 0,
+  regimeMode: 0,
+  lx: 0.1,
+  ly: 0.0,
+  lz: 0.0,
+  ambientTimer: 35,
+  incenseLength: 170,
+  maxIncenseLength: 170,
+  lastAshDropLen: 170,
+  fallenAshes: [
+    { dx: 76, len: 6.2, angle: 0.03 },
+    { dx: 91, len: 4.8, angle: -0.02 }
+  ]
+};
+
+// マウス通過による局所双極子渦の生成
+let prevMouse = null;
+window.addEventListener('mousemove', e => {
+  const mx = e.clientX;
+  const my = e.clientY;
+
+  if (prevMouse !== null) {
+    const dx = mx - prevMouse.x;
+    const dy = my - prevMouse.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 1.0) {
+      const steps = Math.min(6, Math.ceil(dist / 18));
+      const effSpeed = Math.min(5.2, Math.pow(dist, 0.80) * 0.34);
+      const vx = (dx / dist) * effSpeed;
+      const vy = (dy / dist) * effSpeed;
+      const radius = 64 + Math.min(56, dist * 0.95);
+
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        const px = prevMouse.x + dx * t;
+        const py = prevMouse.y + dy * t;
+        dipoleField.spawnDipole(px, py, vx / steps, vy / steps, radius, 165, true);
+      }
+    }
+  }
+  prevMouse = { x: mx, y: my };
+});
+
+window.addEventListener('mouseleave', () => {
+  prevMouse = null;
+});
+
+canvas.addEventListener('click', e => {
+  const cx = e.clientX;
+  const cy = e.clientY;
+  if (cy > H - 85) return;
+  const holderX = W * 0.43;
+  const plumeX = holderX + 125;
+  const dir = cx < plumeX ? 1 : -1;
+  dipoleField.spawnDipole(cx, cy, dir * 2.1, -0.18, 88, 195, true);
+});
+
+function drawStageEnvironment(ctx, tableY, holderX) {
+  ctx.clearRect(0, 0, W, H);
+
+  const spotGrad = ctx.createRadialGradient(
+    holderX + 115, H * 0.35, 20,
+    holderX + 95, H * 0.45, Math.max(W, H) * 0.72
+  );
+  spotGrad.addColorStop(0.0, '#101319');
+  spotGrad.addColorStop(0.42, '#08090c');
+  spotGrad.addColorStop(0.76, '#040406');
+  spotGrad.addColorStop(1.0, '#020203');
+  ctx.fillStyle = spotGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  for (let x = 0; x < W; x += 68) {
+    const foldW = 34 + Math.sin(x * 0.045) * 14;
+    const drapeGrad = ctx.createLinearGradient(x, 0, x + foldW, 0);
+    drapeGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0)');
+    drapeGrad.addColorStop(0.5, 'rgba(26, 30, 38, 0.36)');
+    drapeGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = drapeGrad;
+    ctx.fillRect(x, 0, foldW, tableY);
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, tableY, W, H - tableY);
+  ctx.clip();
+
+  const woodGrad = ctx.createLinearGradient(0, tableY, 0, H);
+  woodGrad.addColorStop(0.0, '#211811');
+  woodGrad.addColorStop(0.16, '#140e0a');
+  woodGrad.addColorStop(1.0, '#050403');
+  ctx.fillStyle = woodGrad;
+  ctx.fillRect(0, tableY, W, H - tableY);
+
+  ctx.translate(0, tableY * 2);
+  ctx.scale(1, -1);
+  ctx.globalAlpha = 0.13;
+  ctx.filter = 'blur(4px)';
+  drawIncenseSystem(ctx, holderX, tableY, state.incenseLength);
+  ctx.filter = 'none';
+  ctx.restore();
+
+  const edgeGrad = ctx.createLinearGradient(W * 0.12, 0, W * 0.88, 0);
+  edgeGrad.addColorStop(0.0, 'rgba(200, 168, 107, 0)');
+  edgeGrad.addColorStop(0.35, 'rgba(200, 168, 107, 0.30)');
+  edgeGrad.addColorStop(0.65, 'rgba(200, 168, 107, 0.30)');
+  edgeGrad.addColorStop(1.0, 'rgba(200, 168, 107, 0)');
+  ctx.strokeStyle = edgeGrad;
+  ctx.lineWidth = 1.0;
+  ctx.beginPath();
+  ctx.moveTo(0, tableY);
+  ctx.lineTo(W, tableY);
+  ctx.stroke();
+}
+
+function drawIncenseSystem(ctx, holderX, tableY, iLen) {
+  ctx.save();
+
+  const trayLeft = holderX - 28;
+  const trayRight = holderX + 165;
+  const trayW = trayRight - trayLeft;
+  const trayY = tableY - 7;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+  ctx.beginPath();
+  ctx.ellipse(holderX + 68, tableY + 1, trayW * 0.52, 5.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const trayGrad = ctx.createLinearGradient(trayLeft, trayY - 6, trayRight, trayY + 7);
+  trayGrad.addColorStop(0.0, '#2c1e16');
+  trayGrad.addColorStop(0.35, '#4b3426');
+  trayGrad.addColorStop(0.7, '#342318');
+  trayGrad.addColorStop(1.0, '#1c120c');
+
+  ctx.fillStyle = trayGrad;
+  ctx.beginPath();
+  ctx.moveTo(trayLeft - 6, trayY - 4);
+  ctx.quadraticCurveTo(holderX + 68, trayY + 4, trayRight + 6, trayY - 3);
+  ctx.lineTo(trayRight, trayY + 6);
+  ctx.quadraticCurveTo(holderX + 68, trayY + 9, trayLeft, trayY + 6);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(215, 180, 135, 0.26)';
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.moveTo(trayLeft - 5, trayY - 3.5);
+  ctx.quadraticCurveTo(holderX + 68, trayY + 3.5, trayRight + 5, trayY - 2.5);
+  ctx.stroke();
+
+  for (let i = 0; i < state.fallenAshes.length; i++) {
+    const ash = state.fallenAshes[i];
+    ctx.save();
+    ctx.translate(holderX + ash.dx, trayY + 0.5);
+    ctx.rotate(ash.angle);
+    ctx.strokeStyle = 'rgba(212, 208, 202, 0.78)';
+    ctx.lineWidth = 2.0;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-ash.len * 0.5, 0);
+    ctx.lineTo(ash.len * 0.5, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  const standGrad = ctx.createRadialGradient(holderX - 2, trayY - 5, 1, holderX, trayY - 4, 8);
+  standGrad.addColorStop(0.0, '#f2d899');
+  standGrad.addColorStop(0.55, '#a88440');
+  standGrad.addColorStop(1.0, '#3a2b10');
+  ctx.fillStyle = standGrad;
+  ctx.beginPath();
+  ctx.arc(holderX, trayY - 3.5, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  const elevAngle = 0.56;
+  const cosA = Math.cos(elevAngle);
+  const sinA = Math.sin(elevAngle);
+
+  const curLen = Math.max(10, iLen);
+  const rootX = holderX - cosA * 10;
+  const rootY = trayY - 2 + sinA * 10;
+
+  const charLen = Math.max(5, curLen - 3.2);
+  const originX = holderX + cosA * charLen;
+  const originY = (trayY - 3.5) - sinA * charLen;
+
+  const tipX = holderX + cosA * curLen;
+  const tipY = (trayY - 3.5) - sinA * curLen;
+
+  ctx.beginPath();
+  ctx.moveTo(rootX, rootY);
+  ctx.lineTo(originX, originY);
+  ctx.strokeStyle = '#8d7355';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(rootX, rootY - 0.7);
+  ctx.lineTo(originX, originY - 0.7);
+  ctx.strokeStyle = 'rgba(228, 208, 178, 0.36)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(originX - cosA * 1.5, originY + sinA * 1.5);
+  ctx.lineTo(tipX, tipY);
+  ctx.strokeStyle = '#16110f';
+  ctx.lineWidth = 2.6;
+  ctx.lineCap = 'butt';
+  ctx.stroke();
+
+  if (curLen > 10) {
+    const pulse = (Math.sin(state.time * 2.6) + 1) * 0.5;
+    const glowR = 15;
+    const glow = ctx.createRadialGradient(tipX, tipY, 0.5, tipX, tipY, glowR);
+    glow.addColorStop(0.0, `rgba(255, 82, 22, ${(0.76 + pulse * 0.16).toFixed(3)})`);
+    glow.addColorStop(0.42, 'rgba(255, 62, 14, 0.22)');
+    glow.addColorStop(1.0, 'rgba(255, 30, 0, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, glowR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(originX + cosA * 0.8, originY - sinA * 0.8);
+    ctx.lineTo(tipX + cosA * 1.8, tipY - sinA * 1.8);
+    ctx.strokeStyle = `rgba(255, ${Math.floor(88 + pulse * 68)}, 34, 0.96)`;
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(tipX + cosA * 1.4, tipY - sinA * 1.4);
+    ctx.lineTo(tipX + cosA * 4.1, tipY - sinA * 4.1);
+    ctx.strokeStyle = 'rgba(234, 230, 224, 0.92)';
+    ctx.lineWidth = 2.35;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  return {
+    originX: originX + cosA * 0.6,
+    originY: originY - sinA * 1.2,
+    tipX: tipX + cosA * 2.8,
+    tipY: tipY - sinA * 2.8
+  };
+}
+
+/**
+ * 熱源浮力プルーム＋双極子渦ウェイクのベクトル場可視化オーバーレイ
+ * （火種を熱源として上昇気流が発生し、熱源から離れると減衰する様子を視覚化）
+ */
+function drawVelocityField(ctx, tableY, effectiveConv, heatX, heatY) {
+  ctx.save();
+  const step = 36;
+  ctx.lineWidth = 1;
+
+  for (let x = step; x < W; x += step) {
+    for (let y = step; y < tableY - 12; y += step) {
+      const th = sampleThermalPlume(x, y, heatX, heatY, state.windX);
+      const w = dipoleField.sample(x, y);
+      const c = curlNoise.curl2D(x * 0.003, y * 0.003 - state.time * 0.06, state.time * 0.08);
+      const vx = th.vx + state.windX * 0.6 + w.vx + c.vx * 0.32 * effectiveConv;
+      const vy = th.vy + w.vy + c.vy * 0.32 * effectiveConv;
+
+      const len = Math.hypot(vx, vy);
+      if (len < 0.04) continue;
+      const drawLen = Math.min(24, len * 8.0);
+      const ex = x + (vx / len) * drawLen;
+      const ey = y + (vy / len) * drawLen;
+
+      // 熱源プルームが強い領域は温かみのある琥珀色、周囲気流は淡い金色で表示
+      const alpha = Math.min(0.65, 0.16 + th.plumeFactor * 0.45 + Math.min(0.3, len * 0.15));
+      ctx.strokeStyle = `rgba(225, ${Math.round(175 - th.plumeFactor * 55)}, 105, ${alpha.toFixed(3)})`;
+      ctx.fillStyle = `rgba(235, ${Math.round(185 - th.plumeFactor * 55)}, 115, ${(alpha * 1.2).toFixed(3)})`;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(ex, ey, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * ============================================================================
+ * 6. メインアニメーションループ
+ * ============================================================================
+ */
+const regimeBadge = document.getElementById('regimeBadge');
+
+function animate() {
+  requestAnimationFrame(animate);
+  state.time += 0.035;
+
+  const dtL = 0.013;
+  const dxL = 10.0 * (state.ly - state.lx);
+  const dyL = state.lx * (28.0 - state.lz) - state.ly;
+  const dzL = state.lx * state.ly - (8.0 / 3.0) * state.lz;
+  state.lx += dxL * dtL;
+  state.ly += dyL * dtL;
+  state.lz += dzL * dtL;
+
+  const holderX = W * 0.43;
+  const tableY = H * 0.81;
+
+  if (state.incenseLength > 14) {
+    state.incenseLength -= 0.005 * state.speed;
+    if (state.lastAshDropLen - state.incenseLength > 18) {
+      state.lastAshDropLen = state.incenseLength;
+      const dropX = Math.cos(0.56) * state.incenseLength;
+      state.fallenAshes.push({
+        dx: dropX + (Math.random() - 0.5) * 5,
+        len: 4.5 + Math.random() * 2.8,
+        angle: (Math.random() - 0.5) * 0.16
+      });
+    }
+  }
+
+  drawStageEnvironment(ctx, tableY, holderX);
+  const tipInfo = drawIncenseSystem(ctx, holderX, tableY, state.incenseLength);
+
+  let effectiveConv = state.convectionLevel;
+  if (state.regimeMode === 1) effectiveConv = 0.0;
+  else if (state.regimeMode === 2) effectiveConv = Math.max(0.28, state.convectionLevel * 0.7);
+  else if (state.regimeMode === 3) effectiveConv = Math.max(0.80, state.convectionLevel);
+
+  // 室内の自然対流渦パケット
+  state.ambientTimer--;
+  if (state.ambientTimer <= 0) {
+    if (effectiveConv > 0.04) {
+      const targetY = tipInfo.tipY - (120 + Math.random() * 260);
+      const dir = Math.sin(state.lx * 0.4 + state.time * 0.3) >= 0 ? 1 : -1;
+      const startX = tipInfo.tipX - dir * (60 + Math.random() * 45);
+      const spd = (0.28 + Math.random() * 0.48) * effectiveConv;
+      dipoleField.spawnDipole(
+        startX,
+        targetY,
+        dir * spd,
+        (Math.random() - 0.5) * 0.22 * effectiveConv,
+        95 + Math.random() * 65,
+        220,
+        false
+      );
+    }
+    state.ambientTimer = 36 + Math.floor(Math.random() * 55);
+  }
+
+  dipoleField.update(state.windX);
+
+  const fbmWave = curlNoise.fbm(state.time * 0.38, state.lx * 0.05, state.lz * 0.05);
+  let critHeight;
+  if (effectiveConv < 0.01 && Math.abs(state.windX) < 0.01) {
+    critHeight = tableY + 350;
+  } else if (state.regimeMode === 2) {
+    critHeight = 185 + fbmWave * 45;
+  } else if (state.regimeMode === 3) {
+    critHeight = 65 + fbmWave * 28;
+  } else {
+    const lorenzSwing = (state.lz - 24.0) * 5.2 + Math.sin(state.time * 0.34) * 55 + fbmWave * 62;
+    const baseH = 235 - effectiveConv * 115 + lorenzSwing * effectiveConv;
+    critHeight = Math.max(42, Math.min(tableY + 200, baseH - Math.abs(state.windX) * 110));
+  }
+
+  const chirality = Math.tanh(state.lx * 0.15) + Math.sin(state.time * 0.48) * 0.38;
+
+  if (state.incenseLength > 14) {
+    smokeEngine.emitRow(
+      tipInfo.originX,
+      tipInfo.originY,
+      tipInfo.tipX,
+      tipInfo.tipY,
+      state.time * 1.25 + state.ly * 0.12,
+      chirality
+    );
+  }
+
+  smokeEngine.update(dipoleField, curlNoise, {
+    time: state.time,
+    convectionLevel: effectiveConv,
+    windX: state.windX,
+    critHeight,
+    heatX: tipInfo.tipX,
+    heatY: tipInfo.tipY
+  });
+
+  if (state.showField) {
+    drawVelocityField(ctx, tableY, effectiveConv, tipInfo.tipX, tipInfo.tipY);
+  }
+
+  smokeEngine.draw(ctx);
+
+  const modeNames = ['自律ゆらぎ', '静寂直立層流', '微風・二重螺旋', '濃密カオスベール'];
+  const lamPx = Math.round(Math.min(tableY - 20, critHeight));
+  if (effectiveConv < 0.01 && Math.abs(state.windX) < 0.01) {
+    regimeBadge.textContent = `気流状態：完全無風・熱源直立プルーム`;
+  } else {
+    regimeBadge.textContent = `気流状態：${modeNames[state.regimeMode]}（層流長：約${lamPx}px）`;
+  }
+}
+
+/**
+ * ============================================================================
+ * 7. UI イベントバインディング
+ * ============================================================================
+ */
+const btnField = document.getElementById('btnField');
+const btnReset = document.getElementById('btnReset');
+const convectionRange = document.getElementById('convectionRange');
+const windRange = document.getElementById('windRange');
+const speedRange = document.getElementById('speedRange');
+
+function prewarmSimulation() {
+  const holderX = W * 0.43;
+  const tableY = H * 0.81;
+  const trayY = tableY - 7;
+  const elevAngle = 0.56;
+  const cosA = Math.cos(elevAngle);
+  const sinA = Math.sin(elevAngle);
+  const curLen = state.incenseLength;
+  const charLen = curLen - 3.2;
+  const originX = holderX + cosA * charLen + cosA * 0.6;
+  const originY = (trayY - 3.5) - sinA * charLen - sinA * 1.2;
+  const tipX = holderX + cosA * curLen + cosA * 2.8;
+  const tipY = (trayY - 3.5) - sinA * curLen - sinA * 2.8;
+
+  for (let i = 0; i < 380; i++) {
+    state.time += 0.035;
+    const dtL = 0.013;
+    state.lx += 10.0 * (state.ly - state.lx) * dtL;
+    state.ly += (state.lx * (28.0 - state.lz) - state.ly) * dtL;
+    state.lz += (state.lx * state.ly - (8.0 / 3.0) * state.lz) * dtL;
+
+    const chirality = Math.tanh(state.lx * 0.15) + Math.sin(state.time * 0.48) * 0.38;
+    const critHeight = 185 + Math.sin(state.time * 0.34) * 45;
+
+    smokeEngine.emitRow(originX, originY, tipX, tipY, state.time * 1.25 + state.ly * 0.12, chirality);
+    smokeEngine.update(dipoleField, curlNoise, {
+      time: state.time,
+      convectionLevel: state.convectionLevel,
+      windX: state.windX,
+      critHeight,
+      heatX: tipX,
+      heatY: tipY
+    });
+  }
+}
+
+regimeBadge.addEventListener('click', () => {
+  state.regimeMode = (state.regimeMode + 1) % 4;
+  if (state.regimeMode === 1) {
+    convectionRange.value = 0;
+    state.convectionLevel = 0;
+    dipoleField.clear();
+  } else if (state.regimeMode === 0 && state.convectionLevel === 0) {
+    convectionRange.value = 42;
+    state.convectionLevel = 0.42;
+  }
+});
+
+btnField.addEventListener('click', () => {
+  state.showField = !state.showField;
+  btnField.textContent = `熱源・気流場：${state.showField ? '表示中' : '非表示'}`;
+  btnField.classList.toggle('active', state.showField);
+});
+
+convectionRange.addEventListener('input', e => {
+  state.convectionLevel = parseFloat(e.target.value) / 100;
+  if (state.convectionLevel === 0 && state.windX === 0) {
+    dipoleField.clear();
+  }
+});
+
+windRange.addEventListener('input', e => {
+  state.windX = (parseFloat(e.target.value) / 100) * 1.6;
+});
+
+speedRange.addEventListener('input', e => {
+  state.speed = parseFloat(e.target.value);
+});
+
+btnReset.addEventListener('click', () => {
+  state.incenseLength = state.maxIncenseLength;
+  state.lastAshDropLen = state.maxIncenseLength;
+  state.fallenAshes = [
+    { dx: 76, len: 6.2, angle: 0.03 },
+    { dx: 91, len: 4.8, angle: -0.02 }
+  ];
+  dipoleField.clear();
+  smokeEngine.clear();
+});
+
+prewarmSimulation();
+animate();
+</script>
+</body>
+</html>
