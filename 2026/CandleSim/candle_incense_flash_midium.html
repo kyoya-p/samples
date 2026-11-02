@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お線香シミュレータ — 層流・螺旋渦・薄襞煙膜</title>
+<style>
+  :root {
+    --gold: #c8a86b;
+    --gold-bright: #e5ca93;
+    --bg: #040406;
+    --panel: rgba(10, 11, 15, 0.82);
+    --text: #eae6de;
+    --muted: rgba(215, 210, 200, 0.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text); user-select: none;
+    font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", Georgia, serif;
+  }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .bar {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px; padding: 9px 24px;
+    background: var(--panel); border: 1px solid rgba(200, 168, 107, 0.28);
+    border-radius: 999px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif; white-space: nowrap;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.8); z-index: 20;
+  }
+  .btn {
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(200, 168, 107, 0.32);
+    color: var(--text); padding: 5px 14px; border-radius: 999px; font-size: 11.5px;
+    letter-spacing: 0.05em; cursor: pointer; transition: all .2s ease;
+  }
+  .btn:hover { background: rgba(200, 168, 107, 0.16); border-color: var(--gold-bright); }
+  .btn.on { background: rgba(200, 168, 107, 0.26); border-color: var(--gold); }
+  label { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); }
+  input[type=range] { width: 72px; accent-color: var(--gold); cursor: pointer; }
+  output { min-width: 3.2em; font-size: 11px; color: var(--text); }
+  .sep { width: 1px; height: 18px; background: rgba(200, 168, 107, 0.2); }
+  @media (max-width: 820px) {
+    .bar { flex-wrap: wrap; border-radius: 16px; width: calc(100% - 32px); justify-content: center; gap: 10px; padding: 10px 16px; }
+    .sep { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar">
+  <button class="btn" id="bField">気流場：非表示</button>
+  <div class="sep"></div>
+  <label title="突風の発生頻度 [回/分]">突風<input type="range" id="sGust" min="0" max="30" value="0"><output id="oGust"></output></label>
+  <label title="室内の微小対流強度">室内対流<input type="range" id="sConv" min="0" max="100" value="0"></label>
+  <label title="線香の燃焼速度">燃焼速<input type="range" id="sSpeed" min="1" max="20" value="2"></label>
+  <div class="sep"></div>
+  <label title="層流から乱流へ遷移する高さ">遷移高さ<input type="range" id="sHc" min="8" max="70" value="22"><output id="oHc"></output></label>
+  <div class="sep"></div>
+  <button class="btn" id="bReset">新しく供える</button>
+</div>
+
+<script>
+"use strict";
+
+/* ===== 1. 3D バリューノイズ & 2D カールノイズ ===== */
+const Noise = (() => {
+  const perm = new Uint8Array(512);
+  let s = 987654321;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const p = Array.from({ length: 256 }, (_, i) => i);
+  for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
+  for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+  const val = (x, y, z) => perm[perm[perm[x & 255] + (y & 255)] + (z & 255)] / 127.5 - 1;
+  const sm = t => t * t * (3 - 2 * t);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function n3(x, y, z) {
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+    const u = sm(x - xi), v = sm(y - yi), w = sm(z - zi);
+    return lerp(
+      lerp(lerp(val(xi, yi, zi), val(xi + 1, yi, zi), u), lerp(val(xi, yi + 1, zi), val(xi + 1, yi + 1, zi), u), v),
+      lerp(lerp(val(xi, yi, zi + 1), val(xi + 1, yi, zi + 1), u), lerp(val(xi, yi + 1, zi + 1), val(xi + 1, yi + 1, zi + 1), u), v), w);
+  }
+  const out = { x: 0, y: 0 };
+  function curl(x, y, t) {
+    const e = 0.025;
+    out.x = (n3(x, y + e, t) - n3(x, y - e, t)) / (2 * e);
+    out.y = -(n3(x + e, y, t) - n3(x - e, y, t)) / (2 * e);
+    return out;
+  }
+  return { n3, curl };
+})();
+
+/* ===== 2. キャンバス・幾何・システム状態 ===== */
+const cv = document.getElementById("c");
+const ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener("resize", resize);
+resize();
+
+const MAX_LEN = 168;
+const ELEV = 0.54; // 線香の仰角 [rad]
+const S = {
+  t: 0, conv: 0, hxf: 0.44, drag: null, dragged: false, speed: 2, showField: false,
+  len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 72, l: 5 }, { dx: 88, l: 4.5 }],
+  wakes: [], mouse: null, phi: 0
+};
+
+function geom() {
+  const hx = W * S.hxf, table = H * 0.81, ty = table - 10;
+  const c = Math.cos(ELEV), s = Math.sin(ELEV);
+  return { hx, table, ty, c, s, tipX: hx + c * (S.len + 2), tipY: ty - s * (S.len + 2) };
+}
+
+/* ===== 3. 気流モデル（熱浮力プルーム・突風・マウス渦対） ===== */
+// 火種熱プルーム: 芯直上では強い上昇流、高さとともに細く収束したのち徐々に拡散減衰
+function plume(px, py, g, out) {
+  const rise = g.tipY - py;
+  if (rise < -12) { out.vx = out.vy = out.k = 0; return out; }
+  const h = Math.max(0, rise);
+  const dx = px - g.tipX;
+  // 初期は熱収束（わずかに中心へ向かう）、その後ゆっくり円錐状に広がる
+  const R = 8.0 + h * 0.16;
+  const r2 = (dx * dx) / (R * R);
+  if (r2 > 6.0) { out.vx = out.vy = out.k = 0; return out; }
+  const gs = Math.exp(-r2);
+  const decay = Math.pow(1 + h / 140, -0.65);
+  // 上昇速度 (初速は約 2.6 px/フレーム)
+  const vy = -(2.4 * decay + 0.6 * Math.exp(-h / 35)) * gs;
+  // 吸い込み効果 (火種直下近傍は中心へ、上方は微小な広がり)
+  const vx = h < 25 ? -dx * (1 - h / 25) * 0.08 * gs : dx * 0.003 * decay * gs;
+  out.vx = vx; out.vy = vy; out.k = gs * decay;
+  return out;
+}
+
+// マウス移動・室内気流の渦対 (Wake Vortex Pair)
+function spawnWake(x, y, vx, vy, r, life, mouse) {
+  const sp = Math.hypot(vx, vy);
+  if (sp < 0.02) return;
+  S.wakes.push({ x, y, dx: vx / sp, dy: vy / sp, a: sp, r, r0: r, age: 0, life, mouse });
+  if (S.wakes.length > 100) S.wakes.shift();
+}
+const wk = { vx: 0, vy: 0, m: 0 };
+function sampleWakes(px, py) {
+  let vx = 0, vy = 0, m = 0;
+  for (const w of S.wakes) {
+    const rx = px - w.x, ry = py - w.y;
+    const r2 = rx * rx + ry * ry, R2 = w.r * w.r;
+    if (r2 > R2 * 3.5) continue;
+    const s = rx * w.dx + ry * w.dy, n = -rx * w.dy + ry * w.dx;
+    const e = Math.exp(-(s * s * 0.85 + n * n * 1.15) / R2);
+    const f = w.a * e * (1 - (w.age / w.life) ** 2);
+    const us = f * (1 - 2.2 * n * n / R2), un = f * 1.75 * s * n / R2;
+    vx += us * w.dx - un * w.dy;
+    vy += us * w.dy + un * w.dx;
+    if (w.mouse) m += Math.abs(f) / w.r * 2.5;
+  }
+  wk.vx = vx; wk.vy = vy; wk.m = m;
+  return wk;
+}
+function stepWakes() {
+  for (let i = S.wakes.length - 1; i >= 0; i--) {
+    const w = S.wakes[i];
+    if (++w.age >= w.life) { S.wakes.splice(i, 1); continue; }
+    const gg = gustAt(w.x, w.y);
+    w.x += w.dx * w.a * 0.35 + gg.vx * 0.25;
+    w.y += w.dy * w.a * 0.35 + gg.vy * 0.25;
+    w.r = Math.sqrt(w.r0 * w.r0 + w.age * 40);
+    w.a *= 0.976;
+  }
+}
+
+// 突風 (対数正規バースト)
+const SEED = 42;
+const rnd = (() => {
+  let a = (SEED * 40503 + 12345) >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+})();
+const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+const GUST = { rate: 5, list: [], mod: 0 };
+function newGust() {
+  const gt = geom();
+  const ang = gauss() * 0.45 + (rnd() < 0.5 ? 0 : Math.PI);
+  const amp = Math.min(2.8, 0.45 * Math.exp(gauss() * 0.7));
+  GUST.list.push({
+    ax: Math.cos(ang) * amp, ay: Math.sin(ang) * amp * 0.55,
+    age: 0, dur: Math.max(30, Math.min(420, 50 * Math.exp(gauss() * 0.7 + 0.9))),
+    p: 0.5 + rnd() * 1.5, ph: rnd() * 100,
+    gx: gt.tipX + gauss() * 260, gy: gt.tipY - rnd() * 360,
+    sx: 110 + rnd() * 320, sy: 90 + rnd() * 280, k: 0
+  });
+}
+function stepGust() {
+  GUST.mod += -GUST.mod * 0.003 + gauss() * 0.05;
+  const rate = GUST.rate / 3600 * Math.exp(GUST.mod * 1.5 - 0.47);
+  if (rnd() < rate) newGust();
+  if (GUST.list.length && rnd() < rate * 0.25) newGust();
+  for (let i = GUST.list.length - 1; i >= 0; i--) {
+    const g = GUST.list[i];
+    if (g.age >= g.dur) { GUST.list.splice(i, 1); continue; }
+    const x = g.age++ / g.dur;
+    g.k = Math.pow(Math.sin(Math.PI * Math.pow(x, g.p)), 2) * (1 + 0.3 * Noise.n3(S.t * 2.2 + g.ph, g.ph, 0.5));
+    g.gx += g.ax * 1.1; g.gy += g.ay * 0.7;
+  }
+}
+const gu = { vx: 0, vy: 0 };
+function gustAt(x, y) {
+  let vx = 0, vy = 0;
+  for (const g of GUST.list) {
+    const dx = (x - g.gx) / g.sx, dy = (y - g.gy) / g.sy;
+    const e = Math.exp(-0.5 * (dx * dx + dy * dy)) * g.k;
+    vx += g.ax * e; vy += g.ay * e;
+  }
+  gu.vx = Math.max(-2.8, Math.min(2.8, vx));
+  gu.vy = Math.max(-1.8, Math.min(1.8, vy));
+  return gu;
+}
+
+/* ===== 4. カオス駆動 (ローレンツアトラクター) & 煙膜リボン ===== */
+const LZ = { x: 0.1, y: 0.1, z: 24 };
+const NC = 9; // 煙膜断面の分割ストランド数
+const MID = NC >> 1;
+const LZC = Array.from({ length: NC }, (_, c) => {
+  const u = c / (NC - 1) * 2 - 1;
+  return { x: LZ.x + 0.4 * u, y: LZ.y - 0.4 * u, z: LZ.z + 0.4 * u };
+});
+function stepLorenz() {
+  const dt = 0.012;
+  const dx = 10 * (LZ.y - LZ.x), dy = LZ.x * (28 - LZ.z) - LZ.y, dz = LZ.x * LZ.y - 8 / 3 * LZ.z;
+  LZ.x += dx * dt; LZ.y += dy * dt; LZ.z += dz * dt;
+  for (const L of LZC) {
+    const ax = 10 * (L.y - L.x), ay = L.x * (28 - L.z) - L.y, az = L.x * L.y - 8 / 3 * L.z;
+    L.x += ax * dt; L.y += ay * dt; L.z += az * dt;
+  }
+}
+
+/* 層流→乱流遷移 (グラスホフ数 Gr) */
+const PHYS = {
+  g: 9.8, beta: 1 / 293, nu: 1.5e-5,
+  dT0: 160, h0: 0.01,
+  grCrit: 2.2e6, kI: 2.2,
+  pxPerM: 800
+};
+function gr(hPx) {
+  const h = Math.max(0, hPx) / PHYS.pxPerM;
+  const dT = PHYS.dT0 * Math.pow(1 + h / PHYS.h0, -5 / 3);
+  return PHYS.g * PHYS.beta * dT * h * h * h / (PHYS.nu * PHYS.nu);
+}
+function grCritEff(I) {
+  return PHYS.grCrit / (1 + PHYS.kI * I) * (1 + 0.35 * Math.tanh(LZ.y * 0.1));
+}
+function transitionHeight(I) {
+  const target = grCritEff(I);
+  let lo = 0, hi = 3500;
+  for (let i = 0; i < 35; i++) {
+    const m = (lo + hi) / 2;
+    if (gr(m) < target) lo = m; else hi = m;
+  }
+  return lo;
+}
+
+const smoke = [];
+const MAX_ROWS = 480;
+const FAST_TH = 0.6, FAST_FADE = 0.005, FAST_SPREAD = 1.2;   // 速度しきい値 [px/f]・消散率・拡散の加速倍率
+const phiC = new Float64Array(NC);
+
+function emit(g) {
+  const nr = Math.tanh(LZ.x * 0.16) * 2.2;
+  const om = (nr < 0 ? -1 : 1) * Math.min(0.14, Math.max(0.04, Math.abs(nr) * 0.1));
+  S.phi = (S.phi || 0) + (nr < 0 ? -1 : 1) * (0.12 + 0.11 * Math.min(1, Math.abs(nr)));
+  for (let c = 0; c < NC; c++) {
+    const n = Math.tanh(LZC[c].x * 0.16) * 2.2;
+    phiC[c] += (n < 0 ? -1 : 1) * (0.12 + 0.11 * Math.min(1, Math.abs(n)));
+  }
+  const jump = emit.lx !== undefined && Math.abs(g.tipX - emit.lx) > 3.0;
+  emit.lx = g.tipX;
+
+  smoke.unshift({
+    brk: jump,
+    x: g.tipX + Math.cos(ELEV) * 1.2,
+    y: g.tipY - Math.sin(ELEV) * 1.2,
+    dx: 0, vx: 0, vy: -2.4, dis: 0, age: 0, turb: 0, tage: 0, W: 0,
+    om, phi: S.phi, pc: Float32Array.from(phiC),
+    wf: 0.75 + 0.5 * (Math.tanh(LZ.y * 0.1) + 1) / 2, ph: S.t,
+    px: new Float32Array(NC), py: new Float32Array(NC),
+    ox: new Float32Array(NC), oy: new Float32Array(NC)
+  });
+  if (smoke.length > MAX_ROWS) smoke.pop();
+}
+
+const pl = { vx: 0, vy: 0, k: 0 };
+function stepSmoke(g) {
+  const t = S.t, conv = S.conv;
+  const grc = grCritEff(conv);
+  const hTr = Math.max(35, transitionHeight(conv));
+  const swayK = Math.max(0.35, Math.min(1.8, 1 + (LZ.z - 24) / 14));
+
+  for (let i = smoke.length - 1; i >= 0; i--) {
+    const r = smoke[i];
+    r.age++;
+    if (r.age > 450 || r.y < -200) { smoke.splice(i, 1); continue; }
+
+    plume(r.x, r.y, g, pl);
+    const w = sampleWakes(r.x, r.y);
+    const rise = Math.max(0, g.tipY - r.y);
+
+    // 層流→乱流遷移判定
+    const gg = gustAt(r.x, r.y);
+    let dT = w.m * 1.5 + (rise > 10 ? Math.hypot(gg.vx, gg.vy) * 0.025 : 0);
+    const ratio = gr(rise) / grc;
+    if (ratio > 1) dT += 0.035 * Math.min(3, ratio - 1);
+    r.turb = Math.min(1, r.turb + dT);
+    if (r.turb > 0.015) r.tage++;
+    const T = r.turb * r.turb * (3 - 2 * r.turb);
+
+    // 移流
+    const cu = Noise.curl(r.x * 0.005 + r.ph * 0.08, r.y * 0.005 - t * 0.12, t * 0.15);
+    const drive = T * (0.35 + conv * 0.75);
+    const gw = 0.2 + 0.8 * Math.min(1, rise / 110);
+    const gvx = gg.vx * gw, gvy = gg.vy * gw;
+
+    r.vx = r.vx * 0.28 + (pl.vx + cu.x * 0.6 * drive + wk.vx + gvx) * 0.72;
+    const lzv = (LZ.z - 24) / 12 * 0.3 * T;   // ローレンツ z: 上下方向のカオス的ゆらぎ
+    r.vy = r.vy * 0.28 + (pl.vy * (1 - T * 0.4) - 0.07 * Math.exp(-r.age / 250) + cu.y * 0.9 * drive + lzv + wk.vy + gvy) * 0.72;
+    r.x += r.vx; r.y += r.vy;
+    // 速い気流 (プルーム流との相対速度) にさらされるほど拡散が加速し、筋が薄れて消える (不可逆)
+    const sp = Math.hypot(r.vx - pl.vx, r.vy - pl.vy);
+    const sf = 1 + FAST_SPREAD * Math.min(1, sp / 1.5);
+    r.dis = Math.min(1, r.dis + Math.max(0, sp - FAST_TH) * FAST_FADE);
+
+    // 層流柱の微細なS字蛇行 (遷移手前から発現)
+    const amp = 8.0 * Math.min(1, Math.pow(rise / hTr, 2.2)) * swayK;
+    r.dx = Noise.n3(rise * 0.012 - t * 0.38, 7.1, 0.3) * amp * (1 + T * 0.4);
+
+    // 煙膜の幅と巻き込み渦 (小スケールカールと薄襞)
+    const ta = r.tage;
+    // 層流域は極めて細い (針のような柱: 0.3px〜0.8px)
+    const Wlam = 0.35 + rise * 0.006;
+    // 遷移後は巻き込みによって帯状に展開
+    const W = Wlam + r.wf * (15 * (1 - Math.exp(-ta / 42)) + 0.035 * Math.pow(ta, 0.92));
+    r.W = W;
+
+    const te = Math.min(ta, 160);
+    // 螺旋巻き込み
+    const R = 0.28 * W;
+    const pa = r.phi + ta * 0.032;
+    const cx = r.x + r.dx + R * Math.cos(pa) * 0.85;
+    const cy = r.y + R * Math.sin(pa) * 1.15;
+
+    for (let c = 0; c < NC; c++) {
+      const u = c / (NC - 1) * 2 - 1;
+      const r0 = Math.abs(u) * W;
+      // 差動回転 (内側ほど高角速度)
+      const ang = (u < 0 ? Math.PI : 0) + te * r.om / (1 + (r0 * r0) / 45);
+      const wisp = Noise.n3(c * 0.85 + r.ph, ta * 0.03, 3.1) * 0.1 * W;
+      const dv = 0.35 * Math.abs(u) * W;
+      const pcv = r.pc[c] + ta * 0.03;
+
+      if (T > 0.01) {
+        const qx = r.px[c] || cx, qy = r.py[c] || cy;
+        const cc = Noise.curl(qx * 0.018 + c * 0.35, qy * 0.018 - t * 0.24, t * 0.28 + c * 0.1);
+        const L = LZC[c];
+        const k = T * (0.32 + conv * 0.4) * sf;
+        const lam = 0.011 * (1 + 0.7 * Math.tanh(L.y * 0.1)) * T * sf;
+        r.ox[c] += k * (cc.x * 0.5 + L.x / 20 * 0.22) + lam * r.ox[c];
+        r.oy[c] += k * (cc.y * 0.85 + (L.z - 24) / 12 * 0.32) - k * 0.05 + lam * r.oy[c];
+        const mag = Math.hypot(r.ox[c], r.oy[c]);
+        if (mag > 260) { r.ox[c] *= 260 / mag; r.oy[c] *= 260 / mag; }
+      }
+
+      r.px[c] = cx + r0 * Math.cos(ang) + wisp + dv * Math.cos(pcv) + r.ox[c];
+      r.py[c] = cy + r0 * Math.sin(ang) + wisp + dv * Math.sin(pcv) + r.oy[c];
+    }
+  }
+}
+
+/* ===== 5. 描画 (薄襞煙膜・層流針柱・香皿・線香) ===== */
+function drawStage(g) {
+  // 深淵な背景グラデーション
+  const bg = ctx.createRadialGradient(g.hx + 100, H * 0.36, 30, g.hx + 80, H * 0.48, Math.max(W, H) * 0.75);
+  bg.addColorStop(0, "#11141c");
+  bg.addColorStop(0.48, "#07080c");
+  bg.addColorStop(1, "#020204");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 飾り机 (銘木漆調)
+  const wood = ctx.createLinearGradient(0, g.table, 0, H);
+  wood.addColorStop(0, "#1f1610");
+  wood.addColorStop(0.22, "#120d09");
+  wood.addColorStop(1, "#040302");
+  ctx.fillStyle = wood;
+  ctx.fillRect(0, g.table, W, H - g.table);
+
+  // 机天板の金糸エッジハイライト
+  const edge = ctx.createLinearGradient(W * 0.1, 0, W * 0.9, 0);
+  edge.addColorStop(0, "rgba(200,168,107,0)");
+  edge.addColorStop(0.5, "rgba(200,168,107,0.35)");
+  edge.addColorStop(1, "rgba(200,168,107,0)");
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, g.table);
+  ctx.lineTo(W, g.table);
+  ctx.stroke();
+}
+
+function drawIncense(g, mirror) {
+  const { hx, ty, c, s, table } = g;
+  ctx.save();
+  if (mirror) {
+    // 卓面への淡い映り込み
+    ctx.beginPath();
+    ctx.rect(0, table, W, H - table);
+    ctx.clip();
+    ctx.translate(0, table * 2);
+    ctx.scale(1, -1);
+    ctx.globalAlpha = 0.11;
+    ctx.filter = "blur(4px)";
+  }
+
+  // 美濃焼風香皿
+  const tray = ctx.createLinearGradient(hx - 32, 0, hx + 172, 0);
+  tray.addColorStop(0, "#261912");
+  tray.addColorStop(0.42, "#422e22");
+  tray.addColorStop(1, "#180f0a");
+  ctx.fillStyle = tray;
+  ctx.beginPath();
+  ctx.moveTo(hx - 36, ty - 4);
+  ctx.quadraticCurveTo(hx + 68, ty + 4.5, hx + 174, ty - 3);
+  ctx.lineTo(hx + 168, ty + 7.5);
+  ctx.quadraticCurveTo(hx + 68, ty + 10.5, hx - 30, ty + 7.5);
+  ctx.closePath();
+  ctx.fill();
+
+  // 皿上の落ちた灰
+  ctx.strokeStyle = "rgba(215,210,205,0.72)";
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = "round";
+  for (const a of S.ashes) {
+    ctx.beginPath();
+    ctx.moveTo(hx + a.dx - a.l / 2, ty + 1.2);
+    ctx.lineTo(hx + a.dx + a.l / 2, ty + 1.2);
+    ctx.stroke();
+  }
+
+  // 真鍮香立て球
+  const ball = ctx.createRadialGradient(hx - 2, ty - 7, 1, hx, ty - 4, 8);
+  ball.addColorStop(0, "#f5dc9e");
+  ball.addColorStop(0.55, "#ad8a45");
+  ball.addColorStop(1, "#3c2d12");
+  ctx.fillStyle = ball;
+  ctx.beginPath();
+  ctx.arc(hx, ty - 3.5, 5.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // お線香本体
+  const L = S.len, base = ty - 3.5;
+  const bx = hx - c * 9, by = base + s * 9;
+  const ex = hx + c * L, ey = base - s * L;
+  const ox = hx + c * (L - 3.2), oy = base - s * (L - 3.2);
+
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#826a4e";
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.lineTo(ox, oy);
+  ctx.stroke();
+
+  // 線香のほのかなハイライト線
+  ctx.strokeStyle = "rgba(230,212,185,0.32)";
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(bx, by - 0.6);
+  ctx.lineTo(ox, oy - 0.6);
+  ctx.stroke();
+
+  if (L > 10 && !mirror) {
+    // 先端の燃え殻（灰の筒）
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = "#ebe6de";
+    ctx.globalAlpha = 0.92;
+    ctx.lineWidth = 2.3;
+    ctx.beginPath();
+    ctx.moveTo(ex + c * 0.5, ey - s * 0.5);
+    ctx.lineTo(ex + c * 3.0, ey - s * 3.0);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // 赤熱する火種 (呼吸する脈動グロー)
+    const pulse = (Math.sin(S.t * 2.8) + 1) / 2;
+    const gl = ctx.createRadialGradient(ex, ey, 0.4, ex, ey, 14);
+    gl.addColorStop(0, `rgba(255,80,20,${0.78 + pulse * 0.18})`);
+    gl.addColorStop(0.38, "rgba(255,60,12,0.22)");
+    gl.addColorStop(1, "rgba(255,25,0,0)");
+    ctx.fillStyle = gl;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.lineCap = "round";
+    ctx.strokeStyle = `rgba(255,${85 + pulse * 65 | 0},32,0.96)`;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ex + c, ey - s);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* 煙の描画: 実写の「細い層流柱」＋「小スケール螺旋・薄襞状の煙膜」を正確にレンダリング */
+function drawSmoke() {
+  const n = smoke.length;
+  if (n < 3) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  const env = r => Math.min(1, r.age / 5) * Math.pow(1 - r.age / 450, 1.3) * Math.pow(1 - r.dis, 1.5);
+  const tt = r => r.turb * r.turb * (3 - 2 * r.turb);
+
+  // 1. 薄襞状の煙膜 (帯ストリップ): 塊状スプライトではなく、連続するメッシュクアッドで薄いシルク状に描画
+  for (let i = 0; i < n - 2; i += 2) {
+    const a = smoke[i], b = smoke[i + 2];
+    if (a.W < 0.4 || a.brk || smoke[i + 1].brk) continue;
+    if (Math.hypot(a.x - b.x, a.y - b.y) > 26) continue;
+
+    // 煙膜の希釈: 広がるほど薄くなる
+    const al = 0.065 * env(a) * Math.exp(-a.tage / 360) / (1 + a.W * 0.045);
+    if (al < 0.001) continue;
+
+    ctx.fillStyle = `rgba(224,236,255,${al.toFixed(4)})`;
+    for (let c = 0; c < NC - 1; c++) {
+      if (Math.abs(a.px[c + 1] - a.px[c]) + Math.abs(a.py[c + 1] - a.py[c]) > 38) continue;
+      ctx.beginPath();
+      ctx.moveTo(a.px[c], a.py[c]);
+      ctx.lineTo(a.px[c + 1], a.py[c + 1]);
+      ctx.lineTo(b.px[c + 1], b.py[c + 1]);
+      ctx.lineTo(b.px[c], b.py[c]);
+      ctx.fill();
+    }
+  }
+
+  // 2. 筋・フィラメント (中心線＝針のような層流柱、外縁＝薄襞のカール折り目)
+  ctx.lineCap = "round";
+  for (let c = 0; c < NC; c++) {
+    const center = (c === MID);
+    const edge = (c === 0 || c === NC - 1);
+    for (let i = 0; i < n - 1; i += 3) {
+      const r = smoke[i], T = tt(r);
+      const life = r.age / 450;
+      // 層流部は中心線が極めてクッキリと細く輝く (実写の針状煙柱)
+      const a = center
+        ? 0.88 * env(r) * (1 - T * 0.82)
+        : (edge ? 0.45 : 0.22) * T * env(r) * Math.exp(-r.tage / 360) / (1 + r.W * 0.015);
+
+      if (a < 0.012) continue;
+
+      ctx.strokeStyle = `rgba(${238 - life * 28 | 0},${244 - life * 18 | 0},255,${a.toFixed(3)})`;
+      ctx.lineWidth = center ? (1.0 - T * 0.3) : (edge ? 0.9 : 0.65);
+
+      ctx.beginPath();
+      ctx.moveTo(r.px[c], r.py[c]);
+      const end = Math.min(n - 1, i + 4);
+      for (let j = i + 1; j <= end; j++) {
+        const q = smoke[j];
+        if (smoke[j - 1].brk) break;
+        if (Math.hypot(q.px[c] - smoke[j - 1].px[c], q.py[c] - smoke[j - 1].py[c]) > 28) break;
+        ctx.lineTo(q.px[c], q.py[c]);
+      }
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawField(g) {
+  ctx.save();
+  ctx.lineWidth = 1;
+  const o = { vx: 0, vy: 0, k: 0 };
+  for (let x = 32; x < W; x += 36) {
+    for (let y = 32; y < g.table - 12; y += 36) {
+      plume(x, y, g, o);
+      const w = sampleWakes(x, y);
+      const cu = Noise.curl(x * 0.003, y * 0.003 - S.t * 0.06, S.t * 0.08);
+      const rise = Math.max(0, g.tipY - y);
+      const gf = gustAt(x, y), gwf = 0.2 + 0.8 * Math.min(1, rise / 110);
+      const vx = o.vx + w.vx + cu.x * 0.3 * S.conv + gf.vx * gwf;
+      const vy = o.vy + w.vy + cu.y * 0.3 * S.conv + gf.vy * gwf;
+      const l = Math.hypot(vx, vy);
+      if (l < 0.04) continue;
+      const d = Math.min(22, l * 8), a = Math.min(0.65, 0.16 + o.k * 0.45 + Math.min(0.3, l * 0.15));
+      ctx.strokeStyle = ctx.fillStyle = `rgba(225,${175 - o.k * 55 | 0},105,${a.toFixed(3)})`;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + vx / l * d, y + vy / l * d); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + vx / l * d, y + vy / l * d, 1.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/* ===== 6. メインループ ===== */
+let ambient = 30;
+
+function frame() {
+  requestAnimationFrame(frame);
+  S.t += 0.035;
+  tick(true);
+}
+
+function tick(render) {
+  if (S.len > 12) {
+    S.len -= 0.005 * S.speed;
+    if (S.lastAsh - S.len > 18) {
+      S.lastAsh = S.len;
+      S.ashes.push({ dx: Math.cos(ELEV) * S.len + (Math.random() - 0.5) * 5, l: 4.0 + Math.random() * 3 });
+    }
+  }
+  const g = geom();
+
+  if (--ambient <= 0) {
+    if (S.conv > 0.04) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      spawnWake(g.tipX - dir * (60 + Math.random() * 45), g.tipY - (120 + Math.random() * 240),
+        dir * (0.25 + Math.random() * 0.45) * S.conv, (Math.random() - 0.5) * 0.2 * S.conv,
+        90 + Math.random() * 60, 220, false);
+    }
+    ambient = 36 + Math.floor(Math.random() * 55);
+  }
+
+  stepGust();
+  stepWakes();
+  stepLorenz();
+  if (S.len > 12) emit(g);
+  stepSmoke(g);
+
+  if (!render) return;
+  drawStage(g);
+  drawIncense(g, true);
+  drawIncense(g, false);
+  if (S.showField) drawField(g);
+  drawSmoke();
+}
+
+/* ===== 7. 操作インタラクション ===== */
+const MOUSE_GAIN = 1.0;
+const MOUSE_MAX = 4.0;
+function mouseMove(x, y, ts) {
+  const m = { x, y, t: ts };
+  if (S.mouse) {
+    const dx = m.x - S.mouse.x, dy = m.y - S.mouse.y, d = Math.hypot(dx, dy);
+    if (d > 1) {
+      const v = d / Math.max(2, m.t - S.mouse.t);
+      const a = Math.min(MOUSE_MAX, MOUSE_GAIN * v);
+      const n = Math.ceil(d / 18);
+      const r = 78;
+      const w = (d / n) / 18;
+      for (let i = 1; i <= n; i++) {
+        spawnWake(S.mouse.x + dx * i / n, S.mouse.y + dy * i / n, dx / d * a * w, dy / d * a * w, r, 160, true);
+      }
+    }
+  }
+  S.mouse = m;
+}
+
+function overIncense(x, y) {
+  const g = geom();
+  if (x > g.hx - 42 && x < g.hx + 178 && y > g.ty - 14 && y < g.ty + 14) return true;
+  const ex = g.tipX, ey = g.tipY, bx = g.hx, by = g.ty - 3.5;
+  const vx = ex - bx, vy = ey - by, t = Math.max(0, Math.min(1, ((x - bx) * vx + (y - by) * vy) / (vx * vx + vy * vy)));
+  return Math.hypot(x - (bx + vx * t), y - (by + vy * t)) < 14;
+}
+
+window.addEventListener("mousedown", e => {
+  if (e.target.closest && e.target.closest(".bar")) return;
+  if (overIncense(e.clientX, e.clientY)) {
+    S.drag = { off: e.clientX - W * S.hxf }; S.dragged = false; S.mouse = null;
+    cv.style.cursor = "grabbing"; e.preventDefault();
+  }
+});
+window.addEventListener("mouseup", () => {
+  if (S.drag) { S.drag = null; cv.style.cursor = overIncense(S.mx || 0, S.my || 0) ? "grab" : "default"; }
+});
+window.addEventListener("mousemove", e => {
+  S.mx = e.clientX; S.my = e.clientY;
+  if (S.drag) {
+    S.hxf = Math.max(80 / W, Math.min(1 - 260 / W, (e.clientX - S.drag.off) / W));
+    S.dragged = true; S.mouse = null;
+    return;
+  }
+  cv.style.cursor = overIncense(e.clientX, e.clientY) ? "grab" : "default";
+  mouseMove(e.clientX, e.clientY, e.timeStamp);
+});
+window.addEventListener("mouseleave", () => { S.mouse = null; });
+cv.addEventListener("click", e => {
+  if (S.dragged) { S.dragged = false; return; }
+  const g = geom();
+  spawnWake(e.clientX, e.clientY, (e.clientX < g.tipX ? 1 : -1) * 2.0, -0.16, 85, 190, true);
+});
+
+const $ = id => document.getElementById(id);
+$("sConv").addEventListener("input", e => { S.conv = e.target.value / 100; });
+$("sSpeed").addEventListener("input", e => { S.speed = +e.target.value; });
+$("sHc").addEventListener("input", setHc);
+function setHc() {
+  const cm = +$("sHc").value;
+  PHYS.grCrit = gr(cm / 100 * PHYS.pxPerM);
+  $("oHc").textContent = cm + "cm";
+}
+setHc();
+
+$("sGust").addEventListener("input", e => {
+  GUST.rate = +e.target.value;
+  $("oGust").textContent = GUST.rate ? GUST.rate + "回/分" : "なし";
+});
+GUST.rate = +$("sGust").value;
+$("oGust").textContent = GUST.rate + "回/分";
+
+$("bField").addEventListener("click", e => {
+  S.showField = !S.showField;
+  e.target.textContent = `気流場：${S.showField ? "表示中" : "非表示"}`;
+  e.target.classList.toggle("on", S.showField);
+});
+$("bReset").addEventListener("click", () => {
+  S.len = S.lastAsh = MAX_LEN;
+  S.ashes = [{ dx: 72, l: 5 }, { dx: 88, l: 4.5 }];
+  S.wakes.length = 0; smoke.length = 0;
+});
+
+// 起動時に煙柱を先行成長
+for (let i = 0; i < 340; i++) { S.t += 0.035; tick(false); }
+S.len = S.lastAsh = MAX_LEN;                       // 先行成長で燃焼が進んだ分を戻す (初期は最大長)
+frame();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+[tools]
+java = "21"
+kotlin = "2.4"
+gradle = "9.6"
+
+[tasks]
+default = "gradle runServer"
+server = "gradle runServer"
+client = "gradle runClient"
+client-auto = "gradle runClientAuto"
+compile = "gradle compileCommonMainKotlinMetadata compileKotlinJvm"
+test-all = { depends = ["client-auto"] }

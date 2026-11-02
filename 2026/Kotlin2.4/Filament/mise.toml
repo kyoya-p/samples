@@ -1,0 +1,4 @@
+[tasks]
+console = "gradle run --quiet --console=plain"
+gui = "gradle runGui"
+build = "gradle build"

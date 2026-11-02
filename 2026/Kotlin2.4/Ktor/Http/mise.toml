@@ -1,0 +1,5 @@
+[tasks]
+build = { description = "ビルド", run = '.\kotlin.bat build' }
+test = { description = "テスト", run = '.\kotlin.bat test' }
+run = { description = "サーバ起動", run = '.\kotlin.bat run' }
+test-all = { description = "全テスト実行", depends = ["test"] }

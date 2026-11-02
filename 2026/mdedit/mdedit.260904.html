@@ -1,0 +1,899 @@
+<title>クエリ Markdown エディタ</title>
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --bg:#e9ebef; --panel:#ffffff; --panel-2:#f4f5f8; --panel-3:#eceef3;
+  --ink:#14171d; --ink-2:#3c434f; --muted:#5f6875;
+  --line:#d5d9e1; --line-2:#c3c9d4;
+  --accent:#2d5bb9; --accent-ink:#ffffff; --accent-soft:rgba(45,91,185,.10);
+  --ok:#2c7a52; --warn:#a06611; --danger:#a8362e;
+  --ui:"IBM Plex Sans",ui-sans-serif,system-ui,"Yu Gothic UI","Hiragino Sans",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,"Courier New",monospace;
+  --serif:"Source Serif 4",Georgia,"Yu Mincho","Hiragino Mincho ProN",serif;
+  --split:50%;
+  --r:6px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101317; --panel:#181b21; --panel-2:#1e222a; --panel-3:#242932;
+    --ink:#e7eaf0; --ink-2:#c3cad5; --muted:#98a1ae;
+    --line:#2b3039; --line-2:#39404b;
+    --accent:#82a9f0; --accent-ink:#0e1117; --accent-soft:rgba(130,169,240,.14);
+    --ok:#67b98c; --warn:#d6a75a; --danger:#e2867d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101317; --panel:#181b21; --panel-2:#1e222a; --panel-3:#242932;
+  --ink:#e7eaf0; --ink-2:#c3cad5; --muted:#98a1ae;
+  --line:#2b3039; --line-2:#39404b;
+  --accent:#82a9f0; --accent-ink:#0e1117; --accent-soft:rgba(130,169,240,.14);
+  --ok:#67b98c; --warn:#d6a75a; --danger:#e2867d;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--ui); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+/* ---------- command bar ---------- */
+.bar{
+  display:flex; align-items:center; gap:8px;
+  padding:8px 12px; background:var(--panel);
+  border-bottom:1px solid var(--line); flex:none;
+}
+.brand{display:flex; align-items:baseline; gap:9px; min-width:0}
+.brand b{
+  font-family:var(--mono); font-weight:500; font-size:12px; color:var(--muted);
+  letter-spacing:.06em; white-space:nowrap;
+}
+.brand b::after{content:"/"; margin-left:9px; color:var(--line-2)}
+.docname{
+  font-family:var(--serif); font-size:15px; color:var(--ink-2);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:28vw;
+}
+.bar .sp{flex:1}
+.src-chip{
+  font-family:var(--mono); font-size:11px; color:var(--accent);
+  background:var(--accent-soft); border-radius:999px; padding:2px 8px; white-space:nowrap;
+}
+
+button,.seg>label{
+  font:inherit; font-size:12.5px; color:var(--ink-2);
+  background:var(--panel-2); border:1px solid var(--line);
+  border-radius:var(--r); padding:5px 9px; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+button:hover,.seg>label:hover{background:var(--panel-3); color:var(--ink)}
+button:active{transform:translateY(.5px)}
+button.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:500}
+button.primary:hover{background:var(--accent); color:var(--accent-ink); filter:brightness(1.08)}
+
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:var(--panel-2)}
+.seg input{position:absolute; opacity:0; pointer-events:none}
+.seg>label{border:0; border-radius:0; padding:5px 11px}
+.seg>label+label{border-left:1px solid var(--line)}
+.seg input:checked+label{background:var(--accent-soft); color:var(--accent); font-weight:500; box-shadow:inset 0 -2px 0 var(--accent)}
+.seg input:focus-visible+label{outline:2px solid var(--accent); outline-offset:-2px}
+
+/* ---------- format strip ---------- */
+.tools{
+  display:flex; align-items:center; gap:2px; flex-wrap:wrap;
+  padding:5px 10px; background:var(--panel-2);
+  border-bottom:1px solid var(--line); flex:none;
+}
+.tools button{
+  background:transparent; border-color:transparent; padding:4px 8px;
+  min-width:30px; justify-content:center; font-family:var(--mono); font-size:12px;
+}
+.tools button:hover{background:var(--panel-3); border-color:var(--line)}
+.tools .div{width:1px; height:18px; background:var(--line-2); margin:0 6px}
+.tools .hint{margin-left:auto; color:var(--muted); font-size:11.5px; font-family:var(--mono); padding-right:4px}
+
+/* ---------- panes ---------- */
+.wrap{
+  flex:1; min-height:0; display:grid;
+  grid-template-columns:var(--split) 7px 1fr;
+  background:var(--bg);
+}
+body[data-view="write"] .wrap{grid-template-columns:1fr 0 0}
+body[data-view="read"]  .wrap{grid-template-columns:0 0 1fr}
+body[data-view="write"] .gutter,body[data-view="read"] .gutter{display:none}
+body[data-view="write"] .pane--out,body[data-view="read"] .pane--src{display:none}
+
+.pane{min-width:0; min-height:0; display:flex; flex-direction:column; background:var(--panel)}
+.pane--src{border-right:1px solid var(--line)}
+.pane-head{
+  display:flex; align-items:center; gap:8px; flex:none;
+  padding:5px 12px; border-bottom:1px solid var(--line);
+  background:var(--panel-2);
+  font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted);
+}
+.pane-head .sp{flex:1}
+.pane-head .k{font-family:var(--mono); letter-spacing:0; text-transform:none}
+
+#src{
+  flex:1; min-height:0; width:100%; resize:none; border:0; outline:0;
+  padding:16px 18px 40vh; background:var(--panel); color:var(--ink);
+  font-family:var(--mono); font-size:13px; line-height:1.75; tab-size:2;
+  white-space:pre-wrap; overflow-wrap:break-word;
+}
+#src::placeholder{color:var(--muted)}
+
+.gutter{cursor:col-resize; background:var(--line); touch-action:none}
+.gutter:hover,.gutter.on{background:var(--accent)}
+
+/* ---------- preview ---------- */
+.out{flex:1; min-height:0; overflow:auto; padding:18px 24px 45vh}
+.md{max-width:66ch; margin:0 auto; font-family:var(--serif); font-size:16px; line-height:1.75; color:var(--ink)}
+.md>*:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{
+  font-family:var(--ui); line-height:1.3; text-wrap:balance;
+  margin:1.9em 0 .55em; font-weight:600; color:var(--ink);
+}
+.md h1{font-size:1.72em; margin-top:.2em; letter-spacing:-.01em}
+.md h2{font-size:1.34em; padding-bottom:.28em; border-bottom:1px solid var(--line)}
+.md h3{font-size:1.12em}
+.md h4{font-size:1em}
+.md h5,.md h6{font-size:.9em; color:var(--ink-2); letter-spacing:.04em}
+.md p{margin:0 0 1.05em}
+.md a{color:var(--accent); text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px}
+.md strong{font-weight:600}
+.md del{color:var(--muted)}
+.md ul,.md ol{margin:0 0 1.05em; padding-left:1.5em}
+.md li{margin:.28em 0}
+.md li>ul,.md li>ol{margin:.28em 0}
+.md li.task{list-style:none; margin-left:-1.35em; padding-left:1.35em; position:relative}
+.md li.task input{position:absolute; left:0; top:.42em; margin:0; accent-color:var(--accent)}
+.md blockquote{
+  margin:0 0 1.05em; padding:.1em 0 .1em 1.1em;
+  border-left:3px solid var(--accent); color:var(--ink-2);
+}
+.md blockquote>*:last-child{margin-bottom:0}
+.md hr{border:0; border-top:1px solid var(--line-2); margin:2em 0}
+.md code{
+  font-family:var(--mono); font-size:.86em; background:var(--panel-3);
+  padding:.12em .38em; border-radius:4px; border:1px solid var(--line);
+}
+.md pre.code{
+  margin:0 0 1.2em; padding:13px 15px; overflow-x:auto; position:relative;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:var(--r);
+}
+.md pre.code code{background:none; border:0; padding:0; font-size:12.5px; line-height:1.65}
+.md pre.code[data-lang]::before{
+  content:attr(data-lang); position:absolute; top:0; right:0;
+  font-family:var(--mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted); background:var(--panel-3);
+  padding:2px 7px; border-left:1px solid var(--line); border-bottom:1px solid var(--line);
+  border-radius:0 var(--r) 0 var(--r);
+}
+.md .tablewrap{overflow-x:auto; margin:0 0 1.2em; border:1px solid var(--line); border-radius:var(--r)}
+.md table{border-collapse:collapse; width:100%; font-family:var(--ui); font-size:13.5px; font-variant-numeric:tabular-nums}
+.md th,.md td{padding:7px 12px; border-bottom:1px solid var(--line); text-align:left}
+.md th{background:var(--panel-2); font-weight:600; white-space:nowrap}
+.md tr:last-child td{border-bottom:0}
+.md img{max-width:100%; height:auto; border-radius:var(--r); display:block; margin:0 0 1.05em}
+.md .anchor{
+  float:left; margin-left:-.85em; width:.85em; color:var(--line-2);
+  text-decoration:none; opacity:0; font-family:var(--mono); font-weight:400;
+}
+.md h1:hover .anchor,.md h2:hover .anchor,.md h3:hover .anchor,
+.md h4:hover .anchor,.md h5:hover .anchor,.md h6:hover .anchor,
+.md .anchor:focus-visible{opacity:1}
+
+/* ---------- status rail ---------- */
+.status{
+  flex:none; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding:5px 12px; background:var(--panel-2); border-top:1px solid var(--line);
+  font-family:var(--mono); font-size:11.5px; color:var(--muted);
+}
+.status .sp{flex:1}
+.status b{font-weight:500; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--ok); margin-right:5px; vertical-align:1px}
+.dot.dirty{background:var(--warn)}
+#urllen.long b{color:var(--warn)}
+#urllen.toolong b{color:var(--danger)}
+
+.toast{
+  position:fixed; left:50%; bottom:44px; transform:translate(-50%,8px);
+  background:var(--ink); color:var(--panel); font-size:12.5px;
+  padding:7px 14px; border-radius:999px; opacity:0; pointer-events:none;
+  transition:opacity .16s ease, transform .16s ease; z-index:9;
+}
+.toast.on{opacity:1; transform:translate(-50%,0)}
+
+@media (max-width:820px){
+  .wrap{grid-template-columns:none!important; grid-template-rows:var(--split) 7px 1fr}
+  body[data-view="write"] .wrap{grid-template-rows:1fr 0 0}
+  body[data-view="read"] .wrap{grid-template-rows:0 0 1fr}
+  .gutter{cursor:row-resize}
+  .pane--src{border-right:0; border-bottom:1px solid var(--line)}
+  .docname{max-width:40vw}
+  .out{padding:14px 16px 45vh}
+}
+@media print{
+  body{overflow:visible; display:block; background:#fff; color:#000}
+  .bar,.tools,.gutter,.pane--src,.status,.toast,.pane-head{display:none!important}
+  .wrap{display:block}
+  .out{overflow:visible; padding:0}
+  .md{max-width:none; color:#000}
+  .md pre.code,.md .tablewrap{break-inside:avoid}
+}
+</style>
+
+<header class="bar">
+  <div class="brand">
+    <b>mdedit</b>
+    <span class="docname" id="docname">無題</span>
+  </div>
+  <span class="sp"></span>
+  <span class="src-chip" id="srcchip" hidden></span>
+  <div class="seg" role="group" aria-label="表示">
+    <input type="radio" name="view" id="v-write" value="write"><label for="v-write" title="ソースのみ">ソース</label>
+    <input type="radio" name="view" id="v-split" value="split" checked><label for="v-split" title="2ペイン">分割</label>
+    <input type="radio" name="view" id="v-read" value="read"><label for="v-read" title="プレビューのみ">プレビュー</label>
+  </div>
+  <button id="btn-theme" title="配色を切り替え">配色</button>
+  <button id="btn-open" title="ローカルの .md を開く">開く</button>
+  <button id="btn-dl" title="Markdown を保存 (Ctrl+S)">保存</button>
+  <button id="btn-print" title="プレビューを印刷 / PDF">印刷</button>
+  <button id="btn-copy" title="Markdown をクリップボードへ">MD コピー</button>
+  <button id="btn-url" class="primary" title="本文入りの URL を作ってコピー">URL をコピー</button>
+  <input type="file" id="file" accept=".md,.markdown,.txt,text/*" hidden>
+</header>
+
+<div class="tools">
+  <button data-act="h" title="見出し (Ctrl+1〜6 でレベル指定)">H</button>
+  <button data-act="bold" title="太字 (Ctrl+B)"><b>B</b></button>
+  <button data-act="italic" title="斜体 (Ctrl+I)"><i>I</i></button>
+  <button data-act="strike" title="打ち消し">S&#818;</button>
+  <button data-act="code" title="インラインコード (Ctrl+E)">`</button>
+  <span class="div"></span>
+  <button data-act="ul" title="箇条書き">- 一覧</button>
+  <button data-act="ol" title="番号付き">1. 番号</button>
+  <button data-act="task" title="チェックリスト">[ ] タスク</button>
+  <button data-act="quote" title="引用">&gt; 引用</button>
+  <span class="div"></span>
+  <button data-act="link" title="リンク (Ctrl+K)">リンク</button>
+  <button data-act="img" title="画像">画像</button>
+  <button data-act="fence" title="コードブロック">```</button>
+  <button data-act="table" title="表">表</button>
+  <button data-act="hr" title="区切り線">―</button>
+  <span class="hint" id="cursor">1:1</span>
+</div>
+
+<main class="wrap" id="wrap">
+  <section class="pane pane--src">
+    <div class="pane-head"><span>Markdown ソース</span><span class="sp"></span><span class="k" id="srcinfo"></span></div>
+    <textarea id="src" spellcheck="false" autocapitalize="off" autocorrect="off"
+      placeholder="ここに Markdown を書く。URL に ?md=... を付けると初期本文になります。"></textarea>
+  </section>
+  <div class="gutter" id="gutter" role="separator" aria-label="ペインの幅" tabindex="0"></div>
+  <section class="pane pane--out">
+    <div class="pane-head"><span>プレビュー</span></div>
+    <div class="out" id="out"><article class="md" id="md"></article></div>
+  </section>
+</main>
+
+<footer class="status">
+  <span><span class="dot" id="dot"></span><span id="savestate">保存済み</span></span>
+  <span>行 <b id="s-lines">0</b></span>
+  <span>文字 <b id="s-chars">0</b></span>
+  <span>語 <b id="s-words">0</b></span>
+  <span class="sp"></span>
+  <span id="urllen">URL 長 <b>0</b> 文字</span>
+  <span>?md= / #md= / ?md64=</span>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   1. Markdown -> HTML（自己完結・入力は必ずエスケープ）
+   ========================================================= */
+const NUL = "\uE000";
+const esc = s => String(s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+function safeUrl(u){
+  const t = String(u).trim().replace(/&amp;/g, "&");
+  if(/^\s*(javascript|vbscript|file|about):/i.test(t)) return "#";
+  if(/^data:/i.test(t) && !/^data:image\//i.test(t)) return "#";
+  return t.replace(/"/g, "%22").replace(/&/g, "&amp;");
+}
+const slug = t => String(t).toLowerCase().trim()
+  .replace(/[<>&"'`]/g, "").replace(/[^\p{L}\p{N}\s-]/gu, "")
+  .replace(/\s+/g, "-").replace(/^-+|-+$/g, "") || "s";
+
+function inline(srcText, store){
+  const top = !store;
+  store = store || [];
+  const put = html => NUL + (store.push(html) - 1) + NUL;
+  let s = esc(srcText);
+
+  s = s.replace(/\\([\\`*_{}\[\]()#+\-.!>~|])/g, (m, c) => put(esc(c)));
+  s = s.replace(/(`+)([\s\S]*?)\1(?!`)/g, (m, f, code) => put("<code>" + code.replace(/^ ([\s\S]*) $/, "$1") + "</code>"));
+  s = s.replace(/!\[([^\]]*)\]\(\s*([^\s)]*)(?:\s+&quot;([^&]*)&quot;)?\s*\)/g,
+    (m, alt, url, title) => put('<img src="' + safeUrl(url) + '" alt="' + alt + '"' + (title ? ' title="' + title + '"' : "") + ">"));
+  s = s.replace(/\[([^\]]*)\]\(\s*([^\s)]*)(?:\s+&quot;([^&]*)&quot;)?\s*\)/g,
+    (m, txt, url, title) => put('<a href="' + safeUrl(url) + '"' + (title ? ' title="' + title + '"' : "") +
+      (/^#/.test(url.trim()) ? "" : ' target="_blank" rel="noopener noreferrer"') + ">" + inline(txt, store) + "</a>"));
+  s = s.replace(/&lt;((?:https?|mailto):[^\s<>]+)&gt;/g,
+    (m, u) => put('<a href="' + safeUrl(u) + '" target="_blank" rel="noopener noreferrer">' + u + "</a>"));
+  s = s.replace(/(^|[\s(])((?:https?:\/\/|www\.)[^\s<>()\uE000]*[^\s<>().,;:!?'"\uE000])/g,
+    (m, p, u) => p + put('<a href="' + safeUrl(/^www\./.test(u) ? "https://" + u : u) +
+      '" target="_blank" rel="noopener noreferrer">' + u + "</a>"));
+
+  s = s.replace(/~~(?=\S)([\s\S]*?\S)~~/g, "<del>$1</del>");
+  s = s.replace(/\*\*\*(?=\S)([\s\S]*?\S)\*\*\*/g, "<strong><em>$1</em></strong>");
+  s = s.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[^\w*])\*(?=\S)([^*\n]*?\S)\*(?!\*)/g, "$1<em>$2</em>");
+  s = s.replace(/(^|[^\w_])___(?=\S)([\s\S]*?\S)___(?!\w)/g, "$1<strong><em>$2</em></strong>");
+  s = s.replace(/(^|[^\w_])__(?=\S)([\s\S]*?\S)__(?!\w)/g, "$1<strong>$2</strong>");
+  s = s.replace(/(^|[^\w_])_(?=\S)([^_\n]*?\S)_(?!\w)/g, "$1<em>$2</em>");
+  s = s.replace(/ {2,}\n/g, "<br>\n").replace(/\\\n/g, "<br>\n");
+
+  if(top){
+    for(let i = 0; i < 8 && s.indexOf(NUL) >= 0; i++)
+      s = s.replace(/\uE000(\d+)\uE000/g, (m, n) => store[+n]);
+    s = s.split(NUL).join("");
+  }
+  return s;
+}
+
+const RE_ITEM  = /^( *)([-*+]|\d{1,9}[.)])(?:\s+|$)/;
+const RE_FENCE = /^ {0,3}(`{3,}|~{3,})\s*([^\s`~]*)/;
+const RE_HEAD  = /^ {0,3}(#{1,6})(?:\s+(.*?))?\s*#*\s*$/;
+const RE_HR    = /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/;
+const RE_QUOTE = /^ {0,3}>[ \t]?/;
+const isBlockStart = l =>
+  RE_FENCE.test(l) || RE_HEAD.test(l) || RE_HR.test(l) || RE_QUOTE.test(l) || RE_ITEM.test(l);
+
+function isTable(lines, i){
+  const h = lines[i], d = lines[i + 1];
+  if(!h || !d || h.indexOf("|") < 0 || d.indexOf("-") < 0) return false;
+  return /^[ \t]*:?-+:?([ \t]*\|[ \t]*:?-+:?)*[ \t]*\|?[ \t]*$/.test(d.replace(/^[ \t]*\|/, ""));
+}
+function cells(row){
+  const s = row.trim().replace(/^\|/, "").replace(/\|[ \t]*$/, "");
+  const out = [];
+  let cur = "";
+  for(let k = 0; k < s.length; k++){
+    const ch = s[k];
+    if(ch === "\\" && s[k + 1] === "|"){ cur += "|"; k++; continue; }
+    if(ch === "|"){ out.push(cur); cur = ""; continue; }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map(c => c.trim());
+}
+function table(lines, i){
+  const head = cells(lines[i]);
+  const align = cells(lines[i + 1]).map(c => {
+    const l = c.startsWith(":"), r = c.endsWith(":");
+    return l && r ? "center" : r ? "right" : l ? "left" : "";
+  });
+  i += 2;
+  const body = [];
+  while(i < lines.length && lines[i].trim() && lines[i].indexOf("|") >= 0 && !isBlockStart(lines[i]))
+    body.push(cells(lines[i++]));
+  const at = k => align[k] ? ' style="text-align:' + align[k] + '"' : "";
+  let h = '<div class="tablewrap"><table><thead><tr>';
+  head.forEach((c, k) => { h += "<th" + at(k) + ">" + inline(c) + "</th>"; });
+  h += "</tr></thead>";
+  if(body.length){
+    h += "<tbody>";
+    body.forEach(r => {
+      h += "<tr>";
+      for(let k = 0; k < head.length; k++) h += "<td" + at(k) + ">" + inline(r[k] || "") + "</td>";
+      h += "</tr>";
+    });
+    h += "</tbody>";
+  }
+  return { html: h + "</table></div>", i };
+}
+function list(lines, i){
+  const m0 = lines[i].match(RE_ITEM);
+  const base = m0[1].length;
+  const ordered = /\d/.test(m0[2]);
+  const start = ordered ? parseInt(m0[2], 10) : 1;
+  const items = [];
+  let cur = null, loose = false, blanks = 0;
+
+  while(i < lines.length){
+    const line = lines[i];
+    if(!line.trim()){ blanks++; i++; continue; }
+    const indent = line.match(/^ */)[0].length;
+    const im = line.match(RE_ITEM);
+    if(im && im[1].length <= base + 1){
+      if(im[1].length < base) break;
+      if(cur && /\d/.test(im[2]) !== ordered) break;
+      if(cur && blanks) loose = true;
+      cur = { body: [line.slice(im[0].length)], ci: im[0].length };
+      items.push(cur); blanks = 0; i++; continue;
+    }
+    if(cur && indent >= cur.ci){
+      if(blanks){ cur.body.push(""); loose = true; }
+      cur.body.push(line.slice(cur.ci)); blanks = 0; i++; continue;
+    }
+    if(cur && !blanks && !isBlockStart(line)){ cur.body.push(line.trim()); i++; continue; }
+    break;
+  }
+
+  let html = "", anyTask = false;
+  items.forEach(it => {
+    let body = it.body.join("\n"), task = "";
+    const tm = body.match(/^\[([ xX])\]\s+/);
+    if(tm){
+      anyTask = true;
+      task = '<input type="checkbox" disabled' + (tm[1] !== " " ? " checked" : "") + "> ";
+      body = body.slice(tm[0].length);
+    }
+    let inner = blocks(body.split("\n"));
+    if(!loose) inner = inner.replace(/^<p>([\s\S]*?)<\/p>/, "$1");
+    html += "<li" + (tm ? ' class="task"' : "") + ">" + task + inner + "</li>";
+  });
+  const tag = ordered ? "ol" : "ul";
+  const attrs = (ordered && start !== 1 ? ' start="' + start + '"' : "") + (anyTask ? ' class="tasklist"' : "");
+  return { html: "<" + tag + attrs + ">" + html + "</" + tag + ">", i };
+}
+
+function blocks(lines){
+  const out = [];
+  let i = 0, m;
+  while(i < lines.length){
+    const line = lines[i];
+    if(!line.trim()){ i++; continue; }
+
+    if(m = line.match(RE_FENCE)){
+      const ch = m[1][0], len = m[1].length, lang = m[2] || "";
+      const close = new RegExp("^ {0,3}\\" + ch + "{" + len + ",}[ \t]*$");
+      const buf = [];
+      i++;
+      while(i < lines.length && !close.test(lines[i])) buf.push(lines[i++]);
+      if(i < lines.length) i++;
+      out.push('<pre class="code"' + (lang ? ' data-lang="' + esc(lang) + '"' : "") +
+        "><code>" + esc(buf.join("\n")) + "</code></pre>");
+      continue;
+    }
+    if(m = line.match(RE_HEAD)){
+      const lv = m[1].length, txt = (m[2] || "").trim(), id = slug(txt);
+      out.push("<h" + lv + ' id="' + esc(id) + '"><a class="anchor" href="#' + esc(id) +
+        '" aria-hidden="true">#</a>' + inline(txt) + "</h" + lv + ">");
+      i++; continue;
+    }
+    if(RE_HR.test(line)){ out.push("<hr>"); i++; continue; }
+    if(RE_QUOTE.test(line)){
+      const buf = [];
+      while(i < lines.length && (RE_QUOTE.test(lines[i]) || (buf.length && lines[i].trim() && !isBlockStart(lines[i]))))
+        buf.push(lines[i++].replace(RE_QUOTE, ""));
+      out.push("<blockquote>" + blocks(buf) + "</blockquote>");
+      continue;
+    }
+    if(RE_ITEM.test(line)){ const r = list(lines, i); out.push(r.html); i = r.i; continue; }
+    if(isTable(lines, i)){ const r = table(lines, i); out.push(r.html); i = r.i; continue; }
+
+    const buf = [line];
+    i++;
+    while(i < lines.length && lines[i].trim() && !isBlockStart(lines[i]) && !isTable(lines, i)) buf.push(lines[i++]);
+    out.push("<p>" + inline(buf.join("\n")) + "</p>");
+  }
+  return out.join("\n");
+}
+const mdToHtml = text => blocks(
+  String(text).replace(/\r\n?/g, "\n").split(NUL).join("").replace(/\t/g, "    ").split("\n")
+);
+
+/* =========================================================
+   2. 初期本文の取得（?md= / #md= / ?md64= …）
+   ========================================================= */
+const KEYS = ["md", "markdown", "text", "content", "doc", "q"];
+const B64  = ["md64", "b64", "base64"];
+
+function fromB64(v){
+  try{
+    let s = v.replace(/-/g, "+").replace(/_/g, "/");
+    while(s.length % 4) s += "=";
+    const bin = atob(s);
+    return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+  }catch(e){ return null; }
+}
+function readParams(){
+  const sets = [];
+  if(location.hash.length > 1) sets.push({ p: new URLSearchParams(location.hash.slice(1).replace(/^!/, "")), sigil: "#" });
+  if(location.search.length > 1) sets.push({ p: new URLSearchParams(location.search.slice(1)), sigil: "?" });
+  for(const { p, sigil } of sets){
+    for(const k of B64){
+      const v = p.get(k);
+      if(v){ const d = fromB64(v); if(d !== null) return { text: d, from: sigil + k + "= (Base64)" }; }
+    }
+    for(const k of KEYS){
+      const v = p.get(k);
+      if(v) return { text: v, from: sigil + k + "=" };
+    }
+  }
+  return null;
+}
+
+const SAMPLE = [
+"# クエリ Markdown エディタ",
+"",
+"URL のクエリパラメータで**初期本文**を渡せる、1 ファイル完結の Markdown エディタです。",
+"",
+"## 本文の渡し方",
+"",
+"| パラメータ | 例 | 用途 |",
+"|---|---|---|",
+"| `?md=` | `mdedit.html?md=%23%20Hello` | URL エンコードした本文 |",
+"| `#md=` | `mdedit.html#md=%23%20Hello` | サーバへ送られない・長文向き |",
+"| `?md64=` | `mdedit.html?md64=IyBIZWxsbw` | Base64（URL-safe も可） |",
+"",
+"`text` / `content` / `doc` / `q` も同じ扱いです。両方あればハッシュ側が優先されます。",
+"",
+"> パラメータが無いときは、前回編集した内容をこの端末から復元します。",
+"",
+"## 長さの目安",
+"",
+"- ブラウザは 8,000 文字前後まで、間に入るプロキシは 2,000 文字程度で切ることがある",
+"- 長文は `#md=` を使う（下のステータスバーに URL 長が出ます）",
+"- `URL をコピー` は、現在の本文をハッシュに載せた URL を作ります",
+"",
+"## 使える記法",
+"",
+"1. 見出し・段落・**強調**・*斜体*・~~打ち消し~~・`コード`",
+"2. 箇条書き / 番号付き / 入れ子",
+"3. リンクと画像、<https://example.com> の自動リンク",
+"",
+"- [x] 表（`---:` で右寄せなどの配置指定）",
+"- [x] コードブロック",
+"- [ ] 数式（未対応）",
+"",
+"```js",
+'const url = "mdedit.html#md=" + encodeURIComponent(text);',
+"```",
+"",
+"---",
+"",
+"HTML はすべてエスケープして描画するので、外部から渡された本文でも安全に開けます。",
+""
+].join("\n");
+
+/* =========================================================
+   3. アプリ
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const src = $("src"), mdEl = $("md"), out = $("out");
+const LS = { draft: "mdedit:draft", view: "mdedit:view", split: "mdedit:split", theme: "mdedit:theme" };
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+};
+const embedded = (() => { try{ return window.self !== window.top; }catch(e){ return true; } })();
+
+let toastTimer;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("on"), 2000);
+}
+
+/* --- 初期化 --- */
+const param = readParams();
+const draft = store.get(LS.draft);
+src.value = param ? param.text : (draft !== null ? draft : SAMPLE);
+if(param){
+  $("srcchip").hidden = false;
+  $("srcchip").textContent = param.from + " から読み込み";
+}
+const savedTheme = store.get(LS.theme);
+if(savedTheme) document.documentElement.dataset.theme = savedTheme;
+const savedView = store.get(LS.view) || "split";
+document.body.dataset.view = savedView;
+const viewRadio = document.querySelector('input[name="view"][value="' + savedView + '"]');
+if(viewRadio) viewRadio.checked = true;
+const savedSplit = store.get(LS.split);
+if(savedSplit) document.documentElement.style.setProperty("--split", savedSplit);
+if(embedded){ $("btn-dl").hidden = true; $("btn-open").hidden = true; }
+
+/* --- 描画 --- */
+const shareUrl = () => location.origin + location.pathname + "#md=" + encodeURIComponent(src.value);
+
+let raf = 0, dirty = false;
+function render(){
+  const text = src.value;
+  mdEl.innerHTML = mdToHtml(text);
+
+  const h = text.match(/^ {0,3}#{1,6}\s+(.+?)\s*#*\s*$/m);
+  const name = h ? h[1].replace(/[*`_~]/g, "").trim() : "";
+  $("docname").textContent = name || "無題";
+  document.title = (name ? name + " — " : "") + "クエリ Markdown エディタ";
+
+  const lines = text ? text.split("\n").length : 0;
+  const chars = text.replace(/\s/g, "").length;
+  const latin = (text.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) || []).length;
+  const cjk = (text.match(/[぀-ヿ㐀-䶿一-鿿豈-﫿]/g) || []).length;
+  $("s-lines").textContent = lines.toLocaleString();
+  $("s-chars").textContent = chars.toLocaleString();
+  $("s-words").textContent = (latin + cjk).toLocaleString();
+  $("srcinfo").textContent = text.length.toLocaleString() + " 字";
+
+  const len = shareUrl().length;
+  const box = $("urllen");
+  box.querySelector("b").textContent = len.toLocaleString();
+  box.className = len > 8000 ? "toolong" : len > 2000 ? "long" : "";
+}
+let saveTimer;
+function schedule(){
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(render);
+  if(!dirty){
+    dirty = true;
+    $("dot").classList.add("dirty");
+    $("savestate").textContent = "未保存";
+  }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    store.set(LS.draft, src.value);
+    dirty = false;
+    $("dot").classList.remove("dirty");
+    $("savestate").textContent = "保存済み";
+  }, 500);
+}
+function cursorInfo(){
+  const upto = src.value.slice(0, src.selectionStart).split("\n");
+  $("cursor").textContent = upto.length + ":" + (upto[upto.length - 1].length + 1);
+}
+src.addEventListener("input", () => { schedule(); cursorInfo(); });
+src.addEventListener("keyup", cursorInfo);
+src.addEventListener("click", cursorInfo);
+
+/* --- 編集ヘルパ --- */
+function apply(fn){
+  const s = src.selectionStart, e = src.selectionEnd;
+  const r = fn(src.value.slice(s, e), s, e);
+  src.setRangeText(r.text, r.from === undefined ? s : r.from, r.to === undefined ? e : r.to, "end");
+  if(r.select) src.setSelectionRange(r.select[0], r.select[1]);
+  src.focus();
+  schedule();
+  cursorInfo();
+}
+const wrapSel = (pre, post, ph) => apply((sel, s) => {
+  const body = sel || ph;
+  return { text: pre + body + post, select: sel ? null : [s + pre.length, s + pre.length + body.length] };
+});
+function lineRange(){
+  const v = src.value;
+  const a = v.lastIndexOf("\n", src.selectionStart - 1) + 1;
+  let b = v.indexOf("\n", src.selectionEnd);
+  if(b < 0) b = v.length;
+  return [a, b];
+}
+function eachLine(fn){
+  const [a, b] = lineRange();
+  const body = src.value.slice(a, b).split("\n").map(fn).join("\n");
+  src.setRangeText(body, a, b, "end");
+  src.focus();
+  schedule();
+  cursorInfo();
+}
+const togglePrefix = p => eachLine(l => l.startsWith(p) ? l.slice(p.length) : p + l);
+function headingCycle(level){
+  eachLine(l => {
+    const m = l.match(/^(#{1,6})\s+/);
+    if(level) return "#".repeat(level) + " " + l.replace(/^#{1,6}\s+/, "");
+    if(!m) return "## " + l;
+    return m[1].length >= 6 ? l.replace(/^#{1,6}\s+/, "") : "#" + l;
+  });
+}
+function insertBlock(text){
+  const v = src.value, s = src.selectionStart;
+  const lead = s === 0 ? "" : v[s - 1] !== "\n" ? "\n\n" : (s > 1 && v[s - 2] !== "\n" ? "\n" : "");
+  apply(() => ({ text: lead + text + "\n" }));
+}
+const ACTS = {
+  h:      () => headingCycle(0),
+  bold:   () => wrapSel("**", "**", "太字"),
+  italic: () => wrapSel("*", "*", "斜体"),
+  strike: () => wrapSel("~~", "~~", "打ち消し"),
+  code:   () => wrapSel("`", "`", "code"),
+  ul:     () => togglePrefix("- "),
+  ol:     () => eachLine((l, k) => /^\d+\.\s/.test(l) ? l.replace(/^\d+\.\s/, "") : (k + 1) + ". " + l),
+  task:   () => togglePrefix("- [ ] "),
+  quote:  () => togglePrefix("> "),
+  link:   () => apply((sel, s) => {
+            if(/^(https?:\/\/|mailto:)\S*$/i.test(sel))
+              return { text: "[リンク](" + sel + ")", select: [s + 1, s + 4] };
+            const body = sel || "リンク";
+            return { text: "[" + body + "](https://)", select: [s + body.length + 3, s + body.length + 11] };
+          }),
+  img:    () => apply((sel, s) => {
+            const alt = sel || "画像";
+            return { text: "![" + alt + "](https://)", select: [s + alt.length + 4, s + alt.length + 12] };
+          }),
+  fence:  () => apply((sel, s) => ({ text: "```\n" + sel + "\n```", select: sel ? null : [s + 4, s + 4] })),
+  table:  () => insertBlock("| 項目 | 値 | 備考 |\n|---|---:|---|\n|  |  |  |\n|  |  |  |"),
+  hr:     () => insertBlock("---")
+};
+document.querySelectorAll(".tools button").forEach(b =>
+  b.addEventListener("click", () => ACTS[b.dataset.act]()));
+
+/* --- キーボード --- */
+src.addEventListener("keydown", e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && !e.altKey){
+    const k = e.key.toLowerCase();
+    if(k === "b"){ e.preventDefault(); return ACTS.bold(); }
+    if(k === "i"){ e.preventDefault(); return ACTS.italic(); }
+    if(k === "k"){ e.preventDefault(); return ACTS.link(); }
+    if(k === "e"){ e.preventDefault(); return ACTS.code(); }
+    if(/^[1-6]$/.test(e.key)){ e.preventDefault(); return headingCycle(+e.key); }
+    if(k === "s" && !embedded){ e.preventDefault(); return download(); }
+  }
+  if(e.key === "Tab"){
+    e.preventDefault();
+    const multi = src.value.slice(src.selectionStart, src.selectionEnd).indexOf("\n") >= 0;
+    if(multi || e.shiftKey) return eachLine(l => e.shiftKey ? l.replace(/^ {1,2}/, "") : "  " + l);
+    return apply(() => ({ text: "  " }));
+  }
+  if(e.key === "Enter" && !e.shiftKey && !mod){
+    const v = src.value;
+    const a = v.lastIndexOf("\n", src.selectionStart - 1) + 1;
+    const line = v.slice(a, src.selectionStart);
+    const m = line.match(/^(\s*)([-*+]|\d{1,9}[.)])\s+(\[[ xX]\]\s+)?/);
+    if(m){
+      e.preventDefault();
+      if(line.length === m[0].length){            // 空項目 -> リストを終了
+        src.setRangeText("", a, src.selectionStart, "end");
+        return apply(() => ({ text: "\n" }));
+      }
+      const marker = /\d/.test(m[2]) ? (parseInt(m[2], 10) + 1) + m[2].slice(-1) : m[2];
+      return apply(() => ({ text: "\n" + m[1] + marker + " " + (m[3] ? "[ ] " : "") }));
+    }
+    const q = line.match(/^(\s*>[ \t]?)+/);
+    if(q && line.trim() !== q[0].trim()){
+      e.preventDefault();
+      return apply(() => ({ text: "\n" + q[0] }));
+    }
+  }
+});
+
+/* --- スクロール同期 --- */
+let lock = null, lockTimer;
+function sync(from, to){
+  if(lock && lock !== from) return;
+  lock = from;
+  const a = from.scrollHeight - from.clientHeight;
+  const b = to.scrollHeight - to.clientHeight;
+  if(a > 0 && b > 0) to.scrollTop = (from.scrollTop / a) * b;
+  clearTimeout(lockTimer);
+  lockTimer = setTimeout(() => { lock = null; }, 90);
+}
+src.addEventListener("scroll", () => sync(src, out));
+out.addEventListener("scroll", () => sync(out, src));
+
+/* --- 表示モード・配色・スプリッタ --- */
+document.querySelectorAll('input[name="view"]').forEach(r =>
+  r.addEventListener("change", () => {
+    document.body.dataset.view = r.value;
+    store.set(LS.view, r.value);
+  }));
+$("btn-theme").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme;
+  const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+  const next = isDark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  store.set(LS.theme, next);
+});
+const gutter = $("gutter");
+function setSplit(pct){
+  const v = Math.min(85, Math.max(15, pct)).toFixed(2) + "%";
+  document.documentElement.style.setProperty("--split", v);
+  store.set(LS.split, v);
+}
+gutter.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  gutter.setPointerCapture(e.pointerId);
+  gutter.classList.add("on");
+  const vertical = matchMedia("(max-width:820px)").matches;
+  const box = $("wrap").getBoundingClientRect();
+  const move = ev => setSplit(vertical
+    ? ((ev.clientY - box.top) / box.height) * 100
+    : ((ev.clientX - box.left) / box.width) * 100);
+  const up = () => {
+    gutter.classList.remove("on");
+    gutter.removeEventListener("pointermove", move);
+    gutter.removeEventListener("pointerup", up);
+  };
+  gutter.addEventListener("pointermove", move);
+  gutter.addEventListener("pointerup", up);
+});
+gutter.addEventListener("keydown", e => {
+  const d = e.key === "ArrowLeft" || e.key === "ArrowUp" ? -4
+          : e.key === "ArrowRight" || e.key === "ArrowDown" ? 4 : 0;
+  if(!d) return;
+  e.preventDefault();
+  const vertical = matchMedia("(max-width:820px)").matches;
+  const box = $("wrap").getBoundingClientRect();
+  const px = vertical ? $("src").closest(".pane").getBoundingClientRect().height
+                      : $("src").closest(".pane").getBoundingClientRect().width;
+  setSplit((px / (vertical ? box.height : box.width)) * 100 + d);
+});
+
+/* --- 入出力 --- */
+async function copy(text, msg){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast(msg);
+  }catch(e){
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e2){}
+    ta.remove();
+    toast(ok ? msg : "コピーできませんでした。ソース欄で選択してコピーしてください");
+  }
+}
+$("btn-copy").addEventListener("click", () => copy(src.value, "Markdown をコピーしました"));
+$("btn-url").addEventListener("click", () => {
+  const u = shareUrl();
+  try{ history.replaceState(null, "", "#md=" + encodeURIComponent(src.value)); }catch(e){}
+  copy(u, u.length > 8000
+    ? "コピーしました（" + u.length.toLocaleString() + " 字・ブラウザの上限に注意）"
+    : "本文入りの URL をコピーしました");
+});
+function download(){
+  const name = ($("docname").textContent.replace(/[\\/:*?"<>|]/g, "_").trim() || "document") + ".md";
+  const url = URL.createObjectURL(new Blob([src.value], { type: "text/markdown;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(name + " を保存しました");
+}
+$("btn-dl").addEventListener("click", download);
+$("btn-print").addEventListener("click", () => window.print());
+$("btn-open").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if(!f) return;
+  src.value = await f.text();
+  schedule();
+  toast(f.name + " を読み込みました");
+  e.target.value = "";
+});
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", async e => {
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(!f) return;
+  src.value = await f.text();
+  schedule();
+  toast(f.name + " を読み込みました");
+});
+addEventListener("hashchange", () => {
+  const p = readParams();
+  if(p && p.text !== src.value){
+    src.value = p.text;
+    schedule();
+    toast("URL から読み込みました");
+  }
+});
+
+render();
+cursorInfo();
+</script>

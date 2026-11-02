@@ -1,0 +1,392 @@
+openapi: 3.0.3
+info:
+  title: Battle Spirits Rule Engine Server API
+  description: |
+    バトルスピリッツ（Battle Spirits / バトスピ）のスタンダード・エターナル両対応
+    局面ルールエンジン・シミュレータおよび盤面配信サーバー (Kotlin/Native) の OpenAPI 仕様。
+  version: 1.0.0
+servers:
+  - url: http://localhost:8090
+    description: ローカル Rule Engine Server (デフォルトポート 8090)
+
+paths:
+  /api/status:
+    get:
+      summary: サーバー健全性および稼働状況取得
+      description: BS Rule Engine Server の稼働ステータス、アクティブセッション数、購読者数、評価モードを返却する。
+      responses:
+        '200':
+          description: 正常応答
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  service:
+                    type: string
+                    example: "BS Rule Engine Server"
+                  sessions:
+                    type: integer
+                    example: 1
+                  subscribers:
+                    type: integer
+                    example: 1
+                  evalMode:
+                    type: string
+                    example: "GRU"
+
+  /api/state:
+    get:
+      summary: 現在の局面（盤面DTO）の取得
+      parameters:
+        - name: room
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "default"
+          description: ルームID (session と同等)
+        - name: session
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "default"
+          description: セッションID (room と同等)
+        - name: viewer
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: 視点 (0: 神視点/観戦, 1: Player 1, 2: Player 2)
+      responses:
+        '200':
+          description: 盤面状態
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/actions:
+    get:
+      summary: 現在の局面に対する合法手一覧の列挙
+      parameters:
+        - name: session
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "default"
+      responses:
+        '200':
+          description: 列挙された選択肢一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameAction'
+
+  /api/act:
+    post:
+      summary: アクションの適用またはステップ終了
+      parameters:
+        - name: session
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - index
+              properties:
+                index:
+                  type: integer
+                  description: 選択肢インデックス (999 はステップ終了)
+                  example: 1
+                session:
+                  type: string
+                  example: "default"
+      responses:
+        '200':
+          description: アクション適用後の盤面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/new:
+    post:
+      summary: 新規ゲームの開始（セッション初期化）
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deck1:
+                  type: string
+                  example: "deck-kogyo.yaml"
+                deck2:
+                  type: string
+                  example: "deck-kogyo.yaml"
+                seed:
+                  type: integer
+                  format: int64
+                  example: 42
+                format:
+                  type: string
+                  enum: [STANDARD, ETERNAL]
+                  example: "STANDARD"
+                session:
+                  type: string
+                  example: "default"
+      responses:
+        '200':
+          description: 初期化後の盤面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/restart:
+    post:
+      summary: 現在のデッキ設定でゲームを再開
+      responses:
+        '200':
+          description: 再開後の盤面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/undo:
+    post:
+      summary: 1手戻す (Undo)
+      responses:
+        '200':
+          description: 巻き戻し後の盤面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/redo:
+    post:
+      summary: 1手進める (Redo)
+      responses:
+        '200':
+          description: 進めた後の盤面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebGameStateDto'
+
+  /api/events:
+    get:
+      summary: Server-Sent Events (SSE) によるリアルタイム盤面配信
+      parameters:
+        - name: session
+          in: query
+          required: false
+          schema:
+            type: string
+            default: "default"
+        - name: viewer
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: text/event-stream 接続
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/decks:
+    get:
+      summary: 利用可能なデッキ定義一覧取得
+      responses:
+        '200':
+          description: デッキ一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/formats:
+    get:
+      summary: サポートされているフォーマット一覧取得
+      responses:
+        '200':
+          description: フォーマット一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  example: "STANDARD"
+
+  /api/eval-config:
+    get:
+      summary: 現在の探索・評価器設定取得
+      responses:
+        '200':
+          description: 探索設定
+    post:
+      summary: 探索深さ・幅・評価器重みの更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [GRU, NONE]
+                depth:
+                  type: integer
+                  minimum: 1
+                  maximum: 4
+                width:
+                  type: integer
+                  minimum: 0
+                weightsPathP1:
+                  type: string
+                weightsPathP2:
+                  type: string
+      responses:
+        '200':
+          description: 設定反映結果
+
+components:
+  schemas:
+    WebGameStateDto:
+      type: object
+      properties:
+        room:
+          type: string
+          example: "default"
+        session:
+          type: string
+          example: "default"
+        turn:
+          type: integer
+        active_player:
+          type: integer
+        choosing_player:
+          type: integer
+        phase:
+          type: string
+        player:
+          $ref: '#/components/schemas/WebPlayerDto'
+        opponent:
+          $ref: '#/components/schemas/WebPlayerDto'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebActionGroupDto'
+        winner:
+          type: integer
+          nullable: true
+
+    WebPlayerDto:
+      type: object
+      properties:
+        player_id:
+          type: integer
+        life:
+          type: integer
+        reserve:
+          type: string
+        trash_cores:
+          type: string
+        deck_count:
+          type: integer
+        hand_count:
+          type: integer
+        hand:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebCardDto'
+        field:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebCardDto'
+
+    WebCardDto:
+      type: object
+      properties:
+        id:
+          type: string
+        card_no:
+          type: string
+        name:
+          type: string
+        cost:
+          type: integer
+        cores:
+          type: string
+        lv:
+          type: integer
+        bp:
+          type: integer
+          nullable: true
+        exhausted:
+          type: boolean
+
+    WebActionGroupDto:
+      type: object
+      properties:
+        category:
+          type: string
+        best_eval:
+          type: number
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebActionOptionDto'
+
+    WebActionOptionDto:
+      type: object
+      properties:
+        index:
+          type: integer
+        detail:
+          type: string
+        eval:
+          type: number
+          nullable: true
+        forbidden:
+          type: boolean
+
+    GameAction:
+      type: object
+      properties:
+        index:
+          type: integer
+        type:
+          type: string
+        category:
+          type: string
+        detail:
+          type: string
+        eval:
+          type: number

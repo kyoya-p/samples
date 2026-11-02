@@ -1,0 +1,5 @@
+[tasks]
+rmnav-deploy = "Copy-Item redmine-navi.js, help.html, index.html '\\\\c6303002l.win.sharp.co.jp\\web\\gantt-tool\\rmnav' -Force"
+rmnav = "Start-Process 'http://c6303002l.win.sharp.co.jp/gantt-tool/rmnav/index.html'"
+rmnav-test = "start ./index.html"
+

@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mermaid WYSIWYG Editor</title>
+<style>
+  :root { --bg:#f6f7f9; --fg:#1d2330; --pane:#fff; --bd:#d5d9e0; --ac:#2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14171d; --fg:#e4e7ee; --pane:#1c2029; --bd:#323846; --ac:#6b9bff; } }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; }
+  body { display:flex; flex-direction:column; background:var(--bg); color:var(--fg); font:14px system-ui,sans-serif; }
+  header { display:flex; gap:8px; align-items:center; padding:8px 12px; border-bottom:1px solid var(--bd); background:var(--pane); flex-wrap:wrap; }
+  header h1 { font-size:15px; margin:0 8px 0 0; }
+  button,select { font:inherit; padding:4px 10px; border:1px solid var(--bd); border-radius:6px; background:var(--pane); color:var(--fg); cursor:pointer; }
+  button:hover { border-color:var(--ac); }
+  .sp { flex:1; }
+  #hint { opacity:.7; font-size:12px; }
+  main { flex:1; display:flex; min-height:0; }
+  #src { display:none; width:38%; min-width:200px; resize:horizontal; border:0; border-right:1px solid var(--bd); padding:12px; background:var(--pane); color:var(--fg); font:13px/1.5 ui-monospace,Consolas,monospace; tab-size:2; outline:none; }
+  body.src #src { display:block; }
+  button.on { background:var(--ac); color:#fff; border-color:var(--ac); }
+  .node.sel rect,.node.sel polygon,.node.sel circle,.node.sel path { stroke:var(--ac)!important; stroke-width:3.5px!important; }
+  .edgehit { fill:none; stroke:transparent; stroke-width:16px; cursor:pointer; pointer-events:stroke; }
+  .edgehit:hover { stroke:color-mix(in srgb,var(--ac) 25%,transparent); }
+  path.flowchart-link.esel { stroke:var(--ac)!important; stroke-width:4px!important; }
+  .node { user-select:none; }
+  #out { user-select:none; }
+  #band { position:fixed; display:none; z-index:8; pointer-events:none; border:1px solid var(--ac); background:color-mix(in srgb,var(--ac) 15%,transparent); }
+  #hdl { position:fixed; display:none; z-index:9; width:22px; height:22px; align-items:center; justify-content:center; border-radius:50%; background:var(--ac); color:#fff; font-size:13px; cursor:crosshair; user-select:none; box-shadow:0 1px 4px #0006; }
+  .cluster.drop rect { stroke:var(--ac)!important; stroke-width:3px!important; stroke-dasharray:6 3; }
+  .node { cursor:grab; }
+  .cluster { cursor:pointer; }
+  .cluster.gsel rect { stroke:var(--ac)!important; stroke-width:3px!important; }
+  #menu { position:fixed; display:none; z-index:10; flex-direction:column; min-width:150px; padding:4px; background:var(--pane); border:1px solid var(--bd); border-radius:6px; box-shadow:0 4px 16px #0004; }
+  #menu button { text-align:left; border:0; }
+  #menu button:hover { background:var(--bg); }
+  #view { flex:1; overflow:auto; padding:16px; position:relative; }
+  #out { display:inline-block; min-width:100%; transform-origin:0 0; }
+  #out svg { max-width:none; height:auto; overflow:visible; } /* ドラッグ中に図外へ出ても表示 */
+  #err { position:absolute; left:12px; bottom:12px; right:12px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; padding:6px 10px; border-radius:6px; font:12px ui-monospace,monospace; white-space:pre-wrap; display:none; }
+  .node { cursor:text; }
+  .node:hover rect,.node:hover polygon,.node:hover circle,.node:hover path { stroke:var(--ac)!important; stroke-width:2.5px!important; }
+  #edit { position:fixed; display:none; z-index:9; padding:4px 6px; border:2px solid var(--ac); border-radius:4px; background:var(--pane); color:var(--fg); font:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mermaid WYSIWYG</h1>
+  <select id="tpl"><option value="">テンプレート</option></select>
+  <button id="add">＋ノード</button><button id="del">削除</button><button id="tsrc">ソース表示</button>
+  <select id="exp"><option value="">書出</option><option value="svg">SVG保存</option><option value="png">PNG保存</option><option value="copy">ソースコピー</option></select>
+  <span class="sp"></span>
+  <span id="hint">ホバーの⇢ドラッグ=接続 / ノードドラッグ=グループ出入 / 空白ドラッグ=範囲選択 / 右クリック=メニュー / ダブルクリック=編集・追加 / Delete=削除</span>
+</header>
+<main>
+  <textarea id="src" spellcheck="false"></textarea>
+  <div id="view"><div id="out"></div><div id="err"></div></div>
+</main>
+<div id="menu"></div><div id="band"></div><div id="hdl" title="ドラッグして接続">⇢</div>
+<input id="edit">
+<svg style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:8"><line id="rb" style="display:none;stroke:var(--ac);stroke-width:2.5;stroke-dasharray:6 4"/></svg>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+const TPL = {
+  flowchart: `flowchart TD\n  A[開始] --> B{判定}\n  B -- Yes --> C[処理1]\n  B -- No --> D[処理2]\n  C --> E[終了]\n  D --> E`,
+  sequence: `sequenceDiagram\n  participant U as ユーザー\n  participant S as サーバー\n  U->>S: リクエスト\n  S-->>U: レスポンス`,
+  class: `classDiagram\n  Animal <|-- Dog\n  Animal : +String name\n  Animal : +eat()\n  Dog : +bark()`,
+  state: `stateDiagram-v2\n  [*] --> Idle\n  Idle --> Running : start\n  Running --> Idle : stop\n  Running --> [*]`,
+  gantt: `gantt\n  title 計画\n  dateFormat YYYY-MM-DD\n  section A\n  設計 :a1, 2026-10-01, 7d\n  実装 :after a1, 10d`,
+  er: `erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ ITEM : contains`,
+};
+const $ = id => document.getElementById(id);
+const src = $("src"), out = $("out"), err = $("err"), edit = $("edit"), tpl = $("tpl");
+for (const k in TPL) tpl.add(new Option(k, k));
+
+const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({ startOnLoad:false, theme: dark ? "dark" : "default", securityLevel:"loose" });
+
+let zoom = 1, seq = 0, timer;
+src.value = localStorage.getItem("mmd-src") || TPL.flowchart;
+
+function render() {
+  localStorage.setItem("mmd-src", src.value);
+  return mermaid.render("m" + (++seq), src.value).then(({ svg }) => {
+    out.innerHTML = svg; err.style.display = "none";
+    hookDiagram();
+  }).catch(e => {
+    err.textContent = e.message || String(e); err.style.display = "block";
+    document.getElementById("dm" + seq)?.remove();
+  });
+}
+const schedule = () => { clearTimeout(timer); timer = setTimeout(render, 250); };
+src.addEventListener("input", schedule);
+tpl.onchange = () => { if (tpl.value) { src.value = TPL[tpl.value]; tpl.value = ""; render(); } };
+
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const nid = n => (/(?:^|-)flowchart-(.+)-\d+$/.exec(n.id) || [])[1];
+const isFlow = () => /^\s*(flowchart|graph)\b/m.test(src.value.replace(/%%.*$/gm, ""));
+const flowOnly = () => isFlow() || (alert("flowchartのみ対応"), false);
+const nodes = () => [...out.querySelectorAll(".node")];
+const nodeEl = id => nodes().find(n => nid(n) === id);
+
+// 選択状態: node = ノードid / edge = {s,d,i}
+let selNode = null, selEdge = null, selGroup = null, dragged = false;
+const selNodes = new Set();
+const setNodes = ids => { selNodes.clear(); ids.forEach(i => selNodes.add(i)); selNode = ids.length ? ids[ids.length - 1] : null; };
+const gidOf = c => c.id.replace(/^m\d+-/, "");
+const mark = () => {
+  nodes().forEach(n => n.classList.toggle("sel", selNodes.has(nid(n))));
+  out.querySelectorAll(".cluster").forEach(c => c.classList.toggle("gsel", gidOf(c) === selGroup));
+  out.querySelectorAll("path.flowchart-link").forEach(p => { const e = edgeOf(p); p.classList.toggle("esel", !!(e && selEdge && e.s === selEdge.s && e.d === selEdge.d && e.i === selEdge.i)); });
+};
+const clearSel = () => { setNodes([]); selEdge = selGroup = null; mark(); };
+
+// 1行編集ボックス
+function openEditor(rect, initial, commit) {
+  Object.assign(edit.style, { display:"block", left:rect.left + "px", top:rect.top + "px", width:Math.max(rect.width, 120) + "px", height:Math.max(rect.height, 28) + "px" });
+  edit.value = initial; edit.focus(); edit.select();
+  const done = ok => {
+    if (edit.style.display === "none") return;
+    edit.style.display = "none"; edit.onblur = edit.onkeydown = null;
+    if (ok && edit.value !== initial) commit(edit.value);
+  };
+  edit.onkeydown = e => { if (e.key === "Enter") done(true); else if (e.key === "Escape") done(false); };
+  edit.onblur = () => done(true);
+}
+
+// ---- ノード ----
+const SH = String.raw`(?:\[\[|\[\(|\(\(|\[|\(|\{|>)(?:"[^"]*"|[^\]\)\}]*)(?:\]\]|\)\]|\)\)|\]|\)|\})`;
+const SHAPE = new RegExp("([A-Za-z_]\\w*)(" + SH + ")", "g");
+function newId() {
+  let i = 1; while (nodeEl("N" + i) || new RegExp("\\bN" + i + "\\b").test(src.value)) i++;
+  return "N" + i;
+}
+function addNode(from, o = "[", c = "]") {
+  if (!flowOnly()) return;
+  const id = newId();
+  src.value += "\n  " + (from ? from + " --> " : "") + id + o + "新規" + c;
+  setNodes([id]); selEdge = selGroup = null;
+  render().then(() => { const n = nodeEl(id); if (n) startEdit(n, new Event("x")); });
+}
+function startEdit(node, ev) {
+  ev.stopPropagation();
+  const id = nid(node);
+  if (!id) { alert("flowchart以外は未対応(ソースを直接編集)"); return; }
+  const re = new RegExp("(\\b" + esc(id) + "\\s*(?:\\[\\[|\\[\\(|\\(\\(|\\[|\\(|\\{|>))(\"?)([^\\]\\)\\}\"]*)(\"?)(\\]\\]|\\)\\]|\\)\\)|\\]|\\)|\\})");
+  const hit = re.exec(src.value);
+  if (!hit) { alert("ノード " + id + " の定義がソースに見つからない"); return; }
+  openEditor(node.getBoundingClientRect(), hit[3], v => {
+    const q = /[()\[\]{}]/.test(v) ? '"' : hit[2];
+    src.value = src.value.slice(0, hit.index) + hit[1] + q + v + q + hit[5] + src.value.slice(hit.index + hit[0].length);
+    render();
+  });
+}
+function delNode(id) {
+  const ref = new RegExp("(^|[^\\w-])" + esc(id) + "(?![\\w-])");
+  const lines = [];
+  for (const ln of src.value.split("\n")) {
+    const bare = ln.replace(SHAPE, "$1");
+    if (!ref.test(bare) || /^\s*(flowchart|graph|%%)/.test(ln)) { lines.push(ln); continue; }
+    for (const m of ln.matchAll(SHAPE)) if (m[1] !== id) lines.push("  " + m[0]); // 他ノードの定義は残す
+  }
+  src.value = lines.join("\n");
+}
+
+// ---- エッジ(関連) ----
+const ARROW = String.raw`(?:--\s+[^>\n]*?\s+-->|==\s+[^>\n]*?\s+==>|(?:<-->|-->|---|-\.->|==>)(?:\|[^|\n]*\|)?)`;
+const edgeRe = (s, d) => new RegExp("(\\b" + esc(s) + "(?:" + SH + ")?)(\\s*)(" + ARROW + ")(\\s*)(\\b" + esc(d) + "(?![\\w-])(?:" + SH + ")?)", "g");
+function edgeOf(p) {
+  const m = /^(?:.*-)?L_(.+)_(\d+)$/.exec(p.id); if (!m) return null;
+  const ids = new Set([...nodes().map(nid), ...[...out.querySelectorAll(".cluster")].map(gidOf)]), body = m[1];
+  for (let k = 1; k < body.length; k++) if (body[k] === "_" && ids.has(body.slice(0, k)) && ids.has(body.slice(k + 1))) return { s:body.slice(0, k), d:body.slice(k + 1), i:+m[2] };
+  return null;
+}
+const findEdge = e => [...src.value.matchAll(edgeRe(e.s, e.d))][e.i];
+const labelOf = a => (/\|([^|]*)\|/.exec(a) || /^(?:--|==)\s+(.*?)\s+(?:-->|==>)$/.exec(a) || [])[1] || "";
+const baseOf = a => /^==/.test(a) ? "==>" : /^-\./.test(a) ? "-.->" : /^<-->/.test(a) ? "<-->" : /^---/.test(a) ? "---" : "-->";
+function addEdge(s, d) {
+  if (s === d) return;
+  src.value += "\n  " + s + " --> " + d;
+  setNodes([]); selGroup = null; selEdge = { s, d, i:[...src.value.matchAll(edgeRe(s, d))].length - 1 };
+  render();
+}
+function delEdge(e) {
+  const m = findEdge(e); if (!m) return;
+  src.value = src.value.slice(0, m.index) + m[1] + "\n  " + m[5] + src.value.slice(m.index + m[0].length); // 両端ノードは残す
+}
+function editEdge(p, ev) {
+  ev.stopPropagation();
+  const e = edgeOf(p), m = e && findEdge(e);
+  if (!m) { alert("エッジの定義がソースに見つからない"); return; }
+  const r = p.getBoundingClientRect(), cur = labelOf(m[3]);
+  openEditor({ left:r.left + r.width / 2 - 60, top:r.top + r.height / 2 - 14, width:120, height:28 }, cur, v => {
+    const arrow = baseOf(m[3]) + (v ? "|" + v.replace(/\|/g, "/") + "|" : "");
+    src.value = src.value.slice(0, m.index) + m[1] + m[2] + arrow + m[4] + m[5] + src.value.slice(m.index + m[0].length);
+    render();
+  });
+}
+// 矢印の種類変更(ラベルは維持)
+const ARROWS = [["→ 片方向", "-->"], ["↔ 双方向", "<-->"], ["— 線のみ", "---"], ["⇢ 点線", "-.->"], ["⇒ 太線", "==>"]];
+function setArrow(e, kind) {
+  const m = findEdge(e); if (!m) return;
+  const lbl = labelOf(m[3]);
+  src.value = src.value.slice(0, m.index) + m[1] + m[2] + kind + (lbl ? "|" + lbl + "|" : "") + m[4] + m[5] + src.value.slice(m.index + m[0].length);
+  render();
+}
+// ノード形状変更
+const SHAPES = [["四角", "[", "]"], ["丸角", "(", ")"], ["判定(菱形)", "{", "}"], ["円", "((", "))"], ["スタジアム", "([", "])"]];
+const reDef = id => new RegExp("(\\b" + esc(id) + "\\s*)(\\[\\[|\\[\\(|\\(\\(|\\(\\[|\\{\\{|\\[|\\(|\\{|>)(\"[^\"]*\"|[^\\]\\)\\}]*)(\\]\\]|\\)\\]|\\)\\)|\\]\\)|\\}\\}|\\]|\\)|\\})");
+function setShape(ids, o, c) {
+  for (const id of ids) {
+    const m = reDef(id).exec(src.value);
+    if (m) src.value = src.value.slice(0, m.index) + m[1] + o + m[3] + c + src.value.slice(m.index + m[0].length);
+    else src.value += "\n  " + id + o + id + c; // 定義なし(id のみ)→ 定義行を追加
+  }
+  render();
+}
+function delSel() {
+  if (!flowOnly()) return;
+  if (selEdge) delEdge(selEdge);
+  else if (selNodes.size) [...selNodes].forEach(delNode);
+  else if (selGroup) dissolveGroup(selGroup);
+  else return;
+  clearSel(); render();
+}
+
+// ---- グループ(subgraph, 1階層) ----
+const SUB = /^(\s*)subgraph\s+(.+?)\s*$/, ENDL = /^\s*end\s*$/, KEYW = /^(direction|style|classDef|class|click|linkStyle|%%)\b/;
+const ARROW_G = new RegExp(ARROW, "g");
+const unq = s => s.replace(/^"(.*)"$/, "$1");
+const idsOn = t => t.replace(/%%.*$/, "").replace(SHAPE, "$1").replace(ARROW_G, " ").match(/[A-Za-z_]\w*/g) || [];
+const BARE = /^[A-Za-z_]\w*$/;
+// 入れ子対応: 全 subgraph を {id,title,indent,start,end,depth} で返す
+function parseGroups(L) {
+  const st = [], gs = [];
+  L.forEach((ln, i) => {
+    const m = SUB.exec(ln);
+    if (m) { const h = /^([^\s\[]+)\s*\[(.*)\]$/.exec(m[2]); st.push({ id:unq(h ? h[1] : m[2]), title:unq(h ? h[2] : m[2]), indent:m[1], start:i, end:-1 }); }
+    else if (ENDL.test(ln) && st.length) { const g = st.pop(); g.end = i; g.depth = st.length; gs.push(g); }
+  });
+  return gs;
+}
+// グループ直下の行番号(子グループの範囲は除く)
+function directLines(L, g, all) {
+  const r = [];
+  for (let i = g.start + 1; i < g.end; i++) {
+    const c = all.find(x => x.start === i && x.end < g.end);
+    if (c) { i = c.end; continue; }
+    r.push(i);
+  }
+  return r;
+}
+// ノード id が直接属する最も内側のグループ
+const groupOf = id => {
+  const L = src.value.split("\n"), all = parseGroups(L);
+  return all.filter(g => directLines(L, g, all).some(i => { const t = L[i].trim(); return t && !KEYW.test(t) && !SUB.test(L[i]) && idsOn(t).includes(id); })).sort((a, b) => b.depth - a.depth)[0];
+};
+// ids を全グループから外す(Lを直接更新)。定義/エッジ行は block の直後へ移し、他ノードは単独参照で残す
+function ungroup(L, ids) {
+  const order = parseGroups(L).sort((a, b) => b.start - a.start).map(g => g.id);
+  for (const gid of order) {
+    const all = parseGroups(L), g = all.find(x => x.id === gid); // 行番号がずれるため毎回再解析
+    if (!g) continue;
+    const keep = [], moved = [], bare = new Set(), endLine = L[g.end];
+    for (let i = g.start + 1; i < g.end; i++) {
+      const c = all.find(x => x.start === i && x.end < g.end);
+      if (c) { keep.push(...L.slice(c.start, c.end + 1)); i = c.end; continue; }
+      const ln = L[i], t = ln.trim();
+      if (!t || KEYW.test(t)) { keep.push(ln); continue; }
+      const on = idsOn(t), isBare = BARE.test(t);
+      if (!on.some(x => ids.includes(x))) { keep.push(ln); if (isBare) bare.add(t); continue; }
+      if (isBare) continue;
+      moved.push(ln);
+      on.filter(x => !ids.includes(x) && !bare.has(x)).forEach(x => { bare.add(x); keep.push(g.indent + "  " + x); });
+    }
+    L.splice(g.start + 1, g.end - g.start, ...keep, endLine, ...moved);
+  }
+}
+function setGroup(ids, gid) {
+  const L = src.value.split("\n"); ungroup(L, ids);
+  if (gid) {
+    const g = parseGroups(L).find(x => x.id === gid);
+    if (!g) { alert("グループ " + gid + " が見つからない"); return false; }
+    L.splice(g.end, 0, ...ids.map(i => g.indent + "  " + i));
+  }
+  src.value = L.join("\n"); return true;
+}
+// グループ(ブロックごと)を別グループの中へ / null でトップレベルへ移動
+function moveGroup(gid, target) {
+  const L = src.value.split("\n"), all = parseGroups(L), g = all.find(x => x.id === gid);
+  if (!g || gid === target) return false;
+  const t = target && all.find(x => x.id === target);
+  if (target && (!t || (t.start > g.start && t.end < g.end))) return false; // 自分の子孫へは入れない
+  const block = L.splice(g.start, g.end - g.start + 1);
+  const reind = (ind, l) => ind + (l.startsWith(g.indent) ? l.slice(g.indent.length) : l.trim()); // 相対インデントを維持
+  if (t) {
+    const t2 = parseGroups(L).find(x => x.id === target);
+    L.splice(t2.end, 0, ...block.map(l => reind(t2.indent + "  ", l)));
+  } else L.push(...block.map(l => reind("  ", l)));
+  src.value = L.join("\n"); return true;
+}
+function makeGroup(ids) {
+  if (!flowOnly() || !ids.length) return;
+  const L = src.value.split("\n"), parents = new Set(ids.map(i => groupOf(i)?.id));
+  const parent = parents.size === 1 ? [...parents][0] : undefined; // 全員が同じグループ直下なら、その中に入れ子で作る
+  ungroup(L, ids);
+  const all = L.join("\n"); let i = 1; while (new RegExp("\\bG" + i + "\\b").test(all)) i++;
+  const gid = "G" + i, pg = parent && parseGroups(L).find(x => x.id === parent), ind = pg ? pg.indent + "  " : "  ";
+  const blk = [ind + "subgraph " + gid + "[グループ]", ...ids.map(x => ind + "  " + x), ind + "end"];
+  if (pg) L.splice(pg.end, 0, ...blk); else L.push(...blk);
+  src.value = L.join("\n"); setNodes([]); selEdge = null; selGroup = gid;
+  render().then(() => { const c = [...out.querySelectorAll(".cluster")].find(x => gidOf(x) === gid); if (c) renameGroup(c); });
+}
+function renameGroup(c) {
+  const gid = gidOf(c), L = src.value.split("\n"), g = parseGroups(L).find(x => x.id === gid);
+  if (!g) { alert("グループ " + gid + " の定義が見つからない(1階層の subgraph のみ対応)"); return; }
+  openEditor((c.querySelector(".cluster-label") || c).getBoundingClientRect(), g.title, v => {
+    L[g.start] = g.indent + "subgraph " + gid + "[" + (/[()\[\]{}]/.test(v) ? '"' + v + '"' : v) + "]";
+    src.value = L.join("\n"); render();
+  });
+}
+function dissolveGroup(gid) {
+  const L = src.value.split("\n"), g = parseGroups(L).find(x => x.id === gid);
+  if (!g) return;
+  L.splice(g.end, 1); L.splice(g.start, 1); src.value = L.join("\n");
+  delNode(gid); // グループへのエッジ等が残るとノードとして再出現するため除去
+}
+
+function setDirection(gid, dir) {
+  const L = src.value.split("\n"), g = parseGroups(L).find(x => x.id === gid);
+  if (!g) return;
+  const i = L.findIndex((l, k) => k > g.start && k < g.end && /^\s*direction\s+\w+/.test(l));
+  if (i >= 0) L[i] = g.indent + "  direction " + dir; else L.splice(g.start + 1, 0, g.indent + "  direction " + dir);
+  src.value = L.join("\n"); render();
+}
+
+// ---- 右クリックメニュー ----
+const menu = $("menu");
+const showMenu = (x, y, items) => {
+  menu.innerHTML = "";
+  items.forEach(([t, f]) => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => { menu.style.display = "none"; f(); }; menu.append(b); });
+  Object.assign(menu.style, { display:"flex", left:x + "px", top:y + "px" });
+};
+addEventListener("click", () => menu.style.display = "none");
+$("view").addEventListener("contextmenu", e => {
+  e.preventDefault();
+  if (!isFlow()) return;
+  const n = e.target.closest(".node"), c = e.target.closest(".cluster");
+  if (n) {
+    const id = nid(n);
+    if (!selNodes.has(id)) { setNodes([id]); selEdge = selGroup = null; mark(); }
+    const ids = [...selNodes];
+    showMenu(e.clientX, e.clientY, [
+      ...SHAPES.map(([t, o, cl]) => ["形状: " + t, () => setShape(ids, o, cl)]),
+      ["グループ化 (" + ids.length + ")", () => makeGroup(ids)],
+      ...(ids.some(groupOf) ? [["グループから外す", () => { if (setGroup(ids, null)) render(); }]] : []),
+      ["削除", delSel]]);
+  } else if (c) {
+    selGroup = gidOf(c); setNodes([]); selEdge = null; mark();
+    showMenu(e.clientX, e.clientY, [["名前変更", () => renameGroup(c)], ["方向: 縦 (TB)", () => setDirection(gidOf(c), "TB")], ["方向: 横 (LR)", () => setDirection(gidOf(c), "LR")], ["グループ解除", delSel]]);
+  } else showMenu(e.clientX, e.clientY, SHAPES.map(([t, o, cl]) => ["ノード追加: " + t, () => addNode(selNode, o, cl)]));
+});
+
+// ---- マウス操作 ----
+function hookDiagram() {
+  nodes().forEach(n => {
+    n.addEventListener("click", e => {
+      e.stopPropagation(); if (dragged) { dragged = false; return; }
+      const id = nid(n);
+      setNodes(e.shiftKey ? (selNodes.has(id) ? [...selNodes].filter(x => x !== id) : [...selNodes, id]) : [id]);
+      selEdge = selGroup = null; mark();
+    });
+    n.addEventListener("dblclick", e => startEdit(n, e));
+    n.addEventListener("mousedown", e => dragMove(nid(n), e));
+    n.addEventListener("mouseenter", () => showHandle(nid(n), n, false));
+    n.addEventListener("mouseleave", leaveHandle);
+  });
+  out.querySelectorAll(".cluster").forEach(c => {
+    c.addEventListener("mousedown", e => { if (e.target.closest(".cluster-label")) dragMove(gidOf(c), e, true); });
+    c.addEventListener("mouseenter", () => showHandle(gidOf(c), c, true));
+    c.addEventListener("mouseleave", leaveHandle);
+    c.addEventListener("click", e => { e.stopPropagation(); if (dragged) { dragged = false; return; } selGroup = gidOf(c); setNodes([]); selEdge = null; mark(); });
+    c.addEventListener("dblclick", e => { e.stopPropagation(); renameGroup(c); });
+  });
+  out.querySelectorAll("path.flowchart-link").forEach(p => {
+    const hit = p.cloneNode(); hit.removeAttribute("id"); hit.removeAttribute("marker-end"); hit.removeAttribute("marker-start"); hit.removeAttribute("style"); hit.setAttribute("class", "edgehit");
+    p.after(hit);
+    hit.addEventListener("click", ev => { ev.stopPropagation(); selEdge = edgeOf(p); setNodes([]); selGroup = null; mark(); });
+    hit.addEventListener("dblclick", ev => editEdge(p, ev));
+    hit.addEventListener("contextmenu", ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const e = edgeOf(p); if (!e) return;
+      selEdge = e; setNodes([]); selGroup = null; mark();
+      showMenu(ev.clientX, ev.clientY, [...ARROWS.map(([t, k]) => [t, () => setArrow(e, k)]), ["ラベル編集", () => editEdge(p, ev)], ["削除", delSel]]);
+    });
+  });
+  mark();
+}
+// ノードから別ノードへドラッグで接続
+function dragLink(from, e, fromGroup) {
+  if (e.button !== 0 || !isFlow()) return;
+  e.stopPropagation();
+  const x0 = e.clientX, y0 = e.clientY, rb = $("rb");
+  let moving = false;
+  const move = ev => {
+    if (!moving && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+    moving = true; rb.style.display = "block";
+    rb.setAttribute("x1", x0); rb.setAttribute("y1", y0); rb.setAttribute("x2", ev.clientX); rb.setAttribute("y2", ev.clientY);
+  };
+  const up = ev => {
+    removeEventListener("mousemove", move); removeEventListener("mouseup", up); rb.style.display = "none";
+    if (!moving) return;
+    dragged = true; setTimeout(() => dragged = false, 0);
+    const el = document.elementFromPoint(ev.clientX, ev.clientY), t = el?.closest?.(".node"), c = el?.closest?.(".cluster");
+    const to = t ? nid(t) : c ? gidOf(c) : null; // ノード/グループのどちらへも接続可
+    if (to && to !== from) addEdge(from, to);
+  };
+  addEventListener("mousemove", move); addEventListener("mouseup", up);
+}
+// ノード本体のドラッグ = 移動(グループへ入れる/外す)。接続はハンドルで行う
+function dragMove(from, e, isGroup) {
+  if (e.button !== 0 || !isFlow()) return;
+  e.stopPropagation();
+  const x0 = e.clientX, y0 = e.clientY, ids = isGroup ? [] : selNodes.has(from) ? [...selNodes] : [from];
+  let moving = false, els = [], dx = 0, dy = 0;
+  const clusters = () => [...out.querySelectorAll(".cluster")];
+  const clear = () => clusters().forEach(c => c.classList.remove("drop"));
+  // ドラッグ対象(ノード群 / グループ枠+内包要素)をマウスに追従させる
+  const svg = out.querySelector("svg"), vb = svg?.viewBox?.baseVal, k = vb?.width ? svg.getBoundingClientRect().width / vb.width : 1;
+  const pick = () => {
+    if (!isGroup) return ids.map(nodeEl).filter(Boolean);
+    const g = clusters().find(c => gidOf(c) === from); if (!g) return [];
+    const b = g.getBoundingClientRect(), inside = el => { const q = el.getBoundingClientRect(); return q.left >= b.left - 1 && q.right <= b.right + 1 && q.top >= b.top - 1 && q.bottom <= b.bottom + 1; };
+    return [g, ...clusters().filter(c => c !== g && inside(c)), ...nodes().filter(inside)];
+  };
+  // 両端が対象内のエッジは一緒に移動、片端のみのエッジは薄く表示
+  let faded = [];
+  const withEdges = list => {
+    const set = new Set(list.map(el => el.classList.contains("cluster") ? gidOf(el) : nid(el)));
+    out.querySelectorAll("path.flowchart-link").forEach(p => {
+      const e = edgeOf(p); if (!e) return;
+      const a = set.has(e.s), b = set.has(e.d), hit = p.nextElementSibling?.classList.contains("edgehit") ? [p.nextElementSibling] : [];
+      if (a && b) list.push(p, ...hit); else if (a || b) faded.push(p);
+    });
+    faded.forEach(p => p.style.opacity = ".25");
+    return list;
+  };
+  const shift = (x, y) => els.forEach(o => o.el.setAttribute("transform", `translate(${x / k},${y / k}) ${o.t}`));
+  const restore = () => { els.forEach(o => { o.el.setAttribute("transform", o.t); o.el.style.pointerEvents = o.el.style.opacity = ""; }); faded.forEach(p => p.style.opacity = ""); };
+  const back = () => { // ドロップで変化なし → 元位置へ戻るアニメーション
+    const sx = dx, sy = dy, t0 = performance.now();
+    const step = now => { const p = Math.min(1, (now - t0) / 180), e = 1 - (1 - p) ** 3; shift(sx * (1 - e), sy * (1 - e)); p < 1 ? requestAnimationFrame(step) : restore(); };
+    requestAnimationFrame(step);
+  };
+  const move = ev => {
+    if (!moving && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+    if (!moving) els = withEdges(pick()).map(el => { el.style.pointerEvents = "none"; el.style.opacity = ".75"; return { el, t: el.getAttribute("transform") || "" }; });
+    moving = true; hideHandle(); document.body.style.cursor = "grabbing"; clear();
+    dx = ev.clientX - x0; dy = ev.clientY - y0; shift(dx, dy);
+    document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.(".cluster")?.classList.add("drop");
+  };
+  const end = () => { removeEventListener("mousemove", move); removeEventListener("mouseup", up); removeEventListener("keydown", key, true); document.body.style.cursor = ""; clear(); };
+  const key = ev => { // Escでドラッグ取消
+    if (ev.key !== "Escape") return;
+    ev.preventDefault(); end();
+    if (moving) { dragged = true; setTimeout(() => dragged = false, 0); back(); }
+  };
+  const up = ev => {
+    end();
+    if (!moving) return;
+    dragged = true; setTimeout(() => dragged = false, 0);
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    const c = el?.closest?.(".cluster"), to = c ? gidOf(c) : null;
+    let ok = false;
+    if (el?.closest?.(".node")) ok = false; // ノード上へのドロップは何もしない
+    else if (isGroup) { // グループ名ドラッグ: 枠へ=入れ子 / 枠外=トップレベルへ
+      const gi = parseGroups(src.value.split("\n")).find(g => g.id === from);
+      ok = to !== from && (to || gi?.depth) && moveGroup(from, to);
+    } else ok = (c || ids.some(groupOf)) && setGroup(ids, to); // 枠へ=入る / 枠外へ=外す
+    if (ok) render().then(() => { if (els[0]?.el.isConnected) back(); }); else back(); // 描画失敗時も元位置へ
+  };
+  addEventListener("mousemove", move); addEventListener("mouseup", up); addEventListener("keydown", key, true);
+}
+// ホバー時に出る接続ハンドル(ここからドラッグで結線)
+const hdl = $("hdl");
+let hdlTimer, hdlFor = null;
+const hideHandle = () => { hdl.style.display = "none"; hdlFor = null; };
+const holdHandle = () => clearTimeout(hdlTimer);
+const leaveHandle = () => { clearTimeout(hdlTimer); hdlTimer = setTimeout(hideHandle, 200); };
+function showHandle(id, el, isGroup) {
+  if (!isFlow()) return;
+  holdHandle(); hdlFor = id;
+  const r = (isGroup ? el.querySelector(".cluster-label") || el : el).getBoundingClientRect(), g = isGroup ? el.getBoundingClientRect() : r;
+  Object.assign(hdl.style, { display:"flex", left:(g.right - 10) + "px", top:((isGroup ? g.top : r.top + r.height / 2) - 11) + "px" });
+}
+hdl.addEventListener("mouseenter", holdHandle);
+hdl.addEventListener("mouseleave", leaveHandle);
+hdl.addEventListener("mousedown", e => { if (hdlFor) { const id = hdlFor; dragLink(id, e); } });
+// 空白(グループ内含む)ドラッグで範囲選択
+let bandJust = false;
+$("view").addEventListener("mousedown", e => {
+  const v = $("view"), r = v.getBoundingClientRect();
+  if (e.button !== 0 || !isFlow() || e.clientX - r.left >= v.clientWidth || e.clientY - r.top >= v.clientHeight) return;
+  if (e.target.closest(".node, .edgehit, #hdl, .cluster-label")) return;
+  const x0 = e.clientX, y0 = e.clientY, band = $("band"), base = e.shiftKey ? [...selNodes] : [];
+  let moving = false;
+  const move = ev => {
+    if (!moving && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+    moving = true;
+    const l = Math.min(x0, ev.clientX), t = Math.min(y0, ev.clientY), rr = Math.max(x0, ev.clientX), b = Math.max(y0, ev.clientY);
+    Object.assign(band.style, { display:"block", left:l + "px", top:t + "px", width:(rr - l) + "px", height:(b - t) + "px" });
+    const hit = nodes().filter(n => { const q = n.getBoundingClientRect(); return q.right > l && q.left < rr && q.bottom > t && q.top < b; }).map(nid);
+    setNodes([...new Set([...base, ...hit])]); selEdge = selGroup = null; mark();
+  };
+  const up = () => {
+    removeEventListener("mousemove", move); removeEventListener("mouseup", up); band.style.display = "none";
+    if (moving) { bandJust = true; setTimeout(() => bandJust = false, 0); }
+  };
+  addEventListener("mousemove", move); addEventListener("mouseup", up);
+});
+$("view").addEventListener("click", () => { if (bandJust) bandJust = false; else clearSel(); });
+$("view").addEventListener("dblclick", e => { if (!e.target.closest(".node, .edgehit") && isFlow()) addNode(selNode); }); // 空白ダブルクリックでノード追加
+$("add").onclick = () => addNode(selNode);
+$("del").onclick = delSel;
+addEventListener("keydown", e => { if (e.key === "Delete" && document.activeElement === document.body) delSel(); });
+$("tsrc").onclick = () => { document.body.classList.toggle("src"); $("tsrc").classList.toggle("on"); $("tsrc").textContent = document.body.classList.contains("src") ? "ソース非表示" : "ソース表示"; };
+
+const setZoom = z => { zoom = Math.min(4, Math.max(.2, z)); out.style.transform = `scale(${zoom})`; };
+$("view").addEventListener("wheel", e => { if (e.ctrlKey) { e.preventDefault(); setZoom(zoom * (e.deltaY < 0 ? 1.1 : .9)); } }, { passive:false });
+
+const save = (blob, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+const svgText = () => { const s = out.querySelector("svg"); if (!s) return null; const c = s.cloneNode(true); c.setAttribute("xmlns", "http://www.w3.org/2000/svg"); return new XMLSerializer().serializeToString(c); };
+const doSvg = () => { const t = svgText(); if (t) save(new Blob([t], { type:"image/svg+xml" }), "diagram.svg"); };
+const doPng = () => {
+  const s = out.querySelector("svg"); if (!s) return;
+  const vb = s.viewBox.baseVal, w = vb.width || s.clientWidth, h = vb.height || s.clientHeight, k = 2;
+  const c = svgText().replace(/<svg /, `<svg width="${w}" height="${h}" `);
+  const img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas"); cv.width = w * k; cv.height = h * k;
+    const x = cv.getContext("2d"); x.fillStyle = dark ? "#14171d" : "#fff"; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(b => save(b, "diagram.png"));
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(c);
+};
+const doCopy = () => navigator.clipboard.writeText(src.value);
+$("exp").onchange = e => { ({ svg:doSvg, png:doPng, copy:doCopy })[e.target.value]?.(); e.target.value = ""; };
+
+render();
+</script>
+</body>
+</html>

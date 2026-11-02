@@ -1,0 +1,43 @@
+[tools]
+kotlin = "2.4"
+
+# ビルド実行ファイルは build/ (Debug) または build-release/ (Release) 配下に出力
+[tasks.build]
+description = "Build all modules (engine, rl, server) in debug mode"
+run = '.\kotlin.bat build'
+
+[tasks.test]
+description = "Run rule verification tests"
+run = '.\kotlin.bat test'
+
+[tasks."build-server"]
+description = "Build BS Rule Engine Server (release)"
+usage = '''
+flag "--dir <dir>" default="build-release" help="Output directory"
+'''
+run = '.\kotlin.bat build -m server -v release --build-dir {{usage.dir}}'
+
+[tasks.server]
+description = "Start BS Rule Engine Server (default port: 8090)"
+usage = '''
+flag "--port <n>" default="8090" help="Port number"
+flag "--weights <file>" help="Weights file for both players"
+flag "--depth <n>" default="1" help="Minimax search depth (1..4)"
+flag "--width <k>" default="1" help="Minimax search width (1=best move only, 0=unlimited)"
+flag "--actions <type>" default="level" help="Action enumeration strategy: level (default), compact, all"
+arg "[rest]..." var=#true help="Extra CLI arguments"
+'''
+run = '''
+powershell -Command "
+$exe = if (Test-Path '.\build-release\tasks\_server_linkMingwX64Release\server.exe') {
+    '.\build-release\tasks\_server_linkMingwX64Release\server.exe'
+} else {
+    '.\build\tasks\_server_linkMingwX64Debug\server.exe'
+}
+& $exe --port {{usage.port}} --depth {{usage.depth}} --width {{usage.width}} --actions {{usage.actions}} {% if usage.weights %}--weights {{usage.weights}}{% endif %} {% if usage.rest %}{{usage.rest | join(sep=' ')}}{% endif %}
+"
+'''
+
+[tasks."server-dev"]
+description = "Build and run server directly in debug mode"
+run = '.\kotlin.bat run -m server'

@@ -1,0 +1,12 @@
+[tasks]
+# --- Kotlin Toolchain (JetBrains 統合CLI / module.yaml Native方式) ---
+init = { description = "Kotlin Toolchain プロジェクト初期化", run = "kotlin init" }
+build = { description = "Kotlin Native アプリビルド", run = "kotlin build" }
+run = { description = "Kotlin Native アプリ実行", run = "kotlin run" }
+test = { description = "Kotlin Native テスト実行", run = "kotlin test" }
+test-all = { description = "全テスト実行 (親ディレクトリ連携用)", depends = ["test"] }
+
+# --- Kotlin 2.4.20 CLI (個別実行・確認用) ---
+version = { description = "Kotlin 2.4.20 コンパイラバージョン表示", run = "kotlinc -version" }
+compile-jvm = { description = "JVM向け一時検証コンパイル", run = "kotlinc src/nativeMain/kotlin -include-runtime -d app.jar" }
+run-jvm = { description = "JVM向け一時検証実行 (kotlinr)", depends = ["compile-jvm"], run = "kotlinr app.jar" }

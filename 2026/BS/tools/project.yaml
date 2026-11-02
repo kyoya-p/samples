@@ -1,9 +1,0 @@
-modules:
-  - jvm-cli
-  - linux-cli
-  - shared
-  - model
-  - windows-cli
-  - gamefield
-  - web-gameboard
-  - web-server

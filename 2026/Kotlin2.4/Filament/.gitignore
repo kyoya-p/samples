@@ -1,0 +1,10 @@
+/.gradle/
+/build/
+/.kotlin/
+/.idea/
+/*.iml
+/*.iws
+/*.ipr
+/out/
+/.DS_Store
+/Thumbs.db

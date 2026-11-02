@@ -1,0 +1,7 @@
+[tasks.tui]
+description = "filetui を起動"
+run = "node filetui.mjs"
+
+[tasks.test]
+description = "ヘッドレステスト実行"
+run = "node test.mjs"
