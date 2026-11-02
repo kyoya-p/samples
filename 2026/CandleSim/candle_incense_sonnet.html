@@ -37,9 +37,8 @@
   <div class="sep"></div>
   <label title="突風が起こる平均頻度 [回/分]。0 で無風">突風<input type="range" id="sGust" min="0" max="30" value="0"><output id="oGust"></output></label>
   <label>室内対流<input type="range" id="sConv" min="0" max="100" value="0"></label>
-  <label>燃焼速<input type="range" id="sSpeed" min="1" max="20" value="2"></label>
   <div class="sep"></div>
-  <label title="無風時（室内対流 0）の層流→乱流 遷移高さ。臨界Grを Gr(h)=Gr_c から決定">遷移高さ<input type="range" id="sHc" min="8" max="70" value="22"><output id="oHc"></output></label>
+  <label title="無風時（室内対流 0）の層流→乱流 遷移高さ。臨界Grを Gr(h)=Gr_c から決定">遷移高さ<input type="range" id="sHc" min="8" max="70" value="30"><output id="oHc"></output></label>
   <div class="sep"></div>
   <button class="btn" id="bReset">新しく供える</button>
 </div>
@@ -92,7 +91,7 @@ resize();
 const MAX_LEN = 170;
 const ELEV = 0.56;               // 線香の傾き [rad]
 const S = {
-  t: 0, conv: 0, hxf: 0.43, drag: null, dragged: false, speed: 2, showField: false,
+  t: 0, conv: 0, hxf: 0.43, drag: null, dragged: false, showField: false,
   len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 76, l: 6 }, { dx: 92, l: 5 }],
   wakes: [], mouse: null, phi: 0
 };
@@ -231,7 +230,7 @@ function gustAt(x, y) {
 }
 const smoke = [];                  // 行の配列 (先頭が最新)
 const FAST_TH = 0.6, FAST_FADE = 0.005, FAST_SPREAD = 1.2;   // 速度しきい値 [px/f]・消散率・拡散の加速倍率
-const CHAOS_STRETCH = 0.02;        // 筋の分散の指数増幅率 [/フレーム] (大きいほど速く分散)
+const CHAOS_STRETCH = 0.014;       // 筋の分散の指数増幅率 [/フレーム] (大きいほど速く分散)
 const NC = 11;                     // 断面の分割数 (中央 NC>>1 が帯の中心線)
 const MID = NC >> 1;
 // 筋(断面の点)ごとのローレンツ状態: 初期値を u に比例してずらす → 筋ごとに別軌道へ発散
@@ -300,7 +299,7 @@ function stepSmoke(g) {
     const gg = gustAt(r.x, r.y);
     let dT = w.m * 1.4 + (rise > 10 ? Math.hypot(gg.vx, gg.vy) * 0.02 : 0);    // 風が強いほど乱れやすい
     const ratio = gr(rise) / grc;
-    if (ratio > 1) dT += 0.03 * Math.min(3, ratio - 1);
+    if (ratio > 1) dT += 0.012 * Math.min(3, ratio - 1);
     r.turb = Math.min(1, r.turb + dT);
     if (r.turb > 0.02) r.tage++;
     const T = r.turb * r.turb * (3 - 2 * r.turb);
@@ -323,12 +322,12 @@ function stepSmoke(g) {
     // 帯の幅と巻き込み: 差動回転 (中心に近いほど速い) で渦巻きになる
     const ta = r.tage;
     const Wlam = 0.35 + rise * 0.006;                          // 層流は針のように細い (根元 0.35px)
-    const W = Wlam + r.wf * (15 * (1 - Math.exp(-ta / 42)) + 0.035 * Math.pow(ta, 0.92));
+    const W = Wlam + r.wf * (22 * (1 - Math.exp(-ta / 60)) + 0.035 * Math.pow(ta, 0.92));
     r.W = W;
     const te = Math.min(ta, 150);
     // 中心を渦の円周上へずらす: 位相が行ごとに進むのでスクリーン上で輪になる
-    const R = 0.25 * W, pa = r.phi + ta * 0.03;
-    const cx = r.x + R * Math.cos(pa) * 0.8, cy = r.y + R * Math.sin(pa) * 1.2;
+    const R = 0.55 * W, pa = r.phi + ta * 0.03;                  // 螺旋 (側面から見た巻き): 横振れ主体・縦は小さく
+    const cx = r.x + R * Math.cos(pa), cy = r.y + R * Math.sin(pa) * 0.45;
     for (let c = 0; c < NC; c++) {
       const u = c / (NC - 1) * 2 - 1;
       const r0 = Math.abs(u) * W;
@@ -342,14 +341,14 @@ function stepSmoke(g) {
         const qx = r.px[c] || cx, qy = r.py[c] || cy;
         const cc = Noise.curl(qx * 0.018 + c * 0.37, qy * 0.018 - t * 0.25, t * 0.3 + c * 0.11);
         const L = LZC[c];
-        const k = T * (0.28 + conv * 0.4) * sf;
+        const k = T * (0.18 + conv * 0.4) * sf * Math.min(1, ta / 120);   // 遷移直後は柱に沿った螺旋、乱れは徐々に増す
         // 分散の指数的増幅 (リアプノフ的): 既存の変位に比例して広がる。増幅率は筋ごとのローレンツ信号で
         // カオス的に変動するので、筋どうしの分散が時間とともに不規則かつ急速に大きくなる
         const lam = CHAOS_STRETCH * (1 + 0.8 * Math.tanh(L.y * 0.1)) * T * sf;
         r.ox[c] += k * (cc.x * 0.5 + L.x / 20 * 0.25) + lam * r.ox[c];
         r.oy[c] += k * (cc.y * 0.9 + (L.z - 24) / 12 * 0.35) - k * 0.04 + lam * r.oy[c];
         const mag = Math.hypot(r.ox[c], r.oy[c]);
-        if (mag > 420) { r.ox[c] *= 420 / mag; r.oy[c] *= 420 / mag; }   // 暴走防止の上限
+        if (mag > 130) { r.ox[c] *= 130 / mag; r.oy[c] *= 130 / mag; }   // 暴走防止の上限
       }
       r.px[c] = cx + r0 * Math.cos(ang) + wisp + dv * Math.cos(pcv) + r.ox[c];
       r.py[c] = cy + r0 * Math.sin(ang) + wisp + dv * Math.sin(pcv) + r.oy[c];
@@ -380,11 +379,11 @@ function drawSmoke() {
   // 1. 淡い霞 (広がった煙膜の気配)
   for (let i = 0; i < n; i += 3) {
     const r = smoke[i];
-    if (r.turb < 0.08) continue;
+    if (r.turb < 2) continue;                     // 霞は無効 (実写は輪郭のある襞が主体で、塊状のもやは出ない)
     const rad = r.W * 1.1 + 6;
     const a = Math.min(0.035, r.turb * 0.04) * Math.pow(1 - r.age / 420, 1.5) / (1 + rad * 0.03) * Math.min(1, r.age / 8) * (1 - r.dis);
     if (a < 0.0006) continue;
-    ctx.globalAlpha = a * 4;
+    ctx.globalAlpha = a * 0.8;
     ctx.drawImage(sprite, r.x - rad, r.y - rad, rad * 2, rad * 2);
   }
   ctx.globalAlpha = 1;
@@ -416,14 +415,14 @@ function drawSmoke() {
       const edge = (c === 0 || c === NC - 1);
       const lamEdge = edge ? 0.35 * env(r) * Math.min(1, r.W / 3) * (1 - T) : 0;     // 層流円錐の縁
       const a = center
-        ? 0.8 * env(r) * (1 - T * 0.85)
-        : lamEdge + (edge ? 0.55 : 0.28) * T * env(r) * Math.exp(-r.tage / 380) / (1 + r.W * 0.012);
+        ? 0.6 * env(r) * (1 - T * 0.7)
+        : lamEdge + (edge ? 0.4 : 0.2) * T * env(r) * Math.exp(-r.tage / 220) / (1 + r.W * 0.012);
       if (a < 0.01) continue;
       ctx.strokeStyle = `rgba(${236 - life * 30 | 0},${244 - life * 20 | 0},255,${a.toFixed(3)})`;
-      ctx.lineWidth = center ? 1.1 : (edge ? 1.1 : 0.8);
+      ctx.lineWidth = center ? 1.5 : (edge ? 1.0 : 0.8);
       ctx.beginPath();
       ctx.moveTo(r.px[c], r.py[c]);
-      const end = Math.min(n - 1, i + 5);
+      const end = Math.min(n - 1, i + 4);
       for (let j = i + 1; j <= end; j++) {
         const q = smoke[j];
         if (smoke[j - 1].brk) break;
@@ -560,7 +559,7 @@ function frame(now) {
 function tick() {
   // 燃焼 (長さ減少、一定間隔で灰が落ちる)
   if (S.len > 14) {
-    S.len -= 0.005 * S.speed;
+    S.len -= 0.01;                      // 燃焼速度 [px/フレーム] (固定)
     if (S.lastAsh - S.len > 18) {
       S.lastAsh = S.len;
       S.ashes.push({ dx: Math.cos(ELEV) * S.len + (Math.random() - 0.5) * 5, l: 4.5 + Math.random() * 3 });
@@ -654,7 +653,6 @@ cv.addEventListener("click", e => {
 
 const $ = id => document.getElementById(id);
 $("sConv").addEventListener("input", e => { S.conv = e.target.value / 100; });
-$("sSpeed").addEventListener("input", e => { S.speed = +e.target.value; });
 // 遷移高さ[cm] を1つの入力とし、臨界Grは Gr_c = Gr(h_c) として逆算 (ΔT0, K_I は固定)
 $("sHc").addEventListener("input", setHc);
 function setHc() {

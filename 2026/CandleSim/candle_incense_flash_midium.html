@@ -53,7 +53,6 @@
   <div class="sep"></div>
   <label title="突風の発生頻度 [回/分]">突風<input type="range" id="sGust" min="0" max="30" value="0"><output id="oGust"></output></label>
   <label title="室内の微小対流強度">室内対流<input type="range" id="sConv" min="0" max="100" value="0"></label>
-  <label title="線香の燃焼速度">燃焼速<input type="range" id="sSpeed" min="1" max="20" value="2"></label>
   <div class="sep"></div>
   <label title="層流から乱流へ遷移する高さ">遷移高さ<input type="range" id="sHc" min="8" max="70" value="22"><output id="oHc"></output></label>
   <div class="sep"></div>
@@ -107,7 +106,7 @@ resize();
 const MAX_LEN = 168;
 const ELEV = 0.54; // 線香の仰角 [rad]
 const S = {
-  t: 0, conv: 0, hxf: 0.44, drag: null, dragged: false, speed: 2, showField: false,
+  t: 0, conv: 0, hxf: 0.44, drag: null, dragged: false, showField: false,
   len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 72, l: 5 }, { dx: 88, l: 4.5 }],
   wakes: [], mouse: null, phi: 0
 };
@@ -617,7 +616,7 @@ function frame() {
 
 function tick(render) {
   if (S.len > 12) {
-    S.len -= 0.005 * S.speed;
+    S.len -= 0.01;                      // 燃焼速度 [px/フレーム] (固定)
     if (S.lastAsh - S.len > 18) {
       S.lastAsh = S.len;
       S.ashes.push({ dx: Math.cos(ELEV) * S.len + (Math.random() - 0.5) * 5, l: 4.0 + Math.random() * 3 });
@@ -707,7 +706,6 @@ cv.addEventListener("click", e => {
 
 const $ = id => document.getElementById(id);
 $("sConv").addEventListener("input", e => { S.conv = e.target.value / 100; });
-$("sSpeed").addEventListener("input", e => { S.speed = +e.target.value; });
 $("sHc").addEventListener("input", setHc);
 function setHc() {
   const cm = +$("sHc").value;
