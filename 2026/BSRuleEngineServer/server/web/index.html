@@ -30,6 +30,26 @@
   @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
   .panel h2 { font-size: 14px; margin: 0 0 8px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .actions-chooser {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 6px;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+  }
+  .actions-chooser.p1 {
+    background: rgba(59, 130, 246, 0.18);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+  }
+  .actions-chooser.p2 {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+  }
   /* 領域ラベル（フィールド／手札）。下線を引くと直下のカードと切り離されて見えるので線は引かず、
      ラベルを中身に寄せてひとかたまりに見せる */
   .zone-label {
@@ -1130,6 +1150,7 @@
 <div id="training-banner" class="hidden"></div>
 
 <div class="toolbar">
+  <button id="btn-switch-playmat2" class="secondary" title="リアルカード盤面 (Playmat2) へ切り替える" onclick="location.href='/playmat2' + location.search" style="background:#0d9488; border-color:#14b8a6; color:#ffffff; font-weight:bold;">🎴 Playmat2 (リアルカード盤面) へ切替</button>
   <button id="btn-settings" class="secondary" title="フォーマット・シード・表示モード・GameServer URL・評価方式・重みファイルを設定">⚙ 設定</button>
   <button id="btn-new" class="primary">新規ゲーム開始</button>
   <button id="btn-restart" class="secondary" title="同じ初期山札・手札で初手からやり直す">🔄 同じ条件でリスタート</button>
@@ -1257,6 +1278,14 @@
 
 <div class="layout">
   <div id="board">
+    <div id="opened-cards-banner" style="display:none; background:rgba(15,23,42,0.95); border:2px solid #38bdf8; border-radius:8px; padding:12px; margin-bottom:12px; flex-direction:column; gap:8px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:6px;">
+        <span style="font-weight:bold; color:#38bdf8; font-size:13px;">👁️ オープンされたカード (相手にも公開中)</span>
+        <button class="secondary" style="padding:2px 8px; font-size:11px;" onclick="$('opened-cards-banner').style.display='none'">✕ 閉じる</button>
+      </div>
+      <div id="opened-cards-content" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+    </div>
+
     <div id="winner" class="winner-banner hidden"></div>
 
     <div class="panel">
@@ -1324,7 +1353,7 @@
 
   <div id="sidebar">
     <div class="panel">
-      <h2>選択可能なアクション</h2>
+      <h2><span id="actions-chooser" class="actions-chooser"></span>選択可能なアクション</h2>
       <div id="groups"><div class="empty">「新規ゲーム開始」を押してください</div></div>
     </div>
     <div class="panel">
@@ -1485,7 +1514,7 @@ function coreSourceElement(sourceId) {
 
 function getVanishingCardIds(option) {
   if (!option) return [];
-  if (Array.isArray(option.vanishing_card_ids) && option.vanishing_card_ids.length > 0) {
+  if (Array.isArray(option.vanishing_card_ids)) {
     return option.vanishing_card_ids;
   }
   const chooser = current?.choosing_player || current?.active_player || 1;
@@ -1510,7 +1539,9 @@ function getVanishingCardIds(option) {
 
   if (ids.length === 0 && Array.isArray(option.core_effects)) {
     for (const card of field) {
-      const keep = (card.lv_costs && card.lv_costs[0]) ?? (card.category === "NEXUS" ? 0 : 1);
+      const isNexus = card.category === "NEXUS" || (card.lv_costs && card.lv_costs[0] === 0);
+      if (isNexus) continue;
+      const keep = (card.lv_costs && card.lv_costs[0]) ?? 1;
       if (keep === 0) continue;
       const totalCores = parseInt(card.cores || "0", 10);
       let netChange = 0;
@@ -2721,27 +2752,83 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
   }
 }
 
+function normalizeCostPlacement(text) {
+  const parts = text.split(/[,、]/).map(s => s.trim());
+  const normalizedParts = parts.map(part => {
+    if (part.startsWith("コスト")) {
+      if (part.includes("不要")) return "コスト不要";
+      const normal = (part.match(/🔷/gu) || []).length;
+      const soul = (part.match(/🔶/gu) || []).length;
+      const total = normal + soul;
+      if (total > 0) return `コスト${"🔷".repeat(total)}`;
+      const numMatch = part.match(/\d+/);
+      if (numMatch) {
+        const n = parseInt(numMatch[0], 10);
+        return n === 0 ? "コスト不要" : `コスト${"🔷".repeat(n)}`;
+      }
+      return part;
+    }
+    if (part.startsWith("配置コア") || part.includes("コアは置かない") || part.includes("配置コアなし")) {
+      if (part.includes("コアは置かない")) return "コアは置かない";
+      if (part.includes("なし") || part.includes("0")) return "配置コアなし";
+      const normal = (part.match(/🔷/gu) || []).length;
+      const soul = (part.match(/🔶/gu) || []).length;
+      const total = normal + soul;
+      if (total > 0) return `配置コア${"🔷".repeat(total)}`;
+      const numMatch = part.match(/\d+/);
+      if (numMatch) {
+        const n = parseInt(numMatch[0], 10);
+        return n === 0 ? "配置コアなし" : `配置コア${"🔷".repeat(n)}`;
+      }
+      return part;
+    }
+    return part;
+  });
+  return normalizedParts.join(", ");
+}
+
 function splitOptionDetail(detail) {
-  // 例: "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
+  // 例: "コスト🔷, 配置コア🔷 ⚠️#3 ストラレイ消滅, (支払:R:🔷, 配置:R:🔷)"
+  //     "コスト3, 配置コア:1s, (支払:R:3, 配置:R:1s)"
   const match = detail.match(/^(.*?)[,、]?\s*(\(([^)]+)\))$/);
-  if (match) {
-    return {
-      costPlacement: match[1].trim(),
-      sourcesLabel: match[2].trim(),
-      innerSources: match[3].trim()
-    };
+  let rawCostPlacement = match ? match[1].trim() : detail.trim();
+  const innerSources = match ? match[3].trim() : "";
+  const baseSourcesLabel = match ? match[2].trim() : "";
+
+  // 消滅情報 (⚠️...消滅 や ▲...消滅) を抽出
+  let vanishText = "";
+  const vanishMatch = rawCostPlacement.match(/([⚠️▲].*?消滅)/u);
+  if (vanishMatch) {
+    vanishText = vanishMatch[1].trim();
+    // rawCostPlacement から消滅情報を除去し、前後のカンマ・空白を整理
+    rawCostPlacement = rawCostPlacement.replace(/[,、]?\s*[⚠️▲].*?消滅/gu, "").trim();
   }
+
+  // 1段目の見出しキー: ソウルコア・通常コアを合算した必要コア総数で正規化
+  const costPlacement = normalizeCostPlacement(rawCostPlacement);
+
+  // 2段目の選択肢ラベル（消滅情報があれば先頭に付与してどのカードが消滅するかを明示）
+  let sourcesLabel = baseSourcesLabel;
+  if (vanishText) {
+    sourcesLabel = sourcesLabel ? `${vanishText} ${sourcesLabel}` : vanishText;
+  }
+  if (!sourcesLabel) {
+    sourcesLabel = detail.trim();
+  }
+
   return {
-    costPlacement: detail.trim(),
-    sourcesLabel: detail.trim(),
-    innerSources: ""
+    rawCostPlacement,
+    costPlacement,
+    sourcesLabel,
+    innerSources,
+    vanishText
   };
 }
 
 function groupOptionsByCostPlacement(options) {
   const map = new Map();
   for (const o of options) {
-    const { costPlacement, sourcesLabel, innerSources } = splitOptionDetail(o.detail);
+    const { rawCostPlacement, costPlacement, sourcesLabel, innerSources, vanishText } = splitOptionDetail(o.detail);
     if (!map.has(costPlacement)) {
       map.set(costPlacement, {
         costPlacement,
@@ -2750,9 +2837,11 @@ function groupOptionsByCostPlacement(options) {
     }
     map.get(costPlacement).options.push({
       ...o,
+      rawCostPlacement,
       costPlacement,
       sourcesLabel,
-      innerSources
+      innerSources,
+      vanishText
     });
   }
   return Array.from(map.values());
@@ -2784,7 +2873,10 @@ function renderOptionsHierarchy(container, options, maxEval, isNearBest) {
       ? (terminalForbidden ? "" : `<span class="exec-icon" title="クリックで実行">⏎</span>`)
       : `<span class="arrow-icon">▶</span>`;
 
-    const formattedCostPlacement = formatWithFieldSeq(sg.costPlacement, sg.options?.[0]?.core_effects);
+    let formattedCostPlacement = formatWithFieldSeq(sg.costPlacement, sg.options?.[0]?.core_effects);
+    if (isTerminalSg && sg.options[0]?.vanishText) {
+      formattedCostPlacement += ` ${sg.options[0].vanishText}`;
+    }
     head.innerHTML = `<span class="cost-title">${headIcon}${statusPrefix}${esc(formattedCostPlacement)}${patternCountStr}</span>${bestBadge}`;
     if (isTerminalSg) head.classList.toggle("repeats-position", terminalRepeats);
     // 真に選べない(forbidden)ときだけボタンを無効化する。onclick内で弾くだけでは、
@@ -3226,6 +3318,26 @@ function render(data) {
   if ($("room-display")) $("room-display").textContent = roomName;
   if ($("room-name")) $("room-name").textContent = roomName;
 
+  // オープンされたカードの表示
+  const openedBanner = $("opened-cards-banner");
+  const openedContent = $("opened-cards-content");
+  if (openedBanner && openedContent) {
+    if (data.opened_cards && data.opened_cards.length > 0) {
+      openedContent.innerHTML = data.opened_cards.map(c => `
+        <div style="display:flex; align-items:center; gap:8px; background:#1e293b; border:1px solid #334155; border-radius:6px; padding:6px 10px;">
+          <img src="${c.image_url}" style="width:40px; height:56px; border-radius:4px;" alt="${esc(c.name)}">
+          <div>
+            <div style="font-weight:bold; font-size:13px; color:#38bdf8;">${esc(c.name)}</div>
+            <div style="font-size:11px; color:#94a3b8;">コスト: ${c.cost} / 軽減: ${esc(c.reduction || '-')}</div>
+          </div>
+        </div>
+      `).join("");
+      openedBanner.style.display = "flex";
+    } else {
+      openedBanner.style.display = "none";
+    }
+  }
+
   // カード名から画像URLへのマップを更新、およびフィールドカード通し番号の事前確定
   cardImageMap = {};
   [data.player, data.opponent].forEach(p => {
@@ -3256,6 +3368,19 @@ function render(data) {
   const p2Chooses = (chooser === 2);
   const p1IsActive = (data.active_player === 1);
   const p2IsActive = (data.active_player === 2);
+
+  // 「選択可能なアクション」の前に Player 1・2 のどちらが選択するかを明示
+  const actionsChooserEl = $("actions-chooser");
+  if (actionsChooserEl) {
+    if (data.winner != null) {
+      actionsChooserEl.textContent = "";
+      actionsChooserEl.className = "actions-chooser";
+    } else {
+      actionsChooserEl.textContent = `【Player ${chooser}】`;
+      actionsChooserEl.className = `actions-chooser p${chooser}`;
+      actionsChooserEl.title = `Player ${chooser} がアクションを選択中`;
+    }
+  }
 
   const p1Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(1) : "g1_g2-best.gru.weight";
   const p2Weight = (typeof getPlayerWeightLabel === "function") ? getPlayerWeightLabel(2) : "g1_g2-best.gru.weight";

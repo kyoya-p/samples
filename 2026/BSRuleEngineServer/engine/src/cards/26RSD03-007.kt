@@ -1,7 +1,6 @@
-package bstools.model.cards.rsd03
+package bstools.model.cards
 
 import bstools.model.*
-import bstools.model.effects.CardScript
 import bstools.model.effects.CardScriptRegistry
 
 /**
@@ -12,8 +11,16 @@ import bstools.model.effects.CardScriptRegistry
  * 疲労状態の相手のスピリット1体を指定できる。
  * このバトル中、そのスピリットは可能なら疲労状態でもブロックしなければならない。
  */
-object Card26RSD03_007 : CardScript {
-    override val cardNo: String = "26RSD03-007"
+object Card26RSD03_007 : CardDefinition {
+    override val data: CardData = CardData(
+cardNo = "26RSD03-007", name = "ガリザロト", cost = 5,
+        colors = listOf(CardColor.GREEN),
+        reductionSymbols = listOf(CardColor.GREEN, CardColor.GREEN, CardColor.GREEN),
+        category = CardCategory.SPIRIT, lvCosts = listOf(1, 2),
+        symbols = listOf(CardColor.GREEN), systems = listOf("甲魚"),
+        effect = "[Lv1-2]『アタック時』疲労状態の相手のスピリット1体を指定できる。このバトル中、それは可能なら疲労状態でもブロックしなければならない。\n[Lv2]《真界放》『アタック中』このスピリットをBP+2000する。",
+        lvBps = listOf(5000, 6000), shinkai = true
+    )
 
     fun register() {
         CardScriptRegistry.register(this)
@@ -39,7 +46,7 @@ object Card26RSD03_007 : CardScript {
                     index = nextIndex(),
                     type = "ATTACK",
                     category = "🗡️【アタック】 ${attacker.displayName}",
-                    detail = "${attacker.displayName} でアタック宣言 ➔ 指定: ${target.displayName} (疲労ブロック強制, Lv${attacker.level}, BP${attacker.currentBp})",
+                    detail = "${attacker.displayName} でアタック宣言 ➔ 指定: ${target.displayName} (疲労ブロック強制, Lv${attacker.level}, BP${attacker.effectiveBp(state, isAttackingHypothetical = true)})",
                     targetInstanceId = attacker.instanceId,
                     effectTargetId = target.instanceId
                 )
@@ -52,13 +59,24 @@ object Card26RSD03_007 : CardScript {
                 index = nextIndex(),
                 type = "ATTACK",
                 category = "🗡️【アタック】 ${attacker.displayName}",
-                detail = "${attacker.displayName} でアタック宣言 (指定なし, Lv${attacker.level}, BP${attacker.currentBp})",
+                detail = "${attacker.displayName} でアタック宣言 (指定なし, Lv${attacker.level}, BP${attacker.effectiveBp(state, isAttackingHypothetical = true)})",
                 targetInstanceId = attacker.instanceId,
                 effectTargetId = null
             )
         )
 
         return actions
+    }
+
+    override fun computeBpModifier(
+        state: GameState,
+        card: FieldCard,
+        isAttackingHypothetical: Boolean
+    ): Int {
+        if (card.level >= 2 && (state.attackingCardId == card.instanceId || isAttackingHypothetical)) {
+            return 2000
+        }
+        return 0
     }
 
     override fun onAttack(

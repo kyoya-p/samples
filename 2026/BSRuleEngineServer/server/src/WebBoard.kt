@@ -19,7 +19,9 @@ data class WebCardDto(
     val exhausted: Boolean = false,
     val image_url: String = "",
     val is_attacking: Boolean = false,
-    val seq: Int? = null
+    val seq: Int? = null,
+    val category: String = "SPIRIT",
+    val lv_costs: List<Int> = emptyList()
 )
 
 @Serializable
@@ -94,6 +96,8 @@ data class WebGameStateDto(
     val messages: List<String> = emptyList(),
     val seed: Long? = null,
     val attacking_card_id: String? = null,
+    val blocking_card_id: String? = null,
+    val opened_cards: List<WebCardDto> = emptyList(),
     val evaluated_count: Long = 0L,
     val visited_count: Int = 0,
     val replay_steps: List<ReplayStepDto> = emptyList(),
@@ -158,7 +162,7 @@ fun vanishingCardIdsOf(field: List<FieldCard>, action: GameAction): List<String>
                 val inn = action.moves.filter { it.toId == fc.instanceId }.sumOf { it.normal + it.soul }
                 fc.cores.total - out + inn
             }
-            action.type == "SUMMON" || action.type == "USE_MAGIC" -> {
+            action.type == "SUMMON" || action.type == "USE_MAGIC" || action.type == "FLASH_SUMMON" -> {
                 val out = action.payFrom.filter { it.sourceId == fc.instanceId }.sumOf { it.normal + it.soul } +
                           action.placeFrom.filter { it.sourceId == fc.instanceId }.sumOf { it.normal + it.soul }
                 if (out == 0) fc.cores.total else fc.cores.total - out
@@ -194,13 +198,15 @@ private fun imageUrl(cardNo: String) = "https://www.battlespirits.com/images/car
 private fun cardDto(id: String, c: CardData) = WebCardDto(
     id = id, card_no = c.cardNo, name = c.name, cost = c.cost,
     reduction = c.reductionSymbols.joinToString("") { it.displayName },
-    symbols = c.symbols.joinToString("") { it.displayName }, cores = "0", image_url = imageUrl(c.cardNo)
+    symbols = c.symbols.joinToString("") { it.displayName }, cores = "0", image_url = imageUrl(c.cardNo),
+    category = c.category.name, lv_costs = c.lvCosts
 )
 
 private fun fieldDto(f: FieldCard, state: GameState) = WebCardDto(
     id = f.instanceId, card_no = f.cardNo, name = f.name, cost = f.cost,
-    symbols = f.symbols.joinToString("") { it.displayName }, cores = f.cores.format(), lv = f.level, bp = f.currentBp,
-    exhausted = f.isExhausted, image_url = imageUrl(f.cardNo), is_attacking = f.instanceId == state.attackingCardId, seq = f.seq
+    symbols = f.symbols.joinToString("") { it.displayName }, cores = f.cores.format(), lv = f.level, bp = f.effectiveBp(state),
+    exhausted = f.isExhausted, image_url = imageUrl(f.cardNo), is_attacking = f.instanceId == state.attackingCardId, seq = f.seq,
+    category = f.category.name, lv_costs = f.lvCosts
 )
 
 fun buildWebGameStateDto(
@@ -253,6 +259,7 @@ fun buildWebGameStateDto(
     val nLabel = when (state.step) {
         Step.MAIN -> "メインステップ終了"
         Step.ATTACK_DECLARATION -> "アタックステップ終了"
+        Step.FLASH_TIMING -> if (state.flashPassCount == 0) "フラッシュをパス (相手へ)" else "フラッシュをパス (ブロックへ)"
         Step.BLOCK_DECLARATION -> "ブロックを選択してください"
         Step.MAIN_2 -> "第2メインステップ終了"
         Step.END -> "ターン終了"
@@ -265,7 +272,14 @@ fun buildWebGameStateDto(
         turn = state.turn,
         active_player = state.activePlayerId,
         choosing_player = state.choosingPlayerId,
-        phase = "${state.step.displayName} [${state.format.displayName}]",
+        phase = run {
+            val stepName = if (state.step == Step.FLASH_TIMING && state.blockingCardId != null) {
+                "フラッシュタイミング [ブロック後]"
+            } else {
+                state.step.displayName
+            }
+            "$stepName [${state.format.displayName}]"
+        },
         player = WebPlayerDto(
             player_id = active.playerId, life = active.life, reserve = active.reserve.format(),
             trash_cores = active.trash.format(), deck_count = active.deck.size, hand_count = active.hand.size,
@@ -282,10 +296,10 @@ fun buildWebGameStateDto(
         view_mode = if (isGod) "god" else "play",
         viewer = viewer,
         can_act = canAct,
-        n_index = if (!canAct || state.step == Step.BLOCK_DECLARATION) null else 999,
+        n_index = if (!canAct || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING) null else 999,
         eval_option_count = PlaymatEval.evaluatedOptionCount(state),
         n_label = nLabel,
-        n_eval = if (state.winner != null || state.step == Step.BLOCK_DECLARATION) null else PlaymatEval.stepEndValue(state),
+        n_eval = if (state.winner != null || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING) null else PlaymatEval.stepEndValue(state),
         can_undo = canUndo,
         can_redo = canRedo,
         winner = state.winner,
@@ -294,6 +308,8 @@ fun buildWebGameStateDto(
         },
         seed = state.seed,
         attacking_card_id = state.attackingCardId,
+        blocking_card_id = state.blockingCardId,
+        opened_cards = state.openedCards.map { cardDto("opened_${it.cardNo}", it) },
         evaluated_count = state.evaluatedCount,
         visited_count = state.visitedPositions.size,
         replay_steps = replaySteps,
@@ -301,12 +317,16 @@ fun buildWebGameStateDto(
     )
 }
 
-private var cachedHtml: String? = null
-
 @OptIn(ExperimentalForeignApi::class)
-fun loadHtmlFile(): String {
-    cachedHtml?.let { return it }
-    for (p in listOf("server/web/index.html", "web/index.html", "playmat/web/index.html", "../server/web/index.html", "../web/index.html", "../playmat/web/index.html")) {
+fun loadHtmlFile(filename: String = "index.html"): String {
+    for (p in listOf(
+        "server/web/$filename",
+        "web/$filename",
+        "playmat/web/$filename",
+        "../server/web/$filename",
+        "../web/$filename",
+        "../playmat/web/$filename"
+    )) {
         val f = fopen(p, "rb") ?: continue
         fseek(f, 0, SEEK_END)
         val size = ftell(f)
@@ -318,11 +338,10 @@ fun loadHtmlFile(): String {
                 buf[size] = 0.toByte()
                 fclose(f)
                 val html = buf.toKString()
-                cachedHtml = html
                 return html
             }
         }
         fclose(f)
     }
-    return "<html><body><h1>BS Rule Engine Server Playmat</h1><p>server/web/index.html が見つかりません</p></body></html>"
+    return "<html><body><h1>BS Rule Engine Server Playmat</h1><p>server/web/$filename が見つかりません</p></body></html>"
 }

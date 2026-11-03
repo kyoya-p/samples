@@ -1,5 +1,7 @@
 package bstools.model
 
+import bstools.model.effects.CardScriptRegistry
+
 /**
  * Lv単位の正規形列挙 (`--actions level`)。
  *
@@ -25,6 +27,14 @@ fun enumerateLevelActions(state: GameState): List<GameAction> {
     if (state.winner != null) return emptyList()
     if (state.step != Step.MAIN && state.step != Step.MAIN_2) return markRepetitions(state, enumerateRawActions(state))
     val p = state.choosingPlayer
+
+    // 総合ルール 8-1: ステップ開始時に同時発揮する効果がある場合、プレイヤーが解決順を選んで1つずつ解決する。
+    // 未解決のステップ開始時効果がある間は、通常のメインステップ行動は行えないため、それらの効果選択肢のみを優先列挙する。
+    val stepStartActs = enumerateStepStartEffects(state, p, state.step) { 1 }
+    if (stepStartActs.isNotEmpty()) {
+        return markRepetitions(state, stepStartActs).mapIndexed { i, a -> a.copy(index = i + 1) }
+    }
+
     val prefix = if (state.step == Step.MAIN_2) "[第2メイン] " else ""
     val acts = ArrayList<GameAction>()
     for (handIdx in p.hand.indices.distinctBy { p.hand[it].cardNo }) {
@@ -32,13 +42,21 @@ fun enumerateLevelActions(state: GameState): List<GameAction> {
     }
     acts.addAll(levelChanges(state, p))
     acts.addAll(soulSwaps(state, p))
+    for (fc in p.field) {
+        val script = CardScriptRegistry.get(fc.cardNo)
+        if (script != null) {
+            acts.addAll(script.enumerateFieldActions(state, fc, p) { acts.size + 1 })
+        }
+    }
     val distinctActs = acts.distinctBy { actionKey(it) }
     return markRepetitions(state, distinctActs).mapIndexed { i, a -> a.copy(index = i + 1) }
 }
 
 private fun actionKey(a: GameAction): String = when (a.type) {
     "MOVE_CORE" -> "MOVE:${a.category}:${a.targetInstanceId}:${a.moves.joinToString { "${it.fromId}->${it.toId}:${it.normal},${it.soul}" }}"
-    "SUMMON", "USE_MAGIC" -> "PLAY:${a.category}:${a.handIndex}:pay[${a.payFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]:place[${a.placeFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]"
+    "SUMMON", "FLASH_SUMMON", "USE_MAGIC" -> "PLAY:${a.category}:${a.handIndex}:pay[${a.payFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]:place[${a.placeFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]"
+    "ACTIVATE_FIELD" -> "ACTIVATE:${a.targetInstanceId}:${a.handIndex}:${a.detail}"
+    "STEP_START_EFFECT" -> "STEP_START:${a.targetInstanceId}:${a.detail}"
     else -> "${a.type}:${a.category}:${a.targetInstanceId}:${a.detail}"
 }
 
@@ -67,8 +85,7 @@ private fun levelPlays(p: PlayerState, card: CardData, handIdx: Int, prefix: Str
     }
 
     val minimum = requiredCoresOnSummon(card)
-    val maxCost = card.lvCosts.maxOrNull() ?: 1
-    val thresholds = (minimum..minOf(maxCost, maxPlace)).toList()
+    val thresholds = (minimum..maxPlace).toList()
 
     for (t in thresholds) {
         out.addAll(playOptions(card, handIdx, category, actionType, cost, t, sources, limit = 50))

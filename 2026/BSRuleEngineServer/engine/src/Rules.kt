@@ -249,6 +249,11 @@ fun positionHash(state: GameState): Long {
         fieldHashes.sort()
         for (h in fieldHashes) mixLong(h)
     }
+    for (eff in state.usedOncePerTurnEffects.sorted()) {
+        mixStr(eff)
+    }
+    mixInt(state.flashPriorityPlayerId ?: -1)
+    mixInt(state.flashPassCount)
     return hash
 }
 
@@ -272,7 +277,11 @@ fun GameState.snapshot(): GameState = GameState(
     visitedPositions = visitedPositions,
     nextCardSeq = nextCardSeq,
     evaluatedCount = evaluatedCount,
-    coreWindow = coreWindow.toMutableSet()
+    coreWindow = coreWindow.toMutableSet(),
+    usedOncePerTurnEffects = usedOncePerTurnEffects.toMutableSet(),
+    openedCards = openedCards.toMutableList(),
+    flashPriorityPlayerId = flashPriorityPlayerId,
+    flashPassCount = flashPassCount
 )
 
 private fun PlayerState.snapshot(): PlayerState = PlayerState(
@@ -503,8 +512,31 @@ private fun coreMoveOptions(p: PlayerState, sources: List<CoreSource>, limit: In
  * それ以外のステップ (アタック・ブロック等) はもともとエンティティ単位なので従来の列挙と同じ。
  * index は 1 からの通し番号。同一局面に戻る手には印を付ける。
  */
+/**
+ * 現在のステップ開始時に発揮する全効果を自陣カードから収集する。
+ * 複数存在する場合、プレイヤーはこの中から解決順を選択する (総合ルール 8-1: 同時発揮の解決)。
+ */
+fun enumerateStepStartEffects(
+    state: GameState,
+    player: PlayerState,
+    step: Step,
+    nextIndex: () -> Int
+): List<GameAction> {
+    if (state.winner != null) return emptyList()
+    val acts = mutableListOf<GameAction>()
+    for (fc in player.field) {
+        val script = CardScriptRegistry.get(fc.cardNo) ?: continue
+        acts.addAll(script.enumerateStepStartActions(state, fc, player, step, nextIndex))
+    }
+    return acts
+}
+
 fun enumerateAllActions(state: GameState): List<GameAction> {
     if (state.winner == null && (state.step == Step.MAIN || state.step == Step.MAIN_2)) {
+        val stepStartActs = enumerateStepStartEffects(state, state.choosingPlayer, state.step) { 1 }
+        if (stepStartActs.isNotEmpty()) {
+            return stepStartActs.mapIndexed { i, a -> a.copy(index = i + 1) }
+        }
         return (enumerateAllPlays(state) + enumerateRearrangements(state)).mapIndexed { i, a -> a.copy(index = i + 1) }
     }
     return markRepetitions(state, enumerateRawActions(state))
@@ -610,6 +642,11 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
     var idx = 1
 
     if (state.step == Step.MAIN || state.step == Step.MAIN_2) {
+        val stepStartActs = enumerateStepStartEffects(state, p, state.step) { idx++ }
+        if (stepStartActs.isNotEmpty()) {
+            return stepStartActs
+        }
+
         val prefix = if (state.step == Step.MAIN_2) "[第2メイン] " else ""
 
         val sources = coreSources(p)
@@ -639,6 +676,13 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
             acts.add(action.copy(index = idx++))
         }
 
+        // 盤面カードの起動型効果 (例: ネクサスやスピリットの【起動：メイン】など)
+        for (fc in p.field) {
+            val script = CardScriptRegistry.get(fc.cardNo)
+            if (script != null) {
+                acts.addAll(script.enumerateFieldActions(state, fc, p) { idx++ })
+            }
+        }
     }
 
     if (state.step == Step.ATTACK_DECLARATION) {
@@ -661,8 +705,63 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
                     index = idx++,
                     type = "ATTACK",
                     category = "🗡️【アタック】 ${fc.displayName}",
-                    detail = "${fc.displayName} でアタック宣言 (Lv${fc.level}, BP${fc.currentBp}, 通ればライフ-${coreIcons(symbolCount, 0)})",
+                    detail = "${fc.displayName} でアタック宣言 (Lv${fc.level}, BP${fc.effectiveBp(state, isAttackingHypothetical = true)}, 通ればライフ-${coreIcons(symbolCount, 0)})",
                     targetInstanceId = fc.instanceId
+                )
+            )
+        }
+    }
+
+    // フラッシュタイミングおよびブロック宣言ステップにおけるフラッシュ効果・マジックの列挙
+    if (state.step == Step.FLASH_TIMING || state.step == Step.BLOCK_DECLARATION) {
+        val opp = state.notChoosingPlayer
+
+        // 1. 手札のフラッシュマジック (CardCategory.MAGIC かつ effect に「フラッシュ」を含む)
+        val distinctHand = p.hand.indices.distinctBy { p.hand[it].cardNo }
+        val sources = coreSources(p)
+        for (handIdx in distinctHand) {
+            val card = p.hand[handIdx]
+            if (card.category == CardCategory.MAGIC && card.effect.contains("フラッシュ")) {
+                val cost = summonCost(card, p)
+                val totalAvail = sources.sumOf { it.availNormal + it.availSoul }
+                if (totalAvail >= cost) {
+                    val category = "✨【フラッシュ使用】 ${card.name}"
+                    for (action in playOptions(card, handIdx, category, "USE_MAGIC", cost, 0, sources)) {
+                        acts.add(action.copy(index = idx++))
+                    }
+                }
+            }
+        }
+
+        // 2. カード固有スクリプトによるフラッシュ効果 (例: フラッティの手札からのフラッシュ召喚など)
+        p.hand.forEachIndexed { hIdx, card ->
+            val script = CardScriptRegistry.get(card.cardNo)
+            if (script != null) {
+                acts.addAll(script.enumerateFlashActions(state, p, opp, hIdx) { idx++ })
+            }
+        }
+        for (fc in p.field) {
+            val script = CardScriptRegistry.get(fc.cardNo)
+            if (script != null) {
+                acts.addAll(script.enumerateFlashActions(state, p, opp, -1) { idx++ })
+            }
+        }
+
+        // 3. アタック直後・ブロック後のフラッシュタイミングにおけるパス選択肢
+        if (state.step == Step.FLASH_TIMING) {
+            val nextDesc = if (state.flashPassCount == 0) {
+                "フラッシュをパス (相手へ優先権を移行)"
+            } else if (state.blockingCardId != null) {
+                "フラッシュをパス (バトル解決へ移行)"
+            } else {
+                "フラッシュをパス (ブロック宣言へ移行)"
+            }
+            acts.add(
+                GameAction(
+                    index = idx++,
+                    type = "PASS_FLASH",
+                    category = "⏩【フラッシュパス】",
+                    detail = nextDesc
                 )
             )
         }
@@ -672,7 +771,7 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
     // 回復状態のスピリット1体だけがブロックでき、ブロックしない選択もできる。
     if (state.step == Step.BLOCK_DECLARATION) {
         val attacker = state.notChoosingPlayer.field.find { it.instanceId == state.attackingCardId }
-        val attackerBp = attacker?.currentBp ?: 0
+        val attackerBp = attacker?.effectiveBp(state) ?: 0
         val attackerName = attacker?.displayName ?: "相手"
         val lifeLoss = maxOf(1, attacker?.symbols?.size ?: 1)
 
@@ -682,9 +781,10 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
         if (forcedBlocker != null) {
             // ガリザロト等の効果により「疲労状態でもブロックしなければならない」スピリットが存在する場合:
             // そのスピリットによるブロックのみが合法手となり、PASS_BLOCKや他スピリットでのブロックは選べない
+            val blockerBp = forcedBlocker.effectiveBp(state)
             val outcome = when {
-                forcedBlocker.currentBp > attackerBp -> "${attackerName}を破壊"
-                forcedBlocker.currentBp < attackerBp -> "${forcedBlocker.displayName}が破壊される"
+                blockerBp > attackerBp -> "${attackerName}を破壊"
+                blockerBp < attackerBp -> "${forcedBlocker.displayName}が破壊される"
                 else -> "相打ち"
             }
             acts.add(
@@ -692,7 +792,7 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
                     index = idx++,
                     type = "BLOCK",
                     category = "🛡️【強制ブロック】 ${forcedBlocker.displayName}",
-                    detail = "${forcedBlocker.displayName} でブロック (疲労強制ブロック, BP${forcedBlocker.currentBp} vs BP${attackerBp} → $outcome)",
+                    detail = "${forcedBlocker.displayName} でブロック (疲労強制ブロック, BP${blockerBp} vs BP${attackerBp} → $outcome)",
                     targetInstanceId = forcedBlocker.instanceId
                 )
             )
@@ -700,9 +800,10 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
             for (fc in p.field) {
                 if (fc.isExhausted || fc.level <= 0 || fc.category != CardCategory.SPIRIT) continue
                 // BPが低い方が破壊される。同じなら相打ち (総合ルール 8-1-6-1)
+                val blockerBp = fc.effectiveBp(state)
                 val outcome = when {
-                    fc.currentBp > attackerBp -> "${attackerName}を破壊"
-                    fc.currentBp < attackerBp -> "${fc.displayName}が破壊される"
+                    blockerBp > attackerBp -> "${attackerName}を破壊"
+                    blockerBp < attackerBp -> "${fc.displayName}が破壊される"
                     else -> "相打ち"
                 }
                 acts.add(
@@ -710,7 +811,7 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
                         index = idx++,
                         type = "BLOCK",
                         category = "🛡️【ブロック】 ${fc.displayName}",
-                        detail = "${fc.displayName} でブロック (BP${fc.currentBp} vs BP${attackerBp} → $outcome)",
+                        detail = "${fc.displayName} でブロック (BP${blockerBp} vs BP${attackerBp} → $outcome)",
                         targetInstanceId = fc.instanceId
                     )
                 )
@@ -732,6 +833,11 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
 /** ターン開始時の非対話ステップ (スタート→コア→ドロー→リフレッシュ) をまとめて処理する */
 fun beginTurn(state: GameState, messages: MutableList<String>) {
     val p = state.activePlayer
+    state.coreWindow.clear()
+    state.usedOncePerTurnEffects.clear()
+    state.openedCards.clear()
+    state.flashPriorityPlayerId = null
+    state.flashPassCount = 0
 
     // スタートステップ: デッキ0枚なら敗北 (総合ルール 7-2-2 / 1-3-2-2)
     state.step = Step.START
@@ -771,6 +877,42 @@ fun beginTurn(state: GameState, messages: MutableList<String>) {
     state.step = Step.MAIN
 }
 
+/**
+ * ブロック後フラッシュタイミング終了後のバトル解決 (総合ルール 8-1-5 / 8-1-6)。
+ * スピリット同士のBPを比較し、低い方を破壊する (同値は相打ち)。
+ */
+fun resolveBattle(state: GameState, messages: MutableList<String>) {
+    val attackerOwner = state.activePlayer
+    val blockerOwner = state.opponentPlayer
+    val attacker = attackerOwner.field.find { it.instanceId == state.attackingCardId }
+    val blocker = blockerOwner.field.find { it.instanceId == state.blockingCardId }
+
+    if (attacker != null && blocker != null) {
+        val attackerBp = attacker.effectiveBp(state)
+        val blockerBp = blocker.effectiveBp(state)
+        messages.add("⚔️ バトル解決 (BP勝負): 「${attacker.name}」(BP$attackerBp) vs 「${blocker.name}」(BP$blockerBp)")
+        when {
+            attackerBp > blockerBp -> destroySpirit(blockerOwner, blocker, messages)
+            attackerBp < blockerBp -> destroySpirit(attackerOwner, attacker, messages)
+            else -> {
+                destroySpirit(blockerOwner, blocker, messages)
+                destroySpirit(attackerOwner, attacker, messages)
+            }
+        }
+    } else if (attacker != null && blocker == null) {
+        messages.add("ℹ️ ブロッカーがフィールドを離れたためBP比べをスキップ")
+    } else if (attacker == null && blocker != null) {
+        messages.add("ℹ️ アタッカーがフィールドを離れたためBP比べをスキップ")
+    }
+
+    state.attackingCardId = null
+    state.blockingCardId = null
+    state.mustBlockInstanceId = null
+    state.flashPriorityPlayerId = null
+    state.flashPassCount = 0
+    state.step = Step.ATTACK_DECLARATION
+}
+
 /** ステップ進行 (総合ルール 7-1-1: スタンダードは8ステップ制) */
 fun advanceStep(state: GameState, messages: MutableList<String>) {
     state.coreWindow.clear()
@@ -780,6 +922,25 @@ fun advanceStep(state: GameState, messages: MutableList<String>) {
         Step.MAIN -> state.step = if (isFirstTurn(state)) Step.END else Step.ATTACK_DECLARATION
         // エターナルにはアタックステップの後の第2メインステップがない
         Step.ATTACK_DECLARATION -> state.step = if (state.format.hasSecondMain) Step.MAIN_2 else Step.END
+        Step.FLASH_TIMING -> {
+            state.flashPassCount++
+            if (state.flashPassCount >= 2) {
+                if (state.blockingCardId != null) {
+                    messages.add("⏩ 両者がブロック後フラッシュをパス ➔ バトル解決へ")
+                    resolveBattle(state, messages)
+                } else {
+                    state.step = Step.BLOCK_DECLARATION
+                    state.flashPriorityPlayerId = null
+                    state.flashPassCount = 0
+                    messages.add("⏩ 両者がフラッシュをパス ➔ ブロック宣言へ")
+                }
+            } else {
+                val currentChooser = state.choosingPlayerId
+                val nextPlayerId = if (currentChooser == 1) 2 else 1
+                state.flashPriorityPlayerId = nextPlayerId
+                messages.add("⏩ プレイヤー${currentChooser}がフラッシュをパス ➔ プレイヤー${nextPlayerId}のフラッシュへ")
+            }
+        }
         Step.MAIN_2 -> state.step = Step.END
         Step.END -> {
             state.turn++
@@ -871,7 +1032,7 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
     if (key != null) state.coreWindow.add(key) else state.coreWindow.clear()
 
     when (action.type) {
-        "SUMMON" -> {
+        "SUMMON", "FLASH_SUMMON" -> {
             if (action.handIndex < 0 || action.handIndex >= p.hand.size) return
             val card = p.hand[action.handIndex]
 
@@ -886,32 +1047,50 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
 
             // 残りは召喚したカードの上へ (総合ルール 11-1-1-6)
             val seq = state.nextCardSeq++
-            p.field.add(
-                FieldCard(
-                    instanceId = "fc_${card.cardNo}_${seq}",
-                    cardNo = card.cardNo,
-                    name = card.name,
-                    category = card.category,
-                    colors = card.colors,
-                    cores = Cores(action.placeFrom.sumOf { it.normal }, action.placeFrom.sumOf { it.soul }),
-                    lvCosts = card.lvCosts,
-                    baseSymbols = card.symbols,
-                    lvBps = card.lvBps,
-                    systems = card.systems,
-                    seq = seq,
-                    cost = card.cost,
-                    shinkai = card.shinkai
-                )
+            val newFieldCard = FieldCard(
+                instanceId = "fc_${card.cardNo}_${seq}",
+                cardNo = card.cardNo,
+                name = card.name,
+                category = card.category,
+                colors = card.colors,
+                cores = Cores(action.placeFrom.sumOf { it.normal }, action.placeFrom.sumOf { it.soul }),
+                lvCosts = card.lvCosts,
+                baseSymbols = card.symbols,
+                lvBps = card.lvBps,
+                systems = card.systems,
+                seq = seq,
+                cost = card.cost,
+                shinkai = card.shinkai
             )
+            p.field.add(newFieldCard)
 
             val fieldPaid = (action.payFrom + action.placeFrom).filter { it.sourceId != "Reserve" }
             val fieldNote = if (fieldPaid.isEmpty()) "" else
                 " ※" + fieldPaid.joinToString(", ") { "${it.label}から${it.normal + it.soul}個" }
-            val verb = if (card.category == CardCategory.NEXUS) "🌐 「${card.name}」を配置" else "🎴 「${card.name}」を召喚"
+            val verb = if (action.type == "FLASH_SUMMON") "⚡ 【フラッシュ】「${card.name}」を召喚"
+                       else if (card.category == CardCategory.NEXUS) "🌐 「${card.name}」を配置"
+                       else "🎴 「${card.name}」を召喚"
             messages.add("$verb (コスト${action.costToPay}をトラッシュへ)$fieldNote")
 
             // コアを抜かれてLvコストを満たさなくなったカードを消滅させる
             resolveVanish(p, messages)
+
+            // 召喚時効果の解決 (総合ルール 11-1-1-8: 召喚完了後に召喚時効果が発揮)
+            if (newFieldCard.level >= 1 && p.field.any { it.instanceId == newFieldCard.instanceId }) {
+                CardScriptRegistry.get(newFieldCard.cardNo)?.onSummon(state, newFieldCard, p, messages)
+            }
+
+            // フラッシュ効果フックの解決
+            if (action.type == "FLASH_SUMMON") {
+                CardScriptRegistry.get(card.cardNo)?.onFlash(state, p, action, messages)
+            }
+
+            if (state.step == Step.FLASH_TIMING) {
+                state.flashPassCount = 0
+                val nextPlayerId = if (p.playerId == 1) 2 else 1
+                state.flashPriorityPlayerId = nextPlayerId
+                messages.add("⚡ フラッシュ優先権がプレイヤー${nextPlayerId}へ移動")
+            }
         }
 
         "MOVE_CORE" -> {
@@ -952,45 +1131,76 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             messages.add("✨ 「${card.name}」を使用 (コスト${coreIcons(action.costToPay, 0)}をトラッシュへ) ※効果は未実装")
 
             resolveVanish(p, messages)
+
+            if (state.step == Step.FLASH_TIMING) {
+                state.flashPassCount = 0
+                val nextPlayerId = if (p.playerId == 1) 2 else 1
+                state.flashPriorityPlayerId = nextPlayerId
+                messages.add("⚡ フラッシュ優先権がプレイヤー${nextPlayerId}へ移動")
+            }
         }
 
         "ATTACK" -> {
             val attacker = p.field.find { it.instanceId == action.targetInstanceId } ?: return
 
-            // アタック宣言でアタックするスピリットを疲労させ、ブロック宣言へ進む (総合ルール 8-1-1-1)
+            // アタック宣言でアタックするスピリットを疲労させ、フラッシュタイミングへ進む (総合ルール 8-1-1-1 / 8-1-2)
             attacker.isExhausted = true
             state.attackingCardId = attacker.instanceId
             state.mustBlockInstanceId = null
-            state.step = Step.BLOCK_DECLARATION
-            messages.add("🗡️ 「${attacker.name}」がアタック宣言 (BP${attacker.currentBp})")
+            state.step = Step.FLASH_TIMING
+            state.flashPriorityPlayerId = state.opponentPlayer.playerId
+            state.flashPassCount = 0
+            messages.add("🗡️ 「${attacker.name}」がアタック宣言 (BP${attacker.effectiveBp(state)})")
+            messages.add("⚡ フラッシュタイミング開始: 防御側（プレイヤー${state.opponentPlayer.playerId}）から優先権")
 
             // カード固有アタック時効果の解決 (例: ガリザロトの疲労ブロック強制指定など)
             CardScriptRegistry.get(attacker.cardNo)?.onAttack(state, attacker, action, messages)
         }
 
+        "PASS_FLASH" -> {
+            state.flashPassCount++
+            if (state.flashPassCount >= 2) {
+                if (state.blockingCardId != null) {
+                    messages.add("⏩ 両者がブロック後フラッシュをパス ➔ バトル解決へ")
+                    resolveBattle(state, messages)
+                } else {
+                    state.step = Step.BLOCK_DECLARATION
+                    state.flashPriorityPlayerId = null
+                    state.flashPassCount = 0
+                    messages.add("⏩ 両者がフラッシュをパス ➔ ブロック宣言へ")
+                }
+            } else {
+                val nextPlayerId = if (p.playerId == 1) 2 else 1
+                state.flashPriorityPlayerId = nextPlayerId
+                messages.add("⏩ プレイヤー${p.playerId}がフラッシュをパス ➔ プレイヤー${nextPlayerId}のフラッシュへ")
+            }
+        }
+
+        "ACTIVATE_FIELD" -> {
+            val card = p.field.find { it.instanceId == action.targetInstanceId } ?: return
+            CardScriptRegistry.get(card.cardNo)?.onFieldAction(state, card, p, action, messages)
+        }
+
+        "STEP_START_EFFECT" -> {
+            val card = p.field.find { it.instanceId == action.targetInstanceId } ?: return
+            CardScriptRegistry.get(card.cardNo)?.onStepStartAction(state, card, p, action, messages)
+        }
+
         "BLOCK" -> {
             // ブロックするスピリットも疲労する (総合ルール 8-1-3-1)
             val blocker = p.field.find { it.instanceId == action.targetInstanceId } ?: return
-            val attackerOwner = state.notChoosingPlayer
-            val attacker = attackerOwner.field.find { it.instanceId == state.attackingCardId }
             blocker.isExhausted = true
-            messages.add("🛡️ 「${blocker.name}」でブロック")
+            state.blockingCardId = blocker.instanceId
+            messages.add("🛡️ 「${blocker.name}」でブロック ➔ ブロック後フラッシュタイミングへ")
 
-            if (attacker != null) {
-                // BPが低い方が破壊され、同じ場合は両方破壊される (総合ルール 8-1-6-1)
-                when {
-                    attacker.currentBp > blocker.currentBp -> destroySpirit(p, blocker, messages)
-                    attacker.currentBp < blocker.currentBp -> destroySpirit(attackerOwner, attacker, messages)
-                    else -> {
-                        destroySpirit(p, blocker, messages)
-                        destroySpirit(attackerOwner, attacker, messages)
-                    }
-                }
-            }
-            // ブロックが成立したのでライフは減らない
-            state.attackingCardId = null
-            state.mustBlockInstanceId = null
-            state.step = Step.ATTACK_DECLARATION
+            // ブロック時効果の解決 (総合ルール 8-1-3-2)
+            CardScriptRegistry.get(blocker.cardNo)?.onBlock(state, blocker, action, messages)
+
+            // ブロック後フラッシュタイミングへ移行 (総合ルール 8-1-4-1: 防御側から優先権)
+            state.step = Step.FLASH_TIMING
+            state.flashPriorityPlayerId = p.playerId
+            state.flashPassCount = 0
+            messages.add("⚡ ブロック後フラッシュタイミング開始: 防御側（プレイヤー${p.playerId}）から優先権")
         }
 
         "PASS_BLOCK" -> {
@@ -1010,6 +1220,8 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             }
             state.attackingCardId = null
             state.mustBlockInstanceId = null
+            state.flashPriorityPlayerId = null
+            state.flashPassCount = 0
             state.step = Step.ATTACK_DECLARATION
         }
 

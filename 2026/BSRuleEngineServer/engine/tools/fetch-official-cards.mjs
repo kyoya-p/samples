@@ -72,28 +72,65 @@ for (const no of [...cardNos].sort()) {
 const kt = s => JSON.stringify(s); // Kotlin の文字列リテラルとしても有効 (\n, \" を含む)
 const list = (xs, f) => `listOf(${xs.map(f).join(', ')})`;
 const today = new Date().toISOString().slice(0, 10);
-let out = `package bstools.model
 
-// このファイルは engine/tools/fetch-official-cards.mjs が生成する。手で編集しないこと。
-// 出典: 公式カードリスト https://www.battlespirits.com/cardlist/ (取得日 ${today})
-// シンボルは公式ページに文字情報がないため「カードの色のシンボル1個」としている (未確認)。
+const CARDS_ROOT = 'engine/src/cards';
 
-/** 公式カードリストから取得したカード情報 (カード番号 → CardData) */
-val OFFICIAL_CARDS: Map<String, CardData> = mapOf(
-`;
+function getClassName(cardNo) {
+  return 'Card' + cardNo.replace(/-/g, '_');
+}
+
 for (const c of cards) {
+  if (!fs.existsSync(CARDS_ROOT)) fs.mkdirSync(CARDS_ROOT, { recursive: true });
+
+  const className = getClassName(c.no);
+  const filePath = path.join(CARDS_ROOT, `${c.no}.kt`);
   const color = c.colors[0] ?? 'GREEN';
   const symbols = c.category === 'MAGIC' ? [] : [color];
   const lvCosts = c.lvCosts.length ? c.lvCosts : [0];
-  out += `    ${kt(c.no)} to CardData(\n` +
-    `        cardNo = ${kt(c.no)}, name = ${kt(c.name)}, cost = ${c.cost},\n` +
+
+  const dataBlock = `        cardNo = ${kt(c.no)}, name = ${kt(c.name)}, cost = ${c.cost},\n` +
     `        colors = ${list(c.colors.length ? c.colors : [color], x => 'CardColor.' + x)},\n` +
     `        reductionSymbols = ${list(c.reduction, x => 'CardColor.' + x)},\n` +
     `        category = CardCategory.${c.category}, lvCosts = ${list(lvCosts, String)},\n` +
     `        symbols = ${list(symbols, x => 'CardColor.' + x)}, systems = ${list(c.systems, kt)},\n` +
     `        effect = ${kt(c.effect)},\n` +
-    `        lvBps = ${list(c.lvBps, String)}, shinkai = ${c.shinkai}\n    ),\n`;
+    `        lvBps = ${list(c.lvBps, String)}, shinkai = ${c.shinkai}`;
+
+  if (fs.existsSync(filePath)) {
+    let existing = fs.readFileSync(filePath, 'utf8');
+    if (existing.includes('override val data: CardData = CardData(')) {
+      existing = existing.replace(/override val data: CardData = CardData\([\s\S]*?\n\s*\)/, `override val data: CardData = CardData(\n${dataBlock}\n    )`);
+      fs.writeFileSync(filePath, existing, 'utf8');
+      continue;
+    }
+  }
+
+  const cardCode = `package bstools.model.cards
+
+import bstools.model.*
+
+/**
+ * [${c.no}] ${c.name}
+ */
+object ${className} : CardDefinition {
+    override val data: CardData = CardData(
+${dataBlock}
+    )
 }
-out += `)\n`;
+`;
+  fs.writeFileSync(filePath, cardCode, 'utf8');
+}
+
+let out = `package bstools.model\n\n`;
+out += `import bstools.model.cards.*\n`;
+out += `\n/**\n * 全カード定義リスト。\n * カード名称、属性、系統、BP、効果等のマスターデータは各カードごとのファイル (engine/src/cards/<cardNo>.kt) に定義される。\n */\n`;
+out += `val ALL_CARD_DEFINITIONS: List<CardDefinition> = listOf(\n`;
+for (const c of cards) {
+  out += `    ${getClassName(c.no)},\n`;
+}
+out += `)\n\n`;
+out += `/** 公式カードリストから取得したカード情報 (カード番号 → CardData) */\n`;
+out += `val OFFICIAL_CARDS: Map<String, CardData> = ALL_CARD_DEFINITIONS.associate { it.cardNo to it.data }\n`;
+
 fs.writeFileSync(OUT, out);
-console.log(`生成: ${OUT} (${cards.length} 枚 / デッキ内 ${cardNos.size} 種)`);
+console.log(`生成完了: 各カードファイル (${cards.length} 枚) および ${OUT}`);

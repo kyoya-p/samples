@@ -103,7 +103,7 @@ object PlaymatEval {
 
     /** ステップ終了のアクション表現 (999) を生成する */
     fun stepEndAction(state: GameState, eval: Double? = null): GameAction? {
-        if (state.winner != null || state.step == Step.BLOCK_DECLARATION) return null
+        if (state.winner != null || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING) return null
         val label = when (state.step) {
             Step.MAIN -> "メインステップ終了"
             Step.ATTACK_DECLARATION -> "アタックステップ終了"
@@ -133,7 +133,7 @@ object PlaymatEval {
         cache[key]?.let { return it }
         val acts = rawActions(state)
         val net = netFor(state.choosingPlayerId)
-        val canEnd = state.winner == null && state.step != Step.BLOCK_DECLARATION
+        val canEnd = state.winner == null && state.step != Step.BLOCK_DECLARATION && state.step != Step.FLASH_TIMING
         if (net == null || state.winner != null) {
             val endAct = if (canEnd) stepEndAction(state, null) else null
             val allActs = if (endAct != null) acts + endAct else acts

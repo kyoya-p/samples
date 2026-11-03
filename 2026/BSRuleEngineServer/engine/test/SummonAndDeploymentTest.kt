@@ -344,6 +344,24 @@ class SummonAndDeploymentTest {
     }
 
     /**
+     * カードの最高Lv維持コストに関係なく、利用可能な全コア数まで無制限に配置コアを選択できる。
+     */
+    @Test
+    fun testLevelPlaysPlacementNotCappedByMaxLvCost() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 6, p1ReserveSoul = 0)
+        state.step = Step.MAIN
+        val spiritCard = OFFICIAL_CARDS["26RSD03-001"]!! // フラッティ: lvCosts=[1, 3] (maxCost=3)
+        p1.hand.add(spiritCard)
+
+        val acts = enumerateLevelActions(state)
+        val summonActs = acts.filter { it.type == "SUMMON" && it.handIndex == 0 }
+
+        // リザーブ6個、コスト2支払い後残り4個すべて置く手 (配置コア=4) が含まれていること
+        val placedCores = summonActs.map { it.placeFrom.sumOf { p -> p.normal + p.soul } }.distinct().sorted()
+        assertEquals(listOf(1, 2, 3, 4), placedCores)
+    }
+
+    /**
      * 総合ルール 11-1-1:
      * コアが不足している場合、召喚は実行されず局面は変化しない。
      */
