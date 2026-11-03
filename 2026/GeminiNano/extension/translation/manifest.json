@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Nano Translate",
+  "version": "0.1.0",
+  "description": "ローカルの Gemini Nano (Chrome Prompt API) で翻訳する。通信なし。",
+  "minimum_chrome_version": "138",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "storage",
+    "offscreen"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "Nano Translate",
+    "default_popup": "translate.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+T"
+      }
+    },
+    "translate-page": {
+      "suggested_key": {
+        "default": "Alt+P"
+      },
+      "description": "ページを Gemini Nano で翻訳/元に戻す"
+    }
+  }
+}

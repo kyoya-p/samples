@@ -1,0 +1,56 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fff;
+  --fg: #202124;
+  --muted: #5f6368;
+  --line: #dadce0;
+  --accent: #1a73e8;
+  --accent-fg: #fff;
+  --surface: #f8f9fa;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202124;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --line: #5f6368;
+    --accent: #8ab4f8;
+    --accent-fg: #202124;
+    --surface: #2d2e31;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 12px;
+  width: 400px;
+  min-height: 360px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 system-ui, "Yu Gothic UI", sans-serif;
+}
+body.window { width: auto; }
+header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+h1 { font-size: 16px; margin: 0; }
+.status { font-size: 12px; color: var(--muted); }
+.head-right { display: flex; align-items: center; gap: 8px; }
+button.icon { padding: 0 6px; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; }
+button.icon:hover { color: var(--fg); }
+.notice { margin-bottom: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 12px; }
+.pane { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; font-size: 12px; color: var(--muted); }
+.bar button { border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+textarea {
+  display: block; width: 100%; border: 0; padding: 4px 8px 8px; resize: vertical;
+  background: transparent; color: inherit; font: inherit; outline: none;
+}
+.controls { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+select, button { font: inherit; }
+select { padding: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: inherit; }
+button { padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: inherit; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); margin-left: auto; }
+button:disabled { opacity: .5; cursor: default; }
+.result { min-height: 96px; padding: 4px 8px 8px; white-space: pre-wrap; word-break: break-word; }
+.result.error { color: #d93025; }
+.foot { margin-top: 8px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.foot button { padding: 0 8px; font-size: 12px; }
