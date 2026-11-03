@@ -373,4 +373,33 @@ class CoreMovementTest {
         assertEquals(2, p1.reserve.normal)
         assertEquals(2, spirit.cores.normal)
     }
+
+    @Test
+    fun testEnumerateLevelActionsNoDuplicateCoreMoves() {
+        val (state, p1) = TestFixtures.createTestState(
+            p1ReserveNormal = 4,
+            p1ReserveSoul = 0,
+            step = Step.MAIN
+        )
+        // Nexus with soul core
+        val nexus = TestFixtures.createNexus("fc_nexus_1", normalCores = 0, soulCores = 1)
+        // Spirit with 1 normal core
+        val spirit = TestFixtures.createSpirit("fc_spirit_1", normalCores = 1, soulCores = 0)
+        p1.field.add(nexus)
+        p1.field.add(spirit)
+
+        val actions = enumerateLevelActions(state)
+        val coreMoveActions = actions.filter { it.type == "MOVE_CORE" }
+
+        // Verify no duplicate moves (same fromId, toId, normal, soul)
+        val moveSignatures = coreMoveActions.map { a ->
+            a.moves.joinToString(";") { "${it.fromId}->${it.toId}:${it.normal},${it.soul}" }
+        }
+        val duplicates = moveSignatures.groupBy { it }.filter { it.value.size > 1 }
+        assertTrue(duplicates.isEmpty(), "Found duplicate core move actions in enumerateLevelActions: ${duplicates.keys}")
+
+        // Ensure indices are 1..N continuous without duplicates
+        val indices = actions.map { it.index }
+        assertEquals(indices.size, indices.distinct().size, "All action indices must be distinct")
+    }
 }

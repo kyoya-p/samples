@@ -22,11 +22,11 @@ This skill provides the architecture reference, official rule compliance invaria
    - Spirits require at least 1 core (or their specified Lv1 cost); reducing them to 0 cores causes immediate vanish (`vanish = true`).
 
 2. **Core Movement Enumeration**:
-   - In the Main Step, players can freely move cores between Field cards and Reserve.
+   - In the Main Step, players can freely move cores between Field cards and Reserve as many times as desired without artificial turn/window restrictions (`coreWindow` restrictions removed).
+   - All core movements (Normal core, Soul core, and mixed) are unified under the category `🔷【コア移動】 移動元 ➔ 移動先` (do not create separate `【ソウルコア移動】` categories).
    - For any donor holding $N$ normal cores and $S$ soul cores ($S \in \{0, 1\}$):
      - Normal core moves: Enumerate every quantity $k \in 1 \dots N$.
      - Soul core moves: Enumerate $S=1$ alone ($0$ normal + $1$ soul) and mixed moves ($k$ normal + $1$ soul for $k \in 1 \dots N$).
-   - Directional Loop Prevention: `rearrangeKey` must use `"${from}->${to}"` instead of bidirectional pairs. This allows multiple consecutive moves in the same direction while preventing trivial immediate back-and-forth reverts.
 
 3. **Soul Core Exchange (コア交換)**:
    - When one location has Soul Core and another has Normal Core, they can exchange without altering total core counts.
@@ -70,6 +70,12 @@ Server endpoint: `http://localhost:8090` (Room parameter: `?sid=<room_id>`).
    - **Single Source of Control**: When a system operation is already accessible from persistent global toolbars (e.g., `#btn-undo` / `◀ 戻る`, `新規ゲーム開始`, `同じ条件でリスタート`), **never duplicate** those action buttons inside transient or notification banners (such as the victory `#winner` banner).
    - Notification banners must strictly present status information (e.g. `🏆 ゲーム終了: プレイヤーX の勝利！`) and avoid cluttering the interface with redundant action buttons.
    - Users interact exclusively via the fixed header controls to maintain consistent, clean, and intuitive UX.
+
+5. **Strict Instance ID Matching Invariant (カード名判定の禁止・インスタンスID照合原則)**:
+   - **Never match or look up field cards by card name (`card.name` / `rawName`)** for game actions (Attack declaration, Block declaration, Attacker identification, Level/Core actions).
+   - Server action categories include sequence numbers (e.g., `🗡️【アタック】 #5 パッファー`), while `card.name` on the client is `"パッファー"`, and multiple copies of the same card can exist on the field simultaneously.
+   - Always bind and resolve field card actions strictly by unique instance ID (`g.target_instance_id === o.id`, `data.attacking_card_id === o.id`).
+   - For hand card actions, always match by `g.card_no === c.card_no` (never substring matching on card names).
 
 ---
 

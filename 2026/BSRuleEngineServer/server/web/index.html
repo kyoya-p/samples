@@ -742,6 +742,46 @@
   .core-fx-badge.from { background: #ff9800; color: #2b1500; }
   .core-fx-badge.to { background: #00e676; color: #05140b; }
 
+  /* 選択肢ホバー時: 消滅するスピリット等を赤でハイライトする */
+  .card-vanish-highlight {
+    outline: 3px solid #ff3b30 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 16px rgba(255, 59, 48, 0.8), inset 0 0 10px rgba(255, 59, 48, 0.4) !important;
+    background: rgba(255, 59, 48, 0.22) !important;
+    animation: pulse-vanish 0.8s infinite alternate ease-in-out;
+    z-index: 25;
+  }
+  @keyframes pulse-vanish {
+    from {
+      outline-color: #ff3b30;
+      box-shadow: 0 0 10px rgba(255, 59, 48, 0.6);
+    }
+    to {
+      outline-color: #ff6961;
+      box-shadow: 0 0 22px rgba(255, 59, 48, 0.95);
+    }
+  }
+  .vanish-badge {
+    position: absolute;
+    top: -10px;
+    left: -8px;
+    background: #ff3b30;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 7px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+    z-index: 30;
+    pointer-events: none;
+    letter-spacing: 0.5px;
+    animation: pulse-badge 0.8s infinite alternate ease-in-out;
+  }
+  @keyframes pulse-badge {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+
   .core-source-badge {
     position: absolute;
     top: -8px;
@@ -1443,47 +1483,114 @@ function coreSourceElement(sourceId) {
   return document.querySelector(`#p${chooser}-field .card[data-obj-id="${CSS.escape(sourceId)}"]`);
 }
 
-function clearCoreEffectPreview() {
-  document.querySelectorAll(".core-fx-from, .core-fx-to").forEach(el => {
-    el.classList.remove("core-fx-from", "core-fx-to");
-  });
-  document.querySelectorAll(".core-fx-badges").forEach(el => el.remove());
+function getVanishingCardIds(option) {
+  if (!option) return [];
+  if (Array.isArray(option.vanishing_card_ids) && option.vanishing_card_ids.length > 0) {
+    return option.vanishing_card_ids;
+  }
+  const chooser = current?.choosing_player || current?.active_player || 1;
+  const p = (chooser === 1 ? current?.player : current?.opponent) || current?.player;
+  const field = p?.field || [];
+  const ids = [];
+
+  const detail = option.detail || "";
+  if (detail.includes("消滅")) {
+    const vanishMatch = detail.match(/⚠️(.*?消滅)/);
+    if (vanishMatch) {
+      const text = vanishMatch[1];
+      for (const card of field) {
+        const seqMatch = card.id ? card.id.match(/_(\d+)$/) : null;
+        const seq = card.seq != null ? `#${card.seq}` : (seqMatch ? `#${seqMatch[1]}` : "");
+        if (text.includes(card.name) || (seq && text.includes(seq))) {
+          ids.push(card.id);
+        }
+      }
+    }
+  }
+
+  if (ids.length === 0 && Array.isArray(option.core_effects)) {
+    for (const card of field) {
+      const keep = (card.lv_costs && card.lv_costs[0]) ?? (card.category === "NEXUS" ? 0 : 1);
+      if (keep === 0) continue;
+      const totalCores = parseInt(card.cores || "0", 10);
+      let netChange = 0;
+      for (const fx of option.core_effects) {
+        if (fx.source_id === card.id) {
+          if (fx.direction === "from") netChange -= (fx.normal + fx.soul);
+          else if (fx.direction === "to") netChange += (fx.normal + fx.soul);
+        }
+      }
+      if (netChange < 0 && (totalCores + netChange) < keep) {
+        ids.push(card.id);
+      }
+    }
+  }
+
+  return [...new Set(ids)];
 }
 
-function showCoreEffectPreview(effects) {
+function clearCoreEffectPreview() {
+  document.querySelectorAll(".core-fx-from, .core-fx-to, .card-vanish-highlight").forEach(el => {
+    el.classList.remove("core-fx-from", "core-fx-to", "card-vanish-highlight");
+  });
+  document.querySelectorAll(".core-fx-badges, .vanish-badge").forEach(el => el.remove());
+}
+
+function showCoreEffectPreview(effects, option = null) {
   clearCoreEffectPreview();
-  if (!effects || !effects.length) return;
 
-  for (const fx of effects) {
-    const el = coreSourceElement(fx.source_id);
-    if (!el) continue;
+  // 1. コア移動のプレビュー (移動元=橙, 移動先=緑)
+  if (effects && effects.length) {
+    for (const fx of effects) {
+      const el = coreSourceElement(fx.source_id);
+      if (!el) continue;
 
-    const isFrom = fx.direction === "from";
-    el.classList.add(isFrom ? "core-fx-from" : "core-fx-to");
+      const isFrom = fx.direction === "from";
+      el.classList.add(isFrom ? "core-fx-from" : "core-fx-to");
 
-    // 交換では同じ場所に出入り両方が付くので、バッジは重ねず横に並べる
-    let box = el.querySelector(":scope > .core-fx-badges");
-    if (!box) {
-      box = document.createElement("span");
-      box.className = "core-fx-badges";
-      el.appendChild(box);
+      // 交換では同じ場所に出入り両方が付くので、バッジは重ねず横に並べる
+      let box = el.querySelector(":scope > .core-fx-badges");
+      if (!box) {
+        box = document.createElement("span");
+        box.className = "core-fx-badges";
+        el.appendChild(box);
+      }
+
+      const parts = [];
+      if (fx.normal > 0) parts.push(`${fx.normal}🔷`);
+      if (fx.soul > 0) parts.push(`${fx.soul}🔶`);
+      const badge = document.createElement("span");
+      badge.className = "core-fx-badge " + (isFrom ? "from" : "to");
+      // 方向は枠の色(橙=出る/緑=入る)で示すので、記号は付けず個数だけを出す
+      badge.textContent = parts.join(" ");
+      box.appendChild(badge);
     }
+  }
 
-    const parts = [];
-    if (fx.normal > 0) parts.push(`${fx.normal}🔷`);
-    if (fx.soul > 0) parts.push(`${fx.soul}🔶`);
-    const badge = document.createElement("span");
-    badge.className = "core-fx-badge " + (isFrom ? "from" : "to");
-    // 方向は枠の色(橙=出る/緑=入る)で示すので、記号は付けず個数だけを出す
-    badge.textContent = parts.join(" ");
-    box.appendChild(badge);
+  // 2. 消滅対象スピリット等の赤ハイライト
+  const vanishIds = getVanishingCardIds(option);
+  for (const cardId of vanishIds) {
+    const el = coreSourceElement(cardId);
+    if (!el) continue;
+    el.classList.add("card-vanish-highlight");
+
+    let badge = el.querySelector(":scope > .vanish-badge");
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "vanish-badge";
+      badge.textContent = "⚠️消滅";
+      el.appendChild(badge);
+    }
   }
 }
 
-/** 選択肢ボタンに、ホバーで移動元・移動先をマークする挙動を付ける */
+/** 選択肢ボタンに、ホバーで移動元・移動先および消滅対象をマークする挙動を付ける */
 function bindCoreEffectPreview(el, option) {
-  if (!option || !option.core_effects || !option.core_effects.length) return;
-  el.addEventListener("mouseenter", () => showCoreEffectPreview(option.core_effects));
+  if (!option) return;
+  const effects = option.core_effects || [];
+  const vanishIds = getVanishingCardIds(option);
+  if (!effects.length && !vanishIds.length) return;
+  el.addEventListener("mouseenter", () => showCoreEffectPreview(effects, option));
   el.addEventListener("mouseleave", clearCoreEffectPreview);
 }
 
@@ -2281,6 +2388,7 @@ function setupMultiClickSelector(head, options, arrowEl, optsDiv, container, tar
     if (clickCount > options.length) clickCount = 1;
 
     const opt = options[clickCount - 1];
+    showCoreEffectPreview(opt.core_effects, opt);
     const optText = formatWithFieldSeq(opt.detail, opt.core_effects, targetInstanceId);
     badge.textContent = `⚡[${clickCount}回クリック]: ${optText}`;
     badge.classList.remove("hidden");
@@ -2296,6 +2404,12 @@ function setupMultiClickSelector(head, options, arrowEl, optsDiv, container, tar
       }
     }, 450);
   };
+
+  head.addEventListener("mouseenter", () => {
+    const opt = options[clickCount > 0 ? clickCount - 1 : 0];
+    if (opt) showCoreEffectPreview(opt.core_effects, opt);
+  });
+  head.addEventListener("mouseleave", clearCoreEffectPreview);
 }
 
 function renderCoreMoveGroupList(container, groups, maxEval, isNearBest) {
@@ -2410,6 +2524,8 @@ function renderField(el, field, isMyField, blockActionsMap = null, attackingCard
       cardClass += " attackable" + (isTopAttack ? " is-best" : "");
     }
     div.className = cardClass;
+    div.setAttribute("data-obj-id", o.id);
+    div.setAttribute("data-obj-name", o.name);
 
     if (isAttacking) {
       div.classList.add("attacking");
@@ -3002,6 +3118,12 @@ function renderGroups(groups, maxEval) {
         badge.className = "click-count-badge hidden";
         head.querySelector(".cat")?.appendChild(badge);
 
+        head.addEventListener("mouseenter", () => {
+          const opt = g.options[clickCount > 0 ? clickCount - 1 : 0];
+          if (opt) showCoreEffectPreview(opt.core_effects, opt);
+        });
+        head.addEventListener("mouseleave", clearCoreEffectPreview);
+
         head.onclick = (e) => {
           if (e.target.closest(".cnt")) {
             toggleOpts();
@@ -3010,6 +3132,7 @@ function renderGroups(groups, maxEval) {
           clickCount++;
           if (clickCount > g.options.length) clickCount = 1;
           const opt = g.options[clickCount - 1];
+          showCoreEffectPreview(opt.core_effects, opt);
           const optText = formatWithFieldSeq(opt.detail, opt.core_effects, g.target_instance_id);
           badge.textContent = `⚡[${clickCount}回]: ${optText}`;
           badge.classList.remove("hidden");
@@ -3575,7 +3698,10 @@ function renderAllOptions(data) {
   }
   box.innerHTML = html.join("");
   box.querySelectorAll(".ao-row").forEach(b => {
-    b.onclick = (e) => { e.stopPropagation(); doAct(Number(b.getAttribute("data-act-idx"))); };
+    const actIdx = Number(b.getAttribute("data-act-idx"));
+    const opt = all.find(o => o.index === actIdx);
+    if (opt) bindCoreEffectPreview(b, opt);
+    b.onclick = (e) => { e.stopPropagation(); doAct(actIdx); };
   });
 }
 

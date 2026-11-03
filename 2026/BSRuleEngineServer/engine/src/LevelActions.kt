@@ -31,9 +31,15 @@ fun enumerateLevelActions(state: GameState): List<GameAction> {
         acts.addAll(levelPlays(p, p.hand[handIdx], handIdx, prefix))
     }
     acts.addAll(levelChanges(state, p))
-    acts.addAll(soulMoves(state, p))
-    val distinctActs = acts.distinctBy { "${it.category}:${it.detail}:${it.moves.joinToString { m -> "${m.fromId}->${m.toId}:${m.normal},${m.soul}" }}" }
+    acts.addAll(soulSwaps(state, p))
+    val distinctActs = acts.distinctBy { actionKey(it) }
     return markRepetitions(state, distinctActs).mapIndexed { i, a -> a.copy(index = i + 1) }
+}
+
+private fun actionKey(a: GameAction): String = when (a.type) {
+    "MOVE_CORE" -> "MOVE:${a.category}:${a.targetInstanceId}:${a.moves.joinToString { "${it.fromId}->${it.toId}:${it.normal},${it.soul}" }}"
+    "SUMMON", "USE_MAGIC" -> "PLAY:${a.category}:${a.handIndex}:pay[${a.payFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]:place[${a.placeFrom.joinToString { "${it.sourceId}:${it.normal},${it.soul}" }}]"
+    else -> "${a.type}:${a.category}:${a.targetInstanceId}:${a.detail}"
 }
 
 private fun keepOf(fc: FieldCard): Int = fc.lvCosts.firstOrNull() ?: 0
@@ -190,8 +196,8 @@ private fun levelChanges(state: GameState, p: PlayerState): List<GameAction> {
     return out
 }
 
-/** ソウルコアの移動および通常コアとの交換 */
-private fun soulMoves(state: GameState, p: PlayerState): List<GameAction> {
+/** ソウルコアと通常コアの交換 */
+private fun soulSwaps(state: GameState, p: PlayerState): List<GameAction> {
     val fromCard = p.field.firstOrNull { it.cores.soul > 0 }
     val fromId = if (p.reserve.soul > 0) "Reserve" else fromCard?.instanceId ?: return emptyList()
     val fromLabel = if (fromId == "Reserve") "R" else fromCard!!.displayName
@@ -201,15 +207,6 @@ private fun soulMoves(state: GameState, p: PlayerState): List<GameAction> {
         val toId = dst?.instanceId ?: "Reserve"
         if (toId == fromId) continue
         val toLabel = dst?.displayName ?: "R"
-        val notes = ArrayList<String>()
-        if (fromId != "Reserve") notes.add("$fromLabel ${lvText(fromCard!!, fromCard.cores.total - 1, 0)}")
-        if (dst != null) notes.add("$toLabel ${lvText(dst, dst.cores.total + 1, 1)}")
-        val vanish = fromId != "Reserve" && fromCard!!.cores.total - 1 < keepOf(fromCard)
-        out.add(GameAction(0, "MOVE_CORE", "🔷【コア移動】 $fromLabel ➔ $toLabel",
-            "$fromLabel ➔ $toLabel 🔶" + (if (notes.isEmpty()) "" else " (${notes.joinToString(", ")})") +
-                (if (vanish) " ⚠️${fromLabel}消滅" else ""),
-            targetInstanceId = dst?.instanceId, moves = listOf(CoreMove(fromId, toId, fromLabel, toLabel, normal = 0, soul = 1)),
-            rearrangeKey = "SOUL"))
 
         // ソウルコアと通常コアの交換
         val dstNormal = if (toId == "Reserve") p.reserve.normal else dst!!.cores.normal

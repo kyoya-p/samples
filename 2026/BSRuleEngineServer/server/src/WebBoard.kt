@@ -49,7 +49,8 @@ data class WebActionOptionDto(
     val repeats_position: Boolean = false,
     val core_effects: List<CoreEffectDto> = emptyList(),
     /** コアの一括再配置の最終配置 (場所ごと)。再配置以外の手は空 */
-    val core_target: List<CoreTargetDto> = emptyList()
+    val core_target: List<CoreTargetDto> = emptyList(),
+    val vanishing_card_ids: List<String> = emptyList()
 )
 
 @Serializable
@@ -146,6 +147,35 @@ fun coreEffectsOf(action: GameAction): List<CoreEffectDto> {
     return merged.values.toList()
 }
 
+fun vanishingCardIdsOf(field: List<FieldCard>, action: GameAction): List<String> {
+    val vanishing = mutableListOf<String>()
+    for (fc in field) {
+        val keep = fc.lvCosts.firstOrNull() ?: 0
+        if (keep == 0) continue // 維持コスト0のカード(ネクサス等)は消滅しない
+        val afterTotal = when {
+            action.type == "MOVE_CORE" -> {
+                val out = action.moves.filter { it.fromId == fc.instanceId }.sumOf { it.normal + it.soul }
+                val inn = action.moves.filter { it.toId == fc.instanceId }.sumOf { it.normal + it.soul }
+                fc.cores.total - out + inn
+            }
+            action.type == "SUMMON" || action.type == "USE_MAGIC" -> {
+                val out = action.payFrom.filter { it.sourceId == fc.instanceId }.sumOf { it.normal + it.soul } +
+                          action.placeFrom.filter { it.sourceId == fc.instanceId }.sumOf { it.normal + it.soul }
+                if (out == 0) fc.cores.total else fc.cores.total - out
+            }
+            action.targetConfig.isNotEmpty() -> {
+                val t = action.targetConfig.find { it.sourceId == fc.instanceId }
+                t?.let { it.normal + it.soul } ?: fc.cores.total
+            }
+            else -> fc.cores.total
+        }
+        if (afterTotal < keep) {
+            vanishing.add(fc.instanceId)
+        }
+    }
+    return vanishing
+}
+
 const val VIEWER_GOD = 0
 
 fun parseViewer(path: String, requestText: String): Int {
@@ -209,7 +239,8 @@ fun buildWebGameStateDto(
                         index = it.index, detail = it.detail, eval = it.eval, forbidden = it.forbidden,
                         forbidden_reason = it.forbiddenReason, repeats_position = it.repeatsPosition,
                         core_effects = coreEffectsOf(it),
-                        core_target = it.targetConfig.map { c -> CoreTargetDto(c.sourceId, c.label, c.normal, c.soul) }
+                        core_target = it.targetConfig.map { c -> CoreTargetDto(c.sourceId, c.label, c.normal, c.soul) },
+                        vanishing_card_ids = vanishingCardIdsOf(chooser.field, it)
                     )
                 },
                 card_no = actions.firstNotNullOfOrNull { a ->

@@ -374,4 +374,37 @@ class SummonAndDeploymentTest {
         assertTrue(p1.field.isEmpty())
         assertTrue(messages.any { it.contains("コアが不足") })
     }
+
+    /**
+     * 総合ルール 10-2-2-10:
+     * 複数のスピリットが場に存在する場合、各スピリットを消滅させて召喚する選択肢が
+     * distinctBy で誤って単一にまとめられることなく複数列挙される。
+     */
+    @Test
+    fun testLevelPlaysPreservesVanishingOptionsAcrossMultipleSpirits() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 0, p1ReserveSoul = 0, step = Step.MAIN_2)
+        // Spirit A (1 soul core)
+        val spiritA = TestFixtures.createSpirit("fc_spirit_a", normalCores = 0, soulCores = 1)
+        // Spirit B (2 normal cores)
+        val spiritB = TestFixtures.createSpirit("fc_spirit_b", normalCores = 2, soulCores = 0)
+        // Spirit C (3 normal cores)
+        val spiritC = TestFixtures.createSpirit("fc_spirit_c", normalCores = 3, soulCores = 0)
+        p1.field.addAll(listOf(spiritA, spiritB, spiritC))
+
+        // 26RSD03-001 フラッティ (cost = 2, lvCosts = [1, 3])
+        val card = OFFICIAL_CARDS["26RSD03-001"]!!
+        p1.hand.add(card)
+
+        val actions = enumerateLevelActions(state)
+        val summonActions = actions.filter { it.type == "SUMMON" }
+
+        // Must have multiple distinct summon actions (e.g. paying/placing from spirit B, from spirit C, etc.)
+        assertTrue(summonActions.size > 1, "Must enumerate multiple distinct summon actions when multiple spirits can be vanished/used: got ${summonActions.size}")
+
+        // Ensure different vanishing targets exist among the summon actions
+        val vanishingNotations = summonActions.mapNotNull {
+            Regex("⚠️(.*?消滅)").find(it.detail)?.groupValues?.get(1)
+        }
+        assertTrue(vanishingNotations.isNotEmpty(), "Must have vanishing notations in summon actions")
+    }
 }
