@@ -8,6 +8,12 @@ import DOMPurify from "https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.
 
 const SYSTEM_PROMPT = "You are a helpful and friendly assistant.";
 
+// Output language must be specified (supported: de, en, es, fr, ja)
+const LANGUAGE_OPTIONS = {
+  expectedInputs: [{ type: "text", languages: ["en", "ja"] }],
+  expectedOutputs: [{ type: "text", languages: ["ja"] }],
+};
+
 (async () => {
   const errorMessage = document.getElementById("error-message");
   const promptInput = document.getElementById("prompt-input");
@@ -73,8 +79,9 @@ const SYSTEM_PROMPT = "You are a helpful and friendly assistant.";
     try {
       if (!session) {
         await updateSession();
+        if (!session) throw new Error("Session not created (see message above).");
       }
-      
+
       // Clone session if needed to manage context window, but for now simple prompting
       const stream = await session.promptStreaming(prompt);
 
@@ -122,32 +129,43 @@ const SYSTEM_PROMPT = "You are a helpful and friendly assistant.";
     if (self.LanguageModel) {
       try {
         // Check availability first
-        const availability = await LanguageModel.availability();
+        const availability = await LanguageModel.availability(LANGUAGE_OPTIONS);
         console.log("Model availability:", availability);
 
-        if (availability === 'no') {
+        if (availability === 'unavailable') {
           errorMessage.textContent = "Gemini Nano is not available on this device. Please check your browser settings and hardware requirements.";
           errorMessage.style.display = "block";
           return;
         }
 
-        // If 'after-download', the model will be downloaded upon creation.
-        // We can optionally show a loading state here.
-        if (availability === 'after-download') {
-           console.log("Model needs to be downloaded.");
+        // Download needs user activation: on page load, wait for the first submit.
+        if (availability !== 'available' && !navigator.userActivation.isActive) {
+          console.log("Model needs to be downloaded; waiting for user action.");
+          return;
         }
 
-        const params = await LanguageModel.params();
-        session = await LanguageModel.create({
-          temperature: Number(sessionTemperature.value) || params.defaultTemperature,
-          topK: Number(sessionTopK.value) || params.defaultTopK,
+        const options = {
+          ...LANGUAGE_OPTIONS,
           initialPrompts: [
             {
               role: 'system',
               content: SYSTEM_PROMPT,
             }
           ],
-        });
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              errorMessage.textContent = `Downloading Gemini Nano: ${Math.round(e.loaded * 100)}%`;
+              errorMessage.style.display = "block";
+            });
+          },
+        };
+        // params() / temperature / topK are not exposed to web pages in all Chrome versions
+        if (typeof LanguageModel.params === 'function') {
+          const params = await LanguageModel.params();
+          options.temperature = Number(sessionTemperature.value) || params.defaultTemperature;
+          options.topK = Number(sessionTopK.value) || params.defaultTopK;
+        }
+        session = await LanguageModel.create(options);
         
         // Hide error message if successful
         errorMessage.style.display = "none";
