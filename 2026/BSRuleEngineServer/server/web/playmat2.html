@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ BS Rule Engine - Playmat 2</title>
+<style>
+  :root {
+    --bg-dark: #0a0e17;
+    --mat-bg: #0f172a;
+    --mat-line: rgba(56, 189, 248, 0.25);
+    --mat-glow: rgba(56, 189, 248, 0.4);
+    --card-w: 100px;
+    --card-h: 140px;
+    --card-hand-w: 110px;
+    --card-hand-h: 154px;
+    --core-blue: #00d2ff;
+    --core-soul: #ff0055;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  /* Header Toolbar */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f172a;
+    border-bottom: 1px solid #1e293b;
+    padding: 8px 16px;
+    font-size: 13px;
+    gap: 12px;
+    flex-wrap: wrap;
+    z-index: 1000;
+  }
+  .title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .title-group h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-room { background: #0284c7; color: #fff; }
+  .badge-phase { background: #16a34a; color: #fff; }
+  .badge-phase.attack { background: #dc2626; }
+  .badge-phase.flash { background: #d97706; }
+
+  .btn-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  button, .btn {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  button:hover:not(:disabled), .btn:hover:not(:disabled) {
+    background: #334155;
+    border-color: #475569;
+  }
+  button:disabled, .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  button.primary { background: #0284c7; border-color: #38bdf8; color: #fff; }
+  button.primary:hover:not(:disabled) { background: #0369a1; }
+  button.accent { background: #059669; border-color: #10b981; }
+  button.accent:hover:not(:disabled) { background: #047857; }
+  button.switch-mat { background: #475569; border-color: #64748b; color: #e2e8f0; font-weight: 600; }
+
+  .auto-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #cbd5e1;
+    cursor: pointer;
+  }
+
+  /* Main Container */
+  .main-container {
+    display: flex;
+    height: calc(100vh - 46px);
+    overflow: hidden;
+  }
+
+  /* Playmat Table View */
+  .playmat-area {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background: radial-gradient(circle at 50% 50%, #172554 0%, #090e17 80%);
+    position: relative;
+  }
+
+  .playmat-surface {
+    position: relative;
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Half Mat (Player / Opponent) */
+  .half-mat {
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid var(--mat-line);
+    border-radius: 14px;
+    padding: 10px 12px;
+    position: relative;
+    backdrop-filter: blur(10px);
+    display: grid;
+    grid-template-columns: 146px minmax(0, 1fr) 146px;
+    gap: 12px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.45);
+  }
+  .half-mat.opponent {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: linear-gradient(180deg, rgba(38, 16, 24, 0.65) 0%, rgba(15, 23, 42, 0.75) 100%);
+  }
+  .half-mat.player {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: linear-gradient(0deg, rgba(10, 32, 60, 0.65) 0%, rgba(15, 23, 42, 0.75) 100%);
+  }
+
+  /* Side Columns: Deck & Trash & Core Trays */
+  .mat-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Standard Zone Header / Titles */
+  .zone-title-bar {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .zone-title-bar .sub {
+    font-size: 9px;
+    color: #64748b;
+    font-weight: normal;
+  }
+
+  /* Real 3D Deck Stack */
+  .deck-pile {
+    width: 90px;
+    height: 126px;
+    position: relative;
+    cursor: pointer;
+    perspective: 800px;
+  }
+  .deck-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    background-image: url('https://www.battlespirits.com/images/rule/card_back.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow:
+      0 1px 0 #1e293b,
+      0 2px 0 #1e293b,
+      0 3px 0 #0f172a,
+      0 4px 0 #0f172a,
+      0 5px 0 #020617,
+      0 8px 16px rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: transform 0.2s ease;
+  }
+  .deck-pile:hover .deck-card {
+    transform: translateY(-3px) rotate(-1deg);
+  }
+  .pile-badge {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    background: #0284c7;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.3);
+    z-index: 10;
+  }
+  .pile-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  /* Unified Trash Zone Wrapper (Cards & Spent Cores) */
+  .trash-zone-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 6px;
+  }
+
+  /* Real Trash Pile */
+  .trash-pile {
+    width: 90px;
+    height: 126px;
+    position: relative;
+    border: 2px dashed rgba(255,255,255,0.2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0,0,0,0.25);
+    transition: all 0.2s;
+  }
+  .trash-pile:hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+  }
+  .trash-card-top {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* Core Trays (Life / Reserve / Trash) */
+  .core-tray {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .tray-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+  .core-gem-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    min-height: 24px;
+  }
+
+  /* 3D Glowing Core Gem */
+  .core-gem {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.8);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .core-gem:hover {
+    transform: scale(1.25);
+  }
+  .core-gem.normal {
+    background: radial-gradient(circle at 35% 35%, #e0f2fe 0%, #0284c7 60%, #0369a1 100%);
+    color: var(--core-blue);
+  }
+  .core-gem.soul {
+    background: radial-gradient(circle at 35% 35%, #fff1f2 0%, #e11d48 60%, #881337 100%);
+    color: var(--core-soul);
+    border: 1px solid #fbbf24;
+    box-shadow: 0 0 10px #f43f5e, 0 0 4px #fbbf24;
+  }
+  .core-gem.life-gem {
+    width: 18px;
+    height: 18px;
+    background: radial-gradient(circle at 30% 30%, #fff 0%, #38bdf8 50%, #0284c7 100%);
+    color: #38bdf8;
+  }
+
+  /* Life Tray & 5-Socket System (Official Battle Spirits Standard) */
+  .life-tray {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .opponent .life-tray {
+    border-color: rgba(239, 68, 68, 0.25);
+  }
+  .life-sockets-row {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 26px;
+    padding: 2px 4px;
+  }
+  .life-socket {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px dashed rgba(56, 189, 248, 0.4);
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.7);
+    transition: all 0.2s ease;
+  }
+  .opponent .life-socket {
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .life-socket.filled {
+    border: 1px solid rgba(56, 189, 248, 0.85);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.5), inset 0 0 4px rgba(255, 255, 255, 0.4);
+    background: rgba(2, 132, 199, 0.25);
+  }
+  .opponent .life-socket.filled {
+    border-color: rgba(244, 63, 94, 0.85);
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.5);
+    background: rgba(225, 29, 72, 0.25);
+  }
+
+  /* Count Area (Modern Battle Spirits Standard) */
+  .count-tray {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 5px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .count-badge {
+    background: #0f766e;
+    color: #2dd4bf;
+    border: 1px solid #14b8a6;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Dedicated Burst Zone (Official Standard Playmat Slot) */
+  .burst-zone {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 0;
+  }
+  .burst-frame {
+    width: 110px;
+    height: 48px;
+    border: 2px dashed rgba(168, 85, 247, 0.45);
+    border-radius: 8px;
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    cursor: default;
+    transition: all 0.25s ease;
+    box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.15);
+    position: relative;
+  }
+  .burst-frame:hover {
+    border-color: #c084fc;
+    box-shadow: 0 0 12px rgba(192, 132, 252, 0.35), inset 0 0 12px rgba(168, 85, 247, 0.25);
+  }
+  .burst-inner {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .burst-icon {
+    font-size: 13px;
+    color: #e879f9;
+    text-shadow: 0 0 6px rgba(232, 121, 249, 0.8);
+  }
+  .burst-text {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #e9d5ff;
+    text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+  }
+  .burst-sub {
+    font-size: 9px;
+    color: #a855f7;
+    font-weight: 600;
+  }
+  .burst-card {
+    position: absolute;
+    inset: 2px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+    border: 1px solid rgba(168, 85, 247, 0.6);
+  }
+
+  /* Field Zone Container & Header */
+  .field-zone-container {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .field-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 0 4px;
+    text-transform: uppercase;
+  }
+
+  /* Center Field Area */
+  .field-center {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .player-identity {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #cbd5e1;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 4px;
+  }
+  .player-identity .turn-indicator {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: rgba(34, 197, 94, 0.2);
+    border: 1px solid #22c55e;
+    color: #4ade80;
+  }
+
+  /* Field Cards Zone */
+  .field-cards-grid {
+    display: flex;
+    gap: 14px;
+    min-height: 154px;
+    align-items: center;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  /* Realistic Physical Card Element */
+  .mat-card {
+    width: var(--card-w);
+    height: var(--card-h);
+    border-radius: 6px;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    background-color: #1e293b;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+    transform-origin: center center;
+  }
+  .mat-card:hover {
+    box-shadow: 0 12px 24px rgba(0,0,0,0.7), 0 0 0 2px #38bdf8;
+    z-index: 50;
+  }
+
+  /* Card States: Exhausted, Attacking, Blocking */
+  .mat-card.exhausted {
+    transform: rotate(90deg) scale(0.95);
+    filter: brightness(0.85);
+  }
+  .mat-card.exhausted:hover {
+    transform: rotate(90deg) scale(1.02);
+  }
+  .mat-card.attacking {
+    box-shadow: 0 0 25px #ef4444, 0 0 8px #f87171, 0 0 0 2px #ef4444;
+    animation: pulse-attack 1.4s infinite;
+  }
+  @keyframes pulse-attack {
+    0%, 100% { box-shadow: 0 0 20px #ef4444, 0 0 0 2px #ef4444; }
+    50% { box-shadow: 0 0 35px #dc2626, 0 0 0 3px #f87171; }
+  }
+  .mat-card.attackable {
+    box-shadow: 0 0 16px #eab308, 0 0 0 2px #facc15;
+    animation: pulse-attackable 1.5s infinite alternate;
+  }
+  @keyframes pulse-attackable {
+    from { box-shadow: 0 0 10px #eab308, 0 0 0 2px #facc15; }
+    to { box-shadow: 0 0 22px #ca8a04, 0 0 0 3px #fef08a; }
+  }
+  .mat-card.blockable {
+    box-shadow: 0 0 16px #3b82f6, 0 0 0 2px #60a5fa;
+    animation: pulse-blockable 1.5s infinite alternate;
+  }
+  @keyframes pulse-blockable {
+    from { box-shadow: 0 0 10px #3b82f6, 0 0 0 2px #60a5fa; }
+    to { box-shadow: 0 0 22px #2563eb, 0 0 0 3px #93c5fd; }
+  }
+
+  /* Floating Card Badges */
+  .card-badge-lv {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(15, 23, 42, 0.85);
+    color: #38bdf8;
+    border: 1px solid #38bdf8;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 4px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .card-badge-bp {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(15, 23, 42, 0.9);
+    color: #facc15;
+    border: 1px solid #facc15;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 1px 5px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .card-badge-bp.boosted {
+    color: #4ade80;
+    border-color: #4ade80;
+    text-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+  }
+
+  /* Cores on Field Card */
+  .card-cores-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    flex-wrap: wrap;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 10px;
+    margin: 0 6px;
+    backdrop-filter: blur(2px);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* Central Clash Battle Zone */
+  .battle-clash-zone {
+    background: rgba(30, 27, 75, 0.5);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    min-height: 80px;
+    position: relative;
+    backdrop-filter: blur(6px);
+  }
+  .battle-clash-zone.active {
+    border-color: #ef4444;
+    background: rgba(69, 10, 10, 0.4);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+  }
+  .clash-unit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .clash-vs {
+    font-size: 20px;
+    font-weight: 900;
+    color: #f87171;
+    text-shadow: 0 0 10px rgba(248, 113, 113, 0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .clash-info {
+    font-size: 12px;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  /* Hand Area */
+  .hand-zone {
+    margin-top: 4px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hand-cards-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    min-height: calc(var(--card-hand-h) + 16px);
+    align-items: flex-end;
+    padding-bottom: 8px;
+    overflow-x: auto;
+  }
+
+  /* Opponent Hand: Face Down */
+  .hand-cards-row.opponent-hand .mat-card-hand {
+    background-image: url('https://www.battlespirits.com/images/rule/card_back.png');
+    transform: scale(0.85);
+  }
+
+  /* Player Hand Card */
+  .mat-card-hand {
+    width: var(--card-hand-w);
+    height: var(--card-hand-h);
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    background-color: #1e293b;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15);
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    transform-origin: bottom center;
+  }
+  .mat-card-hand:hover {
+    transform: translateY(-24px) scale(1.18);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.8), 0 0 0 2px #38bdf8;
+    z-index: 200;
+  }
+  .mat-card-hand.playable {
+    box-shadow: 0 0 16px #10b981, 0 0 0 2px #34d399;
+  }
+  .mat-card-hand.playable:hover {
+    box-shadow: 0 0 24px #059669, 0 0 0 3px #6ee7b7;
+  }
+  .mat-card-hand.is-best {
+    box-shadow: 0 0 20px #eab308, 0 0 0 2px #facc15;
+  }
+
+  /* Hand Card Badges */
+  .hand-badge-cost {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #38bdf8;
+    border-radius: 12px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 800;
+    color: #38bdf8;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .hand-badge-eval {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #059669;
+    color: #fff;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+  .hand-badge-eval.best {
+    background: #ca8a04;
+    border: 1px solid #fde047;
+  }
+
+  /* Summon / Action Popover for Hand Card */
+  .hand-action-popover {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 260px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    z-index: 500;
+  }
+  .popover-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #38bdf8;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .popover-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+    text-align: left;
+    color: #f1f5f9;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .popover-btn:hover {
+    background: #0284c7;
+    border-color: #38bdf8;
+  }
+
+  /* Drag Resizer Separator between Playmat and Sidebar */
+  .main-resizer {
+    width: 8px;
+    background: #0b1120;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: col-resize;
+    user-select: none;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s, box-shadow 0.15s;
+    z-index: 50;
+  }
+  .main-resizer:hover, .main-resizer.resizing {
+    background: #0284c7;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+  }
+  .main-resizer::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 1px;
+  }
+  .main-resizer:hover::after, .main-resizer.resizing::after {
+    background: #ffffff;
+    box-shadow: 0 0 6px #fff;
+  }
+
+  /* Right Sidebar */
+  .sidebar {
+    width: 380px;
+    min-width: 280px;
+    max-width: 70vw;
+    background: #0b1120;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar-section {
+    padding: 12px;
+    border-bottom: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-section h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .action-item-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-item-btn:hover {
+    background: #0284c7;
+    border-color: #38bdf8;
+  }
+  .action-item-btn.is-best {
+    border-left: 4px solid #eab308;
+    background: #1e243b;
+  }
+
+  /* Card Inspector in Sidebar (Large Card View - 100% Responsive) */
+  .card-inspector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .inspector-art {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 59 / 86;
+    border-radius: 8px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: transparent;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 16px rgba(56, 189, 248, 0.2);
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-sizing: border-box;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .inspector-art:hover {
+    transform: scale(1.02);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.95), 0 0 25px rgba(56, 189, 248, 0.45);
+  }
+  .inspector-details {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+  }
+  .inspector-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+  .inspector-stats {
+    display: flex;
+    gap: 8px;
+    color: #94a3b8;
+    font-size: 11px;
+  }
+  .inspector-text {
+    font-size: 11px;
+    color: #cbd5e1;
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+
+  /* Log Area */
+  .log-console {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 11px;
+    color: #cbd5e1;
+    background: #070b14;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .log-line {
+    line-height: 1.4;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  /* Trash Modal */
+  .modal-dialog {
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 16px;
+    max-width: 800px;
+    width: 90vw;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  }
+  .modal-dialog::backdrop {
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+  }
+  .trash-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px 0;
+  }
+
+  /* Animated Flying Draw Card */
+  .anim-flying-card {
+    position: fixed;
+    width: var(--card-hand-w);
+    height: var(--card-hand-h);
+    border-radius: 8px;
+    background-image: url('https://www.battlespirits.com/images/rule/card_back.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.7);
+    pointer-events: none;
+    z-index: 10000;
+    transition: all 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  }
+
+  /* Flying Core Gem */
+  .anim-flying-core {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 15px currentColor, inset 0 0 6px #fff;
+    transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .anim-flying-core.normal {
+    background: radial-gradient(circle at 35% 35%, #e0f2fe 0%, #0284c7 60%, #0369a1 100%);
+    color: var(--core-blue);
+  }
+  .anim-flying-core.soul {
+    background: radial-gradient(circle at 35% 35%, #fff1f2 0%, #e11d48 60%, #881337 100%);
+    color: var(--core-soul);
+    border: 1px solid #fbbf24;
+  }
+
+  /* Opened Cards Showcase Banner */
+  .opened-cards-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    background: rgba(15, 23, 42, 0.96);
+    border: 2px solid #38bdf8;
+    border-radius: 12px;
+    padding: 18px 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(56, 189, 248, 0.45);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    animation: pop-in 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+  @keyframes pop-in {
+    from { transform: translate(-50%, -50%) scale(0.65); opacity: 0; }
+    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  }
+  .opened-cards-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding-bottom: 8px;
+  }
+  .opened-cards-list {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .opened-card-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .opened-card-item .mat-card {
+    width: 130px;
+    height: 182px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.85), 0 0 20px rgba(56,189,248,0.5);
+  }
+
+  /* Direct Core Move Active Source Glow */
+  .core-source-active {
+    outline: 3px solid #38bdf8;
+    box-shadow: 0 0 15px #38bdf8 !important;
+  }
+
+  /* Drag & Drop to Field Styles */
+  .field-cards-grid.drag-drop-hint {
+    border: 2px dashed rgba(56, 189, 248, 0.6) !important;
+    background: rgba(56, 189, 248, 0.08) !important;
+  }
+  .field-cards-grid.drag-over {
+    border: 2px dashed #38bdf8 !important;
+    background: rgba(56, 189, 248, 0.25) !important;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.5) inset;
+  }
+  .mat-card-hand[draggable="true"] {
+    cursor: grab;
+  }
+  .mat-card-hand.dragging {
+    opacity: 0.35;
+    transform: scale(0.95);
+    cursor: grabbing;
+  }
+  .action-filter-bar {
+    background: #0369a1;
+    border: 1px solid #38bdf8;
+    color: #f0f9ff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header Bar -->
+<header class="top-bar">
+  <div class="title-group">
+    <h1>⚔ BS Rule Engine <span style="font-size: 12px; font-weight: normal; background: #0284c7; padding: 2px 8px; border-radius: 4px; color:#fff;">Playmat 2</span></h1>
+    <span id="room-badge" class="badge badge-room">Room: default</span>
+    <span id="turn-badge" class="badge" style="background:#334155;">ターン: -</span>
+    <span id="active-player-badge" class="badge" style="background:#475569;">手番: -</span>
+    <span id="phase-badge" class="badge badge-phase">ゲーム未開始</span>
+  </div>
+
+  <div class="btn-group">
+    <button id="btn-switch-playmat1" class="switch-mat" title="従来のテキスト重視盤面へ戻る" onclick="location.href='/' + location.search">📋 通常Playmat へ切替</button>
+    <button id="btn-settings" class="secondary">⚙ 設定</button>
+    <button id="btn-new" class="primary">新規ゲーム</button>
+    <button id="btn-restart" class="secondary">🔄 リスタート</button>
+    <button id="btn-undo" class="secondary" title="戻る (Ctrl+Z)" disabled>◀ 戻る</button>
+    <button id="btn-redo" class="secondary" title="進む (Ctrl+Y)" disabled>進む ▶</button>
+    <label class="auto-toggle"><input type="checkbox" id="auto-p1"> P1自動</label>
+    <label class="auto-toggle"><input type="checkbox" id="auto-p2"> P2自動</label>
+  </div>
+</header>
+
+<div class="main-container" id="main-container">
+  <!-- Playmat Graphical Table Area -->
+  <main class="playmat-area">
+    <div class="playmat-surface">
+
+      <!-- OPPONENT (Player 2) HALF MAT -->
+      <section class="half-mat opponent" id="p2-mat">
+        <!-- Left: P2 Deck & Trash -->
+        <div class="mat-column">
+          <div class="pile-label">DECK</div>
+          <div class="deck-pile" id="p2-deck-pile" title="DECK">
+            <div class="deck-card"></div>
+            <div class="pile-badge" id="p2-deck-count">--</div>
+          </div>
+
+          <div class="trash-zone-wrapper">
+            <div class="pile-label">TRASH</div>
+            <div class="trash-pile" id="p2-trash-pile">
+              <div id="p2-trash-card-top" class="trash-card-top" style="display:none;"></div>
+              <span id="p2-trash-empty" style="font-size:10px; color:#64748b;">EMPTY</span>
+              <div class="pile-badge" id="p2-trash-count">0</div>
+            </div>
+
+            <div class="core-tray" id="p2-trash-core-tray" style="margin-top:2px;">
+              <div class="tray-title" style="font-size:10px;">🗑️ TRASH CORES</div>
+              <div class="core-gem-container" id="p2-trash-cores"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: P2 Hand & Field -->
+        <div class="field-center">
+          <div class="player-identity">
+            <span id="p2-name">プレイヤー2</span>
+            <span id="p2-turn-badge" class="turn-indicator" style="display:none;">手番</span>
+          </div>
+
+          <!-- P2 Hand (Face Down) -->
+          <div class="hand-cards-row opponent-hand" id="p2-hand-row"></div>
+
+          <!-- P2 Field (Spirits / Nexuses) -->
+          <div class="field-zone-container">
+            <div class="field-header-bar">
+              <span>FIELD</span>
+            </div>
+            <div class="field-cards-grid" id="p2-field-grid"></div>
+          </div>
+        </div>
+
+        <!-- Right: P2 Life, Count & Reserve -->
+        <div class="mat-column">
+          <!-- P2 Life with 5 Sockets -->
+          <div class="life-tray" id="p2-life-tray">
+            <div class="tray-title">💖 LIFE (<span id="p2-life-num">-</span>)</div>
+            <div class="life-sockets-row" id="p2-life-gems"></div>
+          </div>
+
+          <!-- P2 Count Area -->
+          <div class="count-tray" id="p2-count-tray">
+            <div class="tray-title" style="font-size:10px;">💎 COUNT</div>
+            <span class="count-badge" id="p2-count-num">0</span>
+          </div>
+
+          <!-- P2 Reserve -->
+          <div class="core-tray" id="p2-reserve-tray">
+            <div class="tray-title">🔷 RESERVE</div>
+            <div class="core-gem-container" id="p2-reserve-gems"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTRAL BATTLE ARENA (CLASH ZONE) -->
+      <section class="battle-clash-zone" id="clash-zone">
+        <div class="clash-unit" id="clash-attacker">
+          <span style="font-size: 12px; color: #94a3b8;">-</span>
+        </div>
+        <div class="clash-vs">
+          <span>VS</span>
+          <span id="clash-status-text" class="clash-info">平穏</span>
+        </div>
+        <div class="clash-unit" id="clash-blocker">
+          <span style="font-size: 12px; color: #94a3b8;">-</span>
+        </div>
+      </section>
+
+      <!-- PLAYER 1 (YOU) HALF MAT -->
+      <section class="half-mat player" id="p1-mat">
+        <!-- Left: P1 Life, Count & Reserve -->
+        <div class="mat-column">
+          <!-- P1 Life with 5 Sockets -->
+          <div class="life-tray" id="p1-life-tray">
+            <div class="tray-title">💖 LIFE (<span id="p1-life-num">-</span>)</div>
+            <div class="life-sockets-row" id="p1-life-gems"></div>
+          </div>
+
+          <!-- P1 Count Area -->
+          <div class="count-tray" id="p1-count-tray">
+            <div class="tray-title" style="font-size:10px;">💎 COUNT</div>
+            <span class="count-badge" id="p1-count-num">0</span>
+          </div>
+
+          <!-- P1 Reserve -->
+          <div class="core-tray" id="p1-reserve-tray" style="cursor:pointer;">
+            <div class="tray-title">🔷 RESERVE (<span id="p1-reserve-count">0</span>)</div>
+            <div class="core-gem-container" id="p1-reserve-gems"></div>
+          </div>
+        </div>
+
+        <!-- Center: P1 Field & Hand -->
+        <div class="field-center">
+          <div class="player-identity">
+            <span id="p1-name">プレイヤー1</span>
+            <span id="p1-turn-badge" class="turn-indicator" style="display:none;">あなたの手番</span>
+          </div>
+
+          <!-- P1 Field (Spirits / Nexuses) -->
+          <div class="field-zone-container">
+            <div class="field-header-bar">
+              <span>FIELD</span>
+            </div>
+            <div class="field-cards-grid" id="p1-field-grid"></div>
+          </div>
+
+          <!-- P1 Hand (Interactive Physical Cards) -->
+          <div class="hand-zone">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#94a3b8;">
+              <span>手札 (<span id="p1-hand-count-num">0</span>)</span>
+              <span id="hand-instruction" style="color:#38bdf8;"></span>
+            </div>
+            <div class="hand-cards-row" id="p1-hand-row"></div>
+          </div>
+        </div>
+
+        <!-- Right: P1 Deck & Trash -->
+        <div class="mat-column">
+          <div class="pile-label">DECK</div>
+          <div class="deck-pile" id="p1-deck-pile" title="DECK">
+            <div class="deck-card"></div>
+            <div class="pile-badge" id="p1-deck-count">--</div>
+          </div>
+
+          <div class="trash-zone-wrapper">
+            <div class="pile-label">TRASH</div>
+            <div class="trash-pile" id="p1-trash-pile">
+              <div id="p1-trash-card-top" class="trash-card-top" style="display:none;"></div>
+              <span id="p1-trash-empty" style="font-size:10px; color:#64748b;">EMPTY</span>
+              <div class="pile-badge" id="p1-trash-count">0</div>
+            </div>
+
+            <div class="core-tray" id="p1-trash-core-tray" style="margin-top:2px;">
+              <div class="tray-title" style="font-size:10px;">🗑️ TRASH CORES</div>
+              <div class="core-gem-container" id="p1-trash-cores"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Drag Resizer Separator between Playmat and Sidebar -->
+  <div class="main-resizer" id="main-resizer" title="ドラッグして左右の幅を調整"></div>
+
+  <!-- Right Sidebar: Action Controller, Card Inspector, Logs -->
+  <aside class="sidebar" id="main-sidebar">
+    <!-- Step Actions Control -->
+    <div class="sidebar-section">
+      <h2>
+        <span>選択可能なアクション</span>
+        <button id="btn-step-end" class="primary" style="display:none;">ステップ終了</button>
+      </h2>
+      <div id="action-list" class="action-list">
+        <div style="color:#64748b; font-size:12px; text-align:center; padding:12px;">アクションを取得中...</div>
+      </div>
+    </div>
+
+    <!-- Active Card Inspector (No header, maximized card art view) -->
+    <div class="sidebar-section" id="inspector-section" style="padding-top: 8px;">
+      <div class="card-inspector" id="card-inspector">
+        <div class="inspector-art" id="inspector-art"></div>
+        <div class="inspector-details">
+          <div class="inspector-name" id="inspector-name">-</div>
+          <div class="inspector-stats" id="inspector-stats">-</div>
+          <div class="inspector-text" id="inspector-text"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Event Log -->
+    <div class="sidebar-section" style="flex:1; display:flex; flex-direction:column; padding-bottom:0;">
+      <h2>バトルログ</h2>
+      <div class="log-console" id="log-console"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Trash Cards Modal -->
+<dialog id="trash-dialog" class="modal-dialog">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:8px; margin-bottom:12px;">
+    <h2 id="trash-dialog-title" style="font-size:16px; color:#38bdf8;">🗑️ トラッシュ一覧</h2>
+    <button class="secondary" onclick="$('trash-dialog').close()">✕ 閉じる</button>
+  </div>
+  <div class="trash-gallery" id="trash-gallery"></div>
+</dialog>
+
+<!-- Settings Dialog (Same functionality as Playmat 1) -->
+<dialog id="settings-dialog" class="modal-dialog">
+  <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #334155; padding-bottom:8px; margin-bottom:12px;">
+    <h2 style="font-size:16px; color:#38bdf8;">⚙ ゲーム設定</h2>
+    <button class="secondary" onclick="$('settings-dialog').close()">✕</button>
+  </div>
+  <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+    <div>
+      <label style="display:block; margin-bottom:4px; color:#94a3b8;">フォーマット</label>
+      <select id="format" style="width:100%; padding:6px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">
+        <option value="standard">スタンダード</option>
+        <option value="eternal">エターナル</option>
+      </select>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <div>
+        <label style="display:block; margin-bottom:4px; color:#94a3b8;">デッキ1</label>
+        <input id="deck1" value="deck-kogyo.yaml" style="width:100%; padding:6px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">
+      </div>
+      <div>
+        <label style="display:block; margin-bottom:4px; color:#94a3b8;">デッキ2</label>
+        <input id="deck2" value="deck-kogyo.yaml" style="width:100%; padding:6px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">
+      </div>
+    </div>
+    <div>
+      <label style="display:block; margin-bottom:4px; color:#94a3b8;">表示モード</label>
+      <select id="viewer" style="width:100%; padding:6px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:4px;">
+        <option value="0">GodMode（全情報）</option>
+        <option value="1">プレイヤー1 視点</option>
+        <option value="2">プレイヤー2 視点</option>
+      </select>
+    </div>
+  </div>
+  <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+    <button class="primary" onclick="$('settings-dialog').close()">適用して閉じる</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const TAB_ROOM = new URLSearchParams(location.search).get("room") || new URLSearchParams(location.search).get("sid") || "default";
+const TAB_SESSION = "sess_" + Math.random().toString(36).substring(2, 9);
+const CARD_BACK_URL = "https://www.battlespirits.com/images/rule/card_back.png";
+
+let current = null;
+let lastState = null;
+let selectedCoreMoveSource = null;
+let activeHandPopoverCardNo = null;
+let currentActionFilter = null; // { cardNo: string, filterKind: "SUMMON_DEPLOY" | "HAND_EFFECTS" }
+let draggedHandCard = null;
+
+function renderActionList(data, filter = currentActionFilter) {
+  const actionList = $("action-list");
+  if (!actionList) return;
+  actionList.innerHTML = "";
+
+  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
+  if (filter && filter.cardNo) {
+    const cardObj = (p1.hand || []).find(c => c.card_no === filter.cardNo) || (p1.field || []).find(c => c.card_no === filter.cardNo);
+    const cardName = cardObj ? cardObj.name : filter.cardNo;
+    const filterBar = document.createElement("div");
+    filterBar.className = "action-filter-bar";
+    filterBar.innerHTML = `
+      <span>🔍「${esc(cardName)}」の${filter.filterKind === "SUMMON_DEPLOY" ? "召喚・配置" : "手札効果"}</span>
+      <button class="secondary" style="padding:2px 8px; font-size:10px; background:#0f172a; border-color:#38bdf8;" onclick="clearActionFilter()">✕ すべて表示</button>
+    `;
+    actionList.appendChild(filterBar);
+  }
+
+  const stepEndBtn = $("btn-step-end");
+  if (data.n_index != null && !filter) {
+    stepEndBtn.style.display = "inline-flex";
+    stepEndBtn.textContent = data.n_label || "ステップ終了";
+    stepEndBtn.onclick = () => doAct(data.n_index);
+  } else {
+    stepEndBtn.style.display = "none";
+  }
+
+  if (!data.groups || !data.groups.length) {
+    actionList.innerHTML += `<div style="color:#64748b; font-size:12px; text-align:center; padding:12px;">選択可能なアクションはありません</div>`;
+    return;
+  }
+
+  let matchedAny = false;
+  for (const g of data.groups) {
+    if (g.all_forbidden) continue;
+
+    if (filter && filter.cardNo) {
+      if (filter.filterKind === "SUMMON_DEPLOY") {
+        if (g.card_no !== filter.cardNo) continue;
+        if (g.category.includes("マジック使用") || g.category.includes("フラッシュ召喚")) continue;
+      } else if (filter.filterKind === "HAND_EFFECTS") {
+        if (g.card_no !== filter.cardNo) continue;
+        const hasHandEffect = g.category.includes("マジック使用") || g.category.includes("フラッシュ召喚") || g.category.includes("手札") || g.options.some(o => o.type === "USE_MAGIC" || o.type === "FLASH_SUMMON");
+        if (!hasHandEffect) continue;
+      }
+    }
+
+    for (const opt of g.options.filter(o => !o.forbidden)) {
+      matchedAny = true;
+      const item = document.createElement("button");
+      item.className = "action-item-btn" + (opt.eval != null && opt.eval >= 0.5 ? " is-best" : "");
+      item.innerHTML = `
+        <span>${esc(opt.detail)}</span>
+        <span style="color:#facc15; font-weight:700; font-size:11px;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>
+      `;
+      item.onclick = () => doAct(opt.index);
+      actionList.appendChild(item);
+    }
+  }
+
+  if (filter && !matchedAny) {
+    actionList.innerHTML += `<div style="color:#94a3b8; font-size:12px; text-align:center; padding:12px;">該当するアクションはありません</div>`;
+  }
+}
+
+function clearActionFilter() {
+  currentActionFilter = null;
+  $("hand-instruction").textContent = "";
+  if (current) renderActionList(current, null);
+}
+
+function filterSummonActions(cardNo) {
+  closeHandPopover();
+  currentActionFilter = { cardNo, filterKind: "SUMMON_DEPLOY" };
+  if (current) renderActionList(current, currentActionFilter);
+}
+
+function handleHandCardDropOnField(card) {
+  closeHandPopover();
+  currentActionFilter = { cardNo: card.card_no, filterKind: "SUMMON_DEPLOY" };
+  if (current) renderActionList(current, currentActionFilter);
+  $("hand-instruction").textContent = `🎴「${card.name}」の召喚・配置: 選択肢一覧から支払・配置コア配分を選んで決定してください`;
+  const actionList = $("action-list");
+  if (actionList) {
+    actionList.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+function setupFieldDropZone() {
+  const p1FieldGrid = $("p1-field-grid");
+  if (!p1FieldGrid || p1FieldGrid._dropConfigured) return;
+  p1FieldGrid._dropConfigured = true;
+
+  p1FieldGrid.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    p1FieldGrid.classList.add("drag-over");
+  });
+  p1FieldGrid.addEventListener("dragleave", () => {
+    p1FieldGrid.classList.remove("drag-over");
+  });
+  p1FieldGrid.addEventListener("drop", (e) => {
+    e.preventDefault();
+    p1FieldGrid.classList.remove("drag-over");
+    p1FieldGrid.classList.remove("drag-drop-hint");
+    if (draggedHandCard) {
+      handleHandCardDropOnField(draggedHandCard);
+    }
+  });
+}
+
+function triggerDrawAnimation(fromElementId, toElementId, cardImageUrl = null) {
+  const fromEl = $(fromElementId);
+  const toEl = $(toElementId);
+  if (!fromEl || !toEl) return;
+  const fromRect = fromEl.getBoundingClientRect();
+  const toRect = toEl.getBoundingClientRect();
+
+  const flyer = document.createElement("div");
+  flyer.className = "anim-flying-card";
+  if (cardImageUrl) flyer.style.backgroundImage = `url('${cardImageUrl}')`;
+  flyer.style.left = `${fromRect.left}px`;
+  flyer.style.top = `${fromRect.top}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.style.left = `${toRect.left + (toRect.width - 110) / 2}px`;
+    flyer.style.top = `${toRect.top + 10}px`;
+    flyer.style.transform = `scale(1.08) rotate(2deg)`;
+  });
+
+  setTimeout(() => flyer.remove(), 560);
+}
+
+function triggerCoreMoveAnimation(fromElement, toElement, isSoul = false) {
+  if (!fromElement || !toElement) return;
+  const fromRect = fromElement.getBoundingClientRect();
+  const toRect = toElement.getBoundingClientRect();
+
+  const flyer = document.createElement("div");
+  flyer.className = "anim-flying-core " + (isSoul ? "soul" : "normal");
+  flyer.style.left = `${fromRect.left + fromRect.width / 2 - 10}px`;
+  flyer.style.top = `${fromRect.top + fromRect.height / 2 - 10}px`;
+  document.body.appendChild(flyer);
+
+  requestAnimationFrame(() => {
+    flyer.style.left = `${toRect.left + toRect.width / 2 - 10}px`;
+    flyer.style.top = `${toRect.top + toRect.height / 2 - 10}px`;
+  });
+
+  setTimeout(() => flyer.remove(), 460);
+}
+
+function renderOpenedCards(openedCards) {
+  let existing = $("opened-cards-banner");
+  if (!openedCards || openedCards.length === 0) {
+    if (existing) existing.remove();
+    return;
+  }
+  if (!existing) {
+    existing = document.createElement("div");
+    existing.id = "opened-cards-banner";
+    existing.className = "opened-cards-banner";
+    document.body.appendChild(existing);
+  }
+  existing.innerHTML = `
+    <div class="opened-cards-title">
+      <span>👁️ オープンされたカード (相手にも公開中)</span>
+      <button class="secondary" style="padding:2px 8px; font-size:11px;" onclick="$('opened-cards-banner').remove()">✕ 閉じる</button>
+    </div>
+    <div class="opened-cards-list">
+      ${openedCards.map(c => `
+        <div class="opened-card-item">
+          <div class="mat-card" style="background-image:url('${c.image_url}')"></div>
+          <div style="font-weight:700; font-size:12px; color:#38bdf8;">${esc(c.name)}</div>
+          <div style="font-size:11px; color:#94a3b8;">コスト:${c.cost} / 軽減:${esc(c.reduction || '-')}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function currentViewer() {
+  return $("viewer") ? $("viewer").value : "0";
+}
+
+async function api(path, body = null) {
+  const url = path + (path.includes("?") ? "&" : "?") + "room=" + TAB_ROOM + "&session=" + TAB_SESSION + "&viewer=" + currentViewer();
+  const res = await fetch(url, {
+    method: body ? "POST" : "GET",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res.json();
+}
+
+async function doAct(index) {
+  closeHandPopover();
+  clearCoreMoveSelection();
+  const data = await api("/api/act", { index });
+  if (data) render(data);
+}
+
+function parseCoreString(s) {
+  const str = String(s || "0");
+  const total = parseInt(str, 10) || 0;
+  const soul = str.endsWith("s") && total > 0 ? 1 : 0;
+  return { normal: total - soul, soul, total };
+}
+
+function renderCoreGems(container, normalCount, soulCount, isInteractive = false, onCoreClick = null) {
+  container.innerHTML = "";
+  for (let i = 0; i < soulCount; i++) {
+    const gem = document.createElement("div");
+    gem.className = "core-gem soul";
+    gem.title = "ソウルコア 🔮";
+    if (isInteractive && onCoreClick) {
+      gem.onclick = (e) => { e.stopPropagation(); onCoreClick("soul"); };
+    }
+    container.appendChild(gem);
+  }
+  for (let i = 0; i < normalCount; i++) {
+    const gem = document.createElement("div");
+    gem.className = "core-gem normal";
+    gem.title = "コア 🔷";
+    if (isInteractive && onCoreClick) {
+      gem.onclick = (e) => { e.stopPropagation(); onCoreClick("normal"); };
+    }
+    container.appendChild(gem);
+  }
+}
+
+function renderLifeGems(container, lifeCount) {
+  if (!container) return;
+  container.innerHTML = "";
+  const totalSockets = Math.max(5, lifeCount || 0);
+  for (let i = 1; i <= totalSockets; i++) {
+    const socket = document.createElement("div");
+    socket.className = "life-socket" + (i <= (lifeCount || 0) ? " filled" : " empty");
+    if (i <= (lifeCount || 0)) {
+      const gem = document.createElement("div");
+      gem.className = "core-gem life-gem";
+      gem.title = `ライフコア #${i}`;
+      socket.appendChild(gem);
+    } else {
+      socket.textContent = i;
+    }
+    container.appendChild(socket);
+  }
+}
+
+function updateInspector(card) {
+  if (!card) return;
+  const artEl = $("inspector-art");
+  const nameEl = $("inspector-name");
+  const statsEl = $("inspector-stats");
+  const textEl = $("inspector-text");
+
+  if (card.image_url) {
+    artEl.style.backgroundImage = `url('${card.image_url}')`;
+  } else {
+    artEl.style.backgroundImage = `url('${CARD_BACK_URL}')`;
+  }
+  nameEl.textContent = card.name || "カード名未設定";
+  statsEl.textContent = `No: ${card.card_no || '-'} | コスト: ${card.cost ?? '-'} | 軽減: ${card.reduction || '-'} | シンボル: ${card.symbols || '-'}`;
+  textEl.textContent = `カテゴリ: ${card.category || 'SPIRIT'} ${card.bp ? '| BP: ' + card.bp : ''}\n維持コア: ${card.lv_costs ? card.lv_costs.join(' / ') : '-'}`;
+}
+
+function renderFieldCard(c, isMyField, groups, attackingCardId) {
+  const cardDiv = document.createElement("div");
+  cardDiv.className = "mat-card";
+  if (c.image_url) {
+    cardDiv.style.backgroundImage = `url('${c.image_url}')`;
+  }
+  cardDiv.setAttribute("data-id", c.id);
+
+  if (c.exhausted) cardDiv.classList.add("exhausted");
+  if (c.is_attacking || c.id === attackingCardId) cardDiv.classList.add("attacking");
+
+  // Badges: Lv & BP
+  const lvBadge = document.createElement("div");
+  lvBadge.className = "card-badge-lv";
+  lvBadge.textContent = `Lv${c.lv || 1}`;
+  cardDiv.appendChild(lvBadge);
+
+  if (c.bp != null) {
+    const bpBadge = document.createElement("div");
+    bpBadge.className = "card-badge-bp";
+    bpBadge.textContent = `BP${c.bp}`;
+    cardDiv.appendChild(bpBadge);
+  }
+
+  // Cores placed directly on the card
+  const coreInfo = parseCoreString(c.cores);
+  if (coreInfo.total > 0) {
+    const coresOverlay = document.createElement("div");
+    coresOverlay.className = "card-cores-overlay";
+    renderCoreGems(coresOverlay, coreInfo.normal, coreInfo.soul, isMyField, (coreType) => {
+      startCoreMove(c.id, coreType);
+    });
+    cardDiv.appendChild(coresOverlay);
+  }
+
+  // Check actions for this card
+  if (isMyField && groups) {
+    const attackGroup = groups.find(g => (g.category || "").includes("アタック") && g.target_instance_id === c.id);
+    if (attackGroup && !attackGroup.all_forbidden) {
+      cardDiv.classList.add("attackable");
+      cardDiv.title = `⚔️ クリックして ${c.name} でアタック！`;
+      cardDiv.onclick = () => {
+        const act = attackGroup.options.find(o => !o.forbidden);
+        if (act) doAct(act.index);
+      };
+    }
+  } else if (!isMyField && groups) {
+    const blockGroup = groups.find(g => (g.category || "").includes("ブロック") && g.target_instance_id === c.id);
+    if (blockGroup && !blockGroup.all_forbidden) {
+      cardDiv.classList.add("blockable");
+      cardDiv.title = `🛡️ クリックして ${c.name} でブロック！`;
+      cardDiv.onclick = () => {
+        const act = blockGroup.options.find(o => !o.forbidden);
+        if (act) doAct(act.index);
+      };
+    }
+  }
+
+  // Core move target support
+  cardDiv.addEventListener("click", (e) => {
+    if (selectedCoreMoveSource && selectedCoreMoveSource.sourceId !== c.id) {
+      e.stopPropagation();
+      executeDirectCoreMove(selectedCoreMoveSource.sourceId, c.id, selectedCoreMoveSource.coreType);
+    }
+  });
+
+  cardDiv.addEventListener("mouseenter", () => updateInspector(c));
+  return cardDiv;
+}
+
+function startCoreMove(sourceId, coreType) {
+  selectedCoreMoveSource = { sourceId, coreType };
+  document.querySelectorAll(".mat-card, .core-tray").forEach(el => el.classList.remove("core-source-active"));
+  const srcEl = document.querySelector(`[data-id="${sourceId}"]`) || $(sourceId === "Reserve" ? "p1-reserve-tray" : "");
+  if (srcEl) srcEl.classList.add("core-source-active");
+  $("hand-instruction").textContent = `🔷 移動先カードまたはリザーブをクリックしてください`;
+}
+
+function clearCoreMoveSelection() {
+  selectedCoreMoveSource = null;
+  document.querySelectorAll(".mat-card, .core-tray").forEach(el => el.classList.remove("core-source-active"));
+  $("hand-instruction").textContent = "";
+}
+
+function executeDirectCoreMove(fromId, toId, coreType) {
+  if (!current || !current.groups) return;
+  const moveGroup = current.groups.find(g => (g.category || "").includes("コア移動") || (g.category || "").includes("コア再配置"));
+  if (moveGroup) {
+    const candidate = moveGroup.options.find(o => {
+      const fromEff = (o.core_effects || []).find(e => e.source_id === fromId && e.direction === "from");
+      const toEff = (o.core_effects || []).find(e => e.source_id === toId && e.direction === "to");
+      return fromEff != null && toEff != null;
+    });
+    if (candidate) {
+      doAct(candidate.index);
+      return;
+    }
+  }
+  clearCoreMoveSelection();
+}
+
+function renderHand(container, hand, groups, isPlayer) {
+  container.innerHTML = "";
+  if (!hand || !hand.length) {
+    container.innerHTML = `<div style="color:#64748b; font-size:12px; margin:auto;">(手札はありません)</div>`;
+    return;
+  }
+
+  for (const c of hand) {
+    const cardEl = document.createElement("div");
+    cardEl.className = "mat-card-hand";
+    if (isPlayer) {
+      if (c.image_url) cardEl.style.backgroundImage = `url('${c.image_url}')`;
+
+      // Cost badge
+      const costBadge = document.createElement("div");
+      costBadge.className = "hand-badge-cost";
+      costBadge.textContent = `${c.cost} (${c.reduction || '-'})`;
+      cardEl.appendChild(costBadge);
+
+      // Playable check
+      const matchedGroups = (groups || []).filter(g => g.card_no === c.card_no);
+      const isPlayable = matchedGroups.length > 0 && matchedGroups.some(g => !g.all_forbidden);
+
+      if (isPlayable) {
+        cardEl.classList.add("playable");
+        const bestEval = Math.max(...matchedGroups.flatMap(g => g.options.map(o => o.eval || 0)));
+        const evalBadge = document.createElement("div");
+        evalBadge.className = "hand-badge-eval" + (bestEval >= 0.5 ? " best" : "");
+        evalBadge.textContent = `${((bestEval + 1) / 2 * 100).toFixed(0)}%`;
+        cardEl.appendChild(evalBadge);
+      }
+
+      // Drag and Drop: 手札からフィールドにドラッグした場合は召喚・配置としてフィルタ
+      cardEl.setAttribute("draggable", "true");
+      cardEl.addEventListener("dragstart", (e) => {
+        draggedHandCard = c;
+        cardEl.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", c.card_no);
+        e.dataTransfer.effectAllowed = "copy";
+        const fg = $("p1-field-grid");
+        if (fg) fg.classList.add("drag-drop-hint");
+      });
+      cardEl.addEventListener("dragend", () => {
+        cardEl.classList.remove("dragging");
+        const fg = $("p1-field-grid");
+        if (fg) {
+          fg.classList.remove("drag-drop-hint");
+          fg.classList.remove("drag-over");
+        }
+      });
+
+      // 単なるクリック: 手札から使用できる効果 (マジック使用やフラッティ等のフラッシュ召喚効果) を表示
+      cardEl.onclick = (e) => {
+        e.stopPropagation();
+        toggleHandPopover(cardEl, c, matchedGroups);
+      };
+
+      cardEl.addEventListener("mouseenter", () => updateInspector(c));
+    } else {
+      cardEl.style.backgroundImage = `url('${CARD_BACK_URL}')`;
+    }
+    container.appendChild(cardEl);
+  }
+}
+
+function toggleHandPopover(cardEl, card, groups) {
+  closeHandPopover();
+  if (activeHandPopoverCardNo === card.card_no) {
+    activeHandPopoverCardNo = null;
+    return;
+  }
+  activeHandPopoverCardNo = card.card_no;
+
+  const popover = document.createElement("div");
+  popover.className = "hand-action-popover";
+  popover.id = "active-hand-popover";
+
+  // 手札から直接使用できる効果 (マジック使用、フラッシュ召喚、手札誘発効果) を抽出
+  const handEffectGroups = (groups || []).filter(g =>
+    (g.category || "").includes("マジック使用") ||
+    (g.category || "").includes("フラッシュ召喚") ||
+    (g.category || "").includes("手札") ||
+    g.options.some(o => o.type === "USE_MAGIC" || o.type === "FLASH_SUMMON")
+  );
+  const handEffectOptions = handEffectGroups.flatMap(g => g.options.filter(o => !o.forbidden));
+
+  if (handEffectOptions.length > 0) {
+    const header = document.createElement("div");
+    header.className = "popover-header";
+    header.innerHTML = `<span>✨ ${esc(card.name)} の手札効果</span><span>コスト:${card.cost}</span>`;
+    popover.appendChild(header);
+
+    const uniqueDetails = new Map();
+    for (const opt of handEffectOptions) {
+      if (!uniqueDetails.has(opt.detail)) uniqueDetails.set(opt.detail, opt);
+    }
+
+    for (const [detail, opt] of uniqueDetails) {
+      const btn = document.createElement("button");
+      btn.className = "popover-btn";
+      btn.innerHTML = `<span>${esc(detail)}</span><span style="color:#facc15; font-weight:700;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>`;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        doAct(opt.index);
+      };
+      popover.appendChild(btn);
+    }
+
+    // 選択肢フィールドも手札効果でフィルタ
+    currentActionFilter = { cardNo: card.card_no, filterKind: "HAND_EFFECTS" };
+    if (current) renderActionList(current, currentActionFilter);
+  } else {
+    // 手札効果がない場合 (通常召喚・配置カード)
+    const header = document.createElement("div");
+    header.className = "popover-header";
+    header.innerHTML = `<span>🎴 ${esc(card.name)}</span><span>コスト:${card.cost}</span>`;
+    popover.appendChild(header);
+
+    const summonBtn = document.createElement("button");
+    summonBtn.className = "popover-btn";
+    summonBtn.innerHTML = `<span>🎴 召喚・配置の選択肢を表示</span><span>▶</span>`;
+    summonBtn.onclick = (e) => {
+      e.stopPropagation();
+      filterSummonActions(card.card_no);
+    };
+    popover.appendChild(summonBtn);
+  }
+
+  cardEl.appendChild(popover);
+}
+
+function closeHandPopover() {
+  const existing = $("active-hand-popover");
+  if (existing) existing.remove();
+  activeHandPopoverCardNo = null;
+}
+
+document.addEventListener("click", () => {
+  closeHandPopover();
+  clearCoreMoveSelection();
+});
+
+function openTrashModal(playerTitle, trashCards) {
+  $("trash-dialog-title").textContent = `🗑️ ${playerTitle}のトラッシュ (${trashCards.length}枚)`;
+  const gallery = $("trash-gallery");
+  gallery.innerHTML = "";
+  if (!trashCards.length) {
+    gallery.innerHTML = `<div style="color:#94a3b8; font-size:13px;">トラッシュにカードはありません。</div>`;
+  } else {
+    for (const c of trashCards) {
+      const cardEl = document.createElement("div");
+      cardEl.className = "mat-card";
+      if (c.image_url) cardEl.style.backgroundImage = `url('${c.image_url}')`;
+      cardEl.title = `${c.name} (${c.card_no})`;
+      cardEl.onclick = () => updateInspector(c);
+      gallery.appendChild(cardEl);
+    }
+  }
+  $("trash-dialog").showModal();
+}
+
+function render(data) {
+  current = data;
+  if (!data) return;
+
+  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
+  const p2 = (data.player.player_id === 2) ? data.player : data.opponent;
+
+  // Header badges
+  $("room-badge").textContent = `Room: ${TAB_ROOM}`;
+  $("turn-badge").textContent = `ターン: ${data.turn || 1}`;
+  $("active-player-badge").textContent = `手番: プレイヤー${data.active_player}`;
+
+  const phaseBadge = $("phase-badge");
+  phaseBadge.textContent = data.phase || "-";
+  phaseBadge.className = "badge badge-phase";
+  if ((data.phase || "").includes("アタック")) phaseBadge.classList.add("attack");
+  if ((data.phase || "").includes("フラッシュ")) phaseBadge.classList.add("flash");
+
+  // P1 (You) Info
+  $("p1-name").textContent = `プレイヤー1 (${p1.deck_count}枚 / 手札${p1.hand_count}枚)`;
+  $("p1-turn-badge").style.display = (data.choosing_player === 1) ? "inline-block" : "none";
+  $("p1-deck-count").textContent = p1.deck_count;
+  $("p1-trash-count").textContent = p1.trash_cards.length;
+  $("p1-hand-count-num").textContent = p1.hand.length;
+
+  if (p1.trash_cards.length > 0) {
+    const topCard = p1.trash_cards[p1.trash_cards.length - 1];
+    $("p1-trash-card-top").style.display = "block";
+    $("p1-trash-card-top").style.backgroundImage = `url('${topCard.image_url}')`;
+    $("p1-trash-empty").style.display = "none";
+  } else {
+    $("p1-trash-card-top").style.display = "none";
+    $("p1-trash-empty").style.display = "block";
+  }
+  $("p1-trash-pile").onclick = () => openTrashModal("プレイヤー1", p1.trash_cards);
+
+  // P1 Life & Cores
+  $("p1-life-num").textContent = p1.life;
+  renderLifeGems($("p1-life-gems"), p1.life);
+
+  if ($("p1-count-num")) $("p1-count-num").textContent = p1.count ?? 0;
+
+  const p1Res = parseCoreString(p1.reserve);
+  $("p1-reserve-count").textContent = p1Res.total;
+  renderCoreGems($("p1-reserve-gems"), p1Res.normal, p1Res.soul, true, (coreType) => {
+    startCoreMove("Reserve", coreType);
+  });
+  $("p1-reserve-tray").onclick = (e) => {
+    if (selectedCoreMoveSource && selectedCoreMoveSource.sourceId !== "Reserve") {
+      e.stopPropagation();
+      executeDirectCoreMove(selectedCoreMoveSource.sourceId, "Reserve", selectedCoreMoveSource.coreType);
+    }
+  };
+
+  const p1TrashCores = parseCoreString(p1.trash_cores);
+  renderCoreGems($("p1-trash-cores"), p1TrashCores.normal, p1TrashCores.soul);
+
+  // P1 Field & Hand
+  const p1FieldGrid = $("p1-field-grid");
+  p1FieldGrid.innerHTML = "";
+  for (const c of p1.field) {
+    p1FieldGrid.appendChild(renderFieldCard(c, true, data.groups, data.attacking_card_id));
+  }
+  renderHand($("p1-hand-row"), p1.hand, data.groups, true);
+
+  // P2 (Opponent) Info
+  $("p2-name").textContent = `プレイヤー2 (${p2.deck_count}枚 / 手札${p2.hand_count}枚)`;
+  $("p2-turn-badge").style.display = (data.choosing_player === 2) ? "inline-block" : "none";
+  $("p2-deck-count").textContent = p2.deck_count;
+  $("p2-trash-count").textContent = p2.trash_cards.length;
+
+  if (p2.trash_cards.length > 0) {
+    const topCard = p2.trash_cards[p2.trash_cards.length - 1];
+    $("p2-trash-card-top").style.display = "block";
+    $("p2-trash-card-top").style.backgroundImage = `url('${topCard.image_url}')`;
+    $("p2-trash-empty").style.display = "none";
+  } else {
+    $("p2-trash-card-top").style.display = "none";
+    $("p2-trash-empty").style.display = "block";
+  }
+  $("p2-trash-pile").onclick = () => openTrashModal("プレイヤー2", p2.trash_cards);
+
+  // P2 Life & Cores
+  $("p2-life-num").textContent = p2.life;
+  renderLifeGems($("p2-life-gems"), p2.life);
+
+  if ($("p2-count-num")) $("p2-count-num").textContent = p2.count ?? 0;
+
+  const p2Res = parseCoreString(p2.reserve);
+  renderCoreGems($("p2-reserve-gems"), p2Res.normal, p2Res.soul);
+
+  const p2TrashCores = parseCoreString(p2.trash_cores);
+  renderCoreGems($("p2-trash-cores"), p2TrashCores.normal, p2TrashCores.soul);
+
+  // P2 Field & Hand
+  const p2FieldGrid = $("p2-field-grid");
+  p2FieldGrid.innerHTML = "";
+  for (const c of p2.field) {
+    p2FieldGrid.appendChild(renderFieldCard(c, false, data.groups, data.attacking_card_id));
+  }
+      p2FieldGrid.appendChild(renderFieldCard(c, false, data.groups, data.attacking_card_id));
+    }
+  }
+
+  const p2HandCards = (p2.hand && p2.hand.length) ? p2.hand : Array(p2.hand_count).fill({});
+  renderHand($("p2-hand-row"), p2HandCards, null, false);
+
+  // Battle Arena Clash
+  const allFieldCards = [...p1.field, ...p2.field];
+  const attacker = allFieldCards.find(c => c.is_attacking || c.id === data.attacking_card_id);
+  const blocker = allFieldCards.find(c => c.id === data.blocking_card_id);
+
+  const clashZone = $("clash-zone");
+  const attackerUnit = $("clash-attacker");
+  const blockerUnit = $("clash-blocker");
+  const clashStatus = $("clash-status-text");
+
+  if (attacker) {
+    clashZone.classList.add("active");
+    attackerUnit.innerHTML = `
+      <div class="mat-card" style="background-image:url('${attacker.image_url}'); width:60px; height:84px;"></div>
+      <div>
+        <div style="font-weight:700; color:#ef4444;">⚔ ${esc(attacker.name)}</div>
+        <div style="font-size:11px; color:#facc15;">BP ${attacker.bp || '-'}</div>
+      </div>
+    `;
+    if (blocker) {
+      blockerUnit.innerHTML = `
+        <div>
+          <div style="font-weight:700; color:#38bdf8;">🛡️ ${esc(blocker.name)}</div>
+          <div style="font-size:11px; color:#facc15;">BP ${blocker.bp || '-'}</div>
+        </div>
+        <div class="mat-card" style="background-image:url('${blocker.image_url}'); width:60px; height:84px;"></div>
+      `;
+      clashStatus.textContent = "激突中！";
+    } else {
+      blockerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">🛡️ (ブロック待ち/スルー)</span>`;
+      clashStatus.textContent = "アタック進行中";
+    }
+  } else {
+    clashZone.classList.remove("active");
+    attackerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">⚔ アタッカーなし</span>`;
+    blockerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">🛡️ ブロッカーなし</span>`;
+    clashStatus.textContent = "平穏";
+  }
+
+  // Setup Drag & Drop Zone for Field
+  setupFieldDropZone();
+
+  // Render Action List in Sidebar with current filter
+  renderActionList(data, currentActionFilter);
+
+  // Undo / Redo buttons
+  $("btn-undo").disabled = !data.can_undo;
+  $("btn-redo").disabled = !data.can_redo;
+
+  // Append messages to log
+  if (data.messages && data.messages.length) {
+    const consoleEl = $("log-console");
+    for (const msg of data.messages) {
+      const line = document.createElement("div");
+      line.className = "log-line";
+      line.textContent = msg;
+      consoleEl.appendChild(line);
+    }
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  // Animations based on state diff
+  if (lastState) {
+    const prevP1 = (lastState.player.player_id === 1) ? lastState.player : lastState.opponent;
+    const prevP2 = (lastState.player.player_id === 2) ? lastState.player : lastState.opponent;
+
+    // Check P1 Draw Animation
+    if (p1.hand && prevP1.hand && p1.hand.length > prevP1.hand.length) {
+      const drawnCard = p1.hand[p1.hand.length - 1];
+      triggerDrawAnimation("p1-deck-pile", "p1-hand-row", drawnCard ? drawnCard.image_url : null);
+    }
+    // Check P2 Draw Animation
+    if (p2.hand_count > prevP2.hand_count) {
+      triggerDrawAnimation("p2-deck-pile", "p2-hand-row");
+    }
+
+    // Check Core Movements
+    const prevP1Res = parseCoreString(prevP1.reserve);
+    const currP1Res = parseCoreString(p1.reserve);
+    if (currP1Res.total < prevP1Res.total) {
+      // Cores moved out from Reserve to a field card or trash
+      const targetCard = p1.field.find(c => {
+        const prevC = prevP1.field.find(pc => pc.id === c.id);
+        return prevC && parseCoreString(c.cores).total > parseCoreString(prevC.cores).total;
+      });
+      const targetEl = targetCard ? document.querySelector(`[data-id="${targetCard.id}"]`) : $("p1-trash-core-tray");
+      if (targetEl) triggerCoreMoveAnimation($("p1-reserve-tray"), targetEl, currP1Res.soul < prevP1Res.soul);
+    } else if (currP1Res.total > prevP1Res.total) {
+      // Cores moved in to Reserve
+      const srcCard = prevP1.field.find(pc => {
+        const currC = p1.field.find(c => c.id === pc.id);
+        return currC && parseCoreString(currC.cores).total < parseCoreString(pc.cores).total;
+      });
+      const srcEl = srcCard ? document.querySelector(`[data-id="${srcCard.id}"]`) : $("p1-mat");
+      if (srcEl) triggerCoreMoveAnimation(srcEl, $("p1-reserve-tray"), currP1Res.soul > prevP1Res.soul);
+    }
+  }
+
+  // Render Opened Cards Banner if any
+  renderOpenedCards(data.opened_cards);
+
+  lastState = data;
+
+  // Handle Autoplay if enabled
+  checkAutoplay(data);
+}
+
+async function checkAutoplay(data) {
+  if (!data || data.winner != null) return;
+  const isP1 = data.choosing_player === 1;
+  const isP2 = data.choosing_player === 2;
+  const shouldAuto = (isP1 && $("auto-p1").checked) || (isP2 && $("auto-p2").checked);
+
+  if (shouldAuto && data.groups && data.groups.length) {
+    let bestOption = null;
+    let maxEval = -Infinity;
+    for (const g of data.groups) {
+      for (const o of g.options) {
+        if (!o.forbidden && o.eval != null && o.eval > maxEval) {
+          maxEval = o.eval;
+          bestOption = o;
+        }
+      }
+    }
+    if (bestOption) {
+      setTimeout(() => doAct(bestOption.index), 350);
+    } else if (data.n_index != null) {
+      setTimeout(() => doAct(data.n_index), 350);
+    }
+  }
+}
+
+// Global button listeners
+$("btn-new").addEventListener("click", async () => {
+  const d1 = $("deck1").value.trim() || "deck-kogyo.yaml";
+  const d2 = $("deck2").value.trim() || "deck-kogyo.yaml";
+  const data = await api("/api/new", { deck1: d1, deck2: d2 });
+  if (data) render(data);
+});
+
+$("btn-restart").addEventListener("click", async () => {
+  const data = await api("/api/restart");
+  if (data) render(data);
+});
+
+$("btn-undo").addEventListener("click", async () => {
+  const data = await api("/api/undo");
+  if (data) render(data);
+});
+
+$("btn-redo").addEventListener("click", async () => {
+  const data = await api("/api/redo");
+  if (data) render(data);
+});
+
+$("btn-settings").addEventListener("click", () => $("settings-dialog").showModal());
+
+// SSE subscription
+function setupSubscription() {
+  const evtSource = new EventSource('/api/events?viewer=' + currentViewer() + '&room=' + TAB_ROOM + '&session=' + TAB_SESSION);
+  evtSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data) render(data);
+    } catch (err) {
+      console.error("SSE parse error:", err);
+    }
+  };
+}
+
+// Interactive Separator Drag Resizing between Play Area and Sidebar
+function initResizer() {
+  const resizer = $("main-resizer");
+  const sidebar = $("main-sidebar");
+  const container = $("main-container");
+  if (!resizer || !sidebar || !container) return;
+
+  const savedWidth = localStorage.getItem("bs_playmat2_sidebar_width");
+  if (savedWidth) {
+    const parsed = parseInt(savedWidth, 10);
+    if (parsed >= 260 && parsed <= window.innerWidth - 300) {
+      sidebar.style.width = `${parsed}px`;
+    }
+  }
+
+  let isResizing = false;
+
+  const startResize = () => {
+    isResizing = true;
+    resizer.classList.add("resizing");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const doResize = (clientX) => {
+    if (!isResizing) return;
+    const containerRect = container.getBoundingClientRect();
+    const newSidebarWidth = containerRect.right - clientX;
+    const minWidth = 280;
+    const maxWidth = Math.max(minWidth, containerRect.width - 320);
+
+    if (newSidebarWidth >= minWidth && newSidebarWidth <= maxWidth) {
+      sidebar.style.width = `${newSidebarWidth}px`;
+    }
+  };
+
+  const stopResize = () => {
+    if (isResizing) {
+      isResizing = false;
+      resizer.classList.remove("resizing");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      const currentWidth = parseInt(sidebar.style.width, 10);
+      if (currentWidth) {
+        localStorage.setItem("bs_playmat2_sidebar_width", currentWidth);
+      }
+    }
+  };
+
+  resizer.addEventListener("mousedown", (e) => {
+    startResize();
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => doResize(e.clientX));
+  window.addEventListener("mouseup", stopResize);
+
+  // Touch support
+  resizer.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches.length > 0) {
+      startResize();
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchmove", (e) => {
+    if (e.touches && e.touches.length > 0) {
+      doResize(e.touches[0].clientX);
+    }
+  }, { passive: true });
+
+  window.addEventListener("touchend", stopResize);
+}
+
+async function init() {
+  setupSubscription();
+  initResizer();
+  const state = await api("/api/state");
+  if (state) render(state);
+}
+
+init();
+</script>
+</body>
+</html>

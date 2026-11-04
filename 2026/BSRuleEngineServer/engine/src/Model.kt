@@ -1,5 +1,6 @@
 package bstools.model
 
+import bstools.model.effects.CardScriptRegistry
 import kotlinx.serialization.Serializable
 
 /**
@@ -173,15 +174,43 @@ data class FieldCard(
     var seq: Int = 0,
     var cost: Int = 3,
     /** 《真界放》 (ソウルコアが置かれていれば Lv2) */
-    var shinkai: Boolean = false
+    var shinkai: Boolean = false,
+    /** 一時的なBP増減修正値 */
+    var bpModifier: Int = 0
 ) {
-    /** 現在のLvに対応するBP。BPはLvによって変わる (総合ルール 2-8-4) */
-    val currentBp: Int
+    /** 現在のLvに対応する基本BP (修正なし) */
+    val baseBp: Int
         get() {
             if (lvBps.isEmpty()) return 0
             val idx = (level - 1).coerceIn(0, lvBps.size - 1)
             return lvBps[idx]
         }
+
+    /** 現在のLvに対応するBP */
+    val currentBp: Int
+        get() = maxOf(0, baseBp + bpModifier)
+
+    /**
+     * 盤面 [state] に応じた動的効果（例: 『アタック中』BP+2000、他カードからのBP+1000付与など）を適用した実効BP。
+     */
+    fun effectiveBp(state: GameState? = null, isAttackingHypothetical: Boolean = false): Int {
+        if (state == null) return currentBp
+        var dynamicMod = CardScriptRegistry.get(cardNo)?.computeBpModifier(state, this, isAttackingHypothetical) ?: 0
+        val owner = if (state.player1.field.any { it.instanceId == this.instanceId }) state.player1
+                    else if (state.player2.field.any { it.instanceId == this.instanceId }) state.player2
+                    else state.activePlayer
+        if (owner != null) {
+            for (fc in owner.field) {
+                if (fc.instanceId != this.instanceId) {
+                    val script = CardScriptRegistry.get(fc.cardNo)
+                    if (script != null) {
+                        dynamicMod += script.computeAuraBpModifier(state, fc, this, isAttackingHypothetical)
+                    }
+                }
+            }
+        }
+        return maxOf(0, currentBp + dynamicMod)
+    }
 
     val level: Int get() = levelFor(lvCosts, cores.total, cores.soul, shinkai)
 
@@ -244,17 +273,30 @@ data class GameState(
      * (コアを動かし続ける循環を構造的になくす)。再配置以外の手・ステップ進行で空に戻る。
      * 局面ハッシュには含めない (同じ配置に戻る手は「同一局面」として扱う)
      */
-    var coreWindow: MutableSet<String> = mutableSetOf()
+    var coreWindow: MutableSet<String> = mutableSetOf(),
+    /** ターンに1回しか使えない効果の使用済みフラグ (例: "fc_26RSD03-010_2:Lv2_SHINKAI_MAIN") */
+    var usedOncePerTurnEffects: MutableSet<String> = mutableSetOf(),
+    /** 公開・オープンされたカードのリスト (相手・観戦者にも確認できるように表示) */
+    var openedCards: MutableList<CardData> = mutableListOf(),
+    /** フラッシュタイミングで優先権を持つプレイヤーID (総合ルール 8-1-2-1: 防御側から優先権を得る) */
+    var flashPriorityPlayerId: Int? = null,
+    /** フラッシュタイミングでの連続パス回数 (2回連続パスでフラッシュ終了) */
+    var flashPassCount: Int = 0
 ) {
     val activePlayer: PlayerState get() = if (activePlayerId == 1) player1 else player2
     val opponentPlayer: PlayerState get() = if (activePlayerId == 1) player2 else player1
 
     /**
      * いま選択を行うプレイヤー。通常はターンプレイヤーだが、
+     * フラッシュタイミングは防御側から優先権を得て交互に行い (総合ルール 8-1-2-1)、
      * ブロック宣言はアタックされている側が行う (総合ルール 8-1-3-1)。
      */
     val choosingPlayerId: Int
-        get() = if (step == Step.BLOCK_DECLARATION) (if (activePlayerId == 1) 2 else 1) else activePlayerId
+        get() = when (step) {
+            Step.FLASH_TIMING -> flashPriorityPlayerId ?: opponentPlayer.playerId
+            Step.BLOCK_DECLARATION -> opponentPlayer.playerId
+            else -> activePlayerId
+        }
 
     val choosingPlayer: PlayerState get() = if (choosingPlayerId == 1) player1 else player2
     val notChoosingPlayer: PlayerState get() = if (choosingPlayerId == 1) player2 else player1

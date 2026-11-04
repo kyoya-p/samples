@@ -199,7 +199,8 @@ fun runPlaymatServer(port: Int) {
                         if (cleanPath != "/api/training-status") println("[HTTP] $method $cleanPath (sid=$sid)")
 
                         when {
-                            cleanPath == "/" || cleanPath == "/index.html" -> { responseBody = loadHtmlFile(); contentType = "text/html; charset=UTF-8" }
+                            cleanPath == "/" || cleanPath == "/index.html" -> { responseBody = loadHtmlFile("index.html"); contentType = "text/html; charset=UTF-8" }
+                            cleanPath == "/playmat2" || cleanPath == "/playmat2.html" -> { responseBody = loadHtmlFile("playmat2.html"); contentType = "text/html; charset=UTF-8" }
                             cleanPath == "/favicon.ico" -> { statusCode = "204 No Content"; contentType = "" }
                             cleanPath == "/api/events" || cleanPath == "/api/subscribe" -> {
                                 keepAlive = true
