@@ -18,6 +18,19 @@ Claude Code の使用状況（5時間枠・週次・モデル別トークン）�
 - [claude-panel.html](~/projs/samples/2026/ClaudeCodeTools/claude-panel.html): 生成される HTML パネル
 - [README.md](~/projs/samples/2026/ClaudeCodeTools/README.md): 仕様・フック設定手順
 
+## パネル仕様
+1. **5時間枠 使用率（%）**
+   - 残り時間バッジ: カードヘッダーに集約配置（`.rem-badge`）
+   - 表示範囲切替（1h〜30d、`localStorage` に保存）
+2. **週次 使用率（%）**
+   - 残り時間バッジ: カードヘッダーに集約配置（`.rem-badge`）
+   - ドットなし折れ線グラフ（階段状、`stepPts` 補正）
+3. **トークン使用量**
+   - 「モデル別」「Effort別」「モデル×Effort別」および「累積」「/時」の切り替え
+   - 下部凡例ボタン（`.cl-toggle`）をクリックしてモデル／系列ごとの表示／非表示をトグル可能（`localStorage` に保存）
+   - DOM 要素 `#now-cum` に合計値を表示（ID 不一致による JS 停止を防止）
+- **自動更新**: 画面アクティブ時（表示中）に 30 秒間隔で定期自動リフレッシュ（非アクティブ時は停止、復帰時に自動更新）。
+
 ## 表示仕様（チャート共通）
 - **編集先**: `claude-panel.html` は生成物。修正は `usage_panel.js` のテンプレートに行い、`node usage_panel.js` で再生成する。
 - **配色**: ライトのみ（ダーク定義なし）。色は `:root` のトークン（週次は `--wk`）を使い、直書きしない。
