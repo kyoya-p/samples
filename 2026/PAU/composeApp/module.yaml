@@ -1,0 +1,36 @@
+product: jvm/app
+
+dependencies:
+  - $compose.desktop.currentOs
+  - $compose.runtime
+  - $compose.foundation
+  - $compose.material3
+  - $compose.ui
+  - org.jetbrains.compose.material:material-icons-extended:1.7.3
+  - $compose.components.resources
+  - org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4
+  - org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.4
+  - org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2
+  - io.ktor:ktor-client-cio:3.3.1
+  - io.ktor:ktor-client-content-negotiation:3.3.1
+  - io.ktor:ktor-serialization-kotlinx-xml:3.3.1
+  - org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0
+  - org.snmp4j:snmp4j:3.9.6
+
+test-dependencies:
+  - io.kotest:kotest-framework-engine:6.0.5
+  - io.kotest:kotest-assertions-core:6.0.5
+  - io.kotest:kotest-runner-junit5:6.0.5
+
+settings:
+  kotlin:
+    serialization: json
+  compose:
+    enabled: true
+    version: 1.9.0
+  jvm:
+    mainClass: MainKt
+    release: 21
+    jdk:
+      version: 21
+  junit: junit-5
