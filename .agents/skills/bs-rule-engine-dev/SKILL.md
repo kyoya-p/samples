@@ -94,13 +94,35 @@ Server endpoint: `http://localhost:8090` (Room parameter: `?sid=<room_id>`).
 6. **Hand Card Summon Accordion & Option Hierarchy (手札アコーディオン2段階グルーピング原則)**:
    - **Vanish Label Separation**: Vanish notices (`⚠️...消滅`) must be stripped from the `costPlacement` grouping key so that different vanishing donors do not fracture the options into dozens of fragmented rows.
    - **Soul Core Count Normalization (`normalizeCostPlacement`)**: Both soul cores and normal cores in cost/placement are normalized to total core counts, guaranteeing that hand card menus cleanly collapse into rows by placement count (e.g. 1, 2, 3 cores).
+   - **Placement Soul Core Separation Invariant (配置ソウルコアの独立グルーピング原則)**:
+     - 召喚・配置時のサブリスト階層化において、**配置するコアにソウルコアが含まれるか否か（通常コア配置 🔷 vs ソウルコア配置 🔴）は本質的な戦略差異**であるため、単なる個数（1個）だけで1つのサブリストに合算してはならない。
+     - 必ず `配置コア 1個 [🔷] (通常コア)` と `配置コア 1個 [🔴] (ソウルコア)` のように独立したサブリストとして分離し、ボタン側でも `➔ [配置] 🔷` / `➔ [配置] 🔴` を明記すること。
+   - **Drag-and-Drop Pending Summon & Allocation UI (仮召喚ドラッグ＆コア移動確定仕様)**:
+     - 手札からフィールドへドラッグ＆ドロップすると、フィールド上に**半透明の仮召喚カード（`.pending-card`）**が出現する。
+     - リザーブや仮召喚カード上のコア、またはHUDの増減ボタン（`➖`, `➕`, `🔴ソウルコア切替`）を操作して、支払いコストと配置コアをグラフィカルに移動・決定できる。
+     - **すべて充足したら召喚ボタンを有効化原則 (`isPendingBothComplete`)**:
+       - 支払コストが充足（`allocatedPayDonors.length === requiredPayCost`）かつ配置／維持コアが充足（`allocatedPlaceDonors.length >= requiredPlaceCores`）した瞬間、ステップ番号（Step 1/Step 2）に関わらず即座に召喚確定ボタン（`#btn-pending-confirm`）が有効化（`✅ 召喚確定 (Space)`）される。
+       - ユーザーは不要な「次へ」ボタンのクリックを挟むことなく、Spaceキーまたはボタン押下で即時召喚できる。
+       - 未充足時は理由を明記して無効化（`⚠️ コスト不足 (あと N 個)` / `⚠️ 維持コア未指定 (あと N 個)`）。
+     - **点滅枠ハイライトと冗長ラベル文字抑制の原則**:
+       - トラッシュの支払コスト枠（`.trash-pending-pay-enclosure`）および仮召喚カードの維持／配置コア枠（`.card-pending-place-enclosure`）は、未充足時はオレンジ破線枠で滑らかに点滅（`blink-orange-pay-enclosure`）してユーザーの注意を促す。
+       - 充足した瞬間に点滅を停止（`animation: none;`）し、落ち着いたグリーンの完了枠に切り替わる。
+       - 「コスト支払い中」「維持コア指定中」などのカードや盤面を覆い隠す冗長なテキストラベルは非表示（`display: none !important;`）とし、クリーンな表示を徹底する。
+     - `✅ 確定`（またはSpaceキー）で正式召喚、`✖ 手札に戻す`（またはEscapeキー/画面外クリック）で安全にキャンセル可能。
    - Detailed donor combinations, vanishing warnings, and soul core placement are displayed clearly inside the opened second-tier buttons.
 
-7. **Vanish Detection Preview Invariant (`getVanishingCardIds`)**:
+7. **Card States & Rotation Invariants (疲労・重疲労時のステータスバッジ水平維持原則)**:
+   - カードが90°回転（疲労 / `.exhausted`）または180°回転（重疲労 / `.heavy-exhausted`）しても、Lvバッジ（`.card-badge-lv`）およびBPバッジ（`.card-badge-bp`）は逆回転（`transform: rotate(-90deg)` / `rotate(-180deg)`）を適用し、常に水平（0° 正立）で視認可能に保つ。
+   - バッジの位置調整（`top`/`bottom`/`right`/`left`）は、回転後のカード四隅の内側にぴったり収まり、カード外へはみ出さないように配置する。
+
+8. **Multiple-Choice On-Summon & Trigger Effects (召喚時・誘発効果の複数対象選択原則)**:
+   - すくいーど等の召喚時効果で複数の対象（例：疲労状態の相手スピリット重疲労）が存在する場合、システムは単一の固定選択ではなく、対象ごとの個別選択肢を列挙してプレイヤーに選択させる。
+
+9. **Vanish Detection Preview Invariant (`getVanishingCardIds`)**:
    - When the server provides `option.vanishing_card_ids` (even if empty `[]`), always trust and return it directly. Never guard with `length > 0` which falsely triggers client fallback logic.
    - In fallback calculations, explicitly exempt cards where `category === "NEXUS"` or `lv_costs[0] === 0` from vanishing.
 
-8. **Hot-Reloading Static Web Assets & Multi-Playmat Routing**:
+10. **Hot-Reloading Static Web Assets & Multi-Playmat Routing**:
    - `loadHtmlFile(filename)` reads directly from disk on every request without keeping an in-memory cache, enabling immediate UI updates upon browser reload (F5) without restarting the daemon.
    - **Playmat 1 (`index.html` at `/`)**: Dense textual analysis interface designed for deep minimax search and action validation.
    - **Playmat 2 (`playmat2.html` at `/playmat2`)**: Graphical authentic TCG physical card playmat interface.

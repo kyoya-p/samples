@@ -55,3 +55,27 @@
   - The Playmat connects to `/api/events` via SSE (Server-Sent Events), keeping a persistent connection open. Always use `waitUntil: 'domcontentloaded'` instead of `'networkidle0'` in Puppeteer scripts.
   - Action execution uses `POST /api/act` with `{ session, index, viewer }`.
   - When starting `server.exe`, always set the working directory to `2026/BSRuleEngineServer` so `server/web/index.html` is resolved properly.
+
+## 7. Pending Summon & Core Allocation Invariants (仮召喚・コア要求枠の充足仕様)
+
+- **Summon Button Enablement on Full Fulfillment (すべて充足したら召喚ボタンを有効化原則)**:
+  - `isPendingBothComplete()` evaluates:
+    ```javascript
+    const isPayComplete = (pendingSummon.allocatedPayDonors?.length === pendingSummon.requiredPayCost);
+    const isPlaceComplete = (allocatedPlace.length >= reqPlace);
+    return isPayComplete && isPlaceComplete;
+    ```
+  - Regardless of whether the wizard HUD is in Step 1 or Step 2, once all required payment cores and placement cores are allocated, `#btn-pending-confirm` is immediately enabled (`✅ 召喚確定 (Space)` / `✅ 配置確定 (Space)`).
+  - Pressing Space or clicking the button instantly confirms the summon without forcing the player through redundant intermediate steps.
+  - If unfulfilled, the button is disabled and displays the explicit shortage count (`⚠️ コスト不足 (あと N 個)` / `⚠️ 維持コア未指定 (あと N 個)`).
+
+- **Dynamic Attention Blinking & Clutter Suppression (点滅枠ハイライトと冗長ラベル抑制)**:
+  - Both `.trash-pending-pay-enclosure` (Trash payment tray) and `.card-pending-place-enclosure` (Ghost card maintenance/placement slot):
+    - **Unfulfilled State**: Highlighted by an orange dashed border that pulses smoothly (`animation: blink-orange-pay-enclosure 0.9s ease-in-out infinite`).
+    - **Fulfilled State**: Blinking stops immediately (`animation: none`), and transitions to a calm green completed border (`border: 1.5px solid rgba(34, 197, 94, 0.75)`).
+    - **Clutter Suppression**: Never overlay intrusive text labels (e.g. `コスト支払い中`, `維持コア指定中`) via `::before` pseudo-elements onto cards or trays. Visual dashed/solid border cues and HUD progress indicators provide sufficient, clean feedback without obscuring card art.
+
+## 8. Status Badge Orientation on Card Rotation (疲労・重疲労時のLv/BPバッジ水平維持原則)
+
+- When a card rotates 90° (`.mat-card.exhausted`) or 180° (`.mat-card.heavy-exhausted`), status badges (`.card-badge-lv`, `.card-badge-bp`) counter-rotate (`transform: rotate(-90deg)` / `rotate(-180deg)`) to remain horizontally upright (0°).
+- Badges must be repositioned to stay strictly within card corner boundaries without protruding beyond the rotated card perimeter.

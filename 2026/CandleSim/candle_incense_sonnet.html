@@ -40,6 +40,7 @@
   <div class="sep"></div>
   <label title="無風時（室内対流 0）の層流→乱流 遷移高さ。臨界Grを Gr(h)=Gr_c から決定">遷移高さ<input type="range" id="sHc" min="8" max="70" value="30"><output id="oHc"></output></label>
   <div class="sep"></div>
+  <button class="btn" id="bLay" title="浄土真宗など、折った線香を香皿に寝かせて置く">置き方：立てる</button>
   <button class="btn" id="bReset">新しく供える</button>
 </div>
 
@@ -89,19 +90,19 @@ window.addEventListener("resize", resize);
 resize();
 
 const MAX_LEN = 170;
-const ELEV = 0.56;               // 線香の傾き [rad]
+const ELEV = Math.PI / 2;               // 線香の傾き [rad]
 const S = {
   t: 0, conv: 0, hxf: 0.43, drag: null, dragged: false, showField: false,
-  len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 76, l: 6 }, { dx: 92, l: 5 }],
+  lay: false, elev: ELEV, maxLen: MAX_LEN, len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 76, l: 6 }, { dx: 92, l: 5 }],
   wakes: [], mouse: null, phi: 0
 };
 
 /* 幾何 (毎フレーム算出) */
 function geom() {
   const hx = W * S.hxf, table = H * 0.82, ty = table - 10.5;
-  const c = Math.cos(ELEV), s = Math.sin(ELEV);
+  const c = Math.cos(S.elev), s = Math.sin(S.elev);
   return { hx, table, ty, c, s,
-    tipX: hx + c * (S.len + 2), tipY: ty - s * (S.len + 2) };
+    tipX: hx + c * (S.len + 2), tipY: (S.lay ? ty - 1.5 : ty) - s * (S.len + 2) };
 }
 
 /* ===== 3. 気流 ===== */
@@ -253,7 +254,7 @@ function emit(g) {
   emit.lx = g.tipX;
   smoke.unshift({
     brk: jump,
-    x: g.tipX + Math.cos(ELEV) * 1.5, y: g.tipY - Math.sin(ELEV) * 1.5,
+    x: g.tipX + Math.cos(S.elev) * 1.5, y: g.tipY - Math.sin(S.elev) * 1.5,
     vx: 0, vy: -2.3, lv: 0, dis: 0, age: 0, turb: 0, tage: 0, W: 0,
     om, phi: S.phi, pc: Float32Array.from(phiC), wf: 0.75 + 0.5 * (Math.tanh(LZ.y * 0.1) + 1) / 2, ph: S.t,
     px: new Float32Array(NC), py: new Float32Array(NC),
@@ -479,12 +480,14 @@ function drawIncense(g, mirror) {
   }
 
   // 線香立て (金属球) と線香本体
-  const ball = ctx.createRadialGradient(hx - 2, ty - 7, 1, hx, ty - 4, 8);
-  ball.addColorStop(0, "#f2d899"); ball.addColorStop(0.55, "#a88440"); ball.addColorStop(1, "#3a2b10");
-  ctx.fillStyle = ball; ctx.beginPath(); ctx.arc(hx, ty - 3.5, 5.5, 0, Math.PI * 2); ctx.fill();
+  if (!S.lay) {
+    const ball = ctx.createRadialGradient(hx - 2, ty - 7, 1, hx, ty - 4, 8);
+    ball.addColorStop(0, "#f2d899"); ball.addColorStop(0.55, "#a88440"); ball.addColorStop(1, "#3a2b10");
+    ctx.fillStyle = ball; ctx.beginPath(); ctx.arc(hx, ty - 3.5, 5.5, 0, Math.PI * 2); ctx.fill();
+  }
 
-  const L = S.len, base = ty - 3.5;
-  const bx = hx - c * 10, by = base + s * 10;
+  const L = S.len, base = ty - (S.lay ? 1.5 : 3.5), tail = S.lay ? 0 : 10;
+  const bx = hx - c * tail, by = base + s * tail;
   const ex = hx + c * L, ey = base - s * L;
   const ox = hx + c * (L - 3.5), oy = base - s * (L - 3.5);
 
@@ -494,7 +497,7 @@ function drawIncense(g, mirror) {
   ctx.strokeStyle = "rgba(228,208,178,0.35)"; ctx.lineWidth = 0.8;
   ctx.beginPath(); ctx.moveTo(bx, by - 0.7); ctx.lineTo(ox, oy - 0.7); ctx.stroke();
 
-  if (L > 10 && !mirror) {
+  if (L > 14 && !mirror) {            // 発煙停止 (tick の S.len > 14) と同条件。以後は消火 (黒い頭)
     // 燃え殻 (灰の筒) と赤熱部
     ctx.lineCap = "butt"; ctx.strokeStyle = "#e8e4dc"; ctx.globalAlpha = 0.9; ctx.lineWidth = 2.4;
     ctx.beginPath(); ctx.moveTo(ex + c * 0.5, ey - s * 0.5); ctx.lineTo(ex + c * 3.2, ey - s * 3.2); ctx.stroke();
@@ -562,7 +565,7 @@ function tick() {
     S.len -= 0.01;                      // 燃焼速度 [px/フレーム] (固定)
     if (S.lastAsh - S.len > 18) {
       S.lastAsh = S.len;
-      S.ashes.push({ dx: Math.cos(ELEV) * S.len + (Math.random() - 0.5) * 5, l: 4.5 + Math.random() * 3 });
+      S.ashes.push({ dx: Math.cos(S.elev) * S.len + (Math.random() - 0.5) * 5, l: 4.5 + Math.random() * 3 });
     }
   }
   const g = geom();
@@ -620,7 +623,7 @@ function mouseMove(x, y, ts) {
 function overIncense(x, y) {
   const g = geom();
   if (x > g.hx - 40 && x < g.hx + 175 && y > g.ty - 14 && y < g.ty + 14) return true;     // 香皿
-  const ex = g.tipX, ey = g.tipY, bx = g.hx, by = g.ty - 3.5;                            // 線香 (線分との距離)
+  const ex = g.tipX, ey = g.tipY, bx = g.hx, by = g.ty - (S.lay ? 1.5 : 3.5);                            // 線香 (線分との距離)
   const vx = ex - bx, vy = ey - by, t = Math.max(0, Math.min(1, ((x - bx) * vx + (y - by) * vy) / (vx * vx + vy * vy)));
   return Math.hypot(x - (bx + vx * t), y - (by + vy * t)) < 14;
 }
@@ -669,16 +672,25 @@ $("bField").addEventListener("click", e => {
   e.target.textContent = `気流場：${S.showField ? "表示中" : "非表示"}`;
   e.target.classList.toggle("on", S.showField);
 });
+// 置き方: 立てる (斜め・長尺・香立て) / 寝かせる (折った短い線香を香皿に水平に置く)
+$("bLay").addEventListener("click", e => {
+  S.lay = !S.lay;
+  S.elev = S.lay ? 0.04 : ELEV;
+  S.maxLen = S.lay ? 120 : MAX_LEN;
+  e.target.textContent = `置き方：${S.lay ? "寝かせる" : "立てる"}`;
+  e.target.classList.toggle("on", S.lay);
+  $("bReset").click();
+});
 $("bReset").addEventListener("click", () => {
-  S.len = S.lastAsh = MAX_LEN;
-  S.ashes = [{ dx: 76, l: 6 }, { dx: 92, l: 5 }];
+  S.len = S.lastAsh = S.maxLen;
+  S.ashes = S.lay ? [] : [{ dx: 76, l: 6 }, { dx: 92, l: 5 }];
   S.wakes.length = 0; smoke.length = 0;
   S.phi = 0; phiC.fill(0); emit.lx = undefined;
 });
 
 // 起動時に煙柱を先に成長させる
 for (let i = 0; i < 360; i++) { S.t += 0.035; tick(); }
-S.len = S.lastAsh = MAX_LEN;                       // 先行成長で燃焼が進んだ分を戻す (初期は最大長)
+S.len = S.lastAsh = S.maxLen;                       // 先行成長で燃焼が進んだ分を戻す (初期は最大長)
 requestAnimationFrame(frame);
 </script>
 </body>
