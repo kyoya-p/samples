@@ -1,8 +1,9 @@
 [tools]
 java = "21"
+coreutils = "latest"
 
 [vars]
-APP_VERSION = "1.0.11"
+APP_VERSION = "1.0.12"
 MSI_FILE = "PAU-{{vars.APP_VERSION}}.msi"
 
 [env]
@@ -15,16 +16,14 @@ test = '.\kotlin.bat test'
 # 依存 JAR を展開し androidx 版を別名で追加して jpackage に渡す
 makeMsi = [
   '.\kotlin.bat package -f executable-jar',
-  'if exist build\jp-in rmdir /s /q build\jp-in',
-  'if exist build\jp-x rmdir /s /q build\jp-x',
-  'if exist build\msi rmdir /s /q build\msi',
-  'mkdir build\jp-in build\jp-x',
-  '%SystemRoot%\System32\tar.exe -xf build\tasks\_composeApp_executableJarJvm\composeApp-jvm-executable.jar -C build\jp-x',
-  'copy /y build\jp-x\BOOT-INF\lib\*.jar build\jp-in\',
-  'copy /y build\tasks\_composeApp_jarJvm\composeApp-jvm.jar build\jp-in\app.jar',
-  'copy /y "%LOCALAPPDATA%\JetBrains\Kotlin\.m2.cache\androidx\compose\runtime\runtime-desktop\1.9.0\runtime-desktop-1.9.0.jar" build\jp-in\androidx-runtime-desktop-1.9.0.jar',
-  'rmdir /s /q build\jp-x',
+  'coreutils rm -rf build/jp-in build/jp-x build/msi',
+  'coreutils mkdir -p build/jp-in build/jp-x',
+  '%SystemRoot%\System32\tar.exe -xf build/tasks/_composeApp_executableJarJvm/composeApp-jvm-executable.jar -C build/jp-x',
+  'coreutils cp build/jp-x/BOOT-INF/lib/*.jar build/jp-in/',
+  'coreutils cp build/tasks/_composeApp_jarJvm/composeApp-jvm.jar build/jp-in/app.jar',
+  'coreutils cp "%LOCALAPPDATA%/JetBrains/Kotlin/.m2.cache/androidx/compose/runtime/runtime-desktop/1.9.0/runtime-desktop-1.9.0.jar" build/jp-in/androidx-runtime-desktop-1.9.0.jar',
+  'coreutils rm -rf build/jp-x',
   'jpackage --type msi --name PAU --app-version {{vars.APP_VERSION}} --input build\jp-in --main-jar app.jar --main-class MainKt --add-modules ALL-MODULE-PATH --dest build\msi --win-per-user-install --win-menu --win-shortcut --win-upgrade-uuid b7c7a509-b6ea-0554-90a5-217cf641e5cd',
 ]
 installMsi = 'msiexec /i build\msi\{{vars.MSI_FILE}}'
-uninstallMsi = 'msiexec /x build\msi\{{vars.MSI_FILE}}'
+uninstallMsi = 'msiexec /i build\msi\{{vars.MSI_FILE}} REMOVE=ALL /qb'
