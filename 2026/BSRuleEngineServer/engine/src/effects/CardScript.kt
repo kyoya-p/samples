@@ -163,6 +163,38 @@ interface CardScript {
         isVanished: Boolean,
         messages: MutableList<String>
     ) {}
+
+    /**
+     * バトル終了時の効果解決 (例: 甲手スクィードのバトル終了時回復など)。
+     */
+    fun onBattleEnd(
+        state: GameState,
+        attacker: FieldCard,
+        owner: PlayerState,
+        messages: MutableList<String>
+    ) {}
+
+    /**
+     * 未解決効果 (召喚時対象選択など) のアクション候補を列挙するフック。
+     */
+    fun enumeratePendingEffectActions(
+        state: GameState,
+        card: FieldCard,
+        player: PlayerState,
+        pending: PendingEffect,
+        nextIndex: () -> Int
+    ): List<GameAction> = emptyList()
+
+    /**
+     * 未解決効果のアクション実行フック。
+     */
+    fun onResolvePendingEffect(
+        state: GameState,
+        card: FieldCard,
+        player: PlayerState,
+        action: GameAction,
+        messages: MutableList<String>
+    ) {}
 }
 
 /**

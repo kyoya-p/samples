@@ -3,6 +3,7 @@ package bstools.model
 import bstools.model.cards.Card26RSD03_002
 import bstools.model.cards.Card26RSD03_010
 import bstools.model.cards.Card26RSD03_011
+import bstools.model.cards.Card26RSD03_X01
 import bstools.model.effects.*
 import kotlin.test.*
 
@@ -14,6 +15,7 @@ class CardPluginAndEffectsTest {
         Card26RSD03_002.register()
         Card26RSD03_010.register()
         Card26RSD03_011.register()
+        Card26RSD03_X01.register()
     }
 
     @AfterTest
@@ -22,6 +24,7 @@ class CardPluginAndEffectsTest {
         Card26RSD03_002.register()
         Card26RSD03_010.register()
         Card26RSD03_011.register()
+        Card26RSD03_X01.register()
     }
 
     @Test
@@ -160,7 +163,7 @@ class CardPluginAndEffectsTest {
         val flashActions = actions.filter { it.type == "FLASH_SUMMON" }
 
         assertTrue(flashActions.isNotEmpty(), "Must enumerate Flash Summon options for Flatty")
-        assertTrue(flashActions.any { it.detail.contains("フラッシュ召喚 Lv1") })
+        assertTrue(flashActions.any { it.category.contains("【フラッシュ召喚】 フラッティ") && it.detail.contains("(支払:R:") })
 
         // Apply Flash Summon (cost 2 paid from Reserve, 1 placed from Reserve)
         val flashAction = flashActions.first { it.costToPay == 2 && it.placeFrom.first().normal == 1 }
@@ -722,5 +725,340 @@ class CardPluginAndEffectsTest {
         assertEquals(Step.ATTACK_DECLARATION, state.step)
         assertNull(state.attackingCardId)
         assertNull(state.blockingCardId)
+    }
+
+    /**
+     * 深巣ダンテクレオ [Lv2]《真界放》『自分のアタックステップ』【起動：フラッシュ】〔ターン1回〕
+     * ソウルコア1個でLv2になり、疲労状態の他の「甲魚」スピリットを指定して回復させる。
+     */
+    @Test
+    fun testDantecleoShinkaiFlashRecoversExhaustedKogyo() {
+        val (state, p1) = TestFixtures.createTestState(step = Step.FLASH_TIMING)
+        state.activePlayerId = p1.playerId
+        state.flashPriorityPlayerId = p1.playerId
+
+        // ダンテクレオ (26RSD03-X02): ソウルコア1個配置 (shinkai = true により Lv2)
+        val dantecleo = TestFixtures.createSpirit("fc_dantecleo", cardNo = "26RSD03-X02", normalCores = 0, soulCores = 1)
+        dantecleo.shinkai = true
+        dantecleo.systems = listOf("甲魚")
+        p1.field.add(dantecleo)
+        assertEquals(2, dantecleo.level, "ダンテクレオはソウルコア1個で《真界放》によりLv2")
+
+        // 疲労したパッファー (甲魚)
+        val puffer = TestFixtures.createSpirit("fc_puffer", cardNo = "26RSD03-002", normalCores = 1)
+        puffer.isExhausted = true
+        puffer.systems = listOf("甲魚")
+        p1.field.add(puffer)
+
+        // 疲労した非甲魚スピリット (比較用)
+        val nonKogyo = TestFixtures.createSpirit("fc_other", cardNo = "BS76-T001", normalCores = 1)
+        nonKogyo.isExhausted = true
+        nonKogyo.systems = listOf("旗種")
+        p1.field.add(nonKogyo)
+
+        val actions = enumerateActions(state)
+        val flashActions = actions.filter { it.type == "FLASH_EFFECT" && it.category.contains("真界放フラッシュ") }
+        assertEquals(1, flashActions.size, "疲労した甲魚パッファー1体のみが対象となるフラッシュ効果が列挙されること")
+        val act = flashActions.first()
+        assertEquals(puffer.instanceId, act.effectTargetId)
+        assertEquals(dantecleo.instanceId, act.targetInstanceId)
+
+        // 効果発動
+        val messages = mutableListOf<String>()
+        applyAction(state, act, messages)
+
+        // パッファーが回復していること
+        assertFalse(puffer.isExhausted, "パッファーが回復状態になっていること")
+        assertTrue(nonKogyo.isExhausted, "甲魚ではないスピリットは回復しないこと")
+        assertTrue(messages.any { it.contains("【深巣ダンテクレオ】Lv2《真界放》効果") })
+
+        // ターン1回のため、次のフラッシュ列挙ではダンテクレオのフラッシュは出ないこと
+        val nextActions = enumerateActions(state)
+        assertTrue(nextActions.none { it.type == "FLASH_EFFECT" && it.targetInstanceId == dantecleo.instanceId })
+    }
+
+    /**
+     * 甲手スクィード (26RSD03-X01)
+     * [Lv1-2]『このスピリットの召喚時』疲労状態の相手のスピリット1体を指定できる。それを重疲労させる。
+     */
+    @Test
+    fun testSqueedSummonHeavyExhaustsExhaustedOpponentSpirit() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 6, p1ReserveSoul = 0, step = Step.MAIN)
+        val p2 = state.player2
+
+        // 相手フィールドに疲労状態のスピリットと、回復状態のスピリットを配置
+        val oppExhausted = TestFixtures.createSpirit("opp_ex", cardNo = "26RSD03-002", normalCores = 1)
+        oppExhausted.isExhausted = true
+        p2.field.add(oppExhausted)
+
+        val oppRefreshed = TestFixtures.createSpirit("opp_ref", cardNo = "26RSD03-005", normalCores = 1)
+        oppRefreshed.isExhausted = false
+        p2.field.add(oppRefreshed)
+
+        // P1の手札に甲手スクィード
+        val squeedCard = OFFICIAL_CARDS["26RSD03-X01"]!!
+        p1.hand.add(squeedCard)
+
+        // 召喚アクションを実行 (コスト5, 軽減0, 維持1)
+        val summonAction = GameAction(
+            index = 1,
+            type = "SUMMON",
+            category = "SUMMON",
+            detail = "Summon Squeed",
+            handIndex = 0,
+            costToPay = 5,
+            payFrom = listOf(CoreAlloc("Reserve", "R", normal = 5, soul = 0)),
+            placeFrom = listOf(CoreAlloc("Reserve", "R", normal = 1, soul = 0))
+        )
+        val messages = mutableListOf<String>()
+        applyAction(state, summonAction, messages)
+
+        // 召喚完了後、召喚時効果の未解決状態 (PendingEffect) になること
+        assertNotNull(state.pendingEffect, "召喚時効果の選択待ち状態")
+        assertEquals("ON_SUMMON", state.pendingEffect!!.effectType)
+
+        // 選択肢列挙: 指定アクションと指定なしアクションが含まれること
+        val actions = enumerateActions(state)
+        val targetAction = actions.find { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == oppExhausted.instanceId }
+        val passAction = actions.find { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == null }
+        assertNotNull(targetAction, "疲労スピリットを指定する選択肢が存在すること")
+        assertNotNull(passAction, "「指定できる」のため指定しない選択肢が存在すること")
+
+        // 指定アクションを実行
+        applyAction(state, targetAction, messages)
+
+        // 未解決効果が解消され、疲労状態だった相手スピリットが重疲労していること
+        assertNull(state.pendingEffect, "効果解決後は未解決状態がクリアされること")
+        assertTrue(oppExhausted.isExhausted, "疲労フラグも維持")
+        assertTrue(oppExhausted.isHeavyExhausted, "重疲労状態になっていること")
+        assertFalse(oppRefreshed.isHeavyExhausted, "回復状態のスピリットは重疲労しない")
+
+        assertTrue(messages.any { it.contains("【甲手スクィード】召喚時効果: 相手の「${oppExhausted.displayName}」を指定！重疲労させた！") })
+    }
+
+    /**
+     * 甲手スクィード召喚時、疲労状態の相手スピリットが複数存在する場合、
+     * どちらを重疲労させるか選択できること。
+     */
+    @Test
+    fun testSqueedSummonMultipleOpponentExhaustedSpiritsAllowsChoosing() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 6, p1ReserveSoul = 0, step = Step.MAIN)
+        val p2 = state.player2
+
+        // 相手フィールドに2体の疲労スピリット
+        val opp1 = TestFixtures.createSpirit("opp_1", cardNo = "26RSD03-002", normalCores = 1)
+        opp1.isExhausted = true
+        p2.field.add(opp1)
+
+        val opp2 = TestFixtures.createSpirit("opp_2", cardNo = "26RSD03-005", normalCores = 1)
+        opp2.isExhausted = true
+        p2.field.add(opp2)
+
+        val squeedCard = OFFICIAL_CARDS["26RSD03-X01"]!!
+        p1.hand.add(squeedCard)
+
+        val summonAction = GameAction(
+            index = 1,
+            type = "SUMMON",
+            category = "SUMMON",
+            detail = "Summon Squeed",
+            handIndex = 0,
+            costToPay = 5,
+            payFrom = listOf(CoreAlloc("Reserve", "R", normal = 5, soul = 0)),
+            placeFrom = listOf(CoreAlloc("Reserve", "R", normal = 1, soul = 0))
+        )
+        val messages = mutableListOf<String>()
+        applyAction(state, summonAction, messages)
+
+        assertNotNull(state.pendingEffect)
+
+        // 選択肢列挙: opp1, opp2, 指定なし の3択
+        val actions = enumerateActions(state)
+        val actOpp1 = actions.find { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == opp1.instanceId }
+        val actOpp2 = actions.find { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == opp2.instanceId }
+        val actNone = actions.find { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == null }
+
+        assertNotNull(actOpp1, "opp1を指定する選択肢が存在すること")
+        assertNotNull(actOpp2, "opp2を指定する選択肢が存在すること")
+        assertNotNull(actNone, "指定なし選択肢が存在すること")
+
+        // opp2 を選択して実行
+        applyAction(state, actOpp2, messages)
+
+        assertNull(state.pendingEffect)
+        assertFalse(opp1.isHeavyExhausted, "選ばれなかったopp1は重疲労しない (通常疲労のまま)")
+        assertTrue(opp2.isHeavyExhausted, "選ばれたopp2が重疲労する")
+    }
+
+    /**
+     * 甲手スクィード召喚時、「指定しない」を選択した場合
+     */
+    @Test
+    fun testSqueedSummonChooseNotToDesignate() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 6, p1ReserveSoul = 0, step = Step.MAIN)
+        val p2 = state.player2
+
+        val opp = TestFixtures.createSpirit("opp_1", cardNo = "26RSD03-002", normalCores = 1)
+        opp.isExhausted = true
+        p2.field.add(opp)
+
+        val squeedCard = OFFICIAL_CARDS["26RSD03-X01"]!!
+        p1.hand.add(squeedCard)
+
+        val summonAction = GameAction(
+            index = 1,
+            type = "SUMMON",
+            category = "SUMMON",
+            detail = "Summon Squeed",
+            handIndex = 0,
+            costToPay = 5,
+            payFrom = listOf(CoreAlloc("Reserve", "R", normal = 5, soul = 0)),
+            placeFrom = listOf(CoreAlloc("Reserve", "R", normal = 1, soul = 0))
+        )
+        val messages = mutableListOf<String>()
+        applyAction(state, summonAction, messages)
+
+        assertNotNull(state.pendingEffect)
+
+        val actNone = enumerateActions(state).first { it.type == "RESOLVE_PENDING_EFFECT" && it.effectTargetId == null }
+        applyAction(state, actNone, messages)
+
+        assertNull(state.pendingEffect)
+        assertFalse(opp.isHeavyExhausted, "指定しなかったため重疲労しない")
+        assertTrue(messages.any { it.contains("対象を指定しませんでした") })
+    }
+
+    @Test
+    fun testSqueedSummonNoOpponentExhaustedSpiritDoesNothing() {
+        val (state, p1) = TestFixtures.createTestState(p1ReserveNormal = 6, p1ReserveSoul = 0, step = Step.MAIN)
+        val p2 = state.player2
+
+        val oppRefreshed = TestFixtures.createSpirit("opp_ref", cardNo = "26RSD03-005", normalCores = 1)
+        oppRefreshed.isExhausted = false
+        p2.field.add(oppRefreshed)
+
+        val squeedCard = OFFICIAL_CARDS["26RSD03-X01"]!!
+        p1.hand.add(squeedCard)
+
+        val summonAction = GameAction(
+            index = 1,
+            type = "SUMMON",
+            category = "SUMMON",
+            detail = "Summon Squeed",
+            handIndex = 0,
+            costToPay = 5,
+            payFrom = listOf(CoreAlloc("Reserve", "R", normal = 5, soul = 0)),
+            placeFrom = listOf(CoreAlloc("Reserve", "R", normal = 1, soul = 0))
+        )
+        val messages = mutableListOf<String>()
+        applyAction(state, summonAction, messages)
+
+        assertTrue(messages.any { it.contains("疲労状態の相手スピリットが存在しないため不発") })
+        assertFalse(oppRefreshed.isHeavyExhausted)
+        assertNull(state.pendingEffect, "対象が存在しないため未解決状態にはならない")
+    }
+
+    /**
+     * 総合ルール 7-4 重疲労
+     * 重疲労状態のカードは逆向きにし、1回の回復で疲労状態になる。
+     */
+    @Test
+    fun testHeavyExhaustedSpiritRefreshesToExhaustedFirstInRefreshStep() {
+        val (state, p1) = TestFixtures.createTestState(step = Step.START)
+        val card = TestFixtures.createSpirit("fc_heavy", cardNo = "26RSD03-002", normalCores = 1)
+        card.heavyExhaust()
+        p1.field.add(card)
+
+        assertTrue(card.isHeavyExhausted)
+        assertTrue(card.isExhausted)
+
+        // 1回目のリフレッシュステップ: 重疲労 ➔ 疲労状態へ
+        val messages1 = mutableListOf<String>()
+        refreshStep(state, messages1)
+
+        assertFalse(card.isHeavyExhausted, "重疲労が解除される")
+        assertTrue(card.isExhausted, "1回の回復では疲労状態にとどまる")
+
+        // 2回目のリフレッシュステップ: 疲労状態 ➔ 回復状態へ
+        val messages2 = mutableListOf<String>()
+        refreshStep(state, messages2)
+
+        assertFalse(card.isHeavyExhausted, "重疲労ではない")
+        assertFalse(card.isExhausted, "完全に回復状態になる")
+    }
+
+    /**
+     * 甲手スクィード (26RSD03-X01)
+     * [Lv2]『アタック中』〔ターン1回〕バトル終了時、このスピリットを回復できる。
+     */
+    @Test
+    fun testSqueedLv2BattleEndRefreshesItselfOncePerTurn() {
+        val (state, p1) = TestFixtures.createTestState(step = Step.ATTACK_DECLARATION)
+        state.activePlayerId = p1.playerId
+
+        // 甲手スクィード: 3コアでLv2
+        val squeed = TestFixtures.createSpirit("fc_squeed", cardNo = "26RSD03-X01", normalCores = 3)
+        p1.field.add(squeed)
+        assertEquals(2, squeed.level, "3コアでLv2")
+
+        val messages = mutableListOf<String>()
+
+        // アタック宣言 ➔ 疲労
+        val attackAction = enumerateActions(state).first { it.type == "ATTACK" && it.targetInstanceId == squeed.instanceId }
+        applyAction(state, attackAction, messages)
+        assertTrue(squeed.isExhausted, "アタックにより疲労")
+
+        // フラッシュパス
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+
+        // 相手ブロックパス (PASS_BLOCK ➔ バトル終了)
+        val passBlock = enumerateActions(state).first { it.type == "PASS_BLOCK" }
+        applyAction(state, passBlock, messages)
+
+        // バトル終了時効果でLv2スクィードが回復していること
+        assertFalse(squeed.isExhausted, "Lv2効果によりバトル終了時に回復")
+        assertTrue(messages.any { it.contains("【甲手スクィード】Lv2効果: バトル終了時、このスピリットを回復した！") })
+
+        // 同一ターンで再度アタックした場合 (アタック宣言ステップに戻っている)
+        val attackAgain = enumerateActions(state).firstOrNull { it.type == "ATTACK" && it.targetInstanceId == squeed.instanceId }
+        assertNotNull(attackAgain, "回復したため再度アタック可能")
+        applyAction(state, attackAgain, messages)
+        assertTrue(squeed.isExhausted, "2回目のアタックで疲労")
+
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_BLOCK" }, messages)
+
+        // 〔ターン1回〕のため、2回目のバトル終了時は回復しないこと
+        assertTrue(squeed.isExhausted, "ターン1回効果使用済のため疲労状態のまま")
+    }
+
+    /**
+     * 甲手スクィード Lv1 (コア1個) ではバトル終了時回復が発動しないこと
+     */
+    @Test
+    fun testSqueedLv1DoesNotRefreshAtBattleEnd() {
+        val (state, p1) = TestFixtures.createTestState(step = Step.ATTACK_DECLARATION)
+        state.activePlayerId = p1.playerId
+
+        // 甲手スクィード: 1コアでLv1
+        val squeed = TestFixtures.createSpirit("fc_squeed", cardNo = "26RSD03-X01", normalCores = 1)
+        p1.field.add(squeed)
+        assertEquals(1, squeed.level, "1コアでLv1")
+
+        val messages = mutableListOf<String>()
+
+        val attackAction = enumerateActions(state).first { it.type == "ATTACK" && it.targetInstanceId == squeed.instanceId }
+        applyAction(state, attackAction, messages)
+        assertTrue(squeed.isExhausted)
+
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_FLASH" }, messages)
+        applyAction(state, enumerateActions(state).first { it.type == "PASS_BLOCK" }, messages)
+
+        // Lv1なので回復しない
+        assertTrue(squeed.isExhausted, "Lv1のため回復しない")
+        assertFalse(messages.any { it.contains("【甲手スクィード】Lv2効果") })
     }
 }

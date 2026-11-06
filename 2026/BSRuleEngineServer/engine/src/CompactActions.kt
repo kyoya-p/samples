@@ -22,6 +22,7 @@ package bstools.model
  */
 fun enumerateCompactActions(state: GameState): List<GameAction> {
     if (state.winner != null) return emptyList()
+    if (state.pendingEffect != null) return markRepetitions(state, enumerateRawActions(state))
     if (state.step != Step.MAIN && state.step != Step.MAIN_2) {
         return markRepetitions(state, enumerateRawActions(state))
     }

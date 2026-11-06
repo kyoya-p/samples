@@ -165,6 +165,8 @@ data class FieldCard(
     var colors: List<CardColor>,
     var cores: Cores,
     var isExhausted: Boolean = false,
+    /** 重疲労状態 (逆向き180度。1回の回復で疲労状態になる) */
+    var isHeavyExhausted: Boolean = false,
     var lvCosts: List<Int> = listOf(1),
     var baseSymbols: List<CardColor> = listOf(CardColor.GREEN),
     var systems: List<String> = emptyList(),
@@ -178,6 +180,21 @@ data class FieldCard(
     /** 一時的なBP増減修正値 */
     var bpModifier: Int = 0
 ) {
+    /** 重疲労させる (疲労かつ重疲労) */
+    fun heavyExhaust() {
+        isExhausted = true
+        isHeavyExhausted = true
+    }
+
+    /** 回復処理 (重疲労なら疲労へ、疲労なら未疲労へ) */
+    fun refresh() {
+        if (isHeavyExhausted) {
+            isHeavyExhausted = false
+            isExhausted = true
+        } else {
+            isExhausted = false
+        }
+    }
     /** 現在のLvに対応する基本BP (修正なし) */
     val baseBp: Int
         get() {
@@ -281,7 +298,9 @@ data class GameState(
     /** フラッシュタイミングで優先権を持つプレイヤーID (総合ルール 8-1-2-1: 防御側から優先権を得る) */
     var flashPriorityPlayerId: Int? = null,
     /** フラッシュタイミングでの連続パス回数 (2回連続パスでフラッシュ終了) */
-    var flashPassCount: Int = 0
+    var flashPassCount: Int = 0,
+    /** 未解決の効果（召喚時効果等の対象選択）がある場合の情報 */
+    var pendingEffect: PendingEffect? = null
 ) {
     val activePlayer: PlayerState get() = if (activePlayerId == 1) player1 else player2
     val opponentPlayer: PlayerState get() = if (activePlayerId == 1) player2 else player1
@@ -290,17 +309,35 @@ data class GameState(
      * いま選択を行うプレイヤー。通常はターンプレイヤーだが、
      * フラッシュタイミングは防御側から優先権を得て交互に行い (総合ルール 8-1-2-1)、
      * ブロック宣言はアタックされている側が行う (総合ルール 8-1-3-1)。
+     * 未解決の効果がある場合はそのカードの持ち主が行う。
      */
     val choosingPlayerId: Int
-        get() = when (step) {
-            Step.FLASH_TIMING -> flashPriorityPlayerId ?: opponentPlayer.playerId
-            Step.BLOCK_DECLARATION -> opponentPlayer.playerId
-            else -> activePlayerId
+        get() {
+            if (pendingEffect != null) {
+                val instId = pendingEffect!!.cardInstanceId
+                if (player1.field.any { it.instanceId == instId }) return player1.playerId
+                if (player2.field.any { it.instanceId == instId }) return player2.playerId
+            }
+            return when (step) {
+                Step.FLASH_TIMING -> flashPriorityPlayerId ?: opponentPlayer.playerId
+                Step.BLOCK_DECLARATION -> opponentPlayer.playerId
+                else -> activePlayerId
+            }
         }
 
     val choosingPlayer: PlayerState get() = if (choosingPlayerId == 1) player1 else player2
     val notChoosingPlayer: PlayerState get() = if (choosingPlayerId == 1) player2 else player1
 }
+
+/**
+ * 未解決の効果（召喚時効果等の対象選択）
+ */
+@Serializable
+data class PendingEffect(
+    val cardInstanceId: String,
+    val effectType: String,
+    val description: String = ""
+)
 
 /**
  * プレイヤーが選択可能なアクション

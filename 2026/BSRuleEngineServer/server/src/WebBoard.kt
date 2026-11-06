@@ -17,6 +17,7 @@ data class WebCardDto(
     val lv: Int = 1,
     val bp: Int? = null,
     val exhausted: Boolean = false,
+    val heavy_exhausted: Boolean = false,
     val image_url: String = "",
     val is_attacking: Boolean = false,
     val seq: Int? = null,
@@ -205,7 +206,7 @@ private fun cardDto(id: String, c: CardData) = WebCardDto(
 private fun fieldDto(f: FieldCard, state: GameState) = WebCardDto(
     id = f.instanceId, card_no = f.cardNo, name = f.name, cost = f.cost,
     symbols = f.symbols.joinToString("") { it.displayName }, cores = f.cores.format(), lv = f.level, bp = f.effectiveBp(state),
-    exhausted = f.isExhausted, image_url = imageUrl(f.cardNo), is_attacking = f.instanceId == state.attackingCardId, seq = f.seq,
+    exhausted = f.isExhausted, heavy_exhausted = f.isHeavyExhausted, image_url = imageUrl(f.cardNo), is_attacking = f.instanceId == state.attackingCardId, seq = f.seq,
     category = f.category.name, lv_costs = f.lvCosts
 )
 
@@ -251,12 +252,15 @@ fun buildWebGameStateDto(
                 },
                 card_no = actions.firstNotNullOfOrNull { a ->
                     a.handIndex.takeIf { it >= 0 && it < chooser.hand.size }?.let { chooser.hand[it].cardNo }
+                        ?: a.targetInstanceId?.let { tid -> chooser.field.find { it.instanceId == tid }?.cardNo }
                 },
                 target_instance_id = actions.firstNotNullOfOrNull { it.targetInstanceId }
             )
         }
 
-    val nLabel = when (state.step) {
+    val nLabel = if (state.pendingEffect != null) {
+        "効果の対象を選択してください"
+    } else when (state.step) {
         Step.MAIN -> "メインステップ終了"
         Step.ATTACK_DECLARATION -> "アタックステップ終了"
         Step.FLASH_TIMING -> if (state.flashPassCount == 0) "フラッシュをパス (相手へ)" else "フラッシュをパス (ブロックへ)"
@@ -273,7 +277,9 @@ fun buildWebGameStateDto(
         active_player = state.activePlayerId,
         choosing_player = state.choosingPlayerId,
         phase = run {
-            val stepName = if (state.step == Step.FLASH_TIMING && state.blockingCardId != null) {
+            val stepName = if (state.pendingEffect != null) {
+                "効果解決 [${state.pendingEffect!!.description}]"
+            } else if (state.step == Step.FLASH_TIMING && state.blockingCardId != null) {
                 "フラッシュタイミング [ブロック後]"
             } else {
                 state.step.displayName
@@ -296,10 +302,10 @@ fun buildWebGameStateDto(
         view_mode = if (isGod) "god" else "play",
         viewer = viewer,
         can_act = canAct,
-        n_index = if (!canAct || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING) null else 999,
+        n_index = if (!canAct || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING || state.pendingEffect != null) null else 999,
         eval_option_count = PlaymatEval.evaluatedOptionCount(state),
         n_label = nLabel,
-        n_eval = if (state.winner != null || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING) null else PlaymatEval.stepEndValue(state),
+        n_eval = if (state.winner != null || state.step == Step.BLOCK_DECLARATION || state.step == Step.FLASH_TIMING || state.pendingEffect != null) null else PlaymatEval.stepEndValue(state),
         can_undo = canUndo,
         can_redo = canRedo,
         winner = state.winner,

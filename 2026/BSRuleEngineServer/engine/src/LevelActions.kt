@@ -25,6 +25,7 @@ import bstools.model.effects.CardScriptRegistry
  */
 fun enumerateLevelActions(state: GameState): List<GameAction> {
     if (state.winner != null) return emptyList()
+    if (state.pendingEffect != null) return markRepetitions(state, enumerateRawActions(state))
     if (state.step != Step.MAIN && state.step != Step.MAIN_2) return markRepetitions(state, enumerateRawActions(state))
     val p = state.choosingPlayer
 

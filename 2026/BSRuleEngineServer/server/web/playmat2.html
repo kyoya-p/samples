@@ -313,34 +313,96 @@
     min-height: 24px;
   }
 
-  /* 3D Glowing Core Gem */
+  /* 3D Luminous Crystal Glass Hexagonal Core Gem (High Visibility & Intense Specular Highlight) */
   .core-gem {
     width: 16px;
-    height: 16px;
-    border-radius: 50%;
+    height: 18px;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     position: relative;
-    box-shadow: 0 0 8px currentColor, inset 0 0 4px rgba(255,255,255,0.8);
     cursor: pointer;
-    transition: transform 0.15s;
+    transition: transform 0.15s, filter 0.15s;
+    flex-shrink: 0;
   }
   .core-gem:hover {
-    transform: scale(1.25);
+    transform: scale(1.22);
+  }
+  /* Intense specular light reflection (glare) across the upper facets */
+  .core-gem::before {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    right: 2px;
+    height: 7px;
+    clip-path: polygon(50% 0%, 100% 40%, 50% 100%, 0% 40%);
+    background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.85) 40%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95));
   }
   .core-gem.normal {
-    background: radial-gradient(circle at 35% 35%, #e0f2fe 0%, #0284c7 60%, #0369a1 100%);
-    color: var(--core-blue);
+    background: linear-gradient(145deg, #ffffff 0%, rgba(224, 242, 254, 0.98) 15%, rgba(56, 189, 248, 0.95) 35%, rgba(2, 132, 199, 0.92) 65%, rgba(3, 105, 161, 0.95) 88%, rgba(7, 89, 133, 0.98) 100%);
+    box-shadow: inset 0 2.5px 3px rgba(255, 255, 255, 0.98), inset 1px 1px 2px rgba(255, 255, 255, 0.8), inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 0 3.5px rgba(56, 189, 248, 0.9)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
   }
   .core-gem.soul {
-    background: radial-gradient(circle at 35% 35%, #fff1f2 0%, #e11d48 60%, #881337 100%);
-    color: var(--core-soul);
-    border: 1px solid #fbbf24;
-    box-shadow: 0 0 10px #f43f5e, 0 0 4px #fbbf24;
+    background: linear-gradient(145deg, #ffffff 0%, rgba(255, 228, 230, 0.98) 15%, rgba(251, 113, 133, 0.95) 35%, rgba(225, 29, 72, 0.92) 65%, rgba(190, 18, 60, 0.95) 88%, rgba(136, 19, 55, 0.98) 100%);
+    box-shadow: inset 0 2.5px 3px rgba(255, 255, 255, 0.98), inset 1px 1px 2px rgba(255, 255, 255, 0.8), inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 0 4px rgba(244, 63, 94, 0.9)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  }
+  .core-gem.soul::after {
+    content: "";
+    position: absolute;
+    width: 3.5px;
+    height: 3.5px;
+    background: #facc15;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 4px #fbbf24;
+    z-index: 3;
   }
   .core-gem.life-gem {
-    width: 18px;
-    height: 18px;
-    background: radial-gradient(circle at 30% 30%, #fff 0%, #38bdf8 50%, #0284c7 100%);
-    color: #38bdf8;
+    width: 17px;
+    height: 19px;
+    background: linear-gradient(145deg, #ffffff 0%, rgba(240, 249, 255, 0.98) 15%, rgba(56, 189, 248, 0.95) 35%, rgba(2, 132, 199, 0.92) 65%, rgba(3, 105, 161, 0.95) 100%);
+    box-shadow: inset 0 2.5px 3px rgba(255, 255, 255, 0.98), inset 1px 1px 2px rgba(255, 255, 255, 0.8), inset 0 -2px 3px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 0 3.5px rgba(56, 189, 248, 0.9)) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+  }
+
+  /* Core Gem Slot Wrapper & Circular Enclosure Highlight (まるでかこう) */
+  .core-gem-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+  .core-gem-wrapper:hover {
+    transform: scale(1.15);
+  }
+  .core-gem-wrapper.gem-circle-marked::before {
+    content: "";
+    position: absolute;
+    top: 0px;
+    left: -1px;
+    width: 22px;
+    height: 22px;
+    border: 2.5px solid #facc15;
+    border-radius: 50% !important;
+    box-shadow: 0 0 10px #facc15, inset 0 0 5px rgba(250, 204, 21, 0.7);
+    pointer-events: none;
+    z-index: 10;
+    animation: pulse-gem-circle 1.2s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-gem-circle {
+    from { transform: scale(0.96); opacity: 0.85; box-shadow: 0 0 6px #facc15; }
+    to { transform: scale(1.08); opacity: 1; box-shadow: 0 0 14px #fde047, inset 0 0 6px #facc15; }
   }
 
   /* Life Tray & 5-Socket System (Official Battle Spirits Standard) */
@@ -554,13 +616,28 @@
     z-index: 50;
   }
 
-  /* Card States: Exhausted, Attacking, Blocking */
+  /* Card States: Exhausted, Attacking, Blocking, Selected */
+  .mat-card.card-selected,
+  .mat-card-hand.card-selected {
+    outline: 3px solid #38bdf8 !important;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.95), 0 0 35px rgba(2, 132, 199, 0.7) !important;
+    transform: translateY(-12px) scale(1.08) !important;
+    z-index: 100 !important;
+  }
   .mat-card.exhausted {
     transform: rotate(90deg) scale(0.95);
     filter: brightness(0.85);
   }
   .mat-card.exhausted:hover {
     transform: rotate(90deg) scale(1.02);
+  }
+  .mat-card.heavy-exhausted {
+    transform: rotate(180deg) scale(0.95);
+    filter: brightness(0.78);
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.75) !important;
+  }
+  .mat-card.heavy-exhausted:hover {
+    transform: rotate(180deg) scale(1.02);
   }
   .mat-card.attacking {
     box-shadow: 0 0 25px #ef4444, 0 0 8px #f87171, 0 0 0 2px #ef4444;
@@ -601,6 +678,11 @@
     padding: 1px 4px;
     backdrop-filter: blur(4px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    z-index: 10;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-badge-core {
+    display: none !important;
   }
   .card-badge-bp {
     position: absolute;
@@ -615,11 +697,96 @@
     padding: 1px 5px;
     backdrop-filter: blur(4px);
     box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    z-index: 10;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .card-badge-bp.boosted {
     color: #4ade80;
     border-color: #4ade80;
     text-shadow: 0 0 6px rgba(74, 222, 128, 0.8);
+  }
+
+  /* 疲労時 (90度回転): Lv/BP数値表示は回転させず水平に保持 */
+  .mat-card.exhausted .card-badge-lv {
+    top: auto;
+    bottom: 18px;
+    left: 6px;
+    right: auto;
+    transform: rotate(-90deg);
+    transform-origin: center center;
+  }
+  .mat-card.exhausted .card-badge-bp {
+    top: 18px;
+    bottom: auto;
+    left: auto;
+    right: 6px;
+    transform: rotate(-90deg);
+    transform-origin: center center;
+  }
+
+  /* 重疲労時 (180度回転): Lv/BP数値表示は回転させず水平に保持 */
+  .mat-card.heavy-exhausted .card-badge-lv {
+    top: auto;
+    bottom: 6px;
+    left: auto;
+    right: 6px;
+    transform: rotate(-180deg);
+    transform-origin: center center;
+  }
+  .mat-card.heavy-exhausted .card-badge-bp {
+    top: 6px;
+    bottom: auto;
+    left: 6px;
+    right: auto;
+    transform: rotate(-180deg);
+    transform-origin: center center;
+  }
+
+  /* Winner Announcement Banner */
+  .winner-banner {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 58, 138, 0.96));
+    border-bottom: 2px solid #facc15;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 24px rgba(250, 204, 21, 0.45);
+    padding: 16px 28px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+    animation: slide-down-banner 0.35s ease-out;
+  }
+  @keyframes slide-down-banner {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .winner-banner.hidden {
+    display: none !important;
+  }
+  .winner-content {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .winner-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #facc15;
+    text-shadow: 0 0 14px rgba(250, 204, 21, 0.7);
+    letter-spacing: 0.5px;
+  }
+  .winner-sub {
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+  .winner-actions {
+    display: flex;
+    gap: 12px;
   }
 
   /* Cores on Field Card */
@@ -638,6 +805,28 @@
     margin: 0 6px;
     backdrop-filter: blur(2px);
     border: 1px solid rgba(255,255,255,0.15);
+  }
+  /* 召喚中のコアエリア長方形マーク */
+  .card-cores-overlay.pending-core-area {
+    border: 2px dashed #38bdf8;
+    border-radius: 4px; /* 長方形としてマーク */
+    background: rgba(15, 23, 42, 0.92);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5), inset 0 0 6px rgba(56, 189, 248, 0.25);
+    cursor: pointer;
+    padding: 3px 6px;
+    margin: 0 4px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    z-index: 15;
+  }
+  .card-cores-overlay.pending-core-area:hover {
+    border: 2px solid #facc15;
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.85), inset 0 0 8px rgba(250, 204, 21, 0.4);
+    transform: scale(1.04);
+  }
+  .card-cores-overlay.pending-core-area.has-donor-selection {
+    border: 2px solid #fbbf24;
+    background: rgba(30, 27, 75, 0.95);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.8), inset 0 0 6px rgba(251, 191, 36, 0.35);
   }
 
   /* Central Clash Battle Zone */
@@ -871,19 +1060,69 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .action-choosing-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-transform: none;
+  }
+  .action-choosing-badge.p1 {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+  }
+  .action-choosing-badge.p2 {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid #ef4444;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
   }
   .action-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 280px;
+    gap: 8px;
+    max-height: 320px;
     overflow-y: auto;
+  }
+  .action-group-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  .action-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .action-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .action-item-btn {
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 6px;
-    padding: 8px 10px;
+    padding: 7px 10px;
     color: #f8fafc;
     font-size: 12px;
     font-weight: 500;
@@ -893,14 +1132,183 @@
     align-items: center;
     cursor: pointer;
     transition: all 0.15s;
+    position: relative;
   }
   .action-item-btn:hover {
     background: #0284c7;
     border-color: #38bdf8;
   }
+  .action-item-btn.is-pending-matched {
+    border-color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.25) !important;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.7) !important;
+  }
   .action-item-btn.is-best {
     border-left: 4px solid #eab308;
     background: #1e243b;
+  }
+
+  /* Card/Spirit Section Container (Grouped by effect-holding card) */
+  .card-action-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  }
+  .card-action-header {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .card-action-title-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-badge-type {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+  .card-badge-type.hand {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+  }
+  .card-badge-type.field {
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+  }
+  .card-badge-type.global {
+    background: rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+  }
+
+  /* Placement Subgroup Box (Grouped by placement core count) */
+  .placement-subgroup-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 6px;
+    margin-top: 2px;
+  }
+  .placement-subgroup-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed rgba(56, 189, 248, 0.2);
+  }
+  .placement-subgroup-title .subgroup-count {
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: normal;
+  }
+
+  /* Concise Action Option Tags */
+  .badge-cost {
+    background: rgba(2, 132, 199, 0.25);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.5);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .badge-place-req {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .badge-pay {
+    background: rgba(245, 158, 11, 0.25);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.6);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .badge-place {
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.6);
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .badge-vanish {
+    background: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    border: 1px solid #ef4444;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+    animation: pulse-vanish 1s infinite alternate;
+  }
+  @keyframes pulse-vanish {
+    0% { transform: scale(1); opacity: 0.85; }
+    100% { transform: scale(1.05); opacity: 1; }
+  }
+  .act-arrow {
+    color: #64748b;
+    margin: 0 4px;
+    font-weight: 700;
+  }
+  .act-pay-tag, .act-place-tag {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Hover Preview on Playmat (when hovering an action button) */
+  .core-preview-from {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.95), inset 0 0 8px rgba(245, 158, 11, 0.5) !important;
+    transform: translateY(-4px) scale(1.03) !important;
+    z-index: 25 !important;
+  }
+  .core-preview-to {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.95), inset 0 0 8px rgba(16, 185, 129, 0.5) !important;
+    transform: translateY(-4px) scale(1.03) !important;
+    z-index: 25 !important;
+  }
+  .card-preview-vanish {
+    opacity: 0.45 !important;
+    filter: grayscale(0.65) brightness(0.85) !important;
+    border-color: rgba(239, 68, 68, 0.7) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important;
+    transition: opacity 0.2s ease, filter 0.2s ease;
+  }
+  .vanish-overlay-badge {
+    display: none !important;
   }
 
   /* Card Inspector in Sidebar (Large Card View - 100% Responsive) */
@@ -1018,6 +1426,49 @@
     transition: all 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
   }
 
+  /* Deck Shuffle Animation */
+  .deck-shuffling {
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.9) !important;
+  }
+  .anim-shuffle-card {
+    position: fixed;
+    width: var(--card-w);
+    height: var(--card-h);
+    border-radius: 6px;
+    background-image: url('https://www.battlespirits.com/images/rule/card_back.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(56, 189, 248, 0.6);
+    pointer-events: none;
+    z-index: 9999;
+  }
+  .anim-shuffle-card.shuf-1 {
+    animation: shuffle-left 0.6s ease-in-out forwards;
+  }
+  .anim-shuffle-card.shuf-2 {
+    animation: shuffle-right 0.6s ease-in-out forwards;
+  }
+  .anim-shuffle-card.shuf-3 {
+    animation: shuffle-mid 0.6s ease-in-out forwards;
+  }
+  @keyframes shuffle-left {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    30% { transform: translate(-38px, -12px) rotate(-16deg); }
+    70% { transform: translate(22px, 6px) rotate(10deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  @keyframes shuffle-right {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    30% { transform: translate(38px, -14px) rotate(16deg); }
+    70% { transform: translate(-22px, 8px) rotate(-10deg); }
+    100% { transform: translate(0, 0) rotate(0deg); }
+  }
+  @keyframes shuffle-mid {
+    0% { transform: translate(0, 0) scale(1); }
+    40% { transform: translate(0, -26px) scale(1.1); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
   /* Flying Core Gem */
   .anim-flying-core {
     position: fixed;
@@ -1092,10 +1543,66 @@
     box-shadow: 0 12px 30px rgba(0,0,0,0.85), 0 0 20px rgba(56,189,248,0.5);
   }
 
-  /* Direct Core Move Active Source Glow */
+  /* Direct Core Move Active Source & Target Glow */
   .core-source-active {
-    outline: 3px solid #38bdf8;
-    box-shadow: 0 0 15px #38bdf8 !important;
+    outline: 2px solid #facc15 !important;
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.85) !important;
+    animation: pulse-core-source 1.2s infinite alternate;
+  }
+  @keyframes pulse-core-source {
+    from { box-shadow: 0 0 10px rgba(250, 204, 21, 0.5); }
+    to { box-shadow: 0 0 24px rgba(250, 204, 21, 1); }
+  }
+
+  /* Selected floating / glowing core gem */
+  .core-gem.selected {
+    transform: translateY(-9px) scale(1.45) !important;
+    z-index: 50;
+    filter: drop-shadow(0 0 8px #facc15) drop-shadow(0 0 16px rgba(250, 204, 21, 0.95)) !important;
+    animation: gem-selected-bounce 0.85s ease-in-out infinite alternate !important;
+  }
+  @keyframes gem-selected-bounce {
+    0% {
+      transform: translateY(-7px) scale(1.38);
+      filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 12px rgba(250, 204, 21, 0.8));
+    }
+    100% {
+      transform: translateY(-12px) scale(1.52);
+      filter: drop-shadow(0 0 14px #facc15) drop-shadow(0 0 24px rgba(234, 179, 8, 1));
+    }
+  }
+  /* Dim unselected gems when some gems are selected in the container */
+  .has-selection .core-gem:not(.selected) {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+
+  .core-target-candidate {
+    cursor: pointer !important;
+    outline: 2px dashed #4ade80 !important;
+    box-shadow: 0 0 18px rgba(74, 222, 128, 0.75) !important;
+    animation: pulse-core-target 1.2s infinite alternate !important;
+    position: relative;
+  }
+  .core-target-candidate::after {
+    content: "🎯";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.9));
+    pointer-events: none;
+    z-index: 60;
+    animation: target-pulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes target-pulse {
+    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.75; }
+    100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  }
+  @keyframes pulse-core-target {
+    from { outline-color: rgba(74, 222, 128, 0.4); box-shadow: 0 0 8px rgba(74, 222, 128, 0.35); }
+    to { outline-color: #4ade80; box-shadow: 0 0 22px rgba(74, 222, 128, 0.95); }
   }
 
   /* Drag & Drop to Field Styles */
@@ -1129,6 +1636,540 @@
     align-items: center;
     margin-bottom: 6px;
   }
+
+  /* Pending Summon / Deploy Ghost Card on Field */
+  .mat-card.pending-card {
+    opacity: 0.78;
+    outline: 2px dashed #38bdf8 !important;
+    box-shadow: 0 0 24px rgba(56, 189, 248, 0.75), inset 0 0 15px rgba(56, 189, 248, 0.4) !important;
+    animation: pending-summon-glow 2s infinite alternate ease-in-out;
+    cursor: pointer;
+    position: relative;
+  }
+  @keyframes pending-summon-glow {
+    from {
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.3);
+      filter: brightness(0.95);
+    }
+    to {
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.95), inset 0 0 22px rgba(56, 189, 248, 0.6);
+      filter: brightness(1.15);
+    }
+  }
+  .card-badge-pending-type {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(2, 132, 199, 0.9);
+    border: 1px solid #38bdf8;
+    color: #e0f2fe;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 4px;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+    pointer-events: none;
+    animation: pulse 1.5s infinite alternate;
+  }
+  .mat-card-hand.pending-origin {
+    opacity: 0.3 !important;
+    filter: grayscale(0.6);
+    pointer-events: none;
+    transform: scale(0.92);
+  }
+
+  /* Pending Summon HUD Banner (Floating Control for Cost & Cores) */
+  .pending-summon-hud {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.96) 100%);
+    border: 1.5px solid #38bdf8;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 16px rgba(56, 189, 248, 0.4);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    animation: fadeIn 0.2s ease-out;
+  }
+  .pending-hud-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #f0f9ff;
+  }
+  .pending-hud-title {
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .pending-hud-cost {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 11px;
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .pending-hud-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pending-core-stepper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+  .btn-step-core {
+    background: #0f172a;
+    border: 1px solid #38bdf8;
+    color: #38bdf8;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    font-weight: 900;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .btn-step-core:hover:not(:disabled) {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
+  }
+  .btn-step-core:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: #475569;
+    color: #64748b;
+  }
+  .pending-core-preview {
+    font-size: 12px;
+    font-weight: 800;
+    color: #f0f9ff;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 60px;
+    justify-content: center;
+  }
+  .btn-step-soul {
+    background: rgba(225, 29, 72, 0.2);
+    border: 1px solid #f43f5e;
+    color: #fecdd3;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .btn-step-soul:hover:not(:disabled) {
+    background: #e11d48;
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
+  }
+  .btn-step-soul:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .pending-hud-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-pending-confirm {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border: 1px solid #4ade80;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 4px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+    transition: all 0.2s;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-pending-confirm:hover {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 0 18px rgba(34, 197, 94, 0.9);
+    transform: translateY(-1px);
+  }
+  .btn-pending-cancel {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid #94a3b8;
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .btn-pending-cancel:hover {
+    background: #334155;
+    color: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  /* 2-Step Summon Wizard Styles */
+  .pending-wizard-steps {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    width: 100%;
+  }
+  .pending-wizard-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 5px 12px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .pending-wizard-step:hover {
+    border-color: #38bdf8;
+    color: #f0f9ff;
+    background: rgba(56, 189, 248, 0.15);
+  }
+  .pending-wizard-step.active {
+    border-color: #38bdf8 !important;
+    background: rgba(2, 132, 199, 0.35) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.5) !important;
+  }
+  .pending-wizard-step.completed {
+    border-color: #4ade80 !important;
+    background: rgba(22, 163, 74, 0.25) !important;
+    color: #bbf7d0 !important;
+  }
+  .wizard-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .pending-wizard-step.active .wizard-step-num {
+    background: #38bdf8;
+    color: #0f172a;
+  }
+  .pending-wizard-step.completed .wizard-step-num {
+    background: #22c55e;
+    color: #ffffff;
+  }
+
+  /* Quick Selection Buttons */
+  .pending-quick-opts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .btn-quick-opt {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1.5px solid rgba(56, 189, 248, 0.35);
+    color: #e0f2fe;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .btn-quick-opt:hover {
+    border-color: #facc15;
+    background: rgba(250, 204, 21, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  .btn-quick-opt.active {
+    border-color: #facc15 !important;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.3) 0%, rgba(202, 138, 4, 0.4) 100%) !important;
+    color: #fef08a !important;
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.6) !important;
+  }
+  .btn-quick-opt.has-vanish {
+    border-color: #f87171;
+  }
+  .btn-quick-opt.has-vanish:hover {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.2);
+  }
+
+  /* コスト支払分の専用囲い */
+  .trash-pending-pay-enclosure {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    margin-left: 6px;
+    position: relative;
+    vertical-align: middle;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    min-height: 28px;
+    box-sizing: border-box;
+  }
+  /* コスト支払い未充足時: オレンジ破線枠で点滅 (ブリンク) ハイライト */
+  .trash-pending-pay-enclosure.is-unfulfilled,
+  .trash-pending-pay-enclosure.is-active:not(.is-completed) {
+    border: 2.5px dashed #f59e0b;
+    background: rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.85), inset 0 0 6px rgba(245, 158, 11, 0.35);
+    animation: blink-orange-pay-enclosure 0.9s ease-in-out infinite;
+  }
+  /* コスト支払い完了時: 点滅なし・落ち着いた完了枠 */
+  .trash-pending-pay-enclosure.is-completed {
+    border: 1.5px solid rgba(34, 197, 94, 0.75);
+    background: rgba(34, 197, 94, 0.12);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.25);
+    animation: none;
+  }
+  .trash-pending-pay-enclosure.is-idle {
+    border: 1.5px dashed rgba(148, 163, 184, 0.5);
+    background: rgba(15, 23, 42, 0.5);
+    box-shadow: none;
+    animation: none;
+  }
+  /* ラベル文字「コスト支払い...」は不要のため非表示 */
+  .trash-pending-pay-enclosure::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  @keyframes blink-orange-pay-enclosure {
+    0%, 100% {
+      border-color: #f59e0b;
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.95), inset 0 0 8px rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.35);
+      opacity: 1;
+    }
+    50% {
+      border-color: rgba(245, 158, 11, 0.2);
+      box-shadow: 0 0 2px rgba(245, 158, 11, 0.1);
+      background: rgba(245, 158, 11, 0.05);
+      opacity: 0.6;
+    }
+  }
+
+  /* 召喚対象スピリット/ネクサスの維持コア専用囲い */
+  .card-pending-place-enclosure {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    position: relative;
+    vertical-align: middle;
+    min-height: 24px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+  /* 維持コア未充足時: オレンジ破線枠で点滅 (ブリンク) ハイライト */
+  .card-pending-place-enclosure.is-unfulfilled,
+  .card-pending-place-enclosure.is-active:not(.is-completed) {
+    border: 2.5px dashed #f59e0b;
+    background: rgba(245, 158, 11, 0.28);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.8), inset 0 0 6px rgba(245, 158, 11, 0.4);
+    animation: blink-orange-pay-enclosure 0.9s ease-in-out infinite;
+  }
+  /* 維持コア完了時: 点滅なし・落ち着いた完了枠 */
+  .card-pending-place-enclosure.is-completed {
+    border: 1.5px solid rgba(34, 197, 94, 0.75);
+    background: rgba(34, 197, 94, 0.12);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.25);
+    animation: none;
+  }
+  .card-pending-place-enclosure.is-idle {
+    border: 1.5px dashed rgba(148, 163, 184, 0.45);
+    background: rgba(15, 23, 42, 0.55);
+    box-shadow: none;
+    animation: none;
+  }
+  /* ラベル文字「維持コア...」「配置コア...」は不要のため非表示 */
+  .card-pending-place-enclosure::before {
+    display: none !important;
+    content: none !important;
+  }
+  .trash-pending-pay-gem-slot {
+    width: 20px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .trash-pending-pay-gem-slot.pending-trash-gem:hover {
+    transform: scale(1.22);
+    background: rgba(245, 158, 11, 0.35);
+  }
+  .trash-pending-pay-gem-slot.empty-shortage-slot {
+    border: 1.5px dashed rgba(245, 158, 11, 0.7);
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    cursor: default;
+    position: relative;
+    box-shadow: inset 0 0 4px rgba(245, 158, 11, 0.2);
+  }
+  .trash-pending-pay-gem-slot.empty-shortage-slot::after {
+    content: "+";
+    font-size: 11px;
+    font-weight: 800;
+    color: #f59e0b;
+    opacity: 0.85;
+  }
+
+  /* Pending Summon Active Slots (Payment & Placement Core Allocation) */
+  .pending-slot-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pending-slot-btn {
+    background: rgba(15, 23, 42, 0.88);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    position: relative;
+  }
+  .pending-slot-btn:hover {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+  }
+  .pending-slot-btn.active {
+    border-color: #38bdf8 !important;
+    background: rgba(2, 132, 199, 0.35) !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
+  }
+  .pending-slot-btn.active::after {
+    content: "選択中 👈";
+    position: absolute;
+    top: -9px;
+    right: 6px;
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 8px;
+    border: 1px solid #38bdf8;
+  }
+  .pending-slot-btn.active .slot-label {
+    color: #38bdf8 !important;
+    font-weight: 800;
+  }
+  .slot-label {
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .slot-val {
+    font-size: 12px;
+    color: #f8fafc;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .pending-slot-arrow {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 900;
+  }
+
+  /* Cores on board selected for Summon Pay / Place */
+  .core-gem.selected-for-pay {
+    outline: 2px solid #f97316 !important;
+    box-shadow: 0 0 10px #f97316, 0 0 16px rgba(249, 115, 22, 0.8) !important;
+    transform: scale(1.28);
+    animation: pulse-pay-core 1.2s infinite alternate;
+  }
+  @keyframes pulse-pay-core {
+    from { filter: drop-shadow(0 0 2px #f97316) brightness(1); }
+    to { filter: drop-shadow(0 0 8px #ea580c) brightness(1.3); }
+  }
+  .core-gem.selected-for-place {
+    outline: 2px solid #38bdf8 !important;
+    box-shadow: 0 0 10px #38bdf8, 0 0 16px rgba(56, 189, 248, 0.8) !important;
+    transform: scale(1.28);
+    animation: pulse-place-core 1.2s infinite alternate;
+  }
+  @keyframes pulse-place-core {
+    from { filter: drop-shadow(0 0 2px #38bdf8) brightness(1); }
+    to { filter: drop-shadow(0 0 8px #0284c7) brightness(1.3); }
+  }
+
+  /* Field Card donor styling during Pending Summon */
+  .mat-card.card-donor-pay {
+    outline: 2px dashed #f97316 !important;
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.7) !important;
+  }
+  .mat-card.card-donor-place {
+    outline: 2px dashed #38bdf8 !important;
+    box-shadow: 0 0 20px rgba(56, 189, 248, 0.7) !important;
+  }
 </style>
 </head>
 <body>
@@ -1154,6 +2195,18 @@
     <label class="auto-toggle"><input type="checkbox" id="auto-p2"> P2自動</label>
   </div>
 </header>
+
+<!-- Winner Announcement Overlay -->
+<div id="winner-banner" class="winner-banner hidden">
+  <div class="winner-content">
+    <div class="winner-title" id="winner-title">🏆 ゲーム終了: プレイヤー1 の勝利！</div>
+    <div class="winner-sub" id="winner-sub">ライフ喪失またはデッキアウトにより決着しました</div>
+    <div class="winner-actions">
+      <button class="primary" onclick="$('btn-restart').click()">🔄 もう一度プレイ (リスタート)</button>
+      <button class="secondary" onclick="$('btn-new').click()">⚔ 新規ゲーム</button>
+    </div>
+  </div>
+</div>
 
 <div class="main-container" id="main-container">
   <!-- Playmat Graphical Table Area -->
@@ -1223,20 +2276,6 @@
             <div class="tray-title">🔷 RESERVE</div>
             <div class="core-gem-container" id="p2-reserve-gems"></div>
           </div>
-        </div>
-      </section>
-
-      <!-- CENTRAL BATTLE ARENA (CLASH ZONE) -->
-      <section class="battle-clash-zone" id="clash-zone">
-        <div class="clash-unit" id="clash-attacker">
-          <span style="font-size: 12px; color: #94a3b8;">-</span>
-        </div>
-        <div class="clash-vs">
-          <span>VS</span>
-          <span id="clash-status-text" class="clash-info">平穏</span>
-        </div>
-        <div class="clash-unit" id="clash-blocker">
-          <span style="font-size: 12px; color: #94a3b8;">-</span>
         </div>
       </section>
 
@@ -1323,7 +2362,10 @@
     <!-- Step Actions Control -->
     <div class="sidebar-section">
       <h2>
-        <span>選択可能なアクション</span>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span>選択可能なアクション</span>
+          <span id="action-choosing-badge" class="action-choosing-badge p1">Player 1 (あなた)</span>
+        </div>
         <button id="btn-step-end" class="primary" style="display:none;">ステップ終了</button>
       </h2>
       <div id="action-list" class="action-list">
@@ -1402,39 +2444,118 @@
 const $ = (id) => document.getElementById(id);
 const esc = (s) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-const TAB_ROOM = new URLSearchParams(location.search).get("room") || new URLSearchParams(location.search).get("sid") || "default";
+// Battle Spirits 3D Luminous Crystal Glass Hexagonal Core SVGs (強い光の反射ハイライト仕様)
+const HEX_CORE_BLUE_SVG = `<svg class="hex-icon blue" viewBox="0 0 12 14" width="11" height="13" style="display:inline-block; vertical-align:middle; margin:0 1px; flex-shrink:0; filter:drop-shadow(0 0 2px rgba(56,189,248,0.85));"><polygon points="6,0.5 11.5,3.5 11.5,10.5 6,13.5 0.5,10.5 0.5,3.5" fill="#0284c7" stroke="#38bdf8" stroke-width="0.75"/><polygon points="6,0.5 0.5,3.5 6,7" fill="#ffffff" opacity="0.95"/><polygon points="6,0.5 11.5,3.5 6,7" fill="#bae6fd" opacity="0.88"/><polygon points="0.5,3.5 0.5,10.5 6,7" fill="#0284c7" opacity="0.85"/><polygon points="11.5,3.5 11.5,10.5 6,7" fill="#0369a1" opacity="0.85"/><polygon points="0.5,10.5 6,13.5 6,7" fill="#075985" opacity="0.9"/><polygon points="11.5,10.5 6,13.5 6,7" fill="#0c4a6e" opacity="0.92"/><polygon points="6,0.8 2,2.8 6,5 10,2.8" fill="#ffffff" opacity="0.6"/></svg>`;
+
+const HEX_CORE_RED_SVG = `<svg class="hex-icon red" viewBox="0 0 12 14" width="11" height="13" style="display:inline-block; vertical-align:middle; margin:0 1px; flex-shrink:0; filter:drop-shadow(0 0 2.5px rgba(244,63,94,0.9));"><polygon points="6,0.5 11.5,3.5 11.5,10.5 6,13.5 0.5,10.5 0.5,3.5" fill="#e11d48" stroke="#fb7185" stroke-width="0.75"/><polygon points="6,0.5 0.5,3.5 6,7" fill="#ffffff" opacity="0.95"/><polygon points="6,0.5 11.5,3.5 6,7" fill="#fecdd3" opacity="0.88"/><polygon points="0.5,3.5 0.5,10.5 6,7" fill="#e11d48" opacity="0.85"/><polygon points="11.5,3.5 11.5,10.5 6,7" fill="#be123c" opacity="0.85"/><polygon points="0.5,10.5 6,13.5 6,7" fill="#9f1239" opacity="0.9"/><polygon points="11.5,10.5 6,13.5 6,7" fill="#881337" opacity="0.92"/><polygon points="6,0.8 2,2.8 6,5 10,2.8" fill="#ffffff" opacity="0.6"/><circle cx="6" cy="7" r="1.3" fill="#facc15" opacity="0.95"/></svg>`;
+
+function formatActionText(text) {
+  if (!text) return "";
+  let res = esc(text);
+  res = res.replaceAll("🔷", HEX_CORE_BLUE_SVG);
+  res = res.replaceAll("🔶", HEX_CORE_RED_SVG);
+  res = res.replaceAll("🔮", HEX_CORE_RED_SVG);
+  return res;
+}
+
+const TAB_ROOM = new URLSearchParams(location.search).get("room") || new URLSearchParams(location.search).get("sid") || "playmat2";
 const TAB_SESSION = "sess_" + Math.random().toString(36).substring(2, 9);
 const CARD_BACK_URL = "https://www.battlespirits.com/images/rule/card_back.png";
 
 let current = null;
 let lastState = null;
 let selectedCoreMoveSource = null;
+let selectedCard = null; // { cardNo, id, name, type: "hand" | "field" }
 let activeHandPopoverCardNo = null;
-let currentActionFilter = null; // { cardNo: string, filterKind: "SUMMON_DEPLOY" | "HAND_EFFECTS" }
+let currentActionFilter = null; // { cardNo, cardId, cardName, type }
 let draggedHandCard = null;
+let pendingSummon = null; // { card, group, availablePlacements, selectedPlacementIndex, selectedPaymentIndex }
+
+function selectCard(cardInfo) {
+  selectedCard = cardInfo;
+  updateInspector(cardInfo);
+
+  // Apply card-selected class to the matching card
+  document.querySelectorAll(".mat-card, .mat-card-hand").forEach(el => el.classList.remove("card-selected"));
+  if (cardInfo.type === "field") {
+    const el = document.querySelector(`.mat-card[data-id="${cardInfo.id}"]`);
+    if (el) el.classList.add("card-selected");
+  } else if (cardInfo.type === "hand") {
+    const el = Array.from(document.querySelectorAll(".mat-card-hand")).find(e => e._card && e._card.card_no === cardInfo.card_no);
+    if (el) el.classList.add("card-selected");
+  }
+
+  // Filter actions list to this card
+  currentActionFilter = {
+    cardNo: cardInfo.card_no,
+    cardId: cardInfo.id,
+    cardName: cardInfo.name,
+    type: cardInfo.type
+  };
+  if (current) renderActionList(current, currentActionFilter);
+}
+
+function clearCardSelection() {
+  selectedCard = null;
+  document.querySelectorAll(".mat-card, .mat-card-hand").forEach(el => el.classList.remove("card-selected"));
+  currentActionFilter = null;
+  if (current) renderActionList(current, null);
+}
+
+function clearActionFilter() {
+  clearCardSelection();
+}
 
 function renderActionList(data, filter = currentActionFilter) {
   const actionList = $("action-list");
   if (!actionList) return;
   actionList.innerHTML = "";
 
-  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
-  if (filter && filter.cardNo) {
-    const cardObj = (p1.hand || []).find(c => c.card_no === filter.cardNo) || (p1.field || []).find(c => c.card_no === filter.cardNo);
-    const cardName = cardObj ? cardObj.name : filter.cardNo;
+  const choosingPlayer = data.choosing_player || data.active_player || 1;
+  const badgeEl = $("action-choosing-badge");
+  if (badgeEl) {
+    if (data.winner != null) {
+      badgeEl.className = "action-choosing-badge";
+      badgeEl.textContent = `勝者: P${data.winner}`;
+    } else if (choosingPlayer === 1) {
+      badgeEl.className = "action-choosing-badge p1";
+      badgeEl.textContent = "Player 1 (あなた)";
+    } else if (choosingPlayer === 2) {
+      badgeEl.className = "action-choosing-badge p2";
+      badgeEl.textContent = "Player 2 (相手)";
+    } else {
+      badgeEl.className = "action-choosing-badge";
+      badgeEl.textContent = `Player ${choosingPlayer}`;
+    }
+  }
+
+  if (data.winner != null) {
+    actionList.innerHTML = `
+      <div style="padding:24px 16px; text-align:center; color:#94a3b8; font-size:13px; line-height:1.6;">
+        <div style="font-size:32px; margin-bottom:8px;">🏆</div>
+        <div style="font-size:16px; font-weight:800; color:#facc15; margin-bottom:6px;">プレイヤー${data.winner} の勝利！</div>
+        <div>対局が決着しました。「リスタート」または「新規ゲーム」で次の対局を開始できます。</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Filter Bar if card is selected
+  if (filter && (filter.cardName || filter.cardNo)) {
+    const cardName = filter.cardName || filter.cardNo;
     const filterBar = document.createElement("div");
     filterBar.className = "action-filter-bar";
     filterBar.innerHTML = `
-      <span>🔍「${esc(cardName)}」の${filter.filterKind === "SUMMON_DEPLOY" ? "召喚・配置" : "手札効果"}</span>
-      <button class="secondary" style="padding:2px 8px; font-size:10px; background:#0f172a; border-color:#38bdf8;" onclick="clearActionFilter()">✕ すべて表示</button>
+      <span>🔍「${esc(cardName)}」の選択肢</span>
+      <button class="secondary" style="padding:2px 8px; font-size:10px; background:#0f172a; border-color:#38bdf8;" onclick="clearCardSelection()">✕ すべて表示</button>
     `;
     actionList.appendChild(filterBar);
   }
 
   const stepEndBtn = $("btn-step-end");
-  if (data.n_index != null && !filter) {
+  if (data.n_index != null) {
     stepEndBtn.style.display = "inline-flex";
-    stepEndBtn.textContent = data.n_label || "ステップ終了";
+    stepEndBtn.textContent = (data.n_label || "ステップ終了") + " (Space)";
     stepEndBtn.onclick = () => doAct(data.n_index);
   } else {
     stepEndBtn.style.display = "none";
@@ -1445,37 +2566,449 @@ function renderActionList(data, filter = currentActionFilter) {
     return;
   }
 
+  // Group action groups by the Card / Spirit possessing the effect
+  const cardSections = groupActionGroupsByCard(data.groups, data);
+
   let matchedAny = false;
-  for (const g of data.groups) {
-    if (g.all_forbidden) continue;
 
-    if (filter && filter.cardNo) {
-      if (filter.filterKind === "SUMMON_DEPLOY") {
-        if (g.card_no !== filter.cardNo) continue;
-        if (g.category.includes("マジック使用") || g.category.includes("フラッシュ召喚")) continue;
-      } else if (filter.filterKind === "HAND_EFFECTS") {
-        if (g.card_no !== filter.cardNo) continue;
-        const hasHandEffect = g.category.includes("マジック使用") || g.category.includes("フラッシュ召喚") || g.category.includes("手札") || g.options.some(o => o.type === "USE_MAGIC" || o.type === "FLASH_SUMMON");
-        if (!hasHandEffect) continue;
+  for (const cardSec of cardSections) {
+    // If filtering by card, check match
+    if (filter) {
+      let isCardMatch = false;
+      const cName = filter.cardName || "";
+      const cNo = filter.cardNo || "";
+      const cId = filter.cardId || "";
+
+      if (filter.type === "hand") {
+        isCardMatch = (cardSec.cardNo && cardSec.cardNo === cNo)
+                   || (cName && cardSec.title.includes(cName))
+                   || cardSec.groups.some(g => (g.card_no && g.card_no === cNo) || (cName && (g.category || "").includes(cName)));
+      } else if (filter.type === "field") {
+        isCardMatch = (cardSec.id && cardSec.id === cId)
+                   || (cName && cardSec.title.includes(cName))
+                   || (cNo && cardSec.cardNo === cNo)
+                   || cardSec.groups.some(g => (g.target_instance_id && g.target_instance_id === cId)
+                                            || (cName && (g.category || "").includes(cName))
+                                            || (g.options && g.options.some(o => (o.core_effects || []).some(e => e.source_id === cId))));
+      } else {
+        isCardMatch = (cardSec.cardNo && cardSec.cardNo === cNo) || (cName && cardSec.title.includes(cName));
       }
+      if (!isCardMatch) continue;
     }
 
-    for (const opt of g.options.filter(o => !o.forbidden)) {
-      matchedAny = true;
-      const item = document.createElement("button");
-      item.className = "action-item-btn" + (opt.eval != null && opt.eval >= 0.5 ? " is-best" : "");
-      item.innerHTML = `
-        <span>${esc(opt.detail)}</span>
-        <span style="color:#facc15; font-weight:700; font-size:11px;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>
+    // Filter selectable options in all groups under this card
+    const validGroups = cardSec.groups.filter(g => !g.all_forbidden && g.options.some(o => !o.forbidden));
+    if (!validGroups.length) continue;
+    matchedAny = true;
+
+    // Card/Spirit Section Container
+    const cardSectionDiv = document.createElement("div");
+    cardSectionDiv.className = "card-action-section";
+
+    // Card Header
+    const cardHeader = document.createElement("div");
+    cardHeader.className = "card-action-header";
+    const typeLabel = cardSec.type === "field" ? "フィールド" : (cardSec.type === "hand" ? "手札" : "共通");
+    cardHeader.innerHTML = `
+      <div class="card-action-title-left">
+        <span class="card-badge-type ${cardSec.type}">${typeLabel}</span>
+        <span>${formatActionText(cardSec.title)}</span>
+      </div>
+    `;
+    cardSectionDiv.appendChild(cardHeader);
+
+    // Render each action group under this card
+    for (const g of validGroups) {
+      const selectableOpts = g.options.filter(o => !o.forbidden);
+      if (!selectableOpts.length) continue;
+
+      const isSummonOrDeploy = g.category && /【(召喚|配置)】/u.test(g.category);
+
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "action-group-box";
+
+      const costBadgeHtml = extractGroupCostPlacementBadge(selectableOpts);
+      const catHeader = document.createElement("div");
+      catHeader.className = "action-group-title";
+      catHeader.innerHTML = `
+        <span>${formatActionText(g.category || "アクション")}</span>
+        ${costBadgeHtml}
       `;
-      item.onclick = () => doAct(opt.index);
-      actionList.appendChild(item);
+      groupDiv.appendChild(catHeader);
+
+      if (isSummonOrDeploy) {
+        // Group by placement core count (配置コア数)
+        const placementSubgroups = groupOptionsByPlacementCores(selectableOpts);
+
+        // Render sublists for each placement count
+        for (const plSub of placementSubgroups) {
+          const subBox = document.createElement("div");
+          subBox.className = "placement-subgroup-box";
+
+          const subTitle = document.createElement("div");
+          subTitle.className = "placement-subgroup-title";
+          subTitle.innerHTML = `
+            <span>${formatActionText(plSub.label)}</span>
+            <span class="subgroup-count">(${plSub.options.length}パターン)</span>
+          `;
+          subBox.appendChild(subTitle);
+
+          const optsContainer = document.createElement("div");
+          optsContainer.className = "action-options-list";
+
+          for (const opt of plSub.options) {
+            const item = createActionOptionButton(opt, g.category, true);
+            optsContainer.appendChild(item);
+          }
+          subBox.appendChild(optsContainer);
+          groupDiv.appendChild(subBox);
+        }
+      } else {
+        // Normal action group: render buttons directly
+        const optsContainer = document.createElement("div");
+        optsContainer.className = "action-options-list";
+        for (const opt of selectableOpts) {
+          const item = createActionOptionButton(opt, g.category, false);
+          optsContainer.appendChild(item);
+        }
+        groupDiv.appendChild(optsContainer);
+      }
+
+      cardSectionDiv.appendChild(groupDiv);
     }
+
+    actionList.appendChild(cardSectionDiv);
   }
 
   if (filter && !matchedAny) {
-    actionList.innerHTML += `<div style="color:#94a3b8; font-size:12px; text-align:center; padding:12px;">該当するアクションはありません</div>`;
+    actionList.innerHTML += `<div style="color:#94a3b8; font-size:12px; text-align:center; padding:12px;">このカードで選択可能なアクションはありません</div>`;
   }
+}
+
+function createActionOptionButton(opt, category, isPlacementSubgroup) {
+  const item = document.createElement("button");
+  const isMatchedPending = pendingSummon && isPendingBothComplete() && getPendingMatchedOption()?.index === opt.index;
+  item.className = "action-item-btn" + (opt.eval != null && opt.eval >= 0.5 ? " is-best" : "") + (isMatchedPending ? " is-pending-matched" : "");
+  item.innerHTML = `
+    <span style="flex:1; margin-right:8px; line-height:1.4; display:flex; align-items:center; flex-wrap:wrap; gap:4px;">${formatActionOptionContent(opt, category, isPlacementSubgroup)}</span>
+    <span style="color:#facc15; font-weight:700; font-size:11px; white-space:nowrap;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>
+  `;
+  // Preview highlights on board during hover
+  item.addEventListener("mouseenter", () => showActionBoardPreview(opt));
+  item.addEventListener("mouseleave", clearActionBoardPreview);
+  item.onclick = () => {
+    clearActionBoardPreview();
+    if (pendingSummon) {
+      pendingSummon = null;
+    }
+    doAct(opt.index);
+  };
+  return item;
+}
+
+function groupActionGroupsByCard(groups, data) {
+  const cardMap = new Map();
+  const globalGroups = [];
+
+  for (const g of groups) {
+    if (g.all_forbidden) continue;
+
+    // Check if it's step end or pass
+    const isStepEnd = g.category && /【ステップ終了】|パス/u.test(g.category);
+    if (isStepEnd) {
+      globalGroups.push(g);
+      continue;
+    }
+
+    // 1. If target_instance_id is set (Field Spirit / Nexus)
+    if (g.target_instance_id) {
+      const targetId = g.target_instance_id;
+      if (!cardMap.has(targetId)) {
+        const fCard = (data.player && data.player.field ? data.player.field.find(c => c.id === targetId) : null)
+                   || (data.opponent && data.opponent.field ? data.opponent.field.find(c => c.id === targetId) : null);
+        const name = fCard ? fCard.name : (g.category.match(/#\d+\s*([^（(\s]+)/)?.[1] || "スピリット");
+        const seqMatch = targetId.match(/_(\d+)$/);
+        const seq = fCard?.field_seq || fCard?.seq || (seqMatch ? seqMatch[1] : "");
+        const seqStr = seq ? `#${seq} ` : "";
+        const lvStr = fCard?.lv ? ` Lv${fCard.lv}` : "";
+        const bpStr = fCard?.bp != null ? ` (BP${fCard.bp})` : "";
+
+        cardMap.set(targetId, {
+          cardKey: targetId,
+          type: "field",
+          id: targetId,
+          cardNo: fCard?.card_no || g.card_no,
+          title: `🛡️ ${seqStr}${name}${lvStr}${bpStr}`,
+          groups: []
+        });
+      }
+      cardMap.get(targetId).groups.push(g);
+      continue;
+    }
+
+    // 2. If hand card action (召喚, 配置, マジック使用, etc.)
+    const handMatch = g.category.match(/【(召喚|配置|マジック使用|アクセル|フラッシュ使用)】\s*([^\s(（]+)/);
+    const cardNo = g.card_no;
+    const cardName = handMatch ? handMatch[2] : null;
+
+    if (cardNo || cardName) {
+      const handKey = cardNo || `hand_${cardName}`;
+      if (!cardMap.has(handKey)) {
+        const hCard = data.player && data.player.hand ? data.player.hand.find(c => c.card_no === cardNo || c.name === cardName) : null;
+        const name = cardName || hCard?.name || cardNo;
+        const costStr = hCard?.cost != null ? ` (コスト${hCard.cost})` : "";
+        const icon = g.category.includes("【召喚】") ? "🎴" : (g.category.includes("【配置】") ? "🌐" : "✨");
+
+        cardMap.set(handKey, {
+          cardKey: handKey,
+          type: "hand",
+          cardNo: cardNo,
+          name: name,
+          title: `${icon} 「${name}」${costStr}`,
+          groups: []
+        });
+      }
+      cardMap.get(handKey).groups.push(g);
+      continue;
+    }
+
+    // Fallback: Group as global
+    globalGroups.push(g);
+  }
+
+  const result = Array.from(cardMap.values());
+  if (globalGroups.length > 0) {
+    result.push({
+      cardKey: "global_actions",
+      type: "global",
+      title: "⏩ ゲーム進行・ステップ終了",
+      groups: globalGroups
+    });
+  }
+  return result;
+}
+
+function extractPlacementConfig(opt) {
+  const detail = opt.detail || "";
+  let normal = 0;
+  let soul = 0;
+
+  const match = detail.match(/配置コア[:\s]*([^\s,、(]+)/) || detail.match(/\(.*?配置:([^,)]+)/);
+  if (match) {
+    const s = match[1].trim();
+    if (s.includes("なし") || s === "0") {
+      return { total: 0, normal: 0, soul: 0, key: "none", label: "配置コアなし (0個)" };
+    }
+    const blue = (s.match(/🔷/gu) || []).length;
+    const red = (s.match(/[🔴🔶🔮]/gu) || []).length;
+    if (blue + red > 0) {
+      normal = blue;
+      soul = red;
+    } else {
+      if (s.includes("s")) {
+        soul = 1;
+        const n = parseInt(s.replace("s", ""), 10) || 1;
+        normal = Math.max(0, n - 1);
+      } else {
+        normal = parseInt(s, 10) || 0;
+      }
+    }
+  }
+
+  const total = normal + soul;
+  if (total === 0) {
+    return { total: 0, normal: 0, soul: 0, key: "none", label: "配置コアなし (0個)" };
+  }
+
+  let coreIcons = (soul > 0 ? "🔶" : "") + "🔷".repeat(normal);
+  let typeDesc = (soul > 0 && normal === 0)
+    ? " (ソウルコア)"
+    : (soul === 0 ? " (通常コア)" : ` (通常${normal} + ソウル1)`);
+
+  const key = `p_${total}_${soul}`;
+  const label = `配置コア ${total}個 [${coreIcons}]${typeDesc}`;
+
+  return { total, normal, soul, key, label };
+}
+
+function groupOptionsByPlacementCores(options) {
+  const map = new Map();
+  for (const opt of options) {
+    const plInfo = extractPlacementConfig(opt);
+    const key = plInfo.key;
+    if (!map.has(key)) {
+      map.set(key, {
+        total: plInfo.total,
+        normal: plInfo.normal,
+        soul: plInfo.soul,
+        key: plInfo.key,
+        label: plInfo.label,
+        options: []
+      });
+    }
+    map.get(key).options.push(opt);
+  }
+  // Sort by total placement count ascending, then by soul core ascending (normal core first)
+  return Array.from(map.values()).sort((a, b) => (a.total - b.total) || (a.soul - b.soul));
+}
+
+function extractGroupCostPlacementBadge(options) {
+  if (!options || !options.length) return "";
+  const firstDetail = options[0].detail || "";
+  const match = firstDetail.match(/^(コスト[^,、]+)(?:[,、]\s*(配置コア[^,、(]+))?/);
+  if (!match) return "";
+  let costStr = match[1].trim();
+  let placeStr = match[2] ? match[2].trim() : "";
+  
+  if (costStr.includes("不要")) costStr = "コスト0";
+  let html = `<span class="badge-cost">${formatActionText(costStr)}</span>`;
+  if (placeStr && !placeStr.includes("なし") && !placeStr.includes("0")) {
+    html += `<span class="badge-place-req">${formatActionText(placeStr)}</span>`;
+  }
+  return html;
+}
+
+function formatActionOptionContent(opt, groupCategory = "", isPlacementSubgroup = false) {
+  const detail = opt.detail || "";
+  
+  // 1. If it's a simple pass / end / attack / block action:
+  if (!detail.includes("支払:") && !detail.includes("コスト") && !detail.includes("配置コア")) {
+    return `<span>${formatActionText(detail)}</span>`;
+  }
+
+  // 2. Extract Vanish warning
+  const vanishMatch = detail.match(/([⚠️▲].*?消滅)/u);
+  const vanishHtml = vanishMatch ? `<span class="badge-vanish">${esc(vanishMatch[1])}</span>` : "";
+
+  // 3. Extract the parenthesized source/target info: e.g. (支払:#1 パッファー: 🔷, 配置:なし)
+  const parenMatch = detail.match(/\(([^)]+)\)$/);
+  if (parenMatch) {
+    const inner = parenMatch[1];
+    const parts = inner.split(/[,、]/).map(s => s.trim());
+    let payHtml = "";
+    let placeHtml = "";
+
+    for (const part of parts) {
+      if (part.startsWith("支払:")) {
+        let pText = part.replace(/^支払:/, "").trim();
+        pText = pText.replace(/\bR\b/g, "リザーブ");
+        payHtml = `<span class="act-pay-tag"><span class="badge-pay">出</span>${formatActionText(pText)}</span>`;
+      } else if (part.startsWith("配置:")) {
+        let plText = part.replace(/^配置:/, "").trim();
+        if (plText !== "なし" && plText !== "0" && !plText.includes("コアは置かない")) {
+          plText = plText.replace(/\bR:?/g, "");
+          placeHtml = `<span class="act-place-tag"><span class="badge-place">配置</span>${formatActionText(plText)}</span>`;
+        }
+      }
+    }
+
+    if (payHtml || placeHtml) {
+      let combined = payHtml;
+      if (placeHtml) {
+        combined += `<span class="act-arrow">➔</span>${placeHtml}`;
+      }
+      if (vanishHtml) {
+        combined += vanishHtml;
+      }
+      return combined;
+    }
+  }
+
+  // Fallback: clean up raw detail
+  let cleanDetail = detail;
+  cleanDetail = cleanDetail.replace(/[,、]?\s*コアは置かない/g, "");
+  cleanDetail = cleanDetail.replace(/[,、]?\s*配置:なし/g, "");
+  return `<span>${formatActionText(cleanDetail)}</span>${vanishHtml}`;
+}
+
+function clearActionBoardPreview() {
+  document.querySelectorAll(".core-preview-from, .core-preview-to, .card-preview-vanish").forEach(el => {
+    el.classList.remove("core-preview-from", "core-preview-to", "card-preview-vanish");
+  });
+  document.querySelectorAll(".vanish-overlay-badge").forEach(el => el.remove());
+}
+
+function showActionBoardPreview(opt) {
+  clearActionBoardPreview();
+  if (!opt) return;
+
+  // 1. Highlight source and target elements from core_effects
+  if (opt.core_effects && opt.core_effects.length) {
+    for (const fx of opt.core_effects) {
+      const el = findBoardElement(fx.source_id, fx.label);
+      if (!el) continue;
+      if (fx.direction === "from") {
+        el.classList.add("core-preview-from");
+      } else if (fx.direction === "to") {
+        el.classList.add("core-preview-to");
+      }
+    }
+  }
+
+  // 2. Highlight vanishing cards
+  const vanishIds = getVanishingCardIds(opt);
+  for (const cid of vanishIds) {
+    const el = findBoardElement(cid);
+    if (!el) continue;
+    el.classList.add("card-preview-vanish");
+  }
+}
+
+function findBoardElement(sourceId, label = "") {
+  if (!sourceId && !label) return null;
+  if (sourceId === "Reserve" || label === "R" || label === "リザーブ") {
+    return $("p1-reserve-tray") || $("p1-reserve-box");
+  }
+  if (sourceId === "Trash" || label === "T" || label === "トラッシュ") {
+    return $("p1-trash-core-tray");
+  }
+  // Try by data-id
+  if (sourceId) {
+    const el = document.querySelector(`.mat-card[data-id="${CSS.escape(sourceId)}"]`);
+    if (el) return el;
+  }
+  // Try by label (e.g. "#1 パッファー" or "#1")
+  const seqMatch = (label || sourceId || "").match(/#(\d+)/);
+  if (seqMatch) {
+    const seq = seqMatch[1];
+    const fieldCards = document.querySelectorAll("#p1-field-grid .mat-card");
+    for (const cardEl of fieldCards) {
+      const cid = cardEl.getAttribute("data-id") || "";
+      if (cid.endsWith(`_${seq}`) || (cardEl._card && (cardEl._card.field_seq == seq || cardEl._card.seq == seq))) {
+        return cardEl;
+      }
+    }
+    for (const cardEl of fieldCards) {
+      if (cardEl._card && (label || "").includes(cardEl._card.name)) {
+        return cardEl;
+      }
+    }
+  }
+  return null;
+}
+
+function getVanishingCardIds(option) {
+  if (!option) return [];
+  if (Array.isArray(option.vanishing_card_ids) && option.vanishing_card_ids.length > 0) {
+    return option.vanishing_card_ids;
+  }
+  const detail = option.detail || "";
+  const ids = [];
+  if (detail.includes("消滅") && current && current.player && current.player.field) {
+    const field = current.player.field;
+    const vanishMatch = detail.match(/⚠️(.*?消滅)/);
+    if (vanishMatch) {
+      const text = vanishMatch[1];
+      for (const card of field) {
+        const seqMatch = card.id ? card.id.match(/_(\d+)$/) : null;
+        const seq = card.seq != null ? `#${card.seq}` : (seqMatch ? `#${seqMatch[1]}` : "");
+        if (text.includes(card.name) || (seq && text.includes(seq))) {
+          ids.push(card.id);
+        }
+      }
+    }
+  }
+  return [...new Set(ids)];
 }
 
 function clearActionFilter() {
@@ -1490,15 +3023,1184 @@ function filterSummonActions(cardNo) {
   if (current) renderActionList(current, currentActionFilter);
 }
 
+function parseSummonOption(opt) {
+  const detail = opt.detail || "";
+  const plConfig = extractPlacementConfig(opt); // { total, normal, soul }
+
+  const payDonors = [];
+  const placeDonors = [];
+
+  const parenMatch = detail.match(/\(([^)]+)\)$/);
+  if (parenMatch) {
+    const parts = parenMatch[1].split(/[,、]/).map(s => s.trim());
+    let currentMode = "pay";
+    for (const part of parts) {
+      if (part.startsWith("支払:")) {
+        currentMode = "pay";
+        const content = part.replace(/^支払:/, "").trim();
+        addDonorFromText(content, payDonors);
+      } else if (part.startsWith("配置:")) {
+        currentMode = "place";
+        const content = part.replace(/^配置:/, "").trim();
+        addDonorFromText(content, placeDonors);
+      } else {
+        addDonorFromText(part, currentMode === "pay" ? payDonors : placeDonors);
+      }
+    }
+  }
+
+  return {
+    index: opt.index,
+    option: opt,
+    detail,
+    placement: plConfig,
+    payDonors,
+    placeDonors,
+    vanishingIds: opt.vanishing_card_ids || []
+  };
+}
+
+function addDonorFromText(text, list) {
+  if (!text || text === "なし" || text === "0" || text.includes("コアは置かない")) return;
+  const colIdx = text.indexOf(":");
+  let src = "Reserve";
+  let coreStr = text;
+  if (colIdx >= 0) {
+    src = text.substring(0, colIdx).trim();
+    coreStr = text.substring(colIdx + 1).trim();
+  }
+  if (src === "R" || src === "リザーブ") src = "Reserve";
+
+  const blue = (coreStr.match(/🔷/gu) || []).length;
+  const red = (coreStr.match(/[🔴🔶🔮]/gu) || []).length;
+  list.push({
+    source: src,
+    normal: blue,
+    soul: red,
+    total: blue + red
+  });
+}
+
+function matchesDonorSource(donorSource, clickedSourceId, cardObj) {
+  if (!donorSource) return false;
+  const dNorm = donorSource.trim();
+  if (clickedSourceId === "Reserve" || clickedSourceId === "リザーブ" || clickedSourceId === "R") {
+    return dNorm === "Reserve" || dNorm === "リザーブ" || dNorm === "R";
+  }
+  if (clickedSourceId !== "Reserve" && cardObj) {
+    if (dNorm === clickedSourceId) return true;
+    if (cardObj.id && dNorm === cardObj.id) return true;
+    const seq = cardObj.field_seq ?? cardObj.seq;
+    const donorSeqMatch = dNorm.match(/#(\d+)/);
+    const clickedSeqMatch = clickedSourceId ? clickedSourceId.match(/#(\d+)/) : null;
+    const targetSeq = seq != null ? seq : (clickedSeqMatch ? parseInt(clickedSeqMatch[1], 10) : null);
+    if (targetSeq != null && donorSeqMatch) {
+      return parseInt(donorSeqMatch[1], 10) === targetSeq;
+    }
+    if (!donorSeqMatch && cardObj.name && dNorm === cardObj.name) return true;
+  }
+  return false;
+}
+
 function handleHandCardDropOnField(card) {
+  startPendingSummon(card);
+}
+
+function startPendingSummon(card) {
   closeHandPopover();
+  clearCoreMoveSelection();
+  updateInspector(card);
+  if (!current || !current.groups) return;
+
+  const isMagicCard = (card.category === "MAGIC") || (card.category === "マジック");
+
+  // 1. このカードの【召喚】【配置】または【マジック使用】グループを検索
+  const summonGroup = current.groups.find(g => {
+    const isMatch = (g.card_no === card.card_no) || (card.name && (g.category || "").includes(card.name));
+    if (!isMatch || g.all_forbidden) return false;
+    if (isMagicCard) {
+      return (g.category || "").includes("マジック使用") || (g.category || "").includes("フラッシュ使用") || (g.category || "").includes("使用") || g.options.some(o => o.type === "USE_MAGIC");
+    }
+    return (g.category || "").includes("召喚") || (g.category || "").includes("配置");
+  }) || (isMagicCard ? current.groups.find(g => (g.category || "").includes("マジック") && !g.all_forbidden) : null);
+
+  if (!summonGroup || !summonGroup.options || summonGroup.options.length === 0) {
+    const reason = summonGroup?.forbidden_reason || "コスト不足または使用条件を満たしていません";
+    const actName = isMagicCard ? "使用" : "召喚・配置";
+    $("hand-instruction").innerHTML = `<span style="color:#f87171; font-weight:700;">⚠️ 「${card.name}」は現在${actName}できません (${reason})</span>`;
+    return;
+  }
+
+  // 2. 利用可能なオプションを全解析
+  const validOpts = summonGroup.options.filter(o => !o.forbidden);
+  const parsedOptions = validOpts.map(o => parseSummonOption(o));
+  if (parsedOptions.length === 0) {
+    const actName = isMagicCard ? "使用" : "召喚";
+    $("hand-instruction").innerHTML = `<span style="color:#f87171; font-weight:700;">⚠️ ${actName}可能なコア配分がありません</span>`;
+    return;
+  }
+
+  const isDeploy = (summonGroup.category || "").includes("配置");
+  const isMagic = isMagicCard || (summonGroup.category || "").includes("マジック") || (summonGroup.category || "").includes("使用");
+
+  // 3. 初期選択オプション: マジック・ネクサスは配置0個・消滅なし優先、スピリットは配置通常1個・消滅なし優先
+  let initOptIdx = 0;
+  if (isMagic || isDeploy) {
+    const safeZeroIdx = parsedOptions.findIndex(p => p.placement.total === 0 && p.vanishingIds.length === 0);
+    if (safeZeroIdx >= 0) initOptIdx = safeZeroIdx;
+  } else {
+    const safeOneNormalIdx = parsedOptions.findIndex(p => p.placement.total === 1 && p.placement.soul === 0 && p.vanishingIds.length === 0);
+    if (safeOneNormalIdx >= 0) {
+      initOptIdx = safeOneNormalIdx;
+    } else {
+      const anyOneIdx = parsedOptions.findIndex(p => p.placement.total === 1 && p.vanishingIds.length === 0);
+      if (anyOneIdx >= 0) initOptIdx = anyOneIdx;
+    }
+  }
+
+  const p1 = (current.player.player_id === 1) ? current.player : current.opponent;
+  const p1Res = parseCoreString(p1.reserve);
+  const requiredPayCost = parsedOptions[0].payDonors.reduce((sum, d) => sum + d.total, 0);
+
+  // リザーブのコアは支払いコストとして最初からトラッシュに仮置きされる
+  const allocatedPayDonors = [];
+  const resNormalToUse = Math.min(p1Res.normal, requiredPayCost);
+  for (let i = 0; i < resNormalToUse; i++) {
+    allocatedPayDonors.push({ sourceId: "Reserve", sourceSeq: null, sourceName: "リザーブ", coreType: "normal" });
+  }
+  const remainingShortage = requiredPayCost - allocatedPayDonors.length;
+  if (remainingShortage > 0 && p1Res.soul > 0) {
+    allocatedPayDonors.push({ sourceId: "Reserve", sourceSeq: null, sourceName: "リザーブ", coreType: "soul" });
+  }
+
+  // 維持コア・配置コアの要求数: マジックは不要(0個)、スピリットは最低1個、ネクサスは0個
+  const requiredPlaceCores = isMagic ? 0 : (isDeploy ? 0 : 1);
+  const allocatedPlaceDonors = [];
+
+  // コスト支払後に余剰のリザーブコアがあれば維持コアとして仮配置 (マジックの場合は不要)
+  // ※ リザーブに余剰がない場合は自動充当しない（フィールドのスピリットから勝手にコアを奪って消滅させない）
+  if (!isMagic && requiredPlaceCores > 0) {
+    const remainingResNormal = p1Res.normal - resNormalToUse;
+    const remainingResSoul = p1Res.soul - (allocatedPayDonors.some(d => d.coreType === "soul") ? 1 : 0);
+    if (remainingResNormal > 0) {
+      allocatedPlaceDonors.push({ sourceId: "Reserve", sourceSeq: null, sourceName: "リザーブ", coreType: "normal" });
+    } else if (remainingResSoul > 0) {
+      allocatedPlaceDonors.push({ sourceId: "Reserve", sourceSeq: null, sourceName: "リザーブ", coreType: "soul" });
+    }
+  }
+
+  // 不足分はフィールドから選択することでトラッシュ / 維持コアに置かれる
+  const isInitialPayFull = (allocatedPayDonors.length === requiredPayCost);
+  const isInitialPlaceFull = (allocatedPlaceDonors.length >= requiredPlaceCores);
+  const isInitialBothFull = isInitialPayFull && isInitialPlaceFull;
+  const needsPlaceStep = !isMagic && (requiredPlaceCores > 0 || !isDeploy);
+  const initialStep = (isInitialPayFull && needsPlaceStep) ? 2 : 1;
+  pendingSummon = {
+    card,
+    group: summonGroup,
+    parsedOptions,
+    requiredPayCost,
+    allocatedPayDonors,
+    requiredPlaceCores,
+    allocatedPlaceDonors,
+    selectedOptionIndex: isInitialBothFull ? initOptIdx : -1,
+    step: initialStep, // 支払い充足時は維持コア(2)、不足時は支払コスト(1)から開始
+    activeSlot: (initialStep === 1 ? "pay" : "place"),
+    isMagic: isMagic
+  };
+
+  syncPendingSummonWithAllocatedPayment();
+
   currentActionFilter = { cardNo: card.card_no, filterKind: "SUMMON_DEPLOY" };
-  if (current) renderActionList(current, currentActionFilter);
-  $("hand-instruction").textContent = `🎴「${card.name}」の召喚・配置: 選択肢一覧から支払・配置コア配分を選んで決定してください`;
+  render(current);
+
+  const pendingCardEl = document.querySelector("#p1-field-grid .pending-card");
+  if (pendingCardEl) {
+    pendingCardEl.scrollIntoView({ behavior: "smooth", inline: "end" });
+  }
+
   const actionList = $("action-list");
   if (actionList) {
     actionList.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
+}
+
+function cancelPendingSummon() {
+  if (!pendingSummon) return;
+  pendingSummon = null;
+  currentActionFilter = null;
+  $("hand-instruction").innerHTML = "";
+  if (current) render(current);
+}
+
+function setPendingStep(step) {
+  if (!pendingSummon) return;
+  if (step === 2 && pendingSummon.allocatedPayDonors && pendingSummon.allocatedPayDonors.length < pendingSummon.requiredPayCost) {
+    const shortage = pendingSummon.requiredPayCost - pendingSummon.allocatedPayDonors.length;
+    $("hand-instruction").innerHTML = `<span style="color:#ef4444; font-weight:700;">⚠️ 支払コストが ${shortage} 個不足しています。フィールドのコアをクリックしてトラッシュに仮置きしてください</span>`;
+    return;
+  }
+  pendingSummon.step = step;
+  pendingSummon.activeSlot = (step === 1 ? "pay" : "place");
+  render(current);
+}
+
+function setPendingSlot(slot) {
+  if (!pendingSummon) return;
+  pendingSummon.step = (slot === "pay" ? 1 : 2);
+  pendingSummon.activeSlot = slot;
+  render(current);
+}
+
+function getPaymentPatternKey(donors) {
+  if (!donors || donors.length === 0) return "Reserve:0";
+  return donors.map(d => `${d.source}:${d.normal}b${d.soul}s`).sort().join("|");
+}
+
+function getAllocatedPaymentPatternKey(allocatedPay) {
+  if (!allocatedPay || allocatedPay.length === 0) return "Reserve:0";
+  const map = {};
+  for (const a of allocatedPay) {
+    const seqMatch = (a.sourceName || a.sourceId || "").match(/#\d+/);
+    const key = seqMatch ? seqMatch[0] : (a.sourceId === "Reserve" || a.sourceId === "R" || a.sourceName === "リザーブ" ? "Reserve" : a.sourceId);
+    if (!map[key]) map[key] = { normal: 0, soul: 0 };
+    if (a.coreType === "soul") map[key].soul++;
+    else map[key].normal++;
+  }
+  return Object.keys(map).sort().map(k => `${k}:${map[k].normal}b${map[k].soul}s`).join("|");
+}
+
+function getUniquePaymentPatterns(parsedOptions) {
+  const map = new Map();
+  for (const opt of parsedOptions) {
+    const key = getPaymentPatternKey(opt.payDonors);
+    if (!map.has(key)) {
+      let html = "リザーブ";
+      if (opt.payDonors && opt.payDonors.length > 0) {
+        html = opt.payDonors.map(d => {
+          let icons = "";
+          for (let i = 0; i < d.soul; i++) icons += HEX_CORE_RED_SVG;
+          for (let i = 0; i < d.normal; i++) icons += HEX_CORE_BLUE_SVG;
+          const sName = (d.source === "Reserve") ? "リザーブ" : d.source;
+          return `${esc(sName)}: ${icons}`;
+        }).join(" + ");
+      }
+      map.set(key, {
+        key,
+        html,
+        donors: opt.payDonors,
+        vanishingIds: opt.vanishingIds || [],
+        options: []
+      });
+    }
+    map.get(key).options.push(opt);
+  }
+  return Array.from(map.values());
+}
+
+function setPendingPaymentPattern(patternIndex) {
+  if (!pendingSummon) return;
+  const payPatterns = getUniquePaymentPatterns(pendingSummon.parsedOptions);
+  const targetPattern = payPatterns[patternIndex];
+  if (!targetPattern || !targetPattern.options.length) return;
+
+  const curOpt = getPendingCurrentOption();
+  const curPl = curOpt ? curOpt.placement : { total: 1, soul: 0 };
+  let bestOpt = targetPattern.options[0];
+  let bestDiff = Infinity;
+  for (const opt of targetPattern.options) {
+    const diff = Math.abs(opt.placement.total - curPl.total) + Math.abs(opt.placement.soul - curPl.soul) * 2;
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestOpt = opt;
+    }
+  }
+
+  const globalIdx = pendingSummon.parsedOptions.findIndex(p => p.index === bestOpt.index);
+  if (globalIdx >= 0) {
+    pendingSummon.selectedOptionIndex = globalIdx;
+    // allocatedPayDonors を targetPattern のドナーに合わせて再構築
+    pendingSummon.allocatedPayDonors = [];
+    for (const d of targetPattern.donors) {
+      const sName = (d.source === "Reserve") ? "リザーブ" : d.source;
+      const seqMatch = d.source.match(/#(\d+)/);
+      const seq = seqMatch ? parseInt(seqMatch[1], 10) : null;
+      for (let i = 0; i < d.normal; i++) {
+        pendingSummon.allocatedPayDonors.push({ sourceId: d.source, sourceSeq: seq, sourceName: sName, coreType: "normal" });
+      }
+      for (let i = 0; i < d.soul; i++) {
+        pendingSummon.allocatedPayDonors.push({ sourceId: d.source, sourceSeq: seq, sourceName: sName, coreType: "soul" });
+      }
+    }
+    // 支払いコストが充足した場合は、（必要なら）維持コアの指定に切り替わる
+    if (pendingSummon.allocatedPayDonors.length >= pendingSummon.requiredPayCost) {
+      const isMagic = pendingSummon.isMagic || (pendingSummon.group?.category || "").includes("マジック") || (pendingSummon.card?.category === "MAGIC");
+      const isDeploy = (pendingSummon.group?.category || "").includes("配置");
+      const needsPlaceStep = !isMagic && (pendingSummon.requiredPlaceCores > 0 || !isDeploy);
+      if (needsPlaceStep) {
+        pendingSummon.step = 2;
+        pendingSummon.activeSlot = "place";
+      }
+    }
+    syncPendingSummonWithAllocatedPayment();
+    render(current);
+  }
+}
+
+function setPendingPlacementByConfig(targetTotal, targetSoul) {
+  if (!pendingSummon) return;
+  const curOpt = getPendingCurrentOption();
+  const curPayKey = getPaymentPatternKey(curOpt?.payDonors);
+
+  let candidates = pendingSummon.parsedOptions.filter(o => 
+    getPaymentPatternKey(o.payDonors) === curPayKey &&
+    o.placement.total === targetTotal &&
+    o.placement.soul === targetSoul
+  );
+
+  if (candidates.length === 0) {
+    candidates = pendingSummon.parsedOptions.filter(o => 
+      getPaymentPatternKey(o.payDonors) === curPayKey &&
+      o.placement.total === targetTotal
+    );
+  }
+
+  if (candidates.length === 0) {
+    candidates = pendingSummon.parsedOptions.filter(o => 
+      o.placement.total === targetTotal && o.placement.soul === targetSoul
+    );
+  }
+
+  if (candidates.length > 0) {
+    const globalIdx = pendingSummon.parsedOptions.findIndex(p => p.index === candidates[0].index);
+    if (globalIdx >= 0) {
+      pendingSummon.selectedOptionIndex = globalIdx;
+      pendingSummon.allocatedPlaceDonors = [];
+      for (const d of candidates[0].placeDonors) {
+        const sName = (d.source === "Reserve") ? "リザーブ" : d.source;
+        const seqMatch = d.source.match(/#(\d+)/);
+        const seq = seqMatch ? parseInt(seqMatch[1], 10) : null;
+        for (let i = 0; i < d.normal; i++) {
+          pendingSummon.allocatedPlaceDonors.push({ sourceId: d.source, sourceSeq: seq, sourceName: sName, coreType: "normal" });
+        }
+        for (let i = 0; i < d.soul; i++) {
+          pendingSummon.allocatedPlaceDonors.push({ sourceId: d.source, sourceSeq: seq, sourceName: sName, coreType: "soul" });
+        }
+      }
+      render(current);
+    }
+  }
+}
+
+function getPendingCurrentOption() {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return null;
+  if (pendingSummon.selectedOptionIndex == null || pendingSummon.selectedOptionIndex < 0) return null;
+  const idx = Math.min(pendingSummon.selectedOptionIndex, pendingSummon.parsedOptions.length - 1);
+  return pendingSummon.parsedOptions[idx] || null;
+}
+
+function getPendingMatchedOption() {
+  const cur = getPendingCurrentOption();
+  return cur ? cur.option : null;
+}
+
+function getCardDonorInfo(parsedOpt, sourceId, cardObj) {
+  let payNormal = 0, paySoul = 0;
+  let placeNormal = 0, placeSoul = 0;
+
+  if (pendingSummon && pendingSummon.allocatedPayDonors) {
+    for (const item of pendingSummon.allocatedPayDonors) {
+      if (matchesDonorSource(item.sourceId, sourceId, cardObj) || (item.sourceName && matchesDonorSource(item.sourceName, sourceId, cardObj))) {
+        if (item.coreType === "soul") paySoul++;
+        else payNormal++;
+      }
+    }
+  } else if (parsedOpt && parsedOpt.payDonors) {
+    for (const d of parsedOpt.payDonors) {
+      if (matchesDonorSource(d.source, sourceId, cardObj)) {
+        payNormal += d.normal;
+        paySoul += d.soul;
+      }
+    }
+  }
+
+  if (pendingSummon && pendingSummon.allocatedPlaceDonors) {
+    for (const item of pendingSummon.allocatedPlaceDonors) {
+      if (matchesDonorSource(item.sourceId, sourceId, cardObj) || (item.sourceName && matchesDonorSource(item.sourceName, sourceId, cardObj))) {
+        if (item.coreType === "soul") placeSoul++;
+        else placeNormal++;
+      }
+    }
+  } else if (!pendingSummon && parsedOpt && parsedOpt.placeDonors) {
+    for (const d of parsedOpt.placeDonors) {
+      if (matchesDonorSource(d.source, sourceId, cardObj)) {
+        placeNormal += d.normal;
+        placeSoul += d.soul;
+      }
+    }
+  }
+
+  return {
+    payNormal, paySoul,
+    placeNormal, placeSoul,
+    normal: payNormal + placeNormal,
+    soul: paySoul + placeSoul,
+    total: payNormal + paySoul + placeNormal + placeSoul
+  };
+}
+
+/**
+ * トラッシュの【支払コスト】囲みの中のコアをクリックした時のハンドラ:
+ * そのコアを仮支払いから解除し、元のカードまたはリザーブへ戻す。
+ */
+function returnPendingPaidCore(index) {
+  if (!pendingSummon || !pendingSummon.allocatedPayDonors) return;
+  if (index < 0 || index >= pendingSummon.allocatedPayDonors.length) return;
+
+  pendingSummon.allocatedPayDonors.splice(index, 1);
+
+  // もし配置ステップ(2)にいた場合は支払いに不足が生じるのでステップ1(支払)に戻す
+  if (pendingSummon.step === 2) {
+    pendingSummon.step = 1;
+    pendingSummon.activeSlot = "pay";
+  }
+
+  syncPendingSummonWithAllocatedPayment();
+  render(current);
+}
+
+/**
+ * 召喚対象上の【維持コア】囲みの中のコアをクリックした時のハンドラ:
+ * そのコアを配置から解除し、元のカードまたはリザーブへ戻す。
+ */
+function returnPendingPlacedCore(index) {
+  if (!pendingSummon || !pendingSummon.allocatedPlaceDonors) return;
+  if (index < 0 || index >= pendingSummon.allocatedPlaceDonors.length) return;
+
+  pendingSummon.allocatedPlaceDonors.splice(index, 1);
+  syncPendingSummonWithAllocatedPayment();
+  render(current);
+}
+
+/**
+ * allocatedPayDonors / allocatedPlaceDonors と合致する parsedOptions を同期
+ */
+function syncPendingSummonWithAllocatedPayment() {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return;
+  const allocatedPay = pendingSummon.allocatedPayDonors || [];
+  const allocatedPlace = pendingSummon.allocatedPlaceDonors || [];
+  const reqCost = pendingSummon.requiredPayCost;
+
+  const isDeploy = (pendingSummon.group?.category || "").includes("配置");
+  const reqPlace = pendingSummon.requiredPlaceCores != null ? pendingSummon.requiredPlaceCores : (pendingSummon.isMagic ? 0 : (isDeploy ? 0 : 1));
+
+  if (allocatedPay.length < reqCost) {
+    // 不足分がある場合: まだ支払いが完了していないため特定オプションを選択済みにしない
+    pendingSummon.selectedOptionIndex = -1;
+    return;
+  }
+
+  if (!pendingSummon.isMagic && allocatedPlace.length < reqPlace) {
+    // 維持コア/配置コアに不足がある場合: オプション未選択（勝手に特定カードをドナーとして消滅させない）
+    pendingSummon.selectedOptionIndex = -1;
+    return;
+  }
+
+  const paySoulCount = allocatedPay.filter(d => d.coreType === "soul").length;
+  const placeSoulCount = allocatedPlace.filter(d => d.coreType === "soul").length;
+
+  // 供給元ごとにユーザーが指定したコア総数（支払＋配置）を集計
+  const reqSourceMap = {};
+  for (const d of [...allocatedPay, ...allocatedPlace]) {
+    const seqMatch = (d.sourceName || d.sourceId || "").match(/#\d+/);
+    const key = seqMatch ? seqMatch[0] : (d.sourceId === "Reserve" || d.sourceId === "R" || d.sourceName === "リザーブ" ? "Reserve" : d.sourceId);
+    if (!reqSourceMap[key]) reqSourceMap[key] = { normal: 0, soul: 0 };
+    if (d.coreType === "soul") reqSourceMap[key].soul++;
+    else reqSourceMap[key].normal++;
+  }
+
+  // ルールエンジン側の選択肢と照合
+  // ※ サーバー側の GameAction は「リザーブに近い順から配置に回す」内部実装があるため、
+  // 個々のドナーが pay/place のどちらに割り当てられたかではなく、
+  // 「支払合計」「配置合計」「ソウルコア配置の有無」「各供給元から取られるコア総数」が一致するものを照合する。
+  const matched = pendingSummon.parsedOptions.filter(opt => {
+    // 1. 配置総数 & 配置ソウルコア数の一致
+    if (opt.placement.total !== allocatedPlace.length) return false;
+    if (opt.placement.soul !== placeSoulCount) return false;
+
+    // 2. 支払コスト総数 & 支払ソウルコア数の一致
+    const optPayTotal = opt.payDonors.reduce((s, d) => s + d.total, 0);
+    const optPaySoul = opt.payDonors.reduce((s, d) => s + d.soul, 0);
+    if (optPayTotal !== reqCost) return false;
+    if (optPaySoul !== paySoulCount) return false;
+
+    // 3. 供給元ごとの取出しコア総数（支払＋配置）が一致すること
+    const optSourceMap = {};
+    for (const d of [...opt.payDonors, ...opt.placeDonors]) {
+      const seqMatch = d.source.match(/#\d+/);
+      const key = seqMatch ? seqMatch[0] : (d.source === "Reserve" || d.source === "R" ? "Reserve" : d.source);
+      if (!optSourceMap[key]) optSourceMap[key] = { normal: 0, soul: 0 };
+      optSourceMap[key].normal += d.normal;
+      optSourceMap[key].soul += d.soul;
+    }
+
+    for (const k of Object.keys(reqSourceMap)) {
+      const req = reqSourceMap[k];
+      const actual = optSourceMap[k] || { normal: 0, soul: 0 };
+      if (req.normal !== actual.normal || req.soul !== actual.soul) return false;
+    }
+    for (const k of Object.keys(optSourceMap)) {
+      const actual = optSourceMap[k];
+      const req = reqSourceMap[k] || { normal: 0, soul: 0 };
+      if (req.normal !== actual.normal || req.soul !== actual.soul) return false;
+    }
+
+    // 4. 勝手に消滅させない厳格防壁:
+    // opt.vanishingIds に含まれるカードは、ユーザーが実際にコアを0個まで使い切ったカードのみ許容
+    if (opt.vanishingIds && opt.vanishingIds.length > 0) {
+      for (const vanId of opt.vanishingIds) {
+        const fc = (current?.player?.field || []).find(c => c.id === vanId);
+        if (!fc) continue;
+        const seqMatch = fc.id.match(/_(\d+)$/);
+        const seqKey = fc.seq != null ? `#${fc.seq}` : (seqMatch ? `#${seqMatch[1]}` : fc.name);
+        const taken = reqSourceMap[seqKey] || reqSourceMap[fc.id] || { normal: 0, soul: 0 };
+        const initCores = parseInt(fc.cores, 10) || 1;
+        if (initCores - (taken.normal + taken.soul) > 0) {
+          return false; // コアが残っているスピリットを消滅させる選択肢は絶対に除外！
+        }
+      }
+    }
+
+    return true;
+  });
+
+  if (matched.length > 0) {
+    const globalIdx = pendingSummon.parsedOptions.findIndex(p => p.index === matched[0].index);
+    pendingSummon.selectedOptionIndex = globalIdx;
+  } else {
+    pendingSummon.selectedOptionIndex = -1;
+  }
+}
+
+/**
+ * 召喚中のコアエリア・コアクリック操作ハンドラ:
+ * - Step 1: 不足分がある場合、クリックしたカード/リザーブから1個コアをトラッシュに仮置き
+ * - Step 2: 配置コアのインクリメント/サイクル
+ */
+function handlePendingSummonCardDonorClick(sourceId, clickType) {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return;
+
+  const p1 = (current?.player?.player_id === 1) ? current.player : current?.opponent;
+  const cardObj = (sourceId === "Reserve") ? null : (p1?.field || []).find(c => c.id === sourceId);
+  const curOpt = getPendingCurrentOption();
+
+  const isStep1 = (pendingSummon.step === 1); // 1. コスト支払い
+  const isStep2 = (pendingSummon.step === 2); // 2. 配置コア選択
+
+  if (isStep1) {
+    const reqCost = pendingSummon.requiredPayCost;
+    const allocated = pendingSummon.allocatedPayDonors || [];
+
+    // このカード/リザーブの残りコア数を取得
+    let initNormal = 0, initSoul = 0;
+    if (sourceId === "Reserve") {
+      const ci = parseCoreString(p1?.reserve);
+      initNormal = ci.normal;
+      initSoul = ci.soul;
+    } else if (cardObj) {
+      const ci = parseCoreString(cardObj.cores);
+      initNormal = ci.normal;
+      initSoul = ci.soul;
+    }
+    const donorInfo = getCardDonorInfo(null, sourceId, cardObj);
+    const remNormal = Math.max(0, initNormal - (donorInfo.payNormal + donorInfo.placeNormal));
+    const remSoul = Math.max(0, initSoul - (donorInfo.paySoul + donorInfo.placeSoul));
+    const remTotal = remNormal + remSoul;
+
+    if (allocated.length < reqCost) {
+      if (remTotal > 0) {
+        let chosenType = "normal";
+        if (clickType === "soul" && remSoul > 0) chosenType = "soul";
+        else if (remNormal > 0) chosenType = "normal";
+        else chosenType = "soul";
+
+        const sName = (sourceId === "Reserve") ? "リザーブ" : (cardObj ? `${cardObj.seq != null ? '#' + cardObj.seq + ' ' : ''}${cardObj.name}` : sourceId);
+        const seqMatch = sName.match(/#(\d+)/);
+        const seq = seqMatch ? parseInt(seqMatch[1], 10) : cardObj?.seq;
+
+        allocated.push({
+          sourceId,
+          sourceSeq: seq,
+          sourceName: sName,
+          coreType: chosenType
+        });
+        syncPendingSummonWithAllocatedPayment();
+
+        // 支払いコストが充足した場合は、（必要なら）維持コアの指定に切り替わる
+        if (allocated.length >= reqCost) {
+          const isMagic = pendingSummon.isMagic || (pendingSummon.group?.category || "").includes("マジック") || (pendingSummon.card?.category === "MAGIC");
+          const isDeploy = (pendingSummon.group?.category || "").includes("配置");
+          const needsPlaceStep = !isMagic && (pendingSummon.requiredPlaceCores > 0 || !isDeploy);
+          if (needsPlaceStep) {
+            pendingSummon.step = 2;
+            pendingSummon.activeSlot = "place";
+          }
+        }
+
+        render(current);
+        return;
+      }
+    } else {
+      $("hand-instruction").innerHTML = `<span style="color:#fdba74; font-weight:700;">ℹ️ 支払コスト(${reqCost}個)は満たされています。コアを変更したい場合はトラッシュの【支払コスト】囲みの中のコアをクリックして戻してください</span>`;
+      return;
+    }
+    return;
+  }
+
+  // Step 2: 配置コアの指定 (クリックしたカード/リザーブから1個コアを仮維持コアへ配置)
+  if (isStep2) {
+    const isDeploy = (pendingSummon.group?.category || "").includes("配置");
+    const allocatedPlace = pendingSummon.allocatedPlaceDonors || [];
+
+    // このカード/リザーブの残りコア数を取得
+    let initNormal = 0, initSoul = 0;
+    if (sourceId === "Reserve") {
+      const ci = parseCoreString(p1?.reserve);
+      initNormal = ci.normal;
+      initSoul = ci.soul;
+    } else if (cardObj) {
+      const ci = parseCoreString(cardObj.cores);
+      initNormal = ci.normal;
+      initSoul = ci.soul;
+    }
+    const donorInfo = getCardDonorInfo(null, sourceId, cardObj);
+    const remNormal = Math.max(0, initNormal - (donorInfo.payNormal + donorInfo.placeNormal));
+    const remSoul = Math.max(0, initSoul - (donorInfo.paySoul + donorInfo.placeSoul));
+    const remTotal = remNormal + remSoul;
+
+    if (remTotal > 0) {
+      let chosenType = (clickType === "soul" && remSoul > 0) ? "soul" : (remNormal > 0 ? "normal" : "soul");
+      const sName = (sourceId === "Reserve") ? "リザーブ" : (cardObj ? `${cardObj.seq != null ? '#' + cardObj.seq + ' ' : ''}${cardObj.name}` : sourceId);
+      const seqMatch = sName.match(/#(\d+)/);
+      const seq = seqMatch ? parseInt(seqMatch[1], 10) : cardObj?.seq;
+
+      allocatedPlace.push({
+        sourceId,
+        sourceSeq: seq,
+        sourceName: sName,
+        coreType: chosenType
+      });
+      syncPendingSummonWithAllocatedPayment();
+      render(current);
+      return;
+    }
+    return;
+  }
+}
+
+function handlePendingSummonCoreClick(sourceId, coreType) {
+  handlePendingSummonCardDonorClick(sourceId, coreType);
+}
+
+function cyclePendingPlacement(step = 1) {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return;
+  const curOpt = getPendingCurrentOption();
+  const curTotal = curOpt?.placement?.total ?? 1;
+  const curSoul = curOpt?.placement?.soul ?? 0;
+
+  // すべての異なる配置コアパターンのユニーク一覧を取得
+  const plMap = new Map();
+  for (const p of pendingSummon.parsedOptions) {
+    const key = `${p.placement.normal}_${p.placement.soul}`;
+    if (!plMap.has(key)) {
+      plMap.set(key, p.placement);
+    }
+  }
+  const plList = Array.from(plMap.values()).sort((a, b) => (a.total - b.total) || (a.soul - b.soul));
+  if (plList.length === 0) return;
+
+  const curPlIdx = plList.findIndex(pl => pl.normal === curOpt?.placement?.normal && pl.soul === curSoul);
+  const nextPlIdx = ((curPlIdx >= 0 ? curPlIdx : 0) + step + plList.length) % plList.length;
+  const targetPl = plList[nextPlIdx];
+
+  // targetPl に合致する parsedOptions を探す
+  const candidates = pendingSummon.parsedOptions.filter(p => p.placement.normal === targetPl.normal && p.placement.soul === targetPl.soul);
+  if (candidates.length > 0) {
+    // 支払元が現在のものと近いものを選択
+    const best = candidates.find(p => p.vanishingIds.length === (curOpt?.vanishingIds?.length || 0)) || candidates[0];
+    const globalIdx = pendingSummon.parsedOptions.findIndex(p => p.index === best.index);
+    if (globalIdx >= 0) {
+      pendingSummon.selectedOptionIndex = globalIdx;
+      render(current);
+    }
+  }
+}
+
+function changePendingPlacement(delta) {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return;
+  const curOpt = getPendingCurrentOption();
+  const curTotal = pendingSummon.allocatedPlaceDonors?.length ?? curOpt?.placement?.total ?? 1;
+  const curSoul = pendingSummon.allocatedPlaceDonors?.filter(d => d.coreType === "soul").length ?? curOpt?.placement?.soul ?? 0;
+  const reqMin = pendingSummon.requiredPlaceCores != null ? pendingSummon.requiredPlaceCores : 0;
+  const targetTotal = Math.max(reqMin, curTotal + delta);
+
+  setPendingPlacementByConfig(targetTotal, curSoul);
+}
+
+function togglePendingSoulCore() {
+  if (!pendingSummon || !pendingSummon.parsedOptions.length) return;
+  const curOpt = getPendingCurrentOption();
+  const curTotal = pendingSummon.allocatedPlaceDonors?.length ?? curOpt?.placement?.total ?? 1;
+  const curSoul = pendingSummon.allocatedPlaceDonors?.filter(d => d.coreType === "soul").length ?? curOpt?.placement?.soul ?? 0;
+  const targetSoul = curSoul > 0 ? 0 : 1;
+
+  setPendingPlacementByConfig(curTotal, targetSoul);
+}
+
+function isPendingBothComplete() {
+  if (!pendingSummon) return false;
+  const isMagic = pendingSummon.isMagic || (pendingSummon.group?.category || "").includes("マジック") || (pendingSummon.card?.category === "MAGIC");
+  const isPayComplete = (pendingSummon.allocatedPayDonors?.length === pendingSummon.requiredPayCost);
+
+  // マジック使用の場合: 配置コア指定は不要。コスト支払い完了で発揮可能！
+  if (isMagic) {
+    return isPayComplete;
+  }
+
+  const isDeploy = (pendingSummon.group?.category || "").includes("配置");
+  const reqPlace = pendingSummon.requiredPlaceCores != null ? pendingSummon.requiredPlaceCores : (isDeploy ? 0 : 1);
+  const allocatedPlace = pendingSummon.allocatedPlaceDonors || [];
+  const curOpt = getPendingCurrentOption();
+  const curPl = curOpt ? curOpt.placement : { total: 0 };
+
+  // 2. 配置コア完了条件: 要求配置コア数(スピリットは最低1個以上、ネクサスは0個以上)を満たしていること
+  const isPlaceComplete = (allocatedPlace.length >= reqPlace);
+
+  // 双方完了 (支払コスト・配置/維持コアがすべて充足し、合致する合法アクションが存在すること)
+  return isPayComplete && isPlaceComplete && (pendingSummon.selectedOptionIndex != null && pendingSummon.selectedOptionIndex >= 0);
+}
+
+function confirmPendingSummon() {
+  if (!pendingSummon) return;
+  const isMagic = pendingSummon.isMagic || (pendingSummon.group?.category || "").includes("マジック") || (pendingSummon.card?.category === "MAGIC");
+  if (!isPendingBothComplete()) {
+    if (isMagic) {
+      alert("コスト支払いが完了していません。必要なコストを指定してください。");
+    } else {
+      alert("１．コスト支払い、２．配置コアの両方が完了していません。配置コアを指定してください。");
+    }
+    return;
+  }
+  const opt = getPendingMatchedOption();
+  if (!opt) {
+    alert(isMagic ? "指定された条件のマジック使用アクションが見つかりません。" : "指定された条件の召喚アクションが見つかりません。");
+    return;
+  }
+  const actIndex = opt.index;
+  pendingSummon = null;
+  currentActionFilter = null;
+  doAct(actIndex);
+}
+
+function renderPendingSummonCard(pending) {
+  const c = pending.card;
+  const cardDiv = document.createElement("div");
+  cardDiv.className = "mat-card pending-card";
+  cardDiv._card = c;
+  if (c.image_url) {
+    cardDiv.style.backgroundImage = `url('${c.image_url}')`;
+  }
+  cardDiv.title = `✨「${c.name}」仮召喚中 (クリックで配置コア変更 / HUDで確定)`;
+
+  const isDeploy = (pending.group.category || "").includes("配置");
+  const typeBadge = document.createElement("div");
+  typeBadge.className = "card-badge-pending-type";
+  typeBadge.textContent = isDeploy ? "✨仮配置中" : "✨仮召喚中";
+  cardDiv.appendChild(typeBadge);
+
+  if (c.lv != null) {
+    const lvBadge = document.createElement("div");
+    lvBadge.className = "card-badge-lv";
+    lvBadge.textContent = `Lv${c.lv || 1}`;
+    cardDiv.appendChild(lvBadge);
+  }
+
+  if (c.bp != null) {
+    const bpBadge = document.createElement("div");
+    bpBadge.className = "card-badge-bp";
+    bpBadge.textContent = `BP${c.bp}`;
+    cardDiv.appendChild(bpBadge);
+  }
+
+  // 維持コア要求枠 (コスト支払い同様にオレンジの枠でコア要求を示す)
+  const reqPlace = pending.requiredPlaceCores != null ? pending.requiredPlaceCores : (isDeploy ? 0 : 1);
+  const allocatedPlace = pending.allocatedPlaceDonors || [];
+  const shortagePlace = Math.max(0, reqPlace - allocatedPlace.length);
+
+  const isPlaceActive = (pending.step === 2);
+  const isPlaceComplete = (shortagePlace === 0);
+  const placeEnclosure = document.createElement("div");
+  const statusClass = !isPlaceComplete 
+    ? (isPlaceActive ? "is-unfulfilled is-active" : "is-idle") 
+    : (isPlaceActive ? "is-completed is-active" : "is-completed");
+  placeEnclosure.className = "card-pending-place-enclosure " + statusClass;
+  placeEnclosure.id = "card-pending-place-enclosure";
+  placeEnclosure.setAttribute("data-label-active", isDeploy ? "👉 配置コア指定中" : "👉 維持コア指定中");
+  placeEnclosure.setAttribute("data-label-idle", isDeploy ? "配置コア (待機)" : "維持コア (待機)");
+  placeEnclosure.title = isPlaceActive 
+    ? (isDeploy ? "【配置コア枠: 指定中】クリックして配置コアを指定" : "【維持コア枠: 指定中】スピリットのLv1維持に必要なコア要求枠。クリックして配置コアを指定")
+    : (isDeploy ? "【配置コア枠】クリックすると維持コア指定に切り替わります" : "【維持コア枠】クリックすると維持コア指定に切り替わります");
+  placeEnclosure.onclick = (e) => {
+    e.stopPropagation();
+    setPendingStep(2);
+  };
+
+  // 割り当て済み配置コア
+  allocatedPlace.forEach((item, idx) => {
+    const wrap = document.createElement("div");
+    wrap.className = "core-gem-wrapper trash-pending-pay-gem-slot pending-trash-gem";
+    wrap.title = `【仮維持コア: ${item.sourceName || item.sourceId}】クリックで元の場所へ戻す`;
+    wrap.innerHTML = `<div class="core-gem ${item.coreType}"></div>`;
+    wrap.onclick = (e) => {
+      e.stopPropagation();
+      returnPendingPlacedCore(idx);
+    };
+    placeEnclosure.appendChild(wrap);
+  });
+
+  // 不足分 (コスト支払い同様にオレンジの枠でコア要求を示す)
+  for (let i = 0; i < shortagePlace; i++) {
+    const emptySlot = document.createElement("div");
+    emptySlot.className = "core-gem-wrapper trash-pending-pay-gem-slot empty-shortage-slot";
+    emptySlot.title = `【維持コア要求】フィールドまたはリザーブのコアをクリックして配置してください`;
+    emptySlot.onclick = (e) => {
+      e.stopPropagation();
+      setPendingStep(2);
+    };
+    placeEnclosure.appendChild(emptySlot);
+  }
+
+  if (reqPlace === 0 && allocatedPlace.length === 0) {
+    const zeroLabel = document.createElement("span");
+    zeroLabel.style.cssText = "font-size:10px; color:#f59e0b; font-weight:700; padding:0 4px;";
+    zeroLabel.textContent = "0個 (なし)";
+    placeEnclosure.appendChild(zeroLabel);
+  }
+
+  const coresOverlay = document.createElement("div");
+  coresOverlay.className = "card-cores-overlay";
+  coresOverlay.style.cssText = "bottom:6px; left:4px; right:4px; display:flex; justify-content:center;";
+  coresOverlay.appendChild(placeEnclosure);
+  cardDiv.appendChild(coresOverlay);
+
+  // カードクリックで「配置コア指定」へ進む
+  cardDiv.onclick = (e) => {
+    e.stopPropagation();
+    setPendingStep(2);
+  };
+
+  cardDiv.addEventListener("mouseenter", () => updateInspector(c));
+  return cardDiv;
+}
+
+function renderPendingSummonHUD() {
+  const instructionEl = $("hand-instruction");
+  if (!instructionEl) return;
+
+  if (!pendingSummon) {
+    if (!selectedCoreMoveSource) {
+      instructionEl.innerHTML = "";
+    }
+    return;
+  }
+
+  const c = pendingSummon.card;
+  const curOpt = getPendingCurrentOption();
+  const isDeploy = (pendingSummon.group.category || "").includes("配置");
+  const isMagic = pendingSummon.isMagic || (pendingSummon.group.category || "").includes("マジック") || (c.category === "MAGIC");
+  const step = pendingSummon.step || 1; // 1: 支払コスト指定, 2: 配置コア指定
+
+  // 1. 支払パターン一覧の取得
+  const payPatterns = getUniquePaymentPatterns(pendingSummon.parsedOptions);
+  const curPayKey = getAllocatedPaymentPatternKey(pendingSummon.allocatedPayDonors);
+
+  // 2. 現在の支払パターン下で選択可能な配置パターン一覧
+  const matchingPayOpts = pendingSummon.parsedOptions.filter(o => getPaymentPatternKey(o.payDonors) === curPayKey);
+  const placePatterns = groupOptionsByPlacementCores(matchingPayOpts.length > 0 ? matchingPayOpts : pendingSummon.parsedOptions);
+  const curPl = curOpt ? curOpt.placement : { normal: 0, soul: 0, total: 0 };
+
+  // 現在の支払情報の要約
+  const curPayPat = payPatterns.find(p => p.key === curPayKey);
+  let curPaySummary = curPayPat ? curPayPat.html : "";
+  if (!curPaySummary && pendingSummon.allocatedPayDonors && pendingSummon.allocatedPayDonors.length > 0) {
+    const resNormal = pendingSummon.allocatedPayDonors.filter(d => (d.sourceId === "Reserve" || d.sourceName === "リザーブ") && d.coreType === "normal").length;
+    const resSoul = pendingSummon.allocatedPayDonors.filter(d => (d.sourceId === "Reserve" || d.sourceName === "リザーブ") && d.coreType === "soul").length;
+    let s = "";
+    if (resNormal > 0 || resSoul > 0) {
+      s += "リザーブ: ";
+      for (let i = 0; i < resSoul; i++) s += HEX_CORE_RED_SVG;
+      for (let i = 0; i < resNormal; i++) s += HEX_CORE_BLUE_SVG;
+    }
+    curPaySummary = s || "リザーブ";
+  } else if (!curPaySummary) {
+    curPaySummary = "リザーブ";
+  }
+
+  // 消滅バッジ: 実際にフィールドのスピリットが消滅する場合のみ表示 (リザーブは絶対に消滅しない)
+  const anyFieldVanish = (current?.player?.field || []).some(fc => {
+    if (fc.category !== "SPIRIT") return false;
+    const ci = parseCoreString(fc.cores);
+    const di = getCardDonorInfo(null, fc.id, fc);
+    return ci.total > 0 && (ci.total - di.total) === 0;
+  });
+  const curPayVanish = anyFieldVanish
+    ? `<span class="badge-vanish" style="font-size:10px; margin-left:4px;">⚠️消滅</span>` : "";
+
+  // 配置情報の要約
+  const allocatedPlace = (pendingSummon && pendingSummon.allocatedPlaceDonors) ? pendingSummon.allocatedPlaceDonors : [];
+  const reqPlace = pendingSummon.requiredPlaceCores != null ? pendingSummon.requiredPlaceCores : (isMagic ? 0 : (isDeploy ? 0 : 1));
+  let curPlGems = "";
+  if (allocatedPlace.length === 0) {
+    curPlGems = (isMagic || isDeploy) ? "<span style='color:#94a3b8;'>0個 (不要)</span>" : "<span style='color:#f59e0b; font-weight:700;'>未指定 (要1個)</span>";
+  } else {
+    for (const d of allocatedPlace) {
+      curPlGems += (d.coreType === "soul") ? HEX_CORE_RED_SVG : HEX_CORE_BLUE_SVG;
+    }
+    curPlGems += `<span style="margin-left:4px;">${allocatedPlace.length}個</span>`;
+  }
+
+  let wizardContentHtml = "";
+
+  if (isMagic) {
+    // ============================================
+    // MAGIC: マジック使用 (配置コア指定不要、コスト支払い後即発揮)
+    // ============================================
+    const payShortage = Math.max(0, pendingSummon.requiredPayCost - (pendingSummon.allocatedPayDonors ? pendingSummon.allocatedPayDonors.length : 0));
+    const isPayComplete = (payShortage === 0);
+
+    let payButtonsHtml = payPatterns.map((pat, idx) => {
+      const isActive = isPayComplete && curPayKey && (pat.key === curPayKey);
+      const vanishBadge = pat.vanishingIds.length > 0 ? `<span class="badge-vanish" style="font-size:9px;">⚠️消滅</span>` : "";
+      return `
+        <button class="btn-quick-opt ${isActive ? 'active' : ''} ${pat.vanishingIds.length > 0 ? 'has-vanish' : ''}" 
+                onclick="event.stopPropagation(); setPendingPaymentPattern(${idx});"
+                title="クリックしてこの支払元パターンを選択">
+          <span>${pat.html}</span>${vanishBadge}
+        </button>
+      `;
+    }).join("");
+
+    const magicConfirmBtnHtml = isPayComplete
+      ? `<button class="btn-pending-confirm enabled" id="btn-pending-confirm" style="background:linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-color:#a78bfa; box-shadow:0 0 16px rgba(139,92,246,0.7); cursor:pointer; color:#fff; font-weight:800; font-size:13px;">
+          ✨ 発揮 (Space)
+        </button>`
+      : `<button class="btn-pending-confirm disabled" id="btn-pending-confirm" disabled style="background:#1e293b; border-color:#f59e0b; color:#fbbf24; cursor:not-allowed; opacity:0.85;" title="不足している支払コスト(${payShortage}個)をリザーブまたはフィールドのコアをクリックして指定してください">
+          ⚠️ コスト不足 (あと ${payShortage} 個)
+        </button>`;
+
+    const magicPrompt = isPayComplete
+      ? `<span style="font-size:11px; color:#4ade80; font-weight:700;">✅ コスト支払完了 (${pendingSummon.requiredPayCost}個トラッシュ仮置き済) ➔ 「発揮」を選択してください</span>`
+      : `<span style="font-size:11px; color:#f59e0b; font-weight:700;">👉 コスト支払い: リザーブまたはフィールドのコアをクリック ➔ 仮に【トラッシュ】へ置かれます (不足: ${payShortage}個) ※配置コア指定は不要</span>`;
+
+    wizardContentHtml = `
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1; min-width:320px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:12px; font-weight:800; color:#a78bfa;">✨【マジック使用】 ${esc(c.name)} (コスト: ${c.cost ?? 0})</span>
+          ${magicPrompt}
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:#94a3b8; font-weight:700;">支払元選択:</span>
+          <div class="pending-quick-opts">
+            ${payButtonsHtml}
+          </div>
+        </div>
+      </div>
+      <div class="pending-hud-actions" style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <button class="btn-pending-cancel" id="btn-pending-cancel">✖ 手札に戻す (Esc)</button>
+        ${magicConfirmBtnHtml}
+      </div>
+    `;
+  } else if (step === 1) {
+    // ============================================
+    // STEP 1: コスト支払元の指定
+    // ============================================
+    const payShortage = Math.max(0, pendingSummon.requiredPayCost - (pendingSummon.allocatedPayDonors ? pendingSummon.allocatedPayDonors.length : 0));
+    const isStep1Complete = (payShortage === 0);
+
+    let payButtonsHtml = payPatterns.map((pat, idx) => {
+      const isActive = isStep1Complete && curPayKey && (pat.key === curPayKey);
+      const vanishBadge = pat.vanishingIds.length > 0 ? `<span class="badge-vanish" style="font-size:9px;">⚠️消滅</span>` : "";
+      return `
+        <button class="btn-quick-opt ${isActive ? 'active' : ''} ${pat.vanishingIds.length > 0 ? 'has-vanish' : ''}" 
+                onclick="event.stopPropagation(); setPendingPaymentPattern(${idx});"
+                title="クリックしてこの支払元パターンを選択">
+          <span>${pat.html}</span>${vanishBadge}
+        </button>
+      `;
+    }).join("");
+    const step1NextBtnHtml = isStep1Complete
+      ? `<button class="btn-pending-confirm" style="background:linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border-color:#38bdf8; cursor:pointer;" id="btn-wizard-next">
+          次へ: ２．配置コア選択 ➔ (Space)
+        </button>`
+      : `<button class="btn-pending-confirm" style="background:#1e293b; border-color:#f59e0b; color:#fbbf24; cursor:not-allowed; opacity:0.85;" id="btn-wizard-next" disabled title="不足している支払コスト(${payShortage}個)をフィールドのコアをクリックしてトラッシュに置いてください">
+          ⚠️ コスト不足 (あと ${payShortage} 個)
+        </button>`;
+
+    const step1Prompt = isStep1Complete
+      ? `<span style="font-size:11px; color:#4ade80; font-weight:700;">✅ コスト支払完了 (${pendingSummon.requiredPayCost}個トラッシュ仮置き済) ➔ 「次へ」または Space を押してください</span>`
+      : `<span style="font-size:11px; color:#f59e0b; font-weight:700;">👉 １．コスト支払い: フィールドのコアをクリック ➔ 仮に【トラッシュ】へ置かれます (不足: ${payShortage}個)</span>`;
+
+    const isBothComplete = isPendingBothComplete();
+    const placeShortage = Math.max(0, reqPlace - allocatedPlace.length);
+    const step1ConfirmBtnHtml = isBothComplete
+      ? `<button class="btn-pending-confirm enabled" id="btn-pending-confirm" style="background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); border-color:#4ade80; box-shadow:0 0 16px rgba(34,197,94,0.7); cursor:pointer; color:#fff;">✅ ${isDeploy ? '配置確定' : '召喚確定'} (Space)</button>`
+      : (placeShortage > 0
+          ? `<button class="btn-pending-confirm disabled" id="btn-pending-confirm" disabled style="background:#1e293b; border-color:#f59e0b; color:#fbbf24; cursor:not-allowed; opacity:0.85;" title="${isDeploy ? 'ネクサスを配置してください' : 'スピリットに置く維持コア(最低1個)を指定してください'}">⚠️ 維持コア未指定 (あと ${placeShortage} 個)</button>`
+          : `<button class="btn-pending-confirm disabled" id="btn-pending-confirm" disabled style="opacity:0.4; cursor:not-allowed; background:#1e293b; border-color:#475569; color:#64748b;" title="２．配置コア選択に進むと有効になります">✅ ${isDeploy ? '配置確定' : '召喚確定'}</button>`
+        );
+
+    wizardContentHtml = `
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1; min-width:320px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:12px; font-weight:800; color:#38bdf8;">✨ ${isDeploy ? '【仮配置中】' : '【仮召喚中】'} ${esc(c.name)} (コスト: ${c.cost ?? 0})</span>
+          ${step1Prompt}
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:#94a3b8; font-weight:700;">支払元選択:</span>
+          <div class="pending-quick-opts">
+            ${payButtonsHtml}
+          </div>
+        </div>
+      </div>
+      <div class="pending-hud-actions" style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <button class="btn-pending-cancel" id="btn-pending-cancel">✖ 手札に戻す (Esc)</button>
+        ${!isBothComplete && isStep1Complete ? step1NextBtnHtml : ''}
+        ${step1ConfirmBtnHtml}
+      </div>
+    `;
+  } else {
+    // ============================================
+    // STEP 2: 配置コア数の指定
+    // ============================================
+    const isBothComplete = isPendingBothComplete();
+    const placeShortage = Math.max(0, reqPlace - allocatedPlace.length);
+    const payShortage = Math.max(0, pendingSummon.requiredPayCost - (pendingSummon.allocatedPayDonors ? pendingSummon.allocatedPayDonors.length : 0));
+    const confirmBtnHtml = isBothComplete
+      ? `<button class="btn-pending-confirm enabled" id="btn-pending-confirm" style="background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); border-color:#4ade80; box-shadow:0 0 16px rgba(34,197,94,0.7); cursor:pointer; color:#fff;">✅ ${isDeploy ? '配置確定' : '召喚確定'} (Space)</button>`
+      : (payShortage > 0
+          ? `<button class="btn-pending-confirm disabled" id="btn-pending-confirm" disabled style="background:#1e293b; border-color:#f59e0b; color:#fbbf24; cursor:not-allowed; opacity:0.85;" title="支払コストを指定してください">⚠️ コスト不足 (あと ${payShortage} 個)</button>`
+          : `<button class="btn-pending-confirm disabled" id="btn-pending-confirm" disabled style="background:#1e293b; border-color:#f59e0b; color:#fbbf24; cursor:not-allowed; opacity:0.85;" title="${isDeploy ? 'ネクサスを配置してください' : 'スピリットに置く維持コア(最低1個)を指定してください'}">⚠️ 維持コア未指定 (あと ${placeShortage} 個)</button>`
+        );
+
+    let placeButtonsHtml = placePatterns.map(pat => {
+      const isActive = (pat.total === allocatedPlace.length);
+      let coreIcons = "";
+      for (let i = 0; i < pat.soul; i++) coreIcons += HEX_CORE_RED_SVG;
+      for (let i = 0; i < pat.normal; i++) coreIcons += HEX_CORE_BLUE_SVG;
+      if (!coreIcons) coreIcons = "<span style='color:#94a3b8;'>なし</span>";
+
+      let lvHint = "";
+      if (c.lv_costs && pat.total > 0) {
+        if (c.lv_costs[1] && pat.total >= c.lv_costs[1]) lvHint = " (Lv2)";
+        else if (c.lv_costs[0] && pat.total >= c.lv_costs[0]) lvHint = " (Lv1)";
+      }
+
+      return `
+        <button class="btn-quick-opt ${isActive ? 'active' : ''}" 
+                onclick="event.stopPropagation(); setPendingPlacementByConfig(${pat.total}, ${pat.soul});"
+                title="クリックして配置コアを「${pat.label}」に指定">
+          <span>${coreIcons}</span>
+          <span>${pat.total}個${lvHint}</span>
+        </button>
+      `;
+    }).join("");
+
+    wizardContentHtml = `
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1; min-width:320px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:12px; font-weight:800; color:#38bdf8;">✨ ${isDeploy ? '【仮配置中】' : '【仮召喚中】'} ${esc(c.name)}</span>
+          <span style="font-size:11px; color:#a7f3d0; font-weight:700;">👉 ２．維持コア選択: コアをクリック ➔ 【維持コア要求枠】へ仮配置されます</span>
+          <span style="font-size:11px; color:#cbd5e1; background:rgba(0,0,0,0.45); padding:2px 8px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); display:inline-flex; align-items:center;">
+            支払: ${curPaySummary}${curPayVanish}
+            <button class="secondary" style="margin-left:6px; padding:1px 6px; font-size:10px; cursor:pointer;" onclick="event.stopPropagation(); setPendingStep(1);">◀ 支払変更</button>
+          </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-size:11px; color:#94a3b8; font-weight:700;">維持コア指定:</span>
+          <div class="pending-quick-opts">
+            ${placeButtonsHtml}
+          </div>
+          <div class="pending-core-stepper" style="margin-left:4px;">
+            <button class="btn-step-core" id="btn-pending-core-dec" title="配置コアを減らす">➖</button>
+            <button class="btn-step-core" id="btn-pending-core-inc" title="配置コアを増やす">➕</button>
+            <button class="btn-step-soul" id="btn-pending-toggle-soul" title="ソウルコアと通常コアを切り替え">${allocatedPlace.some(d => d.coreType === "soul") ? '🔷 通常コア' : '🔴 ソウルコア'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="pending-hud-actions" style="margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <button class="btn-pending-cancel" id="btn-wizard-back" onclick="event.stopPropagation(); setPendingStep(1);">◀ 支払に戻る</button>
+        ${confirmBtnHtml}
+      </div>
+    `;
+  }
+
+  const isBothComplete = isPendingBothComplete();
+  const payShortage = Math.max(0, pendingSummon.requiredPayCost - (pendingSummon.allocatedPayDonors ? pendingSummon.allocatedPayDonors.length : 0));
+  const paySummaryHtml = payShortage > 0 
+    ? `<span style="color:#f59e0b; font-weight:700;">あと${payShortage}個不足</span>`
+    : `${curPaySummary}${curPayVanish}`;
+
+  const placeShortage = Math.max(0, reqPlace - allocatedPlace.length);
+  const placeSummaryHtml = placeShortage > 0
+    ? `<span style="color:#f59e0b; font-weight:700;">あと${placeShortage}個不足</span>`
+    : curPlGems;
+
+  const wizardStepsHtml = isMagic ? `
+    <div class="pending-wizard-step pending-slot-btn active ${payShortage === 0 ? 'completed' : ''}" id="btn-slot-pay" title="支払いコストの指定">
+      <span class="wizard-step-num">${payShortage === 0 ? '✓' : '1'}</span>
+      <span>１．コスト支払い: ${paySummaryHtml} (仮トラッシュ)</span>
+    </div>
+    <span style="color:#64748b; font-size:12px;">➔</span>
+    <div class="pending-wizard-step ${isBothComplete ? 'active completed' : ''}" style="${isBothComplete ? 'border-color:#a78bfa; color:#e9d5ff; background:rgba(124,58,237,0.25); box-shadow:0 0 12px rgba(124,58,237,0.6);' : 'opacity:0.5; border-color:#64748b;'}">
+      <span class="wizard-step-num">${isBothComplete ? '✓' : '2'}</span>
+      <span>２．${isBothComplete ? '発揮可能' : '発揮準備中'} (配置コア不要)</span>
+    </div>
+  ` : `
+    <button class="pending-wizard-step pending-slot-btn ${step === 1 ? 'active' : (payShortage === 0 ? 'completed' : '')}" id="btn-slot-pay" title="クリックして１．支払いコストの指定に戻る">
+      <span class="wizard-step-num">${payShortage === 0 ? '✓' : '1'}</span>
+      <span>１．コスト支払い: ${paySummaryHtml} (仮トラッシュ)</span>
+    </button>
+    <span style="color:#64748b; font-size:12px;">➔</span>
+    <button class="pending-wizard-step pending-slot-btn ${step === 2 ? 'active' : (placeShortage === 0 ? 'completed' : '')}" id="btn-slot-place" title="クリックして２．維持コアの指定に進む">
+      <span class="wizard-step-num">${placeShortage === 0 ? '✓' : '2'}</span>
+      <span>２．維持コア選択: ${placeSummaryHtml} (仮スピリット)</span>
+    </button>
+    <span style="color:#64748b; font-size:12px;">➔</span>
+    <div class="pending-wizard-step ${isBothComplete ? 'active completed' : ''}" style="${isBothComplete ? 'border-color:#22c55e; color:#bbf7d0; background:rgba(34,197,94,0.25); box-shadow:0 0 12px rgba(34,197,94,0.6);' : 'opacity:0.5; border-color:#64748b;'}">
+      <span class="wizard-step-num">${isBothComplete ? '✓' : '3'}</span>
+      <span>３．${isBothComplete ? '確定可能' : '確定'}</span>
+    </div>
+  `;
+
+  instructionEl.innerHTML = `
+    <div class="pending-summon-hud">
+      <div class="pending-wizard-steps">
+        ${wizardStepsHtml}
+      </div>
+      <div style="display:flex; align-items:center; width:100%; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        ${wizardContentHtml}
+      </div>
+    </div>
+  `;
+
+  $("btn-slot-pay")?.addEventListener("click", (e) => { e.stopPropagation(); setPendingStep(1); });
+  $("btn-slot-place")?.addEventListener("click", (e) => { e.stopPropagation(); setPendingStep(2); });
+  $("btn-wizard-next")?.addEventListener("click", (e) => { e.stopPropagation(); setPendingStep(2); });
+  $("btn-pending-cancel")?.addEventListener("click", (e) => { e.stopPropagation(); cancelPendingSummon(); });
+  $("btn-pending-confirm")?.addEventListener("click", (e) => { e.stopPropagation(); confirmPendingSummon(); });
+  $("btn-pending-core-dec")?.addEventListener("click", (e) => { e.stopPropagation(); changePendingPlacement(-1); });
+  $("btn-pending-core-inc")?.addEventListener("click", (e) => { e.stopPropagation(); changePendingPlacement(1); });
+  $("btn-pending-toggle-soul")?.addEventListener("click", (e) => { e.stopPropagation(); togglePendingSoulCore(); });
 }
 
 function setupFieldDropZone() {
@@ -1524,7 +4226,7 @@ function setupFieldDropZone() {
   });
 }
 
-function triggerDrawAnimation(fromElementId, toElementId, cardImageUrl = null) {
+function triggerDrawAnimation(fromElementId, toElementId, cardImageUrl = null, slotIndex = null) {
   const fromEl = $(fromElementId);
   const toEl = $(toElementId);
   if (!fromEl || !toEl) return;
@@ -1538,13 +4240,123 @@ function triggerDrawAnimation(fromElementId, toElementId, cardImageUrl = null) {
   flyer.style.top = `${fromRect.top}px`;
   document.body.appendChild(flyer);
 
+  const targetLeft = (slotIndex != null)
+    ? toRect.left + slotIndex * 118 + 10
+    : toRect.left + (toRect.width - 110) / 2;
+  const targetTop = (slotIndex != null)
+    ? toRect.top + 4
+    : toRect.top + 10;
+
   requestAnimationFrame(() => {
-    flyer.style.left = `${toRect.left + (toRect.width - 110) / 2}px`;
-    flyer.style.top = `${toRect.top + 10}px`;
-    flyer.style.transform = `scale(1.08) rotate(2deg)`;
+    flyer.style.left = `${targetLeft}px`;
+    flyer.style.top = `${targetTop}px`;
+    flyer.style.transform = `scale(1.06) rotate(${(slotIndex || 0) % 2 === 0 ? 2 : -2}deg)`;
   });
 
   setTimeout(() => flyer.remove(), 560);
+}
+
+function playDeckShuffleAnimation(deckElementId) {
+  const deckEl = $(deckElementId);
+  if (!deckEl) return;
+  deckEl.classList.add("deck-shuffling");
+
+  const rect = deckEl.getBoundingClientRect();
+  const shufflers = [];
+  for (let i = 0; i < 3; i++) {
+    const card = document.createElement("div");
+    card.className = `anim-shuffle-card shuf-${i + 1}`;
+    card.style.left = `${rect.left}px`;
+    card.style.top = `${rect.top}px`;
+    document.body.appendChild(card);
+    shufflers.push(card);
+  }
+
+  setTimeout(() => {
+    shufflers.forEach(el => el.remove());
+    deckEl.classList.remove("deck-shuffling");
+  }, 620);
+}
+
+async function startNewGameWithAnimation(fetchFn) {
+  if ($("log-console")) $("log-console").innerHTML = "";
+  autoPlayPaused = false;
+  // 1. Play deck shuffle animation on both P1 & P2 decks
+  playDeckShuffleAnimation("p1-deck-pile");
+  playDeckShuffleAnimation("p2-deck-pile");
+  $("hand-instruction").innerHTML = `🃏 <b>デッキをシャッフル中...</b>`;
+
+  // Fetch new game state
+  const dataPromise = fetchFn();
+  await new Promise(r => setTimeout(r, 650));
+  const data = await dataPromise;
+  if (!data) return;
+
+  const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
+  const p2 = (data.player.player_id === 2) ? data.player : data.opponent;
+
+  const fullHandP1 = [...(p1.hand || [])];
+  const fullHandP2Count = p2.hand_count || 4;
+
+  // ゲーム開始時（ドロー前）の初期手札は両者4枚
+  const initialHandP1 = fullHandP1.slice(0, 4);
+  const turn1DrawCard = fullHandP1.length > 4 ? fullHandP1[4] : null;
+
+  // 初期化: 手札0枚、P1デッキ37枚
+  p1.hand = [];
+  p2.hand = [];
+  p2.hand_count = 0;
+  const initialP1DeckCount = (p1.deck_count || 36) + (turn1DrawCard ? 1 : 0);
+  p1.deck_count = initialP1DeckCount;
+  render(data);
+
+  $("hand-instruction").innerHTML = `🎴 <b>初期手札 4枚を配布中...</b>`;
+
+  // 2. 初期手札 4枚の配布（P1とP2へ4枚ずつ）
+  for (let i = 0; i < 4; i++) {
+    const cardData = initialHandP1[i];
+    triggerDrawAnimation("p1-deck-pile", "p1-hand-row", cardData ? cardData.image_url : null, i);
+    triggerDrawAnimation("p2-deck-pile", "p2-hand-row", null, i);
+
+    await new Promise(r => setTimeout(r, 220));
+
+    renderHand($("p1-hand-row"), initialHandP1.slice(0, i + 1), data.groups, true);
+    renderHand($("p2-hand-row"), Array(i + 1).fill({}), null, false);
+    $("p1-hand-count-num").textContent = i + 1;
+    $("p2-name").textContent = `プレイヤー2 (${p2.deck_count}枚 / 手札${i + 1}枚)`;
+    $("p1-deck-count").textContent = initialP1DeckCount - (i + 1);
+  }
+
+  // 初期手札4枚の状態を明示
+  $("p1-hand-count-num").textContent = 4;
+  $("p1-deck-count").textContent = initialP1DeckCount - 4;
+  $("hand-instruction").innerHTML = `🎴 <b>初期手札 4枚配布完了</b>`;
+  await new Promise(r => setTimeout(r, 450));
+
+  // 3. 【ターン1】開始 ➔ ドローステップ（1枚ドローして5枚になる）
+  if (turn1DrawCard) {
+    $("hand-instruction").innerHTML = `🃏 <b>【ターン1】ドローステップ: 「${turn1DrawCard.name}」をドロー！</b>`;
+    triggerDrawAnimation("p1-deck-pile", "p1-hand-row", turn1DrawCard.image_url, 4);
+
+    if ($("log-console")) {
+      const line = document.createElement("div");
+      line.className = "log-line";
+      line.innerHTML = `🃏 ドローステップ: 「${esc(turn1DrawCard.name)}」をドロー (残り${data.player.deck_count}枚)`;
+      $("log-console").prepend(line);
+    }
+
+    await new Promise(r => setTimeout(r, 380));
+    renderHand($("p1-hand-row"), fullHandP1, data.groups, true);
+    $("p1-hand-count-num").textContent = 5;
+    $("p1-deck-count").textContent = data.player.deck_count;
+  }
+
+  await new Promise(r => setTimeout(r, 300));
+  // Final render with full state
+  p1.hand = fullHandP1;
+  p2.hand_count = fullHandP2Count;
+  render(data);
+  $("hand-instruction").innerHTML = `⚔️ <b>メインステップ！ 手番: プレイヤー1</b>`;
 }
 
 function triggerCoreMoveAnimation(fromElement, toElement, isSoul = false) {
@@ -1610,8 +4422,10 @@ async function api(path, body = null) {
 }
 
 async function doAct(index) {
+  autoPlayPaused = false;
   closeHandPopover();
   clearCoreMoveSelection();
+  clearCardSelection();
   const data = await api("/api/act", { index });
   if (data) render(data);
 }
@@ -1626,22 +4440,28 @@ function parseCoreString(s) {
 function renderCoreGems(container, normalCount, soulCount, isInteractive = false, onCoreClick = null) {
   container.innerHTML = "";
   for (let i = 0; i < soulCount; i++) {
+    const wrap = document.createElement("div");
+    wrap.className = "core-gem-wrapper";
     const gem = document.createElement("div");
     gem.className = "core-gem soul";
     gem.title = "ソウルコア 🔮";
+    wrap.appendChild(gem);
     if (isInteractive && onCoreClick) {
-      gem.onclick = (e) => { e.stopPropagation(); onCoreClick("soul"); };
+      wrap.onclick = (e) => { e.stopPropagation(); onCoreClick("soul"); };
     }
-    container.appendChild(gem);
+    container.appendChild(wrap);
   }
   for (let i = 0; i < normalCount; i++) {
+    const wrap = document.createElement("div");
+    wrap.className = "core-gem-wrapper";
     const gem = document.createElement("div");
     gem.className = "core-gem normal";
     gem.title = "コア 🔷";
+    wrap.appendChild(gem);
     if (isInteractive && onCoreClick) {
-      gem.onclick = (e) => { e.stopPropagation(); onCoreClick("normal"); };
+      wrap.onclick = (e) => { e.stopPropagation(); onCoreClick("normal"); };
     }
-    container.appendChild(gem);
+    container.appendChild(wrap);
   }
 }
 
@@ -1678,26 +4498,39 @@ function updateInspector(card) {
   }
   nameEl.textContent = card.name || "カード名未設定";
   statsEl.textContent = `No: ${card.card_no || '-'} | コスト: ${card.cost ?? '-'} | 軽減: ${card.reduction || '-'} | シンボル: ${card.symbols || '-'}`;
-  textEl.textContent = `カテゴリ: ${card.category || 'SPIRIT'} ${card.bp ? '| BP: ' + card.bp : ''}\n維持コア: ${card.lv_costs ? card.lv_costs.join(' / ') : '-'}`;
+  const coreDesc = card.cores != null ? ` | 配置コア: ${card.cores}個 (Lv${card.lv || 1})` : '';
+  textEl.textContent = `カテゴリ: ${card.category || 'SPIRIT'} ${card.bp ? '| BP: ' + card.bp : ''}${coreDesc}\n維持コア: ${card.lv_costs ? card.lv_costs.join(' / ') : '-'}`;
 }
 
 function renderFieldCard(c, isMyField, groups, attackingCardId) {
   const cardDiv = document.createElement("div");
   cardDiv.className = "mat-card";
+  cardDiv._card = c;
   if (c.image_url) {
     cardDiv.style.backgroundImage = `url('${c.image_url}')`;
   }
   cardDiv.setAttribute("data-id", c.id);
 
-  if (c.exhausted) cardDiv.classList.add("exhausted");
+  if (c.heavy_exhausted) {
+    cardDiv.classList.add("heavy-exhausted");
+    const heavyBadge = document.createElement("div");
+    heavyBadge.className = "card-badge-heavy-exhausted";
+    heavyBadge.textContent = "⚡重疲労";
+    cardDiv.appendChild(heavyBadge);
+  } else if (c.exhausted) {
+    cardDiv.classList.add("exhausted");
+  }
   if (c.is_attacking || c.id === attackingCardId) cardDiv.classList.add("attacking");
 
-  // Badges: Lv & BP
+  // Badges: Lv
   const lvBadge = document.createElement("div");
   lvBadge.className = "card-badge-lv";
   lvBadge.textContent = `Lv${c.lv || 1}`;
   cardDiv.appendChild(lvBadge);
 
+  const coreInfo = parseCoreString(c.cores);
+
+  // Badges: BP
   if (c.bp != null) {
     const bpBadge = document.createElement("div");
     bpBadge.className = "card-badge-bp";
@@ -1706,79 +4539,331 @@ function renderFieldCard(c, isMyField, groups, attackingCardId) {
   }
 
   // Cores placed directly on the card
-  const coreInfo = parseCoreString(c.cores);
-  if (coreInfo.total > 0) {
+  const donorInfo = pendingSummon ? getCardDonorInfo(null, c.id, c) : null;
+  const remSoul = donorInfo ? Math.max(0, coreInfo.soul - (donorInfo.paySoul + donorInfo.placeSoul)) : coreInfo.soul;
+  const remNormal = donorInfo ? Math.max(0, coreInfo.normal - (donorInfo.payNormal + donorInfo.placeNormal)) : coreInfo.normal;
+  const remTotal = remSoul + remNormal;
+
+  // Render core overlay if card has cores OR during pending summon (so donor can be clicked or returned)
+  if (remTotal > 0 || pendingSummon || coreInfo.total > 0) {
     const coresOverlay = document.createElement("div");
     coresOverlay.className = "card-cores-overlay";
-    renderCoreGems(coresOverlay, coreInfo.normal, coreInfo.soul, isMyField, (coreType) => {
-      startCoreMove(c.id, coreType);
+    if (pendingSummon) {
+      coresOverlay.classList.add("pending-core-area");
+      coresOverlay.title = "コアエリア: クリックでこのカードからのコア選択を変更";
+      coresOverlay.onclick = (e) => {
+        e.stopPropagation();
+        handlePendingSummonCardDonorClick(c.id, "area");
+      };
+    }
+    renderCoreGems(coresOverlay, remNormal, remSoul, isMyField, (coreType) => {
+      if (pendingSummon) {
+        handlePendingSummonCardDonorClick(c.id, coreType);
+        return;
+      }
+      selectOrAddCoreMove(c.id, coreType);
     });
+
     cardDiv.appendChild(coresOverlay);
   }
 
-  // Check actions for this card
-  if (isMyField && groups) {
-    const attackGroup = groups.find(g => (g.category || "").includes("アタック") && g.target_instance_id === c.id);
-    if (attackGroup && !attackGroup.all_forbidden) {
-      cardDiv.classList.add("attackable");
-      cardDiv.title = `⚔️ クリックして ${c.name} でアタック！`;
-      cardDiv.onclick = () => {
-        const act = attackGroup.options.find(o => !o.forbidden);
-        if (act) doAct(act.index);
-      };
-    }
-  } else if (!isMyField && groups) {
-    const blockGroup = groups.find(g => (g.category || "").includes("ブロック") && g.target_instance_id === c.id);
-    if (blockGroup && !blockGroup.all_forbidden) {
-      cardDiv.classList.add("blockable");
-      cardDiv.title = `🛡️ クリックして ${c.name} でブロック！`;
-      cardDiv.onclick = () => {
-        const act = blockGroup.options.find(o => !o.forbidden);
-        if (act) doAct(act.index);
-      };
+  // 仮召喚中: このカード自体が支払元・配置元・消滅対象なら強調 (マーク・バッジは不要)
+  if (pendingSummon) {
+    const isPayDonor = donorInfo && (donorInfo.payNormal > 0 || donorInfo.paySoul > 0);
+    const isPlaceDonor = donorInfo && (donorInfo.placeNormal > 0 || donorInfo.placeSoul > 0);
+    if (isPayDonor) cardDiv.classList.add("card-donor-pay");
+    if (isPlaceDonor) cardDiv.classList.add("card-donor-place");
+
+    // 実際にコアが0個になったスピリットのみ消滅表示 (勝手に消滅表示しない)
+    const isVanish = (c.category === "SPIRIT" && coreInfo.total > 0 && remTotal === 0);
+    if (isVanish) {
+      cardDiv.classList.add("card-preview-vanish");
     }
   }
 
-  // Core move target support
-  cardDiv.addEventListener("click", (e) => {
-    if (selectedCoreMoveSource && selectedCoreMoveSource.sourceId !== c.id) {
-      e.stopPropagation();
-      executeDirectCoreMove(selectedCoreMoveSource.sourceId, c.id, selectedCoreMoveSource.coreType);
+  // Card default hover title
+  cardDiv.title = `${c.name || 'カード'} [Lv${c.lv || 1} / コア: ${coreInfo.total}個]`;
+
+  // Check actions for this card
+  let attackGroup = null;
+  let blockGroup = null;
+  if (isMyField && groups) {
+    attackGroup = groups.find(g => (g.category || "").includes("アタック") && g.target_instance_id === c.id);
+    if (attackGroup && !attackGroup.all_forbidden) {
+      cardDiv.classList.add("attackable");
+      cardDiv.title = `⚔️ クリックして ${c.name} でアタック！`;
     }
-  });
+  } else if (!isMyField && groups) {
+    blockGroup = groups.find(g => (g.category || "").includes("ブロック") && g.target_instance_id === c.id);
+    if (blockGroup && !blockGroup.all_forbidden) {
+      cardDiv.classList.add("blockable");
+      cardDiv.title = `🛡️ クリックして ${c.name} でブロック！`;
+    }
+  }
+
+  if (selectedCard && selectedCard.type === "field" && selectedCard.id === c.id) {
+    cardDiv.classList.add("card-selected");
+  }
+
+  // Unified Card Click Handler: Core Move or Card Selection & Action Filtering
+  cardDiv.onclick = (e) => {
+    // 0. If currently in pending summon mode:
+    if (pendingSummon) {
+      e.stopPropagation();
+      handlePendingSummonCoreClick(c.id, remSoul > 0 ? "soul" : (remNormal > 0 ? "normal" : "area"));
+      return;
+    }
+
+    // 1. If currently in core move mode:
+    if (selectedCoreMoveSource) {
+      e.stopPropagation();
+      if (selectedCoreMoveSource.sourceId === c.id) {
+        // Same card clicked: add another core (+1)
+        selectOrAddCoreMove(c.id, "normal");
+        return;
+      }
+      // Different card clicked: execute move to this card!
+      executeDirectCoreMove(selectedCoreMoveSource.sourceId, c.id, selectedCoreMoveSource.normalCount, selectedCoreMoveSource.soulCount);
+      return;
+    }
+
+    // 2. Select card and filter action list to its effects
+    e.stopPropagation();
+    if (selectedCard && selectedCard.type === "field" && selectedCard.id === c.id) {
+      clearCardSelection();
+    } else {
+      selectCard({ ...c, type: "field" });
+    }
+  };
 
   cardDiv.addEventListener("mouseenter", () => updateInspector(c));
   return cardDiv;
 }
 
-function startCoreMove(sourceId, coreType) {
-  selectedCoreMoveSource = { sourceId, coreType };
-  document.querySelectorAll(".mat-card, .core-tray").forEach(el => el.classList.remove("core-source-active"));
-  const srcEl = document.querySelector(`[data-id="${sourceId}"]`) || $(sourceId === "Reserve" ? "p1-reserve-tray" : "");
+function selectOrAddCoreMove(sourceId, coreType) {
+  let maxNormal = 0;
+  let maxSoul = 0;
+  let srcName = "リザーブ";
+
+  const p1 = (current?.player?.player_id === 1) ? current.player : current?.opponent;
+  if (sourceId === "Reserve") {
+    const res = parseCoreString(p1?.reserve);
+    maxNormal = res.normal;
+    maxSoul = res.soul;
+    srcName = "リザーブ";
+  } else {
+    const cardObj = (p1?.field || []).find(f => f.id === sourceId);
+    if (cardObj) {
+      const cInfo = parseCoreString(cardObj.cores);
+      maxNormal = cInfo.normal;
+      maxSoul = cInfo.soul;
+      srcName = `「${cardObj.name}」`;
+    }
+  }
+
+  if (selectedCoreMoveSource && selectedCoreMoveSource.sourceId === sourceId) {
+    // Increment on the same source
+    if (coreType === "soul") {
+      if (maxSoul > 0) {
+        selectedCoreMoveSource.soulCount = (selectedCoreMoveSource.soulCount > 0) ? 0 : 1;
+      }
+    } else {
+      if (selectedCoreMoveSource.normalCount < maxNormal) {
+        selectedCoreMoveSource.normalCount += 1;
+      } else {
+        // Wrap around to 1 (or 0 if soul is selected)
+        selectedCoreMoveSource.normalCount = (selectedCoreMoveSource.soulCount > 0) ? 0 : 1;
+      }
+    }
+  } else {
+    // New source selection
+    const initSoul = (coreType === "soul" && maxSoul > 0) ? 1 : 0;
+    const initNormal = (coreType === "soul" && maxNormal === 0) ? 0 : (coreType === "normal" ? 1 : (maxNormal > 0 ? 1 : 0));
+    selectedCoreMoveSource = {
+      sourceId,
+      srcName,
+      normalCount: initNormal,
+      soulCount: initSoul,
+      maxNormal,
+      maxSoul
+    };
+  }
+
+  updateCoreMoveUI();
+}
+
+function updateCoreMoveUI() {
+  if (!selectedCoreMoveSource) {
+    clearCoreMoveSelection();
+    return;
+  }
+
+  const { sourceId, srcName, normalCount, soulCount } = selectedCoreMoveSource;
+
+  document.querySelectorAll(".mat-card, .core-tray").forEach(el => {
+    el.classList.remove("core-source-active", "core-target-candidate");
+  });
+  document.querySelectorAll(".core-gem.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".has-selection").forEach(el => el.classList.remove("has-selection"));
+
+  const srcEl = document.querySelector(`[data-id="${sourceId}"]`) || (sourceId === "Reserve" ? $("p1-reserve-tray") : null);
   if (srcEl) srcEl.classList.add("core-source-active");
-  $("hand-instruction").textContent = `🔷 移動先カードまたはリザーブをクリックしてください`;
+
+  // Mark selected individual gems in the source container
+  const gemContainer = (sourceId === "Reserve")
+    ? $("p1-reserve-gems")
+    : document.querySelector(`[data-id="${sourceId}"] .card-cores-overlay`);
+
+  if (gemContainer) {
+    gemContainer.classList.add("has-selection");
+    const soulGems = gemContainer.querySelectorAll(".core-gem.soul");
+    for (let i = 0; i < soulCount; i++) {
+      if (soulGems[i]) soulGems[i].classList.add("selected");
+    }
+    const normalGems = gemContainer.querySelectorAll(".core-gem.normal");
+    for (let i = 0; i < normalCount; i++) {
+      if (normalGems[i]) normalGems[i].classList.add("selected");
+    }
+  }
+
+  // Highlight all valid candidate targets
+  const allOptions = (current?.groups || []).flatMap(g => g.options || []);
+  const validToIds = new Set(allOptions.filter(a => {
+    return (a.core_effects || []).some(e => e.direction === "from" && e.source_id === sourceId);
+  }).flatMap(a => (a.core_effects || []).filter(e => e.direction === "to").map(e => e.source_id)));
+
+  document.querySelectorAll("#p1-field-grid .mat-card").forEach(el => {
+    const cardId = el.getAttribute("data-id");
+    if (cardId !== sourceId && validToIds.has(cardId)) {
+      el.classList.add("core-target-candidate");
+    }
+  });
+  if (sourceId !== "Reserve" && validToIds.has("Reserve")) {
+    $("p1-reserve-tray").classList.add("core-target-candidate");
+  }
+
+  // Purely graphical indicator without verbose text
+  let gemsHtml = "";
+  for (let i = 0; i < soulCount; i++) gemsHtml += HEX_CORE_RED_SVG;
+  for (let i = 0; i < normalCount; i++) gemsHtml += HEX_CORE_BLUE_SVG;
+
+  $("hand-instruction").innerHTML = `
+    <div style="display:inline-flex; align-items:center; gap:8px;">
+      <span style="display:inline-flex; align-items:center; gap:2px; padding:3px 8px; background:rgba(15,23,42,0.85); border:1px solid #facc15; border-radius:12px; box-shadow:0 0 10px rgba(250,204,21,0.5);">
+        ${gemsHtml}
+      </span>
+      <span style="color:#38bdf8; font-size:14px; font-weight:bold;">➔</span>
+      <span style="font-size:16px;">🎯</span>
+      <button class="secondary" style="padding:1px 6px; font-size:11px; margin-left:6px; background:#0f172a; border-color:#64748b; border-radius:4px; cursor:pointer;" onclick="clearCoreMoveSelection()">✕</button>
+    </div>
+  `;
 }
 
 function clearCoreMoveSelection() {
   selectedCoreMoveSource = null;
-  document.querySelectorAll(".mat-card, .core-tray").forEach(el => el.classList.remove("core-source-active"));
-  $("hand-instruction").textContent = "";
+  document.querySelectorAll(".mat-card, .core-tray").forEach(el => {
+    el.classList.remove("core-source-active", "core-target-candidate");
+  });
+  document.querySelectorAll(".core-gem.selected").forEach(el => el.classList.remove("selected"));
+  document.querySelectorAll(".has-selection").forEach(el => el.classList.remove("has-selection"));
+  $("hand-instruction").innerHTML = "";
 }
 
-function executeDirectCoreMove(fromId, toId, coreType) {
+function executeDirectCoreMove(fromId, toId, normalCount = 1, soulCount = 0) {
   if (!current || !current.groups) return;
-  const moveGroup = current.groups.find(g => (g.category || "").includes("コア移動") || (g.category || "").includes("コア再配置"));
-  if (moveGroup) {
-    const candidate = moveGroup.options.find(o => {
-      const fromEff = (o.core_effects || []).find(e => e.source_id === fromId && e.direction === "from");
-      const toEff = (o.core_effects || []).find(e => e.source_id === toId && e.direction === "to");
-      return fromEff != null && toEff != null;
-    });
-    if (candidate) {
-      doAct(candidate.index);
+
+  const allOptions = [];
+  for (const g of current.groups) {
+    if (!g.options) continue;
+    for (const opt of g.options) {
+      allOptions.push({ ...opt, category: g.category });
+    }
+  }
+
+  // 1. Direct core movement: fromId -> toId
+  const acts = allOptions.filter(a => {
+    if (!a.core_effects || !a.core_effects.length) return false;
+    const fromEff = a.core_effects.find(e => e.direction === "from" && e.source_id === fromId);
+    const toEff = a.core_effects.find(e => e.direction === "to" && e.source_id === toId);
+    return !!(fromEff && toEff);
+  });
+
+  if (acts.length > 0) {
+    // 0. Safety priority: Prefer non-vanishing moves over accidental vanishing moves!
+    const nonVanishingActs = acts.filter(a => !a.vanishing_card_ids || a.vanishing_card_ids.length === 0);
+    let pool = nonVanishingActs.length > 0 ? nonVanishingActs : acts;
+
+    // If soul core was specifically targeted, prefer Core Swap (🔄【コア交換】) if available
+    if (soulCount > 0) {
+      const swapActs = pool.filter(a => (a.category && a.category.includes("コア交換")) || (a.description && a.description.includes("コア交換")));
+      if (swapActs.length > 0) pool = swapActs;
+    }
+
+    // 1. Exact match for requested normalCount and soulCount
+    let chosen = pool.find(a => !a.forbidden && a.core_effects.some(e =>
+      e.direction === "to" && e.source_id === toId &&
+      (e.normal || 0) === normalCount && (e.soul || 0) === soulCount
+    ));
+
+    // 2. Match requested soul requirement, closest normal count
+    if (!chosen) {
+      const soulMatches = pool.filter(a => !a.forbidden && a.core_effects.some(e =>
+        e.direction === "to" && e.source_id === toId && (soulCount > 0 ? (e.soul > 0) : (e.soul === 0))
+      ));
+      if (soulMatches.length > 0) {
+        soulMatches.sort((a, b) => {
+          const aEff = a.core_effects.find(e => e.direction === "to" && e.source_id === toId);
+          const bEff = b.core_effects.find(e => e.direction === "to" && e.source_id === toId);
+          return Math.abs((aEff.normal || 0) - normalCount) - Math.abs((bEff.normal || 0) - normalCount);
+        });
+        chosen = soulMatches[0];
+      }
+    }
+
+    if (!chosen) {
+      chosen = pool.find(a => !a.forbidden) || pool[0];
+    }
+
+    if (chosen) {
+      clearCoreMoveSelection();
+      doAct(chosen.index);
       return;
     }
   }
+
+  // 2. Fallback: Core swap (R ⇄ Card or Card ⇄ Card)
+  const swapActs = allOptions.filter(a => {
+    if (!a.core_effects || !a.core_effects.length) return false;
+    const hasFrom = a.core_effects.some(e => e.source_id === fromId);
+    const hasTo = a.core_effects.some(e => e.source_id === toId);
+    return hasFrom && hasTo;
+  });
+
+  if (swapActs.length > 0) {
+    const chosen = swapActs.find(a => !a.forbidden) || swapActs[0];
+    if (chosen) {
+      clearCoreMoveSelection();
+      doAct(chosen.index);
+      return;
+    }
+  }
+
+  // 3. Fallback: Level change / core rearrangement
+  const rearrActs = allOptions.filter(a => {
+    if (!a.core_target || !a.core_target.length) return false;
+    return a.core_target.some(t => t.source_id === toId);
+  });
+  if (rearrActs.length > 0) {
+    const chosen = rearrActs.find(a => !a.forbidden) || rearrActs[0];
+    if (chosen) {
+      clearCoreMoveSelection();
+      doAct(chosen.index);
+      return;
+    }
+  }
+
+  // If no action matched
+  $("hand-instruction").innerHTML = `⚠️ この2箇所の間で直接移動できるルール上の手がありません。右側の選択肢一覧を確認してください。<button style="padding:2px 8px; font-size:10px; margin-left:8px; background:#334155; border:1px solid #64748b; color:#fff; border-radius:4px; cursor:pointer;" onclick="clearCoreMoveSelection()">閉じる</button>`;
   clearCoreMoveSelection();
 }
 
@@ -1833,10 +4918,28 @@ function renderHand(container, hand, groups, isPlayer) {
         }
       });
 
-      // 単なるクリック: 手札から使用できる効果 (マジック使用やフラッティ等のフラッシュ召喚効果) を表示
+      cardEl._card = c;
+      if (pendingSummon && pendingSummon.card.card_no === c.card_no) {
+        cardEl.classList.add("pending-origin");
+      }
+      if (selectedCard && selectedCard.type === "hand" && selectedCard.card_no === c.card_no) {
+        cardEl.classList.add("card-selected");
+      }
+
+      // 手札クリック: カード選択 ＆ マジックカード・フラッシュ召喚の場合は即座に仮使用/仮召喚(コスト支払い・配置・発揮フロー)を開始
       cardEl.onclick = (e) => {
         e.stopPropagation();
-        toggleHandPopover(cardEl, c, matchedGroups);
+        closeHandPopover();
+        const isMagicCard = (c.category === "MAGIC") || (c.category === "マジック");
+        const hasFlashSummon = (current?.groups || []).some(g => (g.card_no === c.card_no || (c.name && (g.category || "").includes(c.name))) && (g.category || "").includes("フラッシュ召喚") && !g.all_forbidden);
+        if (selectedCard && selectedCard.type === "hand" && selectedCard.card_no === c.card_no && !pendingSummon) {
+          clearCardSelection();
+        } else {
+          selectCard({ ...c, type: "hand" });
+          if (isMagicCard || hasFlashSummon) {
+            startPendingSummon(c);
+          }
+        }
       };
 
       cardEl.addEventListener("mouseenter", () => updateInspector(c));
@@ -1882,7 +4985,7 @@ function toggleHandPopover(cardEl, card, groups) {
     for (const [detail, opt] of uniqueDetails) {
       const btn = document.createElement("button");
       btn.className = "popover-btn";
-      btn.innerHTML = `<span>${esc(detail)}</span><span style="color:#facc15; font-weight:700;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>`;
+      btn.innerHTML = `<span>${formatActionText(detail)}</span><span style="color:#facc15; font-weight:700;">${((opt.eval + 1)/2*100).toFixed(0)}%</span>`;
       btn.onclick = (e) => {
         e.stopPropagation();
         doAct(opt.index);
@@ -1945,6 +5048,12 @@ function openTrashModal(playerTitle, trashCards) {
 
 function render(data) {
   current = data;
+  window.current = data;
+  window.startPendingSummon = startPendingSummon;
+  window.getPendingSummon = () => pendingSummon;
+  window.setPendingStep = setPendingStep;
+  window.isPendingBothComplete = isPendingBothComplete;
+  window.confirmPendingSummon = confirmPendingSummon;
   if (!data) return;
 
   const p1 = (data.player.player_id === 1) ? data.player : data.opponent;
@@ -1986,19 +5095,107 @@ function render(data) {
   if ($("p1-count-num")) $("p1-count-num").textContent = p1.count ?? 0;
 
   const p1Res = parseCoreString(p1.reserve);
-  $("p1-reserve-count").textContent = p1Res.total;
-  renderCoreGems($("p1-reserve-gems"), p1Res.normal, p1Res.soul, true, (coreType) => {
-    startCoreMove("Reserve", coreType);
+  let dispResNormal = p1Res.normal;
+  let dispResSoul = p1Res.soul;
+
+  if (pendingSummon) {
+    const resDonor = getCardDonorInfo(null, "Reserve", null);
+    dispResSoul = Math.max(0, p1Res.soul - (resDonor.paySoul + resDonor.placeSoul));
+    dispResNormal = Math.max(0, p1Res.normal - (resDonor.payNormal + resDonor.placeNormal));
+  }
+
+  $("p1-reserve-count").textContent = dispResNormal + dispResSoul;
+  renderCoreGems($("p1-reserve-gems"), dispResNormal, dispResSoul, true, (coreType) => {
+    if (pendingSummon) {
+      handlePendingSummonCardDonorClick("Reserve", coreType);
+      return;
+    }
+    selectOrAddCoreMove("Reserve", coreType);
   });
+
   $("p1-reserve-tray").onclick = (e) => {
-    if (selectedCoreMoveSource && selectedCoreMoveSource.sourceId !== "Reserve") {
+    if (pendingSummon) {
       e.stopPropagation();
-      executeDirectCoreMove(selectedCoreMoveSource.sourceId, "Reserve", selectedCoreMoveSource.coreType);
+      handlePendingSummonCardDonorClick("Reserve", "area");
+      return;
+    }
+    if (selectedCoreMoveSource) {
+      e.stopPropagation();
+      if (selectedCoreMoveSource.sourceId !== "Reserve") {
+        executeDirectCoreMove(selectedCoreMoveSource.sourceId, "Reserve", selectedCoreMoveSource.normalCount, selectedCoreMoveSource.soulCount);
+      } else {
+        selectOrAddCoreMove("Reserve", "normal");
+      }
+    } else if (p1Res.total > 0) {
+      e.stopPropagation();
+      selectOrAddCoreMove("Reserve", p1Res.soul > 0 ? "soul" : "normal");
     }
   };
 
   const p1TrashCores = parseCoreString(p1.trash_cores);
-  renderCoreGems($("p1-trash-cores"), p1TrashCores.normal, p1TrashCores.soul);
+  const trashContainer = $("p1-trash-cores");
+  if (trashContainer) {
+    trashContainer.innerHTML = "";
+    // 既存のトラッシュコア (囲いの外側に配置)
+    for (let i = 0; i < p1TrashCores.soul; i++) {
+      const wrap = document.createElement("div");
+      wrap.className = "core-gem-wrapper";
+      wrap.innerHTML = `<div class="core-gem soul" title="トラッシュのソウルコア"></div>`;
+      trashContainer.appendChild(wrap);
+    }
+    for (let i = 0; i < p1TrashCores.normal; i++) {
+      const wrap = document.createElement("div");
+      wrap.className = "core-gem-wrapper";
+      wrap.innerHTML = `<div class="core-gem normal" title="トラッシュのコア"></div>`;
+      trashContainer.appendChild(wrap);
+    }
+
+    // コストとして支払う分のみ囲いをつけて表示 (ユーザー指定: コストとして支払う分のみ囲いをつける)
+    if (pendingSummon && pendingSummon.requiredPayCost > 0) {
+      const isPayActive = (pendingSummon.step === 1);
+      const isPayComplete = (pendingSummon.allocatedPayDonors?.length === pendingSummon.requiredPayCost);
+      const enclosure = document.createElement("div");
+      const statusClass = !isPayComplete ? "is-unfulfilled is-active" : (isPayActive ? "is-completed is-active" : "is-completed");
+      enclosure.className = "trash-pending-pay-enclosure " + statusClass;
+      enclosure.id = "trash-pending-pay-enclosure";
+      enclosure.title = isPayActive
+        ? "【支払コスト専用トレイ: 指定中】フィールドやリザーブをクリックしてコストを仮置きしてください"
+        : "【支払コスト専用トレイ: 完了】クリックすると支払コストの指定に戻ります";
+      enclosure.onclick = (e) => {
+        e.stopPropagation();
+        setPendingStep(1);
+      };
+
+      const allocated = pendingSummon.allocatedPayDonors || [];
+      const reqCost = pendingSummon.requiredPayCost;
+
+      // その中のコアを選択したら元の場所に移動する
+      allocated.forEach((item, idx) => {
+        const wrap = document.createElement("div");
+        wrap.className = "core-gem-wrapper trash-pending-pay-gem-slot pending-trash-gem";
+        const sourceLabel = item.sourceName || item.sourceId;
+        wrap.title = `【仮支払い中: ${sourceLabel}】クリックで元の場所へ戻す`;
+        wrap.innerHTML = `<div class="core-gem ${item.coreType}"></div>`;
+        wrap.onclick = (e) => {
+          e.stopPropagation();
+          returnPendingPaidCore(idx);
+        };
+        enclosure.appendChild(wrap);
+      });
+
+      // 不足分は空スロット表示 (不足分はフィールドから選択することでトラッシュに置かれる)
+      const shortage = Math.max(0, reqCost - allocated.length);
+      for (let i = 0; i < shortage; i++) {
+        const emptySlot = document.createElement("div");
+        emptySlot.className = "core-gem-wrapper trash-pending-pay-gem-slot empty-shortage-slot";
+        emptySlot.title = `【支払コスト不足 (${allocated.length}/${reqCost})】フィールド上のカードをクリックしてコアをトラッシュに仮置きしてください`;
+        enclosure.appendChild(emptySlot);
+      }
+
+      trashContainer.appendChild(enclosure);
+    }
+    $("p1-trash-core-tray")?.classList.remove("has-pending-pay");
+  }
 
   // P1 Field & Hand
   const p1FieldGrid = $("p1-field-grid");
@@ -2006,7 +5203,14 @@ function render(data) {
   for (const c of p1.field) {
     p1FieldGrid.appendChild(renderFieldCard(c, true, data.groups, data.attacking_card_id));
   }
+  // 仮召喚中のカードをフィールドに半透明表示 (マジック使用時はフィールドに置かない)
+  if (pendingSummon && !pendingSummon.isMagic) {
+    p1FieldGrid.appendChild(renderPendingSummonCard(pendingSummon));
+  }
   renderHand($("p1-hand-row"), p1.hand, data.groups, true);
+
+  // 仮召喚HUD (支払いコスト・配置コア調整) の更新
+  renderPendingSummonHUD();
 
   // P2 (Opponent) Info
   $("p2-name").textContent = `プレイヤー2 (${p2.deck_count}枚 / 手札${p2.hand_count}枚)`;
@@ -2043,54 +5247,17 @@ function render(data) {
   for (const c of p2.field) {
     p2FieldGrid.appendChild(renderFieldCard(c, false, data.groups, data.attacking_card_id));
   }
-      p2FieldGrid.appendChild(renderFieldCard(c, false, data.groups, data.attacking_card_id));
-    }
-  }
 
   const p2HandCards = (p2.hand && p2.hand.length) ? p2.hand : Array(p2.hand_count).fill({});
   renderHand($("p2-hand-row"), p2HandCards, null, false);
 
-  // Battle Arena Clash
-  const allFieldCards = [...p1.field, ...p2.field];
-  const attacker = allFieldCards.find(c => c.is_attacking || c.id === data.attacking_card_id);
-  const blocker = allFieldCards.find(c => c.id === data.blocking_card_id);
-
-  const clashZone = $("clash-zone");
-  const attackerUnit = $("clash-attacker");
-  const blockerUnit = $("clash-blocker");
-  const clashStatus = $("clash-status-text");
-
-  if (attacker) {
-    clashZone.classList.add("active");
-    attackerUnit.innerHTML = `
-      <div class="mat-card" style="background-image:url('${attacker.image_url}'); width:60px; height:84px;"></div>
-      <div>
-        <div style="font-weight:700; color:#ef4444;">⚔ ${esc(attacker.name)}</div>
-        <div style="font-size:11px; color:#facc15;">BP ${attacker.bp || '-'}</div>
-      </div>
-    `;
-    if (blocker) {
-      blockerUnit.innerHTML = `
-        <div>
-          <div style="font-weight:700; color:#38bdf8;">🛡️ ${esc(blocker.name)}</div>
-          <div style="font-size:11px; color:#facc15;">BP ${blocker.bp || '-'}</div>
-        </div>
-        <div class="mat-card" style="background-image:url('${blocker.image_url}'); width:60px; height:84px;"></div>
-      `;
-      clashStatus.textContent = "激突中！";
-    } else {
-      blockerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">🛡️ (ブロック待ち/スルー)</span>`;
-      clashStatus.textContent = "アタック進行中";
-    }
-  } else {
-    clashZone.classList.remove("active");
-    attackerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">⚔ アタッカーなし</span>`;
-    blockerUnit.innerHTML = `<span style="font-size: 12px; color: #94a3b8;">🛡️ ブロッカーなし</span>`;
-    clashStatus.textContent = "平穏";
-  }
-
   // Setup Drag & Drop Zone for Field
   setupFieldDropZone();
+
+  // Restore Core Move Selection UI if active
+  if (selectedCoreMoveSource) {
+    updateCoreMoveUI();
+  }
 
   // Render Action List in Sidebar with current filter
   renderActionList(data, currentActionFilter);
@@ -2099,16 +5266,16 @@ function render(data) {
   $("btn-undo").disabled = !data.can_undo;
   $("btn-redo").disabled = !data.can_redo;
 
-  // Append messages to log
+  // Append messages to log (新しいのが上)
   if (data.messages && data.messages.length) {
     const consoleEl = $("log-console");
     for (const msg of data.messages) {
       const line = document.createElement("div");
       line.className = "log-line";
-      line.textContent = msg;
-      consoleEl.appendChild(line);
+      line.innerHTML = formatActionText(msg);
+      consoleEl.prepend(line);
     }
-    consoleEl.scrollTop = consoleEl.scrollHeight;
+    consoleEl.scrollTop = 0;
   }
 
   // Animations based on state diff
@@ -2151,34 +5318,152 @@ function render(data) {
   // Render Opened Cards Banner if any
   renderOpenedCards(data.opened_cards);
 
+  // Handle Winner Banner
+  const winnerBanner = $("winner-banner");
+  if (winnerBanner) {
+    if (data.winner != null) {
+      winnerBanner.classList.remove("hidden");
+      const titleEl = $("winner-title");
+      if (titleEl) titleEl.textContent = `🏆 ゲーム終了: プレイヤー${data.winner} の勝利！`;
+      if ($("btn-step-end")) $("btn-step-end").disabled = true;
+    } else {
+      winnerBanner.classList.add("hidden");
+    }
+  }
+
   lastState = data;
 
   // Handle Autoplay if enabled
-  checkAutoplay(data);
+  maybeAutoPlay(data);
 }
 
-async function checkAutoplay(data) {
-  if (!data || data.winner != null) return;
-  const isP1 = data.choosing_player === 1;
-  const isP2 = data.choosing_player === 2;
-  const shouldAuto = (isP1 && $("auto-p1").checked) || (isP2 && $("auto-p2").checked);
+/**
+ * 評価値greedy方策 (Playmat 1準拠 + ヒューリスティックフォールバック):
+ * 1. GRU価値ネットワーク評価値が利用可能で差異がある場合: 最良評価値の手を厳密に選ぶ。
+ * 2. 重みファイル未読込等で全選択肢のevalが同一(0.0)の場合:
+ *    パス連打による無為な即時デッキアウトを防ぐため、召喚・配置・アタック・ブロックを積極的に行う。
+ */
+function pickBestActionIndex(data) {
+  let bestIndex = null;
+  let bestEval = -Infinity;
+  let hasDivergentEval = false;
+  let firstEval = null;
 
-  if (shouldAuto && data.groups && data.groups.length) {
-    let bestOption = null;
-    let maxEval = -Infinity;
-    for (const g of data.groups) {
-      for (const o of g.options) {
-        if (!o.forbidden && o.eval != null && o.eval > maxEval) {
-          maxEval = o.eval;
-          bestOption = o;
-        }
+  if (!data.n_forbidden && data.n_eval != null && data.n_index != null) {
+    bestIndex = data.n_index;
+    bestEval = data.n_eval;
+    firstEval = data.n_eval;
+  }
+  for (const g of (data.groups || [])) {
+    for (const o of g.options) {
+      if (o.forbidden || o.eval == null) continue;
+      if (firstEval == null) {
+        firstEval = o.eval;
+      } else if (Math.abs(o.eval - firstEval) > 0.0001) {
+        hasDivergentEval = true;
+      }
+      // 厳密に上回っている場合のみ更新（同値ならステップ終了が残る）
+      if (o.eval > bestEval) {
+        bestEval = o.eval;
+        bestIndex = o.index;
       }
     }
-    if (bestOption) {
-      setTimeout(() => doAct(bestOption.index), 350);
-    } else if (data.n_index != null) {
-      setTimeout(() => doAct(data.n_index), 350);
+  }
+
+  // 重みファイル未ロード等で全選択肢の評価値が同一(0.0)の場合のフォールバック・ヒューリスティック進行
+  if (!hasDivergentEval) {
+    const validGroups = (data.groups || []).filter(g => !g.all_forbidden);
+    const phaseName = data.phase || "";
+
+    // 1. メインステップ: 召喚または配置があれば優先実行 (スピリット/ネクサスを場に出す)
+    if (phaseName.includes("メインステップ")) {
+      const summonGroup = validGroups.find(g => (g.category || "").includes("召喚") || (g.category || "").includes("配置"));
+      if (summonGroup) {
+        const opt = summonGroup.options.find(o => !o.forbidden);
+        if (opt) return opt.index;
+      }
     }
+
+    // 2. アタック宣言ステップ: アタック可能スピリットがあればアタック
+    if (phaseName.includes("アタック宣言") || phaseName.includes("アタックステップ")) {
+      const attackGroup = validGroups.find(g => (g.category || "").includes("アタック"));
+      if (attackGroup) {
+        const opt = attackGroup.options.find(o => !o.forbidden);
+        if (opt) return opt.index;
+      }
+    }
+
+    // 3. ブロック宣言ステップ: ブロック選択肢があればブロック(またはライフ受)
+    if (phaseName.includes("ブロック")) {
+      const spiritBlock = validGroups.find(g => (g.category || "").includes("ブロック") && !(g.category || "").includes("ブロックしない"));
+      if (spiritBlock) {
+        const opt = spiritBlock.options.find(o => !o.forbidden);
+        if (opt) return opt.index;
+      }
+      const passBlock = validGroups.find(g => (g.category || "").includes("ブロックしない"));
+      if (passBlock) {
+        const opt = passBlock.options.find(o => !o.forbidden);
+        if (opt) return opt.index;
+      }
+    }
+
+    // 4. フラッシュタイミング: フラッシュパス優先
+    if (phaseName.includes("フラッシュ")) {
+      const passFlash = validGroups.find(g => (g.category || "").includes("フラッシュパス"));
+      if (passFlash) {
+        const opt = passFlash.options.find(o => !o.forbidden);
+        if (opt) return opt.index;
+      }
+    }
+
+    // 5. ステップ終了(n_index)が利用可能ならステップ終了
+    if (!data.n_forbidden && data.n_index != null) {
+      return data.n_index;
+    }
+
+    // 6. その他合法手があれば最初の合法手
+    for (const g of validGroups) {
+      const opt = g.options.find(o => !o.forbidden);
+      if (opt) return opt.index;
+    }
+  }
+
+  return bestIndex;
+}
+
+let autoPlayTimer = null;
+let autoPlayPaused = false;
+
+function maybeAutoPlay(data) {
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
+  }
+  if (autoPlayPaused) return; // undo等で一時停止中は自動進行しない
+  if (!data || data.winner != null) return;
+  const chooser = data.choosing_player;
+  const cb = $(chooser === 1 ? "auto-p1" : "auto-p2");
+  if (!cb || !cb.checked) return;
+
+  if (data.can_act === false) {
+    // 相手視点で見ている場合はそのプレイヤー視点で取得して打つ
+    autoPlayTimer = setTimeout(() => autoActAs(chooser), 350);
+    return;
+  }
+  const idx = pickBestActionIndex(data);
+  if (idx == null) return;
+  autoPlayTimer = setTimeout(() => doAct(idx), 350);
+}
+
+async function autoActAs(viewer) {
+  try {
+    const st = await (await fetch('/api/state?viewer=' + viewer + '&room=' + TAB_ROOM + '&session=' + TAB_SESSION)).json();
+    if (st.winner != null || st.choosing_player !== viewer) return;
+    const idx = pickBestActionIndex(st);
+    if (idx == null) return;
+    await api('/api/act', { index: idx, viewer });
+  } finally {
+    if (current) maybeAutoPlay(current);
   }
 }
 
@@ -2186,16 +5471,21 @@ async function checkAutoplay(data) {
 $("btn-new").addEventListener("click", async () => {
   const d1 = $("deck1").value.trim() || "deck-kogyo.yaml";
   const d2 = $("deck2").value.trim() || "deck-kogyo.yaml";
-  const data = await api("/api/new", { deck1: d1, deck2: d2 });
-  if (data) render(data);
+  await startNewGameWithAnimation(() => api("/api/new", { deck1: d1, deck2: d2 }));
 });
 
 $("btn-restart").addEventListener("click", async () => {
-  const data = await api("/api/restart");
-  if (data) render(data);
+  await startNewGameWithAnimation(() => api("/api/restart"));
 });
 
 $("btn-undo").addEventListener("click", async () => {
+  autoPlayPaused = true;
+  if ($("auto-p1")) $("auto-p1").checked = false;
+  if ($("auto-p2")) $("auto-p2").checked = false;
+  if (autoPlayTimer) {
+    clearTimeout(autoPlayTimer);
+    autoPlayTimer = null;
+  }
   const data = await api("/api/undo");
   if (data) render(data);
 });
@@ -2204,6 +5494,16 @@ $("btn-redo").addEventListener("click", async () => {
   const data = await api("/api/redo");
   if (data) render(data);
 });
+
+for (const id of ["auto-p1", "auto-p2"]) {
+  const el = $(id);
+  if (el) {
+    el.addEventListener("change", () => {
+      autoPlayPaused = false;
+      if (current) maybeAutoPlay(current);
+    });
+  }
+}
 
 $("btn-settings").addEventListener("click", () => $("settings-dialog").showModal());
 
@@ -2299,6 +5599,51 @@ async function init() {
   const state = await api("/api/state");
   if (state) render(state);
 }
+
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+  if (e.code === "Escape") {
+    if (pendingSummon) {
+      e.preventDefault();
+      cancelPendingSummon();
+      return;
+    }
+  }
+  if (e.code === "Space") {
+    if (pendingSummon) {
+      e.preventDefault();
+      if (isPendingBothComplete()) {
+        confirmPendingSummon();
+      } else if (pendingSummon.step === 1) {
+        setPendingStep(2);
+      }
+      return;
+    }
+    if (current && current.n_index != null) {
+      e.preventDefault();
+      doAct(current.n_index);
+    }
+  } else if ((e.ctrlKey || e.metaKey) && e.key === "z") {
+    e.preventDefault();
+    $("btn-undo").click();
+  } else if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.shiftKey && e.key === "Z"))) {
+    e.preventDefault();
+    $("btn-redo").click();
+  }
+});
+
+// 何もないところをクリックしたら選択は解除してすべての選択肢をlist
+document.addEventListener("click", (e) => {
+  if (!e.target || !e.target.isConnected) return;
+  if (e.target.closest(".mat-card, .mat-card-hand, .action-item-btn, .action-filter-bar, dialog, .btn-history, button, label, input, select, .core-gem, .core-gem-wrapper, .core-tray, .card-cores-overlay, .pending-summon-hud")) {
+    return;
+  }
+  clearCardSelection();
+  clearCoreMoveSelection();
+  if (pendingSummon) {
+    cancelPendingSummon();
+  }
+});
 
 init();
 </script>

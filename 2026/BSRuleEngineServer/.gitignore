@@ -5,4 +5,7 @@
 /build-release/
 /build-tools/
 /weights/
-/temp/deck-kogyo-deck-kogyo.261103-122108.default.json
+/temp/
+/test-results/
+/temp/
+/tests/

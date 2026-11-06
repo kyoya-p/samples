@@ -243,7 +243,7 @@ fun positionHash(state: GameState): Long {
             for (j in 0 until cn.length) h = h * 31L + cn[j].code
             h = h * 31L + fc.cores.normal
             h = h * 31L + fc.cores.soul
-            h = h * 31L + (if (fc.isExhausted) 1 else 0)
+            h = h * 31L + (if (fc.isHeavyExhausted) 2 else if (fc.isExhausted) 1 else 0)
             h
         }
         fieldHashes.sort()
@@ -254,6 +254,10 @@ fun positionHash(state: GameState): Long {
     }
     mixInt(state.flashPriorityPlayerId ?: -1)
     mixInt(state.flashPassCount)
+    if (state.pendingEffect != null) {
+        mixStr(state.pendingEffect!!.cardInstanceId)
+        mixStr(state.pendingEffect!!.effectType)
+    }
     return hash
 }
 
@@ -281,7 +285,8 @@ fun GameState.snapshot(): GameState = GameState(
     usedOncePerTurnEffects = usedOncePerTurnEffects.toMutableSet(),
     openedCards = openedCards.toMutableList(),
     flashPriorityPlayerId = flashPriorityPlayerId,
-    flashPassCount = flashPassCount
+    flashPassCount = flashPassCount,
+    pendingEffect = pendingEffect
 )
 
 private fun PlayerState.snapshot(): PlayerState = PlayerState(
@@ -334,7 +339,7 @@ private fun distributeNormalCores(
  * 1枚のカードについて、コアの供給元の組み合わせごとにプレイの選択肢を作る。
  * スピリット/ネクサスの召喚・配置 (place >= 0) とマジックの使用 (place = 0) を共通で扱う。
  */
-internal fun playOptions(
+fun playOptions(
     card: CardData,
     handIdx: Int,
     category: String,
@@ -532,6 +537,9 @@ fun enumerateStepStartEffects(
 }
 
 fun enumerateAllActions(state: GameState): List<GameAction> {
+    if (state.pendingEffect != null) {
+        return markRepetitions(state, enumerateRawActions(state))
+    }
     if (state.winner == null && (state.step == Step.MAIN || state.step == Step.MAIN_2)) {
         val stepStartActs = enumerateStepStartEffects(state, state.choosingPlayer, state.step) { 1 }
         if (stepStartActs.isNotEmpty()) {
@@ -640,6 +648,19 @@ internal fun enumerateRawActions(state: GameState): List<GameAction> {
 
     val p = state.choosingPlayer
     var idx = 1
+
+    if (state.pendingEffect != null) {
+        val pending = state.pendingEffect!!
+        val card = p.field.find { it.instanceId == pending.cardInstanceId }
+        val script = card?.let { CardScriptRegistry.get(it.cardNo) }
+        if (card != null && script != null) {
+            val pendingActs = script.enumeratePendingEffectActions(state, card, p, pending) { idx++ }
+            if (pendingActs.isNotEmpty()) {
+                return pendingActs
+            }
+        }
+        state.pendingEffect = null
+    }
 
     if (state.step == Step.MAIN || state.step == Step.MAIN_2) {
         val stepStartActs = enumerateStepStartEffects(state, p, state.step) { idx++ }
@@ -862,19 +883,25 @@ fun beginTurn(state: GameState, messages: MutableList<String>) {
     messages.add("🃏 ドローステップ: 「${drawn.name}」をドロー (残り${p.deck.size}枚)")
 
     // リフレッシュステップ: トラッシュのコアをすべてリザーブへ戻し、自分のカードをすべて回復 (総合ルール 7-5-2)
+    refreshStep(state, messages)
+
+    state.step = Step.MAIN
+}
+
+/** リフレッシュステップ処理 (単体呼び出し・テスト可能) */
+fun refreshStep(state: GameState, messages: MutableList<String>) {
+    val p = state.activePlayer
     state.step = Step.REFRESH
     if (p.trash.total > 0) {
         messages.add("♻️ リフレッシュステップ: トラッシュのコア${p.trash.total}個をリザーブへ")
         p.reserve.add(p.trash.normal, p.trash.soul)
         p.trash = Cores(0, 0)
     }
-    val recovered = p.field.count { it.isExhausted }
+    val recovered = p.field.count { it.isExhausted || it.isHeavyExhausted }
     if (recovered > 0) {
-        p.field.forEach { it.isExhausted = false }
+        p.field.forEach { it.refresh() }
         messages.add("♻️ リフレッシュステップ: ${recovered}体を回復")
     }
-
-    state.step = Step.MAIN
 }
 
 /**
@@ -903,6 +930,12 @@ fun resolveBattle(state: GameState, messages: MutableList<String>) {
         messages.add("ℹ️ ブロッカーがフィールドを離れたためBP比べをスキップ")
     } else if (attacker == null && blocker != null) {
         messages.add("ℹ️ アタッカーがフィールドを離れたためBP比べをスキップ")
+    }
+
+    // バトル終了時効果の解決 (総合ルール 8-1-7: バトル終了時)
+    val survivingAttacker = attackerOwner.field.find { it.instanceId == state.attackingCardId }
+    if (survivingAttacker != null) {
+        CardScriptRegistry.get(survivingAttacker.cardNo)?.onBattleEnd(state, survivingAttacker, attackerOwner, messages)
     }
 
     state.attackingCardId = null
@@ -1181,9 +1214,32 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
             CardScriptRegistry.get(card.cardNo)?.onFieldAction(state, card, p, action, messages)
         }
 
+        "FLASH_EFFECT" -> {
+            val card = p.field.find { it.instanceId == action.targetInstanceId }
+            if (card != null) {
+                CardScriptRegistry.get(card.cardNo)?.onFlash(state, p, action, messages)
+            }
+            if (state.step == Step.FLASH_TIMING) {
+                state.flashPassCount = 0
+                val nextPlayerId = if (p.playerId == 1) 2 else 1
+                state.flashPriorityPlayerId = nextPlayerId
+                messages.add("⚡ フラッシュ優先権がプレイヤー${nextPlayerId}へ移動")
+            }
+        }
+
         "STEP_START_EFFECT" -> {
             val card = p.field.find { it.instanceId == action.targetInstanceId } ?: return
             CardScriptRegistry.get(card.cardNo)?.onStepStartAction(state, card, p, action, messages)
+        }
+
+        "RESOLVE_PENDING_EFFECT" -> {
+            val pending = state.pendingEffect
+            state.pendingEffect = null
+            if (pending != null) {
+                val card = p.field.find { it.instanceId == pending.cardInstanceId } ?: return
+                val script = CardScriptRegistry.get(card.cardNo)
+                script?.onResolvePendingEffect(state, card, p, action, messages)
+            }
         }
 
         "BLOCK" -> {
@@ -1218,6 +1274,13 @@ fun applyAction(state: GameState, action: GameAction, messages: MutableList<Stri
                 state.winner = attackerOwner.playerId
                 messages.add("🏁 プレイヤー${p.playerId} のライフが0になりました")
             }
+
+            // バトル終了時効果の解決 (総合ルール 8-1-7: バトル終了時)
+            val survivingAttacker = attackerOwner.field.find { it.instanceId == state.attackingCardId }
+            if (survivingAttacker != null) {
+                CardScriptRegistry.get(survivingAttacker.cardNo)?.onBattleEnd(state, survivingAttacker, attackerOwner, messages)
+            }
+
             state.attackingCardId = null
             state.mustBlockInstanceId = null
             state.flashPriorityPlayerId = null
