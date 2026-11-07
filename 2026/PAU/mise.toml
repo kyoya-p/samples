@@ -1,29 +1,31 @@
 [tools]
 java = "21"
 coreutils = "latest"
+7zip = "26.05"
 
 [vars]
-APP_VERSION = "1.0.12"
-MSI_FILE = "PAU-{{vars.APP_VERSION}}.msi"
-
-[env]
-_.path = ["{{config_root}}/tools/wix311"]
+APP_VERSION = "1.0.13"
 
 [tasks]
-app = '.\kotlin.bat run'
-test = '.\kotlin.bat test'
-# executable-jar の BOOT-INF/lib は同名 JAR が衝突し Compose runtime が欠落するため、
-# 依存 JAR を展開し androidx 版を別名で追加して jpackage に渡す
-makeMsi = [
+app = '.\kotlin run'
+test = '.\kotlin test'
+layoutExecutable = { sources = ['composeApp/src/**/*', 'composeApp/module.yaml', 'project.yaml', 'packaging/PAU.cmd'], outputs = ['build/layout/PAU.cmd'], run = [
   '.\kotlin.bat package -f executable-jar',
-  'coreutils rm -rf build/jp-in build/jp-x build/msi',
-  'coreutils mkdir -p build/jp-in build/jp-x',
-  '%SystemRoot%\System32\tar.exe -xf build/tasks/_composeApp_executableJarJvm/composeApp-jvm-executable.jar -C build/jp-x',
-  'coreutils cp build/jp-x/BOOT-INF/lib/*.jar build/jp-in/',
-  'coreutils cp build/tasks/_composeApp_jarJvm/composeApp-jvm.jar build/jp-in/app.jar',
-  'coreutils cp "%LOCALAPPDATA%/JetBrains/Kotlin/.m2.cache/androidx/compose/runtime/runtime-desktop/1.9.0/runtime-desktop-1.9.0.jar" build/jp-in/androidx-runtime-desktop-1.9.0.jar',
-  'coreutils rm -rf build/jp-x',
-  'jpackage --type msi --name PAU --app-version {{vars.APP_VERSION}} --input build\jp-in --main-jar app.jar --main-class MainKt --add-modules ALL-MODULE-PATH --dest build\msi --win-per-user-install --win-menu --win-shortcut --win-upgrade-uuid b7c7a509-b6ea-0554-90a5-217cf641e5cd',
-]
-installMsi = 'msiexec /i build\msi\{{vars.MSI_FILE}}'
-uninstallMsi = 'msiexec /i build\msi\{{vars.MSI_FILE}} REMOVE=ALL /qb'
+  'coreutils rm -rf build/layout build/layout-x',
+  'coreutils mkdir -p build/layout/app build/layout-x',
+  '%SystemRoot%\System32\tar.exe -xf build/tasks/_composeApp_executableJarJvm/composeApp-jvm-executable.jar -C build/layout-x',
+  'coreutils cp build/layout-x/BOOT-INF/lib/*.jar build/layout/app/',
+  'coreutils cp build/tasks/_composeApp_jarJvm/composeApp-jvm.jar build/layout/app/app.jar',
+  'coreutils cp "%LOCALAPPDATA%/JetBrains/Kotlin/.m2.cache/androidx/compose/runtime/runtime-desktop/1.9.0/runtime-desktop-1.9.0.jar" build/layout/app/androidx-runtime-desktop-1.9.0.jar',
+  'coreutils rm -rf build/layout-x',
+  'jlink --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --compress zip-6 --output build\layout\runtime',
+  'coreutils cp packaging/PAU.cmd build/layout/PAU.cmd',
+] }
+executable = { depends = ['layoutExecutable'], run = 'build\layout\PAU.cmd' }
+fetchSfx = { outputs = ['build/sfx/7zSD.sfx'], run = 'pwsh -NoProfile -File packaging\PatchSfx.ps1 -Out build\sfx\7zSD.sfx' }
+makeSfxExe = { depends = ['layoutExecutable', 'fetchSfx'], run = [
+  'coreutils rm -f build/sfx/PAU.7z build/PAU-{{vars.APP_VERSION}}-sfx.exe',
+  'cmd /c "cd build\layout && 7za a -t7z -mx=5 ..\sfx\PAU.7z app runtime"',
+  'cmd /c copy /b build\sfx\7zSD.sfx + packaging\sfx.conf + build\sfx\PAU.7z build\PAU-{{vars.APP_VERSION}}-sfx.exe',
+] }
+sfxExe = { depends = ['makeSfxExe'], run = 'start "" build\PAU-{{vars.APP_VERSION}}-sfx.exe' }
