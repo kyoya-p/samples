@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Nano Translate 設定</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header>
+    <h1>Nano Translate 設定</h1>
+  </header>
+
+  <section>
+    <h2>翻訳先言語</h2>
+    <p class="note">ポップアップ・右クリック・ショートカット・ページ内翻訳の翻訳先。既定はブラウザの言語設定 (UI 言語 → 受け入れ言語の順で、対応する最初の言語。どれも非対応なら English)。ポップアップで翻訳先を変えると、ここの設定も変わる。</p>
+    <div class="tools">
+      <label>翻訳先 <select id="target"></select></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>ページ翻訳</h2>
+    <div class="tools">
+      <label><input type="checkbox" id="skip-code"> ソースコードは翻訳しない</label>
+      <label><input type="checkbox" id="mark-untranslated"> 未翻訳のテキストを薄くハイライト</label>
+      <label><input type="checkbox" id="mark-code"> コードと判定した部分を薄くハイライト</label>
+      <label><input type="checkbox" id="debug-code"> デバッグ: 翻訳ブロックの詳細をホバー表示</label>
+    </div>
+    <div class="tools">
+      <label>1 回に AI で翻訳する最大文字数 <input type="number" id="max-unit" min="50" step="50"></label>
+    </div>
+    <p class="note">ハイライト: 翻訳モード中、まだ訳していない・訳せなかったテキストに薄い黄色、コードと判定して翻訳しない部分に薄い青の背景 (ページの DOM は変えない)。原文表示に戻すと消える。既定は 未翻訳 ON・コード OFF。</p>
+    <p class="note">デバッグ: 翻訳モード中、テキストにマウスを合わせると、その翻訳ブロックの詳細をダイアログ表示。翻訳単位 (ブロック / テキストノード)、状態 (翻訳済み・辞書から / AI の所要時間・処理待ち・失敗・テキストノード単位への切替とその理由)、AI への入力 (目印付きテキスト) と出力、目印と要素の対応、コード判定の根拠とパラメータ (その場で編集・再判定)。あわせて、AI で翻訳中の部分を薄い緑でハイライトし、入力と生成中の出力を右下のパネルにリアルタイム表示 (ストリーミング)。既定は OFF。</p>
+    <p class="note">複数の翻訳単位 (ブロック・テキストノード) を JSON 文字列配列にまとめ、原文の合計がこの文字数までなら 1 回で AI 翻訳する (表示中の部分が先、続けて画面外の近い部分)。応答の個数が合わない・目印が崩れた単位は 1 つずつ翻訳し直す。この文字数を超えるブロックはテキストノード単位に分割。既定 2000。小さくすると安定、大きくすると AI の呼び出し回数が減る。次回のページ翻訳から反映。</p>
+    <p class="note">ソースコードを翻訳対象から外す。判定は (1) <code>pre</code> / <code>code</code> / <code>kbd</code> / <code>samp</code> と主要なシンタックスハイライタ (highlight.js・Prism・CodeMirror・Monaco 等) のタグ・クラス、(2) 文脈からの推定 (等幅フォント・記号の密度・予約語・行末の <code>;</code> <code>{}</code>・インデント。句点が複数ある文章はコードとみなさない)。推定は完全ではない。既定は ON。次回のページ翻訳から反映。</p>
+  </section>
+
+  <section>
+    <h2>コード判定のパラメータ</h2>
+    <p class="note"><code>pre</code> / <code>code</code> タグや、シンタックスハイライタのクラスが付いた要素は、常にコードと判定する。それ以外の要素は、テキスト (先頭 2000 文字) を下の条件で採点し、<b>満たした条件の点の合計がしきい値以上ならコード</b>と判定して、翻訳しない。</p>
+    <ul class="note">
+      <li>点を上げる / しきい値を下げる → コードと判定しやすくなる (翻訳しない部分が増える)</li>
+      <li>点を 0 にする → その条件を使わない。点を負にする → 満たすと減点</li>
+      <li>空欄・不正値は既定値。変更は次回のページ翻訳から反映</li>
+    </ul>
+    <div class="tools">
+      <label>しきい値 <input type="number" step="1" data-key="threshold"></label>
+      <span class="muted">合計点がこれ以上でコード (既定 3)</span>
+    </div>
+    <table class="params-table">
+      <thead>
+        <tr><th>条件</th><th>判定の内容</th><th>例</th><th>基準値</th><th>点</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>等幅フォント</td><td>要素の font-family に、下の等幅フォント名のどれかを含む</td><td><code>font-family: Consolas</code></td><td></td><td><input type="number" step="1" data-key="monoScore"></td></tr>
+        <tr><td>等幅 + 3 行以上</td><td>等幅で、空行を除いて 3 行以上</td><td>等幅の 3 行のテキスト</td><td></td><td><input type="number" step="1" data-key="monoLinesScore"></td></tr>
+        <tr><td>等幅 + 記号</td><td>等幅で、記号の割合が基準値を超える (キーワードは「キーワードが多い」でのみ数える)</td><td>等幅の <code>x = y + 1</code> (記号 2 / 5 文字 = 0.4)</td><td><input type="number" step="0.01" data-key="monoSymbolRatio"></td><td><input type="number" step="1" data-key="monoSyntaxScore"></td></tr>
+        <tr><td>記号が多い</td><td>空白を除いた文字のうち、記号 <code>{}()[];=&lt;&gt;+*/\|&amp;$#_^~</code> の割合が基準値を超える</td><td><code>if(a){b();}</code> → 記号 7 / 11 文字 = 0.64</td><td><input type="number" step="0.01" data-key="symbolRatio"></td><td><input type="number" step="1" data-key="symbolScore"></td></tr>
+        <tr><td>キーワードが多い</td><td>キーワード (下の一覧と <code>=&gt;</code> <code>-&gt;</code> <code>::</code> <code>&amp;&amp;</code> <code>||</code> <code>++</code> <code>#include</code> HTML タグ) の出現数が基準値以上</td><td><code>const x = await f()</code> → const, await の 2 個</td><td><input type="number" step="1" data-key="keywordCount"></td><td><input type="number" step="1" data-key="keywordScore"></td></tr>
+        <tr><td>行末が記号</td><td>2 行以上で、行末が <code>; { } ) ,</code> の行の割合が基準値を超える</td><td>2 行とも <code>;</code> で終わる → 2 / 2 = 1.0</td><td><input type="number" step="0.01" data-key="lineEndRatio"></td><td><input type="number" step="1" data-key="lineEndScore"></td></tr>
+        <tr><td>字下げ</td><td>3 行以上で、先頭が空白 2 個以上またはタブの行の割合が基準値を超える</td><td>4 行中 3 行が字下げ → 0.75</td><td><input type="number" step="0.01" data-key="indentRatio"></td><td><input type="number" step="1" data-key="indentScore"></td></tr>
+        <tr><td>文章らしい</td><td>文末記号 (<code>. ! ? 。！？</code>) の直後に空白がある箇所が、基準値の個数以上 (負の点で減点)</td><td><code>It works. See docs. Done</code> → 2 個 (日本語の「。」は直後に空白がないと数えない)</td><td><input type="number" step="1" data-key="proseCount"></td><td><input type="number" step="1" data-key="proseScore"></td></tr>
+      </tbody>
+    </table>
+    <label class="wide">等幅フォント名 (カンマ区切り。font-family に含まれれば等幅。大文字・小文字を区別しない)
+      <textarea rows="2" data-key="fonts"></textarea></label>
+    <label class="wide">キーワード (カンマ区切り。単語単位で、大文字・小文字を区別する)
+      <textarea rows="3" data-key="keywords"></textarea></label>
+    <div class="tools">
+      <button id="code-params-reset" type="button">すべて既定値に戻す</button>
+    </div>
+
+    <h3>試算</h3>
+    <p class="note">テキストを入れると、今のパラメータで採点する。例のボタンで入力を差し替え。</p>
+    <div class="tools">
+      <span class="muted">例:</span>
+      <button type="button" class="ex" data-mono="1" data-text="const x = 1;&#10;return x;">等幅のコード</button>
+      <button type="button" class="ex" data-mono="" data-text="x = a + b;&#10;y = c * d;">本文フォントの代入文</button>
+      <button type="button" class="ex" data-mono="" data-text="npm install foo&#10;cd app &amp;&amp; npm start">本文フォントのコマンド</button>
+      <button type="button" class="ex" data-mono="" data-text="Kotlin 2.5 adds functions that return true or false. They are experimental. See the docs.">英語の文章</button>
+      <button type="button" class="ex" data-mono="1" data-text="Note: this value is true.">等幅の短い文</button>
+    </div>
+    <textarea id="try-text" rows="4" class="try"></textarea>
+    <div class="tools"><label><input type="checkbox" id="try-mono"> 等幅フォントの要素として採点</label></div>
+    <div id="try-result" class="try-result"></div>
+  </section>
+
+  <section>
+    <h2>辞書 (翻訳キャッシュ)</h2>
+    <p class="note">翻訳済みの原文と訳文を端末内 (<code>chrome.storage.local</code>) に保存。同じ原文・翻訳先なら再翻訳せずに辞書の訳文を使う。訳文を編集すると以後の翻訳に反映される。</p>
+
+    <div class="tools">
+      <label>保存上限 (件) <input type="number" id="cache-max" min="10" step="100"></label>
+      <label>保存する原文の最大文字数 <input type="number" id="cache-max-len" min="1" step="100"></label>
+    </div>
+    <p class="note">保存上限を超えると参照日時の古い順に削除 (50 件保存するごとに確認)。最大文字数を超える原文は辞書に保存しない。空欄・不正値は既定値。</p>
+
+    <div class="tools">
+      <input id="filter" type="search" placeholder="原文・訳文を絞り込み">
+      <select id="lang">
+        <option value="">翻訳先: すべて</option>
+      </select>
+      <span id="count" class="muted"></span>
+      <span id="msg" class="muted" aria-live="polite"></span>
+      <button id="clear-all" type="button" class="danger">全件クリア</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>翻訳先</th><th>原文</th><th>訳文 (編集可)</th><th>参照日時</th><th></th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p id="empty" class="muted" hidden>該当する項目なし</p>
+    <p id="more" class="muted" hidden></p>
+  </section>
+
+  <script src="prompt.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

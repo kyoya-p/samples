@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Nano Translate</title>
+  <link rel="stylesheet" href="translate.css">
+</head>
+<body>
+  <header>
+    <h1>Nano Translate</h1>
+    <span class="head-right">
+      <span id="status" class="status">準備中…</span>
+      <button id="settings" type="button" class="icon" title="設定 (辞書の編集・クリア)" aria-label="設定">⚙️</button>
+    </span>
+  </header>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="pane">
+    <div class="bar">
+      <span id="detected" class="detected">言語を自動検出</span>
+      <button id="clear" type="button" title="クリア">✕</button>
+    </div>
+    <textarea id="source" rows="5" placeholder="翻訳するテキスト (Ctrl+Enter で翻訳)" autofocus></textarea>
+  </section>
+
+  <div class="controls">
+    <label>翻訳先
+      <select id="target">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+      </select>
+    </label>
+    <button id="translate" type="button" class="primary">翻訳</button>
+    <button id="stop" type="button" hidden>停止</button>
+  </div>
+
+  <section class="pane">
+    <div class="bar">
+      <span>翻訳結果</span>
+      <button id="copy" type="button" title="コピー">コピー</button>
+    </div>
+    <div id="result" class="result" aria-live="polite"></div>
+  </section>
+
+  <script src="prompt.js"></script>
+  <script src="translate.js" type="module"></script>
+</body>
+</html>
