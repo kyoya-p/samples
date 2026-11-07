@@ -352,6 +352,27 @@
     return true;
   }
 
+  const unitEntry = new WeakMap(); // 翻訳単位 → 表示切替 { show, hide } (デバッグの辞書編集で差し替え)
+
+  // 翻訳単位の訳文を out に差し替える (辞書編集用)。適用済みなら原文に戻してから適用。目印が合わなければ元に戻して false
+  function reapply(unit, out) {
+    const old = unitEntry.get(unit);
+    if (old) { old.hide(); entries.splice(entries.indexOf(old), 1); unitEntry.delete(unit); }
+    // テキストノード単位で翻訳済みだったブロックは、各ノードも原文に戻す
+    for (const tn of unitLog.get(unit)?.nodes ?? []) {
+      const e = unitEntry.get(tn);
+      if (e) { e.hide(); entries.splice(entries.indexOf(e), 1); unitEntry.delete(tn); }
+      processed.delete(tn);
+      failed.delete(tn);
+    }
+    failed.delete(unit);
+    if (unit.nodeType === 3) { applyNode(unit, unit.nodeValue, out); flush(); return true; }
+    const s = serialize(unit);
+    if (applyBlock(unit, s.map, s.places, out)) return true;
+    if (old) { old.show(); entries.push(old); unitEntry.set(unit, old); flush(); }
+    return false;
+  }
+
   // 訳文 out (目印付き) を検証してブロックに適用する。構造が合わなければ何もせず false
   function applyBlock(root, map, places, out) {
     const kids = build(out, map, places);
@@ -366,6 +387,7 @@
     entry.show();
     flush();
     entries.push(entry);
+    unitEntry.set(root, entry);
     return true;
   }
 
@@ -393,7 +415,9 @@
     processed.add(node);
     if (out && node.isConnected) {
       const value = raw.match(/^\s*/)[0] + out + raw.match(/\s*$/)[0];
-      entries.push({ show() { if (node.isConnected) node.nodeValue = value; }, hide() { if (node.isConnected) node.nodeValue = raw; } });
+      const entry = { show() { if (node.isConnected) node.nodeValue = value; }, hide() { if (node.isConnected) node.nodeValue = raw; } };
+      entries.push(entry);
+      unitEntry.set(node, entry);
       node.nodeValue = value;
       flush();
     } else failed.add(node);
@@ -718,7 +742,6 @@
     add("h2", "翻訳単位");
     if (isUnitBlock) add("div", `ブロック要素 <${describe(unit)}> (中のテキストとインライン要素をまとめて 1 回で翻訳)`);
     else add("div", `テキストノード 1 つ (親 <${describe(el)}>。最寄りのブロックが入れ子のブロックを含む、または body のため)`);
-    if (isUnitBlock) add("pre", (unit.textContent || "").replace(/\s+/g, " ").trim().slice(0, 300));
     const st = add("div", "", "v");
     if (code) { st.textContent = "状態: 対象外 (コードと判定。下のコード判定を参照)"; st.className = "v code"; }
     else if (blog?.result === "ok") { st.textContent = `状態: 翻訳済み (ブロック単位、${blog.cached ? "辞書から" : `${blog.batch ? `まとめ翻訳 ${blog.batch} 件で ` : ""}AI ${blog.ms} ms`})`; st.className = "v ok2"; }
@@ -728,6 +751,27 @@
     else if (nlog?.out) { st.textContent = `状態: 翻訳済み (テキストノード単位、${nlog.cached ? "辞書から" : `${nlog.batch ? `まとめ翻訳 ${nlog.batch} 件で ` : ""}AI ${nlog.ms} ms`})`; st.className = "v ok2"; }
     else if (processed.has(n)) { st.textContent = "状態: 翻訳済み (訳文のテキスト)"; st.className = "v ok2"; }
     else { st.textContent = "状態: 未翻訳 (処理待ち。表示中の部分から順に翻訳)"; st.className = "v wait"; }
+
+    // 原文と訳文 (目印を外したプレーンテキスト。翻訳しない要素 <n/> は原文のテキストに戻す)
+    {
+      const norm = (t) => (t || "").replace(/\s+/g, " ").trim();
+      const plain = (t, marks) => norm(t.replace(/<(\d+)\/>/g, (_, id) => marks?.find((m) => m.id === Number(id))?.text ?? "").replace(/<\/?\d+>/g, ""));
+      let src, dst;
+      if (isUnitBlock) {
+        src = blog ? plain(blog.input, blog.marks) : norm(unit.textContent);
+        dst = code ? "(翻訳対象外)"
+          : blog?.result === "ok" ? plain(blog.out, blog.marks)
+          : blog?.nodes ? `${norm(unit.textContent)}  ※テキストノード単位の訳を含む現在の表示`
+          : "(未翻訳)";
+      } else {
+        src = nlog?.input ?? norm(n.nodeValue);
+        dst = elCode ? "(翻訳対象外)" : nlog?.out ? nlog.out : failed.has(n) ? "(失敗: AI の出力が空)" : "(未翻訳)";
+      }
+      add("h2", "原文");
+      add("pre", src.slice(0, 1000));
+      add("h2", "訳文");
+      add("pre", dst.slice(0, 1000));
+    }
 
     if (isUnitBlock && !code) {
       let input = blog?.input, marks = blog?.marks, ghosts = blog?.ghosts;
@@ -773,6 +817,45 @@
       add("h2", "AI への入力");
       add("pre", nlog?.input ?? n.nodeValue.trim());
       if (nlog?.out != null) { add("h2", `AI の出力${nlog.cached ? " (辞書)" : ""}`); add("pre", nlog.out || "(空)"); }
+    }
+
+    // ---- 辞書編集 (この翻訳単位の原文 = AI への入力 をキーにした訳文)
+    if (!code) {
+      const key = isUnitBlock ? (blog?.input ?? serialize(unit).text) : (nlog?.input ?? n.nodeValue.trim());
+      add("h2", "辞書 (この翻訳単位の訳文を編集)");
+      add("div", isUnitBlock ? "目印 <n>…</n> / <n/> は原文と同じ番号をすべて残す。保存するとページにも適用" : "保存するとページにも適用", "m");
+      const ta = add("textarea");
+      ta.rows = 4;
+      ta.placeholder = "(辞書に未登録)";
+      for (const t of ["keydown", "keyup", "keypress"]) ta.addEventListener(t, (e) => e.stopPropagation()); // ページのショートカットに渡さない
+      const bar = add("div");
+      const msg = document.createElement("span");
+      msg.className = "m";
+      const btn = (label, fn) => { const b = document.createElement("button"); b.className = "btn"; b.textContent = label; b.onclick = fn; bar.append(b, " "); return b; };
+      const say = (t, cls = "m") => { msg.textContent = t; msg.className = cls; };
+      let target = act?.target;
+      (async () => {
+        target ??= await getTarget();
+        const v = await cache.get(target, key);
+        ta.value = v ?? "";
+        say(v === null ? "辞書に未登録" : "辞書の訳文");
+      })();
+      btn("保存して適用", async () => {
+        const out = ta.value.trim();
+        if (!out) { say("訳文が空", "ng"); return; }
+        if (!reapply(unit, out)) { say("目印が原文と合わないため適用できない (保存もしない)", "ng"); return; }
+        await cache.set(target, key, out);
+        const l = unitLog.get(unit);
+        if (l) Object.assign(l, { out, cached: true, result: l.mode === "block" ? "ok" : l.result });
+        else unitLog.set(unit, { mode: isUnitBlock ? "block" : "node", input: key, out, cached: true, result: "ok", ms: 0, marks: [], ghosts: 0 });
+        say("保存して適用しました", "ok2");
+      });
+      btn("辞書から削除", async () => {
+        await cache.remove(target, key);
+        ta.value = "";
+        say("辞書から削除しました (ページの表示はそのまま。次回の翻訳で AI が翻訳し直す)");
+      });
+      bar.append(msg);
     }
 
     // ---- コード判定

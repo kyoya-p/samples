@@ -160,6 +160,7 @@ globalThis.NanoPrompt = (() => {
     },
     async count() { return (await cache.entries()).length; },
     async clear() { await chrome.storage.local.remove((await cache.entries()).map(([k]) => k)); },
+    async remove(target, text) { await chrome.storage.local.remove(cacheKey(target, text)); },
     // 旧形式 (tr1:) のエントリを新しい鍵へ移す
     async migrate() {
       const all = await chrome.storage.local.get(null);
