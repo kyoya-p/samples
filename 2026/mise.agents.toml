@@ -5,7 +5,7 @@ description = "AgyTools の使用率パネル (agy-panel.html) を更新して�
 dir = "AgyTools"
 run = [
     "node usage_panel.js",
-    'node ../open-panel.mjs agy-panel.html',
+    'node ../open-panel.mjs ~/.gemini/antigravity-cli/agy-panel.html',
 ]
 
 ["claude-panel"]
@@ -13,7 +13,7 @@ description = "ClaudeCodeTools の使用率パネル (claude-panel.html) を更�
 dir = "ClaudeCodeTools"
 run = [
     "node usage_panel.js",
-    'node ../open-panel.mjs claude-panel.html',
+    'node ../open-panel.mjs ~/.claude/claude-panel.html',
 ]
 
 [agents-panels]
