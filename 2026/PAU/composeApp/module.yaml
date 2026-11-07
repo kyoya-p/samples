@@ -27,7 +27,7 @@ settings:
     serialization: json
   compose:
     enabled: true
-    version: 1.9.0
+    version: 1.11.0
   jvm:
     mainClass: MainKt
     release: 21
