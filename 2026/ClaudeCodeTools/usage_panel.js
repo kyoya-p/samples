@@ -1,4 +1,4 @@
-// セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(claude-panel.html)を出力する
+// セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(~/.claude/claude-panel.html)を出力する
 // 集計ロジックは usage_dashboard.js と同一(重複除外・synthetic除外)
 const fs = require('fs'), path = require('path'), os = require('os');
 const root = path.join(os.homedir(), '.claude', 'projects');
@@ -92,6 +92,22 @@ if (lastS) {
     };
   }
 }
+// 過去を含む全ての枠 (5h / 週次): サンプルのリセット時刻ごとに [リセット時刻-枠長, リセット時刻]。グラフの背景帯に使う
+// リセット表記は分単位で揺れるため、15 分以内は同一の枠とみなす
+const windows = { session: [], week: [] };
+for (const [key, resetKey, lenMs] of [['session', 'sessionResets', 5 * 3600000], ['week', 'weekResets', WEEK_MS]]) {
+  for (const s of samples) {
+    const reset = parseReset(s[resetKey] || '', new Date(s.ts).getUTCFullYear());
+    if (reset && !windows[key].some(w => Math.abs(w.reset - reset) < 15 * 60000)) windows[key].push({ start: reset - lenMs, reset });
+  }
+  windows[key].sort((a, b) => a.reset - b.reset);
+  // 実際の終了: 次の枠が期日より前に始まっていたら (期日前にリセットされた) その開始まで。枠の重なりを避ける
+  for (let i = 0; i < windows[key].length; i++) {
+    const w = windows[key][i];
+    const nextStart = windows[key].slice(i + 1).map(n => n.start).filter(st => st > w.start && st < w.reset);
+    w.end = nextStart.length ? Math.min(...nextStart) : w.reset;
+  }
+}
 const data = {
   generated: new Date().toISOString(),
   files: files.length,
@@ -99,6 +115,7 @@ const data = {
   modelSamples,
   weekCap,
   proj,
+  windows,
   total: agg(rows),
   byModel: group(r => r.model),
   byModelEffort: group(r => r.model + ' / ' + r.effort),
@@ -205,15 +222,19 @@ function usageChart() {
   // リセット済みの枠（未採取）は帯・予測を描かない
   const p = c.p && !(c.p.reset && c.p.reset < Date.now()) ? c.p : null, col = c.col;
   // 現在の枠（開始〜更新時刻）の背景。グラフ色をごく薄く
-  const band = p && p.start && p.reset ? '<g clip-path="url(#plotArea)"><rect x="' + x(p.start).toFixed(1) + '" y="' + P + '" width="' + Math.max(0, x(p.reset) - x(p.start)).toFixed(1) + '" height="' + (H - 2 * P) + '" fill="' + col + '" fill-opacity="0.08"><title>現在の枠 ' + fmtT(p.start) + '〜' + fmtT(p.reset) + '</title></rect></g>' : '';
+  // 過去の枠も現在の枠と同じ背景スタイルで塗る (現在の枠は下で別途描くので除く)。枠の境界に細い線
+  const past = (D.windows?.[c.wk] || []).filter(w => !(p && Math.abs(w.reset - p.reset) < 15 * 60000));
+  // 枠は 起点 0% → 期日 100% の三角形 (右下が直角) の領域として描く (期日前に次の枠が始まった場合は、その開始で打ち切る)。過去の枠も現在の枠も同じ色・濃さ。過去の枠には輪郭を付ける
+  const tri = (st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (P + (H - 2 * P) * (1 - (en - st) / (rs - st))).toFixed(1) + '" fill="' + col + '" fill-opacity="0.08"' + (outline ? ' stroke="' + col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
+  const band = '<g clip-path="url(#plotArea)">' + past.map(w => tri(w.start, w.reset, '過去の枠', true, w.end)).join('') + (p && p.start && p.reset ? tri(p.start, p.reset, '現在の枠', false) : '') + '</g>';
   const plot = '<g clip-path="url(#plotArea)">' + line(c.key, col) + projLine(p, col) + projLine1h(p, col) + resetLine(c.p, col, c.label) + nowLine + hit100(p, col) + '</g>';
   document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="使用率推移/' + c.nm + '">' + clip + band + grid + plot + xLabels + '</svg>';
   };
   // 範囲メニュー（グラフごと）: 左端 = 現在の N 時間前、右端 = 枠の最終日時または100%到達日時の早いほう。選択は閲覧者のブラウザに保存し、再読込（F5）後も維持
   const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
   const charts = [
-    { id: 'usage-chart-5h', key: 'sessionPct', col: 'var(--bar)', p: PR.session, label: '5h更新', def: '24h', nm: '5h' },
-    { id: 'usage-chart-1w', key: 'weekPct', col: 'var(--wk)', p: PR.week, label: '週次更新', def: '7d', nm: '1w' }
+    { id: 'usage-chart-5h', key: 'sessionPct', col: 'var(--bar)', p: PR.session, wk: 'session', label: '5h更新', def: '24h', nm: '5h' },
+    { id: 'usage-chart-1w', key: 'weekPct', col: 'var(--wk)', p: PR.week, wk: 'week', label: '週次更新', def: '7d', nm: '1w' }
   ];
   const lastS = S[S.length - 1];
   // 幅 = 選択した範囲（w ms）固定。現在時刻が x 軸の 30〜70% に入る範囲で、次の更新時刻を右端に寄せる（更新が無ければ現在 = 50%）
@@ -535,5 +556,7 @@ cumChart();
   });
 })();
 </script></body></html>`;
-fs.writeFileSync(path.join(__dirname, 'claude-panel.html'), html, 'utf8');
-console.log('written', path.join(__dirname, 'claude-panel.html'), 'files=' + files.length, 'requests=' + rows.length, 'total=' + data.total.total);
+const outPath = path.join(os.homedir(), '.claude', 'claude-panel.html'); // 出力先は ~/.claude/ 配下
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
+fs.writeFileSync(outPath, html, 'utf8');
+console.log('written', outPath, 'files=' + files.length, 'requests=' + rows.length, 'total=' + data.total.total);
