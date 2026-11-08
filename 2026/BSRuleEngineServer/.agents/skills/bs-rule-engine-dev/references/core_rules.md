@@ -76,3 +76,34 @@ Battle sequence proceeds in 5 distinct phases:
 - Instead of tracking symmetric pairs (`A <-> B`), the engine tracks directed transitions: `"${from}->${to}"`.
 - Sequential forward moves (e.g. moving 1 core from R to card A, then another core from R to card A) are permitted.
 - Reversing the move (card A back to R) in the same core window is blocked.
+
+## 2. Official Rule Compliance Audit (2026-11-08)
+
+Sources: [ルールマニュアル［スタンダード］](https://www.battlespirits.com/rule/official-rule-manual-standard/) (page03–12), [バトスピWiki ルール](https://batspi.com/index.php?%E3%83%AB%E3%83%BC%E3%83%AB) (基本ルール / ターンの流れ / わかりづらいルール / フォーマット / 用語集; mostly 2020 Eternal-era text, official manual takes precedence).
+
+### Known Gaps (未修正)
+| # | Gap | Location | Rule |
+|---|-----|----------|------|
+| A | Attacker leaving during Flash 1 still goes to Block Declaration; PASS_BLOCK deals 1 life | `Rules.kt` advanceStep / PASS_BLOCK | Battle ends, no life damage |
+| B | `onDestroy` is never called | `Rules.kt` destroySpirit | 破壊時 effects resolve before trash |
+| 1 | Flash magic/effects enumerated during `BLOCK_DECLARATION` | `Rules.kt` enumerateRawActions | No flash in block declaration |
+| 2 | `maxOf(1, symbols.size)` life loss | `Rules.kt` ATTACK detail / BLOCK_DECLARATION / PASS_BLOCK | Loss = symbol count |
+| 3 | No mulligan; P1 always first | `GameSetup.kt` | One mulligan each |
+| 4 | No deck validation | `CardLoader.loadDeck` | ≥40, ≤3 same name, block icon A |
+| 6 | Blocker's `onBattleEnd` not called; battle-only effects not cleared | `Rules.kt` resolveBattle / PASS_BLOCK | Both sides' バトル終了時 |
+| 7 | Flash magic detected by `effect.contains("フラッシュ")` | `Rules.kt` | Use structured timing data |
+| 8 | No 待機状態 / 消滅時 effects | `resolveVanish` / `destroySpirit` | 待機状態 before trash |
+| 9 | Magic effects unimplemented (cost only) | `USE_MAGIC` | — |
+| D | `END_STEP` offered while `pendingEffect` / step-start effects exist | `server/src/Evaluation.kt` stepEndAction | Mandatory effects must resolve |
+
+### Verified Compliant
+- Initial state (life 5, reserve 3+1 soul, hand 4); 8-step Standard / 7-step Eternal; turn-1 skips Core/Attack/Main2 but draws.
+- Mandatory reduction, payment from reserve/field, paid cores → trash; placement ≥ min Lv; Nexus may have 0 cores.
+- Destroyed/vanished card cores → reserve; life cores → reserve.
+- Flash priority defender-first, alternating, ends on two consecutive passes; Flash 2 only if blocked.
+- BP lower destroyed, tie both; block negates life damage even if blocker leaves.
+- 重疲労 recovers one stage; 真界放 Lv2 by soul core; deck-0 loss checked at Start Step.
+
+### Skill vs Code Discrepancies
+- SKILL §1-3 names `SWAP_CORE`, but code emits `MOVE_CORE` with category `🔄【コア交換】`.
+- SKILL §1-7 says coreWindow removed, §1 "Loop Prevention" says directed `from->to` keys; code uses `GameAction.rearrangeKey` (instanceId / `SOUL` / `ALL`) in `GameState.coreWindow`.

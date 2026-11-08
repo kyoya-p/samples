@@ -1,0 +1,36 @@
+---
+name: pau
+description: >
+  PAU (Kotlin Compose Desktop / Amper) のビルド、レイアウト、単一 exe 化 (jlink + 7-Zip SFX) と動作確認。
+  トリガー: "PAU", "sfxExe", "layoutExecutable", "単一exe", "jlink", "SFX" など。
+---
+
+# PAU
+
+## 構成
+- ビルド: Amper (`.\kotlin.bat`)。`composeApp/module.yaml` (Compose 1.11.0、`jdk.selectionMode: javaHome`)
+- JDK: `mise.toml` の `java = "25"` のみで指定
+- jpackage / WiX は不使用
+
+## タスク (mise.toml)
+| タスク | 内容 |
+| :--- | :--- |
+| `app` / `test` | `.\kotlin run` / `.\kotlin test` |
+| `layoutExecutable` | executable-jar を展開し、`build/layout/app/*.jar` と jlink ランタイム `build/layout/runtime` を作成 |
+| `executable` | `build\layout\PAU.cmd` で起動 |
+| `fetchSfx` | `packaging/PatchSfx.ps1` (pwsh 必須)。7-Zip 9.20 Extra の `7zSD.sfx` を SHA256 検証して取得し、asInvoker マニフェストを埋め込む |
+| `makeSfxExe` | `PAU.7z` を作成し、`7zSD.sfx` + `packaging/sfx.conf` + 7z を連結して `build/PAU-<APP_VERSION>-sfx.exe` を出力 |
+| `sfxExe` | SFX exe を直接実行。アプリ終了までタスクが戻らない |
+
+## 要点
+- 7-Zip の現行版 (26.x / 23.x) にはインストーラ型 SFX がない。RunProgram を使えるのは 9.20 Extra の `7zSD.sfx` のみ
+- `7zSD.sfx` は `InstallPath` を無視する。展開先は `%TEMP%\7zSxxxx.tmp` で、終了時に削除される
+- マニフェストのない `7zSD.sfx` は UAC 昇格を要求する。asInvoker マニフェストの埋め込みが必須
+- `sfx.conf`: `RunProgram="runtime\bin\javaw.exe -cp app\* MainKt"`
+- Compose 1.9.0 では executable-jar の `BOOT-INF/lib` で androidx 版 `runtime-desktop` が同名衝突し、欠落した。1.11 ではバージョンが異なるため衝突しない(回避用のコピーは削除済み)
+- Compose Hot Reload の `NoSuchMethodError` には `--no-compose-hot-reload` で回避(1.11 で解消したかは未検証)
+
+## 検証
+- `Get-Process javaw` の `Path` が `%TEMP%\7zS*.tmp\runtime\bin\javaw.exe` であることを確認
+- javaw の `MainWindowTitle` は空になるので、ウィンドウはスクリーンショットで確認
+- `build` を削除できない場合は `handle64.exe` でロックしているプロセスを特定する

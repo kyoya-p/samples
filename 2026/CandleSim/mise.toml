@@ -1,0 +1,3 @@
+[tasks."pages-deploy"]
+description = "サーバの master を gh-pages へ push"
+run = "git push --force origin refs/remotes/origin/master:refs/heads/gh-pages"

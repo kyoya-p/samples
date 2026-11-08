@@ -51,6 +51,24 @@ This skill provides the architecture reference, official rule compliance invaria
      - Normal core moves: Enumerate every quantity $k \in 1 \dots N$.
      - Soul core moves: Enumerate $S=1$ alone ($0$ normal + $1$ soul) and mixed moves ($k$ normal + $1$ soul for $k \in 1 \dots N$).
 
+8. **Battle Flow Invariants (公式ルールマニュアル［スタンダード］page08 / バトスピWiki「ターンの流れ」)**:
+   - Flash is legal only in Flash 1 / Flash 2. **Block Declaration itself has no flash** (only BLOCK / forced BLOCK / PASS_BLOCK).
+   - Attack-time / block-time effects resolve immediately after exhausting, before the following Flash Timing.
+   - Unblocked life loss = **number of the attacker's symbols** (0 symbols ⇒ 0 loss). Never `maxOf(1, ...)`.
+   - If the attacker leaves the field before Battle Resolution, the battle ends after the current flash with **no life damage**.
+   - Once a block is declared, no life damage even if the blocker later leaves.
+   - Battle end: `バトル終了時` effects of **both** attacker and blocker trigger; `アタック中/ブロック中/このバトル中` effects expire.
+   - Destruction: turn player orders all `破壊時` effects (`CardScript.onDestroy`), then destroyed cards go to trash simultaneously. Destroyed/vanished cards pass through 待機状態; cores go to reserve.
+
+9. **Setup & Win/Loss (page03 / page04 / Wiki「基本ルール」)**:
+   - Deck ≥40 cards, ≤3 copies per name, Standard 2026/4/1–2027/3/31: block icon `A` only.
+   - Life 5, reserve 3 normal + 1 soul, hand 4, one mulligan each (first player decides first).
+   - First player turn 1: no Core / Attack / 2nd Main step; **draw happens**.
+   - Loss: life 0, or deck 0 at the start of (or during) own Start Step.
+   - Cost reduction is fixed before removing cores from field donors; reduction is mandatory.
+
+Known gaps vs official rules (as of 2026-11-08): see [Core Rules Reference §2](./references/core_rules.md).
+
 ---
 
 ## 2. Server API & Data Contract

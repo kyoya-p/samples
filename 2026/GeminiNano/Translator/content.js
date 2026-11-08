@@ -212,6 +212,7 @@
     }
     paint(HL, marks, markUntranslated);
     paint(HL_CODE, codes, markCode || debugCode);
+    imgMarks.schedule(); // 画像の解析待ち/解析中の枠も更新
     codeNodes = new Set(codes);
     // テキストノード → 翻訳単位 (インライン要素をたどって最寄りのブロック要素)。ブロックが入れ子の場合はノード単位
     const units = [];
@@ -479,7 +480,7 @@
     if (a.ctrl.signal.aborted) return done;
     for (const [i, it] of items.entries()) {
       const out = outs ? clean(outs[i]).trim() : null;
-      if (out && applyItem(it, out)) {
+      if (out && !contaminated(it.text, out) && applyItem(it, out)) {
         Object.assign(it.log, { out, ms, batch: items.length, result: it.s ? "ok" : undefined });
         unitLog.set(it.unit, it.log);
         await cache.set(a.target, it.text, out);
@@ -529,11 +530,21 @@
     for (const n of nodes) { if (a.ctrl.signal.aborted) return; await translateNode(a, n); }
   }
 
+  // 訳文に、原文に無い文字体系 (キリル・ギリシャ・アラビア・ヘブライ・デーヴァナーガリー・タイ・ハングル) が混ざっていれば異常
+  //   (実機の Gemini Nano で「ようこそ лаборатории へ」のような混入があった)
+  const SCRIPTS = [/[Ѐ-ӿ]/, /[Ͱ-Ͽ]/, /[؀-ۿ]/, /[֐-׿]/, /[ऀ-ॿ]/, /[฀-๿]/, /[가-힯]/];
+  const contaminated = (src, out) => SCRIPTS.some((re) => re.test(out) && !re.test(src));
+
   // unit: 翻訳中の単位 (ブロック要素 / テキストノード)。デバッグ時のリアルタイム表示用
   async function translateOne(a, text, unit) {
     live.begin(unit, text);
     try {
-      const out = await translateRaw(a, text);
+      let out = await translateRaw(a, text);
+      if (contaminated(text, out)) { // 1 回だけ訳し直す (直らなければ最初の訳文のまま)
+        console.debug("[Nano Translator] 訳文に別の文字体系が混入したため訳し直す", { text, out });
+        const retry = await translateRaw(a, text);
+        if (!contaminated(text, retry)) out = retry;
+      }
       live.end(out);
       return out;
     } catch (e) { live.end(null, e); throw e; }
@@ -643,7 +654,9 @@
   const IMG_SEL = "img, svg, canvas, video";
   const IMG_MIN = 48; // これより小さい (アイコン等) は対象外 (CSS px)
   const imgInfo = new WeakMap(); // 要素 → { state: "busy" | "done" | "error", text, translation, description, error }
-  const IMG_SCHEMA = { type: "object", properties: { text: { type: "string" }, translation: { type: "string" }, description: { type: "string" } }, required: ["text", "translation", "description"] };
+  // 画像内のテキストの翻訳は画像入力では行わず、通常のテキスト翻訳 (辞書・テキスト用セッション) で行う
+  //   (実機の Gemini Nano で、画像入力での翻訳は空欄・逆の意味の誤訳があったため)
+  const IMG_SCHEMA = { type: "object", properties: { text: { type: "string" }, description: { type: "string" } }, required: ["text", "description"] };
 
   // 解析対象: 表示中で一定以上の大きさ、未解析。入れ子の svg は外側のみ
   function visibleImages() {
@@ -684,11 +697,11 @@
     a.imgBase = null;
     if (!("LanguageModel" in self)) return null;
     try {
-      if ((await LanguageModel.availability(opts)) === "unavailable") { console.debug("[Nano Translator] 画像入力は使えない"); return null; }
+      if ((await LanguageModel.availability(opts)) === "unavailable") { console.debug("[Nano Translator] 画像入力は使えない"); imgUnsupported = true; imgMarks.schedule(); return null; }
       a.imgBase = await LanguageModel.create({
         ...opts,
         signal: a.ctrl.signal,
-        initialPrompts: [{ role: "system", content: "You analyze images from web pages. Reply with ONLY a JSON object {\"text\", \"translation\", \"description\"}." }],
+        initialPrompts: [{ role: "system", content: "You analyze images from web pages. Reply with ONLY a JSON object {\"text\", \"description\"}." }],
       });
     } catch (e) {
       if (e.name === "AbortError") throw e;
@@ -725,6 +738,7 @@
       const info = { state: "busy" };
       imgInfo.set(el, info);
       imgTip.refresh(el);
+      imgMarks.schedule();
       try {
         const big = Math.max(w, h) * scale;
         const fit = big > 768 ? 768 / big : 1; // 長辺 768px まで縮小 (速度のため)
@@ -734,7 +748,6 @@
         const hint = [el.getAttribute("alt") ? `Alt text of the image: "${el.getAttribute("alt")}"` : "", st ? `The image contains exactly this text:\n${st}` : ""].filter(Boolean).join("\n");
         const prompt = "Analyze this image from a web page.\n" +
           "- text: all text visible in the image, verbatim in its original language (empty string if none)\n" +
-          `- translation: that text translated into ${LANGS[a.target]} (empty string if none)\n` +
           `- description: a short description of the image in ${LANGS[a.target]} (1-2 sentences)\n` +
           (hint ? hint + "\n" : "") + "Reply with JSON only.";
         live.begin(el, `[画像解析] ${describe(el)}\n${prompt}`);
@@ -758,7 +771,22 @@
         live.end(raw);
         const s = clean(raw);
         const obj = JSON.parse(s.slice(s.indexOf("{"), s.lastIndexOf("}") + 1));
-        const res = { text: st || String(obj.text ?? ""), translation: String(obj.translation ?? ""), description: String(obj.description ?? "") };
+        const text = (st || String(obj.text ?? "")).trim();
+        let translation = "";
+        if (text) { // 画像内のテキストを通常のテキスト翻訳で訳す (辞書を優先)
+          const noMarks = (t) => (text.search(MARK_LIKE) < 0 ? stripMarks(t).trim() : t); // 原文に無い目印 (<1>…</1> 等) は除去 (実機で混入あり)
+          translation = noMarks((await cache.get(a.target, text)) ?? "");
+          if (!translation) {
+            translation = noMarks(clean(await translateOne(a, text, el)).trim());
+            if (translation) await cache.set(a.target, text, translation);
+          }
+        }
+        let description = stripMarks(String(obj.description ?? "")).trim(); // 説明も AI の出力なので目印を除去
+        if (contaminated(text, description)) { // 別の文字体系の混入 (実機で「Лабораторияへようこそ」) は、テキスト翻訳で訳し直す
+          const fixed = stripMarks(clean(await translateOne(a, description, el))).trim();
+          if (fixed && !contaminated(text, fixed)) description = fixed;
+        }
+        const res = { text, translation, description };
         Object.assign(info, res, { state: "done", ms: Math.round(performance.now() - t0) });
         const k = imgKey(el);
         if (k) await cache.set(a.target, k, JSON.stringify(res));
@@ -769,9 +797,54 @@
         console.debug("[Nano Translator] 画像解析に失敗", el, e);
       }
       imgTip.refresh(el);
+      imgMarks.schedule();
     }
     shot.close();
   }
+
+  // 画像のハイライト (文字ブロックと同じ色分け): 解析待ち・失敗 = 薄い黄 (設定 markUntranslated)、解析中 = 薄い緑、解析済み = なし
+  // 画像には CSS Highlight API が効かないため、画像の位置に半透明の枠を重ねる (自前の Shadow DOM。撮影時は他の UI と一緒に隠れる)
+  let imgUnsupported = false; // 画像入力が使えないと分かったら、解析待ちの表示を出さない
+  const imgMarks = (() => {
+    let host = null, layer = null, raf = 0;
+    function ensure() {
+      if (host) return;
+      host = document.createElement("div");
+      host.dataset.nanoUi = "";
+      host.style.cssText = "all:initial;position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483645";
+      const root = host.attachShadow({ mode: "open" });
+      root.innerHTML = `<style>
+        .m{position:fixed;box-sizing:border-box;border-radius:4px;pointer-events:none}
+        .wait{background:rgba(255,193,7,.16);outline:2px solid rgba(255,193,7,.55)}
+        .busy{background:rgba(52,168,83,.22);outline:2px solid rgba(52,168,83,.75)}
+      </style><div></div>`;
+      layer = root.lastElementChild;
+      document.documentElement.append(host);
+    }
+    function draw() {
+      raf = 0;
+      if (!analyzeImages || state === "idle" || imgUnsupported) { host?.remove(); host = null; return; }
+      ensure();
+      const boxes = [];
+      for (const el of document.body.querySelectorAll(IMG_SEL)) {
+        if (el.closest("[data-nano-ui]") || (el.tagName.toLowerCase() === "svg" && el.parentElement?.closest("svg"))) continue;
+        const st = imgInfo.get(el)?.state;
+        const cls = st === "busy" ? "busy" : (!st || st === "error") && markUntranslated ? "wait" : null;
+        if (!cls) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < IMG_MIN || r.height < IMG_MIN || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
+        const d = document.createElement("div");
+        d.className = "m " + cls;
+        d.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+        boxes.push(d);
+      }
+      layer.replaceChildren(...boxes);
+    }
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(draw); };
+    document.addEventListener("scroll", schedule, { capture: true, passive: true });
+    addEventListener("resize", schedule);
+    return { schedule, hide() { cancelAnimationFrame(raf); raf = 0; host?.remove(); host = null; } };
+  })();
 
   // 画像にマウスを合わせたときのコメント (解析結果)
   const imgTip = (() => {
@@ -799,9 +872,11 @@
       else {
         add("l", "画像内のテキスト");
         add("t", info.text || "(文字なし)");
-        if (info.text) { add("l", "翻訳"); add("t", info.translation || "(なし)"); }
+        // 辞書に保存済みの古い結果に目印が残っていても表示しない (最後の安全策)
+        const clip = (t) => (info.text.search(MARK_LIKE) < 0 ? stripMarks(t || "").trim() : t);
+        if (info.text) { add("l", "翻訳"); add("t", clip(info.translation) || "(なし)"); }
         add("l", "説明");
-        add("t", info.description || "(なし)");
+        add("t", stripMarks(info.description || "").trim() || "(なし)");
       }
       if (x !== undefined) {
         const w = box.offsetWidth, h = box.offsetHeight;
@@ -810,10 +885,12 @@
       }
     }
     function hide() { clearTimeout(timer); host?.remove(); host = null; cur = null; }
+    let lastX = -1, lastY = -1;
     function onMove(e) {
       if (!analyzeImages || state === "idle") { if (host) hide(); return; }
       clearTimeout(timer);
       const { clientX: x, clientY: y } = e;
+      lastX = x; lastY = y;
       timer = setTimeout(() => {
         let el = document.elementsFromPoint(x, y).find((n) => n.matches?.(IMG_SEL) && !n.closest("[data-nano-ui]"));
         while (el?.tagName.toLowerCase() === "svg" && el.parentElement?.closest("svg")) el = el.parentElement.closest("svg");
@@ -825,6 +902,9 @@
       }, 120);
     }
     document.addEventListener("mousemove", onMove, { passive: true });
+    // マウスを動かさずにスクロールすると下の画像が変わるため、最後のマウス位置で判定し直す
+    // (しないと、前の画像の結果が別の画像の上に残る)
+    document.addEventListener("scroll", () => { if (lastX >= 0) onMove({ clientX: lastX, clientY: lastY }); }, { capture: true, passive: true });
     return { hide, refresh(el) { if (host && cur === el) render(el); } };
   })();
 
@@ -1247,6 +1327,7 @@
     unpaint();
     live.hide();
     imgTip.hide();
+    imgMarks.hide();
     codeNodes = new Set();
     hideTip();
     for (const e of entries) e.hide();

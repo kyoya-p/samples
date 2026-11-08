@@ -1,11 +1,10 @@
 [tools]
-java = "21"
+java = "25"
 coreutils = "latest"
 7zip = "26.05"
 
 [vars]
 APP_VERSION = "1.0.13"
-ANDROIDX_RUNTIME_VERSION = "1.11.1"
 
 [tasks]
 app = '.\kotlin run'
@@ -17,9 +16,8 @@ layoutExecutable = { sources = ['composeApp/src/**/*', 'composeApp/module.yaml',
     '%SystemRoot%\System32\tar.exe -xf build/tasks/_composeApp_executableJarJvm/composeApp-jvm-executable.jar -C build/layout-x',
     'coreutils cp build/layout-x/BOOT-INF/lib/*.jar build/layout/app/',
     'coreutils cp build/tasks/_composeApp_jarJvm/composeApp-jvm.jar build/layout/app/app.jar',
-    'coreutils cp "%LOCALAPPDATA%/JetBrains/Kotlin/.m2.cache/androidx/compose/runtime/runtime-desktop/{{vars.ANDROIDX_RUNTIME_VERSION}}/runtime-desktop-{{vars.ANDROIDX_RUNTIME_VERSION}}.jar" build/layout/app/androidx-runtime-desktop-{{vars.ANDROIDX_RUNTIME_VERSION}}.jar',
     'coreutils rm -rf build/layout-x',
-    'jlink --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --compress zip-6 --output build\layout\runtime',
+    '''for /f %m in ('jdeps --print-module-deps --ignore-missing-deps --multi-release base build\layout\app\*.jar') do jlink --add-modules %m,jdk.charsets,jdk.localedata,jdk.crypto.ec --strip-debug --no-header-files --no-man-pages --compress zip-6 --output build\layout\runtime''',
     'coreutils cp packaging/PAU.cmd build/layout/PAU.cmd',
 ] }
 executable = { depends = ['layoutExecutable'], run = 'build\layout\PAU.cmd' }

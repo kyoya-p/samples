@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // 使用: node open-panel.mjs <html ファイル>（カレントからの相対可）
 // 既定ブラウザで開く。OS・シェルに依存しない（mise タスクから呼ぶ）
 import { spawn } from 'node:child_process';
