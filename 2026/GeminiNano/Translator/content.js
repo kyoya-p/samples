@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // ページ内テキストを Gemini Nano でその場 (in-place) 翻訳する。再実行で元に戻す。
 // 翻訳単位: ブロック要素 1 つ (インライン要素は <1>..</1> / <2/> のプレースホルダで構造を保持して 1 回で翻訳)。検証に失敗したらテキストノード単位へフォールバック
 // 翻訳順: 表示領域内を優先し、続けて画面外のロード済み部分 (表示領域に近い順)。スクロール・リサイズ時は表示領域内を再優先する。
@@ -201,6 +202,7 @@
     }
     // 表示中の後に、画面外を表示領域に近い順で足す (まとめ翻訳 1 回分程度まで)
     far.sort((x, y) => x.dist - y.dist);
+    const visibleCount = nodes.length;
     let len = nodes.reduce((s, n) => s + n.nodeValue.length, 0);
     for (const f of far) {
       if (nodes.length && len > maxUnit) break;
@@ -222,6 +224,7 @@
       units.push(u);
     }
     units.pending = pending;
+    units.visible = visibleCount > 0; // 表示中の未翻訳テキストがあるか (無ければ画面外のみ)
     return units;
   }
 
@@ -829,10 +832,17 @@
       setCodeParams(await codeParams());
       let done = 0;
       for (let nodes = collectVisible(); nodes.length && !signal.aborted; nodes = collectVisible()) {
+        // 表示中のテキストを訳し終えたら (残りが画面外のみ)、画面外のテキストより先に表示中の画像を解析
+        if (!nodes.visible && analyzeImages) {
+          await analyzeVisibleImages(a);
+          if (signal.aborted) break;
+          nodes = collectVisible(); // 解析中のスクロール等に追従
+          if (!nodes.length) break;
+        }
         setLabel(a, `翻訳中 ${done}/${done + nodes.pending}`);
         done += await translateBatch(a, nodes);
       }
-      if (analyzeImages && !signal.aborted) await analyzeVisibleImages(a); // テキスト翻訳が済んでから、表示中の画像を解析
+      if (analyzeImages && !signal.aborted) await analyzeVisibleImages(a); // 全テキスト翻訳後 (表示中の画像の残り)
       setLabel(a, "");
     } catch (e) {
       if (e.name !== "AbortError" && act === a) {

@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // 翻訳プロンプト/セッション生成の共通部 (popup と content script で共有する classic script)
 globalThis.NanoPrompt = (() => {
   // Prompt API の入出力言語として公式にサポートされるもの

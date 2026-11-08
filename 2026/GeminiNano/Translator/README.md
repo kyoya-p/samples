@@ -1,5 +1,7 @@
 # Nano Translator
 
+> 🤖[AI 生成・編集を含む (Claude)]
+
 # 概要
 
 Chrome で表示した Web ページ・選択テキスト・任意の入力文を翻訳する拡張機能。

@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // 設定ページ: 辞書 (翻訳キャッシュ) の一覧・編集・削除・全件クリア
 const { LANGS, SUPPORTED, DEFAULTS, MINIMUMS, limits, browserLang, cache, CODE_DEFAULTS, codeParams, codeRegex, codeScore } = NanoPrompt;
 

@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 const SELECTION_ID = "nano-translate-selection";
 const PAGE_ID = "nano-translate-page";
 

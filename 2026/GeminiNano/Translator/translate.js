@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 const { LANGS, SUPPORTED, getTarget, wrap, clean, languageOptions, createSession, cache } = NanoPrompt;
 
 const $ = (id) => document.getElementById(id);
