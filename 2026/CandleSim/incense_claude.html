@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>線香シミュレータ — 層流から乱流へ</title>
 <style>
   :root {
@@ -15,8 +15,9 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); user-select: none;
     font-family: "Yu Mincho", "Hiragino Mincho ProN", Georgia, serif; }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .bar { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 18px;
+  html, body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; overscroll-behavior: none; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }   /* タッチ操作でスクロール・ズームさせない */
+  .bar { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); touch-action: manipulation; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 18px;
     padding: 10px 26px; background: var(--panel); border: 1px solid rgba(200, 168, 107, 0.24); border-radius: 999px;
     backdrop-filter: blur(14px); font-family: "Yu Gothic", sans-serif; white-space: nowrap; }
   .btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(200, 168, 107, 0.3); color: var(--text);
@@ -27,7 +28,8 @@
   input[type=range] { width: 72px; accent-color: var(--gold); }
   output { min-width: 3.4em; font-size: 11px; color: var(--text); }
   .sep { width: 1px; height: 20px; background: rgba(200, 168, 107, 0.18); }
-  @media (max-width: 760px) { .bar { flex-wrap: wrap; border-radius: 18px; width: calc(100% - 24px); justify-content: center; gap: 10px; } .sep { display: none; } }
+  @media (max-width: 760px) { .bar { flex-wrap: wrap; border-radius: 18px; width: calc(100% - 24px); justify-content: center; gap: 10px; } .sep { display: none; }
+    .btn { padding: 8px 14px; } input[type=range] { width: 88px; height: 24px; } }   /* 指で操作しやすい大きさ */
 </style>
 </head>
 <body>
@@ -79,10 +81,11 @@ const Noise = (() => {
 /* ===== 2. 状態 ===== */
 const cv = document.getElementById("c");
 const ctx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1;
+let W = 0, H = 0, DPR = 1, BAR_TOP = Infinity;
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   W = window.innerWidth; H = window.innerHeight;
+  BAR_TOP = document.querySelector(".bar").getBoundingClientRect().top;   // 狭い画面では操作バーが折り返して高くなる
   cv.width = W * DPR; cv.height = H * DPR;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
@@ -94,12 +97,12 @@ const ELEV = Math.PI / 2;               // 線香の傾き [rad]
 const S = {
   t: 0, conv: 0, hxf: 0.43, drag: null, dragged: false, showField: false,
   lay: false, elev: ELEV, maxLen: MAX_LEN, len: MAX_LEN, lastAsh: MAX_LEN, ashes: [{ dx: 76, l: 6 }, { dx: 92, l: 5 }],
-  wakes: [], mouse: null, phi: 0
+  wakes: [], phi: 0
 };
 
 /* 幾何 (毎フレーム算出) */
 function geom() {
-  const hx = W * S.hxf, table = H * 0.82, ty = table - 10.5;
+  const hx = W * S.hxf, table = Math.min(H * 0.82, BAR_TOP - 16), ty = table - 10.5;   // 香皿が操作バーに隠れない高さ
   const c = Math.cos(S.elev), s = Math.sin(S.elev);
   return { hx, table, ty, c, s,
     tipX: hx + c * (S.len + 2), tipY: (S.lay ? ty - 1.5 : ty) - s * (S.len + 2) };
@@ -598,61 +601,85 @@ function render() {
   drawSmoke();
 }
 
-/* ===== 7. 入力 ===== */
-const MOUSE_GAIN = 1.0;                 // 渦の強さ [速度単位] / マウス速度 [px/ms]
+/* ===== 7. 入力 (Pointer Events: マウス・タッチ・ペン共通) ===== */
+const MOUSE_GAIN = 1.0;                 // 渦の強さ [速度単位] / ポインタ速度 [px/ms]
 const MOUSE_MAX = 4;                   // 安全上限 (約 4px/ms 超で飽和)
-function mouseMove(x, y, ts) {
-  const m = { x, y, t: ts };
-  if (S.mouse) {
-    const dx = m.x - S.mouse.x, dy = m.y - S.mouse.y, d = Math.hypot(dx, dy);
+const TAP_DIST = 10, TAP_MS = 350;     // タップ判定: 移動量 [px]・押下時間 [ms]
+const ptrs = new Map();                // pointerId → 直前位置 (マルチタッチは指ごとに渦を生成)
+function pointerMove(id, x, y, ts) {
+  const m = { x, y, t: ts }, p = ptrs.get(id);
+  if (p) {
+    const dx = m.x - p.x, dy = m.y - p.y, d = Math.hypot(dx, dy);
     if (d > 1) {
-      // 渦の強さはマウス速度 v [px/ms] に比例 (イベント間隔に依存しない)
-      const v = d / Math.max(2, m.t - S.mouse.t);
+      // 渦の強さはポインタ速度 v [px/ms] に比例 (イベント間隔に依存しない)
+      const v = d / Math.max(2, m.t - p.t);
       const a = Math.min(MOUSE_MAX, MOUSE_GAIN * v);
       const n = Math.ceil(d / 18);                       // 軌跡に沿って約 18px 間隔で配置
       const r = 80;                                         // 渦の大きさは一定 (強さだけが速度に比例)
       const w = (d / n) / 18;                            // 間隔補正: 局所的な合成強さが a に比例
       for (let i = 1; i <= n; i++) {
-        spawnWake(S.mouse.x + dx * i / n, S.mouse.y + dy * i / n, dx / d * a * w, dy / d * a * w, r, 165, true);
+        spawnWake(p.x + dx * i / n, p.y + dy * i / n, dx / d * a * w, dy / d * a * w, r, 165, true);
       }
     }
   }
-  S.mouse = m;
+  ptrs.set(id, m);
 }
-// 線香 (香皿＋線香) をドラッグして左右に動かす。ドラッグ中は気流を乱さない
-function overIncense(x, y) {
+// 線香 (香皿＋線香) をドラッグして左右に動かす。ドラッグ中は気流を乱さない。tol: 当たり判定の余裕 [px]
+function overIncense(x, y, tol = 14) {
   const g = geom();
-  if (x > g.hx - 40 && x < g.hx + 175 && y > g.ty - 14 && y < g.ty + 14) return true;     // 香皿
+  if (x > g.hx - 40 && x < g.hx + 175 && y > g.ty - tol && y < g.ty + tol) return true;   // 香皿
   const ex = g.tipX, ey = g.tipY, bx = g.hx, by = g.ty - (S.lay ? 1.5 : 3.5);                            // 線香 (線分との距離)
   const vx = ex - bx, vy = ey - by, t = Math.max(0, Math.min(1, ((x - bx) * vx + (y - by) * vy) / (vx * vx + vy * vy)));
-  return Math.hypot(x - (bx + vx * t), y - (by + vy * t)) < 14;
+  return Math.hypot(x - (bx + vx * t), y - (by + vy * t)) < tol;
 }
-window.addEventListener("mousedown", e => {
-  if (e.target.closest && e.target.closest(".bar")) return;
-  if (overIncense(e.clientX, e.clientY)) {
-    S.drag = { off: e.clientX - W * S.hxf }; S.dragged = false; S.mouse = null;
-    cv.style.cursor = "grabbing"; e.preventDefault();
+const tolOf = e => e.pointerType === "mouse" ? 14 : 26;       // 指は太いので判定を広げる
+const hover = e => { if (e.pointerType === "mouse") cv.style.cursor = overIncense(e.clientX, e.clientY) ? "grab" : "default"; };
+cv.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  const down = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+  if (!S.drag && overIncense(e.clientX, e.clientY, tolOf(e))) {
+    S.drag = { id: e.pointerId, off: e.clientX - W * S.hxf, down }; S.dragged = false;
+    ptrs.delete(e.pointerId);
+    cv.setPointerCapture(e.pointerId);
+    cv.style.cursor = "grabbing";
+  } else {
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, t: e.timeStamp, down });
   }
+  e.preventDefault();
 });
-window.addEventListener("mouseup", () => {
-  if (S.drag) { S.drag = null; cv.style.cursor = overIncense(S.mx || 0, S.my || 0) ? "grab" : "default"; }
-});
-window.addEventListener("mousemove", e => {
-  S.mx = e.clientX; S.my = e.clientY;
-  if (S.drag) {
-    S.hxf = Math.max(80 / W, Math.min(1 - 260 / W, (e.clientX - S.drag.off) / W));
-    S.dragged = true; S.mouse = null;
+cv.addEventListener("pointermove", e => {
+  if (S.drag && S.drag.id === e.pointerId) {
+    if (Math.hypot(e.clientX - S.drag.down.x, e.clientY - S.drag.down.y) > TAP_DIST) S.dragged = true;
+    S.hxf = Math.max(80 / W, Math.min(1 - (W < 760 ? 190 : 260) / W, (e.clientX - S.drag.off) / W));   // 狭い画面は右端の余白を縮める
     return;
   }
-  cv.style.cursor = overIncense(e.clientX, e.clientY) ? "grab" : "default";
-  mouseMove(e.clientX, e.clientY, e.timeStamp);
+  hover(e);
+  // マウスはホバーで、タッチ・ペンは接触中のみ渦を生成
+  if (e.pointerType !== "mouse" && !ptrs.has(e.pointerId)) return;
+  const down = ptrs.get(e.pointerId)?.down;
+  pointerMove(e.pointerId, e.clientX, e.clientY, e.timeStamp);
+  if (down) ptrs.get(e.pointerId).down = down;
 });
-window.addEventListener("mouseleave", () => { S.mouse = null; });
-cv.addEventListener("click", e => {
-  if (S.dragged) { S.dragged = false; return; }
-  const g = geom();
-  spawnWake(e.clientX, e.clientY, (e.clientX < g.tipX ? 1 : -1) * 2.1, -0.18, 88, 195, true);
-});
+function pointerEnd(e, cancel) {
+  if (S.drag && S.drag.id === e.pointerId) {
+    S.drag = null; S.dragged = false;
+    if (e.pointerType === "mouse") hover(e); else cv.style.cursor = "default";
+    return;
+  }
+  const p = ptrs.get(e.pointerId);
+  // タップ (クリック): 位置に横向きの渦を発生させる
+  if (!cancel && p && p.down && Math.hypot(e.clientX - p.down.x, e.clientY - p.down.y) < TAP_DIST
+      && (e.pointerType === "mouse" || e.timeStamp - p.down.t < TAP_MS)) {
+    const g = geom();
+    spawnWake(e.clientX, e.clientY, (e.clientX < g.tipX ? 1 : -1) * 2.1, -0.18, 88, 195, true);
+  }
+  if (e.pointerType === "mouse") { if (p) p.down = null; }       // マウスはホバー追跡を継続
+  else ptrs.delete(e.pointerId);
+}
+cv.addEventListener("pointerup", e => pointerEnd(e, false));
+cv.addEventListener("pointercancel", e => pointerEnd(e, true));
+cv.addEventListener("pointerleave", e => { if (!(S.drag && S.drag.id === e.pointerId)) ptrs.delete(e.pointerId); });
+cv.addEventListener("contextmenu", e => e.preventDefault());   // 長押しメニュー抑止
 
 const $ = id => document.getElementById(id);
 $("sConv").addEventListener("input", e => { S.conv = e.target.value / 100; });

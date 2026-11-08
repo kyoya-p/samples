@@ -205,6 +205,7 @@
     const visibleCount = nodes.length;
     let len = nodes.reduce((s, n) => s + n.nodeValue.length, 0);
     for (const f of far) {
+      if (visibleCount) break; // 表示中のテキストがあれば画面外は足さない (1 回を短くして、見えている部分を早く訳す)
       if (nodes.length && len > maxUnit) break;
       nodes.push(f.n);
       len += f.n.nodeValue.length;
@@ -494,13 +495,14 @@
   }
   const applyItem = (it, out) => (it.s ? applyBlock(it.unit, it.s.map, it.s.places, out) : (applyNode(it.unit, it.raw, out), true));
 
-  // まとめ翻訳 (JSON 文字列配列)。Prompt API の responseConstraint で配列の形を指定。使えない応答・エラーは null
+  // まとめ翻訳 (JSON 文字列配列)。使えない応答・エラーは null
   async function translateMany(a, texts, units) {
     if (!("LanguageModel" in self)) return null; // offscreen への中継はまとめ翻訳に未対応 (単位ごとに翻訳)
     const input = wrapBatch(texts, a.target);
     live.begin(units, input);
     try {
-      const raw = await promptRaw(a, input, { responseConstraint: { type: "array", items: { type: "string" }, minItems: texts.length, maxItems: texts.length } });
+      // responseConstraint (JSON スキーマ) は付けない: 実機の Gemini Nano で、付けると先頭要素が未翻訳のまま返ることがあった
+      const raw = await promptRaw(a, input, a.farCtrl ? { signal: a.farCtrl.signal } : {});
       live.end(raw);
       return parseBatch(raw, texts.length);
     } catch (e) {
@@ -553,17 +555,19 @@
   // Prompt API に input を渡して応答 (生) を返す。opts: prompt() の追加オプション (responseConstraint 等)
   async function promptRaw(a, input, opts = {}) {
     const { signal } = a.ctrl;
+    const rsig = opts.signal ? AbortSignal.any([signal, opts.signal]) : signal; // 画面外のみの翻訳はスクロールで中断可
     // セッションは辞書にない原文が出た時点で初めて作り、翻訳モード中は使い回す
     a.base ??= await createSession(a.target, {
       signal,
       monitor(m) { m.addEventListener("downloadprogress", (e) => setLabel(a, e.loaded < 1 ? `モデル取得中 ${Math.floor(e.loaded * 100)}%` : "準備中…")); },
     });
-    const clone = await a.base.clone({ signal });
+    if (a.progress) setLabel(a, a.progress); // 準備完了後は進捗表示に戻す
+    const clone = await a.base.clone({ signal: rsig });
     try {
-      if (!debugCode) return await clone.prompt(input, { ...opts, signal });
+      if (!debugCode) return await clone.prompt(input, { ...opts, signal: rsig });
       // デバッグ時はストリーミングで受け取り、生成中の訳文を表示する (チャンクは差分。累積で返す版にも対応)
       let acc = "";
-      for await (const chunk of clone.promptStreaming(input, { ...opts, signal })) {
+      for await (const chunk of clone.promptStreaming(input, { ...opts, signal: rsig })) {
         acc = chunk.startsWith(acc) && acc ? chunk : acc + chunk;
         live.update(acc);
       }
@@ -735,11 +739,22 @@
           (hint ? hint + "\n" : "") + "Reply with JSON only.";
         live.begin(el, `[画像解析] ${describe(el)}\n${prompt}`);
         const t0 = performance.now();
-        const clone = await a.imgBase.clone({ signal: a.ctrl.signal });
-        let raw;
+        // 実機の Gemini Nano は画像入力で kErrorUnknown を返すことがあるため、1 回だけ再試行。1 回あたり 150 秒で打ち切る
+        let raw, lastErr;
         try {
-          raw = await clone.prompt([{ role: "user", content: [{ type: "text", value: prompt }, { type: "image", value: crop }] }], { responseConstraint: IMG_SCHEMA, signal: a.ctrl.signal });
-        } finally { clone.destroy(); crop.close(); }
+          for (let attempt = 0; attempt < 2 && raw === undefined; attempt++) {
+            const clone = await a.imgBase.clone({ signal: a.ctrl.signal });
+            try {
+              raw = await clone.prompt([{ role: "user", content: [{ type: "text", value: prompt }, { type: "image", value: crop }] }],
+                { responseConstraint: IMG_SCHEMA, signal: AbortSignal.any([a.ctrl.signal, AbortSignal.timeout(150000)]) });
+            } catch (e) {
+              if (a.ctrl.signal.aborted) throw e;
+              lastErr = e;
+              console.debug("[Nano Translator] 画像解析を再試行", e);
+            } finally { clone.destroy(); }
+          }
+        } finally { crop.close(); }
+        if (raw === undefined) throw lastErr;
         live.end(raw);
         const s = clean(raw);
         const obj = JSON.parse(s.slice(s.indexOf("{"), s.lastIndexOf("}") + 1));
@@ -839,8 +854,10 @@
           nodes = collectVisible(); // 解析中のスクロール等に追従
           if (!nodes.length) break;
         }
-        setLabel(a, `翻訳中 ${done}/${done + nodes.pending}`);
-        done += await translateBatch(a, nodes);
+        a.progress = `翻訳中 ${done}/${done + nodes.pending}`;
+        setLabel(a, a.progress);
+        a.farCtrl = nodes.visible ? null : new AbortController(); // 画面外のみの回は、スクロールで見えるテキストが現れたら中断
+        try { done += await translateBatch(a, nodes); } catch (e) { if (!(e.name === "AbortError" && a.farCtrl?.signal.aborted && !signal.aborted)) throw e; break; } finally { a.farCtrl = null; }
       }
       if (analyzeImages && !signal.aborted) await analyzeVisibleImages(a); // 全テキスト翻訳後 (表示中の画像の残り)
       setLabel(a, "");
@@ -855,6 +872,10 @@
   }
 
   function onViewChange() {
+    if (act?.farCtrl && !act.farCtrl.signal.aborted) { // 画面外のみの翻訳中にスクロール: 中断して、見えている部分を先に翻訳し直す
+      const f = act.farCtrl;
+      setTimeout(() => { if (act?.farCtrl === f && collectVisible().visible) f.abort(); }, 0);
+    }
     clearTimeout(viewTimer);
     viewTimer = setTimeout(pump, 300);
   }
