@@ -125,7 +125,7 @@ fun devInfoPdu(reqId: Int? = null) = PDU(
 fun scanPdu(reqId: Int? = null) = PDU(reqId = reqId)
 
 suspend fun snmpGetDevInfo(ip: String) =
-    snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu(ip.toIpV4ULong().toInt()))
+    snmpUnicast(ip, retries = 4, interval = 1.seconds, pdu = devInfoPdu())
 //    snmpSend(Request(ip, devInfoPdu(ip.toIpV4ULong().toInt())))
 
 @OptIn(ExperimentalTime::class)
@@ -283,7 +283,7 @@ fun AppData.SearchDialog(
                 nRetry = scanSnmp.retries,
                 interval = scanSnmp.intervalMS.milliseconds,
                 commStrV1 = scanSnmp.commStrV1,
-                pdu = scanPdu(reqId = it.toInt())
+                pdu = scanPdu()
             )
         }.collect { r ->
             ++cRes

@@ -1,0 +1,9 @@
+# 🤖[AI生成]
+[tools]
+rust = "latest"
+zig = "latest"
+"cargo:bend-lang" = "latest"
+
+[env]
+CC = "{{config_root}}/tools/zig-cc"
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "{{config_root}}/tools/zig-cc"

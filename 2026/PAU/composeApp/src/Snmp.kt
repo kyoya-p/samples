@@ -26,7 +26,7 @@ val defaultSenderSnmp by lazy { createDefaultSenderSnmp() }
 fun createDefaultSenderSnmp(bufferSizeByte: Int = 1024 * 1024): Snmp {
     val trasport = DefaultUdpTransportMapping()
     trasport.receiveBufferSize = bufferSizeByte
-    return SnmpBuilder().udp(UdpAddress()).tm(trasport).v1().v3().build()!!
+    return SnmpBuilder().tm(trasport).v1().v3().build()!!
 }
 
 typealias SnmpTarget = CommunityTarget<UdpAddress>
@@ -212,7 +212,7 @@ fun snmpSendFlow(
     snmp: Snmp = defaultSenderSnmp,
     rps: Int,
     scrambleBlock: Int,
-    requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String(), reqId = ip.toUInt()) },
+    requestBuilder: (ip: ULong) -> Request = { ip -> Request(ip.toIpV4String()) },
 ): Flow<Result> = callbackFlow {
     fun Flow<ULong>.scrambled(nBits: Int): Flow<ULong> = flow {
         val mask = (1UL shl nBits) - 1UL
@@ -226,13 +226,14 @@ fun snmpSendFlow(
         override fun <A : Address?> onResponse(r: ResponseEvent<A>) {
             ++count
             runCatching {
-                val reqAdr = r.response?.requestID?.value?.toUInt()
-                val resAdr = r.peerAddress?.toByteArray()?.toUByteArray()?.toIpV4ULong()?.toUInt()
+                val req = r.userObject as Request
+                val reqAdr = req.target.address.inetAddress
+                val resAdr = (r.peerAddress as? UdpAddress)?.inetAddress
 
                 @Suppress("UNCHECKED_CAST")
                 val res = when {
-                    resAdr != null && resAdr == reqAdr -> Result.Response(r.userObject as Request, r as SnmpEvent)
-                    else -> Result.Timeout(r.userObject as Request)
+                    r.response != null && resAdr == reqAdr -> Result.Response(req, r as SnmpEvent)
+                    else -> Result.Timeout(req)
                 }
                 trySendBlocking(res) // 受信スレッドをブロックする、send制限が必要
                 snmp.cancel(r.request, this)
