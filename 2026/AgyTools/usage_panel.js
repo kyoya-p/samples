@@ -1,5 +1,6 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // セッションログ(~/.gemini/antigravity-cli/brain/*/transcript.jsonl)のトークン使用量と usage_samples.jsonl を集計し、
-// ClaudeCodeTools と同じパネル形式の単一 HTML (agy-panel.html) を出力する
+// ClaudeCodeTools と同じパネル形式の単一 HTML (~/.gemini/antigravity-cli/agy-panel.html) を出力する
 const fs = require('fs'), path = require('path'), os = require('os');
 
 const brainDir = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
@@ -160,12 +161,30 @@ if (lastS) {
   }
 }
 
+// 過去を含む全ての枠: サンプルのリセット時刻ごとに [リセット時刻-枠長, リセット時刻]。グラフの背景帯に使う
+// リセット表記は分単位で揺れるため、15 分以内は同一の枠とみなす
+const windows = {};
+for (const [key, lenMs] of BUCKETS) {
+  windows[key] = [];
+  for (const s of samples) {
+    const reset = resetOf(s, key);
+    if (reset && !windows[key].some(w => Math.abs(w.reset - reset) < 15 * 60000)) windows[key].push({ start: reset - lenMs, reset });
+  }
+  windows[key].sort((a, b) => a.reset - b.reset);
+  // 実際の終了: 次の枠が期日より前に始まっていたら (期日前にリセットされた) その開始まで。枠の重なりを避ける
+  for (let i = 0; i < windows[key].length; i++) {
+    const w = windows[key][i];
+    const nextStart = windows[key].slice(i + 1).map(n => n.start).filter(st => st > w.start && st < w.reset);
+    w.end = nextStart.length ? Math.min(...nextStart) : w.reset;
+  }
+}
 const data = {
   generated: new Date().toISOString(),
   files: dirs.length,
   samples,
   modelSamples,
   proj,
+  windows,
   total: agg(rows),
   byModel: group(r => r.model),
   byModelEffort: group(r => r.model + ' / ' + r.effort),
@@ -297,13 +316,12 @@ function usageChart() {
     const clipId = 'plotArea-' + c.nm;
     const clip = '<clipPath id="' + clipId + '"><rect x="' + P + '" y="0" width="' + (W - 2 * P) + '" height="' + H + '"/></clipPath>';
 
-    const bands = visibleSeries.map(s => {
-      const p = s.p;
-      if (!p || !p.start || !p.reset) return '';
-      const x1 = Math.max(P, x(p.start)), x2 = Math.min(W - P, x(p.reset));
-      if (x2 <= x1) return '';
-      return '<rect x="' + x1.toFixed(1) + '" y="' + P + '" width="' + (x2 - x1).toFixed(1) + '" height="' + (H - 2 * P) + '" fill="' + s.col + '" fill-opacity="0.05"><title>' + s.label + ' 現在の枠 ' + fmtT(p.start) + '〜' + fmtT(p.reset) + '</title></rect>';
-    }).join('');
+    // 過去の枠も現在の枠と同じ背景スタイルで塗る (現在の枠は下で別途描くので除く)。枠の境界に細い線
+    // 枠は 起点 0% → 期日 100% の三角形 (右下が直角) の領域として描く (期日前に次の枠が始まった場合は、その開始で打ち切る)。過去の枠も現在の枠も同じ色・濃さ。過去の枠には輪郭を付ける
+    const tri = (s, st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (P + (H - 2 * P) * (1 - (en - st) / (rs - st))).toFixed(1) + '" fill="' + s.col + '" fill-opacity="0.05"' + (outline ? ' stroke="' + s.col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + s.label + ' ' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
+    const bands = visibleSeries.map(s => (D.windows?.[s.key] || [])
+      .filter(w => !(s.p && Math.abs(w.reset - s.p.reset) < 15 * 60000))
+      .map(w => tri(s, w.start, w.reset, '過去の枠', true, w.end)).join('') + (s.p && s.p.start && s.p.reset ? tri(s, s.p.start, s.p.reset, '現在の枠', false) : '')).join('');
 
     const linesAndDots = visibleSeries.map(s => {
       const pts = S.map((sm, i) => ({ ts: sampleTs[i], iso: sm.ts, v: usedOf(sm, s.key) })).filter(pt => pt.v !== null);
@@ -744,5 +762,7 @@ cumChart();
 })();
 </script></body></html>`;
 
-fs.writeFileSync(path.join(__dirname, 'agy-panel.html'), html, 'utf8');
-console.log('written', path.join(__dirname, 'agy-panel.html'), 'conversations=' + dirs.length, 'requests=' + rows.length, 'total=' + data.total.total);
+const outPath = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'agy-panel.html'); // 出力先は ~/.gemini/antigravity-cli/ 配下
+fs.mkdirSync(path.dirname(outPath), { recursive: true });
+fs.writeFileSync(outPath, html, 'utf8');
+console.log('written', outPath, 'conversations=' + dirs.length, 'requests=' + rows.length, 'total=' + data.total.total);

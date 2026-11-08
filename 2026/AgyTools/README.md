@@ -8,7 +8,7 @@ Google Antigravity (`agy`) の使用率（5時間枠・週次、および別枠�
 | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | `usage_hook.js`       | Stop フックから呼ぶ入口。`{"decision":""}` を返しつつ `usage_sample.js` を実行し、追記があればパネルを再生成 |
 | `usage_sample.js`     | `agy -p "/usage"` の残量（使用率換算）と、セッションログのモデル別トークン使用量を `usage_samples.jsonl` に1行追記 |
-| `usage_panel.js`      | `usage_samples.jsonl` とセッションログから `agy-panel.html` を生成                                      |
+| `usage_panel.js`      | `usage_samples.jsonl` とセッションログから `~/.gemini/antigravity-cli/agy-panel.html` を生成                                      |
 | `usage_samples.jsonl` | 採取データ（1行 = 1採取）                                                                               |
 | `agy-panel.html`      | 生成されるパネル（直接編集しない。再生成で上書きされる）                                                |
 

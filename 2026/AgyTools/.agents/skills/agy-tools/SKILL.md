@@ -15,7 +15,7 @@ Google Antigravity (`agy`) の使用状況（5時間枠・週次・別枠の Gem
 - [usage_sample.js](~/projs/samples/2026/AgyTools/usage_sample.js): `agy -p "/usage"` の結果および `~/.gemini/antigravity-cli/brain` ログを集計し追記（欠損枠は直近の既知値を自動継承）
 - [usage_panel.js](~/projs/samples/2026/AgyTools/usage_panel.js): 集計データを HTML パネル (`agy-panel.html`) にレンダリング（3パネル構成、全系列トグル表示、欠損値 forward-fill）
 - [usage_samples.jsonl](~/projs/samples/2026/AgyTools/usage_samples.jsonl): 採取データ（1行 = 1サンプリング）
-- [agy-panel.html](~/projs/samples/2026/AgyTools/agy-panel.html): 生成される HTML パネル
+- [agy-panel.html](~/.gemini/antigravity-cli/agy-panel.html): 生成される HTML パネル
 - [README.md](~/projs/samples/2026/AgyTools/README.md): 仕様・フック設定手順
 - [LOG.md](~/projs/samples/2026/AgyTools/LOG.md): 作業履歴・更新ログ
 - [TASK.md](~/projs/samples/2026/AgyTools/TASK.md): タスク状況・今後の課題
@@ -84,11 +84,11 @@ node usage_hook.js
 
 ### 4. ブラウザでの表示・確認（Orca）
 ```bash
-orca goto --url "~/projs/samples/2026/AgyTools/agy-panel.html"
+orca goto --url "~/.gemini/antigravity-cli/agy-panel.html"
 ```
 
 ## 実装・運用上の重要事項
-- **バックグラウンド実行方針 (`kihonn bg de syori seyo`)**:
+- **バックグラウンド実行方針**:
   コマンド実行やタスクは原則バックグラウンドで実行し、UI をブロックしない。
 - **環境非依存**:
   ユーザーディレクトリ（`os.homedir()`）を動的に解決し、ハードコードしない。

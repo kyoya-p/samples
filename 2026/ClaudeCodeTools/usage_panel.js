@@ -1,3 +1,4 @@
+// 🤖[AI 生成・編集を含む (Claude)]
 // セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(~/.claude/claude-panel.html)を出力する
 // 集計ロジックは usage_dashboard.js と同一(重複除外・synthetic除外)
 const fs = require('fs'), path = require('path'), os = require('os');
