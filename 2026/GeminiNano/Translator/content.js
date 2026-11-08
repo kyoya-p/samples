@@ -4,7 +4,7 @@
 (() => {
   if (globalThis.__nanoInPlace) { globalThis.__nanoInPlace.toggle(); return; }
 
-  const { getTarget, wrap, wrapBatch, parseBatch, clean, createSession, cache, limits, codeParams } = NanoPrompt;
+  const { LANGS, SUPPORTED, getTarget, wrap, wrapBatch, parseBatch, clean, createSession, cache, limits, codeParams } = NanoPrompt;
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "SVG", "CANVAS", "IFRAME", "SELECT", "OPTION"]);
   const BLOCK_SEL = "address,article,aside,blockquote,dd,details,dialog,div,dl,dt,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hr,li,main,nav,ol,p,pre,section,summary,table,tbody,td,tfoot,th,thead,tr,ul,button,select,textarea,iframe,video,canvas";
   let maxUnit = 2000; // 1 回に AI で翻訳する最大文字数。複数の単位をこの文字数までまとめる。超えるブロックはノード単位に分割 (設定 maxUnit)
@@ -30,7 +30,8 @@
   }
   const blockOf = (el) => { while (el.parentElement && el !== document.body && getComputedStyle(el).display.startsWith("inline")) el = el.parentElement; return el; };
   const isCode = (el) => !!el.closest(CODE_SEL) || codeLike(blockOf(el));
-  const isSkipped = (el) => SKIP_TAGS.has(el.tagName.toUpperCase()) || el.isContentEditable || (skipCode && isCode(el));
+  // svg 内の文字はその場で置換せず、画像解析 (文字・翻訳をホバー表示) に任せる (置換すると図の配置が崩れるため)
+  const isSkipped = (el) => SKIP_TAGS.has(el.tagName.toUpperCase()) || el.isContentEditable || !!el.closest("svg") || (skipCode && isCode(el));
   const HAS_LETTER = /\p{L}{2,}/u;
 
   let state = "idle"; // idle (原文表示) | active (表示領域を翻訳。スクロール等で追加分も翻訳) | stopped (エラー等で自動翻訳を止めた。翻訳済み部分は残す)
@@ -43,6 +44,7 @@
   // バッジ: 本体をドラッグで移動、✕で閉じる、原文 ○─ 翻訳 の Material 3 風スイッチで表示を切り替え
   function createBadge() {
     const host = document.createElement("div");
+    host.dataset.nanoUi = "";
     host.style.cssText = "all:initial;position:fixed;right:8px;bottom:8px;z-index:2147483647";
     const root = host.attachShadow({ mode: "open" });
     root.innerHTML = `
@@ -285,15 +287,23 @@
     arr.push(el);
   }
 
+  // 目印らしき文字列 (AI の表記ゆれを含む: <1 />, < /1 >, ＜１／＞ 等)。訳文の DOM に目印を絶対に残さないため、
+  // build() は正規化してから解釈し、テキストに残ったものは除去する。テキストノード単位の訳文も同様 (原文に無い場合)
+  const MARK_LIKE = /[<＜]\s*[/／]?\s*[0-9０-９]+\s*[/／]?\s*[>＞]/g;
+  const normMarks = (out) => out.replace(MARK_LIKE, (m) =>
+    m.replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xfee0)).replace(/＜/g, "<").replace(/＞/g, ">").replace(/／/g, "/").replace(/\s+/g, ""));
+  const stripMarks = (t) => t.replace(MARK_LIKE, "");
+
   // 訳文 (プレースホルダ付き) を検証しつつ子ノード列に組み立てる。構造が合わなければ null
   // 翻訳しない要素 (<n/>) は欠落・<n>…</n> 形でも許容 (欠落は元の位置へ補完、<n>…</n> の中身は捨てる)。翻訳する要素の欠落は不可
   function build(out, map, places) {
+    out = normMarks(out);
     const kids = new Map([[0, []]]); // id → 子ノード列 (0 = ブロック本体)
     const stack = [0];
     const used = new Set();
     const re = /<(\/?)(\d+)(\/?)>/g;
     let last = 0;
-    const addText = (t) => { if (t) kids.get(stack.at(-1)).push(document.createTextNode(t)); };
+    const addText = (t) => { t = stripMarks(t); if (t) kids.get(stack.at(-1)).push(document.createTextNode(t)); };
     for (let m = re.exec(out); m; m = re.exec(out)) {
       addText(out.slice(last, m.index));
       last = re.lastIndex;
@@ -303,6 +313,7 @@
         stack.pop();
       } else {
         const info = map.get(n);
+        if (!info && self) continue; // 原文に無い <n/> (AI が付け足したもの) は捨てる
         if (!info || used.has(n) || (self && !info.atomic)) return null;
         used.add(n);
         kids.get(stack.at(-1)).push(info.el);
@@ -413,6 +424,7 @@
   // 訳文をテキストノードに適用 (前後の空白は原文のまま)。訳文が空なら失敗として記録
   function applyNode(node, raw, out) {
     processed.add(node);
+    if (out && raw.search(MARK_LIKE) < 0) out = stripMarks(out).trim(); // 原文に無い目印は訳文から除去
     if (out && node.isConnected) {
       const value = raw.match(/^\s*/)[0] + out + raw.match(/\s*$/)[0];
       const entry = { show() { if (node.isConnected) node.nodeValue = value; }, hide() { if (node.isConnected) node.nodeValue = raw; } };
@@ -562,6 +574,7 @@
     function ensure() {
       if (host) return;
       host = document.createElement("div");
+      host.dataset.nanoUi = "";
       host.style.cssText = "all:initial;position:fixed;right:8px;bottom:48px;z-index:2147483646";
       const root = host.attachShadow({ mode: "open" });
       root.innerHTML = `<style>
@@ -615,6 +628,188 @@
     };
   })();
 
+  // ---- 画像解析 (スクリーンショット方式)。設定 analyzeImages (既定 ON)
+  // テキスト翻訳の後、表示中の img / svg / canvas / video をタブのスクリーンショットから切り出し、
+  // Gemini Nano (画像入力) で 画像内のテキスト・その翻訳・説明 を得る。結果は画像にマウスを合わせると表示
+  //   img (http(s) の src) の結果は辞書に保存 (原文キー "[image] URL")。svg の <text> は文字を直接取り出して使う
+  let analyzeImages = true;
+  const IMG_SEL = "img, svg, canvas, video";
+  const IMG_MIN = 48; // これより小さい (アイコン等) は対象外 (CSS px)
+  const imgInfo = new WeakMap(); // 要素 → { state: "busy" | "done" | "error", text, translation, description, error }
+  const IMG_SCHEMA = { type: "object", properties: { text: { type: "string" }, translation: { type: "string" }, description: { type: "string" } }, required: ["text", "translation", "description"] };
+
+  // 解析対象: 表示中で一定以上の大きさ、未解析。入れ子の svg は外側のみ
+  function visibleImages() {
+    const list = [];
+    for (const el of document.body.querySelectorAll(IMG_SEL)) {
+      if (imgInfo.has(el) || el.closest("[data-nano-ui]") || (el.tagName.toLowerCase() === "svg" && el.parentElement?.closest("svg"))) continue;
+      const r = el.getBoundingClientRect();
+      const w = Math.min(innerWidth, r.right) - Math.max(0, r.left), h = Math.min(innerHeight, r.bottom) - Math.max(0, r.top);
+      if (w < IMG_MIN || h < IMG_MIN || getComputedStyle(el).visibility === "hidden") continue;
+      list.push(el);
+    }
+    return list;
+  }
+  const imgKey = (el) => {
+    const src = el.tagName === "IMG" ? el.currentSrc || el.src : "";
+    return /^https?:/.test(src) && src.length < 2000 ? `[image] ${src}` : null;
+  };
+  const svgText = (el) => el.tagName.toLowerCase() === "svg" ? [...el.querySelectorAll("text")].map((t) => t.textContent.trim()).filter(Boolean).join("\n") : "";
+
+  // 自前の UI を隠してタブを撮影 → ImageBitmap
+  async function capture() {
+    const ui = [...document.querySelectorAll("[data-nano-ui]")];
+    for (const e of ui) e.style.visibility = "hidden";
+    await new Promise((r) => { requestAnimationFrame(() => requestAnimationFrame(r)); setTimeout(r, 100); }); // 隠した状態が描画されるまで (rAF が止まる非表示タブでも進む)
+    try {
+      const r = await chrome.runtime.sendMessage({ type: "capture" });
+      if (!r?.ok) throw new Error(r?.error ?? "応答なし");
+      const bin = atob(r.dataUrl.split(",")[1]);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      return await createImageBitmap(new Blob([buf], { type: "image/png" }));
+    } finally { for (const e of ui) e.style.visibility = ""; }
+  }
+
+  async function imageSession(a) {
+    if (a.imgBase !== undefined) return a.imgBase;
+    const opts = { expectedInputs: [{ type: "text", languages: SUPPORTED }, { type: "image" }], expectedOutputs: [{ type: "text", languages: [a.target] }] };
+    a.imgBase = null;
+    if (!("LanguageModel" in self)) return null;
+    try {
+      if ((await LanguageModel.availability(opts)) === "unavailable") { console.debug("[Nano Translator] 画像入力は使えない"); return null; }
+      a.imgBase = await LanguageModel.create({
+        ...opts,
+        signal: a.ctrl.signal,
+        initialPrompts: [{ role: "system", content: "You analyze images from web pages. Reply with ONLY a JSON object {\"text\", \"translation\", \"description\"}." }],
+      });
+    } catch (e) {
+      if (e.name === "AbortError") throw e;
+      console.debug("[Nano Translator] 画像解析のセッションを作れない", e);
+    }
+    return a.imgBase;
+  }
+
+  async function analyzeVisibleImages(a) {
+    const els = visibleImages();
+    if (!els.length) return;
+    // 辞書にある img はその場で
+    const todo = [];
+    for (const el of els) {
+      const k = imgKey(el);
+      const hit = k ? await cache.get(a.target, k) : null;
+      if (hit) { try { imgInfo.set(el, { state: "done", ...JSON.parse(hit), cached: true }); continue; } catch { /* 壊れた値は解析し直す */ } }
+      todo.push(el);
+    }
+    if (!todo.length || !(await imageSession(a))) return;
+    let shot;
+    const rects = new Map();
+    try {
+      for (const el of todo) rects.set(el, el.getBoundingClientRect());
+      shot = await capture();
+    } catch (e) { console.debug("[Nano Translator] 撮影できない", e); return; }
+    const scale = shot.width / innerWidth;
+    for (const [i, el] of todo.entries()) {
+      if (a.ctrl.signal.aborted) return;
+      setLabel(a, `画像解析中 ${i + 1}/${todo.length}`);
+      const r = rects.get(el);
+      const x = Math.max(0, r.left), y = Math.max(0, r.top);
+      const w = Math.min(innerWidth, r.right) - x, h = Math.min(innerHeight, r.bottom) - y;
+      const info = { state: "busy" };
+      imgInfo.set(el, info);
+      imgTip.refresh(el);
+      try {
+        const big = Math.max(w, h) * scale;
+        const fit = big > 768 ? 768 / big : 1; // 長辺 768px まで縮小 (速度のため)
+        const crop = await createImageBitmap(shot, Math.round(x * scale), Math.round(y * scale), Math.round(w * scale), Math.round(h * scale),
+          { resizeWidth: Math.max(1, Math.round(w * scale * fit)), resizeHeight: Math.max(1, Math.round(h * scale * fit)) });
+        const st = svgText(el);
+        const hint = [el.getAttribute("alt") ? `Alt text of the image: "${el.getAttribute("alt")}"` : "", st ? `The image contains exactly this text:\n${st}` : ""].filter(Boolean).join("\n");
+        const prompt = "Analyze this image from a web page.\n" +
+          "- text: all text visible in the image, verbatim in its original language (empty string if none)\n" +
+          `- translation: that text translated into ${LANGS[a.target]} (empty string if none)\n` +
+          `- description: a short description of the image in ${LANGS[a.target]} (1-2 sentences)\n` +
+          (hint ? hint + "\n" : "") + "Reply with JSON only.";
+        live.begin(el, `[画像解析] ${describe(el)}\n${prompt}`);
+        const t0 = performance.now();
+        const clone = await a.imgBase.clone({ signal: a.ctrl.signal });
+        let raw;
+        try {
+          raw = await clone.prompt([{ role: "user", content: [{ type: "text", value: prompt }, { type: "image", value: crop }] }], { responseConstraint: IMG_SCHEMA, signal: a.ctrl.signal });
+        } finally { clone.destroy(); crop.close(); }
+        live.end(raw);
+        const s = clean(raw);
+        const obj = JSON.parse(s.slice(s.indexOf("{"), s.lastIndexOf("}") + 1));
+        const res = { text: st || String(obj.text ?? ""), translation: String(obj.translation ?? ""), description: String(obj.description ?? "") };
+        Object.assign(info, res, { state: "done", ms: Math.round(performance.now() - t0) });
+        const k = imgKey(el);
+        if (k) await cache.set(a.target, k, JSON.stringify(res));
+      } catch (e) {
+        live.end(null, e);
+        if (e.name === "AbortError") { imgInfo.delete(el); throw e; }
+        Object.assign(info, { state: "error", error: e.message });
+        console.debug("[Nano Translator] 画像解析に失敗", el, e);
+      }
+      imgTip.refresh(el);
+    }
+    shot.close();
+  }
+
+  // 画像にマウスを合わせたときのコメント (解析結果)
+  const imgTip = (() => {
+    let host = null, box = null, cur = null, timer = 0;
+    function render(el, x, y) {
+      const info = imgInfo.get(el);
+      if (!host) {
+        host = document.createElement("div");
+        host.dataset.nanoUi = "";
+        host.style.cssText = "all:initial;position:fixed;z-index:2147483647;left:0;top:0;pointer-events:none";
+        const root = host.attachShadow({ mode: "open" });
+        root.innerHTML = `<style>
+          .c{box-sizing:border-box;width:min(380px,calc(100vw - 16px));max-height:50vh;overflow:hidden;padding:8px 10px;border-radius:8px;background:#202124f2;color:#e8eaed;font:12px/1.5 system-ui,"Yu Gothic UI",sans-serif;box-shadow:0 4px 16px #0008}
+          .l{color:#8ab4f8;margin:6px 0 2px;font-size:11px}.l:first-child{margin-top:0}.m{color:#9aa0a6}
+          .t{white-space:pre-wrap;word-break:break-word}
+        </style><div class="c"></div>`;
+        box = root.querySelector(".c");
+        document.documentElement.append(host);
+      }
+      const add = (cls, t) => { const d = document.createElement("div"); d.className = cls; d.textContent = t; box.append(d); };
+      box.replaceChildren();
+      if (!info) add("m", "画像: 解析待ち (表示中のテキストの翻訳後に解析)");
+      else if (info.state === "busy") add("m", "画像を解析中…");
+      else if (info.state === "error") add("m", `画像を解析できない: ${info.error}`);
+      else {
+        add("l", "画像内のテキスト");
+        add("t", info.text || "(文字なし)");
+        if (info.text) { add("l", "翻訳"); add("t", info.translation || "(なし)"); }
+        add("l", "説明");
+        add("t", info.description || "(なし)");
+      }
+      if (x !== undefined) {
+        const w = box.offsetWidth, h = box.offsetHeight;
+        host.style.left = Math.max(8, Math.min(x + 14, innerWidth - w - 8)) + "px";
+        host.style.top = Math.max(8, y + 18 + h > innerHeight ? y - h - 10 : y + 18) + "px";
+      }
+    }
+    function hide() { clearTimeout(timer); host?.remove(); host = null; cur = null; }
+    function onMove(e) {
+      if (!analyzeImages || state === "idle") { if (host) hide(); return; }
+      clearTimeout(timer);
+      const { clientX: x, clientY: y } = e;
+      timer = setTimeout(() => {
+        let el = document.elementsFromPoint(x, y).find((n) => n.matches?.(IMG_SEL) && !n.closest("[data-nano-ui]"));
+        while (el?.tagName.toLowerCase() === "svg" && el.parentElement?.closest("svg")) el = el.parentElement.closest("svg");
+        if (!el) { hide(); return; }
+        const r = el.getBoundingClientRect();
+        if (r.width < IMG_MIN || r.height < IMG_MIN) { hide(); return; }
+        cur = el;
+        render(el, x, y);
+      }, 120);
+    }
+    document.addEventListener("mousemove", onMove, { passive: true });
+    return { hide, refresh(el) { if (host && cur === el) render(el); } };
+  })();
+
   // 表示領域の未処理ノードを、まとめ翻訳 1 回分ずつ翻訳。毎回見え方を取り直すので、途中でスクロールしても今見えている部分を優先する
   async function pump() {
     const a = act;
@@ -625,17 +820,19 @@
     try {
       a.target ??= await getTarget();
       maxUnit = (await limits()).maxUnit;
-      const o = await chrome.storage.local.get(["skipCode", "markUntranslated", "markCode", "debugCode"]);
+      const o = await chrome.storage.local.get(["skipCode", "markUntranslated", "markCode", "debugCode", "analyzeImages"]);
       skipCode = o.skipCode !== false;
       markUntranslated = o.markUntranslated !== false;
       markCode = o.markCode === true;
       debugCode = o.debugCode === true;
+      analyzeImages = o.analyzeImages !== false;
       setCodeParams(await codeParams());
       let done = 0;
       for (let nodes = collectVisible(); nodes.length && !signal.aborted; nodes = collectVisible()) {
         setLabel(a, `翻訳中 ${done}/${done + nodes.pending}`);
         done += await translateBatch(a, nodes);
       }
+      if (analyzeImages && !signal.aborted) await analyzeVisibleImages(a); // テキスト翻訳が済んでから、表示中の画像を解析
       setLabel(a, "");
     } catch (e) {
       if (e.name !== "AbortError" && act === a) {
@@ -694,6 +891,7 @@
     const ff = getComputedStyle(b).fontFamily;
     const r = NanoPrompt.codeScore(b.textContent || "", re.mono.test(ff), cp, re);
     tip = document.createElement("div");
+    tip.dataset.nanoUi = "";
     tip.style.cssText = "all:initial;position:fixed;z-index:2147483647;left:0;top:0";
     const root = tip.attachShadow({ mode: "open" });
     root.innerHTML = `<style>
@@ -1006,6 +1204,7 @@
     if (act) {
       act.ctrl.abort();
       act.base?.destroy();
+      act.imgBase?.destroy();
       act = null;
     }
     state = next;
@@ -1016,6 +1215,7 @@
     finish("idle");
     unpaint();
     live.hide();
+    imgTip.hide();
     codeNodes = new Set();
     hideTip();
     for (const e of entries) e.hide();

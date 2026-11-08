@@ -38,6 +38,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
   if (msg?.type === "open-options") {
     chrome.runtime.openOptionsPage().catch(() => chrome.tabs.create({ url: chrome.runtime.getURL("options.html") }));
+  } else if (msg?.type === "capture") {
+    // 画像解析用: 送信元タブの表示部分を撮影 (ページ翻訳の起動時に付与される activeTab 権限で可能)
+    (async () => {
+      const tab = await chrome.tabs.get(sender.tab.id);
+      if (!tab.active) throw new Error("タブが表示されていない");
+      return chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    })().then((dataUrl) => sendResponse({ ok: true, dataUrl }), (e) => sendResponse({ ok: false, error: e.message }));
+    return true;
   } else if (msg?.type === "ensure-offscreen") {
     ensureOffscreen().then(() => sendResponse({ ok: true }), (e) => sendResponse({ ok: false, error: e.message }));
     return true;

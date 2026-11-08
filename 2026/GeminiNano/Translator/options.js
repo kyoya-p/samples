@@ -55,7 +55,7 @@ for (const [k, el] of Object.entries(numberInputs)) {
 }
 
 // チェックボックス設定 (既定 ON。キー未設定は ON 扱い): ソースコードは翻訳しない / 未翻訳・コードのハイライト
-for (const [key, id, def = true] of [["skipCode", "skip-code"], ["markUntranslated", "mark-untranslated"], ["markCode", "mark-code", false], ["debugCode", "debug-code", false]]) {
+for (const [key, id, def = true] of [["skipCode", "skip-code"], ["markUntranslated", "mark-untranslated"], ["markCode", "mark-code", false], ["analyzeImages", "analyze-images"], ["debugCode", "debug-code", false]]) {
   const el = $(id);
   (async () => { const v = (await chrome.storage.local.get(key))[key]; el.checked = v === undefined ? def : v; })();
   el.addEventListener("change", async () => {
