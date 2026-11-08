@@ -1,20 +1,19 @@
 # Web Playmat UI Integration Reference
 
-## 1. Direct Mouse Core Movement
+## 1. Direct Mouse Core Movement & Safe-First Core Swap
 
 ### Event Flow
-1. User clicks on source core:
+1. **User clicks on source core**:
    - Reserve click: `handleSourceCoreClick("Reserve", "soul" | "normal")`
    - Field card core click: `handleSourceCoreClick(card.id, "soul" | "normal")`
-   - Sets `selectedCoreMoveSource = { sourceId, coreType, label }` and highlights source element.
-2. User clicks on target entity:
-   - Target card click: invokes `executeDirectCoreMove(fromId, target.id, coreType)`
-   - Target reserve click: invokes `executeDirectCoreMove(fromId, "Reserve", coreType)`
-3. Action lookup:
-   - Traverses `current.groups.flatMap(g => g.options)`
-   - Matches candidate where `fromEff.source_id === fromId` and `toEff.source_id === toId`
-   - Respects requested `coreType` (prefers soul-core moves if clicked soul core)
-   - Dispatches `/api/step?sid=...&act=<index>` via `doAct(chosen.index)`
+   - Sets `selectedCoreMoveSource = { sourceId, coreType, label, normalCount, soulCount }` and highlights source element.
+2. **User clicks on target entity**:
+   - Target card click: invokes `executeDirectCoreMove(fromId, target.id, normalCount, soulCount)`
+   - Target reserve click: invokes `executeDirectCoreMove(fromId, "Reserve", normalCount, soulCount)`
+3. **Safe-First Matching & Core Swap Priority Invariant (安全優先マッチング原則)**:
+   - When matching candidate actions from `current.groups.flatMap(g => g.options)`:
+     - **Non-Vanishing Priority**: Actions where `!a.vanishing_card_ids || a.vanishing_card_ids.length === 0` are strictly prioritized over vanishing actions. Accidental spirit destruction must never happen via click-to-move.
+     - **Core Swap Priority (`soulCount > 0`)**: If the player clicks a Soul Core and targets another entity with normal cores, `🔄【コア交換】` actions are prioritized above ordinary moves. This guarantees that moving the soul core off a 1-core spirit safely swaps for a normal core instead of destroying the spirit.
 
 ## 2. Dynamic Group Visibility
 
@@ -31,32 +30,14 @@
    - Result: Hand cards always collapse into clean rows grouped by placement count (e.g. `1個`, `2個`, `3個`).
 2. **Tier 2 (Individual Choice Buttons)**:
    - Specific donor combinations, vanishing warnings (`⚠️#3 ストラレイ消滅`), and exact Soul Core usage (`(支払:R:🔷, 配置:#1:🔶)`) are clearly presented in the second-tier buttons inside the opened accordion.
-   - Single-option tiers (`isTerminalSg`) remain immediately executable (⏎) without intermediate nesting.
+   - **Placement Soul Core Separation**: Always separate `配置コア 1個 [🔷] (通常コア)` and `配置コア 1個 [🔴] (ソウルコア)` into distinct sub-headers.
 
-## 4. Vanish Detection Preview (`getVanishingCardIds`)
+## 4. Pending Summon & Core Allocation Invariants (仮召喚・コア要求枠の充足仕様)
 
-- Always trust the server's `option.vanishing_card_ids` array when present, even if empty (`[]`). Do not bypass with `length > 0` which falsely triggers client fallbacks.
-- In client fallback calculations, always inspect `card.category === "NEXUS"` or `card.lv_costs[0] === 0` to guarantee Nexuses are never marked as vanishing (`keep = 0`).
-- Ensure `WebCardDto` includes `category` and `lv_costs`.
-
-## 5. Hot-Reloading Static Web Assets
-
-- The server's `loadHtmlFile()` must read directly from the filesystem on every request without keeping an in-memory cache (`cachedHtml`).
-- This ensures any modifications to `server/web/index.html` take effect immediately upon browser reload (F5) without requiring a server daemon restart.
-
-## 6. Instance ID Binding & Anti-Patterns
-
-- **Attack / Block Action Mapping**:
-  - `attackActionsMap` and `blockActionsMap` must be keyed exclusively by `g.target_instance_id` and looked up via `o.id`.
-  - Do **NOT** strip prefixes from `g.category` to register or look up by `rawName` / `o.name`. Sequence prefixes (`#1`, `#5`) or duplicate copies of the same card will break name-based lookups.
-- **Attacker Identification**:
-  - Use `o.is_attacking === true` or `o.id === data.attacking_card_id`. Never parse battle outcome strings to guess the attacker by name.
-- **Puppeteer / Browser Verification**:
-  - The Playmat connects to `/api/events` via SSE (Server-Sent Events), keeping a persistent connection open. Always use `waitUntil: 'domcontentloaded'` instead of `'networkidle0'` in Puppeteer scripts.
-  - Action execution uses `POST /api/act` with `{ session, index, viewer }`.
-  - When starting `server.exe`, always set the working directory to `2026/BSRuleEngineServer` so `server/web/index.html` is resolved properly.
-
-## 7. Pending Summon & Core Allocation Invariants (仮召喚・コア要求枠の充足仕様)
+- **Donor Net Contribution & Strict Vanishing Guard (`syncPendingSummonWithAllocatedPayment`)**:
+  - The server lists `moves` in internal order (`placeFrom` then `payFrom`). Never rely on positional array matching.
+  - Calculate the **net contribution per donor** (`{ [donorId]: totalCoresContributed }`) across both payment and placement allocations.
+  - **Strict Vanishing Guard**: Even if an action matches contribution counts, if `option.vanishing_card_ids` contains any spirit that currently has remaining cores $> 0$ on the board (i.e. the player did not intentionally empty all its cores), that option is **100% strictly excluded**.
 
 - **Summon Button Enablement on Full Fulfillment (すべて充足したら召喚ボタンを有効化原則)**:
   - `isPendingBothComplete()` evaluates:
@@ -75,7 +56,27 @@
     - **Fulfilled State**: Blinking stops immediately (`animation: none`), and transitions to a calm green completed border (`border: 1.5px solid rgba(34, 197, 94, 0.75)`).
     - **Clutter Suppression**: Never overlay intrusive text labels (e.g. `コスト支払い中`, `維持コア指定中`) via `::before` pseudo-elements onto cards or trays. Visual dashed/solid border cues and HUD progress indicators provide sufficient, clean feedback without obscuring card art.
 
-## 8. Status Badge Orientation on Card Rotation (疲労・重疲労時のLv/BPバッジ水平維持原則)
+## 5. Status Badge Orientation on Card Rotation (疲労・重疲労時のLv/BPバッジ水平維持原則)
 
 - When a card rotates 90° (`.mat-card.exhausted`) or 180° (`.mat-card.heavy-exhausted`), status badges (`.card-badge-lv`, `.card-badge-bp`) counter-rotate (`transform: rotate(-90deg)` / `rotate(-180deg)`) to remain horizontally upright (0°).
 - Badges must be repositioned to stay strictly within card corner boundaries without protruding beyond the rotated card perimeter.
+
+## 6. Vanish Detection Preview (`getVanishingCardIds`)
+
+- Always trust the server's `option.vanishing_card_ids` array when present, even if empty (`[]`). Do not bypass with `length > 0` which falsely triggers client fallbacks.
+- In client fallback calculations, always inspect `card.category === "NEXUS"` or `card.lv_costs[0] === 0` to guarantee Nexuses are never marked as vanishing (`keep = 0`).
+- Ensure `WebCardDto` includes `category` and `lv_costs`.
+
+## 7. Instance ID Binding & Anti-Patterns
+
+- **Attack / Block Action Mapping**:
+  - `attackActionsMap` and `blockActionsMap` must be keyed exclusively by `g.target_instance_id` and looked up via `o.id`.
+  - Do **NOT** strip prefixes from `g.category` to register or look up by `rawName` / `o.name`. Sequence prefixes (`#1`, `#5`) or duplicate copies of the same card will break name-based lookups.
+- **Attacker Identification**:
+  - Use `o.is_attacking === true` or `o.id === data.attacking_card_id`. Never parse battle outcome strings to guess the attacker by name.
+
+## 8. Hot-Reloading Static Web Assets & Multi-Playmat Routing
+
+- The server's `loadHtmlFile()` must read directly from the filesystem on every request without keeping an in-memory cache (`cachedHtml`).
+- Static file edits to `server/web/playmat2.html` and `server/web/index.html` take effect on F5 without daemon restart.
+- E2E Puppeteer scripts connect to SSE streams; always use `waitUntil: 'domcontentloaded'` instead of `'networkidle0'`.

@@ -2,7 +2,7 @@
 
 ## 1. Official Comprehensive Rules Compliance
 
-### Maintain Cost (維持コスト)
+### Maintain Cost (維持コスト - 総合ルール 3-2-5-4 / 3-3-3-3)
 - **Spirits**: Lv1 cost is typically $\ge 1$. Placing 0 cores on a Spirit triggers immediate vanish (消滅 / 総合ルール 3-2-5-4).
 - **Nexus**: Lv1 cost is $0$. A Nexus remains in the arena with 0 cores without vanishing (総合ルール 3-3-3-3).
 - Engine implementation:
@@ -21,10 +21,31 @@
   val thresholds = (minimum..maxPlace).toList()
   ```
 
+### Soul Core Exchange (コア交換 - 総合ルール 11-2)
+- **Core Move vs Core Swap**:
+  - `MOVE_CORE`: Changes the total core count on cards and reserve. Removing all cores causes a spirit to vanish.
+  - `SWAP_CORE` (`🔄【コア交換】`): Atomic 1-to-1 exchange between Soul Core (🔶/🔴) and Normal Core (🔷). Total cores on both donor and receiver remain unchanged.
+  - **No Vanish Invariant**: Since core counts do not change, Core Swap never causes vanishing (`vanishing_card_ids = emptyList()`). This allows safely transferring the Soul Core away from a 1-core spirit without destroying it.
+- Engine implementation (`CompactActions.kt`):
+  ```kotlin
+  val places = listOf(Triple(RESERVE, "R", p.reserve.normal)) + p.field.map { Triple(it.instanceId, it.displayName, it.cores.normal) }
+  places.filter { (id, _, normal) -> id != soulAt.first && normal > 0 }.map { (id, label, _) ->
+      GameAction(0, "MOVE_CORE", "🔄【コア交換】 ${soulAt.second} ⇄ $label", "🔶 ⇄ 🔷 を交換",
+          targetInstanceId = id,
+          moves = listOf(
+              CoreMove(soulAt.first, id, soulAt.second, label, normal = 0, soul = 1),
+              CoreMove(id, soulAt.first, label, soulAt.second, normal = 1, soul = 0)
+          ))
+  }
+  ```
+
 ### Step Start Effects & Simultaneous Trigger Resolution (ステップ開始時効果・同時発揮 / 総合ルール 8-1)
 - Cards with "At the start of step" triggers (e.g. `[Lv2]『自分のメインステップ開始時』...`) are enumerated via `CardScript.enumerateStepStartActions`.
 - **Preemption Rule**: When pending step-start effects exist, normal step actions (Summon, Core Move, End Step) are blocked, and only the pending trigger actions are enumerated.
 - **Simultaneous Resolution (8-1)**: When multiple effects trigger at the same time, the turn player chooses which effect to resolve first. Each resolution consumes one trigger (recorded in `state.usedOncePerTurnEffects`), and remaining unconsumed triggers remain enumerated until all are resolved.
+
+### Multiple-Choice Target Resolution on Triggers (召喚時・誘発効果の複数対象選択原則 / 総合ルール 8-1 / 10-1)
+- When an on-summon or trigger effect (e.g. すくいーど: 相手の疲労状態のスピリット1体を重疲労させる) has multiple legal targets, the engine must enumerate an individual action for **each valid target**, rather than picking an arbitrary default.
 
 ### Two Flash Timings per Battle & Priority (2回のフラッシュタイミング / 総合ルール 8-1-2 & 8-1-4)
 Battle sequence proceeds in 5 distinct phases:
