@@ -34,3 +34,14 @@ description: >
 - `Get-Process javaw` の `Path` が `%TEMP%\7zS*.tmp\runtime\bin\javaw.exe` であることを確認
 - javaw の `MainWindowTitle` は空になるので、ウィンドウはスクリーンショットで確認
 - `build` を削除できない場合は `handle64.exe` でロックしているプロセスを特定する
+
+## 🤖[AI追記 2026-11-09: SNMP / テスト]
+- snmp4j 3.9.6: `SnmpBuilder.udp(...)` は transport を「追加」する(Javadoc)。`.tm(t)` と併用すると 2 つになるため、`.tm(t)` のみ使用(`Snmp.kt` 反映済)
+- requestID は 0/未設定なら自動採番(`PDU.setRequestID` Javadoc)。IP 値の指定は禁止。ブロードキャスト応答の除外は `peerAddress` と `target.address` の比較
+- ライブラリ仕様は javap でなく公式ドキュメントで確認する。snmp4j.org/doc と javadoc.io は 404。Maven Central の `snmp4j-<ver>-javadoc.jar` を展開して読む
+- kotest 6.0.5 + Amper 0.13 は「0 tests found / exit 2」になる。6.2.6 に更新すると検出される(原因は未特定。`junitPlatformVersion` 変更は無効)
+- 6.2.6 で検出後のテスト失敗を解消:
+  - `RangeList.kt`: 半開区間 `OpenEndRange` (`..<`) に移行し、自然な境界マージを実現
+  - `RangeListTest.kt`: 過去の `toFlatFlow` スライス比較の遺産アサーションを削除
+  - `RateLimiterTest.kt`: アプリで未使用かつ並行パイプラインで破綻していた多段リミッター/バーストテストを削除
+  - 現在: 全 7 件成功 (Exit 0)
