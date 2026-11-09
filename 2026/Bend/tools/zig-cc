@@ -1,0 +1,11 @@
+#!/bin/sh
+# 🤖[AI生成: cargo のリンカ / cc-rs の CC として zig cc を使うラッパ]
+# cc-rs が渡す Rust 形式の target (x86_64-unknown-linux-gnu) は zig が解釈できないため zig 形式へ変換
+for a do
+  shift
+  case "$a" in
+    --target=*-unknown-linux-gnu) a="--target=${a#--target=}"; a="${a%-unknown-linux-gnu}-linux-gnu" ;;
+  esac
+  set -- "$@" "$a"
+done
+exec zig cc "$@"

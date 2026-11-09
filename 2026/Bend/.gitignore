@@ -1,0 +1,10 @@
+# 🤖[AI生成: Bend/HVM の生成物を除外]
+# bend gen-hvm / gen-c / gen-cu の出力
+*.hvm
+*.c
+*.cu
+# C/CUDA コンパイル後のバイナリ
+*.out
+*.o
+# mise ローカル設定
+mise.local.toml
