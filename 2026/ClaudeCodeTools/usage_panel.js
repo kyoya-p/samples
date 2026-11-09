@@ -1,5 +1,5 @@
 // 🤖[AI 生成・編集を含む (Claude)]
-// セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(~/.claude/claude-panel.html)を出力する
+// セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(~/.claude/usage/claude-panel.html)を出力する
 // 集計ロジックは usage_dashboard.js と同一(重複除外・synthetic除外)
 const fs = require('fs'), path = require('path'), os = require('os');
 const root = path.join(os.homedir(), '.claude', 'projects');
@@ -28,7 +28,7 @@ const agg = (arr) => ({ req: arr.length, total: sum(arr), input: arr.reduce((s, 
 const group = (keyFn) => { const g = {}; for (const r of rows) { const k = keyFn(r); (g[k] = g[k] || []).push(r); } return Object.entries(g).map(([k, v]) => ({ key: k, ...agg(v) })).sort((a, b) => b.total - a.total); };
 const days = group(r => r.day || 'unknown').sort((a, b) => a.key.localeCompare(b.key));
 // usage_sample.js が記録した使用率（5時間枠・週次）
-const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
+const samplesPath = path.join(os.homedir(), '.claude', 'usage', 'usage_samples.jsonl');
 const samples = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts)) : [];
 
 // 過去サンプルで枠情報が欠損している場合、直前の値を引き継ぐ（チャートの連続性確保）
@@ -557,7 +557,7 @@ cumChart();
   });
 })();
 </script></body></html>`;
-const outPath = path.join(os.homedir(), '.claude', 'claude-panel.html'); // 出力先は ~/.claude/ 配下
+const outPath = path.join(os.homedir(), '.claude', 'usage', 'claude-panel.html'); // 出力先は ~/.claude/usage/ 配下
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, html, 'utf8');
 console.log('written', outPath, 'files=' + files.length, 'requests=' + rows.length, 'total=' + data.total.total);

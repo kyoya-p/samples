@@ -77,7 +77,8 @@ function modelUsage(fromMs, toMs) {
   return byModel;
 }
 
-const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
+const samplesPath = path.join(os.homedir(), '.gemini', 'usage', 'usage_samples.jsonl');
+fs.mkdirSync(path.dirname(samplesPath), { recursive: true });
 const prevLines = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').trim().split('\n').filter(Boolean) : [];
 const prev = prevLines.length ? JSON.parse(prevLines[prevLines.length - 1]) : null;
 const prevTs = prev ? Date.parse(prev.ts) : 0;

@@ -1,6 +1,6 @@
 // 🤖[AI 生成・編集を含む (Claude)]
 // セッションログ(~/.gemini/antigravity-cli/brain/*/transcript.jsonl)のトークン使用量と usage_samples.jsonl を集計し、
-// ClaudeCodeTools と同じパネル形式の単一 HTML (~/.gemini/antigravity-cli/agy-panel.html) を出力する
+// ClaudeCodeTools と同じパネル形式の単一 HTML (~/.gemini/usage/agy-panel.html) を出力する
 const fs = require('fs'), path = require('path'), os = require('os');
 
 const brainDir = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
@@ -79,7 +79,7 @@ const group = keyFn => {
 };
 const days = group(r => r.day || 'unknown').sort((a, b) => a.key.localeCompare(b.key));
 
-const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
+const samplesPath = path.join(os.homedir(), '.gemini', 'usage', 'usage_samples.jsonl');
 const samples = fs.existsSync(samplesPath)
   ? fs.readFileSync(samplesPath, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l)).sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts))
   : [];
@@ -762,7 +762,7 @@ cumChart();
 })();
 </script></body></html>`;
 
-const outPath = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'agy-panel.html'); // 出力先は ~/.gemini/antigravity-cli/ 配下
+const outPath = path.join(os.homedir(), '.gemini', 'usage', 'agy-panel.html'); // 出力先は ~/.gemini/usage/ 配下
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, html, 'utf8');
 console.log('written', outPath, 'conversations=' + dirs.length, 'requests=' + rows.length, 'total=' + data.total.total);

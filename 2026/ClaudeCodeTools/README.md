@@ -9,9 +9,9 @@ Claude Code の使用率（5時間枠・週次）とモデル別トークン使�
 | --------------------- | --------------------------------------------------------------------------- |
 | `usage_hook.js`       | Stop フックから呼ぶ入口。毎回 `usage_sample.js` を実行し、追記があればパネルを再生成                      |
 | `usage_sample.js`     | `claude -p "/usage"` の使用率と、セッションログのモデル別トークン使用量を `usage_samples.jsonl` に1行追記 |
-| `usage_panel.js`      | `usage_samples.jsonl` とセッションログから `~/.claude/claude-panel.html` を生成                    |
-| `usage_samples.jsonl` | 採取データ（1行 = 1採取）                                                             |
-| `claude-panel.html`   | 生成されるパネル（直接編集しない。再生成で上書きされる）                                                |
+| `usage_panel.js`      | `usage_samples.jsonl` とセッションログから `~/.claude/usage/claude-panel.html` を生成                    |
+| `~/.claude/usage/usage_samples.jsonl` | 採取データ（1行 = 1採取）。hook 生成物(`usage_hook.log`、`.usage_hook.lock`)も同ディレクトリ                                                             |
+| `~/.claude/usage/claude-panel.html` | 生成されるパネル（直接編集しない。再生成で上書きされる）                                                |
 
 
 ## 記録の条件

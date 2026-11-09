@@ -1,7 +1,7 @@
 // Antigravity (agy) の Stop フックから呼ぶ使用率採取。
 // 毎回 /usage を取得し、前回記録から10分以上 または 残量が増えた（リセット）ときだけ usage_samples.jsonl に追記する
 // 再帰防止に AGY_USAGE_SAMPLING を使用
-const fs = require('fs'), path = require('path');
+const fs = require('fs'), path = require('path'), os = require('os');
 const { execFileSync } = require('child_process');
 
 process.stdin.resume();
@@ -10,8 +10,11 @@ process.stdout.write('{"decision":""}\n');
 if (process.env.AGY_USAGE_SAMPLING) process.exit(0);
 
 const dir = __dirname;
-const samples = path.join(dir, 'usage_samples.jsonl');
-const lock = path.join(dir, '.usage_hook.lock');
+// 生成データ(採取データ/ログ/ロック)は ~/.gemini/usage に置く
+const dataDir = path.join(os.homedir(), '.gemini', 'usage');
+fs.mkdirSync(dataDir, { recursive: true });
+const samples = path.join(dataDir, 'usage_samples.jsonl');
+const lock = path.join(dataDir, '.usage_hook.lock');
 const size = () => { try { return fs.statSync(samples).size; } catch { return 0; } };
 
 try {
@@ -28,7 +31,7 @@ try {
     execFileSync(process.execPath, [path.join(dir, 'usage_panel.js')], { env, stdio: 'ignore', timeout: 150000 });
   }
 } catch (e) {
-  fs.appendFileSync(path.join(dir, 'usage_hook.log'), `${new Date().toISOString()} ${e.message}\n`);
+  fs.appendFileSync(path.join(dataDir, 'usage_hook.log'), `${new Date().toISOString()} ${e.message}\n`);
 } finally {
   try { fs.unlinkSync(lock); } catch { /* ignore */ }
 }

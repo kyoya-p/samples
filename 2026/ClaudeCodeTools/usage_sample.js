@@ -36,7 +36,8 @@ function modelUsage(fromMs, toMs) {
   }
   return byModel;
 }
-const samplesPath = path.join(__dirname, 'usage_samples.jsonl');
+const samplesPath = path.join(os.homedir(), '.claude', 'usage', 'usage_samples.jsonl');
+fs.mkdirSync(path.dirname(samplesPath), { recursive: true });
 // 過去サンプルから直近の各枠の既知値と最新時刻を取得
 const lines = fs.existsSync(samplesPath) ? fs.readFileSync(samplesPath, 'utf8').trim().split('\n').filter(Boolean) : [];
 const prev = lines.length ? JSON.parse(lines[lines.length - 1]) : null;
