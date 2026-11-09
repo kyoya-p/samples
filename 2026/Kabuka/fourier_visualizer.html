@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>フーリエ変換・級数 視覚化シミュレーター (Fourier Transform Visualizer)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-circle: #818cf8;
+      --accent-wave: #f43f5e;
+      --accent-spectrum: #34d399;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1.5rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .controls-title {
+      font-size: 1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    label span.val {
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    select, input[type="range"], button {
+      width: 100%;
+      background-color: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    input[type="range"] {
+      padding: 0;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      background: #2563eb;
+      border: none;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    .formula-box {
+      background: rgba(0,0,0,0.3);
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      line-height: 1.4;
+    }
+
+    .canvases-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .canvas-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .canvas-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    canvas {
+      width: 100%;
+      height: 280px;
+      background: #090d16;
+      border-radius: 8px;
+    }
+
+    #spectrumCanvas {
+      height: 150px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>フーリエ変換・級数 <span>視覚化 (Fourier Visualizer)</span></h1>
+      <div class="subtitle">周転円（エピサイクル）による波の合成・時間領域波形・周波数スペクトルの連動表示</div>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- 設定パネル -->
+    <div class="panel">
+      <div class="controls-title">コントロール設定</div>
+
+      <div class="control-group">
+        <label for="waveType">波形の種類</label>
+        <select id="waveType">
+          <option value="square">矩形波 (Square Wave)</option>
+          <option value="sawtooth">ノコギリ波 (Sawtooth Wave)</option>
+          <option value="triangle">三角波 (Triangle Wave)</option>
+          <option value="pulse">パルス波 (Pulse Wave)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>合成する項数 (N): <span id="valN" class="val">5</span></label>
+        <input type="range" id="sliderN" min="1" max="50" value="5">
+      </div>
+
+      <div class="control-group">
+        <label>アニメーション速度: <span id="valSpeed" class="val">1.0x</span></label>
+        <input type="range" id="sliderSpeed" min="0.1" max="3.0" step="0.1" value="1.0">
+      </div>
+
+      <div class="btn-group">
+        <button id="btnPause">一時停止 / 再開</button>
+        <button id="btnReset" class="secondary">波形リセット</button>
+      </div>
+
+      <div class="control-group">
+        <label>現在のフーリエ展開式</label>
+        <div id="formulaText" class="formula-box">
+          f(t) = 4/π Σ (1/n) sin(nωt) (n=奇数)
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label>フーリエ変換の直感的解釈</label>
+        <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          • <strong>左上（周転円）</strong>: 各周波数成分の回転ベクトル（正弦波と余弦波の合成）<br>
+          • <strong>右上（時間領域）</strong>: 回転ベクトルの先端の軌跡が合成波形を描く<br>
+          • <strong>下部（周波数スペクトル）</strong>: 波を各周波数ごとの強さ（振幅）に分解した姿
+        </div>
+      </div>
+    </div>
+
+    <!-- 描画エリア -->
+    <div class="canvases-container">
+      <div class="canvas-card">
+        <div class="canvas-title">
+          <span>周転円（エピサイクル）と時間波形（Time Domain）</span>
+          <div class="legend">
+            <div class="legend-item"><div class="dot" style="background:var(--accent-circle)"></div>回転円</div>
+            <div class="legend-item"><div class="dot" style="background:var(--accent-wave)"></div>合成波形</div>
+            <div class="legend-item"><div class="dot" style="background:#ffffff; opacity:0.3"></div>理想目標波形</div>
+          </div>
+        </div>
+        <canvas id="fourierCanvas"></canvas>
+      </div>
+
+      <div class="canvas-card">
+        <div class="canvas-title">
+          <span>周波数スペクトル（Frequency Spectrum / FFT振幅）</span>
+          <div class="legend">
+            <div class="legend-item"><div class="dot" style="background:var(--accent-spectrum)"></div>周波数成分の強さ</div>
+          </div>
+        </div>
+        <canvas id="spectrumCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fourierCanvas = document.getElementById('fourierCanvas');
+    const fCtx = fourierCanvas.getContext('2d');
+    const spectrumCanvas = document.getElementById('spectrumCanvas');
+    const sCtx = spectrumCanvas.getContext('2d');
+
+    const sliderN = document.getElementById('sliderN');
+    const valN = document.getElementById('valN');
+    const sliderSpeed = document.getElementById('sliderSpeed');
+    const valSpeed = document.getElementById('valSpeed');
+    const waveTypeSelect = document.getElementById('waveType');
+    const formulaText = document.getElementById('formulaText');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+
+    let time = 0;
+    let wave = [];
+    let isPaused = false;
+
+    function resizeCanvases() {
+      fourierCanvas.width = fourierCanvas.clientWidth * window.devicePixelRatio;
+      fourierCanvas.height = fourierCanvas.clientHeight * window.devicePixelRatio;
+      spectrumCanvas.width = spectrumCanvas.clientWidth * window.devicePixelRatio;
+      spectrumCanvas.height = spectrumCanvas.clientHeight * window.devicePixelRatio;
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    function getFourierComponents(type, nTerms) {
+      const components = [];
+      const baseRadius = 75;
+
+      for (let i = 0; i < nTerms; i++) {
+        let n, radius;
+        if (type === 'square') {
+          n = i * 2 + 1;
+          radius = baseRadius * (4 / (n * Math.PI));
+        } else if (type === 'sawtooth') {
+          n = i + 1;
+          radius = baseRadius * (2 / (n * Math.PI)) * ((i % 2 === 0) ? 1 : -1);
+        } else if (type === 'triangle') {
+          n = i * 2 + 1;
+          radius = baseRadius * (8 / ((n * n) * (Math.PI * Math.PI))) * ((i % 2 === 0) ? 1 : -1);
+        } else if (type === 'pulse') {
+          n = i + 1;
+          radius = baseRadius * (0.8 / n);
+        }
+        components.push({ n, radius });
+      }
+      return components;
+    }
+
+    function updateFormula(type) {
+      if (type === 'square') {
+        formulaText.innerHTML = 'f(t) = 4/π Σ (1/n) sin(nωt)&nbsp;&nbsp;(n = 1, 3, 5, ...)';
+      } else if (type === 'sawtooth') {
+        formulaText.innerHTML = 'f(t) = 2/π Σ (-1)ⁿ⁺¹/n sin(nωt)&nbsp;&nbsp;(n = 1, 2, 3, ...)';
+      } else if (type === 'triangle') {
+        formulaText.innerHTML = 'f(t) = 8/π² Σ (-1)⁽ⁿ⁻¹⁾/² / n² sin(nωt)&nbsp;&nbsp;(n = 1, 3, 5, ...)';
+      } else if (type === 'pulse') {
+        formulaText.innerHTML = 'f(t) = d + 2/π Σ (1/n) sin(nπd) cos(nωt)&nbsp;&nbsp;(パルス列)';
+      }
+    }
+
+    sliderN.addEventListener('input', () => {
+      valN.textContent = sliderN.value;
+      wave = [];
+    });
+
+    sliderSpeed.addEventListener('input', () => {
+      valSpeed.textContent = sliderSpeed.value + 'x';
+    });
+
+    waveTypeSelect.addEventListener('change', () => {
+      updateFormula(waveTypeSelect.value);
+      wave = [];
+    });
+
+    btnPause.addEventListener('click', () => {
+      isPaused = !isPaused;
+    });
+
+    btnReset.addEventListener('click', () => {
+      wave = [];
+      time = 0;
+    });
+
+    function draw() {
+      if (!isPaused) {
+        time += 0.02 * parseFloat(sliderSpeed.value);
+      }
+
+      const fW = fourierCanvas.width;
+      const fH = fourierCanvas.height;
+      fCtx.clearRect(0, 0, fW, fH);
+
+      const dpr = window.devicePixelRatio || 1;
+      const originX = 140 * dpr;
+      const originY = fH / 2;
+      const waveStartX = 280 * dpr;
+
+      let x = originX;
+      let y = originY;
+
+      const nTerms = parseInt(sliderN.value);
+      const components = getFourierComponents(waveTypeSelect.value, nTerms);
+
+      // 周転円とベクトルの描画
+      components.forEach((comp, idx) => {
+        const prevX = x;
+        const prevY = y;
+        const radius = Math.abs(comp.radius) * dpr;
+        const angle = comp.n * time * (comp.radius < 0 ? -1 : 1);
+
+        x += radius * Math.cos(angle);
+        y += radius * Math.sin(angle);
+
+        // 円の描画
+        fCtx.beginPath();
+        fCtx.arc(prevX, prevY, radius, 0, Math.PI * 2);
+        fCtx.strokeStyle = 'rgba(129, 140, 248, 0.25)';
+        fCtx.lineWidth = 1 * dpr;
+        fCtx.stroke();
+
+        // 半径線の描画
+        fCtx.beginPath();
+        fCtx.moveTo(prevX, prevY);
+        fCtx.lineTo(x, y);
+        fCtx.strokeStyle = 'rgba(129, 140, 248, 0.7)';
+        fCtx.lineWidth = 1.5 * dpr;
+        fCtx.stroke();
+
+        // 先端のドット
+        fCtx.beginPath();
+        fCtx.arc(x, y, 2 * dpr, 0, Math.PI * 2);
+        fCtx.fillStyle = '#38bdf8';
+        fCtx.fill();
+      });
+
+      // 最新の値を波形配列に追加
+      if (!isPaused) {
+        wave.unshift(y);
+        const maxWaveLen = Math.floor((fW - waveStartX) / (1.5 * dpr));
+        if (wave.length > maxWaveLen) {
+          wave.pop();
+        }
+      }
+
+      // 円の先端から波形開始点への接続ガイド線
+      fCtx.beginPath();
+      fCtx.moveTo(x, y);
+      fCtx.lineTo(waveStartX, wave[0] || y);
+      fCtx.strokeStyle = 'rgba(244, 63, 94, 0.4)';
+      fCtx.setLineDash([4 * dpr, 4 * dpr]);
+      fCtx.stroke();
+      fCtx.setLineDash([]);
+
+      // 基準中心線 (y = 0)
+      fCtx.beginPath();
+      fCtx.moveTo(waveStartX, originY);
+      fCtx.lineTo(fW, originY);
+      fCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      fCtx.lineWidth = 1 * dpr;
+      fCtx.stroke();
+
+      // 合成された波形の描画
+      fCtx.beginPath();
+      for (let i = 0; i < wave.length; i++) {
+        const wx = waveStartX + i * 1.5 * dpr;
+        const wy = wave[i];
+        if (i === 0) fCtx.moveTo(wx, wy);
+        else fCtx.lineTo(wx, wy);
+      }
+      fCtx.strokeStyle = '#f43f5e';
+      fCtx.lineWidth = 2 * dpr;
+      fCtx.stroke();
+
+      // 周波数スペクトルの描画
+      const sW = spectrumCanvas.width;
+      const sH = spectrumCanvas.height;
+      sCtx.clearRect(0, 0, sW, sH);
+
+      const maxN = 50;
+      const barW = (sW - 60 * dpr) / maxN;
+      const spectrumOriginY = sH - 25 * dpr;
+
+      // スペクトル軸
+      sCtx.beginPath();
+      sCtx.moveTo(30 * dpr, spectrumOriginY);
+      sCtx.lineTo(sW - 20 * dpr, spectrumOriginY);
+      sCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      sCtx.lineWidth = 1 * dpr;
+      sCtx.stroke();
+
+      // 各周波数成分の振幅棒グラフ
+      components.forEach((c) => {
+        const barH = (Math.abs(c.radius) / 80) * (sH - 50 * dpr);
+        const bx = 35 * dpr + (c.n - 1) * barW;
+        const by = spectrumOriginY - barH;
+
+        sCtx.fillStyle = '#34d399';
+        sCtx.fillRect(bx, by, Math.max(barW * 0.7, 3 * dpr), barH);
+
+        // 周波数ラベル (一部)
+        if (c.n <= 10 || c.n % 5 === 0) {
+          sCtx.fillStyle = '#94a3b8';
+          sCtx.font = `${9 * dpr}px sans-serif`;
+          sCtx.textAlign = 'center';
+          sCtx.fillText(c.n, bx + (barW * 0.35), spectrumOriginY + 15 * dpr);
+        }
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+</body>
+</html>
