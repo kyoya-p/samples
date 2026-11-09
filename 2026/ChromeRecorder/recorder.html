@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Desktop Recorder</title>
+<style>
+  body { font-family: sans-serif; margin: 24px; max-width: 640px; }
+  button { font-size: 16px; padding: 8px 16px; margin-right: 8px; }
+  #log { white-space: pre-wrap; background: #f4f4f4; padding: 8px; margin-top: 16px; min-height: 6em; }
+  video { width: 100%; background: #000; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>Desktop Recorder</h1>
+<p>保存フォルダ: <span id="dir">未設定</span> <button id="chdir">変更</button></p>
+<label>fps <input id="fps" type="number" value="10" min="1" max="60" style="width:4em"></label>
+<p>
+  <button id="start">録画開始</button>
+  <button id="stop" disabled>停止</button>
+</p>
+<div id="log"></div>
+<video id="preview" muted autoplay></video>
+<script src="recorder.js"></script>
+</body>
+</html>

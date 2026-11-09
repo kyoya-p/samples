@@ -1,0 +1,7 @@
+{
+  "manifest_version": 3,
+  "name": "Desktop Recorder (AI-generated)",
+  "version": "0.1.0",
+  "description": "デスクトップ画面とシステム音を共有して webm ファイルに保存する",
+  "action": { "default_title": "録画ページを開く" },
+  "background": { "service_worker": "background.js" }}
