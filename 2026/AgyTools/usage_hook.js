@@ -22,13 +22,22 @@ try {
   if (fs.existsSync(lock) && Date.now() - fs.statSync(lock).mtimeMs < 5 * 60 * 1000) process.exit(0);
   fs.writeFileSync(lock, String(process.pid));
 
-  const env = { ...process.env, AGY_USAGE_SAMPLING: '1', USAGE_GATE: '1' };
+  // Ensure mise shims directory is in PATH
+  const miseShims = path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims');
+  const envPath = (process.env.PATH || '');
+  const updatedPath = fs.existsSync(miseShims) && !envPath.includes(miseShims)
+    ? miseShims + path.delimiter + envPath
+    : envPath;
+  const env = { ...process.env, PATH: updatedPath, AGY_USAGE_SAMPLING: '1', USAGE_GATE: '1' };
   const before = size();
-  execFileSync(process.execPath, [path.join(dir, 'usage_sample.js')], { env, stdio: 'ignore', timeout: 150000 });
+  const nodeBin = fs.existsSync(path.join(miseShims, 'node.exe'))
+    ? path.join(miseShims, 'node.exe')
+    : process.execPath;
+  execFileSync(nodeBin, [path.join(dir, 'usage_sample.js')], { env, stdio: 'ignore', timeout: 150000 });
 
   // 追記されたときだけパネルを再生成
   if (size() !== before) {
-    execFileSync(process.execPath, [path.join(dir, 'usage_panel.js')], { env, stdio: 'ignore', timeout: 150000 });
+    execFileSync(nodeBin, [path.join(dir, 'usage_panel.js')], { env, stdio: 'ignore', timeout: 150000 });
   }
 } catch (e) {
   fs.appendFileSync(path.join(dataDir, 'usage_hook.log'), `${new Date().toISOString()} ${e.message}\n`);

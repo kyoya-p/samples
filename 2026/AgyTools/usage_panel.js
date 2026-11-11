@@ -3,26 +3,45 @@
 // ClaudeCodeTools と同じパネル形式の単一 HTML (~/.gemini/usage/agy-panel.html) を出力する
 const fs = require('fs'), path = require('path'), os = require('os');
 
-const brainDir = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
+function getBrainDirs() {
+  const list = [];
+  const agyBrain = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
+  if (fs.existsSync(agyBrain)) list.push(agyBrain);
+  const t3Base = path.join(os.homedir(), '.t3', 'userdata', 'providers', 'antigravity');
+  if (fs.existsSync(t3Base)) {
+    try {
+      for (const ent of fs.readdirSync(t3Base, { withFileTypes: true })) {
+        if (!ent.isDirectory()) continue;
+        const b = path.join(t3Base, ent.name, 'antigravity-acp', 'brain');
+        if (fs.existsSync(b)) list.push(b);
+      }
+    } catch (_) {}
+  }
+  return list;
+}
+
 const MODEL_RE = /Model Selection` from .+? to ([^\n`]+?)(?: \(([^)]+)\))?\. No need to comment/;
 
-const dirs = fs.existsSync(brainDir)
-  ? fs.readdirSync(brainDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name)
-  : [];
-
 // サブエージェントのモデル継承解決用
-const cidModel = {}, parentOf = {};
-for (const cid of dirs) {
-  const tFile = path.join(brainDir, cid, '.system_generated', 'logs', 'transcript.jsonl');
-  if (!fs.existsSync(tFile)) continue;
+const cidModel = {}, parentOf = {}, sessionDirs = [];
+for (const bDir of getBrainDirs()) {
+  let subDirs = [];
   try {
-    const txt = fs.readFileSync(tFile, 'utf8');
-    const m = txt.match(MODEL_RE);
-    if (m) cidModel[cid] = { model: m[1].trim(), eff: (m[2] || 'unknown').trim() };
-    for (const sub of txt.matchAll(/conversationId[":\s\\]+([0-9a-f-]{36})/gi)) {
-      if (sub[1] !== cid) parentOf[sub[1]] = cid;
-    }
-  } catch { /* skip */ }
+    subDirs = fs.readdirSync(bDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => ({ bDir, cid: d.name }));
+  } catch { continue; }
+  for (const item of subDirs) {
+    sessionDirs.push(item);
+    const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
+    if (!fs.existsSync(tFile)) continue;
+    try {
+      const txt = fs.readFileSync(tFile, 'utf8');
+      const m = txt.match(MODEL_RE);
+      if (m) cidModel[item.cid] = { model: m[1].trim(), eff: (m[2] || 'unknown').trim() };
+      for (const sub of txt.matchAll(/conversationId[":\s\\]+([0-9a-f-]{36})/gi)) {
+        if (sub[1] !== item.cid) parentOf[sub[1]] = item.cid;
+      }
+    } catch { /* skip */ }
+  }
 }
 const resolveModel = (cid, depth = 0) => {
   if (cidModel[cid]) return cidModel[cid];
@@ -31,10 +50,10 @@ const resolveModel = (cid, depth = 0) => {
 };
 
 const seen = new Set(), rows = [];
-for (const cid of dirs) {
-  const tFile = path.join(brainDir, cid, '.system_generated', 'logs', 'transcript.jsonl');
+for (const item of sessionDirs) {
+  const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
   if (!fs.existsSync(tFile)) continue;
-  let { model: curModel, eff: curEff } = resolveModel(cid);
+  let { model: curModel, eff: curEff } = resolveModel(item.cid);
   try {
     for (const line of fs.readFileSync(tFile, 'utf8').split('\n')) {
       if (line.includes('Model Selection')) {
@@ -44,7 +63,7 @@ for (const cid of dirs) {
       if (!line.includes('"PLANNER_RESPONSE"')) continue;
       let j; try { j = JSON.parse(line); } catch { continue; }
       if (j.type !== 'PLANNER_RESPONSE') continue;
-      const key = `${cid}|${j.step_index}|${j.created_at}`;
+      const key = `${item.cid}|${j.step_index}|${j.created_at}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const parts = {
@@ -180,7 +199,7 @@ for (const [key, lenMs] of BUCKETS) {
 }
 const data = {
   generated: new Date().toISOString(),
-  files: dirs.length,
+  files: sessionDirs.length,
   samples,
   modelSamples,
   proj,
@@ -352,8 +371,11 @@ function usageChart() {
       return [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, '1時間前基準', 1]].map(([t, nm, i]) => {
         if (!t || t > t1) return '';
         const cx = x(t), cy = yPct(100), r = 5;
+        const isRight = cx > W / 2;
+        const tx = isRight ? Math.min(W - P - 4, cx - 7) : Math.max(P + 4, cx + 7);
+        const ty = cy + 13 + i * 11;
         return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 100%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
-          '<text x="' + (cx + (cx > W / 2 ? -7 : 7)).toFixed(1) + '" y="' + (cy - 7 - i * 11).toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (cx > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
+          '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (isRight ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
       }).join('');
     }).join('');
 
@@ -765,4 +787,4 @@ cumChart();
 const outPath = path.join(os.homedir(), '.gemini', 'usage', 'agy-panel.html'); // 出力先は ~/.gemini/usage/ 配下
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, html, 'utf8');
-console.log('written', outPath, 'conversations=' + dirs.length, 'requests=' + rows.length, 'total=' + data.total.total);
+console.log('written', outPath, 'conversations=' + sessionDirs.length, 'requests=' + rows.length, 'total=' + data.total.total);

@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "ChromeDoodle - Webページ描画・注釈ツール",
+  "version": "1.0.0",
+  "description": "Webページ上に直接フリーハンド・図形・テキスト描画、既存テキスト編集、暗転クロップ指定、クリップボード領域コピー、画像重ね貼り付け、Undo/Redo対応の注釈拡張機能",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardWrite",
+    "clipboardRead"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "ChromeDoodleを起動/切替 (Alt+Shift+D)"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
+      },
+      "description": "ChromeDoodleの起動/停止切り替え"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

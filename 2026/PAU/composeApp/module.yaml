@@ -31,5 +31,6 @@ settings:
   jvm:
     mainClass: MainKt
     jdk:
+      version: 21
       selectionMode: javaHome
   junit: junit-5

@@ -46,7 +46,7 @@
   #sources .meter { width: 80px; height: 6px; border-radius: 3px; background: var(--hover); overflow: hidden; flex: none; }
   #sources .meter[hidden] { display: none; }
   #sources .meter i { display: block; height: 100%; width: 0; background: var(--fg); }
-  #level { width: 100%; height: 64px; display: block; margin-top: 8px; }
+  #level { width: 100%; height: 32px; display: block; cursor: row-resize; touch-action: none; }
   #levelPanel[hidden] { display: none; }
   #sources .badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--hover); color: var(--muted); }
   /* 録画操作。U+23FA BLACK CIRCLE FOR RECORD / U+23F9 BLACK SQUARE FOR STOP を文字表示 (U+FE0E) で使う */
@@ -93,12 +93,12 @@
     <span id="status"></span>
   </section>
 
-  <video id="preview" muted autoplay hidden></video>
-
   <!-- 🤖 AI: 音声レベルの推移 (直近 30 秒、全画面の合計。横線は -30 dB / -10 dB) -->
   <section class="panel" id="levelPanel" hidden>
     <canvas id="level"></canvas>
   </section>
+
+  <video id="preview" muted autoplay hidden></video>
 
   <!-- ログ (最下部・高さ固定でスクロール) -->
   <section class="panel"><pre id="log"></pre></section>

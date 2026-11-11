@@ -102,9 +102,15 @@ function removeSource(s) {
 // 🤖 AI: 音声レベル表示 (2026-11-11)。画面ごとの横棒メーターと、全画面を合わせた直近 30 秒の推移グラフ。
 // AnalyserNode は destination へ接続しない (再生もしない・録画にも影響しない)。タブ非表示でも止まらないよう setInterval。
 const LEVEL_N = 600, LEVEL_MS = 50; // 30 秒分
-// 🤖 AI: 音声有無の判定 (2026-11-11 たたき台): 合計音量が SOUND_DB 以上を ON_TICKS 連続 (1 秒) で「音あり」、SOUND_DB 未満を OFF_TICKS 連続 (30 秒) で「音なし」
+// 🤖 AI: 音声有無の判定: 合計音量が soundLv 以上を ON_TICKS 連続 (1 秒) で「音あり」、soundLv 未満を OFF_TICKS 連続 (30 秒) で「音なし」
 const SOUND_DB = -45, ON_TICKS = 1000 / LEVEL_MS, OFF_TICKS = 30000 / LEVEL_MS;
-const SOUND_LV = (SOUND_DB + 60) / 60;
+let soundLv = (() => {
+  try {
+    const v = localStorage.getItem("chrome-recorder.soundLv");
+    if (v !== null && !isNaN(Number(v))) return Math.min(1, Math.max(0.01, Number(v)));
+  } catch {}
+  return (SOUND_DB + 60) / 60;
+})();
 let hasSound = false, runAbove = 0, runBelow = 0;
 let mctx, master, masterBuf, history = new Array(LEVEL_N).fill(0), states = new Array(LEVEL_N).fill(false), meterTimer;
 const toLevel = (buf) => { // RMS → dBFS (-60..0) → 0..1
@@ -126,6 +132,7 @@ function attachMeter(s) {
   src.connect(an); src.connect(master);
   s.meter = { src, an, buf: new Float32Array(an.fftSize) };
   $("levelPanel").hidden = false;
+  drawLevel();
 }
 function detachMeter(s) {
   if (!s.meter) return;
@@ -142,12 +149,12 @@ function tickMeter() {
   }
   master.getFloatTimeDomainData(masterBuf);
   const lv = toLevel(masterBuf);
-  if (lv >= SOUND_LV) { runAbove++; runBelow = 0; } else { runBelow++; runAbove = 0; }
+  if (lv >= soundLv) { runAbove++; runBelow = 0; } else { runBelow++; runAbove = 0; }
   if (!hasSound && runAbove >= ON_TICKS) hasSound = true;
   else if (hasSound && runBelow >= OFF_TICKS) hasSound = false;
   history.push(lv); history.shift(); states.push(hasSound); states.shift();
   if (armed && !session && pre && hasSound) beginArmed(true);
-  if (session) session.quiet = lv >= SOUND_LV ? 0 : (session.quiet || 0) + 1; // 録画開始 (またはファイル切替) 以降の連続無音
+  if (session) session.quiet = lv >= soundLv ? 0 : (session.quiet || 0) + 1; // 録画開始 (またはファイル切替) 以降の連続無音
   if (session && $("autoStop").checked && !session.stopping && session.quiet >= OFF_TICKS) requestStop(true); // 無音 30 秒で保存 (自動開始が ON なら待機へ)
   drawLevel();
 }
@@ -156,16 +163,55 @@ function drawLevel() {
   const w = c.width = c.clientWidth * devicePixelRatio, h = c.height = c.clientHeight * devicePixelRatio;
   g.clearRect(0, 0, w, h);
   g.strokeStyle = cs.getPropertyValue("--line"); g.lineWidth = 1;
-  const bw = w / LEVEL_N, ty = h * (1 - SOUND_LV), th = 3 * devicePixelRatio; // ty: しきい値の y 座標
+  const bw = w / LEVEL_N, ty = h * (1 - soundLv), th = 3 * devicePixelRatio; // ty: しきい値の y 座標
   history.forEach((v, i) => { // しきい値以上の棒は濃く、未満は薄く
     const bh = Math.max(1, v * h);
-    g.fillStyle = cs.getPropertyValue(v >= SOUND_LV ? "--fg" : "--muted");
+    g.fillStyle = cs.getPropertyValue(v >= soundLv ? "--fg" : "--muted");
     g.fillRect(i * bw, h - bh, Math.max(1, bw - 0.5), bh);
   });
   g.fillStyle = cs.getPropertyValue("--rec"); // 「音あり」判定中は、しきい値の線に重ねて太線にする
   states.forEach((on, i) => { if (on) g.fillRect(i * bw, ty - th / 2, Math.ceil(bw), th); });
-  g.strokeStyle = cs.getPropertyValue("--rec"); g.setLineDash([4, 4]); // しきい値
-  g.beginPath(); g.moveTo(0, ty); g.lineTo(w, ty); g.stroke(); g.setLineDash([]);
+  // 🤖 AI: しきい値 (破線から細い実線へ変更。ドラッグでレベル変更可)
+  g.strokeStyle = cs.getPropertyValue("--rec");
+  g.lineWidth = 1 * devicePixelRatio;
+  g.setLineDash([]);
+  g.beginPath();
+  g.moveTo(0, ty);
+  g.lineTo(w, ty);
+  g.stroke();
+}
+
+// 🤖 AI: 音声判定しきい値のドラッグ操作 (上下ドラッグで判定レベルを変更・記憶)
+function setupLevelDrag() {
+  const c = $("level");
+  if (!c) return;
+  const updateTitle = () => {
+    const db = Math.round(soundLv * 60 - 60);
+    c.title = `音声判定しきい値: ${db} dBFS (上下ドラッグで調整)`;
+  };
+  const setLevelFromY = (clientY) => {
+    const rect = c.getBoundingClientRect();
+    const y = Math.min(rect.bottom, Math.max(rect.top, clientY));
+    const ratio = rect.height ? (1 - (y - rect.top) / rect.height) : soundLv;
+    soundLv = Math.min(1, Math.max(0.01, ratio));
+    try { localStorage.setItem("chrome-recorder.soundLv", String(soundLv)); } catch {}
+    updateTitle();
+    drawLevel();
+  };
+  c.addEventListener("pointerdown", (e) => {
+    c.setPointerCapture(e.pointerId);
+    setLevelFromY(e.clientY);
+    const onMove = (ev) => setLevelFromY(ev.clientY);
+    const onUp = (ev) => {
+      c.removeEventListener("pointermove", onMove);
+      c.removeEventListener("pointerup", onUp);
+      c.removeEventListener("pointercancel", onUp);
+    };
+    c.addEventListener("pointermove", onMove);
+    c.addEventListener("pointerup", onUp);
+    c.addEventListener("pointercancel", onUp);
+  });
+  updateTitle();
 }
 
 // 🤖 AI: 音声が付かないときの案内。ウィンドウ共有で音声が付くかは未確認 (2026-11-10 の実例は audio=0)。画面全体ならシステム音を取得できた (README「動作確認」)
@@ -273,8 +319,8 @@ function stopComposite() {
 }
 
 // 🤖 AI: 録画 1 ファイル分 (セグメント)。録画中に ⏺ を押すと、ここまでを保存して新しいファイルで続ける (2026-11-11 ユーザー指示)
-async function uniqueName(dir) {
-  const base = fileName().replace(/\.webm$/, "");
+async function uniqueName(dir, suffix = "") {
+  const base = fileName().replace(/\.webm$/, "") + suffix;
   for (let i = 1; ; i++) { // 同じ秒に分割した場合は _2, _3… を付ける
     const name = i === 1 ? `${base}.webm` : `${base}_${i}.webm`;
     try { await dir.getFileHandle(name); } catch (e) { if (e.name === "NotFoundError") return name; throw e; }
@@ -301,8 +347,8 @@ function bindWriter(r, w, dir, name, initial = []) {
   r.fileName = name;
 }
 
-async function startSegment(dir) {
-  const name = await uniqueName(dir);
+async function startSegment(dir, suffix = "") {
+  const name = await uniqueName(dir, suffix);
   const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
   try {
     const r = new MediaRecorder(stream, { mimeType: pickMime() });
@@ -321,7 +367,13 @@ async function startSegment(dir) {
 // 「音あり」判定の時点でそのバッファをファイルの先頭にして続きを書き込む。音あり判定は 1 秒かかるが、その 1 秒も先頭に含まれる。
 // 音の立ち上がり候補 (runAbove > 0) の間は作り直さないので、立ち上がりがバッファの前に切れることはない。
 const PRE_MS = 10000;
-let armed = false, pre, preTimer;
+let armed = false, pre, preTimer, armTime;
+function elapsedSuffix(t0) {
+  if (!t0) return "";
+  const sec = Math.max(0, Math.floor((Date.now() - t0) / 1000));
+  const z = (n) => String(n).padStart(2, "0");
+  return `_${z(Math.floor(sec / 60))}${z(sec % 60)}`;
+}
 function startPre() {
   const r = new MediaRecorder(stream, { mimeType: pickMime() }), chunks = [];
   r.ondataavailable = (e) => e.data.size && chunks.push(e.data);
@@ -336,6 +388,7 @@ async function arm() {
   if (armed || session) return;
   if (!sources.some((s) => s.meter)) { log("自動録画: 音声ありの画面を追加してください"); $("autoStart").checked = false; return; }
   armed = true; $("addScreen").disabled = true;
+  armTime = Date.now();
   try {
     stream = await buildComposite();
   } catch (e) {
@@ -351,7 +404,7 @@ async function arm() {
 function disarm() {
   if (session) { armed = false; return; } // 録画中なら停止まで続ける (停止後は待機に戻らない)
   if (!armed) return;
-  armed = false; clearInterval(preTimer);
+  armed = false; clearInterval(preTimer); armTime = null;
   if (pre) { try { pre.r.stop(); } catch {} pre = null; }
   if (composite) { stream.getAudioTracks().forEach((t) => t.stop()); stopComposite(); }
   $("addScreen").disabled = false; $("status").textContent = ""; setTabRec("");
@@ -364,11 +417,13 @@ async function beginArmed(auto) {
   $("start").disabled = true;
   try {
     const dir = await getDir();
-    const name = await uniqueName(dir);
+    // 🤖 AI: 自動開始時は開始からの経過分秒 (_mmss) を付与 (ユーザー指示)
+    const suffix = auto ? elapsedSuffix(armTime) : "";
+    const name = await uniqueName(dir, suffix);
     const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
     recorder = p.r;
     bindWriter(recorder, w, dir, name, p.chunks); // 同期で以降のチャンクの書き込み先を切り替える
-    session = { dir, auto };
+    session = { dir, auto, armTime };
     log(`${auto ? "音声検知" : "手動"}: 先頭 ${Math.round((Date.now() - p.t0) / 1000)} 秒分のバッファから録画`);
     afterStart(dir);
   } catch (e) {
@@ -423,19 +478,21 @@ $("start").onclick = async () => {
     if (sources.length) {
       stream = await buildComposite();
       renderSources();
-    } else try {
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: fps() },
-        audio: withAudio(),
-        systemAudio: withAudio() ? "include" : "exclude",
-      });
-    } catch (e) {
-      // フォルダ選択・許可のダイアログでクリックの効力が切れた場合
-      if (e.name === "InvalidStateError") { log("保存フォルダの準備ができました。もう一度 ⏺ (録画開始) を押してください"); $("start").disabled = false; return; }
-      throw e;
+    } else {
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: fps() },
+          audio: withAudio(),
+          systemAudio: withAudio() ? "include" : "exclude",
+        });
+      } catch (e) {
+        // フォルダ選択・許可のダイアログでクリックの効力が切れた場合
+        if (e.name === "InvalidStateError") { log("保存フォルダの準備ができました。もう一度 ⏺ (録画開始) を押してください"); $("start").disabled = false; return; }
+        throw e;
+      }
+      setPreview(stream);
+      tempSrc = { name: `screen${sourceSeq + 1}`, stream, temp: true }; attachMeter(tempSrc); // 1画面録画時のみ仮ソースとして一覧・音声レベルの対象にする
     }
-    setPreview(stream);
-    tempSrc = { name: `screen${sourceSeq + 1}`, stream, temp: true }; attachMeter(tempSrc); // 音声レベルの対象にする
     recorder = await startSegment(dir);
     session = { dir };
 
@@ -456,7 +513,8 @@ async function splitSegment() {
   $("start").disabled = true;
   s.busy = (async () => {
     const old = recorder;
-    try { recorder = await startSegment(s.dir); }
+    const suffix = (s.auto && s.armTime) ? elapsedSuffix(s.armTime) : "";
+    try { recorder = await startSegment(s.dir, suffix); }
     catch (e) { log(`エラー: 分割できませんでした (録画は継続): ${e.name}: ${e.message}`); return; }
     log(`分割: ${old.fileName} を保存し、${recorder.fileName} へ録画`);
     old.stop();
@@ -476,9 +534,12 @@ function scheduleRotate() {
   const ms = rotateMs();
   if (ms && session && !session.stopping) rotateTimer = setTimeout(splitSegment, ms);
 }
-for (const id of ["rotate"]) {
+// 🤖 AI: 設定を localStorage に記憶 (fps, 自動分割)
+for (const id of ["rotate", "fps"]) {
   try { const v = localStorage.getItem(`chrome-recorder.${id}`); if (v !== null) $(id).value = v; } catch {}
-  $(id).addEventListener("change", () => { try { localStorage.setItem(`chrome-recorder.${id}`, $(id).value); } catch {} });
+  const save = () => { try { localStorage.setItem(`chrome-recorder.${id}`, $(id).value); } catch {} };
+  $(id).addEventListener("change", save);
+  $(id).addEventListener("input", save);
 }
 
 // 🤖 AI: 録画中の経過時間表示
@@ -548,3 +609,4 @@ async function requestStop(rearm = false) {
 $("stop").onclick = () => requestStop(); // 引数 (MouseEvent) を rearm と取り違えないよう明示
 
 showDir();
+setupLevelDrag();

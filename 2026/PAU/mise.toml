@@ -1,5 +1,5 @@
 [tools]
-java = "21" # 🤖AI: 2026-11-11 ユーザー指示で 25 から変更
+java = "25"
 coreutils = "latest"
 7zip = "26.05"
 

@@ -10,7 +10,7 @@ html_template = f'''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>シャープ【6753】ローソク足時系列＆周波数空間（FFT）ダッシュボード</title>
+  <title>シャープ【6753】カレンダー日等間隔ローソク足＆周期逆算重畳ダッシュボード</title>
   <!-- TradingView Lightweight Charts (Candlestick) -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <!-- Chart.js & Zoom for Frequency Domain -->
@@ -30,6 +30,7 @@ html_template = f'''<!DOCTYPE html>
       --accent-red: #ef4444;
       --accent-purple: #c084fc;
       --accent-amber: #fbbf24;
+      --accent-rose: #f43f5e;
     }}
 
     * {{
@@ -42,81 +43,12 @@ html_template = f'''<!DOCTYPE html>
     body {{
       background-color: var(--bg-color);
       color: var(--text-main);
-      padding: 1.5rem;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1rem;
       min-height: 100vh;
     }}
-
-    header {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-      border-bottom: 1px solid var(--card-border);
-      padding-bottom: 1rem;
-    }}
-
-    .title-area h1 {{
-      font-size: 1.6rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }}
-
-    .badge {{
-      background: #0284c7;
-      color: #fff;
-      font-size: 0.8rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 9999px;
-      font-weight: 600;
-    }}
-
-    .subtitle {{
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
-    }}
-
-    .stat-cards {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-    }}
-
-    .card {{
-      background-color: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }}
-
-    .card-title {{
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }}
-
-    .card-value {{
-      font-size: 1.6rem;
-      font-weight: 700;
-    }}
-
-    .card-sub {{
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }}
-
-    .up {{ color: var(--accent-green); }}
-    .down {{ color: var(--accent-red); }}
 
     .chart-container-card {{
       background-color: var(--card-bg);
@@ -233,7 +165,7 @@ html_template = f'''<!DOCTYPE html>
 
     #tvChartWrapper {{
       position: relative;
-      height: 480px;
+      height: 520px;
       width: 100%;
       border-radius: 8px;
       overflow: hidden;
@@ -242,25 +174,8 @@ html_template = f'''<!DOCTYPE html>
 
     .freq-chart-wrapper {{
       position: relative;
-      height: 310px;
+      height: 290px;
       width: 100%;
-    }}
-
-    .peak-badges {{
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }}
-
-    .peak-badge {{
-      background: rgba(20, 184, 166, 0.15);
-      border: 1px solid var(--accent-teal);
-      color: var(--accent-teal);
-      font-size: 0.8rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-      font-weight: 600;
     }}
 
     .events-grid {{
@@ -305,65 +220,67 @@ html_template = f'''<!DOCTYPE html>
       align-items: center;
       gap: 0.3rem;
     }}
+
+    .sync-tag {{
+      background: rgba(20, 184, 166, 0.12);
+      border: 1px solid rgba(20, 184, 166, 0.4);
+      color: #2dd4bf;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }}
+
+    .overlay-controls {{
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      padding: 0.3rem 0.7rem;
+      border-radius: 6px;
+    }}
   </style>
 </head>
 <body>
 
-  <!-- ヘッダー -->
-  <header>
-    <div class="title-area">
-      <h1>シャープ【6753】ローソク足時系列＆周波数空間（FFT）ダッシュボード <span class="badge">東証プライム</span></h1>
-      <div class="subtitle">ローソク足四本値・移動平均・出来高・周波数空間スペクトル（リニア/対数切替）の統合分析</div>
-    </div>
-  </header>
-
-  <!-- 統計カード -->
-  <div class="stat-cards">
-    <div class="card">
-      <div class="card-title">最新株価（終値）</div>
-      <div class="card-value" id="currentPrice">538.0 円</div>
-      <div class="card-sub up" id="currentDiff">+9.0 円 (+1.70%)</div>
-    </div>
-    <div class="card">
-      <div class="card-title">過去最高値（調整後）</div>
-      <div class="card-value" style="color: var(--accent-amber)">20,524.6 円</div>
-      <div class="card-sub">2007年4月9日（AQUOS全盛期）</div>
-    </div>
-    <div class="card">
-      <div class="card-title">過去最安値（27年間）</div>
-      <div class="card-value down">527.0 円</div>
-      <div class="card-sub">2026年11月4日（直近安値）</div>
-    </div>
-    <div class="card">
-      <div class="card-title">期間内 変動率</div>
-      <div class="card-value down" id="rangeReturn">-97.4%</div>
-      <div class="card-sub" id="rangeLabel">全期間 (2000年〜2026年)</div>
-    </div>
-  </div>
-
-  <!-- 時間領域：ローソク足時系列チャート -->
+  <!-- 時間領域：ローソク足チャート（逆算波重畳） -->
   <div class="chart-container-card">
     <div class="card-header-row">
       <div class="section-title">
-        <span style="color: var(--accent-blue);">●</span> 時間領域（Time Domain）：ローソク足四本値チャート
+        <span style="color: var(--accent-blue);">●</span> 時間領域（Time Domain）：ローソク足 ＆ 周期逆算（IFFT）重畳表示
       </div>
+
       <div class="options-group">
+        <!-- ★ 周期スペクトル逆算波の重畳コントロール ★ -->
+        <div class="overlay-controls">
+          <label class="toggle-label" style="color: var(--accent-rose); font-weight: 700;">
+            <input type="checkbox" id="toggleFourier" checked> 周期逆算波 (IFFT) を重ねる
+          </label>
+          <select id="selectHarmonicsCount" style="background:#0f172a; color:#f8fafc; border:1px solid rgba(244,63,94,0.5); border-radius:4px; padding:0.15rem 0.4rem; font-size:0.8rem; cursor:pointer;">
+            <option value="3">上位3成分 (大局サイクル)</option>
+            <option value="5" selected>上位5成分 (滑らかな近似)</option>
+            <option value="10">上位10成分 (詳細近似)</option>
+            <option value="20">上位20成分 (高周波追従)</option>
+          </select>
+          <label class="toggle-label" style="color: var(--accent-blue); font-size:0.8rem; margin-left:0.3rem;">
+            <input type="checkbox" id="toggleTop1"> 第1主周期波も表示
+          </label>
+        </div>
+
         <div class="button-group" id="chartTypeButtons">
           <button class="btn active" data-type="candle">ローソク足</button>
           <button class="btn" data-type="line">ライン</button>
         </div>
 
         <label class="toggle-label">
-          <input type="checkbox" id="toggleSMA25" checked> SMA25 (黄)
+          <input type="checkbox" id="toggleSMA25" checked> SMA25
         </label>
         <label class="toggle-label">
-          <input type="checkbox" id="toggleSMA75" checked> SMA75 (青)
+          <input type="checkbox" id="toggleSMA75" checked> SMA75
         </label>
         <label class="toggle-label">
-          <input type="checkbox" id="toggleSMA200" checked> SMA200 (紫)
-        </label>
-        <label class="toggle-label" style="color: var(--accent-red); font-weight: bold;">
-          <input type="checkbox" id="toggleFourier"> フーリエ周期復元 (FFT)
+          <input type="checkbox" id="toggleSMA200" checked> SMA200
         </label>
       </div>
     </div>
@@ -377,6 +294,9 @@ html_template = f'''<!DOCTYPE html>
       <div class="ohlc-item"><span class="ohlc-label">終値(C):</span> <span class="ohlc-val" id="infoClose">538.0円</span></div>
       <div class="ohlc-item"><span class="ohlc-label">出来高(V):</span> <span class="ohlc-val" id="infoVolume">3,269,900株</span></div>
       <div class="ohlc-item"><span class="ohlc-label">前日比:</span> <span class="ohlc-val up" id="infoDiff">+9.0円 (+1.70%)</span></div>
+      <div class="ohlc-item" id="infoIFFTItem" style="margin-left:auto; color: var(--accent-rose); font-weight: bold;">
+        <span class="ohlc-label" style="color: var(--accent-rose);">IFFT逆算値:</span> <span id="infoIFFTVal">-- 円</span>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -388,42 +308,42 @@ html_template = f'''<!DOCTYPE html>
         <button class="btn" data-range="10Y">10年</button>
         <button class="btn active" data-range="ALL">全期間 (27y)</button>
       </div>
-      <span class="hint-tag">🔍 マウスホイールで時間軸の伸縮 / ドラッグでスクロール</span>
+      <span class="hint-tag">🔍 マウスホイールで時間軸の伸縮 / ドラッグでスクロール（周期逆算波もリアルタイムに自動再計算・追従）</span>
     </div>
 
     <!-- TradingView ローソク足チャート本体 -->
     <div id="tvChartWrapper"></div>
   </div>
 
-  <!-- ★周波数空間グラフ（Frequency Domain）★ -->
+  <!-- ★周期スペクトルグラフ★ -->
   <div class="chart-container-card">
     <div class="card-header-row">
       <div class="section-title">
-        <span style="color: var(--accent-teal);">●</span> 周波数空間（Frequency Domain）：振幅スペクトル [横軸：周波数 $f$ (1/営業日)]
+        <span style="color: var(--accent-teal);">●</span> 周期スペクトル（Period Spectrum）：振幅 [横軸：周期 $T$ (カレンダー日)]
       </div>
       <div class="options-group">
-        <!-- 対数スケール切替オプション -->
+        <label class="toggle-label" style="color: var(--accent-teal); font-weight: 600;">
+          <input type="checkbox" id="toggleLogX" checked> 横軸：対数 (Log X)
+        </label>
         <label class="toggle-label" style="color: var(--accent-teal); font-weight: 600;">
           <input type="checkbox" id="toggleLogY"> 縦軸：対数 (Log Y / dB相当)
         </label>
-        <label class="toggle-label" style="color: var(--accent-teal); font-weight: 600;">
-          <input type="checkbox" id="toggleLogX"> 横軸：対数 (Log X)
-        </label>
 
-        <span class="hint-tag">🔍 ホイールで拡大縮小 / ドラッグでパン</span>
         <button class="btn" id="btnResetFreqZoom" style="background: #334155; padding: 0.3rem 0.6rem; font-size: 0.8rem;">
           ズームリセット
         </button>
-        <button class="btn" id="btnLowFreqZoom" style="background: #0284c7; padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-          低周波域 (f≦0.1)
+        <button class="btn" id="btnShortPeriodZoom" style="background: #0284c7; padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+          短期〜中期 (2〜120日)
         </button>
       </div>
     </div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-      <div class="peak-badges" id="peakBadgesContainer"></div>
+      <div class="sync-tag" id="visibleRangeStatus">
+        ⚡ FFT解析対象：上のチャートの表示区間を自動追従中
+      </div>
       <div style="font-size: 0.8rem; color: var(--text-muted);" id="scaleStatusText">
-        スケール表示: [横軸: リニア] × [縦軸: リニア]
+        横軸：周期 T (カレンダー日) ── 左端: 短期 (2日〜) ──→ 右端: 長期 (表示区間最大日数)
       </div>
     </div>
 
@@ -435,7 +355,7 @@ html_template = f'''<!DOCTYPE html>
   <!-- 重要歴史イベント -->
   <div class="chart-container-card">
     <div class="section-title" style="font-size: 0.95rem; color: var(--text-muted);">
-      歴史的転換点（クリックで該当期間へズーム & 周波数解析）
+      歴史的転換点（クリックで該当期間へズーム & 周期解析）
     </div>
     <div class="events-grid">
       <div class="event-card" onclick="zoomTo('2006-01-01', '2008-12-31')">
@@ -464,6 +384,56 @@ html_template = f'''<!DOCTYPE html>
   <script>
     const RAW_DATA = {json.dumps(raw_data)};
 
+    function buildFullCalendarData(rawData) {{
+      const map = new Map();
+      rawData.forEach(d => map.set(d[0], d));
+
+      const startParts = rawData[0][0].split('-').map(Number);
+      const endParts = rawData[rawData.length - 1][0].split('-').map(Number);
+
+      const cur = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2]));
+      const end = new Date(Date.UTC(endParts[0], endParts[1] - 1, endParts[2]));
+
+      const calData = [];
+      let lastClose = rawData[0][4];
+
+      while (cur <= end) {{
+        const y = cur.getUTCFullYear();
+        const m = String(cur.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(cur.getUTCDate()).padStart(2, '0');
+        const dateStr = `${{y}}-${{m}}-${{d}}`;
+
+        if (map.has(dateStr)) {{
+          const row = map.get(dateStr);
+          lastClose = row[4];
+          calData.push({{
+            date: dateStr,
+            open: row[1],
+            high: row[2],
+            low: row[3],
+            close: row[4],
+            volume: row[5],
+            isHoliday: false
+          }});
+        }} else {{
+          calData.push({{
+            date: dateStr,
+            open: lastClose,
+            high: lastClose,
+            low: lastClose,
+            close: lastClose,
+            volume: 0,
+            isHoliday: true
+          }});
+        }}
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }}
+
+      return calData;
+    }}
+
+    const CALENDAR_DATA = buildFullCalendarData(RAW_DATA);
+
     let tvChart = null;
     let candleSeries = null;
     let lineSeries = null;
@@ -471,29 +441,35 @@ html_template = f'''<!DOCTYPE html>
     let sma25Series = null;
     let sma75Series = null;
     let sma200Series = null;
-    let fourierSeries = null;
+    let fourierSeries = null; // ★ 周期逆算（IFFT）合成復元波
+    let top1Series = null;    // ★ 第1主周期成分波（単体）
 
     let freqChart = null;
     let currentChartType = 'candle';
-    let filteredData = [...RAW_DATA];
+    let visibleRangeTimer = null;
+    let currentFFTResult = null;
+    let currentVisibleCalData = null;
 
-    function calcSMA_TV(data, windowSize) {{
+    function calcSMA_Calendar(calData, windowDays) {{
       const result = [];
-      for (let i = windowSize - 1; i < data.length; i++) {{
+      for (let i = windowDays - 1; i < calData.length; i++) {{
         let sum = 0;
-        for (let j = 0; j < windowSize; j++) {{
-          sum += data[i - j][4];
+        for (let j = 0; j < windowDays; j++) {{
+          sum += calData[i - j].close;
         }}
-        result.push({{ time: data[i][0], value: sum / windowSize }});
+        result.push({{ time: calData[i].date, value: sum / windowDays }});
       }}
       return result;
     }}
 
-    function computeFFTSpectrum(data) {{
-      const n = data.length;
-      if (n < 8) return {{ spectrum: [], peaks: [] }};
+    // 表示区間限定の周期スペクトルおよびIFFT逆算情報計算
+    function computePeriodSpectrumAndIFFT(calSubset) {{
+      const n = calSubset.length;
+      if (n < 8) return {{ spectrum: [], sortedComponents: [], maxPeriod: 10 }};
 
-      const closes = data.map(d => d[4]);
+      const closes = calSubset.map(d => d.close);
+
+      // 1次線形トレンド除去
       const sumX = (n * (n - 1)) / 2;
       const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
       let sumY = 0, sumXY = 0;
@@ -505,10 +481,11 @@ html_template = f'''<!DOCTYPE html>
       const intercept = (sumY - slope * sumX) / n;
       const detrended = closes.map((y, x) => y - (intercept + slope * x));
 
+      // 窓関数
       const windowed = detrended.map((v, i) => v * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1))));
 
       const numFreqs = Math.floor(n / 2);
-      const spectrum = [];
+      const allComponents = [];
 
       for (let k = 1; k < numFreqs; k++) {{
         let real = 0, imag = 0;
@@ -518,36 +495,139 @@ html_template = f'''<!DOCTYPE html>
           imag -= windowed[t] * Math.sin(angle);
         }}
         const amp = (Math.sqrt(real * real + imag * imag) * 2) / (n / 2);
+        const phase = Math.atan2(imag, real);
         const freq = k / n;
         const period = n / k;
-        spectrum.push({{ x: freq, y: Math.max(amp, 0.001), period: period }});
+        allComponents.push({{
+          k: k,
+          period: period,
+          freq: freq,
+          amp: amp,
+          phase: phase,
+          x: period,
+          y: Math.max(amp, 0.001)
+        }});
       }}
 
-      const sorted = [...spectrum].filter(s => s.period >= 3)
-                                  .sort((a, b) => b.y - a.y);
-      const peaks = sorted.slice(0, 3);
+      // 振幅順ソート
+      const sortedByAmp = [...allComponents].filter(s => s.period >= 2)
+                                            .sort((a, b) => b.amp - a.amp);
 
-      return {{ spectrum, peaks, intercept, slope }};
+      // 周期（横軸）昇順ソート
+      const spectrum = [...allComponents].sort((a, b) => a.x - b.x);
+
+      return {{
+        spectrum: spectrum,
+        sortedComponents: sortedByAmp,
+        intercept: intercept,
+        slope: slope,
+        n: n,
+        maxPeriod: n
+      }};
     }}
 
-    function calcFourierCycle_TV(data, fftResult) {{
-      const n = data.length;
-      if (n < 8 || !fftResult) return [];
+    // ★ 上のチャートに重ねるための逆算（IFFT）時系列データを生成 ★
+    function generateOverlayIFFTData(calSubset, fftResult, numHarmonics) {{
+      const {{ n, intercept, slope, sortedComponents }} = fftResult;
+      const topComponents = sortedComponents.slice(0, numHarmonics);
 
-      const topComponents = fftResult.peaks;
-      const {{ intercept, slope }} = fftResult;
+      const fourierSeriesData = [];
+      const top1SeriesData = [];
 
-      const result = [];
       for (let t = 0; t < n; t++) {{
-        let cycle = 0;
+        const baseTrend = intercept + slope * t;
+        let cycleSum = 0;
         for (const comp of topComponents) {{
-          const k = Math.round(comp.x * n);
-          const angle = (2 * Math.PI * k * t) / n;
-          cycle += comp.y * Math.cos(angle);
+          const angle = (2 * Math.PI * comp.k * t) / n + comp.phase;
+          cycleSum += comp.amp * Math.cos(angle);
         }}
-        result.push({{ time: data[t][0], value: intercept + slope * t + cycle }});
+        const reconVal = baseTrend + cycleSum;
+        fourierSeriesData.push({{ time: calSubset[t].date, value: reconVal }});
+
+        if (topComponents.length > 0) {{
+          const c1 = topComponents[0];
+          const a1 = (2 * Math.PI * c1.k * t) / n + c1.phase;
+          top1SeriesData.push({{ time: calSubset[t].date, value: baseTrend + c1.amp * Math.cos(a1) }});
+        }}
       }}
-      return result;
+
+      return {{
+        reconstructed: fourierSeriesData,
+        top1: top1SeriesData,
+        topPeriod: topComponents.length > 0 ? topComponents[0].period : 0
+      }};
+    }}
+
+    function parseTimeObj(t) {{
+      if (!t) return '';
+      if (typeof t === 'string') return t;
+      if (t.year) {{
+        const y = t.year;
+        const m = String(t.month).padStart(2, '0');
+        const d = String(t.day).padStart(2, '0');
+        return `${{y}}-${{m}}-${{d}}`;
+      }}
+      return '';
+    }}
+
+    // 表示区間変更時のリアルタイム更新リスナー
+    function onVisibleTimeRangeChanged(range) {{
+      if (!range || !range.from || !range.to) return;
+
+      clearTimeout(visibleRangeTimer);
+      visibleRangeTimer = setTimeout(() => {{
+        const fromStr = parseTimeObj(range.from);
+        const toStr = parseTimeObj(range.to);
+        if (!fromStr || !toStr) return;
+
+        const visibleCalData = CALENDAR_DATA.filter(d => d.date >= fromStr && d.date <= toStr);
+        if (visibleCalData.length < 8) return;
+
+        currentVisibleCalData = visibleCalData;
+        currentFFTResult = computePeriodSpectrumAndIFFT(visibleCalData);
+
+        // 下の周期スペクトルチャートを更新
+        if (freqChart) {{
+          freqChart.data.datasets[0].data = currentFFTResult.spectrum || [];
+          applyFreqChartScales(currentFFTResult.maxPeriod);
+          freqChart.update();
+        }}
+
+        // ★ 上のローソク足チャートに重ねる逆算（IFFT）波を更新 ★
+        updateOverlayIFFTLines();
+
+        const busDays = visibleCalData.filter(d => !d.isHoliday).length;
+        document.getElementById('visibleRangeStatus').textContent =
+          `⚡ FFT解析対象：${{fromStr}} 〜 ${{toStr}}（表示区間：${{visibleCalData.length.toLocaleString()}}カレンダー日 / 内営業日:${{busDays.toLocaleString()}}日）`;
+      }}, 50);
+    }}
+
+    // ★ 上のチャート上の逆算（IFFT）ラインを更新 ★
+    function updateOverlayIFFTLines() {{
+      if (!currentVisibleCalData || !currentFFTResult) return;
+
+      const isShowFourier = document.getElementById('toggleFourier').checked;
+      const isShowTop1 = document.getElementById('toggleTop1').checked;
+      const numH = parseInt(document.getElementById('selectHarmonicsCount').value);
+
+      if (isShowFourier || isShowTop1) {{
+        const overlayData = generateOverlayIFFTData(currentVisibleCalData, currentFFTResult, numH);
+
+        fourierSeries.setData(overlayData.reconstructed);
+        fourierSeries.applyOptions({{
+          visible: isShowFourier,
+          title: `IFFT逆算波(${{numH}}成分)`
+        }});
+
+        top1Series.setData(overlayData.top1);
+        top1Series.applyOptions({{
+          visible: isShowTop1,
+          title: `第1主周期(T≈${{overlayData.topPeriod.toFixed(1)}}日)`
+        }});
+      }} else {{
+        fourierSeries.applyOptions({{ visible: false }});
+        top1Series.applyOptions({{ visible: false }});
+      }}
     }}
 
     function initTVChart() {{
@@ -555,7 +635,7 @@ html_template = f'''<!DOCTYPE html>
 
       tvChart = LightweightCharts.createChart(container, {{
         width: container.clientWidth,
-        height: 480,
+        height: 520,
         layout: {{
           background: {{ color: '#090d16' }},
           textColor: '#94a3b8'
@@ -571,7 +651,8 @@ html_template = f'''<!DOCTYPE html>
         }},
         timeScale: {{
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          timeVisible: true
+          timeVisible: true,
+          minBarSpacing: 0.0001
         }}
       }});
 
@@ -596,34 +677,50 @@ html_template = f'''<!DOCTYPE html>
         scaleMargins: {{ top: 0.8, bottom: 0 }}
       }});
 
-      sma25Series = tvChart.addLineSeries({{ color: '#fbbf24', lineWidth: 1.5, title: 'SMA25' }});
-      sma75Series = tvChart.addLineSeries({{ color: '#3b82f6', lineWidth: 1.5, title: 'SMA75' }});
-      sma200Series = tvChart.addLineSeries({{ color: '#c084fc', lineWidth: 1.5, title: 'SMA200' }});
+      sma25Series = tvChart.addLineSeries({{ color: '#fbbf24', lineWidth: 1.2, title: 'SMA25' }});
+      sma75Series = tvChart.addLineSeries({{ color: '#3b82f6', lineWidth: 1.2, title: 'SMA75' }});
+      sma200Series = tvChart.addLineSeries({{ color: '#c084fc', lineWidth: 1.2, title: 'SMA200' }});
 
+      // ★ 上の時系列チャートに直接重ねる「周期逆算（IFFT）合成波」★
       fourierSeries = tvChart.addLineSeries({{
         color: '#f43f5e',
-        lineWidth: 2,
+        lineWidth: 2.5,
+        title: 'IFFT逆算波',
+        visible: true
+      }});
+
+      // ★ 上の時系列チャートに重ねる「第1主周期波（単体）」★
+      top1Series = tvChart.addLineSeries({{
+        color: '#38bdf8',
+        lineWidth: 1.5,
         lineStyle: LightweightCharts.LineStyle.Dashed,
-        title: 'FFT Cycle',
+        title: '第1主周期波',
         visible: false
       }});
 
-      applyDataToTVChart();
+      loadInitialCalendarData();
+
+      tvChart.timeScale().subscribeVisibleTimeRangeChange(onVisibleTimeRangeChanged);
 
       tvChart.subscribeCrosshairMove(param => {{
         if (!param.time || !param.seriesData.get(candleSeries)) {{
-          const last = RAW_DATA[RAW_DATA.length - 1];
-          updateOHLCBar(last[0], last[1], last[2], last[3], last[4], last[5]);
+          const last = CALENDAR_DATA[CALENDAR_DATA.length - 1];
+          updateOHLCBar(last.date, last.open, last.high, last.low, last.close, last.volume, last.isHoliday, null);
           return;
         }}
         const candle = param.seriesData.get(candleSeries) || param.seriesData.get(lineSeries);
         const vol = param.seriesData.get(volumeSeries);
-        const timeStr = typeof param.time === 'string' ? param.time : `${{param.time.year}}-${{String(param.time.month).padStart(2,'0')}}-${{String(param.time.day).padStart(2,'0')}}`;
+        const ifftPoint = param.seriesData.get(fourierSeries);
+        const timeStr = parseTimeObj(param.time);
+
+        const item = CALENDAR_DATA.find(d => d.date === timeStr);
+        const isHol = item ? item.isHoliday : false;
+        const ifftVal = ifftPoint ? ifftPoint.value : null;
 
         if (candle.open !== undefined) {{
-          updateOHLCBar(timeStr, candle.open, candle.high, candle.low, candle.close, vol ? vol.value : 0);
+          updateOHLCBar(timeStr, candle.open, candle.high, candle.low, candle.close, vol ? vol.value : 0, isHol, ifftVal);
         }} else {{
-          updateOHLCBar(timeStr, candle.value, candle.value, candle.value, candle.value, vol ? vol.value : 0);
+          updateOHLCBar(timeStr, candle.value, candle.value, candle.value, candle.value, vol ? vol.value : 0, isHol, ifftVal);
         }}
       }});
 
@@ -632,8 +729,8 @@ html_template = f'''<!DOCTYPE html>
       }});
     }}
 
-    function updateOHLCBar(date, open, high, low, close, volume) {{
-      document.getElementById('infoDate').textContent = date;
+    function updateOHLCBar(date, open, high, low, close, volume, isHoliday, ifftVal) {{
+      document.getElementById('infoDate').textContent = isHoliday ? `${{date}} (休場日)` : date;
       document.getElementById('infoOpen').textContent = open.toFixed(1) + '円';
       document.getElementById('infoHigh').textContent = high.toFixed(1) + '円';
       document.getElementById('infoLow').textContent = low.toFixed(1) + '円';
@@ -641,50 +738,66 @@ html_template = f'''<!DOCTYPE html>
       document.getElementById('infoVolume').textContent = (volume || 0).toLocaleString() + '株';
 
       const diff = close - open;
-      const pct = (diff / open) * 100;
+      const pct = open > 0 ? (diff / open) * 100 : 0;
       const diffElem = document.getElementById('infoDiff');
-      diffElem.textContent = `${{diff >= 0 ? '+' : ''}}${{diff.toFixed(1)}}円 (${{pct >= 0 ? '+' : ''}}${{pct.toFixed(2)}}%)`;
-      diffElem.className = 'ohlc-val ' + (diff >= 0 ? 'up' : 'down');
+      if (isHoliday) {{
+        diffElem.textContent = '休場日 (前日終値維持)';
+        diffElem.className = 'ohlc-val';
+      }} else {{
+        diffElem.textContent = `${{diff >= 0 ? '+' : ''}}${{diff.toFixed(1)}}円 (${{pct >= 0 ? '+' : ''}}${{pct.toFixed(2)}}%)`;
+        diffElem.className = 'ohlc-val ' + (diff >= 0 ? 'up' : 'down');
+      }}
+
+      // IFFT逆算値の表示
+      const ifftValElem = document.getElementById('infoIFFTVal');
+      if (ifftVal !== null && ifftVal !== undefined) {{
+        ifftValElem.textContent = `${{ifftVal.toFixed(1)}} 円`;
+      }} else {{
+        ifftValElem.textContent = '-- 円';
+      }}
     }}
 
-    function applyDataToTVChart() {{
-      const candleData = filteredData.map(d => ({{
-        time: d[0],
-        open: d[1],
-        high: d[2],
-        low: d[3],
-        close: d[4]
-      }}));
+    function loadInitialCalendarData() {{
+      const candleData = CALENDAR_DATA.map(d => {{
+        if (d.isHoliday) {{
+          return {{
+            time: d.date,
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close,
+            color: 'rgba(148, 163, 184, 0.2)',
+            borderColor: 'rgba(148, 163, 184, 0.2)',
+            wickColor: 'rgba(148, 163, 184, 0.2)'
+          }};
+        }} else {{
+          return {{
+            time: d.date,
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close
+          }};
+        }}
+      }});
 
-      const lineData = filteredData.map(d => ({{ time: d[0], value: d[4] }}));
+      const lineData = CALENDAR_DATA.map(d => ({{ time: d.date, value: d.close }}));
 
-      const volumeData = filteredData.map(d => ({{
-        time: d[0],
-        value: d[5],
-        color: d[4] >= d[1] ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'
+      const volumeData = CALENDAR_DATA.map(d => ({{
+        time: d.date,
+        value: d.volume,
+        color: d.isHoliday ? 'transparent' : (d.close >= d.open ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)')
       }}));
 
       candleSeries.setData(candleData);
       lineSeries.setData(lineData);
       volumeSeries.setData(volumeData);
 
-      sma25Series.setData(calcSMA_TV(filteredData, 25));
-      sma75Series.setData(calcSMA_TV(filteredData, 75));
-      sma200Series.setData(calcSMA_TV(filteredData, 200));
+      sma25Series.setData(calcSMA_Calendar(CALENDAR_DATA, 25));
+      sma75Series.setData(calcSMA_Calendar(CALENDAR_DATA, 75));
+      sma200Series.setData(calcSMA_Calendar(CALENDAR_DATA, 200));
 
-      const fftResult = computeFFTSpectrum(filteredData);
-      const fourierData = calcFourierCycle_TV(filteredData, fftResult);
-      fourierSeries.setData(fourierData);
-      updatePeakBadges(fftResult.peaks);
-
-      tvChart.timeScale().fitContent();
-
-      if (freqChart) {{
-        freqChart.data.datasets[0].data = fftResult.spectrum || [];
-        applyFreqChartScales();
-        freqChart.resetZoom();
-        freqChart.update();
-      }}
+      setVisibleRangeByButtons('ALL');
     }}
 
     function setChartType(type) {{
@@ -698,71 +811,45 @@ html_template = f'''<!DOCTYPE html>
       }}
     }}
 
-    function filterByRange(rangeKey) {{
-      const latestDate = new Date(RAW_DATA[RAW_DATA.length - 1][0]);
-      let startDate = new Date(latestDate);
+    function setVisibleRangeByButtons(rangeKey) {{
+      const totalLen = CALENDAR_DATA.length;
+      const latestDateStr = CALENDAR_DATA[totalLen - 1].date;
+      const latestDate = new Date(latestDateStr);
 
+      if (rangeKey === 'ALL') {{
+        const startStr = CALENDAR_DATA[0].date;
+        tvChart.timeScale().setVisibleRange({{ from: startStr, to: latestDateStr }});
+        tvChart.timeScale().fitContent();
+        return;
+      }}
+
+      let startDate = new Date(latestDate);
       if (rangeKey === '1M') startDate.setMonth(latestDate.getMonth() - 1);
       else if (rangeKey === '6M') startDate.setMonth(latestDate.getMonth() - 6);
       else if (rangeKey === '1Y') startDate.setFullYear(latestDate.getFullYear() - 1);
       else if (rangeKey === '5Y') startDate.setFullYear(latestDate.getFullYear() - 5);
       else if (rangeKey === '10Y') startDate.setFullYear(latestDate.getFullYear() - 10);
-      else if (rangeKey === 'ALL') startDate = new Date(RAW_DATA[0][0]);
 
       const startStr = startDate.toISOString().split('T')[0];
-      filteredData = RAW_DATA.filter(d => d[0] >= startStr);
-      applyDataToTVChart();
-      updateStatCards(rangeKey);
+      tvChart.timeScale().setVisibleRange({{ from: startStr, to: latestDateStr }});
     }}
 
     function zoomTo(startStr, endStr) {{
-      filteredData = RAW_DATA.filter(d => d[0] >= startStr && d[0] <= endStr);
       document.querySelectorAll('#rangeButtons button').forEach(b => b.classList.remove('active'));
-      applyDataToTVChart();
-      updateStatCards(`${{startStr}} ~ ${{endStr}}`);
+      tvChart.timeScale().setVisibleRange({{ from: startStr, to: endStr }});
     }}
 
-    function updateStatCards(rangeLabel) {{
-      if (filteredData.length === 0) return;
-      const firstClose = filteredData[0][4];
-      const lastClose = filteredData[filteredData.length - 1][4];
-      const ret = ((lastClose - firstClose) / firstClose) * 100;
-
-      const retElem = document.getElementById('rangeReturn');
-      retElem.textContent = (ret >= 0 ? '+' : '') + ret.toFixed(1) + '%';
-      retElem.className = 'card-value ' + (ret >= 0 ? 'up' : 'down');
-      document.getElementById('rangeLabel').textContent = rangeLabel;
-    }}
-
-    function updatePeakBadges(peaks) {{
-      const container = document.getElementById('peakBadgesContainer');
-      container.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted); font-weight:600;">支配的周波数ピーク（Dominant Frequencies）:</span>';
-      if (!peaks || peaks.length === 0) return;
-
-      peaks.forEach((p, idx) => {{
-        const badge = document.createElement('div');
-        badge.className = 'peak-badge';
-        const fStr = p.x.toFixed(4);
-        const pDays = p.period.toFixed(1);
-        let extra = '';
-        if (p.period >= 245) extra = ` (約${{(p.period / 245).toFixed(1)}}年)`;
-        else if (p.period >= 40) extra = ` (約${{(p.period / 20).toFixed(1)}}ヶ月)`;
-        badge.textContent = `第${{idx + 1}}位: f = ${{fStr}} [1/日]（周期: 約${{pDays}}日${{extra}}）振幅: ${{p.y.toFixed(1)}}円`;
-        container.appendChild(badge);
-      }});
-    }}
-
-    // 周波数空間 Chart.js 初期化
     function initFreqChart() {{
-      const fftResult = computeFFTSpectrum(filteredData);
-      const spectrum = fftResult.spectrum || [];
+      currentVisibleCalData = CALENDAR_DATA;
+      currentFFTResult = computePeriodSpectrumAndIFFT(CALENDAR_DATA);
+      const spectrum = currentFFTResult.spectrum || [];
 
       const fCtx = document.getElementById('freqChart').getContext('2d');
       freqChart = new Chart(fCtx, {{
         type: 'line',
         data: {{
           datasets: [{{
-            label: '振幅スペクトル |X(f)|',
+            label: '振幅スペクトル |X(T)|',
             data: spectrum,
             borderColor: '#14b8a6',
             backgroundColor: 'rgba(20, 184, 166, 0.15)',
@@ -785,9 +872,12 @@ html_template = f'''<!DOCTYPE html>
               callbacks: {{
                 title: (items) => {{
                   const raw = items[0].raw;
-                  const fVal = raw.x;
-                  const pVal = raw.period > 0 ? raw.period.toFixed(1) : '∞';
-                  return `周波数 f = ${{fVal.toFixed(4)}} [1/日] (周期 T ≈ ${{pVal}}日)`;
+                  const pVal = raw.x.toFixed(1);
+                  let unitDesc = '';
+                  if (raw.x >= 365) unitDesc = ` (約${{(raw.x / 365.25).toFixed(2)}}年)`;
+                  else if (raw.x >= 60) unitDesc = ` (約${{(raw.x / 30.4).toFixed(1)}}ヶ月)`;
+                  else if (raw.x >= 14) unitDesc = ` (約${{(raw.x / 7).toFixed(1)}}週間)`;
+                  return `周期 T = ${{pVal}} 日${{unitDesc}}`;
                 }},
                 label: (item) => `振幅スペクトル: ${{item.raw.y.toFixed(2)}} 円`
               }}
@@ -800,31 +890,44 @@ html_template = f'''<!DOCTYPE html>
                 mode: 'x'
               }},
               limits: {{
-                x: {{ min: 0.0001, max: 0.505, minRange: 0.002 }}
+                x: {{ min: 2, max: 15000, minRange: 1 }}
               }}
             }}
           }},
           scales: {{
             x: {{
-              type: 'linear',
-              min: 0,
-              max: 0.5,
+              type: 'logarithmic',
+              min: 2,
+              max: currentFFTResult.maxPeriod || 365,
               title: {{
                 display: true,
-                text: '周波数 f [1 / 営業日] (低周波・長周期 ← ────────────────── ホイールで拡大縮小 ────────────────── → 高周波・短周期)',
+                text: '周期 T [カレンダー日] (短期: 2日・7日・30日 ← ────────────── ホイールで拡大縮小 ────────────── → 長期: 表示区間最大日数)',
                 color: '#94a3b8',
                 font: {{ size: 11 }}
               }},
               ticks: {{
                 color: '#64748b',
-                callback: v => Number(v).toFixed(3)
+                callback: v => {{
+                  const val = Number(v);
+                  if (val === 2) return '2日';
+                  if (val === 7) return '7日(1週)';
+                  if (val === 30) return '30日(1ヶ月)';
+                  if (val === 90) return '90日(3ヶ月)';
+                  if (val === 180) return '180日(半年)';
+                  if (val === 365) return '365日(1年)';
+                  if (val === 730) return '2年';
+                  if (val === 1095) return '3年';
+                  if (val === 1825) return '5年';
+                  if (val === 3650) return '10年';
+                  return val >= 10 ? val.toString() : '';
+                }}
               }},
               grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
             }},
             y: {{
               type: 'linear',
               position: 'right',
-              title: {{ display: true, text: '振幅 |X(f)| [円]', color: '#94a3b8', font: {{ size: 11 }} }},
+              title: {{ display: true, text: '振幅 |X(T)| [円]', color: '#94a3b8', font: {{ size: 11 }} }},
               ticks: {{ color: '#64748b' }},
               grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
             }}
@@ -832,53 +935,61 @@ html_template = f'''<!DOCTYPE html>
         }}
       }});
 
-      applyFreqChartScales();
+      applyFreqChartScales(currentFFTResult.maxPeriod || 365);
     }}
 
-    // 対数スケール切替の適用関数
-    function applyFreqChartScales() {{
+    function applyFreqChartScales(maxP) {{
       if (!freqChart) return;
       const isLogY = document.getElementById('toggleLogY').checked;
       const isLogX = document.getElementById('toggleLogX').checked;
 
-      // Y軸（振幅）
       if (isLogY) {{
         freqChart.options.scales.y.type = 'logarithmic';
-        freqChart.options.scales.y.title.text = '振幅 |X(f)| [対数 Log scale / dB相当]';
+        freqChart.options.scales.y.title.text = '振幅 |X(T)| [対数 Log scale / dB相当]';
         freqChart.options.scales.y.ticks.callback = v => Number(v) >= 0.1 ? Number(v).toLocaleString() + '円' : Number(v);
       }} else {{
         freqChart.options.scales.y.type = 'linear';
-        freqChart.options.scales.y.title.text = '振幅 |X(f)| [円]';
+        freqChart.options.scales.y.title.text = '振幅 |X(T)| [円]';
         freqChart.options.scales.y.ticks.callback = v => Number(v).toLocaleString() + '円';
       }}
 
-      // X軸（周波数）
       if (isLogX) {{
         freqChart.options.scales.x.type = 'logarithmic';
-        freqChart.options.scales.x.min = 0.0005;
-        freqChart.options.scales.x.max = 0.5;
-        freqChart.options.scales.x.title.text = '周波数 f [1/営業日] (対数 Log scale: 低周波・長周期がワイド表示)';
-        freqChart.options.scales.x.ticks.callback = v => Number(v).toString();
+        freqChart.options.scales.x.min = 2;
+        freqChart.options.scales.x.max = Math.max(maxP || 365, 5);
+        freqChart.options.scales.x.title.text = '周期 T [カレンダー日] (対数 Log scale: 7日, 30日, 90日, 365日, 数年)';
+        freqChart.options.scales.x.ticks.callback = v => {{
+          const val = Number(v);
+          if (val === 2) return '2日';
+          if (val === 7) return '7日(1週)';
+          if (val === 30) return '30日(1ヶ月)';
+          if (val === 90) return '90日(3ヶ月)';
+          if (val === 180) return '180日(半年)';
+          if (val === 365) return '365日(1年)';
+          if (val === 730) return '2年';
+          if (val === 1095) return '3年';
+          if (val === 1825) return '5年';
+          if (val === 3650) return '10年';
+          return val >= 10 ? val.toString() : '';
+        }};
       }} else {{
         freqChart.options.scales.x.type = 'linear';
-        freqChart.options.scales.x.min = 0;
-        freqChart.options.scales.x.max = 0.5;
-        freqChart.options.scales.x.title.text = '周波数 f [1 / 営業日] (低周波・長周期 ← ────────────────── ホイールで拡大縮小 ────────────────── → 高周波・短周期)';
-        freqChart.options.scales.x.ticks.callback = v => Number(v).toFixed(3);
+        freqChart.options.scales.x.min = 2;
+        freqChart.options.scales.x.max = Math.max(maxP || 365, 5);
+        freqChart.options.scales.x.title.text = '周期 T [カレンダー日] (リニア表示: 2日 ────── ホイールで拡大縮小 ──────→ 最大日数)';
+        freqChart.options.scales.x.ticks.callback = v => `${{Math.round(v)}}日`;
       }}
 
-      // ステータステキスト更新
       const xMode = isLogX ? '対数 (Log)' : 'リニア';
       const yMode = isLogY ? '対数 (Log)' : 'リニア';
-      document.getElementById('scaleStatusText').textContent = `スケール表示: [横軸: ${{xMode}}] × [縦軸: ${{yMode}}]`;
+      document.getElementById('scaleStatusText').textContent = `横軸単位: 周期 T [カレンダー日] | スケール: [横軸: ${{xMode}}] × [縦軸: ${{yMode}}]`;
     }}
 
-    // イベントリスナー設定
     document.querySelectorAll('#rangeButtons button').forEach(btn => {{
       btn.addEventListener('click', () => {{
         document.querySelectorAll('#rangeButtons button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        filterByRange(btn.dataset.range);
+        setVisibleRangeByButtons(btn.dataset.range);
       }});
     }});
 
@@ -890,7 +1001,11 @@ html_template = f'''<!DOCTYPE html>
       }});
     }});
 
-    // 対数切替イベント
+    // 逆算波のコントロール
+    document.getElementById('toggleFourier').addEventListener('change', () => updateOverlayIFFTLines());
+    document.getElementById('toggleTop1').addEventListener('change', () => updateOverlayIFFTLines());
+    document.getElementById('selectHarmonicsCount').addEventListener('change', () => updateOverlayIFFTLines());
+
     document.getElementById('toggleLogY').addEventListener('change', () => {{
       applyFreqChartScales();
       freqChart.update();
@@ -911,25 +1026,19 @@ html_template = f'''<!DOCTYPE html>
     document.getElementById('toggleSMA200').addEventListener('change', (e) => {{
       sma200Series.applyOptions({{ visible: e.target.checked }});
     }});
-    document.getElementById('toggleFourier').addEventListener('change', (e) => {{
-      fourierSeries.applyOptions({{ visible: e.target.checked }});
-    }});
 
     document.getElementById('btnResetFreqZoom').addEventListener('click', () => {{
       if (freqChart) freqChart.resetZoom();
     }});
 
-    document.getElementById('btnLowFreqZoom').addEventListener('click', () => {{
+    document.getElementById('btnShortPeriodZoom').addEventListener('click', () => {{
       if (freqChart) {{
-        const isLogX = document.getElementById('toggleLogX').checked;
-        freqChart.zoomScale('x', {{ min: isLogX ? 0.001 : 0, max: 0.1 }}, 'default');
+        freqChart.zoomScale('x', {{ min: 2, max: 120 }}, 'default');
       }}
     }});
 
-    // 初期化実行
     initTVChart();
     initFreqChart();
-    updateStatCards('全期間 (2000年〜2026年)');
   </script>
 </body>
 </html>
@@ -938,4 +1047,4 @@ html_template = f'''<!DOCTYPE html>
 with open('sharp_dashboard.html', 'w', encoding='utf-8') as f:
     f.write(html_template)
 
-print("sharp_dashboard.html successfully upgraded with Log scale on Frequency Domain!")
+print("sharp_dashboard.html successfully updated: IFFT reconstructed line is now directly overlaid onto the upper Candlestick chart!")

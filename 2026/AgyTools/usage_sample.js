@@ -9,31 +9,56 @@
 const fs = require('fs'), path = require('path'), os = require('os');
 const { execSync } = require('child_process');
 
-const brainDir = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
+const miseShims = path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims');
+if (fs.existsSync(miseShims) && !(process.env.PATH || '').includes(miseShims)) {
+  process.env.PATH = miseShims + path.delimiter + (process.env.PATH || '');
+}
+
+function getBrainDirs() {
+  const list = [];
+  const agyBrain = path.join(os.homedir(), '.gemini', 'antigravity-cli', 'brain');
+  if (fs.existsSync(agyBrain)) list.push(agyBrain);
+  const t3Base = path.join(os.homedir(), '.t3', 'userdata', 'providers', 'antigravity');
+  if (fs.existsSync(t3Base)) {
+    try {
+      for (const ent of fs.readdirSync(t3Base, { withFileTypes: true })) {
+        if (!ent.isDirectory()) continue;
+        const b = path.join(t3Base, ent.name, 'antigravity-acp', 'brain');
+        if (fs.existsSync(b)) list.push(b);
+      }
+    } catch (_) {}
+  }
+  return list;
+}
+
 const MODEL_RE = /Model Selection` from .+? to ([^\n`]+?)(?: \(([^)]+)\))?\. No need to comment/;
 
 // セッションログ（brain/*/transcript.jsonl）から期間 (fromMs, toMs] のモデル別使用量を集計
 function modelUsage(fromMs, toMs) {
-  if (!fs.existsSync(brainDir)) return {};
-  let dirs = [];
-  try {
-    dirs = fs.readdirSync(brainDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name);
-  } catch { return {}; }
+  const brainDirs = getBrainDirs();
+  if (brainDirs.length === 0) return {};
 
-  // サブエージェントのモデル継承解決用（親会話の invoke_subagent 結果から紐付け）
-  const cidModel = {}, parentOf = {};
-  for (const cid of dirs) {
-    const tFile = path.join(brainDir, cid, '.system_generated', 'logs', 'transcript.jsonl');
-    if (!fs.existsSync(tFile)) continue;
+  const cidModel = {}, parentOf = {}, sessionDirs = [];
+  for (const bDir of brainDirs) {
+    let subDirs = [];
     try {
-      const txt = fs.readFileSync(tFile, 'utf8');
-      const m = txt.match(MODEL_RE);
-      if (m) cidModel[cid] = { model: m[1].trim(), eff: (m[2] || 'unknown').trim() };
-      for (const sub of txt.matchAll(/conversationId[":\s\\]+([0-9a-f-]{36})/gi)) {
-        if (sub[1] !== cid) parentOf[sub[1]] = cid;
-      }
-    } catch { /* skip */ }
+      subDirs = fs.readdirSync(bDir, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => ({ bDir, cid: d.name }));
+    } catch { continue; }
+    for (const item of subDirs) {
+      sessionDirs.push(item);
+      const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
+      if (!fs.existsSync(tFile)) continue;
+      try {
+        const txt = fs.readFileSync(tFile, 'utf8');
+        const m = txt.match(MODEL_RE);
+        if (m) cidModel[item.cid] = { model: m[1].trim(), eff: (m[2] || 'unknown').trim() };
+        for (const sub of txt.matchAll(/conversationId[":\s\\]+([0-9a-f-]{36})/gi)) {
+          if (sub[1] !== item.cid) parentOf[sub[1]] = item.cid;
+        }
+      } catch { /* skip */ }
+    }
   }
+
   const resolveModel = (cid, depth = 0) => {
     if (cidModel[cid]) return cidModel[cid];
     if (parentOf[cid] && depth < 5) return resolveModel(parentOf[cid], depth + 1);
@@ -41,10 +66,10 @@ function modelUsage(fromMs, toMs) {
   };
 
   const seen = new Set(), byModel = {};
-  for (const cid of dirs) {
-    const tFile = path.join(brainDir, cid, '.system_generated', 'logs', 'transcript.jsonl');
+  for (const item of sessionDirs) {
+    const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
     if (!fs.existsSync(tFile)) continue;
-    let { model: curModel, eff: curEff } = resolveModel(cid);
+    let { model: curModel, eff: curEff } = resolveModel(item.cid);
     try {
       for (const line of fs.readFileSync(tFile, 'utf8').split('\n')) {
         if (line.includes('Model Selection')) {
@@ -56,7 +81,7 @@ function modelUsage(fromMs, toMs) {
         if (j.type !== 'PLANNER_RESPONSE') continue;
         const ts = Date.parse(j.created_at) || 0;
         if (ts <= fromMs || ts > toMs) continue;
-        const key = `${cid}|${j.step_index}|${j.created_at}`;
+        const key = `${item.cid}|${j.step_index}|${j.created_at}`;
         if (seen.has(key)) continue;
         seen.add(key);
         const parts = {
