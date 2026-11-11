@@ -3,23 +3,106 @@
 <head>
 <meta charset="utf-8">
 <title>Desktop Recorder</title>
+<!-- 🤖 AI: 見出し (CHROME RECORDER / Desktop Recorder) は 2026-11-11 ユーザー指示で削除。デザインは Open WebUI (openwebui.com / docs.openwebui.com, 2026-11-10 確認) の配色・余白に合わせる
+     背景 #fafafa / 文字 #1a1a1a / 補助 #676767 / 主ボタン黒 / パネル #f3f3f3 角丸 16px / 見出し weight 300 -->
 <style>
-  body { font-family: sans-serif; margin: 24px; max-width: 640px; }
-  button { font-size: 16px; padding: 8px 16px; margin-right: 8px; }
-  #log { white-space: pre-wrap; background: #f4f4f4; padding: 8px; margin-top: 16px; min-height: 6em; }
-  video { width: 100%; background: #000; margin-top: 12px; }
+  :root {
+    --bg: #fafafa; --fg: #1a1a1a; --muted: #676767; --panel: #f3f3f3; --hover: rgba(0,0,0,.05);
+    --line: rgba(0,0,0,.08); --primary: #000; --on-primary: #fff; --rec: #e00; --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d0d0d; --fg: #ececec; --muted: #9b9b9b; --panel: #1a1a1a; --hover: rgba(255,255,255,.07);
+            --line: rgba(255,255,255,.1); --primary: #fff; --on-primary: #000; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.6 -apple-system, ui-sans-serif, system-ui, "Segoe UI", "Noto Sans JP", sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 40px 24px; display: grid; gap: 16px; }
+  .panel { background: var(--panel); border-radius: var(--radius); padding: 16px; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .label { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  button { font: inherit; border: 0; cursor: pointer; border-radius: 999px; padding: 6px 14px;
+           background: var(--hover); color: var(--fg); }
+  button:hover:not(:disabled) { background: var(--line); }
+  button:disabled { opacity: .35; cursor: default; }
+  button.primary { background: var(--primary); color: var(--on-primary); padding: 8px 18px; }
+  button.primary:hover:not(:disabled) { opacity: .85; background: var(--primary); }
+  /* 🤖 AI: 録画中は 録画=分割 (控えめ) / 停止=赤の強調。停止が押せないときは枠線のみ */
+  button.split { background: transparent; box-shadow: inset 0 0 0 1px var(--line); padding: 8px 18px; }
+  #stop { padding: 8px 18px; box-shadow: inset 0 0 0 1px var(--line); background: transparent; }
+  #stop:not(:disabled) { background: var(--rec); color: #fff; box-shadow: none; }
+  #stop:not(:disabled):hover { background: var(--rec); opacity: .85; }
+  button.ghost { background: transparent; color: var(--muted); }
+  input[type=number], select { font: inherit; width: 4.5em; padding: 4px 8px; border-radius: 8px;
+                       border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+  #dir { font-weight: 500; }
+  /* 画面一覧 */
+  #sources { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; }
+  #sources:empty::before { content: "画面未追加 (録画開始時に 1 画面を選択)"; color: var(--muted); font-size: 12px; }
+  #sources li { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 10px; background: var(--bg); }
+  #sources .name { font-weight: 500; }
+  #sources .meta { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  #sources .meter { width: 80px; height: 6px; border-radius: 3px; background: var(--hover); overflow: hidden; flex: none; }
+  #sources .meter[hidden] { display: none; }
+  #sources .meter i { display: block; height: 100%; width: 0; background: var(--fg); }
+  #level { width: 100%; height: 64px; display: block; margin-top: 8px; }
+  #levelPanel[hidden] { display: none; }
+  #sources .badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--hover); color: var(--muted); }
+  /* 録画操作。U+23FA BLACK CIRCLE FOR RECORD / U+23F9 BLACK SQUARE FOR STOP を文字表示 (U+FE0E) で使う */
+  .rec-mark { color: var(--rec); }
+  #start:disabled .rec-mark { color: inherit; }
+  #status { font-variant-numeric: tabular-nums; color: var(--muted); }
+  #status.on { color: var(--rec); }
+  #status.on::before { content: "\25CF  "; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  video { width: 100%; max-height: 60vh; object-fit: contain; background: #000; border-radius: var(--radius); display: block; }
+  video[hidden] { display: none; }
+  #log { margin: 0; white-space: pre-wrap; height: 10em; overflow-y: auto; font: 12px/1.6 ui-monospace, Consolas, monospace; color: var(--muted); }
 </style>
 </head>
 <body>
-<h1>Desktop Recorder</h1>
-<p>保存フォルダ: <span id="dir">未設定</span> <button id="chdir">変更</button></p>
-<label>fps <input id="fps" type="number" value="10" min="1" max="60" style="width:4em"></label>
-<p>
-  <button id="start">録画開始</button>
-  <button id="stop" disabled>停止</button>
-</p>
-<div id="log"></div>
-<video id="preview" muted autoplay></video>
+<main>
+  <!-- 保存先 -->
+  <section class="panel row">
+    <span class="label">保存フォルダ</span>
+    <span id="dir">未設定</span>
+    <span class="spacer"></span>
+    <button id="chdir">変更</button>
+  </section>
+
+  <!-- 🤖 AI: 複数画面の同時録画 (追加した画面を横並びで 1 ファイルに録画) -->
+  <section class="panel">
+    <div class="row">
+      <span class="label">画面</span>
+      <span class="spacer"></span>
+      <button id="addScreen">+ 画面を追加</button>
+    </div>
+    <ul id="sources"></ul>
+  </section>
+
+  <!-- 録画操作 (fps は録画ボタンの左: ユーザー指示) -->
+  <section class="row">
+    <label class="label">fps <input id="fps" type="number" value="10" min="1" max="60"></label>
+    <!-- 🤖 AI: 自動ローテーション (0 = なし) -->
+    <label class="label" title="指定時間ごとに新しいファイルへ切り替え (0 = 切り替えない)">自動分割 <input id="rotate" type="number" value="0" min="0" step="any"> 分</label>
+    <label class="label" title="音が出たら録画を開始"><input type="checkbox" id="autoStart"> 自動開始</label>
+    <label class="label" title="無音が 30 秒続いたら保存して停止"><input type="checkbox" id="autoStop" checked> 自動終了</label>
+    <button id="start" class="primary" title="録画開始" aria-label="録画開始"><span class="rec-mark">&#x23FA;&#xFE0E;</span> 録画</button>
+    <button id="stop" title="停止" aria-label="停止" disabled>&#x23F9;&#xFE0E; 停止</button>
+    <span id="status"></span>
+  </section>
+
+  <video id="preview" muted autoplay hidden></video>
+
+  <!-- 🤖 AI: 音声レベルの推移 (直近 30 秒、全画面の合計。横線は -30 dB / -10 dB) -->
+  <section class="panel" id="levelPanel" hidden>
+    <canvas id="level"></canvas>
+  </section>
+
+  <!-- ログ (最下部・高さ固定でスクロール) -->
+  <section class="panel"><pre id="log"></pre></section>
+</main>
 <script src="recorder.js"></script>
 </body>
 </html>

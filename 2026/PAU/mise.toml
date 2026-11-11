@@ -1,5 +1,5 @@
 [tools]
-java = "25"
+java = "21" # 🤖AI: 2026-11-11 ユーザー指示で 25 から変更
 coreutils = "latest"
 7zip = "26.05"
 
@@ -22,6 +22,7 @@ layoutExecutable = { sources = ['composeApp/src/**/*', 'composeApp/module.yaml',
 ] }
 executable = { depends = ['layoutExecutable'], run = 'build\layout\PAU.cmd' }
 fetchSfx = { outputs = ['build/sfx/7zSD.sfx'], run = 'pwsh -NoProfile -File packaging\PatchSfx.ps1 -Out build\sfx\7zSD.sfx' }
+build = { depends = ["makeSfxExe"] }
 makeSfxExe = { depends = ['layoutExecutable', 'fetchSfx'], sources = ['build/layout/**/*', 'build/sfx/7zSD.sfx', 'packaging/sfx.conf'], outputs = ['build/PAU-{{vars.APP_VERSION}}-sfx.exe'], run = [
     'coreutils rm -f build/sfx/PAU.7z build/PAU-{{vars.APP_VERSION}}-sfx.exe',
     'cmd /c "cd build\layout && 7za a -t7z -mx=5 ..\sfx\PAU.7z app runtime"',
