@@ -183,10 +183,21 @@ function usageChart() {
   const yPct = v => H - P - (v / 100) * (H - 2 * P);
   // 使用率（折れ線・左軸 %）
   // 値の低下（リセット）で線を分割し、枠をまたぐ補間線を描かない
-  const segs = key => S.reduce((a, s, i) => { if (!i || s[key] < S[i - 1][key]) a.push([]); a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1)); return a; }, []);
+  const now = Date.now();
+  const segs = (key, p) => {
+    const res = S.reduce((a, s, i) => { if (!i || s[key] < S[i - 1][key]) a.push([]); a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1)); return a; }, []);
+    if (res.length && S.length) {
+      const lastS = S[S.length - 1];
+      const lastTs = sampleTs[sampleTs.length - 1];
+      if (now > lastTs && (!p?.reset || now < p.reset)) {
+        res[res.length - 1].push(x(now).toFixed(1) + ',' + yPct(lastS[key]).toFixed(1));
+      }
+    }
+    return res;
+  };
   // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
   const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
-  const line = (key, col) => segs(key).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
+  const line = (key, col, p) => segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
     (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' ' + s[key] + '%</title></circle>').join(''));
   const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + v + '%</text>').join('');
   // x軸目盛り: 表示範囲の幅に応じて間隔を選ぶ（目盛りは最大8本）。間隔が1日未満なら時刻も表示（ローカル時刻）
@@ -209,7 +220,6 @@ function usageChart() {
   const projLine1h = (p, col) => p && p.h1 && p.h1.t100 ? '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>100%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>' : '';
   const resetLine = (p, col, label) => (p && p.reset && p.reset <= t1) ? '<line x1="' + x(p.reset).toFixed(1) + '" x2="' + x(p.reset).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="' + col + '" stroke-width="1"><title>' + label + ' ' + fmtT(p.reset) + '</title></line><text x="' + (x(p.reset) + (x(p.reset) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (P + (label.startsWith('5') ? 10 : 22)) + '" font-size="10" text-anchor="' + (x(p.reset) > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + label + ' ' + fmtT(p.reset) + '</text>' : '';
   // 現在日時の縦線（ページ表示時点のローカル時刻）
-  const now = Date.now();
   const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - P - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
   const clip = '<clipPath id="plotArea"><rect x="' + P + '" y="0" width="' + (W - 2 * P) + '" height="' + H + '"/></clipPath>';
   // 100%到達点（予測線と100%の交点）に ✕ と日時。枠開始基準・1時間前基準の2本分。表示範囲外は描画されない
@@ -228,7 +238,7 @@ function usageChart() {
   // 枠は 起点 0% → 期日 100% の三角形 (右下が直角) の領域として描く (期日前に次の枠が始まった場合は、その開始で打ち切る)。過去の枠も現在の枠も同じ色・濃さ。過去の枠には輪郭を付ける
   const tri = (st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (P + (H - 2 * P) * (1 - (en - st) / (rs - st))).toFixed(1) + '" fill="' + col + '" fill-opacity="0.08"' + (outline ? ' stroke="' + col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
   const band = '<g clip-path="url(#plotArea)">' + past.map(w => tri(w.start, w.reset, '過去の枠', true, w.end)).join('') + (p && p.start && p.reset ? tri(p.start, p.reset, '現在の枠', false) : '') + '</g>';
-  const plot = '<g clip-path="url(#plotArea)">' + line(c.key, col) + projLine(p, col) + projLine1h(p, col) + resetLine(c.p, col, c.label) + nowLine + hit100(p, col) + '</g>';
+  const plot = '<g clip-path="url(#plotArea)">' + line(c.key, col, c.p) + projLine(p, col) + projLine1h(p, col) + resetLine(c.p, col, c.label) + nowLine + hit100(p, col) + '</g>';
   document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="使用率推移/' + c.nm + '">' + clip + band + grid + plot + xLabels + '</svg>';
   };
   // 範囲メニュー（グラフごと）: 左端 = 現在の N 時間前、右端 = 枠の最終日時または100%到達日時の早いほう。選択は閲覧者のブラウザに保存し、再読込（F5）後も維持

@@ -1,0 +1,6 @@
+﻿[tasks]
+start-claude-usage = { description = "ClaudeCodeTools の使用量サンプリング・HTMLパネル生成・ブラウザ表示", run = [
+    "node usage_sample.js",
+    "node usage_panel.js",
+    "cmd /c start %USERPROFILE%\\.claude\\usage\\claude-panel.html"
+], dir = "{{config_root}}" }

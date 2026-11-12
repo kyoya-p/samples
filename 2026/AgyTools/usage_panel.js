@@ -319,7 +319,7 @@ function usageChart() {
     const visibleSeries = c.series.filter(s => isSeriesVisible(s, c)).map(s => ({ ...s, rp: s.p, p: livep(s.p) }));
     const { t0, t1 } = c.view;
     const x = ms => P + ((ms - t0) / (t1 - t0)) * (W - 2 * P);
-    const yPct = v => H - P - (v / 100) * (H - 2 * P);
+    const yPct = v => P + (v / 100) * (H - 2 * P); // 上 0% → 下 100%
     const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + v + '%</text>').join('');
     const span = t1 - t0;
     const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 8) || 43200;
@@ -337,17 +337,25 @@ function usageChart() {
 
     // 過去の枠も現在の枠と同じ背景スタイルで塗る (現在の枠は下で別途描くので除く)。枠の境界に細い線
     // 枠は 起点 0% → 期日 100% の三角形 (右下が直角) の領域として描く (期日前に次の枠が始まった場合は、その開始で打ち切る)。過去の枠も現在の枠も同じ色・濃さ。過去の枠には輪郭を付ける
-    const tri = (s, st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (H - P) + ' ' + x(en).toFixed(1) + ',' + (P + (H - 2 * P) * (1 - (en - st) / (rs - st))).toFixed(1) + '" fill="' + s.col + '" fill-opacity="0.05"' + (outline ? ' stroke="' + s.col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + s.label + ' ' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
+    const tri = (s, st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + P + ' ' + x(en).toFixed(1) + ',' + yPct(100 * (en - st) / (rs - st)).toFixed(1) + ' ' + x(en).toFixed(1) + ',' + (H - P) + ' ' + x(st).toFixed(1) + ',' + (H - P) + '" fill="' + s.col + '" fill-opacity="0.05"' + (outline ? ' stroke="' + s.col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + s.label + ' ' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
     const bands = visibleSeries.map(s => (D.windows?.[s.key] || [])
       .filter(w => !(s.p && Math.abs(w.reset - s.p.reset) < 15 * 60000))
       .map(w => tri(s, w.start, w.reset, '過去の枠', true, w.end)).join('') + (s.p && s.p.start && s.p.reset ? tri(s, s.p.start, s.p.reset, '現在の枠', false) : '')).join('');
 
+    const now = Date.now();
     const linesAndDots = visibleSeries.map(s => {
       const pts = S.map((sm, i) => ({ ts: sampleTs[i], iso: sm.ts, v: usedOf(sm, s.key) })).filter(pt => pt.v !== null);
       // 値の低下（リセット）で線を分割し、枠をまたぐ補間線を描かない
       const segs = pts.reduce((a, pt, i) => { if (!i || pt.v < pts[i - 1].v) a.push([]); a[a.length - 1].push(x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1)); return a; }, []);
-  // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
-  const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
+      // 最後のセグメントの最新値から「現在時刻 (now)」まで水平線を延長（枠がリセットされていない場合）
+      if (segs.length && pts.length) {
+        const lastPt = pts[pts.length - 1];
+        if (now > lastPt.ts && (!s.rp?.reset || now < s.rp.reset)) {
+          segs[segs.length - 1].push(x(now).toFixed(1) + ',' + yPct(lastPt.v).toFixed(1));
+        }
+      }
+      // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
+      const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
       const pl = segs.map(sg => '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + stepPts(sg).join(' ') + '"/>').join('');
       const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
       return pl + dots;
@@ -373,7 +381,7 @@ function usageChart() {
         const cx = x(t), cy = yPct(100), r = 5;
         const isRight = cx > W / 2;
         const tx = isRight ? Math.min(W - P - 4, cx - 7) : Math.max(P + 4, cx + 7);
-        const ty = cy + 13 + i * 11;
+        const ty = cy - 13 - i * 11; // 100% が下端のため、ラベルは線の上側に配置
         return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 100%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
           '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (isRight ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
       }).join('');
@@ -388,7 +396,6 @@ function usageChart() {
         '<text x="' + (rx + (isRight ? -4 : 4)).toFixed(1) + '" y="' + yText + '" font-size="10" text-anchor="' + (isRight ? 'end' : 'start') + '" fill="' + s.col + '">' + s.shortLabel + '更新 ' + fmtT(p.reset) + '</text>';
     }).join('');
 
-    const now = Date.now();
     const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + P + '" y2="' + (H - P) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - P - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
 
     const plot = '<g clip-path="url(#' + clipId + ')">' + bands + linesAndDots + projLines + resetLines + nowLine + hitMarkers + '</g>';
