@@ -1,0 +1,9 @@
+# 🤖 AI 生成
+[tasks.install]
+description = "依存パッケージを導入"
+run = "npm install"
+
+[tasks.build]
+description = "Whisper(transformers.js) 一式を lib/ へコピー"
+depends = ["install"]
+run = "node scripts/build.mjs"

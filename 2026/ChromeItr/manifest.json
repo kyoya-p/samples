@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Transcriber (AI-generated)",
+  "version": "0.1.0",
+  "description": "🤖 AI 生成: タブの音声を文字起こしし、そのページ上のダイアログに表示する (Gemini Nano / Whisper)",
+  "minimum_chrome_version": "116",
+  "permissions": ["tabCapture", "offscreen", "activeTab", "scripting", "storage"],
+  "action": { "default_title": "このタブの文字起こしを開始/停止" },
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": []
+}

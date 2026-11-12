@@ -77,8 +77,11 @@ function renderSources() {
     const li = document.createElement("li");
     const v = s.stream.getVideoTracks()[0];
     const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls, textContent: text });
-    const meter = el("span", "meter", ""), bar = el("i", "", ""); // 🤖 AI: 音量メーター
-    meter.appendChild(bar); s.meterEl = s.stream.getAudioTracks().length ? bar : null; meter.hidden = !s.meterEl;
+    // 🤖 AI: ソース毎のインジケータ (音声=深緑 / 動画の変化=青)
+    const mk = (cls) => { const m = el("span", `meter ${cls}`, ""), i = el("i", "", ""); m.appendChild(i); return [m, i]; };
+    const [am, ai] = mk("a"), [vm, vi] = mk("v");
+    s.meterEl = s.stream.getAudioTracks().length ? ai : null; am.hidden = !s.meterEl; s.changeEl = vi;
+    const meter = el("span", "meters", ""); meter.append(am, vm);
     li.append(el("span", "name", s.name), el("span", "meta", `${v?.getSettings().displaySurface ?? ""} · ${v?.label ?? ""}`), meter,
       el("span", "badge", s.stream.getAudioTracks().length ? "音声あり" : "音声なし"));
     const x = el("button", "ghost", "×");
@@ -113,33 +116,83 @@ let soundLv = (() => {
 })();
 let hasSound = false, runAbove = 0, runBelow = 0;
 let mctx, master, masterBuf, history = new Array(LEVEL_N).fill(0), states = new Array(LEVEL_N).fill(false), meterTimer;
+// 🤖 AI: 画面の変化量 (2026-11-12 ユーザー指示: 音量の棒グラフに重ねて折れ線で % 表示)。
+// 録画対象の映像 (合成 canvas、1 画面録画なら #preview) を 96x54 に縮小し、250ms ごとに前回と比べて「変化した画素の割合」(%) を出す。
+// 画素の変化 = RGB の差の合計が 48 超 (1 チャンネル平均 16/255)。マウスポインタ・時計・動画の再生も変化に数える。
+const CHANGE_W = 96, CHANGE_H = 54, CHANGE_EVERY = 5; // 5 tick = 250ms
+const chHist = new Array(LEVEL_N).fill(0);
+const sampleCv = document.createElement("canvas"); sampleCv.width = CHANGE_W; sampleCv.height = CHANGE_H;
+const sampleG = sampleCv.getContext("2d", { willReadFrequently: true });
+let prevPx = null, change = 0, sampleTick = 0;
+// 🤖 AI: 画面の「動きあり」判定 (g3): 変化量が changeLv 以上を 1 秒 (4 サンプル) 続けると「動きあり」、未満を 30 秒 (120 サンプル) 続けると「動きなし」。
+// 自動開始・自動終了は「音声または動き」で判定する。グラフの縦軸は小さな変化を見やすくするため平方根スケール (表示値は実際の %)。
+const MOTION_ON = 4, MOTION_OFF = 120;
+let changeLv = (() => { // 動き判定のしきい値 (変化した画素の割合)。数値入力で変更・記憶
+  try { const v = Number(localStorage.getItem("chrome-recorder.changeLv")); if (v > 0 && v <= 1) return v; } catch {}
+  return 0.02;
+})();
+let hasMotion = false, mAbove = 0, mBelow = 0;
+const mStates = new Array(LEVEL_N).fill(false);
+const scaleCh = (v) => Math.sqrt(Math.min(1, Math.max(0, v)));
+// el を縮小して prev (前回の画素) と比べ、{ px, frac } を返す。frac = 変化した画素の割合 (prev が無ければ null)
+function frameDiff(el, prev) {
+  sampleG.drawImage(el, 0, 0, CHANGE_W, CHANGE_H);
+  const d = sampleG.getImageData(0, 0, CHANGE_W, CHANGE_H).data;
+  let frac = null;
+  if (prev) {
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - prev[i]) + Math.abs(d[i + 1] - prev[i + 1]) + Math.abs(d[i + 2] - prev[i + 2]) > 48) n++;
+    frac = n / (d.length / 4);
+  }
+  return { px: d, frac };
+}
+function sampleChange() {
+  const el = comp?.canvas ?? $("preview");
+  if (el instanceof HTMLVideoElement ? !el.videoWidth : el.width <= 1) return change; // 映像サイズ未確定は前回値のまま
+  const r = frameDiff(el, prevPx);
+  prevPx = r.px;
+  if (r.frac !== null) change = r.frac;
+  return change;
+}
+// 🤖 AI: ソース毎の画面の変化量 (行のインジケータ用)。comp.vids は「映像が live のソース」と同じ順
+function sampleSources() {
+  const one = (s, el) => {
+    if (!el?.videoWidth) return;
+    const r = frameDiff(el, s.prev); s.prev = r.px;
+    if (r.frac !== null) s.change = r.frac;
+    if (s.changeEl) s.changeEl.style.width = `${scaleCh(s.change || 0) * 100}%`;
+  };
+  sources.filter((x) => x.stream.getVideoTracks().some((t) => t.readyState === "live")).forEach((x, i) => one(x, comp?.vids[i]));
+  if (tempSrc) one(tempSrc, $("preview"));
+}
 const toLevel = (buf) => { // RMS → dBFS (-60..0) → 0..1
   let sum = 0; for (const x of buf) sum += x * x;
   const db = 20 * Math.log10(Math.sqrt(sum / buf.length) || 1e-9);
   return Math.min(1, Math.max(0, (db + 60) / 60));
 };
 function attachMeter(s) {
-  const tracks = s.stream.getAudioTracks();
-  if (!tracks.length) return;
-  mctx ??= new AudioContext();
-  mctx.resume();
-  if (!master) {
-    master = mctx.createAnalyser(); master.fftSize = 1024; masterBuf = new Float32Array(master.fftSize);
-    meterTimer = setInterval(tickMeter, LEVEL_MS);
-  }
-  const src = mctx.createMediaStreamSource(new MediaStream(tracks)), an = mctx.createAnalyser();
-  an.fftSize = 1024;
-  src.connect(an); src.connect(master);
-  s.meter = { src, an, buf: new Float32Array(an.fftSize) };
+  // 🤖 AI: 音声なしの画面でも、画面の変化量のためにグラフとループは動かす
+  if (!meterTimer) meterTimer = setInterval(tickMeter, LEVEL_MS);
   $("levelPanel").hidden = false;
+  const tracks = s.stream.getAudioTracks();
+  if (tracks.length) {
+    mctx ??= new AudioContext();
+    mctx.resume();
+    if (!master) { master = mctx.createAnalyser(); master.fftSize = 1024; masterBuf = new Float32Array(master.fftSize); }
+    const src = mctx.createMediaStreamSource(new MediaStream(tracks)), an = mctx.createAnalyser();
+    an.fftSize = 1024;
+    src.connect(an); src.connect(master);
+    s.meter = { src, an, buf: new Float32Array(an.fftSize) };
+  }
   drawLevel();
 }
 function detachMeter(s) {
-  if (!s.meter) return;
-  s.meter.src.disconnect(); s.meter = null;
-  if (!sources.some((x) => x !== s && x.meter) && !(tempSrc && tempSrc !== s && tempSrc.meter)) {
-    clearInterval(meterTimer); master = null; history.fill(0); states.fill(false); hasSound = false; runAbove = runBelow = 0; $("levelPanel").hidden = true;
-  }
+  if (s.meter) { s.meter.src.disconnect(); s.meter = null; }
+  if ([...sources, ...(tempSrc ? [tempSrc] : [])].some((x) => x !== s)) return;
+  clearInterval(meterTimer); meterTimer = null; master = null;
+  history.fill(0); states.fill(false); chHist.fill(0); mStates.fill(false); prevPx = null; change = 0;
+  hasMotion = false; mAbove = mBelow = 0;
+  hasSound = false; runAbove = runBelow = 0; $("levelPanel").hidden = true;
 }
 function tickMeter() {
   for (const s of tempSrc ? [...sources, tempSrc] : sources) {
@@ -147,15 +200,23 @@ function tickMeter() {
     s.meter.an.getFloatTimeDomainData(s.meter.buf);
     if (s.meterEl) s.meterEl.style.width = `${toLevel(s.meter.buf) * 100}%`;
   }
-  master.getFloatTimeDomainData(masterBuf);
-  const lv = toLevel(masterBuf);
+  if (++sampleTick % CHANGE_EVERY === 0) {
+    change = sampleChange();
+    sampleSources();
+    if (change >= changeLv) { mAbove++; mBelow = 0; } else { mBelow++; mAbove = 0; }
+    if (!hasMotion && mAbove >= MOTION_ON) hasMotion = true;
+    else if (hasMotion && mBelow >= MOTION_OFF) hasMotion = false;
+  }
+  chHist.push(change); chHist.shift(); mStates.push(hasMotion); mStates.shift();
+  let lv = 0;
+  if (master) { master.getFloatTimeDomainData(masterBuf); lv = toLevel(masterBuf); } // 音声なしの画面だけなら音量は 0
   if (lv >= soundLv) { runAbove++; runBelow = 0; } else { runBelow++; runAbove = 0; }
   if (!hasSound && runAbove >= ON_TICKS) hasSound = true;
   else if (hasSound && runBelow >= OFF_TICKS) hasSound = false;
   history.push(lv); history.shift(); states.push(hasSound); states.shift();
-  if (armed && !session && pre && hasSound) beginArmed(true);
-  if (session) session.quiet = lv >= soundLv ? 0 : (session.quiet || 0) + 1; // 録画開始 (またはファイル切替) 以降の連続無音
-  if (session && $("autoStop").checked && !session.stopping && session.quiet >= OFF_TICKS) requestStop(true); // 無音 30 秒で保存 (自動開始が ON なら待機へ)
+  if (armed && !session && pre && (hasSound || hasMotion)) beginArmed(true);
+  if (session) session.quiet = (lv >= soundLv || change >= changeLv) ? 0 : (session.quiet || 0) + 1; // 録画開始 (またはファイル切替) 以降の連続の無音・静止
+  if (session && $("autoStop").checked && !session.stopping && session.quiet >= OFF_TICKS) requestStop(true); // 無音・静止 30 秒で保存 (自動開始が ON なら待機へ)
   drawLevel();
 }
 function drawLevel() {
@@ -164,21 +225,33 @@ function drawLevel() {
   g.clearRect(0, 0, w, h);
   g.strokeStyle = cs.getPropertyValue("--line"); g.lineWidth = 1;
   const bw = w / LEVEL_N, ty = h * (1 - soundLv), th = 3 * devicePixelRatio; // ty: しきい値の y 座標
-  history.forEach((v, i) => { // しきい値以上の棒は濃く、未満は薄く
-    const bh = Math.max(1, v * h);
-    g.fillStyle = cs.getPropertyValue(v >= soundLv ? "--fg" : "--muted");
-    g.fillRect(i * bw, h - bh, Math.max(1, bw - 0.5), bh);
-  });
-  g.fillStyle = cs.getPropertyValue("--rec"); // 「音あり」判定中は、しきい値の線に重ねて太線にする
+  g.fillStyle = cs.getPropertyValue("--audio"); // 「音あり」判定中は、しきい値の線に重ねて太線にする
   states.forEach((on, i) => { if (on) g.fillRect(i * bw, ty - th / 2, Math.ceil(bw), th); });
   // 🤖 AI: しきい値 (破線から細い実線へ変更。ドラッグでレベル変更可)
-  g.strokeStyle = cs.getPropertyValue("--rec");
+  g.strokeStyle = cs.getPropertyValue("--audio");
   g.lineWidth = 1 * devicePixelRatio;
   g.setLineDash([]);
   g.beginPath();
   g.moveTo(0, ty);
   g.lineTo(w, ty);
   g.stroke();
+  // 🤖 AI: 折れ線 2 本 (2026-11-12 ユーザー指示): 音声レベル = 赤、画面の変化量 (縦軸 0〜100% = 変化した画素の割合) = 黒。右上に変化量の現在値
+  const line = (arr, color, f = (v) => v) => {
+    g.strokeStyle = color; g.lineWidth = 1.5 * devicePixelRatio; g.lineJoin = "round";
+    g.beginPath();
+    arr.forEach((v, i) => { const x = (i + 0.5) * bw, y = h - Math.min(1, f(v)) * (h - g.lineWidth) - g.lineWidth / 2; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.stroke();
+  };
+  line(history, cs.getPropertyValue("--audio"));
+  // 変化量のしきい値 (黒の細い実線)。「動きあり」判定中は太線にする
+  const cy = h * (1 - scaleCh(changeLv));
+  g.fillStyle = cs.getPropertyValue("--video");
+  mStates.forEach((on, i) => { if (on) g.fillRect(i * bw, cy - th / 2, Math.ceil(bw), th); });
+  g.strokeStyle = cs.getPropertyValue("--video"); g.lineWidth = 1 * devicePixelRatio; g.setLineDash([]);
+  g.beginPath(); g.moveTo(0, cy); g.lineTo(w, cy); g.stroke();
+  line(chHist, cs.getPropertyValue("--video"), scaleCh);
+  g.fillStyle = cs.getPropertyValue("--video"); g.font = `${11 * devicePixelRatio}px sans-serif`; g.textAlign = "right"; g.textBaseline = "top";
+  g.fillText(`${(change * 100).toFixed(1)}%`, w - 4 * devicePixelRatio, 3 * devicePixelRatio);
 }
 
 // 🤖 AI: 音声判定しきい値のドラッグ操作 (上下ドラッグで判定レベルを変更・記憶)
@@ -186,9 +259,21 @@ function setupLevelDrag() {
   const c = $("level");
   if (!c) return;
   const updateTitle = () => {
-    const db = Math.round(soundLv * 60 - 60);
-    c.title = `音声判定しきい値: ${db} dBFS (上下ドラッグで調整)`;
+    const db = Math.round(soundLv * 100); // % (縦軸 0〜100% = -60〜0 dBFS)
+    c.title = `緑線: 音量 / 青線: 画面の変化 (%、縦軸は平方根) / 緑の細い横線: 音声判定しきい値 ${db}% (上下ドラッグで調整) / 青の細い横線: 動き判定しきい値 ${changeLv * 100}%`;
   };
+  // 🤖 AI: しきい値の数値入力 (音声 dBFS / 動き %)。ドラッグとも同期
+  const syncInputs = () => { $("soundPct").value = Math.round(soundLv * 100); $("changePct").value = +(changeLv * 100).toFixed(1); };
+  const applyInputs = () => {
+    const sp = Number($("soundPct").value), pct = Number($("changePct").value);
+    if ($("soundPct").value !== "" && sp >= 1 && sp <= 100) { soundLv = sp / 100; try { localStorage.setItem("chrome-recorder.soundLv", String(soundLv)); } catch {} }
+    if ($("changePct").value !== "" && pct > 0 && pct <= 100) { changeLv = pct / 100; try { localStorage.setItem("chrome-recorder.changeLv", String(changeLv)); } catch {} }
+    updateTitle(); drawLevel();
+  };
+  $("soundPct").addEventListener("input", applyInputs);
+  $("changePct").addEventListener("input", applyInputs);
+  $("soundPct").addEventListener("change", syncInputs); // 範囲外・空欄は有効な値に戻す
+  $("changePct").addEventListener("change", syncInputs);
   const setLevelFromY = (clientY) => {
     const rect = c.getBoundingClientRect();
     const y = Math.min(rect.bottom, Math.max(rect.top, clientY));
@@ -196,6 +281,7 @@ function setupLevelDrag() {
     soundLv = Math.min(1, Math.max(0.01, ratio));
     try { localStorage.setItem("chrome-recorder.soundLv", String(soundLv)); } catch {}
     updateTitle();
+    syncInputs();
     drawLevel();
   };
   c.addEventListener("pointerdown", (e) => {
@@ -212,6 +298,7 @@ function setupLevelDrag() {
     c.addEventListener("pointercancel", onUp);
   });
   updateTitle();
+  syncInputs();
 }
 
 // 🤖 AI: 音声が付かないときの案内。ウィンドウ共有で音声が付くかは未確認 (2026-11-10 の実例は audio=0)。画面全体ならシステム音を取得できた (README「動作確認」)
@@ -381,12 +468,12 @@ function startPre() {
   pre = { r, chunks, t0: Date.now() };
 }
 function rotatePre() {
-  if (!pre || session || hasSound || runAbove > 0 || Date.now() - pre.t0 < PRE_MS) return;
+  if (!pre || session || hasSound || runAbove > 0 || hasMotion || mAbove > 0 || Date.now() - pre.t0 < PRE_MS) return;
   const old = pre; startPre(); old.r.stop(); // 古いバッファは破棄
 }
 async function arm() {
   if (armed || session) return;
-  if (!sources.some((s) => s.meter)) { log("自動録画: 音声ありの画面を追加してください"); $("autoStart").checked = false; return; }
+  if (!sources.length) { log("自動録画: 画面を追加してください"); $("autoStart").checked = false; return; }
   armed = true; $("addScreen").disabled = true;
   armTime = Date.now();
   try {
@@ -399,7 +486,7 @@ async function arm() {
   const ends = sources.flatMap((s) => s.stream.getTracks());
   ends.forEach((t) => t.addEventListener("ended", () => { if (armed && !session && ends.every((x) => x.readyState === "ended")) { $("autoStart").checked = false; disarm(); } }));
   $("status").textContent = "待機中"; setTabRec("待機中", true);
-  log("自動録画: 待機中 (音が出たら録画を開始)");
+  log("自動録画: 待機中 (音または画面の動きで録画を開始)");
 }
 function disarm() {
   if (session) { armed = false; return; } // 録画中なら停止まで続ける (停止後は待機に戻らない)
@@ -424,7 +511,7 @@ async function beginArmed(auto) {
     recorder = p.r;
     bindWriter(recorder, w, dir, name, p.chunks); // 同期で以降のチャンクの書き込み先を切り替える
     session = { dir, auto, armTime };
-    log(`${auto ? "音声検知" : "手動"}: 先頭 ${Math.round((Date.now() - p.t0) / 1000)} 秒分のバッファから録画`);
+    log(`${auto ? (hasSound ? "音声検知" : "画面の動き検知") : "手動"}: 先頭 ${Math.round((Date.now() - p.t0) / 1000)} 秒分のバッファから録画`);
     afterStart(dir);
   } catch (e) {
     log(`エラー: ${e.name}: ${e.message}`);
