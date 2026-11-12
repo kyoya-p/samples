@@ -1,0 +1,80 @@
+﻿{
+  "manifest_version": 3,
+  "name": "火災保険 一括見積もりアシスタント",
+  "version": "1.2.0",
+  "description": "物件条件（所在地・構造・築年数・保険金額）を主要損保・一括試算サイトへ完全自動入力し、サイドパネルに計算結果をリアルタイム表示します。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.kakaku.com/*",
+    "https://*.sbisonpo.co.jp/*",
+    "https://*.sonysonpo.co.jp/*",
+    "https://*.secom-anshinmyhome.jp/*"
+  ],
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "火災保険一括見積もりアシスタント",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.kakaku.com/*"
+      ],
+      "js": [
+        "content_scripts/helper.js",
+        "content_scripts/kakaku.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.sbisonpo.co.jp/*"
+      ],
+      "js": [
+        "content_scripts/helper.js",
+        "content_scripts/sbi.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.sonysonpo.co.jp/*"
+      ],
+      "js": [
+        "content_scripts/helper.js",
+        "content_scripts/sony.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.secom-anshinmyhome.jp/*"
+      ],
+      "js": [
+        "content_scripts/helper.js",
+        "content_scripts/secom.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

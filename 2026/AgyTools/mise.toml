@@ -1,0 +1,7 @@
+﻿[tasks]
+start-agy-usage = { description = "AgyTools の使用量サンプリング・HTMLパネル生成・ブラウザ表示", run = [
+    "node usage_sample.js",
+    "node usage_panel.js",
+    "cmd /c start %USERPROFILE%\\.gemini\\usage\\agy-panel.html"
+], dir = "{{config_root}}" }
+

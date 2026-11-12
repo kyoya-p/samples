@@ -150,6 +150,13 @@
     window.addEventListener('resize', () => {
       if (isActive) {
         resizeCanvas();
+        if (toolbarEl && toolbarEl.style.left) {
+          const rect = toolbarEl.getBoundingClientRect();
+          if (rect.right > window.innerWidth - 8 || rect.left < 8) {
+            const newX = Math.max(8, Math.min(window.innerWidth - toolbarEl.offsetWidth - 8, rect.left));
+            toolbarEl.style.left = `${newX}px`;
+          }
+        }
       }
     });
   }
@@ -2616,19 +2623,26 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 2147483645;
-        background: rgba(24, 24, 27, 0.88);
+        background: rgba(24, 24, 27, 0.92);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.16);
         border-radius: 14px;
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        row-gap: 5px;
+        column-gap: 6px;
         padding: 6px 10px;
+        max-width: calc(100vw - 16px);
+        max-height: 90vh;
+        overflow-y: auto;
+        box-sizing: border-box;
         color: #f4f4f5;
         font-size: 13px;
-        transition: all 0.2s ease;
+        transition: max-width 0.2s, background 0.2s;
       }
 
       .cd-toolbar.minimized {
@@ -2648,6 +2662,7 @@
         line-height: 1;
         padding: 4px;
         letter-spacing: -2px;
+        flex-shrink: 0;
       }
       .cd-toolbar-handle:active {
         cursor: grabbing;
@@ -2657,13 +2672,40 @@
         display: flex;
         align-items: center;
         gap: 4px;
+        flex-shrink: 0;
       }
 
       .cd-divider {
         width: 1px;
         height: 22px;
         background: rgba(255, 255, 255, 0.14);
-        margin: 0 4px;
+        margin: 0 3px;
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 980px) {
+        .cd-toolbar {
+          top: 10px;
+          padding: 5px 8px;
+          row-gap: 4px;
+          column-gap: 5px;
+        }
+        .cd-divider {
+          display: none;
+        }
+        .cd-tool-btn,
+        .cd-action-icon-btn {
+          width: 30px !important;
+          height: 30px !important;
+        }
+        .cd-eyedropper-btn {
+          width: 24px !important;
+          height: 24px !important;
+        }
+        .cd-color-dot {
+          width: 16px !important;
+          height: 16px !important;
+        }
       }
 
       .cd-tool-btn,

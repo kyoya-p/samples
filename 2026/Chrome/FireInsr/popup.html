@@ -1,0 +1,439 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>火災保険 一括見積もりアシスタント</title>
+  <style>
+    body {
+      width: 100%;
+      min-width: 360px;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      background: #f4f6f9;
+      color: #333;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a5276, #2980b9);
+      color: white;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+    .header h1 {
+      font-size: 14px;
+      margin: 0;
+      font-weight: 700;
+    }
+    .container {
+      padding: 10px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #1a5276;
+      margin: 0 0 10px 0;
+      border-bottom: 2px solid #ebf5fb;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #2980b9;
+      margin: 10px 0 6px 0;
+      border-left: 3px solid #2980b9;
+      padding-left: 6px;
+    }
+    .form-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .form-group {
+      flex: 1;
+    }
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 2px;
+    }
+    input, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 7px;
+      border: 1px solid #ccd1d9;
+      border-radius: 4px;
+      font-size: 11px;
+      background: #fff;
+    }
+    input:focus, select:focus {
+      border-color: #2980b9;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(41,128,185,0.2);
+    }
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #27ae60, #2ecc71);
+      color: white;
+      border: none;
+      padding: 13px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      box-shadow: 0 3px 8px rgba(39,174,96,0.4);
+      margin-top: 5px;
+    }
+    .btn-submit:hover {
+      background: linear-gradient(135deg, #219653, #27ae60);
+      transform: translateY(-1px);
+    }
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .btn-site {
+      background: white;
+      border: 1px solid #2980b9;
+      color: #2980b9;
+      padding: 7px 4px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .btn-site:hover {
+      background: #ebf5fb;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    th, td {
+      padding: 6px 4px;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #f4f6f7;
+      text-align: left;
+      color: #555;
+    }
+    .price {
+      text-align: right;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      color: white;
+    }
+    .badge-green { background: #27ae60; }
+    .badge-gray { background: #7f8c8d; }
+    .badge-orange { background: #e67e22; }
+    .badge-blue { background: #2980b9; }
+    .live-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #27ae60;
+      border-radius: 50%;
+      margin-right: 4px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      color: #888;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🛡️ 火災保険 一括見積もりアシスタント</h1>
+    <span style="font-size: 11px; opacity: 0.9;">全パラメタ設定</span>
+  </div>
+
+  <div class="container">
+    
+    <!-- 全パラメタ入力フォーム -->
+    <div class="card">
+      <div class="card-title">
+        <span>① 見積もり条件パラメータ</span>
+        <button id="btnResetDefault" style="background:none;border:none;color:#2980b9;font-size:10px;cursor:pointer;text-decoration:underline;">初期値に戻す</button>
+      </div>
+
+      <div class="section-label">物件・建物情報</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>建物種類</label>
+          <select id="buildingType">
+            <option value="1" selected>一戸建て</option>
+            <option value="2">マンション（区分所有）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>都道府県</label>
+          <select id="prefecture">
+            <option value="奈良県" data-code="29" selected>奈良県</option>
+            <option value="東京都" data-code="13">東京都</option>
+            <option value="大阪府" data-code="27">大阪府</option>
+            <option value="神奈川県" data-code="14">神奈川県</option>
+            <option value="愛知県" data-code="23">愛知県</option>
+            <option value="京都府" data-code="26">京都府</option>
+            <option value="兵庫県" data-code="28">兵庫県</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex: 0.7;">
+          <label>郵便番号</label>
+          <input type="text" id="postalCode" value="6391015" placeholder="6391015">
+        </div>
+        <div class="form-group" style="flex: 1.3;">
+          <label>市区町村・町名・番地</label>
+          <input type="text" id="address" value="大和郡山市箕山町6-27">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>構造区分 (耐火性能)</label>
+          <select id="buildingStructure">
+            <option value="2" selected>H構造（木造・非耐火住宅）</option>
+            <option value="3">T構造（省令準耐火・鉄骨）</option>
+            <option value="1">M構造（マンション・耐火造）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>柱の種類</label>
+          <select id="pillarType">
+            <option value="木造" selected>木造</option>
+            <option value="鉄骨">鉄骨造</option>
+            <option value="コンクリート">コンクリート造</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>建築年月</label>
+          <div style="display:flex;gap:4px;">
+            <input type="number" id="builtYear" value="2000" style="width:65%;">
+            <input type="number" id="builtMonth" value="9" style="width:35%;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>築年数 (年)</label>
+          <input type="number" id="buildingAge" value="25">
+        </div>
+        <div class="form-group">
+          <label>延床面積 (㎡)</label>
+          <input type="number" id="area" value="98">
+        </div>
+      </div>
+
+      <div class="section-label">補償内容・保険金額</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>建物保険金額 (万円)</label>
+          <input type="number" id="buildingAmount" value="1500" step="100">
+        </div>
+        <div class="form-group">
+          <label>家財保険金額 (万円)</label>
+          <input type="number" id="goodsAmount" value="500" step="50">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>水災補償</label>
+          <select id="waterDamage">
+            <option value="0" selected>× 外す (節約・浸水リスク低)</option>
+            <option value="1">○ 付帯する</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>地震保険</label>
+          <select id="earthquake">
+            <option value="1" selected>○ あり（付帯する）</option>
+            <option value="2">× なし</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>不測の事故 (破損・汚損)</label>
+          <select id="accidentalDamage">
+            <option value="5" selected>○ 付帯 (自己負担5万円)</option>
+            <option value="3">○ 付帯 (自己負担3万円)</option>
+            <option value="0">× なし (節約型)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>オール電化住宅</label>
+          <select id="allElectric">
+            <option value="1" selected>○ 該当する (電化割適用)</option>
+            <option value="0">× 該当しない</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-label">契約者情報・始期日</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>契約者氏名 (漢字)</label>
+          <div style="display:flex;gap:4px;">
+            <input type="text" id="ownerLastName" value="河野" placeholder="姓">
+            <input type="text" id="ownerFirstName" value="恭也" placeholder="名">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>契約者氏名 (カナ)</label>
+          <div style="display:flex;gap:4px;">
+            <input type="text" id="ownerKanaLast" value="コウノ" placeholder="セイ">
+            <input type="text" id="ownerKanaFirst" value="キョウヤ" placeholder="メイ">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>補償開始日 (始期日)</label>
+          <div style="display:flex;gap:4px;">
+            <input type="number" id="startYear" value="2026" style="width:45%;">
+            <input type="number" id="startMonth" value="11" style="width:25%;">
+            <input type="number" id="startDay" value="21" style="width:30%;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>保険期間</label>
+          <select id="policyPeriod">
+            <option value="5" selected>5年間長期一括</option>
+            <option value="1">1年間</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- メイン見積ボタン -->
+      <button id="btnRunQuote" class="btn-submit">
+        ⚡ この条件で一括見積もりを実行する
+      </button>
+      <div style="font-size:10px;color:#666;text-align:center;margin-top:4px;">
+        ※各社サイトを開き、上記全パラメータを自動入力して試算します
+      </div>
+
+    </div>
+
+    <!-- 個別サイトを開く -->
+    <div class="card">
+      <div class="card-title">個別サイトで確認</div>
+      <div class="btn-grid">
+        <button id="btnOpenKakaku" class="btn-site">🌐 価格.com</button>
+        <button id="btnOpenSony" class="btn-site">🟦 ソニー損保</button>
+        <button id="btnOpenSBI" class="btn-site">🟧 SBI損保</button>
+        <button id="btnOpenSecom" class="btn-site">🟥 セコム損保</button>
+      </div>
+    </div>
+
+    <!-- リアルタイム計算結果比較表 -->
+    <div class="card">
+      <div class="card-title">
+        <span>5年一括 見積もり計算結果</span>
+        <span style="font-size: 10px; font-weight: normal; color: #27ae60;">
+          <span class="live-indicator"></span>リアルタイム自動同期中
+        </span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>保険会社 / プラン</th>
+            <th>5年一括保険料</th>
+            <th>削減差額</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody">
+          <tr>
+            <td>AIG損保 (現契約同等)</td>
+            <td class="price">272,420 円</td>
+            <td><span class="badge badge-gray">基準 (0円)</span></td>
+          </tr>
+          <tr>
+            <td>AIG損保 (プラン1節約型)</td>
+            <td class="price">55,260 円</td>
+            <td><span class="badge badge-green">▲ 21.7万円</span></td>
+          </tr>
+          <tr>
+            <td>セコム損保 (電化割★)</td>
+            <td class="price" id="val-secom">約 159,680 円</td>
+            <td><span class="badge badge-green">▲ 約11.2万円</span></td>
+          </tr>
+          <tr>
+            <td>ソニー損保 (Web試算)</td>
+            <td class="price" id="val-sony">約 168,680 円</td>
+            <td><span class="badge badge-green">▲ 約10.3万円</span></td>
+          </tr>
+          <tr>
+            <td>日新火災 (価格.com)</td>
+            <td class="price" id="val-nisshin">231,980 円</td>
+            <td><span class="badge badge-blue">▲ 4.0万円</span></td>
+          </tr>
+          <tr>
+            <td>チューリッヒ (価格.com)</td>
+            <td class="price" id="val-zurich">244,600 円</td>
+            <td><span class="badge badge-blue">▲ 2.8万円</span></td>
+          </tr>
+          <tr>
+            <td>SBI損保 (※要デスク)</td>
+            <td class="price" id="val-sbi">約 148,180 円</td>
+            <td><span class="badge badge-orange">▲ 約12.4万円</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      火災保険更新アシスタント - 全自動見積もり対応
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
