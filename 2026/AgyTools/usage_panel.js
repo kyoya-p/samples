@@ -133,7 +133,7 @@ for (const s of samples) {
 }
 const modelSamples = samples.filter(s => s.byModel && Object.keys(s.byModel).length > 0);
 
-// 100% 到達の予測（推定）: 使用率 usedPct = 100 - pct（残量）を基準に直線外挿
+// 残量0%（使用率100%）到達の予測（推定）: 使用率 usedPct = 100 - pct（残量）を基準に直線外挿
 const WEEK_MS = 7 * 86400000;
 const FIVE_H_MS = 5 * 3600000;
 const BUCKETS = [
@@ -246,7 +246,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
 <div class="grid" style="margin-top:12px">
   <div class="card">
     <h2 class="ch">
-      <span>使用率推移/5h<span class="rem-badge" id="rem-5h"></span></span>
+      <span>残量推移/5h<span class="rem-badge" id="rem-5h"></span></span>
       <span class="rt">
         <span class="mlg-head" id="head-5h"></span>
         <span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span>
@@ -257,7 +257,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
   <div class="card">
     <h2 class="ch">
-      <span>使用率推移/7d<span class="rem-badge" id="rem-7d"></span></span>
+      <span>残量推移/7d<span class="rem-badge" id="rem-7d"></span></span>
       <span class="rt">
         <span class="mlg-head" id="head-7d"></span>
         <span class="range"><select id="range-7d" aria-label="週次の表示範囲"></select></span>
@@ -281,7 +281,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
 </div>
 <script>
-const D = ${JSON.stringify(data)};
+let D = ${JSON.stringify(data)}; // 初期データ。以後は usage_data.js の再読込で差し替える（ページはリロードしない）
 const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
 const usedOf = (s, key) => {
   const lim = s?.limits?.[key];
@@ -319,8 +319,8 @@ function usageChart() {
     const visibleSeries = c.series.filter(s => isSeriesVisible(s, c)).map(s => ({ ...s, rp: s.p, p: livep(s.p) }));
     const { t0, t1 } = c.view;
     const x = ms => P + ((ms - t0) / (t1 - t0)) * (W - 2 * P);
-    const yPct = v => P + (v / 100) * (H - 2 * P); // 上 0% → 下 100%
-    const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + v + '%</text>').join('');
+    const yPct = v => P + (v / 100) * (H - 2 * P); // 上 残量100%(使用率0%) → 下 残量0%(使用率100%)
+    const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + (100 - v) + '%</text>').join('');
     const span = t1 - t0;
     const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 8) || 43200;
     const step = stepMin * 60000;
@@ -357,7 +357,7 @@ function usageChart() {
       // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
       const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
       const pl = segs.map(sg => '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + stepPts(sg).join(' ') + '"/>').join('');
-      const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 使用率 ' + pt.v + '% (残量 ' + (100 - pt.v) + '%)</title></circle>').join('');
+      const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 残量 ' + (100 - pt.v) + '% (使用率 ' + pt.v + '%)</title></circle>').join('');
       return pl + dots;
     }).join('');
 
@@ -365,10 +365,10 @@ function usageChart() {
       const p = s.p, col = s.col;
       let out = '';
       if (p && p.t100) {
-        out += '<line x1="' + x(p.start).toFixed(1) + '" y1="' + yPct(0).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>' + s.shortLabel + ' 100%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
+        out += '<line x1="' + x(p.start).toFixed(1) + '" y1="' + yPct(0).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>' + s.shortLabel + ' 残量0%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
       }
       if (p && p.h1 && p.h1.t100) {
-        out += '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>' + s.shortLabel + ' 100%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
+        out += '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>' + s.shortLabel + ' 残量0%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
       }
       return out;
     }).join('');
@@ -381,8 +381,8 @@ function usageChart() {
         const cx = x(t), cy = yPct(100), r = 5;
         const isRight = cx > W / 2;
         const tx = isRight ? Math.min(W - P - 4, cx - 7) : Math.max(P + 4, cx + 7);
-        const ty = cy - 13 - i * 11; // 100% が下端のため、ラベルは線の上側に配置
-        return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 100%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
+        const ty = cy - 13 - i * 11; // 残量0% が下端のため、ラベルは線の上側に配置
+        return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>' + s.shortLabel + ' 残量0%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
           '<text x="' + tx.toFixed(1) + '" y="' + ty.toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (isRight ? 'end' : 'start') + '" fill="' + col + '">' + s.shortLabel + ' ' + fmtT(t) + '</text>';
       }).join('');
     }).join('');
@@ -407,7 +407,7 @@ function usageChart() {
     {
       id: 'usage-chart-5h',
       nm: '5h',
-      title: '使用率推移/5h',
+      title: '残量推移/5h',
       def: '24h',
       isWeek: false,
       series: [
@@ -418,7 +418,7 @@ function usageChart() {
     {
       id: 'usage-chart-7d',
       nm: '7d',
-      title: '使用率推移/7d',
+      title: '残量推移/7d',
       def: '7d',
       isWeek: true,
       series: [
@@ -467,8 +467,8 @@ function usageChart() {
       c.series.forEach(s => {
         const isVis = isSeriesVisible(s, c);
         const curUsed = lastS ? usedOf(lastS, s.key) : null;
-        const usedStr = curUsed !== null ? curUsed + '%' : '-';
-        const title = (lastS ? new Date(lastS.ts).toLocaleString('ja-JP') : '') + ' ' + s.label + ' 使用率: ' + usedStr;
+        const usedStr = curUsed !== null ? (100 - curUsed) + '%' : '-'; // 残量表示
+        const title = (lastS ? new Date(lastS.ts).toLocaleString('ja-JP') : '') + ' ' + s.label + ' 残量: ' + usedStr + (curUsed !== null ? '（使用率 ' + curUsed + '%）' : '');
 
         if (isVis) {
           headHtml += '<span class="it" title="' + title + '"><i class="sw" style="background:' + s.col + '"></i><span style="color:var(--mut)">' + s.shortLabel + ':</span><b style="color:' + s.col + '">' + usedStr + '</b></span>';
@@ -512,7 +512,7 @@ function usageChart() {
       if (!drag) return;
       const shift = -(e.clientX - drag.x) / el.getBoundingClientRect().width * drag.span;
       const t0 = Math.min(Math.max(drag.t0 + shift, full.t0), full.t1 - drag.span);
-      c.view = { t0, t1: t0 + drag.span };
+      c.view = { t0, t1: t0 + drag.span }; PAN[c.id] = c.view;
       draw(c);
     });
     const endDrag = () => { drag = null; el.style.cursor = 'grab'; };
@@ -521,6 +521,7 @@ function usageChart() {
     menu.innerHTML = ranges.map(([label]) => '<option value="' + label + '"' + (label === saved ? ' selected' : '') + '>' + label + '</option>').join('');
     menu.addEventListener('change', () => {
       try { localStorage.setItem('agyUsageRange:' + c.id, menu.value); } catch (e) {}
+      delete PAN[c.id];
       applyRange(menu.value);
       draw(c);
     });
@@ -533,15 +534,15 @@ function usageChart() {
       const t1 = c.view.t1;
       menu.value = ranges[j][0];
       try { localStorage.setItem('agyUsageRange:' + c.id, menu.value); } catch (err) {}
-      c.view = { t0: t1 - ranges[j][1] * 3600000, t1 };
+      c.view = { t0: t1 - ranges[j][1] * 3600000, t1 }; if (PAN[c.id]) PAN[c.id] = c.view;
       draw(c);
     }, { passive: false });
     applyRange(menu.value);
+    if (PAN[c.id]) { const v = PAN[c.id], sp = v.t1 - v.t0, t0 = Math.min(Math.max(v.t0, full.t0), full.t1 - sp); c.view = { t0, t1: t0 + sp }; } // 再描画前のドラッグ位置を維持
     draw(c);
     updateUI();
   });
 }
-usageChart();
 
 function cumChart() {
   const MS = (D.modelSamples || []).slice().sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
@@ -583,7 +584,7 @@ function cumChart() {
   try { savedRange = localStorage.getItem('agyUsageRange:cum-chart') || '7d'; } catch (e) {}
   rangeMenu.innerHTML = ranges.map(([l]) => '<option value="' + l + '"' + (l === savedRange ? ' selected' : '') + '>' + l + '</option>').join('');
   let hours = (ranges.find(([l]) => l === savedRange) || ranges[5])[1];
-  let view = null; // 横ドラッグ中の終端時刻（null = 現在に追従）
+  let view = PANCUM.v; // 横ドラッグ中の終端時刻（null = 現在に追従）
 
   const storageKeyOf = kk => split === 'model' ? 'agyUsageShowModel:' + kk : 'agyUsageShowModel:' + split + ':' + kk;
   const isModelVis = kk => {
@@ -733,7 +734,7 @@ function cumChart() {
   };
   splitMenu.addEventListener('change', () => { split = splitMenu.value; try { localStorage.setItem('agyUsageSplit:cum-chart', split); } catch (e) {} draw(); });
   modeMenu.addEventListener('change', () => { mode = modeMenu.value; try { localStorage.setItem('agyUsageMode:cum-chart', mode); } catch (e) {} draw(); });
-  rangeMenu.addEventListener('change', () => { view = null; hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (e) {} draw(); });
+  rangeMenu.addEventListener('change', () => { view = PANCUM.v = null; hours = (ranges.find(([l]) => l === rangeMenu.value) || ranges[5])[1]; try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (e) {} draw(); });
   // ドラッグで横スクロール: 表示幅を保ったまま、データ範囲内で移動。現在まで戻すと追従に戻る
   let drag = null;
   el.style.touchAction = 'pan-y';
@@ -751,7 +752,7 @@ function cumChart() {
     const first = Math.min(...MS.map(s => Date.parse(s.from)));
     const shift = -(e.clientX - drag.x) / el.getBoundingClientRect().width * drag.span;
     const t1 = Math.min(Math.max(drag.t1 + shift, first + drag.span), now);
-    view = t1 >= now - 1000 ? null : { t1 };
+    view = t1 >= now - 1000 ? null : { t1 }; PANCUM.v = view;
     draw();
   });
   const endDrag = () => { drag = null; el.style.cursor = 'grab'; };
@@ -767,26 +768,44 @@ function cumChart() {
     rangeMenu.value = ranges[j][0];
     try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (err) {}
     hours = ranges[j][1];
-    view = { t1 };
+    view = { t1 }; PANCUM.v = PANCUM.v ? view : null;
     draw();
   }, { passive: false });
   draw();
 }
-cumChart();
 
-// アクティブ時（画面表示中）に定期リフレッシュ（30秒間隔）
+// 再描画: .grid の初期 DOM を復元して各グラフを組み直す。範囲・凡例などの選択は localStorage から復元されるため、ページのリロードは不要
+const PAN = {}, PANCUM = { v: null }; // 横ドラッグ位置（再描画をまたいで保持）
+const GRID = document.querySelector('.grid'), GRID_HTML = GRID.innerHTML;
+let dragging = false;
+['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, () => { dragging = false; }));
+document.addEventListener('pointerdown', () => { dragging = true; });
+const render = () => {
+  const y = window.scrollY;
+  GRID.innerHTML = GRID_HTML;
+  usageChart();
+  cumChart();
+  window.scrollTo(0, y);
+};
+render();
+
+// 表示中は30秒ごとに usage_data.js（script 読み込み。file:// でも可）を読み直して再描画する。リロードはしない
 (() => {
   const INTERVAL_MS = 30 * 1000;
-  const loadTime = Date.now();
-  setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      location.reload();
-    }
-  }, INTERVAL_MS);
+  let last = Date.now(), busy = false;
+  const refresh = () => {
+    if (document.visibilityState !== 'visible' || dragging || busy) return;
+    busy = true; last = Date.now();
+    const sc = document.createElement('script');
+    const done = () => { sc.remove(); busy = false; };
+    sc.onload = () => { if (window.__USAGE) D = window.__USAGE; render(); done(); };
+    sc.onerror = () => { render(); done(); }; // データ未取得でも「現在」の線・残り時間は更新する
+    sc.src = 'usage_data.js?t=' + Date.now();
+    document.head.appendChild(sc);
+  };
+  setInterval(refresh, INTERVAL_MS);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && Date.now() - loadTime >= INTERVAL_MS) {
-      location.reload();
-    }
+    if (document.visibilityState === 'visible' && Date.now() - last >= INTERVAL_MS) refresh();
   });
 })();
 </script></body></html>`;
@@ -794,4 +813,5 @@ cumChart();
 const outPath = path.join(os.homedir(), '.gemini', 'usage', 'agy-panel.html'); // 出力先は ~/.gemini/usage/ 配下
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, html, 'utf8');
+fs.writeFileSync(path.join(path.dirname(outPath), 'usage_data.js'), 'window.__USAGE = ' + JSON.stringify(data) + ';\n', 'utf8'); // ページが再読込せずに読み直すデータ
 console.log('written', outPath, 'conversations=' + sessionDirs.length, 'requests=' + rows.length, 'total=' + data.total.total);
