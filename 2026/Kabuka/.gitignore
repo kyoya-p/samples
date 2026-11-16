@@ -1,0 +1,8 @@
+# 🤖 AI生成: 株価データ・生成物は Git 管理外
+# 採取データ (fetch_stock.py / server.py で再生成可能)
+*_daily_all_history.csv
+*_daily_1y.csv
+sharp_data.json
+
+__pycache__/
+*.pyc

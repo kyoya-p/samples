@@ -1,8 +1,30 @@
 import json
+import glob
+import os
+import re
+import pandas as pd
 
+# 🤖 AI: 複数銘柄対応。tickers.txt (コード # 名称) と *_daily_all_history.csv から DATASETS を構築
 print("Reading stock data...")
-with open('sharp_data.json', 'r', encoding='utf-8') as f:
-    raw_data = json.load(f)
+names = {'6753': 'シャープ'}  # tickers.txt の記載で上書き
+if os.path.exists('tickers.txt'):
+    for line in open('tickers.txt', encoding='utf-8'):
+        m = re.match(r'\s*(\d+)(?:\.T)?\s*(?:#\s*(.*))?$', line)
+        if m:
+            names[m.group(1)] = (m.group(2) or '').strip()
+
+DATASETS = {}
+for path in sorted(glob.glob('*_daily_all_history.csv')):
+    m = re.search(r'(\d{4})', os.path.basename(path))
+    if not m:
+        continue
+    code = m.group(1)
+    df = pd.read_csv(path, parse_dates=['Date']).dropna(subset=['Close']).sort_values('Date')
+    rows = [[d.strftime('%Y-%m-%d'), round(o, 2), round(h, 2), round(l, 2), round(c, 2), int(v)]
+            for d, o, h, l, c, v in zip(df['Date'], df['Open'], df['High'], df['Low'], df['Close'], df['Volume'])]
+    DATASETS[code] = {'name': names.get(code, ''), 'data': rows}
+DEFAULT_CODE = '6753' if '6753' in DATASETS else next(iter(DATASETS))
+print('銘柄:', ', '.join(DATASETS))
 
 # raw_data: [[date, open, high, low, close, volume], ...]
 html_template = f'''<!DOCTYPE html>
@@ -10,7 +32,7 @@ html_template = f'''<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>シャープ【6753】カレンダー日等間隔ローソク足＆周期逆算重畳ダッシュボード</title>
+  <title>株価ダッシュボード：カレンダー日等間隔ローソク足＆周期逆算重畳</title>
   <!-- TradingView Lightweight Charts (Candlestick) -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <!-- Chart.js & Zoom for Frequency Domain -->
@@ -244,18 +266,23 @@ html_template = f'''<!DOCTYPE html>
 </head>
 <body>
 
+  <!-- 🤖 AI: 銘柄切替 -->
+  <div style="display:flex; align-items:center; gap:0.6rem;">
+    <label for="selectStock" style="color: var(--text-muted); font-size:0.85rem;">銘柄:</label>
+    <select id="selectStock" style="background:#0f172a; color:#f8fafc; border:1px solid var(--card-border); border-radius:4px; padding:0.25rem 0.5rem; font-size:0.9rem; cursor:pointer;"></select>
+    <input id="inputCode" type="text" inputmode="numeric" maxlength="4" placeholder="銘柄コード (例 9984)" style="width:11rem; background:#0f172a; color:#f8fafc; border:1px solid var(--card-border); border-radius:4px; padding:0.25rem 0.5rem; font-size:0.9rem;">
+    <button id="btnAddStock" style="background:#2563eb; color:#fff; border:none; border-radius:4px; padding:0.3rem 0.8rem; font-size:0.85rem; cursor:pointer;">追加・採取</button>
+    <span id="addStatus" style="color: var(--text-muted); font-size:0.8rem;"></span>
+  </div>
+
   <!-- 時間領域：ローソク足チャート（逆算波重畳） -->
   <div class="chart-container-card">
     <div class="card-header-row">
-      <div class="section-title">
-        <span style="color: var(--accent-blue);">●</span> 時間領域（Time Domain）：ローソク足 ＆ 周期逆算（IFFT）重畳表示
-      </div>
-
-      <div class="options-group">
+      <div class="options-group" style="margin-left:auto;">
         <!-- ★ 周期スペクトル逆算波の重畳コントロール ★ -->
         <div class="overlay-controls">
           <label class="toggle-label" style="color: var(--accent-rose); font-weight: 700;">
-            <input type="checkbox" id="toggleFourier" checked> 周期逆算波 (IFFT) を重ねる
+            <input type="checkbox" id="toggleFourier"> 周期逆算波 (IFFT) を重ねる
           </label>
           <select id="selectHarmonicsCount" style="background:#0f172a; color:#f8fafc; border:1px solid rgba(244,63,94,0.5); border-radius:4px; padding:0.15rem 0.4rem; font-size:0.8rem; cursor:pointer;">
             <option value="3">上位3成分 (大局サイクル)</option>
@@ -263,9 +290,8 @@ html_template = f'''<!DOCTYPE html>
             <option value="10">上位10成分 (詳細近似)</option>
             <option value="20">上位20成分 (高周波追従)</option>
           </select>
-          <label class="toggle-label" style="color: var(--accent-blue); font-size:0.8rem; margin-left:0.3rem;">
-            <input type="checkbox" id="toggleTop1"> 第1主周期波も表示
-          </label>
+          <!-- 🤖 AI: 第1主周期波は UI 非表示(常にオフ)。JS 参照のため要素のみ残す -->
+          <input type="checkbox" id="toggleTop1" hidden>
         </div>
 
         <div class="button-group" id="chartTypeButtons">
@@ -308,15 +334,14 @@ html_template = f'''<!DOCTYPE html>
         <button class="btn" data-range="10Y">10年</button>
         <button class="btn active" data-range="ALL">全期間 (27y)</button>
       </div>
-      <span class="hint-tag">🔍 マウスホイールで時間軸の伸縮 / ドラッグでスクロール（周期逆算波もリアルタイムに自動再計算・追従）</span>
     </div>
 
     <!-- TradingView ローソク足チャート本体 -->
     <div id="tvChartWrapper"></div>
   </div>
 
-  <!-- ★周期スペクトルグラフ★ -->
-  <div class="chart-container-card">
+  <!-- ★周期スペクトルグラフ★ (🤖 AI: IFFT/第1主周期波チェックに連動して表示) -->
+  <div class="chart-container-card" id="freqCard" style="display:none;">
     <div class="card-header-row">
       <div class="section-title">
         <span style="color: var(--accent-teal);">●</span> 周期スペクトル（Period Spectrum）：振幅 [横軸：周期 $T$ (カレンダー日)]
@@ -326,7 +351,7 @@ html_template = f'''<!DOCTYPE html>
           <input type="checkbox" id="toggleLogX" checked> 横軸：対数 (Log X)
         </label>
         <label class="toggle-label" style="color: var(--accent-teal); font-weight: 600;">
-          <input type="checkbox" id="toggleLogY"> 縦軸：対数 (Log Y / dB相当)
+          <input type="checkbox" id="toggleLogY" checked> 縦軸：対数 (Log Y / dB相当)
         </label>
 
         <button class="btn" id="btnResetFreqZoom" style="background: #334155; padding: 0.3rem 0.6rem; font-size: 0.8rem;">
@@ -382,7 +407,46 @@ html_template = f'''<!DOCTYPE html>
   </div>
 
   <script>
-    const RAW_DATA = {json.dumps(raw_data)};
+    // 🤖 AI: 複数銘柄データ。?code=XXXX で切替(ページ再読込で全チャートを再構築)
+    const DATASETS = {json.dumps(DATASETS, ensure_ascii=False)};
+    const CURRENT_CODE = (() => {{
+      const c = new URLSearchParams(location.search).get('code');
+      return (c && DATASETS[c]) ? c : '{DEFAULT_CODE}';
+    }})();
+    const RAW_DATA = DATASETS[CURRENT_CODE].data;
+    (() => {{
+      const sel = document.getElementById('selectStock');
+      Object.keys(DATASETS).forEach(code => {{
+        const o = document.createElement('option');
+        o.value = code;
+        o.textContent = code + (DATASETS[code].name ? ' ' + DATASETS[code].name : '');
+        if (code === CURRENT_CODE) o.selected = true;
+        sel.appendChild(o);
+      }});
+      sel.addEventListener('change', () => {{ location.search = '?code=' + sel.value; }});
+      // 🤖 AI: 銘柄コード入力 → server.py の /api/add で採取 → 再生成後に切替
+      const inp = document.getElementById('inputCode');
+      const btn = document.getElementById('btnAddStock');
+      const st = document.getElementById('addStatus');
+      async function addStock() {{
+        const code = inp.value.trim();
+        if (!/^\\d{{4}}$/.test(code)) {{ st.textContent = '4桁の数字で入力'; return; }}
+        if (DATASETS[code]) {{ location.search = '?code=' + code; return; }}
+        btn.disabled = true; st.textContent = code + ' 採取中…(数十秒かかる場合あり)';
+        try {{
+          const r = await fetch('/api/add?code=' + code, {{ method: 'POST' }});
+          const j = await r.json();
+          if (j.ok) {{ location.search = '?code=' + code; return; }}
+          st.textContent = j.error || '失敗';
+        }} catch (e) {{
+          st.textContent = '採取不可: server.py 経由で開いてください (http://localhost:8765/)';
+        }}
+        btn.disabled = false;
+      }}
+      btn.addEventListener('click', addStock);
+      inp.addEventListener('keydown', e => {{ if (e.key === 'Enter') addStock(); }});
+      document.title = sel.options[sel.selectedIndex].textContent + ' 株価ダッシュボード';
+    }})();
 
     function buildFullCalendarData(rawData) {{
       const map = new Map();
@@ -604,10 +668,14 @@ html_template = f'''<!DOCTYPE html>
 
     // ★ 上のチャート上の逆算（IFFT）ラインを更新 ★
     function updateOverlayIFFTLines() {{
-      if (!currentVisibleCalData || !currentFFTResult) return;
-
       const isShowFourier = document.getElementById('toggleFourier').checked;
       const isShowTop1 = document.getElementById('toggleTop1').checked;
+      // 🤖 AI: 周期スペクトル欄はチェックに連動して表示/非表示
+      const freqCard = document.getElementById('freqCard');
+      const wasHidden = freqCard.style.display === 'none';
+      freqCard.style.display = (isShowFourier || isShowTop1) ? '' : 'none';
+      if (wasHidden && freqCard.style.display === '' && typeof freqChart !== 'undefined' && freqChart) freqChart.resize();
+      if (!currentVisibleCalData || !currentFFTResult) return;
       const numH = parseInt(document.getElementById('selectHarmonicsCount').value);
 
       if (isShowFourier || isShowTop1) {{
@@ -647,7 +715,7 @@ html_template = f'''<!DOCTYPE html>
         crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
         rightPriceScale: {{
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          scaleMargins: {{ top: 0.08, bottom: 0.22 }}
+          scaleMargins: {{ top: 0.08, bottom: 0.3 }}
         }},
         timeScale: {{
           borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -661,31 +729,40 @@ html_template = f'''<!DOCTYPE html>
         downColor: '#ef4444',
         borderVisible: false,
         wickUpColor: '#22c55e',
-        wickDownColor: '#ef4444'
+        wickDownColor: '#ef4444',
+        lastValueVisible: false,
+        priceLineVisible: false
       }});
 
       lineSeries = tvChart.addLineSeries({{
         color: '#38bdf8',
         lineWidth: 2,
-        visible: false
+        visible: false,
+        lastValueVisible: false,
+        priceLineVisible: false
       }});
 
       volumeSeries = tvChart.addHistogramSeries({{
         color: '#64748b',
         priceFormat: {{ type: 'volume' }},
         priceScaleId: '',
+        lastValueVisible: false,
+        priceLineVisible: false,
         scaleMargins: {{ top: 0.8, bottom: 0 }}
       }});
+      // 🤖 AI: v4 ではシリーズ option の scaleMargins は無効のため priceScale 側で指定 (出来高を下段に分離)
+      tvChart.priceScale('').applyOptions({{ scaleMargins: {{ top: 0.75, bottom: 0 }} }});
 
-      sma25Series = tvChart.addLineSeries({{ color: '#fbbf24', lineWidth: 1.2, title: 'SMA25' }});
-      sma75Series = tvChart.addLineSeries({{ color: '#3b82f6', lineWidth: 1.2, title: 'SMA75' }});
-      sma200Series = tvChart.addLineSeries({{ color: '#c084fc', lineWidth: 1.2, title: 'SMA200' }});
+      sma25Series = tvChart.addLineSeries({{ color: '#fbbf24', lineWidth: 1.2, lastValueVisible: false, priceLineVisible: false }});
+      sma75Series = tvChart.addLineSeries({{ color: '#3b82f6', lineWidth: 1.2, lastValueVisible: false, priceLineVisible: false }});
+      sma200Series = tvChart.addLineSeries({{ color: '#c084fc', lineWidth: 1.2, lastValueVisible: false, priceLineVisible: false }});
 
       // ★ 上の時系列チャートに直接重ねる「周期逆算（IFFT）合成波」★
       fourierSeries = tvChart.addLineSeries({{
         color: '#f43f5e',
         lineWidth: 2.5,
-        title: 'IFFT逆算波',
+        lastValueVisible: false,
+        priceLineVisible: false,
         visible: true
       }});
 
@@ -697,6 +774,12 @@ html_template = f'''<!DOCTYPE html>
         title: '第1主周期波',
         visible: false
       }});
+
+      // 🤖 AI: 軸ラベルの代わりにチャート右上へ凡例(終値/SMA)を表示
+      const legend = document.createElement('div');
+      legend.id = 'chartLegend';
+      legend.style.cssText = 'position:absolute; top:10px; right:70px; z-index:5; pointer-events:none; display:flex; flex-direction:column; gap:3px; align-items:flex-end; font-size:12px; font-weight:600;';
+      container.appendChild(legend);
 
       loadInitialCalendarData();
 
@@ -729,7 +812,24 @@ html_template = f'''<!DOCTYPE html>
       }});
     }}
 
+    // 🤖 AI: 凡例更新 (SMA値は日付で検索、チェックOFFの系列は非表示)
+    const smaMaps = {{}};
+    let legendArgs = null;
+    function updateLegend(date, close) {{
+      legendArgs = [date, close];
+      const legend = document.getElementById('chartLegend');
+      if (!legend) return;
+      const rows = [['終値', '#ef4444', close]];
+      [['25', '#fbbf24'], ['75', '#3b82f6'], ['200', '#c084fc']].forEach(([n, color]) => {{
+        if (document.getElementById('toggleSMA' + n).checked && smaMaps[n]) rows.push(['SMA' + n, color, smaMaps[n].get(date)]);
+      }});
+      legend.innerHTML = rows.map(([label, color, v]) =>
+        `<div style="display:flex; border-radius:3px; overflow:hidden;"><span style="background:${{color}}; color:#0b1120; padding:1px 6px;">${{label}}</span><span style="background:rgba(15,23,42,0.85); color:#f8fafc; padding:1px 6px; min-width:64px; text-align:right;">${{v === undefined || v === null ? '--' : Number(v).toFixed(2)}}</span></div>`
+      ).join('');
+    }}
+
     function updateOHLCBar(date, open, high, low, close, volume, isHoliday, ifftVal) {{
+      updateLegend(date, close);
       document.getElementById('infoDate').textContent = isHoliday ? `${{date}} (休場日)` : date;
       document.getElementById('infoOpen').textContent = open.toFixed(1) + '円';
       document.getElementById('infoHigh').textContent = high.toFixed(1) + '円';
@@ -793,9 +893,17 @@ html_template = f'''<!DOCTYPE html>
       lineSeries.setData(lineData);
       volumeSeries.setData(volumeData);
 
-      sma25Series.setData(calcSMA_Calendar(CALENDAR_DATA, 25));
-      sma75Series.setData(calcSMA_Calendar(CALENDAR_DATA, 75));
-      sma200Series.setData(calcSMA_Calendar(CALENDAR_DATA, 200));
+      const sma25Data = calcSMA_Calendar(CALENDAR_DATA, 25);
+      const sma75Data = calcSMA_Calendar(CALENDAR_DATA, 75);
+      const sma200Data = calcSMA_Calendar(CALENDAR_DATA, 200);
+      sma25Series.setData(sma25Data);
+      sma75Series.setData(sma75Data);
+      sma200Series.setData(sma200Data);
+      [['25', sma25Data], ['75', sma75Data], ['200', sma200Data]].forEach(([n, arr]) => {{
+        smaMaps[n] = new Map(arr.map(d => [d.time, d.value]));
+      }});
+      const lastC = CALENDAR_DATA[CALENDAR_DATA.length - 1];
+      updateLegend(lastC.date, lastC.close);
 
       setVisibleRangeByButtons('ALL');
     }}
@@ -1018,12 +1126,15 @@ html_template = f'''<!DOCTYPE html>
     }});
 
     document.getElementById('toggleSMA25').addEventListener('change', (e) => {{
+      if (legendArgs) setTimeout(() => updateLegend(...legendArgs), 0);
       sma25Series.applyOptions({{ visible: e.target.checked }});
     }});
     document.getElementById('toggleSMA75').addEventListener('change', (e) => {{
+      if (legendArgs) setTimeout(() => updateLegend(...legendArgs), 0);
       sma75Series.applyOptions({{ visible: e.target.checked }});
     }});
     document.getElementById('toggleSMA200').addEventListener('change', (e) => {{
+      if (legendArgs) setTimeout(() => updateLegend(...legendArgs), 0);
       sma200Series.applyOptions({{ visible: e.target.checked }});
     }});
 

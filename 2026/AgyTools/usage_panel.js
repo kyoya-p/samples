@@ -21,6 +21,106 @@ function getBrainDirs() {
 }
 
 const MODEL_RE = /Model Selection` from .+? to ([^\n`]+?)(?: \(([^)]+)\))?\. No need to comment/;
+const HARNESS_MODEL_RE = /through the Antigravity harness, as ([^\s<]+?)\./;
+
+function loadT3ModelResolver() {
+  const t3User = path.join(os.homedir(), '.t3', 'userdata');
+  const nameMap = {};
+  try {
+    const mmPath = path.join(t3User, 'model-manifest.json');
+    if (fs.existsSync(mmPath)) {
+      const mm = JSON.parse(fs.readFileSync(mmPath, 'utf8'));
+      for (const m of (mm?.manifest?.providers?.antigravity?.models || [])) {
+        if (m.slug && m.name) {
+          nameMap[m.slug] = m.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        }
+      }
+    }
+  } catch { /* skip */ }
+
+  const formatSlug = (slug) => {
+    if (!slug) return 'unknown';
+    if (nameMap[slug]) return nameMap[slug];
+    return slug
+      .replace(/-(\d+)-(\d+)$/, ' $1.$2')
+      .split('-')
+      .map(w => w ? w[0].toUpperCase() + w.slice(1) : w)
+      .join(' ');
+  };
+  const formatEff = (eff) => eff ? eff[0].toUpperCase() + eff.slice(1) : 'unknown';
+
+  const runsByProviderThread = {}, runsByThread = {}, nativeToInfo = {}, threadFallback = {};
+  try {
+    const dbPath = path.join(t3User, 'statev2.sqlite');
+    if (fs.existsSync(dbPath)) {
+      const { DatabaseSync } = require('node:sqlite');
+      const db = new DatabaseSync(dbPath, { readOnly: true });
+      try {
+        for (const r of db.prepare("SELECT provider_thread_id, thread_id, payload_json FROM orchestration_v2_projection_provider_threads WHERE driver='antigravity'").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const nid = p?.nativeThreadRef?.nativeId;
+            if (nid) nativeToInfo[nid] = { threadId: r.thread_id, providerThreadId: r.provider_thread_id };
+          } catch { /* skip */ }
+        }
+        for (const r of db.prepare("SELECT thread_id, provider_thread_id, requested_at, completed_at, payload_json FROM orchestration_v2_projection_runs WHERE provider='antigravity' ORDER BY ordinal ASC").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const ms = p?.modelSelection;
+            if (!ms?.model) continue;
+            const effVal = (ms.options || []).find(o => o.id === 'thinking_level')?.value;
+            const entry = {
+              reqMs: Date.parse(p.requestedAt || r.requested_at) || 0,
+              compMs: Date.parse(p.completedAt || r.completed_at) || Infinity,
+              model: formatSlug(ms.model),
+              eff: effVal ? formatEff(effVal) : 'Default',
+            };
+            if (r.provider_thread_id) {
+              (runsByProviderThread[r.provider_thread_id] = runsByProviderThread[r.provider_thread_id] || []).push(entry);
+            }
+            if (r.thread_id) {
+              (runsByThread[r.thread_id] = runsByThread[r.thread_id] || []).push(entry);
+            }
+          } catch { /* skip */ }
+        }
+        for (const r of db.prepare("SELECT thread_id, payload_json FROM orchestration_v2_projection_threads WHERE provider_instance_id='antigravity'").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const ms = p?.modelSelection;
+            if (!ms?.model) continue;
+            const effVal = (ms.options || []).find(o => o.id === 'thinking_level')?.value;
+            threadFallback[r.thread_id] = {
+              model: formatSlug(ms.model),
+              eff: effVal ? formatEff(effVal) : 'Default',
+            };
+          } catch { /* skip */ }
+        }
+      } finally {
+        db.close();
+      }
+    }
+  } catch { /* skip */ }
+
+  return {
+    formatSlug,
+    resolveAt(cid, tsMs) {
+      const info = nativeToInfo[cid];
+      if (!info) return null;
+      const list = runsByProviderThread[info.providerThreadId] || runsByThread[info.threadId];
+      if (list && list.length) {
+        let best = null;
+        for (const e of list) {
+          if (tsMs >= e.reqMs && tsMs <= e.compMs) return { model: e.model, eff: e.eff };
+          if (e.reqMs <= tsMs) best = e;
+        }
+        return best || list[0];
+      }
+      return threadFallback[info.threadId] || null;
+    }
+  };
+}
+
+const t3Resolver = loadT3ModelResolver();
 
 // サブエージェントのモデル継承解決用
 const cidModel = {}, parentOf = {}, sessionDirs = [];
@@ -48,17 +148,28 @@ const resolveModel = (cid, depth = 0) => {
   if (parentOf[cid] && depth < 5) return resolveModel(parentOf[cid], depth + 1);
   return { model: 'unknown', eff: 'unknown' };
 };
+const resolveT3At = (cid, tsMs, depth = 0) => {
+  const hit = t3Resolver.resolveAt(cid, tsMs);
+  if (hit) return hit;
+  if (parentOf[cid] && depth < 5) return resolveT3At(parentOf[cid], tsMs, depth + 1);
+  return null;
+};
 
 const seen = new Set(), rows = [];
 for (const item of sessionDirs) {
   const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
   if (!fs.existsSync(tFile)) continue;
   let { model: curModel, eff: curEff } = resolveModel(item.cid);
+  let hasExplicitModelSelection = Boolean(cidModel[item.cid]);
   try {
     for (const line of fs.readFileSync(tFile, 'utf8').split('\n')) {
       if (line.includes('Model Selection')) {
         const m = line.match(MODEL_RE);
-        if (m) { curModel = m[1].trim(); curEff = (m[2] || 'unknown').trim(); }
+        if (m) { curModel = m[1].trim(); curEff = (m[2] || 'unknown').trim(); hasExplicitModelSelection = true; }
+      }
+      if (!hasExplicitModelSelection && line.includes('through the Antigravity harness, as ')) {
+        const hm = line.match(HARNESS_MODEL_RE);
+        if (hm) curModel = t3Resolver.formatSlug(hm[1]);
       }
       if (!line.includes('"PLANNER_RESPONSE"')) continue;
       let j; try { j = JSON.parse(line); } catch { continue; }
@@ -72,11 +183,13 @@ for (const item of sessionDirs) {
         output: j.output_tokens || 0,
       };
       if (parts.input + parts.cacheRead + parts.output <= 0) continue;
+      const ts = Date.parse(j.created_at) || 0;
+      const t3Hit = !hasExplicitModelSelection ? resolveT3At(item.cid, ts) : null;
       rows.push({
-        model: curModel,
-        effort: curEff,
+        model: t3Hit ? t3Hit.model : curModel,
+        effort: t3Hit ? t3Hit.eff : curEff,
         day: (j.created_at || '').slice(0, 10),
-        ts: Date.parse(j.created_at) || 0,
+        ts,
         ...parts,
       });
     }
@@ -116,9 +229,10 @@ for (const s of samples) {
   }
 }
 
-// byModel が未記録の過去行があれば rows から補完
+// byModel が未記録、または unknown を含む過去行があれば rows から補完・再解決
 for (const s of samples) {
-  if (!s.byModel) {
+  const hasUnknown = s.byModel && (s.byModel.unknown || Object.values(s.byModel).some(a => a?.effort?.unknown));
+  if (!s.byModel || hasUnknown) {
     const fromMs = Date.parse(s.from) || 0, toMs = Date.parse(s.ts) || 0;
     const bm = {};
     for (const r of rows) {
@@ -128,7 +242,9 @@ for (const s of samples) {
       a.req++; a.input += r.input; a.cacheRead += r.cacheRead; a.output += r.output; a.total += tot;
       a.effort[r.effort] = (a.effort[r.effort] || 0) + tot;
     }
-    s.byModel = bm;
+    if (!s.byModel || Object.keys(bm).length > 0) {
+      s.byModel = bm;
+    }
   }
 }
 const modelSamples = samples.filter(s => s.byModel && Object.keys(s.byModel).length > 0);
@@ -358,7 +474,10 @@ function usageChart() {
       const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
       const pl = segs.map(sg => '<polyline fill="none" stroke="' + s.col + '" stroke-width="2" points="' + stepPts(sg).join(' ') + '"/>').join('');
       const dots = c.isWeek ? '' : pts.map(pt => '<circle cx="' + x(pt.ts).toFixed(1) + '" cy="' + yPct(pt.v).toFixed(1) + '" r="2.5" fill="' + s.col + '"><title>' + s.label + ' ' + new Date(pt.iso).toLocaleString('ja-JP') + ' 残量 ' + (100 - pt.v) + '% (使用率 ' + pt.v + '%)</title></circle>').join('');
-      return pl + dots;
+      const lp = pts[pts.length - 1];
+      const px = lp && now > lp.ts && (!s.rp?.reset || now < s.rp.reset) ? now : lp && lp.ts; // 線の右端（延長されていれば現在、なければ最新サンプル）
+      const pulse = lp && now - lp.ts <= 600000 && px >= t0 && px <= t1 ? '<circle cx="' + x(px).toFixed(1) + '" cy="' + yPct(lp.v).toFixed(1) + '" r="4" fill="none" stroke="' + s.col + '" stroke-width="2"><animate attributeName="r" values="3;8;3" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>' : '';
+      return pl + dots + pulse;
     }).join('');
 
     const projLines = visibleSeries.map(s => {
@@ -531,10 +650,13 @@ function usageChart() {
       const i = ranges.findIndex(([l]) => l === menu.value);
       const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
       if (j === i) return;
-      const t1 = c.view.t1;
+      const { t0: ot0, t1: ot1 } = c.view;
+      const rc = el.getBoundingClientRect();
+      const fp = Math.min(1, Math.max(0, ((e.clientX - rc.left) / rc.width * 640 - 30) / (640 - 60))); // マウス位置（プロット内の割合）
       menu.value = ranges[j][0];
       try { localStorage.setItem('agyUsageRange:' + c.id, menu.value); } catch (err) {}
-      c.view = { t0: t1 - ranges[j][1] * 3600000, t1 }; if (PAN[c.id]) PAN[c.id] = c.view;
+      const nsp = ranges[j][1] * 3600000, nt0 = ot0 + fp * (ot1 - ot0) - fp * nsp; // マウス位置の時刻を固定して拡大縮小
+      c.view = { t0: nt0, t1: nt0 + nsp }; if (PAN[c.id] || Math.abs(c.view.t1 - ot1) > 1000) PAN[c.id] = c.view;
       draw(c);
     }, { passive: false });
     applyRange(menu.value);
@@ -715,13 +837,12 @@ function cumChart() {
       ? shown.filter(([kk]) => isModelVis(kk)).reduce((acc, [, v]) => acc + v, 0)
       : keys.filter(kk => isModelVis(kk)).reduce((acc, kk) => acc + (finCum[kk] || 0), 0);
     document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
-    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' +
-      shown.map(([kk, v]) => {
-        const vis = isModelVis(kk);
-        return vis
-          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + kk + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + kk + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
-          : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + kk + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + kk + '</span></button>';
-      }).join('');
+    lg.innerHTML = shown.map(([kk, v]) => {
+      const vis = isModelVis(kk);
+      return vis
+        ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + kk + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + kk + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+        : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + kk + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + kk + '</span></button>';
+    }).join('');
 
     lg.querySelectorAll('button[data-model]').forEach(btn => {
       btn.addEventListener('click', e => {
@@ -764,11 +885,14 @@ function cumChart() {
     const i = ranges.findIndex(([l]) => l === rangeMenu.value);
     const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
     if (j === i) return;
-    const t1 = view ? view.t1 : Date.now();
+    const now = Date.now(), ot1 = view ? view.t1 : now, osp = hours * 3600000;
+    const rc = el.getBoundingClientRect();
+    const fp = Math.min(1, Math.max(0, ((e.clientX - rc.left) / rc.width * 640 - 46) / (640 - 46 - 30))); // マウス位置（プロット内の割合）
     rangeMenu.value = ranges[j][0];
     try { localStorage.setItem('agyUsageRange:cum-chart', rangeMenu.value); } catch (err) {}
     hours = ranges[j][1];
-    view = { t1 }; PANCUM.v = PANCUM.v ? view : null;
+    const nsp = hours * 3600000, nt1 = Math.min(now, ot1 - osp + fp * osp - fp * nsp + nsp); // マウス位置の時刻を固定
+    view = nt1 >= now - 1000 ? null : { t1: nt1 }; PANCUM.v = view;
     draw();
   }, { passive: false });
   draw();

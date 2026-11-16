@@ -51,6 +51,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
+  if (message.type === 'CHROME_DOODLE_OPEN_DESKTOP_CAPTURE') {
+    const tabId = sender.tab?.id || '';
+    chrome.windows.create({
+      url: chrome.runtime.getURL(`desktop_capture.html?tabId=${tabId}`),
+      type: 'popup',
+      width: 440,
+      height: 240,
+      focused: true
+    }).then(() => {
+      sendResponse({ ok: true });
+    }).catch((err) => {
+      sendResponse({ ok: false, error: err?.message || String(err) });
+    });
+    return true;
+  }
+
+  if (message.type === 'CHROME_DOODLE_DESKTOP_RESULT') {
+    if (message.targetTabId) {
+      chrome.tabs.sendMessage(message.targetTabId, {
+        type: 'CHROME_DOODLE_DESKTOP_CAPTURED',
+        success: message.success,
+        cancelled: message.cancelled,
+        dataUrl: message.dataUrl
+      }).catch(() => {});
+    }
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (message.type === 'CHROME_DOODLE_GET_ZOOM') {
+    const tabId = sender.tab?.id;
+    if (tabId && chrome.tabs?.getZoom) {
+      chrome.tabs.getZoom(tabId, (zoomFactor) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ zoom: 1 });
+        } else {
+          sendResponse({ zoom: zoomFactor || 1 });
+        }
+      });
+      return true;
+    }
+    sendResponse({ zoom: 1 });
+    return false;
+  }
+
   if (message.type === 'CHROME_DOODLE_STATE_CHANGED') {
     if (sender.tab && sender.tab.id) {
       updateBadge(sender.tab.id, message.active);
@@ -58,4 +103,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ ok: true });
     return false;
   }
+});
+
+chrome.tabs.onZoomChange?.addListener((zoomChangeInfo) => {
+  if (!zoomChangeInfo?.tabId) return;
+  chrome.tabs.sendMessage(zoomChangeInfo.tabId, {
+    type: 'CHROME_DOODLE_ZOOM_CHANGED',
+    zoom: zoomChangeInfo.newZoomFactor || 1
+  }).catch(() => {});
 });

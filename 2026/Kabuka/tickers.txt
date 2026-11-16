@@ -1,0 +1,5 @@
+# 🤖 AI生成: 採取対象銘柄 (1行1銘柄、.T 省略可)
+7203  # トヨタ
+6758  # ソニー
+9984  # SOFTBANK GROUP CORP
+7974  # NINTENDO CO LTD

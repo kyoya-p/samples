@@ -32,12 +32,111 @@ function getBrainDirs() {
 }
 
 const MODEL_RE = /Model Selection` from .+? to ([^\n`]+?)(?: \(([^)]+)\))?\. No need to comment/;
+const HARNESS_MODEL_RE = /through the Antigravity harness, as ([^\s<]+?)\./;
+
+function loadT3ModelResolver() {
+  const t3User = path.join(os.homedir(), '.t3', 'userdata');
+  const nameMap = {};
+  try {
+    const mmPath = path.join(t3User, 'model-manifest.json');
+    if (fs.existsSync(mmPath)) {
+      const mm = JSON.parse(fs.readFileSync(mmPath, 'utf8'));
+      for (const m of (mm?.manifest?.providers?.antigravity?.models || [])) {
+        if (m.slug && m.name) {
+          nameMap[m.slug] = m.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+        }
+      }
+    }
+  } catch { /* skip */ }
+
+  const formatSlug = (slug) => {
+    if (!slug) return 'unknown';
+    if (nameMap[slug]) return nameMap[slug];
+    return slug
+      .replace(/-(\d+)-(\d+)$/, ' $1.$2')
+      .split('-')
+      .map(w => w ? w[0].toUpperCase() + w.slice(1) : w)
+      .join(' ');
+  };
+  const formatEff = (eff) => eff ? eff[0].toUpperCase() + eff.slice(1) : 'unknown';
+
+  const runsByProviderThread = {}, runsByThread = {}, nativeToInfo = {}, threadFallback = {};
+  try {
+    const dbPath = path.join(t3User, 'statev2.sqlite');
+    if (fs.existsSync(dbPath)) {
+      const { DatabaseSync } = require('node:sqlite');
+      const db = new DatabaseSync(dbPath, { readOnly: true });
+      try {
+        for (const r of db.prepare("SELECT provider_thread_id, thread_id, payload_json FROM orchestration_v2_projection_provider_threads WHERE driver='antigravity'").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const nid = p?.nativeThreadRef?.nativeId;
+            if (nid) nativeToInfo[nid] = { threadId: r.thread_id, providerThreadId: r.provider_thread_id };
+          } catch { /* skip */ }
+        }
+        for (const r of db.prepare("SELECT thread_id, provider_thread_id, requested_at, completed_at, payload_json FROM orchestration_v2_projection_runs WHERE provider='antigravity' ORDER BY ordinal ASC").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const ms = p?.modelSelection;
+            if (!ms?.model) continue;
+            const effVal = (ms.options || []).find(o => o.id === 'thinking_level')?.value;
+            const entry = {
+              reqMs: Date.parse(p.requestedAt || r.requested_at) || 0,
+              compMs: Date.parse(p.completedAt || r.completed_at) || Infinity,
+              model: formatSlug(ms.model),
+              eff: effVal ? formatEff(effVal) : 'Default',
+            };
+            if (r.provider_thread_id) {
+              (runsByProviderThread[r.provider_thread_id] = runsByProviderThread[r.provider_thread_id] || []).push(entry);
+            }
+            if (r.thread_id) {
+              (runsByThread[r.thread_id] = runsByThread[r.thread_id] || []).push(entry);
+            }
+          } catch { /* skip */ }
+        }
+        for (const r of db.prepare("SELECT thread_id, payload_json FROM orchestration_v2_projection_threads WHERE provider_instance_id='antigravity'").all()) {
+          try {
+            const p = JSON.parse(r.payload_json);
+            const ms = p?.modelSelection;
+            if (!ms?.model) continue;
+            const effVal = (ms.options || []).find(o => o.id === 'thinking_level')?.value;
+            threadFallback[r.thread_id] = {
+              model: formatSlug(ms.model),
+              eff: effVal ? formatEff(effVal) : 'Default',
+            };
+          } catch { /* skip */ }
+        }
+      } finally {
+        db.close();
+      }
+    }
+  } catch { /* skip */ }
+
+  return {
+    formatSlug,
+    resolveAt(cid, tsMs) {
+      const info = nativeToInfo[cid];
+      if (!info) return null;
+      const list = runsByProviderThread[info.providerThreadId] || runsByThread[info.threadId];
+      if (list && list.length) {
+        let best = null;
+        for (const e of list) {
+          if (tsMs >= e.reqMs && tsMs <= e.compMs) return { model: e.model, eff: e.eff };
+          if (e.reqMs <= tsMs) best = e;
+        }
+        return best || list[0];
+      }
+      return threadFallback[info.threadId] || null;
+    }
+  };
+}
 
 // セッションログ（brain/*/transcript.jsonl）から期間 (fromMs, toMs] のモデル別使用量を集計
 function modelUsage(fromMs, toMs) {
   const brainDirs = getBrainDirs();
   if (brainDirs.length === 0) return {};
 
+  const t3Resolver = loadT3ModelResolver();
   const cidModel = {}, parentOf = {}, sessionDirs = [];
   for (const bDir of brainDirs) {
     let subDirs = [];
@@ -64,17 +163,28 @@ function modelUsage(fromMs, toMs) {
     if (parentOf[cid] && depth < 5) return resolveModel(parentOf[cid], depth + 1);
     return { model: 'unknown', eff: 'unknown' };
   };
+  const resolveT3At = (cid, tsMs, depth = 0) => {
+    const hit = t3Resolver.resolveAt(cid, tsMs);
+    if (hit) return hit;
+    if (parentOf[cid] && depth < 5) return resolveT3At(parentOf[cid], tsMs, depth + 1);
+    return null;
+  };
 
   const seen = new Set(), byModel = {};
   for (const item of sessionDirs) {
     const tFile = path.join(item.bDir, item.cid, '.system_generated', 'logs', 'transcript.jsonl');
     if (!fs.existsSync(tFile)) continue;
     let { model: curModel, eff: curEff } = resolveModel(item.cid);
+    let hasExplicitModelSelection = Boolean(cidModel[item.cid]);
     try {
       for (const line of fs.readFileSync(tFile, 'utf8').split('\n')) {
         if (line.includes('Model Selection')) {
           const m = line.match(MODEL_RE);
-          if (m) { curModel = m[1].trim(); curEff = (m[2] || 'unknown').trim(); }
+          if (m) { curModel = m[1].trim(); curEff = (m[2] || 'unknown').trim(); hasExplicitModelSelection = true; }
+        }
+        if (!hasExplicitModelSelection && line.includes('through the Antigravity harness, as ')) {
+          const hm = line.match(HARNESS_MODEL_RE);
+          if (hm) curModel = t3Resolver.formatSlug(hm[1]);
         }
         if (!line.includes('"PLANNER_RESPONSE"')) continue;
         let j; try { j = JSON.parse(line); } catch { continue; }
@@ -91,11 +201,14 @@ function modelUsage(fromMs, toMs) {
         };
         const partTotal = parts.input + parts.cacheRead + parts.output;
         if (partTotal <= 0) continue;
-        const a = byModel[curModel] = byModel[curModel] || { req: 0, total: 0, input: 0, cacheRead: 0, output: 0 };
+        const t3Hit = !hasExplicitModelSelection ? resolveT3At(item.cid, ts) : null;
+        const model = t3Hit ? t3Hit.model : curModel;
+        const eff = t3Hit ? t3Hit.eff : curEff;
+        const a = byModel[model] = byModel[model] || { req: 0, total: 0, input: 0, cacheRead: 0, output: 0 };
         a.req++;
         for (const [k, v] of Object.entries(parts)) { a[k] += v; a.total += v; }
         a.effort = a.effort || {};
-        a.effort[curEff] = (a.effort[curEff] || 0) + partTotal;
+        a.effort[eff] = (a.effort[eff] || 0) + partTotal;
       }
     } catch { /* skip */ }
   }

@@ -197,8 +197,10 @@ function usageChart() {
   };
   // 階段状の折れ線: 水平に変化点まで進み、変化点で垂直に移動（斜線を引かない）
   const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
+  // 最新サンプルが10分以内なら脈動する〇
+  const pulse = (key, col, p) => { const n = S.length - 1; if (n < 0 || now - sampleTs[n] > 600000) return ''; const pt = (now > sampleTs[n] && (!p?.reset || now < p.reset)) ? now : sampleTs[n]; if (pt < t0 || pt > t1) return ''; return '<circle cx="' + x(pt).toFixed(1) + '" cy="' + yPct(S[n][key]).toFixed(1) + '" r="4" fill="none" stroke="' + col + '" stroke-width="2"><animate attributeName="r" values="3;8;3" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>'; };
   const line = (key, col, p) => segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
-    (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>').join(''));
+    (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>').join('')) + pulse(key, col, p);
   const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + P + '" x2="' + (W - P) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (P - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + (100 - v) + '%</text>').join('');
   // x軸目盛り: 表示範囲の幅に応じて間隔を選ぶ（目盛りは最大8本）。間隔が1日未満なら時刻も表示（ローカル時刻）
   const span = t1 - t0;
@@ -306,10 +308,13 @@ function usageChart() {
       const i = ranges.findIndex(([l]) => l === menu.value);
       const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
       if (j === i) return;
-      const t1 = c.view.t1;
+      const { t0: ot0, t1: ot1 } = c.view;
+      const rc = el.getBoundingClientRect();
+      const fp = Math.min(1, Math.max(0, ((e.clientX - rc.left) / rc.width * 640 - 30) / (640 - 60))); // マウス位置（プロット内の割合）
       menu.value = ranges[j][0];
       try { localStorage.setItem('usageRange:' + c.id, menu.value); } catch (err) {}
-      c.view = { t0: t1 - ranges[j][1] * 3600000, t1 }; if (PAN[c.id]) PAN[c.id] = c.view;
+      const nsp = ranges[j][1] * 3600000, nt0 = ot0 + fp * (ot1 - ot0) - fp * nsp; // マウス位置の時刻を固定して拡大縮小
+      c.view = { t0: nt0, t1: nt0 + nsp }; if (PAN[c.id] || Math.abs(c.view.t1 - ot1) > 1000) PAN[c.id] = c.view;
       draw(c);
     }, { passive: false });
     applyRange(menu.value);
@@ -492,14 +497,13 @@ function cumChart() {
       ? shown.filter(([kk]) => isModelVis(kk)).reduce((acc, [, v]) => acc + v, 0)
       : keys.filter(kk => isModelVis(kk)).reduce((acc, kk) => acc + (finCum[kk] || 0), 0);
     document.getElementById('now-cum').textContent = k(Math.round(headTot)) + unit;
-    lg.innerHTML = '<span><i class="sw" style="background:var(--fg)"></i>合計<span class="v">' + k(Math.round(headTot)) + unit + '</span></span>' +
-      shown.map(([kk, v]) => {
-        const vis = isModelVis(kk);
-        const label = kk.replace(/^claude-/, '');
-        return vis
-          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
-          : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + label + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + label + '</span></button>';
-      }).join('');
+    lg.innerHTML = shown.map(([kk, v]) => {
+      const vis = isModelVis(kk);
+      const label = kk.replace(/^claude-/, '');
+      return vis
+        ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+        : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + label + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + label + '</span></button>';
+    }).join('');
     lg.querySelectorAll('button[data-model]').forEach(btn => {
       btn.addEventListener('click', e => {
         e.preventDefault();
@@ -541,11 +545,14 @@ function cumChart() {
     const i = ranges.findIndex(([l]) => l === rangeMenu.value);
     const j = Math.min(ranges.length - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1)));
     if (j === i) return;
-    const t1 = view ? view.t1 : Date.now();
+    const now = Date.now(), ot1 = view ? view.t1 : now, osp = hours * 3600000;
+    const rc = el.getBoundingClientRect();
+    const fp = Math.min(1, Math.max(0, ((e.clientX - rc.left) / rc.width * 640 - 46) / (640 - 46 - 30))); // マウス位置（プロット内の割合）
     rangeMenu.value = ranges[j][0];
     try { localStorage.setItem('usageRange:cum-chart', rangeMenu.value); } catch (err) {}
     hours = ranges[j][1];
-    view = { t1 }; PANCUM.v = PANCUM.v ? view : null;
+    const nsp = hours * 3600000, nt1 = Math.min(now, ot1 - osp + fp * osp - fp * nsp + nsp); // マウス位置の時刻を固定
+    view = nt1 >= now - 1000 ? null : { t1: nt1 }; PANCUM.v = view;
     draw();
   }, { passive: false });
   draw();
