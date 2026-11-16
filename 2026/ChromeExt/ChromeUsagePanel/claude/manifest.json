@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Claude Usage Panel",
+  "version": "1.1.0",
+  "description": "Claude Code の /usage をバックグラウンド定期採取し、既存ページ上のドロワーで5時間枠・週次残量推移とモデル別トークン使用量を可視化",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsyQp0DDrgcODfbzwZeUQPed/Unfx/rH/E1CSOuuDxPo03RkzWOhhiTTc9dO8VkD9SS0KlsFqyBKjlpedrFFAFCDOmpYxafHWIz3elZfy1R4warrR5a8irzOejvxzujCiYgvirDejdx/jxwO2ulKbfRSaLQxGQx9jNWcJoYC+VIHPfDquq9srk6WdB/7wB/88j4YrxC2HUSO9X9etiBjp2z7k5mn9rtLrAZvaN1RHFPxpgXTf1NZDTiiW9LH8AnECoJGpQt9Qsd+5sSopYvb1B+J71+1BJXm5obb2jhCuR+/RcMsAp3eMURaSEVkdrVFY9SoqMq/4iJdmvW80+vExBQIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "alarms",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Claude Usage Panel ドロワーを開く/閉じる (Alt+Shift+C)"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["styles.js", "panel_core.js", "drawer.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+C",
+        "mac": "Alt+Shift+C"
+      },
+      "description": "Claude Usage Panel ドロワーの開閉"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

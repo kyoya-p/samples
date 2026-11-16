@@ -11,11 +11,11 @@ okf_version: "0.2"
 
 ## AI & Agent Tools (AI・エージェント開発支援 / 運用)
 
-* [AgyTools](./AgyTools/README.md) — Google Antigravity (`agy`) の使用率（5時間枠・週次）とモデル別トークン使用量を記録・可視化する HTML ダッシュボード
-* [ClaudeCodeTools](./ClaudeCodeTools/README.md) — Claude Code の使用率とトークン使用量を記録・可視化する HTML ダッシュボード
-* [ChromeUsagePanel](./ChromeUsagePanel/README.md) — Claude Code と Antigravity の `/usage` を `chrome.alarms` + Native Messaging でバックグラウンド定期採取・可視化する Chrome / Edge 拡張機能
-* [ChromeRecorder](./ChromeRecorder/README.md) — デスクトップ画面とシステム音を逐次 WebM 保存する Chrome 拡張機能および Playwright 自動テスト生成
-* [ChromeDoodle](./ChromeDoodle/README.md) — Webページ上に直接フリーハンド・図形・テキスト注釈を描画し、暗転クロップ領域コピーや画像貼り付けができる Chrome 拡張機能
+* [AgyTools](./ChromeExt/AgyTools/README.md) — Google Antigravity (`agy`) の使用率（5時間枠・週次）とモデル別トークン使用量を記録・可視化する HTML ダッシュボード
+* [ClaudeCodeTools](./ChromeExt/ClaudeCodeTools/README.md) — Claude Code の使用率とトークン使用量を記録・可視化する HTML ダッシュボード
+* [ChromeUsagePanel](./ChromeExt/ChromeUsagePanel/README.md) — Claude Code 版 (`claude/`)・Antigravity 版 (`agy/`) に分離されたドロワー型 Chrome / Edge 拡張機能（`chrome.alarms` + Native Messaging 定期採取）
+* [ChromeRecorder](./ChromeExt/ChromeRecorder/README.md) — デスクトップ画面とシステム音を逐次 WebM 保存する Chrome 拡張機能および Playwright 自動テスト生成
+* [ChromeDoodle](./ChromeExt/ChromeDoodle/README.md) — Webページ上に直接フリーハンド・図形・テキスト注釈を描画し、暗転クロップ領域コピーや画像貼り付けができる Chrome 拡張機能
 * [GeminiNano](./GeminiNano/README.md) — Chrome 組み込み AI (Gemini Nano / Prompt API / Translator) の検証環境
 * [Gemini/ComputerUse](./Gemini/ComputerUse/README.md) — Gemini モデルを用いた Computer Use / 操作自動化サンプルの検証
 * [mise.agents.toml](./mise.agents.toml) — Antigravity / Claude Code パネル更新および Stop フック一括登録の mise タスク定義
@@ -64,9 +64,9 @@ okf_version: "0.2"
 
 ## Agent Skills (AIエージェント用スキル定義)
 
-* [agy-tools SKILL](./AgyTools/.agents/skills/agy-tools/SKILL.md) — AgyTools の使用ログ収集・HTML パネル更新用エージェントスキル
-* [claude-code-tools SKILL](./ClaudeCodeTools/.agents/skills/claude-code-tools/SKILL.md) — ClaudeCodeTools の使用ログ収集・HTML パネル更新用エージェントスキル
-* [chrome-recorder SKILL](./ChromeRecorder/.agents/skills/chrome-recorder/SKILL.md) — Chrome 拡張レコーダーと Playwright 自動テスト生成スキル
+* [agy-tools SKILL](./ChromeExt/AgyTools/.agents/skills/agy-tools/SKILL.md) — AgyTools の使用ログ収集・HTML パネル更新用エージェントスキル
+* [claude-code-tools SKILL](./ChromeExt/ClaudeCodeTools/.agents/skills/claude-code-tools/SKILL.md) — ClaudeCodeTools の使用ログ収集・HTML パネル更新用エージェントスキル
+* [chrome-recorder SKILL](./ChromeExt/ChromeRecorder/.agents/skills/chrome-recorder/SKILL.md) — Chrome 拡張レコーダーと Playwright 自動テスト生成スキル
 * [bs-rule-engine-dev SKILL](./BSRuleEngineServer/.agents/skills/bs-rule-engine-dev/SKILL.md) — バトスピルールエンジンサーバーの開発・テスト・API連携スキル
 * [bend SKILL](./Bend/.agents/skills/bend/SKILL.md) — Bend 言語および Lean 4 形式証明のスキル
 * [pau SKILL](./PAU/.agents/skills/pau/SKILL.md) — PAU プロジェクトのビルド・テスト・検証スキル

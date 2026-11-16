@@ -1,0 +1,31 @@
+[tools]
+java = "latest"
+"http:tla2tools" = { version = "1.7.4", url = "https://github.com/tlaplus/tlaplus/releases/download/v{{ version }}/tla2tools.jar" }
+
+[tasks.default]
+description = "デフォルト: 各局面の選択肢数サマリーを実行・表示"
+depends = ["summary"]
+
+[tasks.tlc]
+description = "TLA+ TLCモデルチェッカーを実行して全選択肢をコンソールに出力"
+shell = 'bash -c'
+run = 'java -jar "$(mise where http:tla2tools)/tla2tools.jar" -config BSChoices.cfg BSChoices.tla'
+
+[tasks.summary]
+description = "TLCを実行し、各局面（ステップ）ごとの選択肢数サマリーを表示"
+shell = 'bash -c'
+run = '''
+java -jar "$(mise where http:tla2tools)/tla2tools.jar" -config BSChoices.cfg BSChoices.tla 2>&1 \
+  | grep -E '^<<\"[A-Z_0-9]+\", [0-9]+>>' || true
+'''
+
+[tasks.export]
+description = "TLCを実行して全出力を out.txt に保存し、件数サマリーを表示"
+shell = 'bash -c'
+run = '''
+JAR="$(mise where http:tla2tools)/tla2tools.jar"
+java -jar "$JAR" -config BSChoices.cfg BSChoices.tla > out.txt 2>&1
+echo "=== 局面別選択肢数サマリー ==="
+grep -E '^<<\"[A-Z_0-9]+\", [0-9]+>>' out.txt
+echo "=== 出力行数: $(wc -l < out.txt) 行 (out.txt に保存完了) ==="
+'''

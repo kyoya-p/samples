@@ -1,5 +1,6 @@
 // 🤖[AI 生成・編集を含む (Antigravity)]
 // Chrome / Edge Native Messaging Host (com.kyoya.usage_panel) を HKCU レジストリに登録/解除する
+// Claude 版・Antigravity 版の2拡張機能 ID を両方 allowed_origins に登録する
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -9,7 +10,10 @@ const HOST_NAME = 'com.kyoya.usage_panel';
 const HOST_DIR = __dirname;
 const MANIFEST_JSON = path.join(HOST_DIR, `${HOST_NAME}.json`);
 const HOST_CMD = path.join(HOST_DIR, 'host.cmd');
-const EXT_MANIFEST = path.resolve(HOST_DIR, '..', 'extension', 'manifest.json');
+const EXT_MANIFESTS = [
+  { name: 'claude', path: path.resolve(HOST_DIR, '..', 'claude', 'manifest.json') },
+  { name: 'agy', path: path.resolve(HOST_DIR, '..', 'agy', 'manifest.json') },
+];
 
 const REG_KEYS = [
   `HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}`,
@@ -36,12 +40,17 @@ function main() {
     return;
   }
 
-  const extManifest = JSON.parse(fs.readFileSync(EXT_MANIFEST, 'utf8'));
-  if (!extManifest.key) {
-    throw new Error(`"key" field not found in ${EXT_MANIFEST}`);
+  const origins = [];
+  for (const item of EXT_MANIFESTS) {
+    const extManifest = JSON.parse(fs.readFileSync(item.path, 'utf8'));
+    if (!extManifest.key) {
+      throw new Error(`"key" field not found in ${item.path}`);
+    }
+    const extId = computeExtensionIdFromKey(extManifest.key);
+    origins.push(`chrome-extension://${extId}/`);
+    console.log(`Extension ID (${item.name}):`, extId);
   }
-  const extId = computeExtensionIdFromKey(extManifest.key);
-  const origins = [`chrome-extension://${extId}/`];
+
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--extra-id' && args[i + 1]) {
       origins.push(`chrome-extension://${args[i + 1]}/`);
@@ -59,7 +68,6 @@ function main() {
 
   fs.writeFileSync(MANIFEST_JSON, JSON.stringify(hostManifest, null, 2) + '\n', 'utf8');
   console.log('Written host manifest:', MANIFEST_JSON);
-  console.log('Extension ID:', extId);
 
   for (const regKey of REG_KEYS) {
     execFileSync('reg', ['add', regKey, '/ve', '/t', 'REG_SZ', '/d', MANIFEST_JSON, '/f'], { stdio: 'inherit' });

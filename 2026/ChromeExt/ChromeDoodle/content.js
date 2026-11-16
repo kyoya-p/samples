@@ -2786,8 +2786,6 @@
         type: 'ADD',
         object: imgObj
       });
-
-      showToast('📋 画像を貼り付けました (ドラッグ移動・ハンドルでリサイズ・Ctrl押下でフレーミング)', 'success');
     } catch (err) {
       console.error('[ChromeDoodle] Add image error:', err);
       showToast('❌ 画像の貼り付けに失敗しました', 'error');

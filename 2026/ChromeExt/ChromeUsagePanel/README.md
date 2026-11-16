@@ -1,23 +1,29 @@
-# ChromeUsagePanel — AI Usage Panel Chrome 拡張機能
+# ChromeUsagePanel — Claude / Antigravity Usage Panel Chrome 拡張機能
 
-Claude Code (`claude -p "/usage"`) と Antigravity (`agy -p "/usage"`) の `/usage` をバックグラウンドで定期採取し、5時間枠・週次残量推移およびモデル別トークン使用量を可視化する Manifest V3 Chrome / Edge 拡張機能です。
+Claude Code (`claude -p "/usage"`) と Antigravity (`agy -p "/usage"`) の `/usage` をバックグラウンドで定期採取し、**開いている既存 Web ページの右端ドロワー**として 5時間枠・週次残量推移およびモデル別トークン使用量を可視化する Chrome / Edge 拡張機能です。
 
-静的 HTML (`file://`) ではブラウザのセキュリティ制約によりローカルコマンド (`claude` / `agy`) を定期実行できないため、**`chrome.alarms` + Native Messaging Host** を用いて安全にローカル集計スクリプトと連携します。
+Claude 版 (`claude/`) と Antigravity 版 (`agy/`) を独立した 2 つの拡張機能に分離しています。
 
 ## 構成
 
 ```text
-ChromeUsagePanel/
-├── extension/              # Chrome / Edge へ「パッケージ化されていない拡張機能」として読み込むフォルダ
-│   ├── manifest.json       # MV3 マニフェスト（固定公開鍵 "key" により拡張機能 ID を固定）
-│   ├── background.js       # Service Worker（chrome.alarms 定期実行・バッジ表示・Native Messaging 制御）
-│   ├── panel.html / .css / .js  # ダッシュボード UI（Claude Code & Antigravity 統合チャート）
+ChromeExt/ChromeUsagePanel/
+├── claude/                 # Claude Code 版拡張機能（chrome://extensions に読み込む）
+│   ├── manifest.json       # ID 固定: ckchlpjbnhhnfdigpnaigpjkpakeefoi / Alt+Shift+C
+│   ├── background.js       # chrome.alarms 定期実行・バッジ・ドロワー注入トグル
+│   ├── drawer.js           # 既存ページへ Shadow DOM 右ドロワー＋開閉タブを注入（横ドラッグ幅変更・縦ドラッグ位置移動）
+│   ├── panel_core.js       # チャート・操作 UI 描画
+│   ├── styles.js           # ドロワー / タブ共用 CSS
+│   ├── panel.html / panel_page.js  # chrome:// 等で注入不可時のフォールバック表示
 │   └── icons/
-└── host/                   # Native Messaging Host (Node.js)
-    ├── host.js             # stdin/stdout 4バイト長プレフィックス JSON プロトコル実装
-    ├── host.cmd            # mise Node (node:sqlite 対応) 起動ラッパー
-    ├── install.js          # ホストマニフェスト生成 & Chrome / Edge HKCU レジストリ登録
-    └── com.kyoya.usage_panel.json  # install.js により生成されるホストマニフェスト
+├── agy/                    # Antigravity 版拡張機能（chrome://extensions に読み込む）
+│   ├── manifest.json       # ID 固定: hffbpilenookaphajanlienkcedbbmpe / Alt+Shift+A
+│   └── ...
+└── host/                   # 共通 Native Messaging Host (Node.js)
+    ├── host.js             # stdin/stdout 4バイト長プレフィックス JSON プロトコル
+    ├── host.cmd            # mise Node (node:sqlite) 起動ラッパー
+    ├── install.js          # 両拡張機能 ID を許可するホストマニフェスト生成 & Chrome / Edge 登録
+    └── com.kyoya.usage_panel.json
 ```
 
 ## セットアップ手順
@@ -25,30 +31,27 @@ ChromeUsagePanel/
 ### 1. Native Messaging Host を登録する（初回のみ）
 
 ```powershell
-node C:\Users\kyoya\projs\samples\2026\ChromeUsagePanel\host\install.js
+node C:\Users\kyoya\projs\samples\2026\ChromeExt\ChromeUsagePanel\host\install.js
 ```
 
-* `host/com.kyoya.usage_panel.json` を生成し、以下のレジストリキーに登録します（管理者権限不要・`HKCU`）:
-  * `HKCU\Software\Google\Chrome\NativeMessagingHosts\com.kyoya.usage_panel`
-  * `HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.kyoya.usage_panel`
-* 解除したい場合は `node ChromeUsagePanel\host\install.js --uninstall` を実行します。
+* `host/com.kyoya.usage_panel.json` を生成し、Claude 版・Agy 版両方の拡張機能 ID を `allowed_origins` に登録したうえで Chrome / Edge の `HKCU\...\NativeMessagingHosts\com.kyoya.usage_panel` に書き込みます。
+* 解除したい場合は `node ChromeExt\ChromeUsagePanel\host\install.js --uninstall` を実行します。
 
-### 2. Chrome / Edge に拡張機能を読み込む
+### 2. Chrome / Edge に 2 つの拡張機能を読み込む
 
 1. ブラウザで `chrome://extensions`（Edge の場合は `edge://extensions`）を開く
 2. 右上の **デベロッパーモード** を ON にする
-3. **パッケージ化されていない拡張機能を読み込む** をクリック
-4. `C:\Users\kyoya\projs\samples\2026\ChromeUsagePanel\extension` フォルダを選択する
+3. **パッケージ化されていない拡張機能を読み込む** から以下をそれぞれ読み込む:
+   * Claude 版: `C:\Users\kyoya\projs\samples\2026\ChromeExt\ChromeUsagePanel\claude`
+   * Antigravity 版: `C:\Users\kyoya\projs\samples\2026\ChromeExt\ChromeUsagePanel\agy`
 
-> `manifest.json` に公開鍵 (`key`) を含めているため、拡張機能 ID は常に `hcgagjaolphkmepikeiicapjpgcalfbg` に固定されます。
+## 使い方
 
-## 主な機能
-
-* **バックグラウンド定期 `/usage` 採取**: `chrome.alarms` により `OFF` / `5分` / `10分` / `15分` / `30分` ごとに選択したプロバイダ（Claude Code / Antigravity）の `/usage` を自動取得（`/usage` はローカル枠照会のためトークン消費なし）。
-* **即時操作ボタン**:
-  * **今すぐ /usage 実行**: 10分ゲートをバイパスして即座に `/usage` を実行・記録・再描画。
-  * **データ再読込**: `/usage` を叩かずに `~/.claude/usage`・`~/.gemini/usage`・セッションログを再集計して描画。
-* **ツールバーアイコンバッジ**: 選択中のプロバイダの最新 5時間枠残量 (`%`) をアイコンバッジに表示（残量に応じて緑 / 黄 / 赤）。
-* **チャート操作**:
-  * 横ドラッグによる時間範囲パン、マウス位置中心のホイール拡大・縮小、凡例ボタンによる系列/モデル表示切替。
-  * 既存の `ClaudeCodeTools` / `AgyTools` の Stop フックや `usage_samples.jsonl`・`localStorage` キーと完全互換。
+* **サイドパネル開閉タブ**: 通常の Web ページ右端に各拡張の開閉タブ（`C` / `A`）が表示されます。
+  * **クリック**: ドロワーを開閉（ツールバーアイコン / `Alt+Shift+C` / `Alt+Shift+A` / `Esc` でも開閉可）
+  * **横方向ドラッグ**: ドロワー（Window）幅を変更
+  * **縦方向ドラッグ**: 開閉タブの上下位置を移動（ページ間で位置保存）
+  * `chrome://extensions` 等のスクリプト注入不可ページでツールバーアイコンを押した場合は専用タブ (`panel.html`) を開きます。
+* **バックグラウンド自動採取**: `OFF` / `5分` / `10分` / `15分` / `30分` ごとに `chrome.alarms` 経由で `/usage` を自動採取（`/usage` はローカル枠照会のためトークン消費なし）。
+* **ツールバーアイコンバッジ**: 最新の 5時間枠残量 (`%`) を常時表示。
+* **チャート操作**: 横ドラッグで時間パン、マウス位置中心ホイールで拡大/縮小、凡例ボタンで系列/モデル表示切替。設定は `chrome.storage.local` に保存されるため全ページで共通維持されます。

@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Antigravity Usage Panel",
+  "version": "1.1.0",
+  "description": "Antigravity (agy) の /usage をバックグラウンド定期採取し、既存ページ上のドロワーで5時間枠・週次残量推移とモデル別トークン使用量を可視化",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAooigfMS55fvcPO0/Z7oxL5jP6ps9Wlv9BfMQ36Jurnmm8awoC04jC9hHHMjn9ZJ3f6E3q6s8pXifm5h5cAHKugr0fKwimd9nTrnfvKS/18AOTwndSyy8OiGniSMOgsRbsN1xZu3lbp8CSLcoFbgdfwgEhHTrL7i+0tI5IMz4O1WMAZhn6n55hY7IYBFszgwjNonqvoBuubWFAa4BimYSufTFQVVuVJWzt39jY/xvNizVCICNt5dZrjHz13tm91XrA5WxJAQpz8N6+Fy9MT86RuSVZ741XqdckG9W/lEXblIZt3a61HcGaMKtNHhZyBYDvE1K0i3TzOEKh99d8M9f0wIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "alarms",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Antigravity Usage Panel ドロワーを開く/閉じる (Alt+Shift+A)"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["styles.js", "panel_core.js", "drawer.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+A",
+        "mac": "Alt+Shift+A"
+      },
+      "description": "Antigravity Usage Panel ドロワーの開閉"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
