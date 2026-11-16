@@ -1,0 +1,9 @@
+{
+  "name": "com.kyoya.usage_panel",
+  "description": "AI Usage Panel Native Messaging Host (Claude Code & Antigravity)",
+  "path": "C:\\Users\\kyoya\\projs\\samples\\2026\\ChromeUsagePanel\\host\\host.cmd",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://hcgagjaolphkmepikeiicapjpgcalfbg/"
+  ]
+}

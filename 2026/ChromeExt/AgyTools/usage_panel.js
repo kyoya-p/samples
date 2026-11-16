@@ -120,6 +120,7 @@ function loadT3ModelResolver() {
   };
 }
 
+function buildData() {
 const t3Resolver = loadT3ModelResolver();
 
 // サブエージェントのモデル継承解決用
@@ -313,7 +314,7 @@ for (const [key, lenMs] of BUCKETS) {
     w.end = nextStart.length ? Math.min(...nextStart) : w.reset;
   }
 }
-const data = {
+return {
   generated: new Date().toISOString(),
   files: sessionDirs.length,
   samples,
@@ -324,9 +325,12 @@ const data = {
   byModel: group(r => r.model),
   byModelEffort: group(r => r.model + ' / ' + r.effort),
   byDay: days,
+  requests: rows.length,
 };
+}
 
-const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+function renderHtml(data) {
+return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#fafaf7">
 <title>Antigravity Usage Panel</title>
 <style>
@@ -933,9 +937,20 @@ render();
   });
 })();
 </script></body></html>`;
+}
 
-const outPath = path.join(os.homedir(), '.gemini', 'usage', 'agy-panel.html'); // 出力先は ~/.gemini/usage/ 配下
-fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, html, 'utf8');
-fs.writeFileSync(path.join(path.dirname(outPath), 'usage_data.js'), 'window.__USAGE = ' + JSON.stringify(data) + ';\n', 'utf8'); // ページが再読込せずに読み直すデータ
-console.log('written', outPath, 'conversations=' + sessionDirs.length, 'requests=' + rows.length, 'total=' + data.total.total);
+function writePanel(data = buildData()) {
+  const html = renderHtml(data);
+  const outPath = path.join(os.homedir(), '.gemini', 'usage', 'agy-panel.html'); // 出力先は ~/.gemini/usage/ 配下
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, html, 'utf8');
+  fs.writeFileSync(path.join(path.dirname(outPath), 'usage_data.js'), 'window.__USAGE = ' + JSON.stringify(data) + ';\n', 'utf8'); // ページが再読込せずに読み直すデータ
+  return { outPath, data };
+}
+
+module.exports = { buildData, writePanel };
+
+if (require.main === module) {
+  const { outPath, data } = writePanel();
+  console.log('written', outPath, 'conversations=' + data.files, 'requests=' + data.requests, 'total=' + data.total.total);
+}

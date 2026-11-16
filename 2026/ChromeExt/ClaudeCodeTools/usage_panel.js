@@ -2,6 +2,7 @@
 // セッションログ(~/.claude/projects/**/*.jsonl)のトークン使用量を集計し、パネル形式の単一 HTML(~/.claude/usage/claude-panel.html)を出力する
 // 集計ロジックは usage_dashboard.js と同一(重複除外・synthetic除外)
 const fs = require('fs'), path = require('path'), os = require('os');
+function buildData() {
 const root = path.join(os.homedir(), '.claude', 'projects');
 const files = [];
 (function walk(d) {
@@ -109,7 +110,7 @@ for (const [key, resetKey, lenMs] of [['session', 'sessionResets', 5 * 3600000],
     w.end = nextStart.length ? Math.min(...nextStart) : w.reset;
   }
 }
-const data = {
+return {
   generated: new Date().toISOString(),
   files: files.length,
   samples,
@@ -121,8 +122,11 @@ const data = {
   byModel: group(r => r.model),
   byModelEffort: group(r => r.model + ' / ' + r.effort),
   byDay: days,
+  requests: rows.length,
 };
-const html = `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+}
+function renderHtml(data) {
+return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#fafaf7">
 <title>Claude Usage Panel</title>
 <style>
@@ -593,8 +597,17 @@ render();
   });
 })();
 </script></body></html>`;
-const outPath = path.join(os.homedir(), '.claude', 'usage', 'claude-panel.html'); // 出力先は ~/.claude/usage/ 配下
-fs.mkdirSync(path.dirname(outPath), { recursive: true });
-fs.writeFileSync(outPath, html, 'utf8');
-fs.writeFileSync(path.join(path.dirname(outPath), 'usage_data.js'), 'window.__USAGE = ' + JSON.stringify(data) + ';\n', 'utf8'); // ページが再読込せずに読み直すデータ
-console.log('written', outPath, 'files=' + files.length, 'requests=' + rows.length, 'total=' + data.total.total);
+}
+function writePanel(data = buildData()) {
+  const html = renderHtml(data);
+  const outPath = path.join(os.homedir(), '.claude', 'usage', 'claude-panel.html'); // 出力先は ~/.claude/usage/ 配下
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, html, 'utf8');
+  fs.writeFileSync(path.join(path.dirname(outPath), 'usage_data.js'), 'window.__USAGE = ' + JSON.stringify(data) + ';\n', 'utf8'); // ページが再読込せずに読み直すデータ
+  return { outPath, data };
+}
+module.exports = { buildData, writePanel };
+if (require.main === module) {
+  const { outPath, data } = writePanel();
+  console.log('written', outPath, 'files=' + data.files, 'requests=' + data.requests, 'total=' + data.total.total);
+}

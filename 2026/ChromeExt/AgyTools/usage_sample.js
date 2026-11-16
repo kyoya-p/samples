@@ -9,9 +9,13 @@
 const fs = require('fs'), path = require('path'), os = require('os');
 const { execSync } = require('child_process');
 
-const miseShims = path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims');
-if (fs.existsSync(miseShims) && !(process.env.PATH || '').includes(miseShims)) {
-  process.env.PATH = miseShims + path.delimiter + (process.env.PATH || '');
+const extraPaths = [
+  path.join(os.homedir(), 'AppData', 'Local', 'mise', 'installs', 'antigravity-cli', 'latest'),
+  path.join(os.homedir(), 'AppData', 'Local', 'Microsoft', 'WinGet', 'Links'),
+  path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims'),
+].filter(p => fs.existsSync(p) && !(process.env.PATH || '').includes(p));
+if (extraPaths.length) {
+  process.env.PATH = extraPaths.join(path.delimiter) + path.delimiter + (process.env.PATH || '');
 }
 
 function getBrainDirs() {

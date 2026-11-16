@@ -13,6 +13,7 @@ okf_version: "0.2"
 
 * [AgyTools](./AgyTools/README.md) — Google Antigravity (`agy`) の使用率（5時間枠・週次）とモデル別トークン使用量を記録・可視化する HTML ダッシュボード
 * [ClaudeCodeTools](./ClaudeCodeTools/README.md) — Claude Code の使用率とトークン使用量を記録・可視化する HTML ダッシュボード
+* [ChromeUsagePanel](./ChromeUsagePanel/README.md) — Claude Code と Antigravity の `/usage` を `chrome.alarms` + Native Messaging でバックグラウンド定期採取・可視化する Chrome / Edge 拡張機能
 * [ChromeRecorder](./ChromeRecorder/README.md) — デスクトップ画面とシステム音を逐次 WebM 保存する Chrome 拡張機能および Playwright 自動テスト生成
 * [ChromeDoodle](./ChromeDoodle/README.md) — Webページ上に直接フリーハンド・図形・テキスト注釈を描画し、暗転クロップ領域コピーや画像貼り付けができる Chrome 拡張機能
 * [GeminiNano](./GeminiNano/README.md) — Chrome 組み込み AI (Gemini Nano / Prompt API / Translator) の検証環境

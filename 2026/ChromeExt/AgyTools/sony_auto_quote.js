@@ -1,4 +1,4 @@
-﻿const { chromium } = require('playwright');
+const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
@@ -23,11 +23,21 @@ const DEFAULT_PARAMS = {
   startDateYear: '2026',
   startDateMonth: '11',
   startDateDay: '21',
-  // 金額
-  buildingAmount: '1500', // 万円
-  goodsAmount: '500',     // 万円
-  waterDamage: false,     // 水災除外
-  earthquake: true        // 地震保険あり
+  // 金額・プラン (PDF 見積もり条件)
+  buildingAmount: '1500', // 建物: 1,500万円
+  goodsAmount: '500',     // 家財: 500万円
+  earthquake: true,       // 地震保険あり
+  earthquakeBuilding: '450', // 地震建物: 450万円 (30%)
+  earthquakeGoods: '250',    // 地震家財: 250万円 (50%)
+  deductible: '10',          // 自己負担額: 10万円
+  windBuilding: true,        // 風災・雹災・雪災 (建物のみ付帯)
+  windGoods: false,          // 風災 (家財は未付帯)
+  waterDamage: false,        // 水災なし (除外)
+  waterLeak: false,          // 水漏れなし (除外)
+  theft: true,               // 盗難あり (建物・家財とも付帯)
+  accidentalDamage: false,   // 破損・汚損なし (除外)
+  targetCustomPlan: '164,353円', // 目標自由設定プラン試算額
+  targetBasicPlan: '215,793円'   // 目標基本プラン試算額
 };
 
 async function runSonyAutoQuote(customParams = {}) {
@@ -36,7 +46,8 @@ async function runSonyAutoQuote(customParams = {}) {
   console.log('  ソニー損保 火災保険 Playwright 自動入力スクリプト');
   console.log('========================================================');
   console.log(`[条件] ${p.prefecture}${p.address} / ${p.builtYear}年${p.builtMonth}月築 / ${p.pillarType}(${p.fireProofPerformance})`);
-  console.log(`[補償] 建物: ${p.buildingAmount}万 / 家財: ${p.goodsAmount}万 / 水災: ${p.waterDamage ? 'あり' : 'なし(除外)'}`);
+  console.log(`[補償] 建物: ${p.buildingAmount}万 / 家財: ${p.goodsAmount}万 / 地震: 建${p.earthquakeBuilding}万・家${p.earthquakeGoods}万`);
+  console.log(`[プラン] 自由設定: 風災(建物のみ)+盗難 / 水災・水濡れ・破損汚損除外 / 免責${p.deductible}万 -> 目標: ${p.targetCustomPlan}`);
 
   const browser = await chromium.launch({
     headless: false, // 動作確認のため可視化（不要なら true）

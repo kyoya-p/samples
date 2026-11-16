@@ -34,3 +34,8 @@ run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path'),f=p.
 ["agents-hooks"]
 description = "Antigravity・Claude Code 両方の Stop フックを一括登録"
 depends = ["agy-hook", "claude-hook"]
+
+["usage-ext-install"]
+description = "ChromeUsagePanel の Native Messaging Host を Chrome / Edge に登録"
+dir = "ChromeUsagePanel/host"
+run = "node install.js"

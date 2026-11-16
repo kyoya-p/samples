@@ -3,6 +3,14 @@
 // 出力形式: "Current session: 25% used · resets Oct 13, 11:49am (Asia/Tokyo)" / "Current week (all models): 5% used · resets Oct 19, 6:59am (Asia/Tokyo)"
 const fs = require('fs'), path = require('path'), os = require('os');
 const { execSync } = require('child_process');
+const extraPaths = [
+  path.join(os.homedir(), 'AppData', 'Local', 'mise', 'installs', 'claude-code', 'latest'),
+  path.join(os.homedir(), 'AppData', 'Local', 'Microsoft', 'WinGet', 'Links'),
+  path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims'),
+].filter(p => fs.existsSync(p) && !(process.env.PATH || '').includes(p));
+if (extraPaths.length) {
+  process.env.PATH = extraPaths.join(path.delimiter) + path.delimiter + (process.env.PATH || '');
+}
 const root = path.join(os.homedir(), '.claude', 'projects');
 // セッションログから期間 (fromMs, toMs] のモデル別使用量を集計（重複除外・synthetic除外は usage_panel.js と同一）
 function modelUsage(fromMs, toMs) {
@@ -61,7 +69,7 @@ for (let i = lines.length - 1; i >= 0; i--) {
 
 let out = '';
 try {
-  out = execSync('claude -p "/usage"', { encoding: 'utf8', timeout: 120000 });
+  out = execSync('claude -p "/usage"', { encoding: 'utf8', timeout: 120000, env: { ...process.env, USAGE_SAMPLING: '1' } });
 } catch (e) {
   out = (e.stdout || '').toString();
   console.warn('claude -p "/usage" execution failed or timed out:', e.message);
