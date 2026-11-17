@@ -1,0 +1,8 @@
+[tasks]
+start-claude-usage = { description = "ClaudeCodeTools の使用量サンプリング・HTMLパネル生成・ブラウザ表示", run = [
+    "node usage_sample.js",
+    "node usage_panel.js",
+    "node ../open-panel.mjs claude-panel.html"
+], dir = "{{config_root}}" }
+
+enable-hook = { description = "Claude Code (~/.claude/settings.json) に ClaudeCodeTools の Stop フックを登録", run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path'),f=p.join(os.homedir(),'.claude','settings.json'),cmd='node '+p.join(process.cwd(),'usage_hook.js').replace(/\\/g,'/'),j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j.hooks=j.hooks||{};j.hooks.Stop=(j.hooks.Stop||[]).filter(x=>!JSON.stringify(x).includes('usage_hook.js'));j.hooks.Stop.unshift({hooks:[{type:'command',command:cmd,timeout:300,async:true}]});fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered ClaudeCodeTools Stop hook in',f);"''', dir = "{{config_root}}" }

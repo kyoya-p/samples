@@ -17,10 +17,27 @@ const samples = path.join(dataDir, 'usage_samples.jsonl');
 const lock = path.join(dataDir, '.usage_hook.lock');
 const size = () => { try { return fs.statSync(samples).size; } catch { return 0; } };
 
+let lockFd = null;
 try {
-  // 同時実行防止（5分以上前のロックは無視）
-  if (fs.existsSync(lock) && Date.now() - fs.statSync(lock).mtimeMs < 5 * 60 * 1000) process.exit(0);
-  fs.writeFileSync(lock, String(process.pid));
+  // アトミック排他ロック ('wx': 既に存在する場合は即 EEXIST エラーで安全終了)
+  try {
+    lockFd = fs.openSync(lock, 'wx');
+    fs.writeSync(lockFd, String(process.pid));
+  } catch (err) {
+    if (err.code === 'EEXIST') {
+      try {
+        const mtime = fs.statSync(lock).mtimeMs;
+        if (Date.now() - mtime < 5 * 60 * 1000) process.exit(0);
+        fs.unlinkSync(lock);
+        lockFd = fs.openSync(lock, 'wx');
+        fs.writeSync(lockFd, String(process.pid));
+      } catch (_) {
+        process.exit(0);
+      }
+    } else {
+      process.exit(0);
+    }
+  }
 
   // Ensure mise shims directory is in PATH
   const miseShims = path.join(os.homedir(), 'AppData', 'Local', 'mise', 'shims');
@@ -42,6 +59,9 @@ try {
 } catch (e) {
   fs.appendFileSync(path.join(dataDir, 'usage_hook.log'), `${new Date().toISOString()} ${e.message}\n`);
 } finally {
+  if (lockFd !== null) {
+    try { fs.closeSync(lockFd); } catch (_) {}
+  }
   try { fs.unlinkSync(lock); } catch { /* ignore */ }
 }
 process.exit(0);

@@ -13,10 +13,11 @@ Claude Code の使用状況（5時間枠・週次・モデル別トークン）�
 - リポジトリ: `ClaudeCodeTools`
 - [usage_hook.js](~/projs/samples/2026/ClaudeCodeTools/usage_hook.js): Stop フック入口（10分間隔／リセット時のみ追記判定、パネル再生成）
 - [usage_sample.js](~/projs/samples/2026/ClaudeCodeTools/usage_sample.js): `claude -p "/usage"` の結果および `~/.claude/projects` ログを集計し追記（欠損枠は直近の既知値を自動継承）
-- [usage_panel.js](~/projs/samples/2026/ClaudeCodeTools/usage_panel.js): 集計データを HTML パネル (`claude-panel.html`) にレンダリング（欠損値 forward-fill、画面アクティブ時 30 秒定期自動リフレッシュ）
-- [usage_samples.jsonl](~/projs/samples/2026/ClaudeCodeTools/usage_samples.jsonl): 採取データ（1行 = 1サンプリング）
-- [claude-panel.html](~/.claude/claude-panel.html): 生成される HTML パネル
-- [README.md](~/projs/samples/2026/ClaudeCodeTools/README.md): 仕様・フック設定手順
+- [usage_panel.js](file:///C:/Users/kyoya/projs/samples/2026/ClaudeCodeTools/usage_panel.js): 集計データを HTML パネル (`claude-panel.html`) と自動更新用データ (`usage_data.js`) にレンダリング
+- [claude-panel.html](file:///C:/Users/kyoya/projs/samples/2026/ClaudeCodeTools/claude-panel.html): 生成される HTML パネル（git管理下）
+- [usage_data.js](file:///C:/Users/kyoya/projs/samples/2026/ClaudeCodeTools/usage_data.js): 自動更新用データ（.gitignore 対象）
+- `~/.claude/usage/usage_samples.jsonl`: 採取ログデータ（git管理外）
+- [README.md](file:///C:/Users/kyoya/projs/samples/2026/ClaudeCodeTools/README.md): 仕様・フック設定手順
 
 ## パネル仕様
 1. **5時間枠 使用率（%）**

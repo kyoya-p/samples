@@ -14,10 +14,10 @@ Google Antigravity (`agy`) および T3 Code (`antigravity-acp`) の使用状況
 - [usage_hook.js](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/usage_hook.js): Stop フック入口（`{"decision":""}` の標準出力、10分間隔／リセット時のみ追記判定、追記時のみパネル再生成、`process.exit(0)` による確実な終了、mise shim `node.exe` 自動検出）
 - [usage_sample.js](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/usage_sample.js): `agy -p "/usage"` の結果および各 `brain` ログを集計し追記（欠損枠は直近の既知値を自動継承）
 - [usage_panel.js](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/usage_panel.js): 集計データを HTML パネル (`agy-panel.html`) と自動更新用データ (`usage_data.js`) にレンダリング（3パネル構成、全系列トグル表示、欠損値 forward-fill、過去サンプルの `unknown` 再解決）
-- 生成・採取データ配置先（`~/.gemini/usage/`）:
+- [agy-panel.html](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/agy-panel.html): 生成される HTML パネル（git管理下）
+- [usage_data.js](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/usage_data.js): ブラウザ再読込なしの 30 秒自動更新用データ (`window.__USAGE = ...`)（.gitignore 対象）
+- 採取データ・ログ配置先（`~/.gemini/usage/`・git管理外）:
   - `usage_samples.jsonl`: 採取データ（1行 = 1サンプリング）
-  - `agy-panel.html`: 生成される HTML パネル
-  - `usage_data.js`: ブラウザ再読込なしの 30 秒自動更新用データ (`window.__USAGE = ...`)
   - `.usage_hook.lock`: 同時実行防止ロック（5分以上前の古いロックは無視）
   - `usage_hook.log`: フック実行エラーログ
 - [README.md](file:///C:/Users/kyoya/projs/samples/2026/AgyTools/README.md): 仕様・フック設定手順

@@ -1,0 +1,8 @@
+[tasks]
+start-agy-usage = { description = "AgyTools の使用量サンプリング・HTMLパネル生成・ブラウザ表示", run = [
+    "node usage_sample.js",
+    "node usage_panel.js",
+    "node ../open-panel.mjs agy-panel.html"
+], dir = "{{config_root}}" }
+
+enable-hook = { description = "Antigravity (T3 Code & CLI) に AgyTools の Stop フックを登録", run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path');const cmd='node '+p.join(process.cwd(),'usage_hook.js');const reg=f=>{const j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j['agy-usage']={Stop:[{type:'command',command:cmd,timeout:300}]};fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered agy-usage Stop hook in',f);};reg(p.join(os.homedir(),'.gemini','config','hooks.json'));const t3p=p.join(os.homedir(),'.t3','userdata','providers','antigravity');if(fs.existsSync(t3p)){for(const d of fs.readdirSync(t3p)){const prof=p.join(t3p,d);if(fs.existsSync(p.join(prof,'antigravity-acp')))reg(p.join(prof,'config','hooks.json'));}}"''', dir = "{{config_root}}" }

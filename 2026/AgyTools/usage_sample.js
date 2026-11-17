@@ -248,6 +248,13 @@ try {
   agyErr = e.message + (e.stderr ? ' | ' + String(e.stderr).trim() : '');
   console.error('agy /usage error:', agyErr);
 }
+if (out.trim()) {
+  try {
+    const latestTxtPath = path.join(path.dirname(samplesPath), 'latest_usage.txt');
+    const header = '[取得日時: ' + new Date().toLocaleString('ja-JP') + ']';
+    fs.writeFileSync(latestTxtPath, header + '\n' + out.trim() + '\n', 'utf8');
+  } catch (_) {}
+}
 
 const lines = out.trim().split('\n').map(l => l.trim()).filter(Boolean);
 

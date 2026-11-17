@@ -79,6 +79,13 @@ try {
   out = (e.stdout || '').toString();
   console.warn('claude -p "/usage" execution failed or timed out:', e.message);
 }
+if (out.trim()) {
+  try {
+    const latestTxtPath = path.join(path.dirname(samplesPath), 'latest_usage.txt');
+    const header = '[取得日時: ' + new Date().toLocaleString('ja-JP') + ']';
+    fs.writeFileSync(latestTxtPath, header + '\n' + out.trim() + '\n', 'utf8');
+  } catch (_) {}
+}
 
 const session = out.match(/Current session:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
 const week = out.match(/Current week(?:\s*\(all models\))?:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
