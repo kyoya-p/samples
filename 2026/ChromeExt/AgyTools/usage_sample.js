@@ -241,10 +241,12 @@ for (let i = prevLines.length - 1; i >= 0; i--) {
 }
 
 let out = '';
+let agyErr = '';
 try {
-  out = execSync('agy -p "/usage"', { encoding: 'utf8', timeout: 120000, env: { ...process.env, AGY_USAGE_SAMPLING: '1' } });
+  out = execSync('agy -p "/usage"', { encoding: 'utf8', timeout: 120000, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, AGY_USAGE_SAMPLING: '1' } });
 } catch (e) {
-  console.error('agy /usage error:', e.message);
+  agyErr = e.message + (e.stderr ? ' | ' + String(e.stderr).trim() : '');
+  console.error('agy /usage error:', agyErr);
 }
 
 const lines = out.trim().split('\n').map(l => l.trim()).filter(Boolean);
@@ -275,8 +277,11 @@ for (const [k, lim] of Object.entries(lastKnownLimits)) {
   }
 }
 
-if (!parsed.gemini_5h && !parsed.gemini_week && !Object.keys(lastKnownLimits).length) {
-  console.error('Failed to parse agy /usage and no prior samples:\n' + out);
+// agy から1行も取得できなかった場合は、前回値の使い回しを記録せず失敗として終了する（偽の値を残さない）
+if (!lines.some(l => l.split('\t').length >= 4)) {
+  const msg = 'Failed to get agy /usage (no rows). ' + (agyErr || 'output: ' + JSON.stringify(out.slice(0, 500))) + ' | PATH=' + (process.env.PATH || '').slice(0, 300);
+  try { fs.appendFileSync(path.join(path.dirname(samplesPath), 'sample_error.log'), new Date().toISOString() + ' ' + msg + '\n'); } catch { /* ignore */ }
+  console.error(msg);
   process.exit(1);
 }
 

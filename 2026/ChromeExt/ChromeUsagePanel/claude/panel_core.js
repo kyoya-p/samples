@@ -114,6 +114,7 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
         <span class="rt"><b class="now" id="now-1w" style="color:var(--wk)"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span></span>
       </h2>
       <div id="usage-chart-1w"></div>
+      <div class="mlg" id="legend-1w"></div>
     </div>
     <div class="card">
       <h2 class="ch">
@@ -179,6 +180,10 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
     return Math.round(fs * 10) / 10;
   }
 
+  const lastSampleAltLabel = S => [...S].reverse().find(s => s.weekAltLabel)?.weekAltLabel || '';
+
+  const isSeriesVis = key => getPref('usageShow:' + key, '1') !== '0';
+
   function renderUsageCharts(D) {
     const S = D?.samples || [];
     const DAYS = (D?.byDay || []).filter(d => d.key !== 'unknown');
@@ -189,7 +194,7 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
     const lastDay = DAYS.length ? Date.parse(DAYS[DAYS.length - 1].key + 'T00:00:00') + dayMs : nowInit;
     const sampleTs = S.map(s => new Date(s.ts).getTime());
     const PRJ = D?.proj || {};
-    const resets = [PRJ.session?.reset, PRJ.week?.reset].filter(Boolean);
+    const resets = [PRJ.session?.reset, PRJ.week?.reset, PRJ.weekAlt?.reset].filter(Boolean);
     const full = {
       t0: Math.min(firstDay, ...(sampleTs.length ? sampleTs : [firstDay])),
       t1: Math.max(lastDay, ...(sampleTs.length ? sampleTs : [lastDay]), nowInit, ...resets),
@@ -230,7 +235,7 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
       };
       const line = (key, col, p) =>
         segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
-        (key === 'weekPct' ? '' : S.map((s, i) => typeof s[key] === 'number'
+        (key === 'weekPct' || key === 'weekAltPct' ? '' : S.map((s, i) => typeof s[key] === 'number'
           ? '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>'
           : '').join('')) +
         pulse(key, col, p);
@@ -270,14 +275,22 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
       const past = (D?.windows?.[c.wk] || []).filter(w => !(p && Math.abs(w.reset - p.reset) < 15 * 60000));
       const tri = (st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + PT + ' ' + x(en).toFixed(1) + ',' + yPct(100 * (en - st) / (rs - st)).toFixed(1) + ' ' + x(en).toFixed(1) + ',' + (H - PB) + ' ' + x(st).toFixed(1) + ',' + (H - PB) + '" fill="' + col + '" fill-opacity="0.08"' + (outline ? ' stroke="' + col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
       const band = '<g clip-path="url(#' + clipId + ')">' + past.map(w => tri(w.start, w.reset, '過去の枠', true, w.end)).join('') + (p && p.start && p.reset ? tri(p.start, p.reset, '現在の枠', false) : '') + '</g>';
-      const plot = '<g clip-path="url(#' + clipId + ')">' + line(c.key, col, c.p) + (showProj ? projLine(p, col) + projLine1h(p, col) : '') + resetLine(c.p, col, c.label) + nowLine + (showProj ? hit100(p, col) : '') + '</g>';
+      const alt = c.alt && isSeriesVis(c.alt.key) ? c.alt : null;
+      const showMain = !c.alt || isSeriesVis(c.key);
+      const pa = alt && alt.p && !(alt.p.reset && alt.p.reset < Date.now()) ? alt.p : null;
+      const altSvg = alt ? line(alt.key, alt.col, alt.p) + (showProj ? projLine(pa, alt.col) + projLine1h(pa, alt.col) + hit100(pa, alt.col) : '') : '';
+      const plot = '<g clip-path="url(#' + clipId + ')">' + (showMain ? line(c.key, col, c.p) : '') + altSvg + (showProj && showMain ? projLine(p, col) + projLine1h(p, col) : '') + resetLine(c.p, col, c.label) + nowLine + (showProj && showMain ? hit100(p, col) : '') + '</g>';
       byId(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="残量推移/' + c.nm + '">' + clip + band + grid + plot + xLabels + '</svg>';
     };
 
     const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
     const charts = [
       { id: 'usage-chart-5h', key: 'sessionPct', col: 'var(--bar)', p: PRJ.session, wk: 'session', label: '5h更新', def: '5h', nm: '5h' },
-      { id: 'usage-chart-1w', key: 'weekPct', col: 'var(--wk)', p: PRJ.week, wk: 'week', label: '週次更新', def: '7d', nm: '1w' },
+      { id: 'usage-chart-1w', key: 'weekPct', col: 'var(--wk)', p: PRJ.week, wk: 'week', label: '週次更新', def: '7d', nm: '1w',
+        // モデル別の週次枠（例: Fable）が別カウントの場合は2本目の線として重ねる
+        alt: S.some(s => typeof s.weekAltPct === 'number')
+          ? { key: 'weekAltPct', col: '#9b59b6', p: PRJ.weekAlt, label: PRJ.weekAlt?.label || lastSampleAltLabel(S) }
+          : null },
     ];
     const lastS = S[S.length - 1];
     const fitView = (now, w, reset) => {
@@ -296,8 +309,39 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
         if (c.p && c.p.reset) remEl.title = '更新予定: ' + new Date(c.p.reset).toLocaleString('ja-JP');
       }
       nowEl.textContent = lastS && typeof lastS[c.key] === 'number' ? (100 - lastS[c.key]) + '%' : '-';
+      if (c.alt && lastS && typeof lastS[c.alt.key] === 'number') {
+        const sp = nowEl.ownerDocument.createElement('span');
+        sp.style.color = c.alt.col;
+        sp.textContent = ' / ' + (c.alt.label || 'alt') + ' ' + (100 - lastS[c.alt.key]) + '%';
+        sp.title = '別カウントの週次枠（' + (c.alt.label || '') + '）使用率 ' + lastS[c.alt.key] + '%';
+        nowEl.appendChild(sp);
+      }
       if (lastS && typeof lastS[c.key] === 'number') {
         nowEl.title = new Date(lastS.ts).toLocaleString('ja-JP') + ' 時点の残量（100 - 使用率 ' + lastS[c.key] + '%）';
+      }
+
+      const legEl = byId('legend-' + c.nm);
+      if (legEl && c.alt) {
+        const series = [
+          { key: c.key, label: 'All models', col: c.col },
+          { key: c.alt.key, label: c.alt.label || 'alt', col: c.alt.col },
+        ];
+        const renderLeg = () => {
+          legEl.innerHTML = series.map(s => {
+            const v = lastS && typeof lastS[s.key] === 'number' ? (100 - lastS[s.key]) + '%' : '-';
+            return isSeriesVis(s.key)
+              ? '<button type="button" class="cl-toggle expanded" data-key="' + s.key + '" title="クリックして ' + s.label + ' を非表示"><i class="sw" style="background:' + s.col + '"></i><span>' + s.label + '</span><span class="v" style="color:' + s.col + '">' + v + '</span></button>'
+              : '<button type="button" class="cl-toggle collapsed" data-key="' + s.key + '" title="クリックして ' + s.label + ' を表示"><i class="sw" style="background:' + s.col + ';opacity:0.35"></i><span style="color:var(--mut)">' + s.label + '</span></button>';
+          }).join('');
+          legEl.querySelectorAll('.cl-toggle').forEach(btn => btn.addEventListener('click', e => {
+            e.preventDefault();
+            const key = btn.dataset.key;
+            setPref('usageShow:' + key, isSeriesVis(key) ? '0' : '1');
+            draw(c);
+            renderLeg();
+          }));
+        };
+        renderLeg();
       }
 
       c.view = { ...full };

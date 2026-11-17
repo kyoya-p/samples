@@ -43,6 +43,16 @@ for (const s of samples) {
     s.weekPct = lastRunning.weekPct;
     s.weekResets = lastRunning.weekResets || '';
   }
+  if (typeof s.weekAltPct !== 'number' && typeof lastRunning.weekAltPct === 'number') {
+    s.weekAltPct = lastRunning.weekAltPct;
+    s.weekAltLabel = lastRunning.weekAltLabel || '';
+    s.weekAltResets = lastRunning.weekAltResets || '';
+  }
+  if (typeof s.weekAltPct === 'number') {
+    lastRunning.weekAltPct = s.weekAltPct;
+    lastRunning.weekAltLabel = s.weekAltLabel;
+    if (s.weekAltResets) lastRunning.weekAltResets = s.weekAltResets;
+  }
   if (typeof s.sessionPct === 'number') lastRunning.sessionPct = s.sessionPct;
   if (s.sessionResets) lastRunning.sessionResets = s.sessionResets;
   if (typeof s.weekPct === 'number') lastRunning.weekPct = s.weekPct;
@@ -73,9 +83,9 @@ const proj = {};
 const lastS = samples[samples.length - 1];
 if (lastS) {
   const ts = Date.parse(lastS.ts), year = new Date(ts).getUTCFullYear();
-  for (const [key, pctKey, resetKey, lenMs] of [['session', 'sessionPct', 'sessionResets', 5 * 3600000], ['week', 'weekPct', 'weekResets', WEEK_MS]]) {
+  for (const [key, pctKey, resetKey, lenMs] of [['session', 'sessionPct', 'sessionResets', 5 * 3600000], ['week', 'weekPct', 'weekResets', WEEK_MS], ['weekAlt', 'weekAltPct', 'weekAltResets', WEEK_MS]]) {
     const reset = parseReset(lastS[resetKey] || '', year);
-    if (!reset) continue;
+    if (!reset || typeof lastS[pctKey] !== 'number') continue;
     const start = reset - lenMs, pct = lastS[pctKey];
     const rate = ts > start ? pct / (ts - start) : 0; // %/ms
     // 1時間以上前で最も新しく、同一枠(リセット表記が一致)かつ使用率が現在値より小さいサンプル
@@ -92,6 +102,7 @@ if (lastS) {
       // 1時間前基準が出せない理由（表示用）
       h1Reason: base ? null : (ts - start < 3600000 ? '枠開始から1時間未満' : '同一枠で1時間以上前の記録なし'),
     };
+    if (key === 'weekAlt') proj[key].label = lastS.weekAltLabel || '';
   }
 }
 // 過去を含む全ての枠 (5h / 週次): サンプルのリセット時刻ごとに [リセット時刻-枠長, リセット時刻]。グラフの背景帯に使う

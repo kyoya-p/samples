@@ -108,13 +108,19 @@ async function updateBadge() {
   } else if (status.hostOk === false && !sum) {
     badgeText = '!';
     badgeColor = '#d93025';
-  } else if (sum?.rem5h !== null && sum?.rem5h !== undefined) {
-    badgeText = `${Math.round(sum.rem5h)}%`;
-    badgeColor = sum.rem5h > 40 ? '#1baf7a' : sum.rem5h > 15 ? '#d08c4a' : '#d93025';
+  } else {
+    // 5h / 7d のうち残量が少ない方を表示。<=20% 黄、<=1% 赤
+    const vals = [sum?.rem5h, sum?.rem7d].filter(v => typeof v === 'number');
+    if (vals.length) {
+      const minRem = Math.min(...vals);
+      badgeText = `${Math.round(minRem)}%`;
+      badgeColor = minRem <= 1 ? '#d93025' : minRem <= 20 ? '#d9a100' : '#1baf7a';
+    }
   }
 
   await chrome.action.setBadgeText({ text: badgeText });
   await chrome.action.setBadgeBackgroundColor({ color: badgeColor });
+  await chrome.action.setBadgeTextColor({ color: '#ffffff' });
 
   const lines = ['Antigravity Usage Panel (クリックでドロワー開閉)'];
   if (sum) {

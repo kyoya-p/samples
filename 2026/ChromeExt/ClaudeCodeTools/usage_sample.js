@@ -63,7 +63,12 @@ for (let i = lines.length - 1; i >= 0; i--) {
       lastKnown.weekPct = s.weekPct;
       lastKnown.weekResets = s.weekResets || '';
     }
-    if (lastKnown.sessionPct !== undefined && lastKnown.weekPct !== undefined) break;
+    if (lastKnown.weekAltPct === undefined && typeof s.weekAltPct === 'number') {
+      lastKnown.weekAltPct = s.weekAltPct;
+      lastKnown.weekAltLabel = s.weekAltLabel || '';
+      lastKnown.weekAltResets = s.weekAltResets || '';
+    }
+    if (lastKnown.sessionPct !== undefined && lastKnown.weekPct !== undefined && lastKnown.weekAltPct !== undefined) break;
   } catch { /* skip */ }
 }
 
@@ -77,12 +82,18 @@ try {
 
 const session = out.match(/Current session:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
 const week = out.match(/Current week(?:\s*\(all models\))?:\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
+// モデル別の週次枠: "Current week (Fable): 72% used · resets ..."（all models 以外。無い場合もある）
+const weekAlt = out.match(/Current week\s*\((?!all models)([^)]+)\):\s*(\d+)% used(?:\s*·\s*resets\s*([^\n]+))?/i);
 
 // 今回の /usage に情報がない枠（usage）は、前回の最後の値を継続しているものとして引き継ぐ
 const sessionPct = session ? Number(session[1]) : (lastKnown.sessionPct ?? null);
 const sessionResets = session ? (session[2] ? session[2].trim() : '') : (lastKnown.sessionResets ?? '');
 const weekPct = week ? Number(week[1]) : (lastKnown.weekPct ?? null);
 const weekResets = week ? (week[2] ? week[2].trim() : '') : (lastKnown.weekResets ?? '');
+
+const weekAltPct = weekAlt ? Number(weekAlt[2]) : (lastKnown.weekAltPct ?? null);
+const weekAltLabel = weekAlt ? weekAlt[1].trim() : (lastKnown.weekAltLabel ?? '');
+const weekAltResets = weekAlt ? (weekAlt[3] ? weekAlt[3].trim() : '') : (lastKnown.weekAltResets ?? '');
 
 if (sessionPct === null && weekPct === null) {
   console.error('Failed to parse claude /usage and no prior samples:\n' + out);
@@ -92,7 +103,8 @@ if (sessionPct === null && weekPct === null) {
 // フック経由（USAGE_GATE）では、前回記録から10分未満かつ使用率が減っていない（リセットでない）なら追記しない
 if (process.env.USAGE_GATE && prev) {
   const dropped = (session && typeof prev.sessionPct === 'number' && sessionPct < prev.sessionPct) ||
-                  (week && typeof prev.weekPct === 'number' && weekPct < prev.weekPct);
+                  (week && typeof prev.weekPct === 'number' && weekPct < prev.weekPct) ||
+                  (weekAlt && typeof prev.weekAltPct === 'number' && weekAltPct < prev.weekAltPct);
   if (!dropped && Date.now() - prevTs < 10 * 60 * 1000) {
     console.log('skipped');
     process.exit(0);
@@ -105,6 +117,7 @@ const sample = {
   sessionResets,
   weekPct,
   weekResets,
+  ...(weekAltPct !== null ? { weekAltPct, weekAltLabel, weekAltResets } : {}),
   from: new Date(prevTs).toISOString(),
   byModel: modelUsage(prevTs, Date.parse(new Date().toISOString())),
 };
