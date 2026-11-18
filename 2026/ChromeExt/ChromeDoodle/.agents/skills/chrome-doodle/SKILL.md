@@ -11,16 +11,16 @@ description: >-
 Webページ上に Shadow DOM で隔離された Canvas / ツールバーを重ねて注釈・編集・撮影を行う Manifest V3 Chrome 拡張機能の開発ガイド。
 
 ## ファイル構成
-- [manifest.json](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/manifest.json): MV3 定義（`activeTab`, `scripting`, `storage`, `clipboardWrite`, `clipboardRead`、ショートカット `Alt+Shift+D`）
-- [background.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/background.js):
+- [manifest.json](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/manifest.json): MV3 定義（`activeTab`, `scripting`, `storage`, `clipboardWrite`, `clipboardRead`、ショートカット `Alt+Shift+D`）
+- [background.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/background.js):
   - アイコンクリック時のトグル／未注入タブへの動的 `executeScript`
   - `CHROME_DOODLE_CAPTURE_TAB`（`chrome.tabs.captureVisibleTab`）
   - `CHROME_DOODLE_GET_ZOOM` / `chrome.tabs.onZoomChange` → `CHROME_DOODLE_ZOOM_CHANGED`（タブのズーム倍率同期）
   - `CHROME_DOODLE_OPEN_DESKTOP_CAPTURE` / `CHROME_DOODLE_DESKTOP_RESULT`（フォールバック用ポップアップウィンドウ連携）
-- [content.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/content.js): Shadow DOM UI・Canvas 描画エンジン・図形ハンドル・スポイト・編集モード・クロップ・スクロール撮影・Undo/Redo・ズーム非連動 UI 制御
-- [desktop_capture.html](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/desktop_capture.html) / [desktop_capture.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/desktop_capture.js): HTTP ページや `Permissions-Policy` で `getDisplayMedia` が拒否された場合に拡張機能オリジン上で画面採取を行うポップアップ
-- [demo.html](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/demo.html): 拡張未導入環境向けの単体テストページ
-- [README.md](file:///C:/Users/kyoya/projs/samples/2026/ChromeDoodle/README.md): 機能・ショートカット・利用手順
+- [content.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/content.js): Shadow DOM UI・Canvas 描画エンジン・図形ハンドル・スポイト・編集モード・クロップ・スクロール撮影・Undo/Redo・ズーム非連動 UI 制御
+- [desktop_capture.html](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/desktop_capture.html) / [desktop_capture.js](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/desktop_capture.js): HTTP ページや `Permissions-Policy` で `getDisplayMedia` が拒否された場合に拡張機能オリジン上で画面採取を行うポップアップ
+- [demo.html](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/demo.html): 拡張未導入環境向けの単体テストページ
+- [README.md](file:///C:/Users/kyoya/projs/samples/2026/ChromeExt/ChromeDoodle/README.md): 機能・ショートカット・利用手順
 
 ## 設計上の重要ポイント・規約
 
@@ -64,8 +64,8 @@ Webページ上に Shadow DOM で隔離された Canvas / ツールバーを重�
 ## 検証手順・落とし穴
 - **構文チェック**: 変更後は必ず各 JS に構文チェックを実行する（この環境では `node` が PATH 外の場合 `C:\Users\kyoya\AppData\Local\mise\shims\node.exe -c` を使用）。
   ```powershell
-  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeDoodle/content.js
-  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeDoodle/background.js
-  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeDoodle/desktop_capture.js
+  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeExt/ChromeDoodle/content.js
+  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeExt/ChromeDoodle/background.js
+  & "C:\Users\kyoya\AppData\Local\mise\shims\node.exe" -c ChromeExt/ChromeDoodle/desktop_capture.js
   ```
 - **拡張機能の反映**: `background.js` や `content.js` を更新したら、`chrome://extensions/` で「更新（リロード）」を押し、**対象タブもリロード**してから `Alt+Shift+D` 等で動作確認する（旧 content script が残ったタブでは新メッセージや修正が反映されない）。

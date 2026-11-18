@@ -1,0 +1,9 @@
+{
+  "name": "com.kyoya.link_cert_verifier",
+  "description": "LinkCertVerifier Native Messaging Host (TLS Certificate & Link Inspector)",
+  "path": "C:\\Users\\kyoya\\projs\\samples\\2026\\ChromeExt\\LinkCertVerifier\\host\\host.cmd",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://pfkihokdnpmhbgdgpghoahkhmiibgojl/"
+  ]
+}

@@ -16,6 +16,7 @@ okf_version: "0.2"
 * [ChromeRecorder](./ChromeExt/ChromeRecorder/README.md) - デスクトップ画面とシステム音を逐次 WebM 保存する Chrome 拡張機能および Playwright 自動テスト生成
 * [ChromeDoodle](./ChromeExt/ChromeDoodle/README.md) - Webページ上に直接フリーハンド・図形・テキスト注釈を描画し、暗転クロップ領域コピーや画像貼り付けができる Chrome 拡張機能
 * [ChromeItr](./ChromeExt/ChromeItr/README.md) - 🤖 Tab Transcriber: `chrome.tabCapture` でタブ音声を取得し、Gemini Nano(不可時は Whisper / transformers.js)で文字起こしをページ上のダイアログに表示する Chrome 拡張機能
+* [LinkCertVerifier](./ChromeExt/LinkCertVerifier/README.md) - 🤖 リンク右クリック「リンクのアドレスを検証」でページ遷移せずに URL 安全性・DNS・TLS 証明書チェーンを検証表示する Chrome 拡張機能（Node.js Native Messaging Host 連携）
 * [NanoTranslator](./ChromeExt/NanoTranslator/README.md) - 🤖 Chrome 内蔵 Gemini Nano で Web ページ・選択テキスト・入力文を翻訳する Chrome 拡張機能(外部通信なし、訳文を端末内辞書に保存)
 * [GeminiNano](./GeminiNano/README.md) - Chrome 組み込み AI (Gemini Nano / Prompt API / Translator) の検証環境
 * [Gemini/ComputerUse](./Gemini/ComputerUse/README.md) - Gemini モデルを用いた Computer Use / 操作自動化サンプルの検証
@@ -79,6 +80,7 @@ okf_version: "0.2"
 * [candlesim SKILL](./CandleSim/.agents/skills/candlesim/SKILL.md) - 🤖 線香の煙シミュレータ CandleSim の構成・運用知識
 * [chrome-doodle SKILL](./ChromeExt/ChromeDoodle/.agents/skills/chrome-doodle/SKILL.md) - 🤖 ChromeDoodle の構成・実装規約・落とし穴・検証手順
 * [chrome-itr SKILL](./ChromeExt/ChromeItr/.agents/skills/chrome-itr/SKILL.md) - 🤖 ChromeItr(Tab Transcriber)の構成・MV3 の落とし穴・検証手順
+* [link-cert-verifier SKILL](./ChromeExt/LinkCertVerifier/.agents/skills/link-cert-verifier/SKILL.md) - 🤖 LinkCertVerifier の構成・Native Messaging Host 検証・導入手順
 * [nano-translator SKILL](./ChromeExt/NanoTranslator/.agents/skills/nano-translator/SKILL.md) - 🤖 Nano Translator の構成・設定キー・Gemini Nano 実機での検証手順
 * [files SKILL](./files/.agents/skills/files/SKILL.md) - 🤖 Node.js 製 TUI ファイルマネージャー files の実行・試験・保守
 * [filetui SKILL](./filetui/.agents/skills/filetui/SKILL.md) - 🤖 TUI ファイルマネージャー filetui(ローカル・Explorer D&D・SSH 越し Linux)の実行・試験・保守

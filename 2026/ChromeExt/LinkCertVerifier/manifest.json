@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "LinkCertVerifier - リンクアドレス・TLS証明書検証",
+  "version": "1.0.0",
+  "description": "右クリックメニュー「リンクのアドレスを検証」でリンク先URLの安全性・DNS解決・TLS証明書チェーンをページ遷移せずに検証表示します",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnbVgaWeK2rXtb/+K3eulUQ6eTbpWahJEj9scg2EMR9lK0nqKxgmqlxRmNjfWGV1TrNuh2hrfmvj2NqRT0EjdEMwgYfHyWeRemHosuB4z6Jvw7/cOuO5IIZiTlcu2mLvA/8jJnSQ95T7A7N0WhgWyZkOSYkMjD8RnOfPySYdaKko3i9b9ecLBzdTcPMmNj9yKFnGTHbWlgCsSM0E9cZGm2cHga6ST/1Yu/39cO8YiCPftx76E2HOQyOiQZ2BTZj1VHGACfvP9NpxtSRUcNGZkRvlB3bQaaRoZ1qGL3KbsBx8V4b0Ma99wik38C/4mXAeJDsN9xGzeIFMQqEeQJyqqYQIDAQAB",
+  "permissions": [
+    "contextMenus",
+    "nativeMessaging",
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_popup": "result.html?mode=popup",
+    "default_title": "リンクアドレス・TLS証明書を検証"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

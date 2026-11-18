@@ -69,7 +69,7 @@ Webページ上に直接フリーハンド・図形・テキストを描画・�
 ## 📁 ディレクトリ構成
 
 ```text
-2026/ChromeDoodle/
+2026/ChromeExt/ChromeDoodle/
 ├── manifest.json       # Manifest V3 拡張機能マニフェスト
 ├── background.js       # バックグラウンド Service Worker (タブ画面キャプチャ・起動制御)
 ├── content.js          # Shadow DOM Canvas描画エンジン・ツールバー・Undo/Redo・クリップボード制御

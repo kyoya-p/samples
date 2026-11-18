@@ -26,7 +26,14 @@ depends = ["agy-panel", "claude-panel"]
 ["agy-hook"]
 description = "Antigravity (T3 Code & CLI) に AgyTools の Stop フックを登録"
 dir = "AgyTools"
-run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path');const cmd='node '+p.join(process.cwd(),'usage_hook.js');const reg=f=>{const j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j['agy-usage']={Stop:[{type:'command',command:cmd,timeout:300}]};fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered agy-usage Stop hook in',f);};reg(p.join(os.homedir(),'.gemini','config','hooks.json'));const t3p=p.join(os.homedir(),'.t3','userdata','providers','antigravity');if(fs.existsSync(t3p)){for(const d of fs.readdirSync(t3p)){const prof=p.join(t3p,d);if(fs.existsSync(p.join(prof,'antigravity-acp')))reg(p.join(prof,'config','hooks.json'));}}"'''
+run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path');const cmd='node '+p.join(process.cwd(),'usage_hook.js').replace(/\\/g,'/');const reg=f=>{const j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j['agy-usage']={Stop:[{type:'command',command:cmd,timeout:300}]};fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered agy-usage Stop hook in',f);};reg(p.join(os.homedir(),'.gemini','config','hooks.json'));const t3p=p.join(os.homedir(),'.t3','userdata','providers','antigravity');if(fs.existsSync(t3p)){for(const d of fs.readdirSync(t3p)){const prof=p.join(t3p,d);if(fs.existsSync(p.join(prof,'antigravity-acp')))reg(p.join(prof,'config','hooks.json'));}}"'''
+
+["t3code-hook"]
+alias = ["t3-hook", "t3code-hooks"]
+description = "T3 Code (Antigravity & Claude Agent) の Usage 採取 Stop フックを有効化"
+depends = ["claude-hook"]
+dir = "AgyTools"
+run = '''node -e "const fs=require('fs'),os=require('os'),p=require('path');const cmd='node '+p.join(process.cwd(),'usage_hook.js').replace(/\\/g,'/');const t3p=p.join(os.homedir(),'.t3','userdata','providers','antigravity');let n=0;if(fs.existsSync(t3p)){for(const d of fs.readdirSync(t3p)){const prof=p.join(t3p,d);if(!fs.existsSync(p.join(prof,'antigravity-acp')))continue;const f=p.join(prof,'config','hooks.json');const j=fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{};j['agy-usage']={Stop:[{type:'command',command:cmd,timeout:300}]};fs.mkdirSync(p.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('Registered T3 Code agy-usage Stop hook in',f);n++;}}if(!n)console.warn('No T3 Code Antigravity profile found under',t3p);"'''
 
 ["claude-hook"]
 description = "Claude Code (~/.claude/settings.json) に ClaudeCodeTools の Stop フックを登録"

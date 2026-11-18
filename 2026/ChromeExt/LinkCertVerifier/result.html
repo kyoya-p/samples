@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>リンクアドレス・TLS 証明書検証</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #18181b;
+      font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', Meiryo, system-ui, sans-serif;
+      min-width: 520px;
+    }
+    body.mode-popup {
+      width: 620px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .page-wrap {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e4e4e7;
+    }
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #18181b;
+    }
+    .shield-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2563eb, #10b981);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .url-form {
+      display: flex;
+      gap: 8px;
+    }
+    .url-input {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #d4d4d8;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #18181b;
+      font-family: 'Cascadia Code', Consolas, monospace;
+      font-size: 12.5px;
+      outline: none;
+    }
+    .url-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+    .submit-btn {
+      appearance: none;
+      background: #2563eb;
+      color: #fff;
+      border: 1px solid #2563eb;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .submit-btn:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap lcv-root">
+    <div class="page-header">
+      <div class="page-title">
+        <span class="shield-badge">✓</span>
+        <span>リンクアドレス・TLS 証明書検証</span>
+      </div>
+    </div>
+
+    <form id="urlForm" class="url-form" style="display: none;">
+      <input id="urlInput" class="url-input" type="text" placeholder="https://example.com" spellcheck="false">
+      <button type="submit" class="submit-btn">検証</button>
+    </form>
+
+    <div id="viewerMount"></div>
+  </div>
+
+  <script src="viewer.js"></script>
+  <script src="result.js"></script>
+</body>
+</html>
