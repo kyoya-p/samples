@@ -255,7 +255,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
 </div>
 <script>
-let D = ${JSON.stringify(data)}; // 初期データ。以後は usage_data.js の再読込で差し替える（ページはリロードしない）
+let D = {}; // データは埋め込まない。usage_data.js を読み込んで置き換える（ページはリロードしない）
 const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
 const pad = n => String(n).padStart(2, '0');
 const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
@@ -378,7 +378,7 @@ function usageChart() {
 
   const ranges = [['1h', 1], ['5h', 5], ['12h', 12], ['24h', 24], ['3d', 72], ['7d', 168], ['15d', 360], ['30d', 720]];
   const charts = [
-    { id: 'usage-chart-5h', nm: '5h', def: '5h', p: PROJ.session, key: 'sessionPct', col: 'var(--bar)', wk: 'session', label: '5h枠更新' },
+    { id: 'usage-chart-5h', nm: '5h', def: '5h', p: PROJ.session, key: 'sessionPct', col: 'var(--bar)', wk: 'session', label: '5hリセット' },
     { id: 'usage-chart-1w', nm: '1w', def: '7d', p: PROJ.week, key: 'weekPct', col: 'var(--wk)', wk: 'week', label: '週次リセット' },
   ];
 
@@ -818,6 +818,7 @@ render();
     sc.src = 'usage_data.js?t=' + Date.now();
     document.head.appendChild(sc);
   };
+  refresh();
   setInterval(refresh, INTERVAL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && Date.now() - last >= INTERVAL_MS) refresh();
