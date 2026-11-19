@@ -228,7 +228,6 @@
       document.body.classList.add('cd-doodle-active-body');
       syncPageZoom();
       resizeCanvas();
-      showToast('🎨 ChromeDoodleを起動しました', 'info');
       notifyState(true);
     } else {
       if (document.designMode === 'on') {

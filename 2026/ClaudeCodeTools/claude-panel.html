@@ -134,7 +134,7 @@ try { showProj = localStorage.getItem('usageShowProj') === '1'; } catch (e) {}
 
 function usageChart() {
   const S = D.samples || [], DAYS = D.byDay || [];
-  const W = 640, H = 140, PL = 50, PR = 16, PT = 10, PB = 22;
+  const W = 640, H = 148, PL = 56, PR = 18, PT = 14, PB = 26;
   const dayMs = 86400000;
   const firstDay = DAYS.length ? Date.parse(DAYS[0].key + 'T00:00:00Z') : Date.now() - dayMs;
   const lastDay = DAYS.length ? Date.parse(DAYS[DAYS.length - 1].key + 'T00:00:00Z') + dayMs : Date.now();
@@ -173,10 +173,10 @@ function usageChart() {
     const line = (key, col, p) => segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
       (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>').join('')) + pulse(key, col, p);
 
-    const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (PL - 4) + '" y="' + (yPct(v) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + (100 - v) + '%</text>').join('');
+    const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (PL - 5) + '" y="' + (yPct(v) + 5) + '" font-size="15" text-anchor="end" fill="var(--mut)">' + (100 - v) + '%</text>').join('');
 
     const span = t1 - t0;
-    const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 8) || 43200;
+    const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 6) || 43200;
     let xLabels = '';
     for (const ms of localTicks(t0, t1, stepMin)) {
       const lx = x(ms);
@@ -184,28 +184,29 @@ function usageChart() {
       const date = pad(d.getMonth() + 1) + '/' + pad(d.getDate());
       const txt = stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date;
       xLabels += '<line x1="' + lx.toFixed(1) + '" x2="' + lx.toFixed(1) + '" y1="' + (H - PB) + '" y2="' + (H - PB + 4) + '" stroke="var(--mut)"/>';
-      if (lx >= 40 && lx <= W - 40) {
-        xLabels += '<text x="' + lx.toFixed(1) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + txt + '</text>';
+      if (lx >= 50 && lx <= W - 50) {
+        xLabels += '<text x="' + lx.toFixed(1) + '" y="' + (H - 5) + '" font-size="15" text-anchor="middle" fill="var(--mut)">' + txt + '</text>';
       }
     }
 
+    const recentBaseLabel = c.nm === '1w' ? '1日前基準' : '1時間前基準';
     const projLine = (p, col) => !showProj || !p || !p.t100 ? '' : '<line x1="' + x(p.start).toFixed(1) + '" y1="' + yPct(0).toFixed(1) + '" x2="' + x(p.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="5 4"><title>残量0%到達予測・枠開始基準（推定） ' + fmtT(p.t100) + (p.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
-    const projLine1h = (p, col) => !showProj || !p || !p.h1 || !p.h1.t100 ? '' : '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>残量0%到達予測・1時間前基準（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
-    const resetLine = (p, col, label) => (p && p.reset && p.reset <= t1) ? '<line x1="' + x(p.reset).toFixed(1) + '" x2="' + x(p.reset).toFixed(1) + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="' + col + '" stroke-width="1"><title>' + label + ' ' + fmtT(p.reset) + '</title></line><text x="' + (x(p.reset) + (x(p.reset) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (PT + (label.startsWith('5') ? 10 : 22)) + '" font-size="10" text-anchor="' + (x(p.reset) > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + label + ' ' + fmtT(p.reset) + '</text>' : '';
-    const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -3 : 3)).toFixed(1) + '" y="' + (H - PB - 4) + '" font-size="10" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
+    const projLine1h = (p, col) => !showProj || !p || !p.h1 || !p.h1.t100 ? '' : '<line x1="' + x(p.h1.ts0).toFixed(1) + '" y1="' + yPct(p.h1.pct0).toFixed(1) + '" x2="' + x(p.h1.t100).toFixed(1) + '" y2="' + yPct(100).toFixed(1) + '" stroke="' + col + '" stroke-width="1.5" stroke-dasharray="1 3"><title>残量0%到達予測・' + recentBaseLabel + '（推定） ' + fmtT(p.h1.t100) + '（基準 ' + fmtT(p.h1.ts0) + ' ' + p.h1.pct0 + '%）' + (p.h1.t100 > p.reset ? '（リセットより後）' : '') + '</title></line>';
+    const resetLine = (p, col, label) => (p && p.reset && p.reset <= t1) ? '<line x1="' + x(p.reset).toFixed(1) + '" x2="' + x(p.reset).toFixed(1) + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="' + col + '" stroke-width="1"><title>' + label + ' ' + fmtT(p.reset) + '</title></line><text x="' + (x(p.reset) + (x(p.reset) > W / 2 ? -4 : 4)).toFixed(1) + '" y="' + (PT + (label.startsWith('5') ? 12 : 28)) + '" font-size="15" text-anchor="' + (x(p.reset) > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + label + ' ' + fmtT(p.reset) + '</text>' : '';
+    const nowLine = '<line x1="' + x(now).toFixed(1) + '" x2="' + x(now).toFixed(1) + '" y1="' + PT + '" y2="' + (H - PB) + '" stroke="var(--fg)" stroke-width="1"><title>現在 ' + fmtT(now) + '</title></line><text x="' + (x(now) + (x(now) > W / 2 ? -4 : 4)).toFixed(1) + '" y="' + (H - PB - 5) + '" font-size="15" text-anchor="' + (x(now) > W / 2 ? 'end' : 'start') + '" fill="var(--fg)">現在 ' + fmtT(now) + '</text>';
     const clip = '<clipPath id="plotArea"><rect x="' + PL + '" y="0" width="' + (W - PL - PR) + '" height="' + H + '"/></clipPath>';
 
-    const hit100 = (p, col) => !showProj || !p ? '' : [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, '1時間前基準', 1]].map(([t, nm, i]) => {
+    const hit100 = (p, col) => !showProj || !p ? '' : [[p.t100, '枠開始基準', 0], [p.h1 && p.h1.t100, recentBaseLabel, 1]].map(([t, nm, i]) => {
       if (!t || t > t1) return '';
       const cx = x(t), cy = yPct(100), r = 5;
       return '<path d="M' + (cx - r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx + r).toFixed(1) + ' ' + (cy + r).toFixed(1) + 'M' + (cx + r).toFixed(1) + ' ' + (cy - r).toFixed(1) + 'L' + (cx - r).toFixed(1) + ' ' + (cy + r).toFixed(1) + '" stroke="' + col + '" stroke-width="2.5" fill="none"><title>残量0%到達予測・' + nm + '（推定） ' + fmtT(t) + '</title></path>' +
-        '<text x="' + (cx + (cx > W / 2 ? -7 : 7)).toFixed(1) + '" y="' + (cy - 7 - i * 11).toFixed(1) + '" font-size="10" font-weight="600" text-anchor="' + (cx > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + fmtT(t) + '</text>';
+        '<text x="' + (cx + (cx > W / 2 ? -7 : 7)).toFixed(1) + '" y="' + (cy - 8 - i * 16).toFixed(1) + '" font-size="15" font-weight="600" text-anchor="' + (cx > W / 2 ? 'end' : 'start') + '" fill="' + col + '">' + fmtT(t) + '</text>';
     }).join('');
 
     const p = c.p && !(c.p.reset && c.p.reset < Date.now()) ? c.p : null, col = c.col;
-    const past = (D.windows?.[c.wk] || []).filter(w => !(p && Math.abs(w.reset - p.reset) < 15 * 60000));
+    const past = (D.windows?.[c.wk] || []).filter(w => !(p && p.pct > 0 && Math.abs(w.reset - p.reset) < 15 * 60000));
     const tri = (st, rs, title, outline, en = rs) => '<polygon points="' + x(st).toFixed(1) + ',' + PT + ' ' + x(en).toFixed(1) + ',' + yPct(100 * (en - st) / (rs - st)).toFixed(1) + ' ' + x(en).toFixed(1) + ',' + (H - PB) + ' ' + x(st).toFixed(1) + ',' + (H - PB) + '" fill="' + col + '" fill-opacity="0.08"' + (outline ? ' stroke="' + col + '" stroke-opacity="0.25" stroke-width="1"' : '') + '><title>' + title + ' ' + fmtT(st) + '〜' + fmtT(en) + '</title></polygon>';
-    const band = '<g clip-path="url(#plotArea)">' + past.map(w => tri(w.start, w.reset, '過去の枠', true, w.end)).join('') + (p && p.start && p.reset ? tri(p.start, p.reset, '現在の枠', false) : '') + '</g>';
+    const band = '<g clip-path="url(#plotArea)">' + past.map(w => tri(w.start, w.reset, '過去の枠', true, w.end)).join('') + (p && p.pct > 0 && p.start && p.reset ? tri(p.start, p.reset, '現在の枠', false) : '') + '</g>';
     const plot = '<g clip-path="url(#plotArea)">' + line(c.key, col, c.p) + projLine(p, col) + projLine1h(p, col) + resetLine(c.p, col, c.label) + nowLine + hit100(p, col) + '</g>';
     document.getElementById(c.id).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="残量推移/' + c.nm + '">' + clip + band + grid + plot + xLabels + '</svg>';
   };
@@ -364,7 +365,7 @@ function cumChart() {
     try { localStorage.setItem(storageKeyOf(kk), val ? '1' : '0'); } catch (e) {}
   };
 
-  const W = 640, H = 140, PL = 86, PR = 16, PT = 10, PB = 24;
+  const W = 640, H = 148, PL = 86, PR = 18, PT = 14, PB = 26;
   const fmtLabel = kk => kk.replace(/^claude-/, '');
 
   const draw = () => {
@@ -477,17 +478,17 @@ function cumChart() {
     const max = Math.max(1, ...bars.map(bar => stackKeys.reduce((acc, kk) => acc + (bar.r[kk] || 0) * mult, 0)));
     const x = ms => PL + ((Math.min(Math.max(ms, t0), t1) - t0) / (t1 - t0)) * (W - PL - PR);
     const y = v => H - PB - (v / max) * (H - PT - PB);
-    const grid = [0, 0.25, 0.5, 0.75, 1].map(f => '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y(max * f) + '" y2="' + y(max * f) + '" stroke="var(--line)"/><text x="' + (PL - 6) + '" y="' + (y(max * f) + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)">' + k(Math.round(max * f)) + '</text>').join('');
+    const grid = [0, 0.25, 0.5, 0.75, 1].map(f => '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y(max * f) + '" y2="' + y(max * f) + '" stroke="var(--line)"/><text x="' + (PL - 6) + '" y="' + (y(max * f) + 5) + '" font-size="15" text-anchor="end" fill="var(--mut)">' + k(Math.round(max * f)) + '</text>').join('');
     const span = t1 - t0;
     const stepMin = [10, 15, 30, 60, 120, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].find(m => span / (m * 60000) <= 4) || 43200;
-    const edge = (ms, anchor) => '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 6) + '" font-size="10" text-anchor="' + anchor + '" fill="var(--mut)">' + fmtT(ms) + '</text>';
+    const edge = (ms, anchor) => '<text x="' + x(ms).toFixed(1) + '" y="' + (H - 5) + '" font-size="15" text-anchor="' + anchor + '" fill="var(--mut)">' + fmtT(ms) + '</text>';
     let xl = edge(t0, 'start') + edge(t1, 'end');
     for (const ms of localTicks(t0, t1, stepMin)) {
       const lx = x(ms);
       xl += '<line x1="' + lx.toFixed(1) + '" x2="' + lx.toFixed(1) + '" y1="' + (H - PB) + '" y2="' + (H - PB + 4) + '" stroke="var(--mut)"/>';
-      if (Math.abs(lx - PL) < 80 || Math.abs(lx - (W - PR)) < 80) continue;
+      if (Math.abs(lx - PL) < 110 || Math.abs(lx - (W - PR)) < 110) continue;
       const d = new Date(ms), date = pad(d.getMonth() + 1) + '/' + pad(d.getDate());
-      xl += '<text x="' + lx.toFixed(1) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>';
+      xl += '<text x="' + lx.toFixed(1) + '" y="' + (H - 5) + '" font-size="15" text-anchor="middle" fill="var(--mut)">' + (stepMin < 1440 ? date + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : date) + '</text>';
     }
 
     const barSeries = bars.map((bar, i) => {

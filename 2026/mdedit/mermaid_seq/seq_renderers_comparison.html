@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>シーケンス図レンダラ 表現要素・矢印構文 比較表</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --fg: #f8fafc;
+    --muted: #94a3b8;
+    --sec: #0f172a;
+    --code-bg: #020617;
+    --accent: #3b82f6;
+    --ok: #22c55e;
+    --part: #f59e0b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --fg: #0f172a;
+      --muted: #64748b;
+      --sec: #f1f5f9;
+      --code-bg: #f1f5f9;
+      --accent: #2563eb;
+      --ok: #16a34a;
+      --part: #d97706;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    padding: 20px;
+    line-height: 1.4;
+  }
+  h1 {
+    font-size: 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .sec-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sec-title { font-size: 15px; font-weight: 700; }
+  .sec-sub { font-size: 12px; color: var(--muted); }
+  table.t {
+    width: 100%;
+    min-width: 960px;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.t th, table.t td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+    vertical-align: middle;
+  }
+  table.t th {
+    background: var(--sec);
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  table.t td.name-cell {
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  table.t td.svg-cell {
+    width: 90px;
+    padding: 4px 8px;
+  }
+  code.syn {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 11px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    padding: 1px 5px;
+    border-radius: 4px;
+    display: inline-block;
+    color: var(--fg);
+    margin: 1px;
+  }
+  .sub-note {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .b-ok { color: var(--ok); font-weight: 700; }
+  .b-part { color: var(--part); font-weight: 700; }
+  .b-no { color: var(--muted); opacity: 0.45; }
+  .hl { background: rgba(59, 130, 246, 0.12); }
+  svg.arr-svg { display: block; margin: 0 auto; overflow: visible; }
+  .sample-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .sample-card { background: var(--sec); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+  .sample-card.hl { background: rgba(59, 130, 246, 0.10); border-color: rgba(59, 130, 246, 0.4); }
+  .sample-card h3 { font-size: 13px; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .sample-card p { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  pre.sample-code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; line-height: 1.45; background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 7px 9px; overflow-x: auto; white-space: pre; color: var(--fg); }
+</style>
+</head>
+<body>
+<h1>
+  <span>シーケンス図レンダラ8種 表現要素・矢印構文・ラベル表現（SVG描画）網羅比較</span>
+  <span style="font-size:12px;font-weight:400;color:var(--muted)">● 対応 / ▲ 一部制限 / － 非対応</span>
+</h1>
+
+<div class="section">
+  <div class="sec-header">
+    <span class="sec-title">1. メッセージ・矢印（全18種：逆向き自己呼び出し含む）</span>
+  </div>
+  <table class="t">
+    <thead>
+      <tr>
+        <th style="text-align:left">矢印の種類</th>
+        <th>SVG表現</th>
+        <th>mermaid.js (公式)</th>
+        <th class="hl" style="color:var(--accent)">seqedit.html</th>
+        <th>PlantUML</th>
+        <th>SequenceDiagram.org</th>
+        <th>WebSequenceDiagrams</th>
+        <th>D2 (sequence)</th>
+        <th>Swimlanes.io</th>
+        <th>js-sequence-diagrams</th>
+      </tr>
+    </thead>
+    <tbody id="arrow-tbody"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="sec-header">
+    <span class="sec-title">2. 矢印に付与できるラベル表現（全7項目：改行・書式・数式・配置等）</span>
+  </div>
+  <table class="t">
+    <thead>
+      <tr>
+        <th style="text-align:left">ラベル表現</th>
+        <th>SVG表現</th>
+        <th>mermaid.js (公式)</th>
+        <th class="hl" style="color:var(--accent)">seqedit.html</th>
+        <th>PlantUML</th>
+        <th>SequenceDiagram.org</th>
+        <th>WebSequenceDiagrams</th>
+        <th>D2 (sequence)</th>
+        <th>Swimlanes.io</th>
+        <th>js-sequence-diagrams</th>
+      </tr>
+    </thead>
+    <tbody id="label-tbody"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="sec-header">
+    <span class="sec-title">3. 参加者・活性区間・複合フラグメント・注釈（全11項目）</span>
+  </div>
+  <table class="t">
+    <thead>
+      <tr>
+        <th style="text-align:left">表現要素</th>
+        <th>SVG表現</th>
+        <th>mermaid.js (公式)</th>
+        <th class="hl" style="color:var(--accent)">seqedit.html</th>
+        <th>PlantUML</th>
+        <th>SequenceDiagram.org</th>
+        <th>WebSequenceDiagrams</th>
+        <th>D2 (sequence)</th>
+        <th>Swimlanes.io</th>
+        <th>js-sequence-diagrams</th>
+      </tr>
+    </thead>
+    <tbody id="other-tbody"></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="sec-header">
+    <span class="sec-title">4. 背景ハイライト・Box の色指定 &amp; 透過仕様サンプル</span>
+    <span class="sec-sub">全対応レンダラで背面レイヤ描画（ライフライン・矢印は透けて前面に表示）。背景色自体の透過可否は色書式に依存。</span>
+  </div>
+  <div class="sample-grid" id="color-samples"></div>
+</div>
+
+<script>
+function makeArrowSvg(type) {
+  const stroke = "currentColor";
+  const dash = type.includes("dash") ? 'stroke-dasharray="4,2.5"' : '';
+  let content = '';
+  switch (type) {
+    case "solid-line":
+    case "dash-line":
+      content = `<line x1="4" y1="10" x2="68" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>`;
+      break;
+    case "solid-filled":
+    case "dash-filled":
+      content = `<line x1="4" y1="10" x2="62" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <polygon points="68,10 59,5.5 59,14.5" fill="${stroke}"/>`;
+      break;
+    case "solid-open":
+    case "dash-open":
+      content = `<line x1="4" y1="10" x2="66" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <polyline points="59,5.5 67,10 59,14.5" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>`;
+      break;
+    case "solid-half-top":
+    case "dash-half-top":
+      content = `<line x1="4" y1="10" x2="67" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <polyline points="59,5 67,10" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/>`;
+      break;
+    case "solid-half-bot":
+    case "dash-half-bot":
+      content = `<line x1="4" y1="10" x2="67" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <polyline points="59,15 67,10" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/>`;
+      break;
+    case "solid-cross":
+    case "dash-cross":
+      content = `<line x1="4" y1="10" x2="63" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <line x1="59" y1="5.5" x2="68" y2="14.5" stroke="${stroke}" stroke-width="1.8"/>
+                 <line x1="68" y1="5.5" x2="59" y2="14.5" stroke="${stroke}" stroke-width="1.8"/>`;
+      break;
+    case "solid-circle":
+      content = `<line x1="4" y1="10" x2="58" y2="10" stroke="${stroke}" stroke-width="1.8"/>
+                 <polygon points="61,10 54,6 54,14" fill="${stroke}"/>
+                 <circle cx="65" cy="10" r="3" fill="${stroke}"/>`;
+      break;
+    case "solid-bidir":
+    case "dash-bidir":
+      content = `<line x1="10" y1="10" x2="62" y2="10" stroke="${stroke}" stroke-width="1.8" ${dash}/>
+                 <polygon points="4,10 12,5.5 12,14.5" fill="${stroke}"/>
+                 <polygon points="68,10 60,5.5 60,14.5" fill="${stroke}"/>`;
+      break;
+    case "self-call":
+      content = `<line x1="16" y1="2" x2="16" y2="19" stroke="${stroke}" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
+                 <polyline points="16,5 50,5 50,14 21,14" fill="none" stroke="${stroke}" stroke-width="1.6"/>
+                 <polygon points="17,14 24,11 24,17" fill="${stroke}"/>`;
+      break;
+    case "self-call-left":
+      content = `<line x1="58" y1="2" x2="58" y2="19" stroke="${stroke}" stroke-width="1.2" stroke-dasharray="2,2" opacity="0.6"/>
+                 <polyline points="58,5 24,5 24,14 53,14" fill="none" stroke="${stroke}" stroke-width="1.6"/>
+                 <polygon points="57,14 50,11 50,17" fill="${stroke}"/>`;
+      break;
+    case "gate-in":
+      content = `<circle cx="7" cy="10" r="3.2" fill="${stroke}"/>
+                 <line x1="10" y1="10" x2="62" y2="10" stroke="${stroke}" stroke-width="1.8"/>
+                 <polygon points="68,10 59,5.5 59,14.5" fill="${stroke}"/>`;
+      break;
+  }
+  return `<svg class="arr-svg" width="74" height="20" viewBox="0 0 74 20">${content}</svg>`;
+}
+
+const arrowRows = [
+  { name: "実線・矢じり無し", svg: "solid-line", cells: [`● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`, `－`, `－`, `－`, `● <code class="syn">--</code>`, `－`, `－`] },
+  { name: "破線・矢じり無し", svg: "dash-line", cells: [`● <code class="syn">--&gt;</code>`, `● <code class="syn">--&gt;</code>`, `－`, `－`, `－`, `▲ <code class="syn">--</code><span class="sub-note">stroke-dash指定</span>`, `－`, `－`] },
+  { name: "実線・塗り矢じり (同期)", svg: "solid-filled", cells: [`● <code class="syn">-&gt;&gt;</code>`, `● <code class="syn">-&gt;&gt;</code>`, `● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`, `● <code class="syn">-&gt;</code>`] },
+  { name: "破線・塗り矢じり (応答)", svg: "dash-filled", cells: [`● <code class="syn">--&gt;&gt;</code>`, `● <code class="syn">--&gt;&gt;</code>`, `● <code class="syn">--&gt;</code>`, `● <code class="syn">--&gt;</code>`, `● <code class="syn">--&gt;</code>`, `▲ <code class="syn">-&gt;</code><span class="sub-note">stroke-dash指定</span>`, `● <code class="syn">--&gt;</code>`, `● <code class="syn">--&gt;</code>`] },
+  { name: "実線・開矢じり (非同期)", svg: "solid-open", cells: [`● <code class="syn">-)</code>`, `● <code class="syn">-)</code>`, `● <code class="syn">-&gt;&gt;</code>`, `● <code class="syn">-&gt;&gt;</code>`, `● <code class="syn">-&gt;&gt;</code>`, `▲ <span class="sub-note">target-arrowhead</span>`, `● <code class="syn">-&gt;&gt;</code>`, `● <code class="syn">-&gt;&gt;</code>`] },
+  { name: "破線・開矢じり (非同期応答)", svg: "dash-open", cells: [`● <code class="syn">--)</code>`, `● <code class="syn">--)</code>`, `● <code class="syn">--&gt;&gt;</code>`, `● <code class="syn">--&gt;&gt;</code>`, `● <code class="syn">--&gt;&gt;</code>`, `▲ <span class="sub-note">dash + arrowhead</span>`, `● <code class="syn">--&gt;&gt;</code>`, `● <code class="syn">--&gt;&gt;</code>`] },
+  { name: "実線・上半分矢じり", svg: "solid-half-top", cells: [`－`, `－`, `● <code class="syn">-\\</code>`, `● <code class="syn">-\\</code>`, `● <code class="syn">-\\</code>`, `－`, `－`, `－`] },
+  { name: "破線・上半分矢じり", svg: "dash-half-top", cells: [`－`, `－`, `● <code class="syn">--\\</code>`, `● <code class="syn">--\\</code>`, `● <code class="syn">--\\</code>`, `－`, `－`, `－`] },
+  { name: "実線・下半分矢じり", svg: "solid-half-bot", cells: [`－`, `－`, `● <code class="syn">-/</code>`, `● <code class="syn">-/</code>`, `● <code class="syn">-/</code>`, `－`, `－`, `－`] },
+  { name: "破線・下半分矢じり", svg: "dash-half-bot", cells: [`－`, `－`, `● <code class="syn">--/</code>`, `● <code class="syn">--/</code>`, `● <code class="syn">--/</code>`, `－`, `－`, `－`] },
+  { name: "実線・✕終端 (ロスト)", svg: "solid-cross", cells: [`● <code class="syn">-x</code>`, `● <code class="syn">-x</code>`, `● <code class="syn">-&gt;x</code>`, `● <code class="syn">-&gt;x</code>`, `● <code class="syn">-&gt;x</code>`, `▲ <span class="sub-note">shape: cf-many等</span>`, `● <code class="syn">-x</code>`, `－`] },
+  { name: "破線・✕終端 (破線ロスト)", svg: "dash-cross", cells: [`● <code class="syn">--x</code>`, `● <code class="syn">--x</code>`, `● <code class="syn">--&gt;x</code>`, `● <code class="syn">--&gt;x</code>`, `● <code class="syn">--&gt;x</code>`, `－`, `● <code class="syn">--x</code>`, `－`] },
+  { name: "●終端 (Found / 着弾)", svg: "solid-circle", cells: [`－`, `－`, `● <code class="syn">-&gt;o</code> <code class="syn">--&gt;o</code>`, `● <code class="syn">-&gt;o</code>`, `－`, `▲ <span class="sub-note">shape: circle</span>`, `－`, `－`] },
+  { name: "実線・双方向矢印", svg: "solid-bidir", cells: [`● <code class="syn">&lt;&lt;-&gt;&gt;</code>`, `● <code class="syn">&lt;&lt;-&gt;&gt;</code>`, `● <code class="syn">&lt;-&gt;</code>`, `▲ <code class="syn">&lt;-&gt;</code>`, `－`, `● <code class="syn">&lt;-&gt;</code>`, `－`, `－`] },
+  { name: "破線・双方向矢印", svg: "dash-bidir", cells: [`● <code class="syn">&lt;&lt;--&gt;&gt;</code>`, `● <code class="syn">&lt;&lt;--&gt;&gt;</code>`, `● <code class="syn">&lt;--&gt;</code>`, `▲ <code class="syn">&lt;--&gt;</code>`, `－`, `▲ <code class="syn">&lt;-&gt;</code><span class="sub-note">stroke-dash指定</span>`, `－`, `－`] },
+  { name: "自己呼び出し (右折返し)", svg: "self-call", cells: [`● <code class="syn">A-&gt;&gt;A</code>`, `● <code class="syn">A-&gt;&gt;A</code>`, `● <code class="syn">A-&gt;A</code>`, `● <code class="syn">A-&gt;A</code>`, `● <code class="syn">A-&gt;A</code>`, `● <code class="syn">A -&gt; A</code>`, `● <code class="syn">A -&gt; A</code>`, `● <code class="syn">A-&gt;A</code>`] },
+  { name: "自己呼び出し (逆/左折返し)", svg: "self-call-left", cells: [`－`, `● <code class="syn">A&lt;-A</code><span class="sub-note">左側にループ描画</span>`, `● <code class="syn">A&lt;-A</code><span class="sub-note">左側にループ描画</span>`, `● <code class="syn">A&lt;-A</code><span class="sub-note">左側にループ描画</span>`, `－ <span class="sub-note">右折返しに正規化</span>`, `－`, `－ <span class="sub-note">右折返しに正規化</span>`, `－`] },
+  { name: "外部ゲート入出力", svg: "gate-in", cells: [`－`, `－`, `● <code class="syn">[-&gt;A</code> <code class="syn">A-&gt;]</code>`, `● <code class="syn">[-&gt;A</code> <code class="syn">A-&gt;]</code>`, `▲ <code class="syn">[-&gt;A</code>`, `－`, `－`, `－`] }
+];
+
+function styleCell(html, isHl) {
+  let cls = isHl ? ' class="hl"' : '';
+  let formatted = html
+    .replace(/^●/, '<span class="b-ok">●</span>')
+    .replace(/^▲/, '<span class="b-part">▲</span>')
+    .replace(/^－/, '<span class="b-no">－</span>');
+  return `<td${cls}>${formatted}</td>`;
+}
+
+const arrowTbody = document.getElementById("arrow-tbody");
+arrowRows.forEach(r => {
+  const tr = document.createElement("tr");
+  let rowHtml = `<td class="name-cell">${r.name}</td>`;
+  rowHtml += `<td class="svg-cell">${makeArrowSvg(r.svg)}</td>`;
+  r.cells.forEach((c, idx) => { rowHtml += styleCell(c, idx === 1); });
+  tr.innerHTML = rowHtml;
+  arrowTbody.appendChild(tr);
+});
+
+function makeLabelSvg(kind) {
+  const s = "currentColor";
+  let g = "";
+  switch (kind) {
+    case "lbl-basic":
+      g = `<text x="37" y="9" text-anchor="middle" font-size="8.5" fill="${s}">label</text>
+           <line x1="6" y1="14" x2="62" y2="14" stroke="${s}" stroke-width="1.6"/>
+           <polygon points="68,14 60,10.5 60,17.5" fill="${s}"/>`;
+      break;
+    case "lbl-br":
+      g = `<text x="37" y="7" text-anchor="middle" font-size="7.5" fill="${s}">line 1</text>
+           <text x="37" y="14" text-anchor="middle" font-size="7.5" fill="${s}">line 2</text>
+           <line x1="6" y1="18" x2="62" y2="18" stroke="${s}" stroke-width="1.5"/>
+           <polygon points="68,18 60,14.5 60,21" fill="${s}"/>`;
+      break;
+    case "lbl-fmt":
+      g = `<text x="37" y="9" text-anchor="middle" font-size="8.5" fill="${s}"><tspan font-weight="700">B</tspan> <tspan font-style="italic">I</tspan> <tspan font-family="monospace">code</tspan></text>
+           <line x1="6" y1="14" x2="62" y2="14" stroke="${s}" stroke-width="1.6"/>
+           <polygon points="68,14 60,10.5 60,17.5" fill="${s}"/>`;
+      break;
+    case "lbl-color":
+      g = `<text x="37" y="9" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--part,#f59e0b)">color</text>
+           <line x1="6" y1="14" x2="62" y2="14" stroke="var(--accent,#3b82f6)" stroke-width="1.8"/>
+           <polygon points="68,14 60,10.5 60,17.5" fill="var(--accent,#3b82f6)"/>`;
+      break;
+    case "lbl-link":
+      g = `<text x="37" y="9" text-anchor="middle" font-size="8.5" fill="var(--accent,#3b82f6)" text-decoration="underline">link↗</text>
+           <line x1="6" y1="14" x2="62" y2="14" stroke="${s}" stroke-width="1.6"/>
+           <polygon points="68,14 60,10.5 60,17.5" fill="${s}"/>`;
+      break;
+    case "lbl-align":
+      g = `<text x="10" y="9" text-anchor="start" font-size="7.5" fill="${s}">L / C / R</text>
+           <line x1="6" y1="14" x2="62" y2="14" stroke="${s}" stroke-width="1.6"/>
+           <polygon points="68,14 60,10.5 60,17.5" fill="${s}"/>`;
+      break;
+    case "lbl-num":
+      g = `<circle cx="15" cy="9" r="5.5" fill="${s}"/>
+           <text x="15" y="12" text-anchor="middle" font-size="7.5" font-weight="700" fill="var(--card,#fff)">1</text>
+           <text x="41" y="11" text-anchor="middle" font-size="8" fill="${s}">msg</text>
+           <line x1="6" y1="16" x2="62" y2="16" stroke="${s}" stroke-width="1.5"/>
+           <polygon points="68,16 60,12.5 60,19.5" fill="${s}"/>`;
+      break;
+  }
+  return `<svg class="arr-svg" width="74" height="22" viewBox="0 0 74 22">${g}</svg>`;
+}
+
+const labelRows = [
+  {
+    name: "基本付与・省略",
+    svg: "lbl-basic",
+    cells: [
+      `● <code class="syn">: 文言</code><span class="sub-note">空ラベル可</span>`,
+      `● <code class="syn">: 文言</code><span class="sub-note">省略可</span>`,
+      `● <code class="syn">: 文言</code><span class="sub-note">省略可</span>`,
+      `● <code class="syn">: 文言</code><span class="sub-note">省略可</span>`,
+      `● <code class="syn">: 文言</code>`,
+      `● <code class="syn">: 文言</code><span class="sub-note">省略可</span>`,
+      `● <code class="syn">: 文言</code>`,
+      `● <code class="syn">: 文言</code>`
+    ]
+  },
+  {
+    name: "複数行・改行",
+    svg: "lbl-br",
+    cells: [
+      `● <code class="syn">&lt;br/&gt;</code>`,
+      `● <code class="syn">&lt;br/&gt;</code><span class="sub-note">Shift+Enter</span>`,
+      `● <code class="syn">\\n</code>`,
+      `● <code class="syn">\\n</code>`,
+      `● <code class="syn">\\n</code>`,
+      `● <code class="syn">\\n</code> / <code class="syn">|md|</code>`,
+      `▲ <code class="syn">\\n</code>`,
+      `● <code class="syn">\\n</code>`
+    ]
+  },
+  {
+    name: "文字装飾 (太字/斜体/コード)",
+    svg: "lbl-fmt",
+    cells: [
+      `▲ <code class="syn">&lt;b&gt;</code> <code class="syn">&lt;i&gt;</code><span class="sub-note">securityLevel次第</span>`,
+      `－ <span class="sub-note">プレーン文字列</span>`,
+      `● <code class="syn">**B**</code> <code class="syn">//I//</code> <code class="syn">""M""</code><span class="sub-note">Creole / HTML</span>`,
+      `● <code class="syn">**B**</code> <code class="syn">//I//</code> <code class="syn">__U__</code>`,
+      `－`,
+      `● <code class="syn">|md **B** |</code><span class="sub-note">Markdown対応</span>`,
+      `● <code class="syn">**B**</code> <code class="syn">*I*</code> <code class="syn">\`code\`</code>`,
+      `－`
+    ]
+  },
+  {
+    name: "文字色・矢印色変更",
+    svg: "lbl-color",
+    cells: [
+      `－`,
+      `－`,
+      `● <code class="syn">&lt;color:red&gt;</code><span class="sub-note">-[#red]&gt;</span>`,
+      `● <code class="syn">&lt;color:#f00&gt;</code><span class="sub-note">-[#f00]&gt;</span>`,
+      `－`,
+      `● <code class="syn">style.stroke</code><span class="sub-note">font-color</span>`,
+      `－`,
+      `－`
+    ]
+  },
+  {
+    name: "リンク / アイコン / 数式",
+    svg: "lbl-link",
+    cells: [
+      `▲ <span class="sub-note">HTMLリンク/KaTeX</span>`,
+      `－`,
+      `● <code class="syn">[[url 表示]]</code><span class="sub-note">&lt;&amp;icon&gt; / &lt;math&gt;</span>`,
+      `▲ <code class="syn">[[url]]</code>`,
+      `－`,
+      `● <code class="syn">|latex ...|</code><span class="sub-note">linkプロパティ</span>`,
+      `▲ <span class="sub-note">{fas-icon}</span>`,
+      `－`
+    ]
+  },
+  {
+    name: "配置揃え (左/中/右)",
+    svg: "lbl-align",
+    cells: [
+      `▲ <span class="sub-note">中央 (自己呼出は左)</span>`,
+      `▲ <span class="sub-note">中央 / 複数行左揃</span>`,
+      `● <span class="sub-note">skinparam sequenceMessageAlign</span>`,
+      `▲ <span class="sub-note">中央固定</span>`,
+      `▲ <span class="sub-note">中央固定</span>`,
+      `▲ <span class="sub-note">中央固定</span>`,
+      `▲ <span class="sub-note">中央固定</span>`,
+      `▲ <span class="sub-note">中央固定</span>`
+    ]
+  },
+  {
+    name: "番号書式 (Autonumber連携)",
+    svg: "lbl-num",
+    cells: [
+      `● <code class="syn">autonumber 1 1</code>`,
+      `▲ <code class="syn">1. 文言</code><span class="sub-note">1始まり固定</span>`,
+      `● <code class="syn">"&lt;b&gt;[00]"</code><span class="sub-note">書式・中断・再開</span>`,
+      `● <code class="syn">autonumber 1</code>`,
+      `● <code class="syn">autonumber 1</code>`,
+      `▲ <code class="syn">autonumber:true</code>`,
+      `● <code class="syn">autonumber</code>`,
+      `－`
+    ]
+  }
+];
+
+const labelTbody = document.getElementById("label-tbody");
+labelRows.forEach(r => {
+  const tr = document.createElement("tr");
+  let rowHtml = `<td class="name-cell">${r.name}</td>`;
+  rowHtml += `<td class="svg-cell">${makeLabelSvg(r.svg)}</td>`;
+  r.cells.forEach((c, idx) => { rowHtml += styleCell(c, idx === 1); });
+  tr.innerHTML = rowHtml;
+  labelTbody.appendChild(tr);
+});
+
+function makeMiniSvg(kind) {
+  const s = "currentColor";
+  let g = "";
+  switch (kind) {
+    case "part":
+      g = `<rect x="3" y="3" width="22" height="15" rx="2" fill="none" stroke="${s}" stroke-width="1.4"/>
+           <circle cx="38" cy="6" r="3" fill="none" stroke="${s}" stroke-width="1.3"/>
+           <line x1="38" y1="9" x2="38" y2="15" stroke="${s}" stroke-width="1.3"/>
+           <line x1="33" y1="11" x2="43" y2="11" stroke="${s}" stroke-width="1.3"/>
+           <line x1="38" y1="15" x2="34" y2="19" stroke="${s}" stroke-width="1.3"/>
+           <line x1="38" y1="15" x2="42" y2="19" stroke="${s}" stroke-width="1.3"/>`;
+      break;
+    case "db":
+      g = `<ellipse cx="25" cy="5" rx="11" ry="3" fill="none" stroke="${s}" stroke-width="1.3"/>
+           <path d="M14,5 v11 a11,3 0 0,0 22,0 v-11" fill="none" stroke="${s}" stroke-width="1.3"/>`;
+      break;
+    case "box":
+      g = `<rect x="3" y="2" width="44" height="18" rx="2" fill="currentColor" fill-opacity="0.12" stroke="${s}" stroke-width="1.2" stroke-dasharray="3,2"/>
+           <rect x="7" y="6" width="14" height="10" rx="1" fill="none" stroke="${s}" stroke-width="1.2"/>
+           <rect x="29" y="6" width="14" height="10" rx="1" fill="none" stroke="${s}" stroke-width="1.2"/>`;
+      break;
+    case "destroy":
+      g = `<line x1="25" y1="2" x2="25" y2="14" stroke="${s}" stroke-width="1.3" stroke-dasharray="2,2"/>
+           <line x1="19" y1="10" x2="31" y2="20" stroke="${s}" stroke-width="1.8"/>
+           <line x1="31" y1="10" x2="19" y2="20" stroke="${s}" stroke-width="1.8"/>`;
+      break;
+    case "act":
+      g = `<line x1="23" y1="1" x2="23" y2="21" stroke="${s}" stroke-width="1.1" stroke-dasharray="2,2"/>
+           <rect x="20" y="4" width="6" height="14" fill="var(--card,#fff)" stroke="${s}" stroke-width="1.3"/>
+           <rect x="23" y="7" width="6" height="8" fill="var(--sec,#888)" stroke="${s}" stroke-width="1.3"/>`;
+      break;
+    case "delay":
+      g = `<line x1="15" y1="2" x2="15" y2="7" stroke="${s}" stroke-width="1.3"/>
+           <line x1="15" y1="8" x2="15" y2="15" stroke="${s}" stroke-width="1.3" stroke-dasharray="1.5,2"/>
+           <line x1="15" y1="16" x2="15" y2="20" stroke="${s}" stroke-width="1.3"/>
+           <line x1="35" y1="2" x2="35" y2="7" stroke="${s}" stroke-width="1.3"/>
+           <line x1="35" y1="8" x2="35" y2="15" stroke="${s}" stroke-width="1.3" stroke-dasharray="1.5,2"/>
+           <line x1="35" y1="16" x2="35" y2="20" stroke="${s}" stroke-width="1.3"/>`;
+      break;
+    case "frag":
+      g = `<rect x="3" y="2" width="44" height="18" fill="none" stroke="${s}" stroke-width="1.2"/>
+           <polygon points="3,2 20,2 20,7 16,10 3,10" fill="currentColor" fill-opacity="0.2" stroke="${s}" stroke-width="1"/>
+           <line x1="3" y1="13" x2="47" y2="13" stroke="${s}" stroke-width="1" stroke-dasharray="3,2"/>`;
+      break;
+    case "rect":
+      g = `<rect x="4" y="3" width="42" height="16" rx="2" fill="var(--accent,#3b82f6)" fill-opacity="0.25" stroke="var(--accent,#3b82f6)" stroke-width="1.2"/>`;
+      break;
+    case "note":
+      g = `<polygon points="9,3 35,3 41,9 41,19 9,19" fill="currentColor" fill-opacity="0.12" stroke="${s}" stroke-width="1.2"/>
+           <polyline points="35,3 35,9 41,9" fill="none" stroke="${s}" stroke-width="1.1"/>`;
+      break;
+    case "div":
+      g = `<line x1="2" y1="11" x2="48" y2="11" stroke="${s}" stroke-width="1.2"/>
+           <rect x="12" y="6" width="26" height="10" rx="2" fill="var(--card,#fff)" stroke="${s}" stroke-width="1.2"/>`;
+      break;
+    case "num":
+      g = `<circle cx="14" cy="11" r="6" fill="${s}"/>
+           <text x="14" y="14" text-anchor="middle" font-size="8.5" font-weight="700" fill="var(--card,#fff)">1</text>
+           <line x1="22" y1="11" x2="44" y2="11" stroke="${s}" stroke-width="1.6"/>
+           <polygon points="47,11 41,7.5 41,14.5" fill="${s}"/>`;
+      break;
+  }
+  return `<svg class="arr-svg" width="50" height="22" viewBox="0 0 50 22">${g}</svg>`;
+}
+
+const otherRows = [
+  { name: "矩形 / 人型 / 別名", svg: "part", cells: [`● <code class="syn">participant</code> <code class="syn">actor</code> <code class="syn">as</code>`, `● <code class="syn">participant</code> <code class="syn">actor</code> <code class="syn">as</code>`, `● <code class="syn">participant</code> <code class="syn">actor</code> <code class="syn">as</code>`, `● <code class="syn">participant</code> <code class="syn">actor</code> <code class="syn">as</code>`, `● <code class="syn">participant</code> <code class="syn">actor</code> <code class="syn">as</code>`, `● <code class="syn">shape: person</code>`, `● <code class="syn">actor: A</code>`, `▲ <code class="syn">participant</code>`] },
+  { name: "特殊形状 (DB/Queue)", svg: "db", cells: [`● <code class="syn">A@{type:database}</code>`, `－`, `● <code class="syn">database</code> <code class="syn">queue</code>`, `● <code class="syn">database</code> <code class="syn">entity</code>`, `▲ <span class="sub-note">スタイル依存</span>`, `● <code class="syn">shape: cylinder</code>`, `▲ <span class="sub-note">icon指定</span>`, `－`] },
+  { name: "グループ囲み (Box)", svg: "box", cells: [`● <code class="syn">box ... end</code>`, `● <code class="syn">box ... end</code>`, `● <code class="syn">box ... end box</code>`, `● <code class="syn">group ... end</code>`, `● <code class="syn">box ... end box</code>`, `● <span class="sub-note">親コンテナ</span>`, `－`, `－`] },
+  { name: "途中生成・消滅 (✕)", svg: "destroy", cells: [`● <code class="syn">create</code> <code class="syn">destroy</code>`, `● <code class="syn">create</code> <code class="syn">destroy</code>`, `● <code class="syn">create</code> <code class="syn">destroy</code>`, `● <code class="syn">create</code> <code class="syn">destroy</code>`, `● <code class="syn">*-&gt;B</code> <code class="syn">destroy</code>`, `－`, `－`, `－`] },
+  { name: "活性バー & ネスト段差", svg: "act", cells: [`● <code class="syn">activate</code> <code class="syn">-&gt;&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">++</code> <code class="syn">--</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;+</code> <code class="syn">-</code>`, `▲ <code class="syn">A.span</code>`, `▲ <span class="sub-note">自動/単層</span>`, `－`] },
+  { name: "時間遅延・間隔", svg: "delay", cells: [`－`, `－`, `● <code class="syn">...</code> <code class="syn">|||</code>`, `● <code class="syn">space</code> <code class="syn">delay</code>`, `● <code class="syn">...</code>`, `－`, `▲ <code class="syn">...</code>`, `－`] },
+  { name: "分岐・反復・並列・中断", svg: "frag", cells: [`● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop/par</code>`, `▲ <span class="sub-note">グループ表現</span>`, `▲ <code class="syn">if/else/loop</code>`, `－`] },
+  { name: "背景ハイライト (Rect)", svg: "rect", cells: [`● <code class="syn">rect rgba(...)</code><span class="sub-note">rgbは不透明 / rgbaで透過</span>`, `● <code class="syn">rect rgb/rgba/#hex</code><span class="sub-note">不透明色も自動半透明(0.35)</span>`, `▲ <code class="syn">group #RRGGBBaa</code><span class="sub-note">#transparent / 8桁Hexで透過</span>`, `▲ <code class="syn">group #Col #Bg</code><span class="sub-note">名前・Hex指定 (透過は環境依存)</span>`, `－`, `▲ <code class="syn">style.fill</code><span class="sub-note">style.opacityで透過</span>`, `－`, `－`] },
+  { name: "ノート (Left/Right/Over)", svg: "note", cells: [`● <code class="syn">Note left/right/over</code>`, `● <code class="syn">Note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `▲ <code class="syn">A."note"</code>`, `● <code class="syn">note: ...</code>`, `● <code class="syn">Note over</code>`] },
+  { name: "区切り線 / 参照 (Ref)", svg: "div", cells: [`－`, `－`, `● <code class="syn">== A ==</code> <code class="syn">ref over</code>`, `● <code class="syn">== A ==</code> <code class="syn">ref over</code>`, `● <code class="syn">ref over</code>`, `－`, `● <code class="syn">-- A --</code>`, `－`] },
+  { name: "自動採番 (Autonumber)", svg: "num", cells: [`● <code class="syn">autonumber [s i]</code>`, `▲ <code class="syn">autonumber</code><span class="sub-note">ONのみ</span>`, `● <code class="syn">autonumber [s i]</code>`, `● <code class="syn">autonumber [s]</code>`, `● <code class="syn">autonumber [s]</code>`, `▲ <code class="syn">autonumber:true</code>`, `● <code class="syn">autonumber</code>`, `－`] }
+];
+
+const otherTbody = document.getElementById("other-tbody");
+otherRows.forEach(r => {
+  const tr = document.createElement("tr");
+  let rowHtml = `<td class="name-cell">${r.name}</td>`;
+  rowHtml += `<td class="svg-cell">${makeMiniSvg(r.svg)}</td>`;
+  r.cells.forEach((c, idx) => { rowHtml += styleCell(c, idx === 1); });
+  tr.innerHTML = rowHtml;
+  otherTbody.appendChild(tr);
+});
+
+const colorSamples = [
+  {
+    name: "mermaid.js (公式)",
+    hl: false,
+    note: "rect は rgb()/rgba() のみ対応で色名・#hex は非対応（rgbは不透明、rgbaで透過）。box は色名（Aqua 等）・transparent・rgb()/rgba() に対応。",
+    code: `box Aqua API層                 %% box は色名・transparent 可
+  participant A
+end
+rect rgb(230, 240, 255)        %% rect は色名不可 (rgb/rgbaのみ)
+  rect rgba(245, 158, 11, .2)  %% 半透明 (重ね塗り可)
+    A->>A: 処理
+  end
+end`
+  },
+  {
+    name: "seqedit.html",
+    hl: true,
+    note: "rect / box とも CSS色名（lightblue / Aqua 等）・rgb()・rgba()・#hex・transparent に対応。rgba/hsla/#RRGGBBAA は指定αをそのまま適用、色名・rgb() 等の不透明色は自動半透明（rect: 0.35 / box: 0.22）。",
+    code: `box Aqua フロント              %% CSS色名も自動半透明 (0.22)
+  participant W
+end
+box #10b981 データ層           %% #hex も自動半透明 (0.22)
+  participant D
+end
+rect rgba(45, 91, 185, 0.15)   %% α=0.15 のまま透過
+  rect lightblue               %% 色名指定も自動で 0.35 透過
+    W->>D: クエリ
+  end
+end`
+  },
+  {
+    name: "PlantUML",
+    hl: false,
+    note: "色名指定には先頭の # が必須（#LightBlue, #Gold, #transparent 等）。既定では不透明で背後の box 色を上書きするため、透過は 8桁Hex (#RRGGBBaa) や #transparent を使う。",
+    code: `box "Internal" #LightBlue
+  participant A
+end box
+group #FF990033 半透明オレンジ (α=0x33)
+  A -> A : 処理
+end
+alt #transparent 透過ボディ
+  A -> A : 枠線のみ
+end`
+  },
+  {
+    name: "SequenceDiagram.org",
+    hl: false,
+    note: "色名・#Hex とも先頭に # を付けて指定（#aliceblue, #pink 等）。第2の #色 を省略すると背景なし（透過）。rgba() は非対応。",
+    code: `group #navy ラベル #aliceblue
+  A->B: 色名背景あり
+end
+group #pink 背景色なし(枠のみ)
+  A->B: 背面がそのまま透ける
+end`
+  },
+  {
+    name: "D2 (sequence)",
+    hl: false,
+    note: "style.fill に CSS色名（lightblue 等）・#Hex・transparent を指定可能。style.opacity (0〜1) を併用して透過ハイライトを表現。",
+    code: `shape: sequence_diagram
+alice -> bob: start
+auth_phase: Auth Check {
+  style.fill: lightblue
+  style.opacity: 0.65
+  alice -> bob: token
+}`
+  }
+];
+
+const colorGrid = document.getElementById("color-samples");
+const escHtml = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+colorSamples.forEach(s => {
+  const card = document.createElement("div");
+  card.className = "sample-card" + (s.hl ? " hl" : "");
+  card.innerHTML = `<h3><span>${escHtml(s.name)}</span></h3><p>${escHtml(s.note)}</p><pre class="sample-code">${escHtml(s.code)}</pre>`;
+  colorGrid.appendChild(card);
+});
+</script>
+</body>
+</html>

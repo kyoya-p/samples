@@ -32,6 +32,7 @@ Webページ上に Shadow DOM で隔離された Canvas / ツールバーを重�
 - **スタイル・配色を勝手に変えない**:
   - 下段アクションアイコンは全て同じ基本色（`#d4d4d8`）で統一し、`highlight` / `accent` などの個別色を付けない（選択状態 `.active` の `#6366f1` と `close-btn` のホバー赤のみ例外）。
   - `.cd-crop-actions` 等のフローティングUIも同じコンテナスタイル（`rgba(24, 24, 27, 0.92)`・`border-radius: 14px`・`backdrop-filter: blur(16px)`）・`.cd-action-icon-btn`・同一 SVG アイコンを共有し、独自デザインへ分岐させない。
+  - **起動時トーストを出さない**: `setActive(true)` 時に「ChromeDoodleを起動しました」等の余計なトースト（`showToast`）を表示しない（ツールバーの表示自体で起動が自明であり、画面キャプチャや閲覧の邪魔になるため）。
 
 ### 2. ページズームと連動しないフローティング UI
 - ページズーム倍率（Ctrl + `-`/`+`）は `background.js` の `chrome.tabs.getZoom` と `chrome.tabs.onZoomChange` で取得する（`window.devicePixelRatio` 単独では OS DPI 倍率と区別しづらいためタブズーム API を基準にする）。

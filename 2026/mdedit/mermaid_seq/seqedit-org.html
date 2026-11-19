@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>シーケンス図エディタ</title>
+<style>
+:root{
+  --bg:#e9ebef; --panel:#ffffff; --panel-2:#f4f5f8; --ink:#14171d; --muted:#5f6875;
+  --line:#d5d9e1; --line-2:#9aa3b2; --accent:#2d5bb9; --accent-ink:#fff; --accent-soft:rgba(45,91,185,.14);
+  --danger:#a8362e; --note:#fff4b8; --box:#eaf0fc; --bar:#dfe6f5; --tab:#e3e7ef;
+  --ui:ui-sans-serif,system-ui,"Yu Gothic UI","Hiragino Sans",Meiryo,sans-serif;
+  --mono:ui-monospace,Consolas,"Courier New",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101317; --panel:#181b21; --panel-2:#1e222a; --ink:#e7eaf0; --muted:#98a1ae;
+    --line:#2b3039; --line-2:#5a6474; --accent:#82a9f0; --accent-ink:#0e1117; --accent-soft:rgba(130,169,240,.2);
+    --danger:#e2867d; --note:#4a4220; --box:#263044; --bar:#37425a; --tab:#2a303b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101317; --panel:#181b21; --panel-2:#1e222a; --ink:#e7eaf0; --muted:#98a1ae;
+  --line:#2b3039; --line-2:#5a6474; --accent:#82a9f0; --accent-ink:#0e1117; --accent-soft:rgba(130,169,240,.2);
+  --danger:#e2867d; --note:#4a4220; --box:#263044; --bar:#37425a; --tab:#2a303b;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.4 var(--ui);display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;background:var(--panel);border-bottom:1px solid var(--line)}
+header .sp{flex:1}
+header .grp{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid var(--line)}
+button,select{font:inherit;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;cursor:pointer}
+button:hover,select:hover{border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default;border-color:var(--line)}
+button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+main{flex:1;min-height:0;display:flex}
+.src{width:38%;min-width:240px;position:relative;background:var(--panel);border-right:1px solid var(--line)}
+#ln{position:absolute;left:0;top:0;bottom:0;width:44px;overflow:hidden;z-index:1;pointer-events:none;background:var(--panel-2);border-right:1px solid var(--line)}
+#lnI{padding:8px 6px 8px 0;text-align:right;color:var(--muted);font:12px/20px var(--mono)}
+#lnI div{height:20px}
+#lnI .e{color:#fff;background:var(--danger);font-weight:700;padding-right:6px;margin-right:-6px}
+#lnI .s{color:var(--accent);font-weight:700}
+#errs{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.errl{position:absolute;left:0;right:0;height:20px;background:rgba(200,60,50,.18);border-left:4px solid var(--danger)}
+.errl span{position:absolute;right:16px;top:1px;font:11px/18px var(--ui);color:#fff;background:var(--danger);padding:0 6px;border-radius:3px;white-space:nowrap}
+#hl{position:absolute;left:0;right:0;height:20px;background:var(--accent-soft);pointer-events:none;display:none}
+#src{position:absolute;inset:0;width:100%;height:100%;border:0;resize:none;outline:0;background:transparent;color:var(--ink);
+  font:13px/20px var(--mono);padding:8px 8px 8px 52px;white-space:pre;overflow:auto;tab-size:2}
+#stage{flex:1;min-width:0;overflow:auto;position:relative;padding:12px;background:var(--panel)}
+#view svg{display:block;background:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+#menu{position:fixed;z-index:20;display:none;min-width:210px;max-width:320px;padding:4px;background:var(--panel);border:1px solid var(--line-2);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.22);font-size:13px}
+#menu>button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:5px 10px;border-radius:5px}
+#menu>button:hover:not(:disabled),#menu .row button:hover{background:var(--accent-soft)}
+#menu .row{display:flex;flex-wrap:wrap;gap:3px;padding:4px 8px}
+#menu .row span{width:100%;color:var(--muted);font-size:11px}
+#menu .row button{padding:2px 7px;font-family:var(--mono);font-size:12px}
+#menu button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+#menu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+#editId{position:absolute;z-index:6;width:120px;font:12px var(--mono);padding:2px 6px;border:2px solid var(--accent);border-radius:4px;background:var(--panel-2);color:var(--ink);outline:0}
+#edit{position:absolute;z-index:5;resize:none;overflow:hidden;white-space:pre;font:13px/17px var(--ui);padding:3px 6px;border:2px solid var(--accent);border-radius:4px;background:var(--panel);color:var(--ink);outline:0}
+footer{padding:4px 10px;background:var(--panel);border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:12px;flex-wrap:wrap}
+footer .err{color:var(--danger);cursor:pointer}
+.drop{outline:3px dashed var(--accent);outline-offset:-6px}
+@media (max-width:820px){main{flex-direction:column}.src{width:100%;height:40%;border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="grp">
+    <button id="bPart" title="参加者を追加">＋参加者</button>
+    <button id="bMsg" title="選択行の下にメッセージを追加">＋メッセージ</button>
+    <button id="bNote" title="Noteを追加">＋Note</button>
+    <select id="bBlock" title="選択行を囲む / 末尾に追加">
+      <option value="">囲む…</option><option>loop</option><option>alt</option><option>opt</option><option>par</option><option>critical</option><option>break</option>
+    </select>
+  </div>
+  <div class="grp">
+    <button id="bUp" title="選択行を上へ">↑</button>
+    <button id="bDown" title="選択行を下へ">↓</button>
+    <button id="bDup" title="選択行を複製">複製</button>
+    <button id="bFlip" title="送信元と宛先を入替">⇄</button>
+    <button id="bArrow" title="矢印種別を切替 (->> / -->> / -> / --> / -x / --x / -) / --) / <<->> / <<-->>)">矢印</button>
+    <button id="bDel" title="選択行を削除 (Delete)">削除</button>
+  </div>
+  <div class="grp">
+    <label title="メッセージに連番を自動付与 (autonumber 行の追加 / 削除)" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" id="cAuto">autonumber</label>
+  </div>
+  <div class="grp">
+    <button id="bZm" title="図を縮小(図の上で Ctrl+ホイールでも可)">−</button><span id="zv">100%</span><button id="bZp" title="図を拡大(図の上で Ctrl+ホイールでも可)">＋</button>
+  </div>
+  <span class="sp"></span>
+  <span id="fn" style="color:var(--muted);font-size:12px"></span>
+  <select id="sBlk" title="この .md 内のどのシーケンス図を編集するか" hidden></select>
+  <button id="bOpen" title=".md / .mmd を開く(.md は mermaid シーケンス図ブロックのみ編集)。ダイアログは最後に使ったフォルダから開始">開く</button>
+  <input id="file" type="file" accept=".mmd,.md,.txt" hidden>
+</header>
+<main>
+  <div class="src"><div id="errs"></div><div id="ln"><div id="lnI"></div></div><div id="hl"></div><textarea id="src" spellcheck="false" wrap="off" aria-label="Mermaid sequenceDiagram ソース"></textarea></div>
+  <div id="stage"><div id="view"></div></div>
+</main>
+<footer>
+  <span id="st">—</span>
+  <span>ドラッグ: ライフライン間＝追加 / 要素＝上下移動 / 矢印の端＝付替 / 参加者＝並替 / Note端・ブロック下端＝範囲 ｜ ダブルクリック＝編集(Enter＝確定 / Shift+Enter＝改行、参加者は ID 欄と表示名欄) ｜ 右クリック＝メニュー</span>
+</footer>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const ta=$('#src'), view=$('#view'), stage=$('#stage'), hl=$('#hl'), st=$('#st');
+const FONT='"Yu Gothic UI","Hiragino Sans",Meiryo,ui-sans-serif,system-ui,sans-serif';
+const LH=20, PAD=8;
+const ctx=document.createElement('canvas').getContext('2d'); ctx.font='13px '+FONT;
+const SAMPLE=`sequenceDiagram
+  title 注文フロー
+  autonumber
+  actor U as ユーザー
+  participant W as Web
+  participant A as API
+  participant D as DB
+  U->>W: 注文する
+  W->>+A: POST /orders
+  A->>+D: 在庫確認
+  D-->>-A: 結果
+  alt 在庫あり
+    A->>D: 注文保存
+  else 在庫なし
+    A-->>W: 409 Conflict
+  end
+  A-->>-W: レスポンス
+  Note over U,W: 画面更新
+  loop 3回まで
+    W->>W: リトライ待ち
+  end
+  W-->>U: 結果表示
+`;
+let model=null, sel=null, pendingSel=null, pendingEdit=null, geo=null, zoom=1, theme='auto', editEl=null;
+
+/* ---------- parser ---------- */
+const MSG=/^(.+?)\s*(<<-->>|<<->>|-->>|->>|--x|-x|--\)|-\)|-->|->)\s*([+-]?)\s*([^\s:]+?)\s*(?::\s*(.*))?$/;
+const ARROWS=['->>','-->>','->','-->','-x','--x','-)','--)','<<->>','<<-->>'];
+function parse(text){
+  const L=text.split('\n'), items=[], parts=[], map={}, errors=[], byLine={};
+  let title='', titleLine=null, depth=0;
+  const part=(id,label,type,line)=>{
+    let p=map[id];
+    if(!p){p=map[id]={id,label:id,type:'participant',idx:parts.length,line:null};parts.push(p)}
+    if(label!=null)p.label=label;
+    if(type)p.type=type;
+    if(line!=null&&p.line==null){p.line=line;byLine[line]={k:'part',raw:p.label}}
+    return p;
+  };
+  const br=s=>s.replace(/<br\s*\/?>/gi,'\n');
+  L.forEach((raw,n)=>{
+    const t=raw.trim(); if(!t||t.startsWith('%%'))return;
+    let m;
+    if(/^sequenceDiagram\b/i.test(t))return;
+    if(m=t.match(/^title\s*:?\s*(.*)$/i)){title=br(m[1]);titleLine=n;byLine[n]={k:'title',raw:m[1]};return}
+    if(/^autonumber\b/i.test(t)){items.push({k:'auto',line:n});return}
+    if(m=t.match(/^(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/i)){
+      part(m[2],m[3]!=null?br(m[3]):null,m[1].toLowerCase(),n);
+      if(m[3]!=null){const p=map[m[2]];if(p.line===n)byLine[n].raw=m[3]}else if(map[m[2]].line===n)byLine[n].raw=m[2];
+      return}
+    if(m=t.match(/^note\s+(left of|right of|over)\s+([^:]+?)\s*:\s*(.*)$/i)){
+      const ps=m[2].split(',').map(s=>part(s.trim()));
+      const it={k:'note',pos:m[1].toLowerCase(),ps,raw:m[3],text:br(m[3]),line:n};
+      items.push(it);byLine[n]={k:'note',raw:m[3]};return}
+    if(m=t.match(/^(activate|deactivate)\s+(\S+)$/i)){
+      items.push({k:'act',on:m[1].toLowerCase()==='activate',p:part(m[2]),line:n});byLine[n]={k:'act'};return}
+    if(m=t.match(/^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/i)){
+      depth++;items.push({k:'bstart',type:m[1].toLowerCase(),raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
+    if(m=t.match(/^(else|and|option)\b\s*(.*)$/i)){
+      items.push({k:'bsep',type:m[1].toLowerCase(),raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
+    if(/^end$/i.test(t)){
+      if(depth>0){depth--;items.push({k:'bend',line:n});byLine[n]={k:'end'}}else errors.push({line:n,msg:'対応するブロックが無い end'});
+      return}
+    if(m=t.match(MSG)){
+      const f=part(m[1].trim()),to=part(m[4]);
+      const raw=m[5]||'';
+      items.push({k:'msg',f,t:to,arrow:m[2],act:m[3],raw,text:br(raw),line:n});byLine[n]={k:'msg',raw};return}
+    errors.push({line:n,msg:'解釈できない行: '+t.slice(0,30)});
+  });
+  if(depth>0)errors.push({line:L.length-1,msg:'end が不足 ('+depth+')'});
+  return {items,parts,errors,title,titleLine,byLine,nLines:L.length};
+}
+
+/* ---------- layout / svg ---------- */
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const cv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function layout(m){
+  const P=m.parts,n=P.length,LHT=16;
+  const lines=s=>String(s).split('\n');
+  const tw=s=>Math.max(0,...lines(s).map(l=>ctx.measureText(l).width));
+  if(!n)return null;
+  const BH=Math.max(38,...P.map(p=>lines(p.label).length*LHT+22));
+  const bw=P.map(p=>Math.max(84,tw(p.label)+(p.type==='actor'?46:28)));
+  const gap=[];for(let i=0;i<n-1;i++)gap.push((bw[i]+bw[i+1])/2+24);
+  let leftX=0,rightX=0;
+  const x=[30+leftX+bw[0]/2];for(let i=1;i<n;i++)x.push(x[i-1]+gap[i-1]);
+  const W=x[n-1]+bw[n-1]/2+30+rightX;
+  const top=m.title?40:12;
+  let cursor=top+BH+22;
+  const bg=[],life=[],bars=[],fg=[],ys=[];
+  let minL=0,maxR=W;
+  const act=P.map(()=>[]);
+  const stack=[];
+  let num=0,auto=false;
+  const closeBar=(i,y)=>{const s=act[i].pop();if(s)bars.push({i,level:act[i].length+1,y0:s.y0,y1:y,line:s.line})};
+  const touch=(a,b)=>{for(const s of stack){s.minX=Math.min(s.minX,a);s.maxX=Math.max(s.maxX,b)}};
+  const edge=(i,l,side)=>l===0?x[i]:side>0?x[i]+5+(l-1)*5:x[i]-5;
+  const al=(txt,cx)=>lines(txt).length>1?`x="${cx-tw(txt)/2}" text-anchor="start"`:`x="${cx}" text-anchor="middle"`;
+  const textLines=(txt,cx,yBottom,anchor)=>anchor==='middle'?lines(txt).map((l,i,a)=>`<text class="t" ${al(txt,cx)} y="${yBottom-(a.length-1-i)*LHT}">${esc(l)}</text>`).join(''):lines(txt).map((l,i,a)=>`<text class="t" x="${cx}" y="${yBottom-(a.length-1-i)*LHT}" text-anchor="${anchor}">${esc(l)}</text>`).join('');
+  const closeBlock=(y,b)=>{
+    const pad=18+10*b.inner,inner=b.inner;
+    if(b.minX===Infinity){b.minX=x[0];b.maxX=x[0]}
+    const x0=b.minX-pad,x1=b.maxX+pad,w=x1-x0;
+    minL=Math.min(minL,x0);maxR=Math.max(maxR,x1);
+    const tabW=tw(b.type)+20;
+    let s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}"/>`+
+      `<path class="tab" d="M${x0} ${b.y0}h${tabW}v12l-8 8h${-(tabW-8)}z"/><text class="t" x="${x0+8}" y="${b.y0+14}" font-weight="600">${esc(b.type)}</text>`+
+      (b.label?lines('['+b.label+']').map((l,k)=>`<text class="t" x="${x0+tabW+8}" y="${b.y0+15+k*LHT}">${esc(l)}</text>`).join(''):'')+`</g>`;
+    if(b.type==='rect'){const col=(b.label||'').replace(/[^\w#(),.%\s-]/g,'')||'transparent';
+      s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" style="fill:${col};fill-opacity:.45" pointer-events="none"/>`+
+        `<rect x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" fill="none" stroke="transparent" stroke-width="8" pointer-events="stroke"/></g>`}
+    for(const sp of b.seps){
+      s+=`<g class="el" data-kind="bsep" data-line="${sp.line}"><line class="sep" x1="${x0}" x2="${x1}" y1="${sp.y}" y2="${sp.y}"/>`+
+        `<line class="hit" x1="${x0}" x2="${x1}" y1="${sp.y}" y2="${sp.y}" stroke="transparent" stroke-width="12"/>`+
+        (sp.label?lines('['+sp.label+']').map((l,k)=>`<text class="t" x="${x0+tabW+8}" y="${sp.y+16+k*LHT}">${esc(l)}</text>`).join(''):'')+`</g>`;
+    }
+    if(b.endLine!=null)s+=`<g class="el" data-kind="bend" data-line="${b.endLine}"><line class="hit" x1="${x0}" x2="${x1}" y1="${y}" y2="${y}" stroke="transparent" stroke-width="10"/></g>`;
+    bg.push(s);
+    return inner;
+  };
+  for(const it of m.items){
+    ys.push({line:it.line,y:cursor});
+    if(it.k==='auto'){auto=true;num=0;continue}
+    if(it.k==='msg'){
+      const a=it.f.idx,b=it.t.idx;
+      const dL=x[0]-bw[0]/2,dR=x[n-1]+bw[n-1]/2,maxW=Math.max(40,dR-dL);
+      const wrapTxt=s=>lines(s).flatMap(l=>{
+        if(ctx.measureText(l).width<=maxW)return [l];
+        const out=[];let cur='';
+        for(const ch of l){
+          if(cur&&ctx.measureText(cur+ch).width>maxW){out.push(cur);cur=ch}
+          else cur+=ch;
+        }
+        if(cur)out.push(cur);
+        return out;
+      }).join('\n');
+      let txt=it.text;if(auto){num++;txt=num+'. '+txt}
+      txt=wrapTxt(txt);
+      const Ln=lines(txt).length;
+      const bi=it.arrow.startsWith('<<'),ar=bi?it.arrow.slice(2):it.arrow,dash=ar.startsWith('--'),kind=ar.replace(/^--?/,'');
+      const ms=bi?' marker-start="url(#mF)"':'';
+      const mk=kind==='>>'?'url(#mF)':kind==='x'?'url(#mX)':kind===')'?'url(#mO)':'';
+      const cls='msg'+(dash?' dash':'');
+      if(it.act==='+')act[b].push({y0:0,line:it.line});
+      const lvS=act[a].length,lvT=act[b].length;
+      let y,g;
+      const clampCX=(c,w)=>w>=dR-dL?(dL+dR)/2:Math.max(dL+w/2,Math.min(dR-w/2,c));
+      if(a===b){
+        y=cursor+Ln*LHT+4;
+        if(it.act==='+')act[b][act[b].length-1].y0=y;
+        const x1=edge(a,lvT,1),w=tw(txt),cx=clampCX(x1+18,w),hw=w/2+4;
+        g=`<g class="el" data-kind="msg" data-self="1" data-x1="${x1}" data-x2="${x1+36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1+36}V${y+10}H${x1+2}" marker-end="${mk}"${ms}/>`+
+          `<path class="hit" d="M${x1} ${y}H${x1+36}V${y+10}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+          textLines(txt,cx,y-5,'middle')+`</g>`;
+        touch(x1,x1+36);minL=Math.min(minL,cx-hw);maxR=Math.max(maxR,x1+36,cx+hw);
+        if(it.act==='-')closeBar(a,y+5);
+        cursor=y+16;
+      }else{
+        y=cursor+Ln*LHT+4;
+        if(it.act==='+')act[b][act[b].length-1].y0=y;
+        const dir=b>a?1:-1,x1=edge(a,lvS,dir),x2=edge(b,lvT,-dir),w=tw(txt),cx=clampCX((x1+x2)/2,w),hw=w/2+4;
+        g=`<g class="el" data-kind="msg" data-x1="${x1}" data-x2="${x2}" data-line="${it.line}"><line class="${cls}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="${mk}"${ms}/>`+
+          `<line class="hit" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="transparent" stroke-width="14"/>`+
+          textLines(txt,cx,y-5,'middle')+`</g>`;
+        {const l=Math.min(x1,x2,cx-hw),r=Math.max(x1,x2,cx+hw);touch(Math.min(x1,x2),Math.max(x1,x2));minL=Math.min(minL,l);maxR=Math.max(maxR,r)}
+        if(it.act==='-')closeBar(a,y);
+        cursor=y+10;
+      }
+      fg.push(g);
+    }else if(it.k==='note'){
+      const Ln=lines(it.text).length,W2=Math.max(70,tw(it.text)+24),h=Ln*LHT+10;
+      let x0,x1;const i=it.ps[0].idx;
+      if(it.pos==='left of'){x1=x[i]-8;x0=x1-W2}
+      else if(it.pos==='right of'){x0=x[i]+8;x1=x0+W2}
+      else{
+        const a=Math.min(...it.ps.map(p=>x[p.idx])),b=Math.max(...it.ps.map(p=>x[p.idx]));
+        x0=a-10;x1=b+10;if(x1-x0<W2){const c=(a+b)/2;x0=c-W2/2;x1=c+W2/2}
+      }
+      const y=cursor+4;
+      fg.push(`<g class="el" data-kind="note" data-x0="${x0}" data-x1="${x1}" data-line="${it.line}"><path class="note" d="M${x0} ${y}H${x1-8}l8 8V${y+h}H${x0}z"/>`+
+        lines(it.text).map((l,k)=>`<text class="t" ${al(it.text,(x0+x1)/2)} y="${y+16+k*LHT-2}">${esc(l)}</text>`).join('')+`</g>`);
+      touch(x0,x1);minL=Math.min(minL,x0);maxR=Math.max(maxR,x1);
+      cursor=y+h+14;
+    }else if(it.k==='act'){
+      const i=it.p.idx;
+      if(it.on)act[i].push({y0:cursor-4,line:it.line});else closeBar(i,cursor-4);
+      cursor+=6;
+    }else if(it.k==='bstart'){
+      stack.push({type:it.type,label:it.text,line:it.line,y0:cursor,minX:Infinity,maxX:-Infinity,inner:0,seps:[]});
+      cursor+=30+(it.type==='rect'?0:(lines(it.text).length-1)*LHT);
+    }else if(it.k==='bsep'){
+      const b=stack[stack.length-1];
+      if(b){b.seps.push({y:cursor+2,label:it.text,line:it.line});cursor+=28+(lines(it.text).length-1)*LHT}
+    }else if(it.k==='bend'){
+      const b=stack.pop();
+      if(b){b.endLine=it.line;const inner=closeBlock(cursor+2,b);const par=stack[stack.length-1];
+        if(par){par.inner=Math.max(par.inner,inner+1);par.minX=Math.min(par.minX,b.minX-(18+10*inner));par.maxX=Math.max(par.maxX,b.maxX+(18+10*inner))}
+        cursor+=16}
+    }
+  }
+  while(stack.length){const b=stack.pop();const inner=closeBlock(cursor+2,b);const par=stack[stack.length-1];if(par)par.inner=Math.max(par.inner,inner+1);cursor+=16}
+  for(let i=0;i<n;i++)while(act[i].length)closeBar(i,cursor);
+  const by=cursor+6,H=by+BH+14;
+  /* lifelines + boxes */
+  const boxes=[];
+  P.forEach((p,i)=>{
+    life.push(`<line class="life" x1="${x[i]}" y1="${top+BH}" x2="${x[i]}" y2="${by}"/>`+
+      `<rect class="lh" data-i="${i}" x="${x[i]-12}" y="${top+BH}" width="24" height="${by-top-BH}" fill="transparent"/>`);
+    for(const yy of [top,by]){
+      const ln=p.line!=null?` data-line="${p.line}"`:'';
+      boxes.push(`<g class="el" data-kind="part" data-pi="${i}"${ln}><rect class="box" x="${x[i]-bw[i]/2}" y="${yy}" width="${bw[i]}" height="${BH}" rx="${p.type==='actor'?19:5}"/>`+
+        lines(p.label).map((l,k,a)=>`<text class="t" ${al(p.label,x[i])} y="${yy+BH/2+5+(k-(a.length-1)/2)*LHT}" font-weight="600">${esc(l)}</text>`).join('')+`</g>`);
+    }
+  });
+  const barS=bars.map(b=>`<g class="el" data-kind="bar" data-line="${b.line}"><rect class="bar" x="${x[b.i]-5+(b.level-1)*5}" y="${b.y0}" width="10" height="${Math.max(4,b.y1-b.y0)}"/></g>`).join('');
+  const titleS=m.title?`<g class="el" data-kind="title"${m.titleLine!=null?` data-line="${m.titleLine}"`:''}><text class="t" x="${W/2}" y="26" text-anchor="middle" font-size="17" font-weight="700">${esc(m.title)}</text></g>`:'';
+  if(m.title){const hw=tw(m.title)*17/13/2+8;minL=Math.min(minL,W/2-hw);maxR=Math.max(maxR,W/2+hw)}
+  const vbX=Math.min(0,minL-8),vbW=Math.max(W,maxR+8)-vbX;
+  const C={ink:cv('--ink'),l2:cv('--line-2'),mu:cv('--muted'),ac:cv('--accent'),note:cv('--note'),box:cv('--box'),bar:cv('--bar'),tab:cv('--tab')};
+  const style=`<style>.t{fill:${C.ink};font-size:13px}.box{fill:${C.box};stroke:${C.l2};stroke-width:1.2}.life{stroke:${C.l2};stroke-dasharray:4 4}`+
+    `.msg{stroke:${C.ink};stroke-width:1.5;fill:none}.dash{stroke-dasharray:6 4}.bar{fill:${C.bar};stroke:${C.ink};stroke-width:1}`+
+    `.note{fill:${C.note};stroke:${C.l2}}.blk{fill:none;stroke:${C.mu};stroke-width:1.2}.tab{fill:${C.tab};stroke:${C.mu}}.sep{stroke:${C.mu};stroke-dasharray:6 4}`+
+    `.el{cursor:pointer}.lh{cursor:crosshair}.el[data-kind=msg],.el[data-kind=note],.el[data-kind=bstart],.el[data-kind=bsep]{cursor:move}`+
+    `.el[data-kind=bend]{cursor:ns-resize}.el[data-kind=part]{cursor:ew-resize}`+
+    `.sel .msg,.sel .box,.sel .note,.sel .blk,.sel .bar,.sel .tab{stroke:${C.ac};stroke-width:2.6}.sel .t{fill:${C.ac}}</style>`;
+  const defs=`<defs><marker id="mF" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto-start-reverse"><path d="M0 1.5L10.5 6L0 10.5z" fill="${C.ink}"/></marker>`+
+    `<marker id="mO" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1.5L10 6L1 10.5" fill="none" stroke="${C.ink}" stroke-width="1.5"/></marker>`+
+    `<marker id="mX" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="7" refY="6" orient="auto"><path d="M2 1L12 11M12 1L2 11" fill="none" stroke="${C.ink}" stroke-width="1.6"/></marker></defs>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} 0 ${vbW} ${H}" width="${vbW*zoom}" height="${H*zoom}" font-family='${FONT.replace(/"/g,'&quot;')}'>`+
+    style+defs+titleS+bg.join('')+life.join('')+barS+fg.join('')+boxes.join('')+`</svg>`;
+  return {svg,x,ys,vbX,vbW,H,bottom:cursor};
+}
+
+/* ---------- render / selection ---------- */
+function render(){
+  geo=layout(model);
+  view.innerHTML=geo?geo.svg:'<p style="color:var(--muted)">参加者 / メッセージを入力してください</p>';
+  applySel();
+}
+function applySel(){
+  view.querySelectorAll('.sel').forEach(e=>e.classList.remove('sel'));
+  if(sel!=null)view.querySelectorAll(`.el[data-line="${sel}"]`).forEach(e=>e.classList.add('sel'));
+  syncHl();
+  const k=sel!=null&&model.byLine[sel]?model.byLine[sel].k:null;
+  $('#bUp').disabled=$('#bDown').disabled=$('#bDup').disabled=$('#bDel').disabled=sel==null;
+  $('#bFlip').disabled=$('#bArrow').disabled=k!=='msg';
+}
+function syncHl(){
+  if(model)syncLn();
+  if(sel==null){hl.style.display='none';return}
+  hl.style.display='block';hl.style.top=(PAD+sel*LH-ta.scrollTop)+'px';
+}
+function select(n,scroll){
+  sel=(n!=null&&model.byLine[n])?n:null;applySel();
+  if(sel!=null&&scroll){
+    const y=PAD+sel*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl();
+    const el=view.querySelector(`.el[data-line="${sel}"]`);if(el)el.scrollIntoView({block:'nearest',inline:'nearest'});
+  }
+}
+function status(){
+  const e=model.errors;
+  st.innerHTML=e.length?`<span class="err" style="cursor:default">⚠ エラー ${e.length} 件:</span> `+e.slice(0,4).map(x=>`<span class="err" data-l="${x.line}" title="クリックでこの行へ">L${x.line+1} ${esc(x.msg)}</span>`).join(' ／ ')+(e.length>4?` ／ 他 ${e.length-4} 件`:''):
+    `参加者 ${model.parts.length} / 要素 ${model.items.length}`;
+  syncErrs();syncLn();
+}
+function syncLn(){
+  const es=new Set(model.errors.map(x=>x.line));let h='';
+  for(let i=0;i<model.nLines;i++)h+=`<div${es.has(i)?' class="e"':i===sel?' class="s"':''}>${i+1}</div>`;
+  $('#lnI').innerHTML=h;lnScroll();
+}
+function lnScroll(){$('#lnI').style.transform=`translateY(${-ta.scrollTop}px)`}
+function syncErrs(){
+  $('#errs').innerHTML=model.errors.map(x=>`<div class="errl" style="top:${PAD+x.line*LH-ta.scrollTop}px"><span>⚠ ${esc(x.msg)}</span></div>`).join('');
+}
+st.addEventListener('click',ev=>{const l=ev.target.dataset&&ev.target.dataset.l;if(l!=null){const n=+l;ta.focus();const lo=lineOffsets(),off=lo.off;ta.setSelectionRange(off[n],off[n]+lo.L[n].length);ta.scrollTop=Math.max(0,PAD+n*LH-ta.clientHeight/2)}});
+
+/* ---------- text edit helpers ---------- */
+function lineOffsets(){const L=ta.value.split('\n'),off=[0];for(const l of L)off.push(off[off.length-1]+l.length+1);return {L,off}}
+function edit(a,b,txt){
+  const had=document.activeElement===ta,st0=ta.scrollTop;
+  ta.focus({preventScroll:true});ta.setSelectionRange(a,b);
+  const ok=txt===''?document.execCommand('delete'):document.execCommand('insertText',false,txt);
+  if(!ok){ta.setRangeText(txt,a,b,'end');ta.dispatchEvent(new Event('input'))}
+  if(!had){if(document.activeElement===ta)ta.blur();ta.scrollTop=st0;if(sel!=null)reveal(sel)}
+}
+function reveal(n){const y=PAD+n*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl()}
+const indentOf=l=>(l.match(/^\s*/)||[''])[0];
+const indent=(ind,t)=>t.split('\n').map(l=>ind+l).join('\n');
+function insertAfter(n,txt,ed){const {L,off}=lineOffsets();n=Math.min(n,L.length-1);const p=off[n]+L[n].length;pendingSel=n+1;pendingEdit=ed?n+1:null;edit(p,p,'\n'+indent(indentOf(L[n]),txt))}
+function insertBefore(n,txt,ed){const {L,off}=lineOffsets();pendingSel=n;pendingEdit=ed?n:null;edit(off[n],off[n],indent(indentOf(L[n]||''),txt)+'\n')}
+function insertEnd(txt,ed){const {L}=lineOffsets();let n=L.length-1;while(n>0&&!L[n].trim())n--;insertAfter(n,txt,ed)}
+function replaceLine(n,txt){const {L,off}=lineOffsets();pendingSel=n;edit(off[n],off[n]+L[n].length,txt)}
+function deleteLine(n){
+  if(model&&model.byLine[n]&&model.byLine[n].k==='part'){
+    const i=model.parts.findIndex(p=>p.line===n);
+    if(i>=0)return deletePart(i);
+  }
+  const {L,off}=lineOffsets();pendingSel=null;
+  if(n<L.length-1)edit(off[n],off[n+1],'');else if(n>0)edit(off[n]-1,off[n]+L[n].length,'');else edit(0,L[0].length,'');
+  sel=null;
+}
+function moveLine(n,d){
+  const {L,off}=lineOffsets(),m=n+d;if(m<0||m>=L.length)return;
+  const lo=Math.min(n,m),hi=Math.max(n,m);pendingSel=m;
+  edit(off[lo],off[hi]+L[hi].length,L[hi]+'\n'+L[lo]);
+}
+function setText(n,v){
+  const {L}=lineOffsets(),raw=L[n],info=model.byLine[n];if(!info)return;
+  v=v.replace(/\r?\n/g,'<br/>');
+  let out=raw;
+  if(info.k==='msg'||info.k==='note'){const i=raw.indexOf(':');out=i<0?raw+': '+v:raw.slice(0,i+1)+' '+v}
+  else if(info.k==='block')out=raw.replace(/^(\s*\w+)\b.*$/,(a,p)=>p+(v?' '+v:''));
+  else if(info.k==='part')out=raw.replace(/^(\s*(?:participant|actor)\s+\S+?)(?:\s+as\s+.*)?$/i,(a,p)=>p+' as '+v);
+  else if(info.k==='title')out=raw.replace(/^(\s*title)\b\s*:?\s*.*$/i,(a,p)=>p+' '+v);
+  if(out!==raw)replaceLine(n,out);
+}
+
+/* ---------- inline editor ---------- */
+/* 参加者: ID / 表示名 を別々に編集(null は変更なし)。ID 変更時は参照箇所も置換 */
+function setPart(n,id,label){
+  const p=model.parts.find(p=>p.line===n);if(!p)return;
+  const raw=model.byLine[n].raw;
+  id=id==null?p.id:id.trim();
+  label=label==null?(raw===p.id?id:raw):label.trim().replace(/\r?\n/g,'<br/>');
+  if(!id||/\s/.test(id)||/[:,;]/.test(id)||/^(end|note|title|loop|alt|opt|par|rect|else|and)$/i.test(id)||/-[->x)]|<</.test(id)){flash('⚠ ID に使えない文字/語: '+id);return}
+  if(id!==p.id&&model.parts.some(q=>q.id===id)){flash('⚠ ID 重複: '+id);return}
+  const L=getL(),sw=x=>x===p.id?id:x;
+  if(id!==p.id)L.forEach((l,i)=>{
+    const k=model.byLine[i]&&model.byLine[i].k;let o;
+    if(k==='msg'&&(o=msgP(l))){if(o.f===p.id||o.t===p.id){o.f=sw(o.f);o.t=sw(o.t);L[i]=msgS(o)}}
+    else if(k==='note'&&(o=noteP(l))){if(o.ps.includes(p.id)){o.ps=o.ps.map(sw);L[i]=noteS(o)}}
+    else if(k==='act')L[i]=l.replace(/^(\s*(?:activate|deactivate)\s+)(\S+)\s*$/i,(a,pre,x)=>pre+sw(x));
+  });
+  L[n]=L[n].replace(/^(\s*(?:participant|actor))\s+.*$/i,(a,pre)=>pre+' '+id+(label&&label!==id?' as '+label:''));
+  rewrite(L,n);
+}
+let editWhat=null;
+/* 図上のテキスト編集。参加者は ID 欄(1 行)と表示名欄を並べて表示し、別々に編集できる */
+function startEdit(n,what){
+  if(what===undefined)what=editWhat;editWhat=null;
+  const info=model.byLine[n];if(!info||!('raw' in info))return;
+  const g=view.querySelector(`.el[data-line="${n}"]`);if(!g)return;
+  stopEdit(false);
+  const tx=g.querySelector('text')||g,r=tx.getBoundingClientRect(),sr=stage.getBoundingClientRect();
+  const pp=info.k==='part'&&model.parts.find(p=>p.line===n);
+  const inp=document.createElement('textarea');inp.id='edit';inp.wrap='off';
+  const v0=info.raw.replace(/<br\s*\/?>/gi,'\n');inp.value=v0;
+  const fit=()=>{inp.rows=inp.value.split('\n').length;inp.style.width='200px';inp.style.width=Math.max(200,inp.scrollWidth+24)+'px'};
+  const left=Math.max(0,r.left-sr.left+stage.scrollLeft-8),top=Math.max(0,r.top-sr.top+stage.scrollTop-6-(pp?28:0));
+  let idInp=null;
+  if(pp){
+    idInp=document.createElement('input');idInp.id='editId';idInp.value=pp.id;idInp.placeholder='ID';idInp.title='ID(ソース上の名前)';
+    idInp.spellcheck=false;idInp.style.left=left+'px';idInp.style.top=top+'px';stage.appendChild(idInp);
+    inp.title='表示名';
+  }
+  inp.style.left=left+'px';inp.style.top=(top+(pp?28:0))+'px';
+  stage.appendChild(inp);fit();inp.addEventListener('input',fit);
+  editEl={inp,n,v0,idInp,id0:pp?pp.id:null};
+  const first=idInp&&what==='id'?idInp:inp;first.focus();first.select();
+  const key=multi=>e=>{
+    if(e.key==='Enter'&&(!multi||!e.shiftKey&&!e.altKey)&&!e.isComposing){e.preventDefault();stopEdit(true)}
+    else if(e.key==='Escape'){e.preventDefault();stopEdit(false)}
+    e.stopPropagation()};
+  /* 2 つの欄の間の移動では確定しない */
+  const blur=()=>setTimeout(()=>{const a=document.activeElement;if(editEl&&editEl.inp===inp&&a!==inp&&a!==idInp)stopEdit(true)},0);
+  inp.addEventListener('keydown',key(true));inp.addEventListener('blur',blur);
+  if(idInp){idInp.addEventListener('keydown',key(false));idInp.addEventListener('blur',blur)}
+}
+function stopEdit(commit){
+  if(!editEl)return;const {inp,n,v0,idInp,id0}=editEl;editEl=null;
+  const v=inp.value,id=idInp?idInp.value:null;inp.remove();if(idInp)idInp.remove();
+  if(!commit)return;
+  const i=model.byLine[n];
+  if(i&&i.k==='part'){if(v!==v0||id!==id0)setPart(n,id!==id0?id:null,v!==v0?v:null)}
+  else if(v!==v0)setText(n,v);
+}
+
+/* ---------- view interaction ---------- */
+const NS='http://www.w3.org/2000/svg';
+const NOTE=/^note\s+(left of|right of|over)\s+([^:]+?)\s*:\s*(.*)$/i;
+const BSTART=/^(loop|alt|opt|par|critical|break|rect)\b/i;
+const BLOCKS=['loop','alt','opt','par','critical','break'];
+const getL=()=>ta.value.split('\n');
+function msgP(l){const m=l.trim().match(MSG);return m&&{ind:indentOf(l),f:m[1].trim(),a:m[2],act:m[3],t:m[4],x:m[5]}}
+const msgS=o=>`${o.ind}${o.f}${o.a}${o.act}${o.t}${o.x!=null?': '+o.x:''}`;
+function noteP(l){const m=l.trim().match(NOTE);return m&&{ind:indentOf(l),pos:m[1].toLowerCase(),ps:m[2].split(',').map(s=>s.trim()),x:m[3]}}
+const noteS=o=>`${o.ind}Note ${o.pos} ${o.ps.join(',')}: ${o.x}`;
+function blockEnd(L,n){let d=0;for(let i=n;i<L.length;i++){const t=L[i].trim();if(BSTART.test(t))d++;else if(/^end$/i.test(t)){d--;if(d<=0)return i}}return L.length-1}
+function lastContent(L){let n=L.length-1;while(n>0&&!L[n].trim())n--;return n}
+function topIndent(L){const l=L.find(l=>l.trim()&&!/^\s*sequenceDiagram\b/i.test(l));return l?indentOf(l):'  '}
+function flash(msg){st.textContent=msg;setTimeout(()=>model&&status(),2500)}
+function rewrite(L,selLine,editLine){
+  const v=L.join('\n');if(v===ta.value)return false;
+  if(parse(v).errors.length>model.errors.length){flash('⚠ その操作は構文が崩れるため中止');return false}
+  pendingSel=selLine??null;pendingEdit=editLine??null;
+  const o=ta.value;let a=0,eo=o.length,en=v.length;
+  while(a<eo&&a<en&&o[a]===v[a])a++;
+  while(eo>a&&en>a&&o[eo-1]===v[en-1]){eo--;en--}
+  edit(a,eo,v.slice(a,en));return true;
+}
+/* move lines a..b to the position indicated by y */
+function dropTarget(y,a,b){return geo.ys.find(o=>o.y>y&&(o.line<a||o.line>b))}
+function headEnd(L){
+  let e=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l))+1;
+  for(let i=e;i<L.length;i++){const t=L[i].trim();if(!t)continue;if(/^(title|autonumber|participant|actor|%%)/i.test(t))e=i+1;else break}
+  return e;
+}
+function moveRange(L,a,b,y){
+  const tg=dropTarget(y,a,b);
+  let ins=tg?tg.line:lastContent(L)+1;
+  while(ins>0&&!L[ins-1].trim()&&(ins-1<a||ins-1>b))ins--;
+  const he=headEnd(L);if(ins<he&&a>=he)ins=he;
+  if(ins>=a&&ins<=b+1)return null;
+  let ind;
+  if(a===b&&/^(end|else|and|option)\b/i.test(L[a].trim()))ind=indentOf(L[a]);
+  else if(tg&&tg.line>=he){const t=L[tg.line].trim();ind=indentOf(L[tg.line])+(/^(end|else|and|option)\b/i.test(t)?'  ':'')}
+  else ind=topIndent(L);
+  const chunk=L.slice(a,b+1),base=Math.min(...chunk.filter(l=>l.trim()).map(l=>indentOf(l).length));
+  const moved=chunk.map(l=>l.trim()?ind+l.slice(base):l);
+  let out=L.slice(0,a).concat(L.slice(b+1)),at=ins>b?ins-chunk.length:ins;
+  /* end を下へ広げたとき、元の境界だった空行はブロック内に残さない */
+  if(a===b&&/^end$/i.test(L[a].trim())&&at>a&&!out[a].trim()){out.splice(a,1);at--}
+  out.splice(at,0,...moved);
+  let pos=at;const n=moved.length,ra=a<at?a:a+n;
+  const depthAt=k=>{let d=0;for(let i=0;i<k;i++){const t=out[i].trim();if(BSTART.test(t))d++;else if(/^end$/i.test(t))d--}return d};
+  for(const k of [...new Set([at,at+n,ra])].sort((x,y)=>y-x)){
+    if(k<=0||k>=out.length)continue;
+    const p=out[k-1].trim(),q=out[k].trim();
+    if(!p&&!q){out.splice(k,1);if(k<pos)pos--}
+    else if(p&&q&&depthAt(k)===0&&(/^end$/i.test(p)||BSTART.test(q))){out.splice(k,0,'');if(k<=pos)pos++}
+  }
+  return {L:out,at:pos};
+}
+/* rebuild participant declarations in the given order (also declares implicit ones) */
+function reorderParts(L,from,to){
+  const ids=model.parts.map(p=>p.id);const id=ids.splice(from,1)[0];ids.splice(to,0,id);
+  const isDecl=l=>/^\s*(participant|actor)\s+\S/i.test(l);
+  const decl={};model.parts.forEach(p=>{decl[p.id]=p.line!=null?L[p.line].trim():'participant '+p.id});
+  let pos=L.findIndex(isDecl),ind;
+  if(pos<0){
+    let h=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l));
+    for(let i=h+1;i<L.length&&/^\s*(title|autonumber|%%)/i.test(L[i]);i++)h=i;
+    pos=h+1;ind=topIndent(L);
+  }else ind=indentOf(L[pos]);
+  const out=L.filter(l=>!isDecl(l));
+  out.splice(pos,0,...ids.map(i=>ind+decl[i]));
+  return {L:out,at:pos+to};
+}
+function wrap(a,b,type){
+  const L=getL(),ind=indentOf(L[a]);
+  for(let i=a;i<=b;i++)if(L[i].trim())L[i]='  '+L[i];
+  L.splice(b+1,0,ind+'end');L.splice(a,0,ind+type+' 条件');
+  rewrite(L,a,a);
+}
+function rangeOf(n){const L=getL();return BSTART.test((L[n]||'').trim())?[n,blockEnd(L,n)]:[n,n]}
+function renamePart(i,what){const p=model.parts[i];what=what||'label';if(p.line!=null)return startEdit(p.line,what);const r=reorderParts(getL(),i,i);editWhat=what;rewrite(r.L,r.at,r.at)}
+function setPartType(i,type){const r=reorderParts(getL(),i,i);r.L[r.at]=r.L[r.at].replace(/^(\s*)(participant|actor)\b/i,'$1'+type);rewrite(r.L,r.at)}
+function deletePart(i){
+  const id=model.parts[i].id,L=getL(),kill=new Set();
+  L.forEach((l,k)=>{const m=l.trim().match(/^(participant|actor)\s+(\S+?)(\s+as\s|$)/i);if(m&&m[2]===id)kill.add(k)});
+  for(const it of model.items){
+    if((it.k==='msg'&&(it.f.id===id||it.t.id===id))||(it.k==='act'&&it.p.id===id))kill.add(it.line);
+    else if(it.k==='note'&&it.ps.some(p=>p.id===id)){
+      /* Note は対象一覧からその参加者だけ外す。他に対象が無ければ Note ごと削除 */
+      if(it.ps.every(p=>p.id===id))kill.add(it.line);
+      else L[it.line]=L[it.line].replace(/^(\s*note\s+(?:left of|right of|over)\s+)([^:]+?)(\s*:)/i,(a,p,list,c)=>p+list.split(',').map(x=>x.trim()).filter(x=>x!==id).join(',')+c);
+    }
+  }
+  sel=null;rewrite(L.filter((l,k)=>!kill.has(k)),null);
+}
+function headerPos(L){let h=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l));return h}
+function toggleAuto(){
+  const L=getL(),k=L.findIndex(l=>/^\s*autonumber\b/i.test(l));
+  if(k>=0)L.splice(k,1);else L.splice(headerPos(L)+1,0,topIndent(L)+'autonumber');
+  rewrite(L,null);
+}
+function addTitle(){const L=getL(),h=headerPos(L)+1;L.splice(h,0,topIndent(L)+'title タイトル');rewrite(L,h,h)}
+function addAt(y,txt){const nx=geo.ys.find(o=>o.y>y),he=headEnd(getL());if(nx&&nx.line<he)insertAfter(he-1,txt,true);else if(nx)insertBefore(nx.line,txt,true);else insertEnd(txt,true)}
+function nearestPart(x,lim=Infinity){let j=-1,b=lim;geo.x.forEach((xx,k)=>{const d=Math.abs(xx-x);if(d<b){b=d;j=k}});return j}
+function svgPt(e){const s=view.querySelector('svg'),p=s.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(s.getScreenCTM().inverse())}
+function overlay(html){
+  const s=view.querySelector('svg');if(!s)return;let g=s.querySelector('#ov');
+  if(!g){g=document.createElementNS(NS,'g');g.id='ov';g.setAttribute('pointer-events','none');s.appendChild(g)}
+  g.innerHTML=html;
+}
+
+view.addEventListener('click',e=>{
+  if(drag.moved)return;
+  const g=e.target.closest('.el'),n=g&&g.dataset.line!=null?+g.dataset.line:null;
+  if(n!=null&&model.byLine[n]){select(n,false);const {L,off}=lineOffsets();ta.setSelectionRange(off[n],off[n]+L[n].length);reveal(n)}
+  else{sel=null;applySel()}
+});
+view.addEventListener('dblclick',e=>{
+  const g=e.target.closest('.el');
+  if(g){if(g.dataset.kind==='part')renamePart(+g.dataset.pi,'label');else if(g.dataset.line!=null)startEdit(+g.dataset.line);return}
+  if(!geo||!model.parts.length)return;
+  const p=svgPt(e),j=nearestPart(p.x),k=j+1<model.parts.length?j+1:Math.max(0,j-1);
+  addAt(p.y,`${model.parts[j].id}->>${model.parts[k].id}: メッセージ`);
+});
+
+/* ---------- drag ---------- */
+const drag={on:false,moved:false};
+view.addEventListener('pointerdown',e=>{
+  if(e.button!==0||!geo||editEl)return;
+  const p=svgPt(e),D={on:true,moved:false,sx:p.x,sy:p.y,mode:null,line:null};
+  const h=e.target.closest('.lh'),g=e.target.closest('.el');
+  if(h){D.mode='new';D.i=+h.dataset.i}
+  else if(g){
+    const k=g.dataset.kind;D.line=g.dataset.line!=null?+g.dataset.line:null;
+    if(k==='part'){D.mode='part';D.i=+g.dataset.pi}
+    else if(k==='msg'){
+      const x1=+g.dataset.x1,x2=+g.dataset.x2;
+      D.mode=g.dataset.self?(Math.abs(p.x-x2)<12?'to':'move'):Math.abs(p.x-x2)<18?'to':Math.abs(p.x-x1)<18?'from':'move';
+      D.fx=D.mode==='from'?x2:x1;
+    }
+    else if(k==='note'){const x0=+g.dataset.x0,x1=+g.dataset.x1;D.mode=p.x>x1-10?'nR':p.x<x0+10?'nL':'note'}
+    else if(k==='bstart'||k==='bsep'||k==='bend')D.mode='move';
+    if(D.mode==='move'||D.mode==='note')[D.a,D.b]=rangeOf(D.line);
+  }
+  if(D.mode)Object.assign(drag,D);
+});
+view.addEventListener('pointermove',e=>{
+  if(!drag.on)return;
+  const p=svgPt(e);
+  if(!drag.moved){if(Math.hypot(p.x-drag.sx,p.y-drag.sy)<5)return;drag.moved=true;try{view.setPointerCapture(e.pointerId)}catch(_){}}
+  const A=cv('--accent'),vb=view.querySelector('svg').viewBox.baseVal;
+  const hl_=y=>`<line x1="${vb.x}" x2="${vb.x+vb.width}" y1="${y}" y2="${y}" stroke="${A}" stroke-width="2" stroke-dasharray="6 4"/>`;
+  const vl=(x,w=3)=>`<line x1="${x}" x2="${x}" y1="0" y2="${vb.height}" stroke="${A}" stroke-width="${w}" opacity=".45"/>`;
+  const ln=(x1,x2,y)=>`<line x1="${x1}" x2="${x2}" y1="${y}" y2="${y}" stroke="${A}" stroke-width="2" stroke-dasharray="5 3"/>`;
+  const tgY=()=>{const t=dropTarget(p.y,drag.a,drag.b);return t?t.y-2:geo.bottom}
+  let s='';
+  switch(drag.mode){
+    case 'new':{const j=nearestPart(p.x,40);s=ln(geo.x[drag.i],p.x,drag.sy)+(j>=0?vl(geo.x[j]):'');break}
+    case 'to':case 'from':{const j=nearestPart(p.x,40);s=ln(drag.fx,p.x,drag.sy)+(j>=0?vl(geo.x[j]):'');break}
+    case 'move':s=hl_(tgY());break;
+    case 'note':s=(Math.abs(p.y-drag.sy)>12?hl_(tgY()):'')+vl(geo.x[nearestPart(p.x)]);break;
+    case 'nL':case 'nR':s=vl(geo.x[nearestPart(p.x)]);break;
+    case 'part':{s=vl(p.x,2)+`<rect x="${p.x-30}" y="0" width="60" height="${vb.height}" fill="${A}" opacity=".08"/>`;break}
+  }
+  overlay(s);
+});
+function endDrag(e){
+  if(!drag.on)return;drag.on=false;overlay('');
+  const g=view.querySelector('#ov');if(g)g.remove();
+  if(!drag.moved)return;
+  setTimeout(()=>{drag.moved=false},0);
+  if(e.type==='pointercancel')return;
+  const p=svgPt(e),L=getL();
+  switch(drag.mode){
+    case 'new':{
+      const j=nearestPart(p.x,40);if(j<0)break;
+      addAt(drag.sy,`${model.parts[drag.i].id}->>${model.parts[j].id}: メッセージ`);break}
+    case 'to':case 'from':{
+      const j=nearestPart(p.x,40),o=msgP(L[drag.line]);if(j<0||!o)break;
+      o[drag.mode==='to'?'t':'f']=model.parts[j].id;L[drag.line]=msgS(o);rewrite(L,drag.line);break}
+    case 'move':{const r=moveRange(L,drag.a,drag.b,p.y);if(r)rewrite(r.L,r.at);break}
+    case 'note':{
+      let L2=L,at=drag.line;
+      if(Math.abs(p.y-drag.sy)>12){const r=moveRange(L,drag.a,drag.b,p.y);if(r){L2=r.L;at=r.at}}
+      const d=nearestPart(p.x)-nearestPart(drag.sx),o=noteP(L2[at]);
+      if(d&&o){
+        const idx=o.ps.map(id=>model.parts.findIndex(q=>q.id===id)),lo=Math.min(...idx),hi=Math.max(...idx);
+        const dd=Math.max(-lo,Math.min(model.parts.length-1-hi,d));
+        o.ps=idx.map(i=>model.parts[i+dd].id);L2[at]=noteS(o);
+      }
+      rewrite(L2,at);break}
+    case 'nL':case 'nR':{
+      const o=noteP(L[drag.line]);if(!o)break;
+      const idx=o.ps.map(id=>model.parts.findIndex(q=>q.id===id)),j=nearestPart(p.x);
+      let lo=Math.min(...idx),hi=Math.max(...idx);
+      if(drag.mode==='nR')hi=j;else lo=j;if(lo>hi)[lo,hi]=[hi,lo];
+      o.pos='over';o.ps=lo===hi?[model.parts[lo].id]:[model.parts[lo].id,model.parts[hi].id];
+      L[drag.line]=noteS(o);rewrite(L,drag.line);break}
+    case 'part':{
+      const from=drag.i,to=geo.x.filter((x,k)=>k!==from&&x<p.x).length;if(to===from)break;
+      const r=reorderParts(L,from,to);rewrite(r.L,r.at);break}
+  }
+}
+view.addEventListener('pointerup',endDrag);
+view.addEventListener('pointercancel',endDrag);
+
+/* ---------- context menu ---------- */
+const menu=document.createElement('div');menu.id='menu';document.body.appendChild(menu);
+function hideMenu(){menu.style.display='none'}
+function mbtn(b){const e=document.createElement('button');e.textContent=b.t;if(b.on)e.classList.add('on');if(b.dis)e.disabled=true;e.onclick=()=>{hideMenu();b.f&&b.f()};return e}
+function showMenu(x,y,items){
+  menu.innerHTML='';
+  for(const it of items){
+    if(it==='-'){menu.appendChild(document.createElement('hr'));continue}
+    if(it.row){const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent=it.h;d.appendChild(s);it.row.forEach(b=>d.appendChild(mbtn(b)));menu.appendChild(d);continue}
+    menu.appendChild(mbtn(it));
+  }
+  menu.style.display='block';const r=menu.getBoundingClientRect();
+  menu.style.left=Math.max(4,Math.min(x,innerWidth-r.width-4))+'px';menu.style.top=Math.max(4,Math.min(y,innerHeight-r.height-4))+'px';
+}
+document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target))hideMenu()},true);
+addEventListener('keydown',e=>{if(e.key==='Escape')hideMenu()});
+stage.addEventListener('scroll',hideMenu);
+function menuFor(g,p){
+  const L=getL(),n=g&&g.dataset.line!=null?+g.dataset.line:null,info=n!=null?model.byLine[n]:null;
+  const kind=g?g.dataset.kind:null,k=info?info.k:null;
+  const set=fn=>()=>{const L2=getL();fn(L2);rewrite(L2,n)};
+  const wrapRow=a=>({h:'囲む',row:BLOCKS.map(b=>({t:b,f:()=>{const [x,y]=rangeOf(a);wrap(x,y,b)}}))});
+  const tail=n!=null?['-',{t:'複製',f:()=>{const [a,b]=rangeOf(n);const L2=getL();L2.splice(b+1,0,...L2.slice(a,b+1));rewrite(L2,b+1)}},{t:'削除',f:()=>{const [a,b]=rangeOf(n);const L2=getL();L2.splice(a,b-a+1);sel=null;rewrite(L2,null)}}]:[];
+  if(kind==='part'){
+    const i=+g.dataset.pi,P=model.parts[i];
+    return [{t:'表示名を変更',f:()=>renamePart(i,'label')},{t:'ID を変更 ('+model.parts[i].id+')',f:()=>renamePart(i,'id')},
+      {h:'種別',row:[{t:'participant',on:P.type!=='actor',f:()=>setPartType(i,'participant')},{t:'actor',on:P.type==='actor',f:()=>setPartType(i,'actor')}]},
+      {h:'並び',row:[{t:'← 左へ',dis:i===0,f:()=>{const r=reorderParts(getL(),i,i-1);rewrite(r.L,r.at)}},{t:'右へ →',dis:i===model.parts.length-1,f:()=>{const r=reorderParts(getL(),i,i+1);rewrite(r.L,r.at)}}]},
+      {t:'参加者を追加',f:()=>$('#bPart').click()},
+      '-',{t:'削除（関連する矢印も削除、Note の対象から除外）',f:()=>deletePart(i)}];
+  }
+  if(k==='msg'){
+    const o=msgP(L[n]);
+    const so=fn=>set(L2=>{fn(o);L2[n]=msgS(o)});
+    return [{t:'文言を編集',f:()=>startEdit(n)},
+      {h:'矢印',row:ARROWS.map(a=>({t:a,on:o.a===a,f:so(o=>o.a=a)}))},
+      {h:'活性化',row:[{t:'なし',on:!o.act,f:so(o=>o.act='')},{t:'+ 宛先ON',on:o.act==='+',f:so(o=>o.act='+')},{t:'- 送信元OFF',on:o.act==='-',f:so(o=>o.act='-')}]},
+      {t:'⇄ 方向を反転',f:so(o=>{const t=o.f;o.f=o.t;o.t=t})},
+      wrapRow(n),
+      {t:'下に Note を追加',f:()=>insertAfter(n,`Note over ${o.f===o.t?o.f:o.f+','+o.t}: メモ`,true)},
+      {t:'下にメッセージを追加',f:()=>insertAfter(n,`${o.t}-->>${o.f}: 応答`,true)},
+      ...tail];
+  }
+  if(k==='note'){
+    const o=noteP(L[n]);
+    return [{t:'文言を編集',f:()=>startEdit(n)},
+      {h:'位置',row:[['left of','左'],['over','上'],['right of','右']].map(([v,t])=>({t,on:o.pos===v,f:set(L2=>{o.pos=v;if(v!=='over')o.ps=[o.ps[0]];L2[n]=noteS(o)})}))},
+      wrapRow(n),...tail];
+  }
+  if(k==='block'&&kind==='bstart'){
+    const t=L[n].trim(),type=t.match(BSTART)[1].toLowerCase(),e=blockEnd(L,n);
+    const sep=type==='par'?'and':type==='critical'?'option':'else';
+    return [{t:'条件を編集',f:()=>startEdit(n)},
+      {h:'種別',row:BLOCKS.map(b=>({t:b,on:type===b,f:set(L2=>{L2[n]=L2[n].replace(/^(\s*)\w+/,'$1'+b)})}))},
+      {t:sep+' を追加',dis:!['alt','par','critical'].includes(type),f:()=>insertBefore(e,sep+' 条件',true)},
+      wrapRow(n),
+      {t:'囲みを解除',f:()=>{const L2=getL(),e2=blockEnd(L2,n);for(let i=n+1;i<e2;i++)L2[i]=L2[i].replace(/^ {1,2}/,'');L2.splice(e2,1);L2.splice(n,1);sel=null;rewrite(L2,null)}},
+      ...tail];
+  }
+  if(k==='block')return [{t:'条件を編集',f:()=>startEdit(n)},'-',{t:'削除',f:()=>deleteLine(n)}];
+  if(k==='end')return [{t:'下端を上下ドラッグで範囲変更',dis:true}];
+  if(k==='title')return [{t:'タイトルを編集',f:()=>startEdit(n)},{t:'削除',f:()=>deleteLine(n)}];
+  if(k==='act')return [{t:'削除',f:()=>deleteLine(n)}];
+  const items=[{t:'参加者を追加',f:()=>$('#bPart').click()}];
+  if(model.parts.length&&p){
+    const j=nearestPart(p.x),k2=j+1<model.parts.length?j+1:Math.max(0,j-1);
+    items.push({t:'ここにメッセージを追加',f:()=>addAt(p.y,`${model.parts[j].id}->>${model.parts[k2].id}: メッセージ`)},
+      {t:'ここに Note を追加',f:()=>addAt(p.y,`Note over ${model.parts[j].id}: メモ`)});
+  }
+  items.push('-');
+  if(!model.title)items.push({t:'タイトルを追加',f:addTitle});
+  items.push({t:'自動採番',on:model.items.some(i=>i.k==='auto'),f:toggleAuto});
+  return items;
+}
+view.addEventListener('contextmenu',e=>{
+  e.preventDefault();if(!model||!geo)return;
+  const g=e.target.closest('.el');
+  if(g&&g.dataset.line!=null)select(+g.dataset.line,false);else{sel=null;applySel()}
+  showMenu(e.clientX,e.clientY,menuFor(g,svgPt(e)));
+});
+stage.addEventListener('contextmenu',e=>{if(e.target===stage||e.target===view){e.preventDefault();if(model)showMenu(e.clientX,e.clientY,menuFor(null,null))}});
+
+/* ---------- source interaction ---------- */
+function curLine(){return ta.value.slice(0,ta.selectionStart).split('\n').length-1}
+function followCaret(){const n=curLine();const s=model.byLine[n]?n:null;if(s!==sel){sel=s;applySel()}}
+ta.addEventListener('keyup',followCaret);ta.addEventListener('click',followCaret);
+ta.addEventListener('scroll',()=>{syncHl();if(model){syncErrs();lnScroll()}});
+ta.addEventListener('input',e=>{if(e&&/^history/.test(e.inputType||'')){const p=ta.selectionEnd;ta.setSelectionRange(p,p)}update()});
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){e.preventDefault();document.execCommand('insertText',false,'  ')}
+});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();flash('保存機能は無効です')}   /* ブラウザの「ページを保存」も出さない */
+  const tag=document.activeElement&&document.activeElement.tagName;
+  if(tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT')return;
+  const k=e.key.toLowerCase();
+  if((e.ctrlKey||e.metaKey)&&(k==='z'||k==='y')){e.preventDefault();const st0=ta.scrollTop;ta.focus({preventScroll:true});
+    document.execCommand(k==='y'||e.shiftKey?'redo':'undo');ta.blur();ta.scrollTop=st0;return}
+  if(e.key==='Delete'&&sel!=null){e.preventDefault();deleteLine(sel)}
+  else if(e.key==='Escape'){sel=null;applySel()}
+});
+
+/* ---------- toolbar ---------- */
+function afterLine(){return sel!=null?sel:null}
+$('#bPart').onclick=()=>{
+  const {L}=lineOffsets();let last=-1;L.forEach((l,i)=>{if(/^\s*(participant|actor)\b/i.test(l))last=i});
+  if(last<0)L.forEach((l,i)=>{if(/^\s*(sequenceDiagram|title|autonumber)\b/i.test(l))last=i});
+  let k=model.parts.length+1,id='P'+k;while(model.parts.some(p=>p.id===id))id='P'+(++k);
+  if(last<0){pendingSel=1;pendingEdit=1;edit(0,0,'sequenceDiagram\n  participant '+id+' as 新規\n')}
+  else insertAfter(last,`participant ${id} as 新規`,true);
+};
+function twoParts(){const p=model.parts;if(!p.length)return null;let a=p[0].id,b=(p[1]||p[0]).id;
+  if(sel!=null){const it=model.items.find(i=>i.line===sel&&i.k==='msg');if(it){a=it.t.id;b=it.f.id}}return [a,b]}
+$('#bMsg').onclick=()=>{const t=twoParts();if(!t){ta.focus();return}
+  const txt=`${t[0]}->>${t[1]}: メッセージ`;const n=afterLine();
+  if(n!=null)insertAfter(n,txt,true);else insertEnd(txt,true)};
+$('#bNote').onclick=()=>{const p=model.parts[0];if(!p)return;const txt=`Note over ${p.id}: メモ`;const n=afterLine();
+  if(n!=null)insertAfter(n,txt,true);else insertEnd(txt,true)};
+$('#bBlock').onchange=e=>{
+  const t=e.target.value;e.target.value='';if(!t)return;
+  const {L,off}=lineOffsets();
+  if(sel!=null){const ind=indentOf(L[sel]);pendingSel=sel;pendingEdit=sel;
+    edit(off[sel],off[sel]+L[sel].length,`${ind}${t} 条件\n  ${L[sel]}\n${ind}end`)}
+  else insertEnd(t+' 条件\nend',true)
+};
+$('#cAuto').onchange=e=>{const want=e.target.checked;if(want!==model.items.some(i=>i.k==='auto'))toggleAuto();e.target.blur();$('#cAuto').checked=model.items.some(i=>i.k==='auto')};
+$('#bUp').onclick=()=>sel!=null&&moveLine(sel,-1);
+$('#bDown').onclick=()=>sel!=null&&moveLine(sel,1);
+$('#bDup').onclick=()=>{if(sel==null)return;const {L}=lineOffsets();insertAfter(sel,L[sel].trim(),false)};
+$('#bDel').onclick=()=>sel!=null&&deleteLine(sel);
+$('#bFlip').onclick=()=>{
+  if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
+  replaceLine(sel,indentOf(L[sel])+m[4]+m[2]+m[3]+m[1].trim()+(m[5]!=null?': '+m[5]:''));
+};
+$('#bArrow').onclick=()=>{
+  if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
+  const i=ARROWS.indexOf(m[2]);
+  replaceLine(sel,indentOf(L[sel])+m[1].trim()+ARROWS[(i+1)%ARROWS.length]+m[3]+m[4]+(m[5]!=null?': '+m[5]:''));
+};
+/* 図の上で Ctrl+ホイール: 図だけ拡大縮小(カーソル位置を基準。ブラウザ全体のズームは抑止) */
+stage.addEventListener('wheel',e=>{
+  if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();if(!geo)return;stopEdit(true);
+  const r=stage.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,z0=zoom,P=12;
+  const cx=(stage.scrollLeft+px-P)/z0,cy=(stage.scrollTop+py-P)/z0;
+  setZoom(zoom*(e.deltaY<0?1.1:1/1.1));
+  stage.scrollLeft=cx*zoom+P-px;stage.scrollTop=cy*zoom+P-py;
+},{passive:false});
+function setZoom(z){zoom=Math.min(3,Math.max(.4,z));$('#zv').textContent=Math.round(zoom*100)+'%';render()}
+$('#bZm').onclick=()=>setZoom(zoom-.1);$('#bZp').onclick=()=>setZoom(zoom+.1);
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>render());
+function dl(name,data,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+/* ---------- file io (.md 内の mermaid ブロック対応) ---------- */
+let doc={pre:'',post:'',name:'',handle:null,crlf:false,md:false,orig:null},savedSrc=null;
+const idb=(mode,fn)=>new Promise((res,rej)=>{
+  const o=indexedDB.open('seqedit',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');o.onerror=()=>rej(o.error);
+  o.onsuccess=()=>{const db=o.result,tx=db.transaction('kv',mode);let rq;try{rq=fn(tx.objectStore('kv'))}catch(e){db.close();return rej(e)}
+    tx.oncomplete=()=>{db.close();res(rq&&rq.result)};tx.onerror=tx.onabort=()=>{db.close();rej(tx.error)}};
+});
+function keepHandle(){try{idb('readwrite',st=>doc.handle?st.put(doc.handle,'handle'):st.delete('handle')).catch(()=>{})}catch(e){}}
+function splitDoc(t,k){
+  const lf=s=>s.replace(/\r\n/g,'\n');
+  const re=/^([ \t]*)(`{3,}|~{3,})[ \t]*mermaid[^\n]*\n([\s\S]*?)^\1\2[ \t]*\r?$/gm;let m;const hits=[];
+  while(m=re.exec(t)){if(/^\s*sequenceDiagram\b/m.test(m[3]))hits.push(m)}
+  const cnt=hits.length,idx=Math.min(Math.max(k|0,0),Math.max(cnt-1,0)),hit=hits[idx];
+  if(!hit)return {pre:'',post:'',body:lf(t),crlf:/\r\n/.test(t),md:false,cnt:0,idx:0,blocks:[]};
+  const blocks=hits.map((h,i)=>{const ti=h[3].match(/^[ \t]*title[ \t]*:?[ \t]*(.+)$/mi),hd=[...t.slice(0,h.index).matchAll(/^#{1,6}[ \t]+(.+)$/gm)].pop();
+    return (i+1)+': '+(ti?ti[1]:hd?hd[1]:'シーケンス図').trim().slice(0,48)});
+  const b0=hit.index+hit[0].indexOf('\n')+1,b1=b0+hit[3].length;
+  return {pre:t.slice(0,b0),post:t.slice(b1),body:lf(hit[3]).replace(/\n$/,''),crlf:/\r\n/.test(hit[3]),md:true,cnt,idx,blocks};
+}
+function fullText(){const b=doc.crlf?ta.value.replace(/\n/g,'\r\n'):ta.value;return doc.md?doc.pre+b+(doc.crlf?'\r\n':'\n')+doc.post:b}
+function showName(){const n=(doc.name||'無題')+(doc.md?' [mermaid ブロック]':'')+'';$('#fn').textContent=n;document.title=n+' - シーケンス図エディタ'}
+function loadText(t,name,handle){
+  const d=splitDoc(t);
+  if(/\.(md|markdown)$/i.test(name||'')&&!d.md){flash('⚠ mermaid の sequenceDiagram ブロックが無いため開けません(図以外は編集不可)');return}
+  doc={pre:d.pre,post:d.post,crlf:d.crlf,md:d.md,idx:d.idx,name:name||'',handle:handle||null,orig:t};
+  ta.value=d.body;savedSrc=d.body;sel=null;update();fillBlocks(d);keepHandle();
+  if(d.cnt>1)flash('シーケンス図 '+d.cnt+' 個: 右上のプルダウンで編集対象を選択');
+
+}
+function fillBlocks(d){const e=$('#sBlk');e.hidden=!(d&&d.cnt>1);e.innerHTML='';if(e.hidden)return;
+  d.blocks.forEach((b,i)=>{const o=document.createElement('option');o.value=i;o.textContent=b;e.appendChild(o)});e.value=d.idx}
+function refreshBlocks(){fillBlocks(doc.md?splitDoc(fullText(),doc.idx):null)}
+/* 編集対象の図を切替。編集中の内容は文書側に保持(保存は Ctrl+S で全体) */
+function switchBlock(k){
+  if(!doc.md)return;stopEdit(true);
+  const dirty=ta.value!==savedSrc,d=splitDoc(fullText(),k);
+  doc={...doc,pre:d.pre,post:d.post,md:d.md,crlf:d.crlf,idx:d.idx};
+  ta.value=d.body;savedSrc=dirty?null:d.body;sel=null;ta.scrollTop=0;update();fillBlocks(d);
+}
+$('#sBlk').onchange=e=>{switchBlock(+e.target.value);e.target.blur()};
+async function saveFile(){
+  if(!doc.handle)return saveMdAs();
+  const data=fullText();
+  try{
+    if(doc.handle){
+      if(doc.handle.requestPermission&&await doc.handle.requestPermission({mode:'readwrite'})!=='granted')throw new Error('書込権限なし');
+      if(doc.orig!=null){const cur=await (await doc.handle.getFile()).text();
+        if(cur!==doc.orig&&!confirm('ファイルが読込後に外部で変更されています。上書きしますか?'))return}
+      else if(doc.md){const d=splitDoc(await (await doc.handle.getFile()).text(),doc.idx);
+        if((d.pre!==doc.pre||d.post!==doc.post)&&!confirm('ファイルの図以外の部分が、エディタの保持内容と異なります(外部で変更された可能性)。上書きしますか?'))return}
+      const w=await doc.handle.createWritable();await w.write(data);await w.close();
+      doc.name=doc.handle.name;doc.orig=data;keepHandle();
+    }else dl(doc.name||'seq.mmd',data,'text/plain');
+    savedSrc=ta.value;showName();save();refreshBlocks();flash('保存: '+(doc.name||'seq.mmd'));
+  }catch(e){if(e.name!=='AbortError')flash('保存失敗: '+e.message)}
+}
+/* 名前を付けて .md 保存。.md 由来でなければ図を ```mermaid フェンスで包む */
+async function saveMdAs(){
+  const F='`'.repeat(3),wrap=!doc.md,data=wrap?F+'mermaid\n'+ta.value+'\n'+F+'\n':fullText();
+  const name=(doc.name||'sequence').replace(/\.(mmd|txt|md|markdown)$/i,'')+'.md';
+  try{
+    if(window.showSaveFilePicker){
+      const h=await pick(showSaveFilePicker,{suggestedName:name,types:[{description:'Markdown',accept:{'text/markdown':['.md']}}]});
+      const w=await h.createWritable();await w.write(data);await w.close();
+      if(wrap)doc={...doc,pre:F+'mermaid\n',post:F+'\n',md:true,crlf:false,idx:0};
+      doc.handle=h;doc.name=h.name;doc.orig=data;keepHandle();
+    }else dl(name,data,'text/markdown');
+    savedSrc=ta.value;showName();save();refreshBlocks();flash('保存: '+(doc.handle?doc.name:name));
+  }catch(e){if(e.name!=='AbortError')flash('保存失敗: '+e.message)}
+}
+/* 保存機能は一旦無効(saveFile / saveMdAs は未使用のまま残置) */
+const PICK_ID='seqedit-md';
+async function pick(fn,opts){
+  const o={id:PICK_ID,...opts};if(doc.handle)o.startIn=doc.handle;
+  try{return await fn(o)}
+  catch(e){if(e.name==='AbortError'||!o.startIn)throw e;delete o.startIn;return fn(o)}   /* 無効なハンドル等 → 記憶フォルダで再試行 */
+}
+$('#bOpen').onclick=async()=>{
+  if(!window.showOpenFilePicker)return $('#file').click();
+  try{const [h]=await pick(showOpenFilePicker,{types:[{description:'Markdown / Mermaid',accept:{'text/plain':['.md','.mmd','.txt']}}]});
+    loadText(await (await h.getFile()).text(),h.name,h)}
+  catch(e){if(e.name!=='AbortError')flash('読込失敗: '+e.message)}
+};
+$('#file').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f);e.target.value=''};
+function loadFile(f,h){f.text().then(t=>loadText(t,f.name,h))}
+addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
+addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
+addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drop');
+  const f=e.dataTransfer.files[0],it=e.dataTransfer.items&&e.dataTransfer.items[0];if(!f)return;
+  const hp=it&&it.getAsFileSystemHandle?it.getAsFileSystemHandle().catch(()=>null):Promise.resolve(null);
+  hp.then(h=>loadFile(f,h&&h.kind==='file'?h:null))});
+
+/* ---------- persistence ---------- */
+let saveT=null,packSeq=0;
+async function pack(t){
+  const b=new Uint8Array(await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+  let bin='';for(let i=0;i<b.length;i++)bin+=String.fromCharCode(b[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function unpack(z){
+  const bin=atob(z.replace(/-/g,'+').replace(/_/g,'/')),u=Uint8Array.from(bin,c=>c.charCodeAt(0));
+  return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+}
+function setHash(){
+  const t=ta.value,plain=()=>{try{history.replaceState(null,'','#src='+encodeURIComponent(t))}catch(e){}};
+  if(!window.CompressionStream)return plain();
+  const q=++packSeq;pack(t).then(z=>{if(q===packSeq)history.replaceState(null,'','#z='+z)}).catch(plain);
+}
+function save(){
+  clearTimeout(saveT);
+  saveT=setTimeout(()=>{
+    setHash();
+    try{localStorage.setItem('seqedit.src',ta.value);localStorage.setItem('seqedit.doc',JSON.stringify({pre:doc.pre,post:doc.post,name:doc.name,crlf:doc.crlf,md:doc.md,idx:doc.idx,saved:savedSrc}))}catch(e){}
+  },300);
+}
+function update(){
+  model=parse(ta.value);
+  if(pendingSel!==null){sel=pendingSel;pendingSel=null}
+  if(sel!=null&&!model.byLine[sel])sel=null;
+  render();status();showName();save();$('#cAuto').checked=model.items.some(i=>i.k==='auto');
+  if(pendingEdit!==null){const l=pendingEdit;pendingEdit=null;if(model.byLine[l])startEdit(l)}
+}
+(async function init(){
+  let src=null;
+  const h=location.hash.match(/^#(src|z)=(.*)$/);
+  if(h){try{src=h[1]==='z'?await unpack(h[2]):decodeURIComponent(h[2])}catch(e){}}
+  let ls=null;try{ls=localStorage.getItem('seqedit.src')}catch(e){}
+  if(src==null)src=ls;
+  if(src!=null&&src===ls){try{const d=JSON.parse(localStorage.getItem('seqedit.doc')||'null');if(d){doc={...doc,pre:d.pre,post:d.post,name:d.name,crlf:d.crlf,md:d.md,idx:d.idx|0};savedSrc=d.saved}}catch(e){}}
+  ta.value=src||SAMPLE;update();refreshBlocks();
+  if(doc.name&&!doc.handle){const d0=doc;try{const h=await idb('readonly',st=>st.get('handle'));if(h&&h.name===d0.name&&doc===d0){doc.handle=h;showName()}}catch(e){}}
+})();
+</script>
+</body>
+</html>

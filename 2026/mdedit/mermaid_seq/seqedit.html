@@ -81,7 +81,7 @@ footer .err{color:var(--danger);cursor:pointer}
     <button id="bDown" title="選択行を下へ">↓</button>
     <button id="bDup" title="選択行を複製">複製</button>
     <button id="bFlip" title="送信元と宛先を入替">⇄</button>
-    <button id="bArrow" title="矢印種別を切替 (->> / -->> / -> / --> / -x / -))">矢印</button>
+    <button id="bArrow" title="矢印種別を切替 (->> / -->> / -> / --> / -x / --x / -) / --) / <<->> / <<-->>)">矢印</button>
     <button id="bDel" title="選択行を削除 (Delete)">削除</button>
   </div>
   <div class="grp">
@@ -93,6 +93,7 @@ footer .err{color:var(--danger);cursor:pointer}
   <span class="sp"></span>
   <span id="fn" style="color:var(--muted);font-size:12px"></span>
   <select id="sBlk" title="この .md 内のどのシーケンス図を編集するか" hidden></select>
+  <button id="bSample" title="全機能を網羅したデフォルトのサンプル図を読み込む">サンプル</button>
   <button id="bOpen" title=".md / .mmd を開く(.md は mermaid シーケンス図ブロックのみ編集)。ダイアログは最後に使ったフォルダから開始">開く</button>
   <input id="file" type="file" accept=".mmd,.md,.txt" hidden>
 </header>
@@ -113,55 +114,137 @@ const FONT='"Yu Gothic UI","Hiragino Sans",Meiryo,ui-sans-serif,system-ui,sans-s
 const LH=20, PAD=8;
 const ctx=document.createElement('canvas').getContext('2d'); ctx.font='13px '+FONT;
 const SAMPLE=`sequenceDiagram
-  title 注文フロー
+  %% 1. タイトル・自動連番・グループ囲み (box)・参加者定義 (actor / participant / <br/>改行)
+  title シーケンス図エディタ 全機能デモ<br/>（Box囲み・create/destroy・全矢印10種・活性区間・ブロック7種・Note3種）
   autonumber
-  actor U as ユーザー
-  participant W as Web
-  participant A as API
-  participant D as DB
-  U->>W: 注文する
-  W->>+A: POST /orders
-  A->>+D: 在庫確認
-  D-->>-A: 結果
-  alt 在庫あり
-    A->>D: 注文保存
-  else 在庫なし
-    A-->>W: 409 Conflict
+  actor U as ユーザー<br/>(Actor)
+  box rgba(45, 91, 185, 0.14) フロントエンド＆API層
+    participant W as Web<br/>フロント
+    participant A as API<br/>サーバー
   end
-  A-->>-W: レスポンス
-  Note over U,W: 画面更新
-  loop 3回まで
-    W->>W: リトライ待ち
+  box #10b981 データ層
+    participant D as DB / Queue
   end
-  W-->>U: 結果表示
+
+  %% 2. 矢印全10種 (->> / -->> / -> / --> / -x / --x / -) / --) / <<->> / <<-->> )
+  U->>W: 実線・塗り矢印 (->>) 同期呼出
+  W-->>U: 破線・塗り矢印 (-->>) 応答
+  U->W: 実線・矢じり無し (->)
+  W-->U: 破線・矢じり無し (-->)
+  U->>U: メッセージ
+  U<-U: 自己呼び出し (左折返し)
+  W-xA: 実線・✕終端 (-x) 失敗/破棄
+  A--xW: 破線・✕終端 (--x) エラー通知
+  W-)A: 実線・開矢印 (-)) 非同期送信
+  A--)W: 破線・開矢印 (--)) 非同期応答
+  W<<->>A: 実線・双方向 (<<->>) 双方向同期
+  A<<-->>D: 破線・双方向 (<<-->> ) 双方向ストリーム
+
+  %% 3. 途中生成 (create) と 消滅 (destroy ✕)
+  create participant Wk as 一時Worker<br/>(create)
+  A->>+Wk: ジョブ生成 & 開始
+  Wk-->>-A: 処理完了
+  destroy Wk
+
+  %% 4. 活性区間（+ / - ショートハンド、ネスト活性、activate / deactivate、自己呼び出し）
+  U->>+W: 活性開始 (+W)
+  W->>+A: ネスト活性開始 (+A)
+  A->>+A: 自己呼び出し & ネスト活性 (+A)<br/>複数行ラベルの折り返し表示
+  A-->>-A: 自己呼び出し終了 (-A)
+  activate D
+  A->>D: 明示的 activate / deactivate と長文ラベルの自動折り返し確認用メッセージ（全体図の左右端を超えないように自動クランプ＆折り返し）
+  deactivate D
+  A-->>-W: 活性終了 (-A)
+  W-->>-U: 活性終了 (-W)
+
+  %% 5. Note 3種 (left of / right of / over 単一・複数参加者・改行)
+  Note left of U: 左側ノート (left of)<br/>2行目テキスト
+  Note right of D: 右側ノート (right of)
+  Note over W,A: 複数参加者またぎノート (over W,A)<br/>ドラッグで範囲変更・ダブルクリックで編集
+
+  %% 6. 複合フラグメント・背景ハイライト全7種 (alt/else, loop, opt, par/and, critical/option, break, rect)
+  rect rgba(45, 91, 185, 0.15)
+    alt 条件分岐 (alt) : 正常系
+      W->>A: 通常リクエスト
+      rect rgb(245, 158, 11)
+        loop ループ (loop) : 最大3回
+          A->>D: クエリ実行
+        end
+      end
+      opt オプション (opt) : キャッシュ更新
+        A-)D: 非同期キャッシュ書込
+      end
+    else 分岐 (else) : 異常系
+      A--xW: エラー応答
+      break 中断 (break) : リトライ上限到達
+        W--xU: 処理中断通知
+      end
+    end
+  end
+
+  par 並列処理 (par) : 通知A
+    A-)U: メール通知送信
+  and 並列分岐 (and) : 通知B
+    A-)W: WebSocket Push通知
+  end
+
+  critical クリティカル区間 (critical) : 排他トランザクション
+    A->>D: ロック取得 & 更新
+  option 例外条件 (option) : デッドロック時
+    D--xA: ロールバック
+  end
 `;
 let model=null, sel=null, pendingSel=null, pendingEdit=null, geo=null, zoom=1, theme='auto', editEl=null;
 
 /* ---------- parser ---------- */
-const MSG=/^(.+?)\s*(<<-->>|<<->>|-->>|->>|--x|-x|--\)|-\)|-->|->)\s*([+-]?)\s*([^\s:]+?)\s*(?::\s*(.*))?$/;
-const ARROWS=['->>','-->>','->','-->','-x','-)','<<->>','<<-->>'];
+const MSG=/^(.+?)\s*(<<-->>|<<->>|<<--|<<-|-->>|->>|--x|-x|--\)|-\)|<--|<-|\(--|\(-|-->|->)\s*([+-]?)\s*([^\s:]+?)\s*(?::\s*(.*))?$/;
+const ARROWS=['->>','-->>','->','-->','-x','--x','-)','--)','<<->>','<<-->>','<-','<--','<<-','<<--','(-','(--'];
+const REV_PAIR={'->>':'<<-','-->>':'<<--','->':'<-','-->':'<--','-)':'(-','--)':'(--','<<-':'->>','<<--':'-->>','<-':'->','<--':'-->','(-':'-)','(--':'--)'};
 function parse(text){
-  const L=text.split('\n'), items=[], parts=[], map={}, errors=[], byLine={};
-  let title='', titleLine=null, depth=0;
+  const L=text.split('\n'), items=[], parts=[], boxes=[], map={}, errors=[], byLine={};
+  let title='', titleLine=null, depth=0, curBox=null;
   const part=(id,label,type,line)=>{
     let p=map[id];
-    if(!p){p=map[id]={id,label:id,type:'participant',idx:parts.length,line:null};parts.push(p)}
+    if(!p){p=map[id]={id,label:id,type:'participant',idx:parts.length,line:null,box:null,created:false,destroyed:false};parts.push(p)}
     if(label!=null)p.label=label;
     if(type)p.type=type;
     if(line!=null&&p.line==null){p.line=line;byLine[line]={k:'part',raw:p.label}}
     return p;
   };
   const br=s=>s.replace(/<br\s*\/?>/gi,'\n');
+  const isCssCol=c=>/^transparent$/i.test(c)||/^#[0-9a-f]{3,8}$/i.test(c)||(!/^\d+$/.test(c)&&typeof CSS!=='undefined'&&CSS.supports&&CSS.supports('color',c));
+  const parseBox=s=>{
+    s=s.trim();if(!s)return {color:'',title:''};
+    const fm=s.match(/^((?:rgba?|hsla?)\s*\([^)]*\))(?:\s+(.*))?$/i);
+    if(fm&&isCssCol(fm[1]))return {color:fm[1],title:br(fm[2]||'')};
+    const m=s.match(/^(\S+)(?:\s+(.*))?$/);
+    if(!m)return {color:'',title:br(s)};
+    return isCssCol(m[1])?{color:m[1],title:br(m[2]||'')}:{color:'',title:br(s)};
+  };
   L.forEach((raw,n)=>{
     const t=raw.trim(); if(!t||t.startsWith('%%'))return;
     let m;
     if(/^sequenceDiagram\b/i.test(t))return;
     if(m=t.match(/^title\s*:?\s*(.*)$/i)){title=br(m[1]);titleLine=n;byLine[n]={k:'title',raw:m[1]};return}
     if(/^autonumber\b/i.test(t)){items.push({k:'auto',line:n});return}
+    if(m=t.match(/^box(?:\s+(.*))?$/i)){
+      if(curBox){errors.push({line:n,msg:'box の入れ子は非対応です'});return}
+      const arg=(m[1]||'').trim(),b=parseBox(arg);
+      curBox={idx:boxes.length,color:b.color,title:b.title,raw:arg,line:n,endLine:null,parts:[]};
+      boxes.push(curBox);byLine[n]={k:'pbox',raw:arg};return}
+    if(m=t.match(/^create\s+(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/i)){
+      const p=part(m[2],m[3]!=null?br(m[3]):null,m[1].toLowerCase(),n);
+      p.created=true;
+      if(m[3]!=null){if(p.line===n)byLine[n].raw=m[3]}else if(p.line===n)byLine[n].raw=m[2];
+      items.push({k:'create',p,line:n});return}
     if(m=t.match(/^(participant|actor)\s+(\S+?)(?:\s+as\s+(.+))?$/i)){
-      part(m[2],m[3]!=null?br(m[3]):null,m[1].toLowerCase(),n);
-      if(m[3]!=null){const p=map[m[2]];if(p.line===n)byLine[n].raw=m[3]}else if(map[m[2]].line===n)byLine[n].raw=m[2];
+      const p=part(m[2],m[3]!=null?br(m[3]):null,m[1].toLowerCase(),n);
+      if(curBox&&p.box==null){p.box=curBox.idx;curBox.parts.push(p)}
+      if(m[3]!=null){if(p.line===n)byLine[n].raw=m[3]}else if(p.line===n)byLine[n].raw=m[2];
       return}
+    if(m=t.match(/^destroy\s+(\S+)$/i)){
+      const p=part(m[1]);p.destroyed=true;
+      items.push({k:'destroy',p,line:n});byLine[n]={k:'destroy'};return}
     if(m=t.match(/^note\s+(left of|right of|over)\s+([^:]+?)\s*:\s*(.*)$/i)){
       const ps=m[2].split(',').map(s=>part(s.trim()));
       const it={k:'note',pos:m[1].toLowerCase(),ps,raw:m[3],text:br(m[3]),line:n};
@@ -173,7 +256,9 @@ function parse(text){
     if(m=t.match(/^(else|and|option)\b\s*(.*)$/i)){
       items.push({k:'bsep',type:m[1].toLowerCase(),raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
     if(/^end$/i.test(t)){
-      if(depth>0){depth--;items.push({k:'bend',line:n});byLine[n]={k:'end'}}else errors.push({line:n,msg:'対応するブロックが無い end'});
+      if(depth>0){depth--;items.push({k:'bend',line:n});byLine[n]={k:'end'}}
+      else if(curBox){curBox.endLine=n;byLine[n]={k:'pboxend'};curBox=null}
+      else errors.push({line:n,msg:'対応するブロックが無い end'});
       return}
     if(m=t.match(MSG)){
       const f=part(m[1].trim()),to=part(m[4]);
@@ -182,7 +267,8 @@ function parse(text){
     errors.push({line:n,msg:'解釈できない行: '+t.slice(0,30)});
   });
   if(depth>0)errors.push({line:L.length-1,msg:'end が不足 ('+depth+')'});
-  return {items,parts,errors,title,titleLine,byLine,nLines:L.length};
+  if(curBox)errors.push({line:L.length-1,msg:'box の end が不足'});
+  return {items,parts,boxes,errors,title,titleLine,byLine,nLines:L.length};
 }
 
 /* ---------- layout / svg ---------- */
@@ -195,15 +281,22 @@ function layout(m){
   if(!n)return null;
   const BH=Math.max(38,...P.map(p=>lines(p.label).length*LHT+22));
   const bw=P.map(p=>Math.max(84,tw(p.label)+(p.type==='actor'?46:28)));
-  const gap=[];for(let i=0;i<n-1;i++)gap.push((bw[i]+bw[i+1])/2+24);
+  const gap=[];
+  for(let i=0;i<n-1;i++){
+    const diffBox=P[i].box!==P[i+1].box;
+    gap.push((bw[i]+bw[i+1])/2+24+(diffBox?18:0));
+  }
   let leftX=0,rightX=0;
   const x=[30+leftX+bw[0]/2];for(let i=1;i<n;i++)x.push(x[i-1]+gap[i-1]);
   const W=x[n-1]+bw[n-1]/2+30+rightX;
-  const top=m.title?40:12;
+  const hasBox=m.boxes.some(b=>b.parts.length);
+  const boxHeaderH=hasBox?(Math.max(1,...m.boxes.filter(b=>b.parts.length).map(b=>b.title?lines(b.title).length:1))*LHT+10):0;
+  const top=(m.title?40:12)+boxHeaderH;
   let cursor=top+BH+22;
   const bg=[],life=[],bars=[],fg=[],ys=[];
   let minL=0,maxR=W;
   const act=P.map(()=>[]);
+  const createY=P.map(()=>null), destroyY=P.map(()=>null);
   const stack=[];
   let num=0,auto=false;
   const closeBar=(i,y)=>{const s=act[i].pop();if(s)bars.push({i,level:act[i].length+1,y0:s.y0,y1:y,line:s.line})};
@@ -211,6 +304,74 @@ function layout(m){
   const edge=(i,l,side)=>l===0?x[i]:side>0?x[i]+5+(l-1)*5:x[i]-5;
   const al=(txt,cx)=>lines(txt).length>1?`x="${cx-tw(txt)/2}" text-anchor="start"`:`x="${cx}" text-anchor="middle"`;
   const textLines=(txt,cx,yBottom,anchor)=>anchor==='middle'?lines(txt).map((l,i,a)=>`<text class="t" ${al(txt,cx)} y="${yBottom-(a.length-1-i)*LHT}">${esc(l)}</text>`).join(''):lines(txt).map((l,i,a)=>`<text class="t" x="${cx}" y="${yBottom-(a.length-1-i)*LHT}" text-anchor="${anchor}">${esc(l)}</text>`).join('');
+  const dL=x[0]-bw[0]/2,dR=x[n-1]+bw[n-1]/2,maxW=Math.max(40,dR-dL);
+  const wrapTxt=s=>lines(s).flatMap(l=>{
+    if(ctx.measureText(l).width<=maxW)return [l];
+    const out=[];let cur='';
+    for(const ch of l){
+      if(cur&&ctx.measureText(cur+ch).width>maxW){out.push(cur);cur=ch}
+      else cur+=ch;
+    }
+    if(cur)out.push(cur);
+    return out;
+  }).join('\n');
+  const formatMsgText=(it,inc)=>{
+    let txt=it.text;
+    if(auto){const k=inc?++num:num+1;txt=k+'. '+txt}
+    return wrapTxt(txt);
+  };
+  const drawMsg=(it,customY,createdIdx)=>{
+    const a=it.f.idx,b=it.t.idx;
+    const txt=formatMsgText(it,true),Ln=lines(txt).length;
+    const bi=it.arrow.startsWith('<<')&&it.arrow.endsWith('>>');
+    const rev=!bi&&(/^[<(]/.test(it.arrow));
+    const dash=it.arrow.includes('--');
+    let mk='';
+    if(bi)mk='url(#mF)';
+    else if(rev)mk=it.arrow.startsWith('(')?'url(#mO)':'url(#mF)';
+    else{const kind=it.arrow.replace(/^--?/,'');mk=kind==='>>'?'url(#mF)':kind==='x'?'url(#mX)':kind===')'?'url(#mO)':''}
+    const ms=bi?' marker-start="url(#mF)"':'';
+    const cls='msg'+(dash?' dash':'');
+    if(it.act==='+')act[b].push({y0:0,line:it.line});
+    const lvS=act[a].length,lvT=act[b].length;
+    let y,g;
+    const clampCX=(c,w)=>w>=dR-dL?(dL+dR)/2:Math.max(dL+w/2,Math.min(dR-w/2,c));
+    if(a===b){
+      y=customY!=null?customY:cursor+Ln*LHT+4;
+      if(it.act==='+')act[b][act[b].length-1].y0=y;
+      if(rev){
+        const x1=edge(a,lvT,-1),w=tw(txt),cx=clampCX(x1-18,w),hw=w/2+4;
+        g=`<g class="el" data-kind="msg" data-self="-1" data-x1="${x1}" data-x2="${x1-36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1-36}V${y+10}H${x1-2}" marker-end="${mk}"${ms}/>`+
+          `<path class="hit" d="M${x1} ${y}H${x1-36}V${y+10}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+          textLines(txt,cx,y-5,'middle')+`</g>`;
+        touch(x1-36,x1);minL=Math.min(minL,x1-36,cx-hw);maxR=Math.max(maxR,cx+hw);
+      }else{
+        const x1=edge(a,lvT,1),w=tw(txt),cx=clampCX(x1+18,w),hw=w/2+4;
+        g=`<g class="el" data-kind="msg" data-self="1" data-x1="${x1}" data-x2="${x1+36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1+36}V${y+10}H${x1+2}" marker-end="${mk}"${ms}/>`+
+          `<path class="hit" d="M${x1} ${y}H${x1+36}V${y+10}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+          textLines(txt,cx,y-5,'middle')+`</g>`;
+        touch(x1,x1+36);minL=Math.min(minL,cx-hw);maxR=Math.max(maxR,x1+36,cx+hw);
+      }
+      if(it.act==='-')closeBar(a,y+5);
+      cursor=Math.max(cursor,y+16);
+    }else{
+      y=customY!=null?customY:cursor+Ln*LHT+4;
+      if(it.act==='+')act[b][act[b].length-1].y0=createdIdx===b?y+BH/2:y;
+      const src=rev?b:a,dst=rev?a:b,lv1=rev?lvT:lvS,lv2=rev?lvS:lvT;
+      const dir=dst>src?1:-1;
+      const x1=createdIdx===src?x[src]+dir*(bw[src]/2):edge(src,lv1,dir);
+      const x2=createdIdx===dst?x[dst]-dir*(bw[dst]/2):edge(dst,lv2,-dir);
+      const w=tw(txt),cx=clampCX((x1+x2)/2,w),hw=w/2+4;
+      g=`<g class="el" data-kind="msg" data-x1="${rev?x2:x1}" data-x2="${rev?x1:x2}" data-line="${it.line}"><line class="${cls}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="${mk}"${ms}/>`+
+        `<line class="hit" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="transparent" stroke-width="14"/>`+
+        textLines(txt,cx,y-5,'middle')+`</g>`;
+      {const l=Math.min(x1,x2,cx-hw),r=Math.max(x1,x2,cx+hw);touch(Math.min(x1,x2),Math.max(x1,x2));minL=Math.min(minL,l);maxR=Math.max(maxR,r)}
+      if(it.act==='-')closeBar(a,y);
+      cursor=Math.max(cursor,y+10);
+    }
+    fg.push(g);
+    return y;
+  };
   const closeBlock=(y,b)=>{
     const pad=18+10*b.inner,inner=b.inner;
     if(b.minX===Infinity){b.minX=x[0];b.maxX=x[0]}
@@ -220,8 +381,9 @@ function layout(m){
     let s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}"/>`+
       `<path class="tab" d="M${x0} ${b.y0}h${tabW}v12l-8 8h${-(tabW-8)}z"/><text class="t" x="${x0+8}" y="${b.y0+14}" font-weight="600">${esc(b.type)}</text>`+
       (b.label?lines('['+b.label+']').map((l,k)=>`<text class="t" x="${x0+tabW+8}" y="${b.y0+15+k*LHT}">${esc(l)}</text>`).join(''):'')+`</g>`;
-    if(b.type==='rect'){const col=(b.label||'').replace(/[^\w#(),.%\s-]/g,'')||'transparent';
-      s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" style="fill:${col};fill-opacity:.45" pointer-events="none"/>`+
+    if(b.type==='rect'){const col=(b.label||'').replace(/[^\w#(),.%\s/-]/g,'')||'transparent';
+      const op=/^(?:rgba|hsla)\s*\(/i.test(col)||/\//.test(col)||/^#[0-9a-f]{4}$|^#[0-9a-f]{8}$/i.test(col)||/^transparent$/i.test(col)?'1':'.35';
+      s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" style="fill:${col};fill-opacity:${op}" pointer-events="none"/>`+
         `<rect x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" fill="none" stroke="transparent" stroke-width="8" pointer-events="stroke"/></g>`}
     for(const sp of b.seps){
       s+=`<g class="el" data-kind="bsep" data-line="${sp.line}"><line class="sep" x1="${x0}" x2="${x1}" y1="${sp.y}" y2="${sp.y}"/>`+
@@ -232,41 +394,42 @@ function layout(m){
     bg.push(s);
     return inner;
   };
-  for(const it of m.items){
+  for(let idx=0;idx<m.items.length;idx++){
+    const it=m.items[idx];
     ys.push({line:it.line,y:cursor});
     if(it.k==='auto'){auto=true;num=0;continue}
-    if(it.k==='msg'){
-      const a=it.f.idx,b=it.t.idx,Ln=lines(it.text).length;
-      let txt=it.text;if(auto){num++;txt=num+'. '+txt}
-      const bi=it.arrow.startsWith('<<'),ar=bi?it.arrow.slice(2):it.arrow,dash=ar.startsWith('--'),kind=ar.replace(/^--?/,'');
-      const ms=bi?' marker-start="url(#mF)"':'';
-      const mk=kind==='>>'?'url(#mF)':kind==='x'?'url(#mX)':kind===')'?'url(#mO)':'';
-      const cls='msg'+(dash?' dash':'');
-      if(it.act==='+')act[b].push({y0:0,line:it.line});
-      const lvS=act[a].length,lvT=act[b].length;
-      let y,g;
-      if(a===b){
-        y=cursor+Ln*LHT+6;
-        if(it.act==='+')act[b][act[b].length-1].y0=y;
-        const x1=edge(a,lvT,1);
-        g=`<g class="el" data-kind="msg" data-self="1" data-x1="${x1}" data-x2="${x1+36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1+36}V${y+20}H${x1+2}" marker-end="${mk}"${ms}/>`+
-          `<path class="hit" d="M${x1} ${y}H${x1+36}V${y+20}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
-          textLines(txt,x1+8,y-6,'start')+`</g>`;
-        {const r=x1+8+tw(txt)+4;touch(x1,Math.max(x1+36,r));maxR=Math.max(maxR,r)}
-        if(it.act==='-')closeBar(a,y+10);
-        cursor=y+34;
+    if(it.k==='create'){
+      const c=it.p.idx,nx=m.items[idx+1];
+      if(nx&&nx.k==='msg'&&(nx.f===it.p||nx.t===it.p)&&nx.f!==nx.t){
+        const Ln=lines(formatMsgText(nx,false)).length;
+        const msgY=Math.max(cursor+Ln*LHT+4,cursor+4+BH/2),boxY=msgY-BH/2;
+        if(createY[c]==null)createY[c]=boxY;
+        ys[ys.length-1].y=boxY;
+        ys.push({line:nx.line,y:msgY});
+        touch(x[c]-bw[c]/2,x[c]+bw[c]/2);minL=Math.min(minL,x[c]-bw[c]/2);maxR=Math.max(maxR,x[c]+bw[c]/2);
+        drawMsg(nx,msgY,c);
+        cursor=Math.max(cursor,boxY+BH+12);
+        idx++;
       }else{
-        y=cursor+Ln*LHT+8;
-        if(it.act==='+')act[b][act[b].length-1].y0=y;
-        const dir=b>a?1:-1,x1=edge(a,lvS,dir),x2=edge(b,lvT,-dir);
-        g=`<g class="el" data-kind="msg" data-x1="${x1}" data-x2="${x2}" data-line="${it.line}"><line class="${cls}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="${mk}"${ms}/>`+
-          `<line class="hit" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="transparent" stroke-width="14"/>`+
-          textLines(txt,(x1+x2)/2,y-6,'middle')+`</g>`;
-        {const c=(x1+x2)/2,hw=tw(txt)/2+4,l=Math.min(x1,x2,c-hw),r=Math.max(x1,x2,c+hw);touch(l,r);minL=Math.min(minL,l);maxR=Math.max(maxR,r)}
-        if(it.act==='-')closeBar(a,y);
-        cursor=y+18;
+        const boxY=cursor+4;
+        if(createY[c]==null)createY[c]=boxY;
+        touch(x[c]-bw[c]/2,x[c]+bw[c]/2);minL=Math.min(minL,x[c]-bw[c]/2);maxR=Math.max(maxR,x[c]+bw[c]/2);
+        cursor=boxY+BH+14;
       }
-      fg.push(g);
+      continue;
+    }
+    if(it.k==='destroy'){
+      const c=it.p.idx,dy=cursor+8;
+      while(act[c].length)closeBar(c,dy);
+      if(destroyY[c]==null)destroyY[c]=dy;
+      touch(x[c]-12,x[c]+12);
+      fg.push(`<g class="el" data-kind="destroy" data-line="${it.line}"><circle cx="${x[c]}" cy="${dy}" r="14" fill="transparent"/>`+
+        `<path class="destroy" d="M${x[c]-9} ${dy-9}L${x[c]+9} ${dy+9}M${x[c]+9} ${dy-9}L${x[c]-9} ${dy+9}"/></g>`);
+      cursor=dy+16;
+      continue;
+    }
+    if(it.k==='msg'){
+      drawMsg(it,null,null);
     }else if(it.k==='note'){
       const Ln=lines(it.text).length,W2=Math.max(70,tw(it.text)+24),h=Ln*LHT+10;
       let x0,x1;const i=it.ps[0].idx;
@@ -300,13 +463,41 @@ function layout(m){
   }
   while(stack.length){const b=stack.pop();const inner=closeBlock(cursor+2,b);const par=stack[stack.length-1];if(par)par.inner=Math.max(par.inner,inner+1);cursor+=16}
   for(let i=0;i<n;i++)while(act[i].length)closeBar(i,cursor);
-  const by=cursor+6,H=by+BH+14;
+  const by=cursor+6,H=by+BH+(hasBox?18:14);
+  const C={ink:cv('--ink'),l2:cv('--line-2'),mu:cv('--muted'),ac:cv('--accent'),note:cv('--note'),box:cv('--box'),bar:cv('--bar'),tab:cv('--tab')};
+  /* group boxes (box ... end) */
+  const pboxBg=[];
+  if(hasBox){
+    const boxY0=top-boxHeaderH+2,boxY1=by+BH+10;
+    for(const b of m.boxes){
+      if(!b.parts.length)continue;
+      let x0=Math.min(...b.parts.map(p=>x[p.idx]-bw[p.idx]/2))-10;
+      let x1=Math.max(...b.parts.map(p=>x[p.idx]+bw[p.idx]/2))+10;
+      const twb=b.title?tw(b.title)+24:0;
+      if(twb>x1-x0){const pad=(twb-(x1-x0))/2;x0-=pad;x1+=pad}
+      minL=Math.min(minL,x0);maxR=Math.max(maxR,x1);
+      const col=b.color?b.color.replace(/[^\w#(),.%\s/-]/g,''):'';
+      const op=col?(/^(?:rgba|hsla)\s*\(/i.test(col)||/\//.test(col)||/^#[0-9a-f]{4}$|^#[0-9a-f]{8}$/i.test(col)?'1':/^transparent$/i.test(col)?'0':'.22'):'.45';
+      const fill=col?`fill:${col};fill-opacity:${op}`:`fill:${C.box};fill-opacity:.45`;
+      pboxBg.push(`<g class="el" data-kind="pbox" data-line="${b.line}">`+
+        `<rect class="pbox" x="${x0}" y="${boxY0}" width="${x1-x0}" height="${boxY1-boxY0}" rx="6" style="${fill}" pointer-events="none"/>`+
+        `<rect x="${x0}" y="${boxY0}" width="${x1-x0}" height="${boxY1-boxY0}" rx="6" fill="none" stroke="transparent" stroke-width="8" pointer-events="stroke"/>`+
+        `<rect x="${x0}" y="${boxY0}" width="${x1-x0}" height="${boxHeaderH}" fill="transparent"/>`+
+        (b.title?lines(b.title).map((l,k)=>`<text class="t" x="${(x0+x1)/2}" y="${boxY0+17+k*LHT}" text-anchor="middle" font-weight="600">${esc(l)}</text>`).join(''):'')+
+        `</g>`);
+    }
+  }
   /* lifelines + boxes */
   const boxes=[];
   P.forEach((p,i)=>{
-    life.push(`<line class="life" x1="${x[i]}" y1="${top+BH}" x2="${x[i]}" y2="${by}"/>`+
-      `<rect class="lh" data-i="${i}" x="${x[i]-12}" y="${top+BH}" width="24" height="${by-top-BH}" fill="transparent"/>`);
-    for(const yy of [top,by]){
+    const topY=createY[i]!=null?createY[i]:top;
+    const ly0=topY+BH,ly1=destroyY[i]!=null?Math.max(ly0,destroyY[i]):by;
+    if(ly1>ly0){
+      life.push(`<line class="life" x1="${x[i]}" y1="${ly0}" x2="${x[i]}" y2="${ly1}"/>`+
+        `<rect class="lh" data-i="${i}" x="${x[i]-12}" y="${ly0}" width="24" height="${ly1-ly0}" fill="transparent"/>`);
+    }
+    const drawY=destroyY[i]!=null?[topY]:[topY,by];
+    for(const yy of drawY){
       const ln=p.line!=null?` data-line="${p.line}"`:'';
       boxes.push(`<g class="el" data-kind="part" data-pi="${i}"${ln}><rect class="box" x="${x[i]-bw[i]/2}" y="${yy}" width="${bw[i]}" height="${BH}" rx="${p.type==='actor'?19:5}"/>`+
         lines(p.label).map((l,k,a)=>`<text class="t" ${al(p.label,x[i])} y="${yy+BH/2+5+(k-(a.length-1)/2)*LHT}" font-weight="600">${esc(l)}</text>`).join('')+`</g>`);
@@ -316,18 +507,17 @@ function layout(m){
   const titleS=m.title?`<g class="el" data-kind="title"${m.titleLine!=null?` data-line="${m.titleLine}"`:''}><text class="t" x="${W/2}" y="26" text-anchor="middle" font-size="17" font-weight="700">${esc(m.title)}</text></g>`:'';
   if(m.title){const hw=tw(m.title)*17/13/2+8;minL=Math.min(minL,W/2-hw);maxR=Math.max(maxR,W/2+hw)}
   const vbX=Math.min(0,minL-8),vbW=Math.max(W,maxR+8)-vbX;
-  const C={ink:cv('--ink'),l2:cv('--line-2'),mu:cv('--muted'),ac:cv('--accent'),note:cv('--note'),box:cv('--box'),bar:cv('--bar'),tab:cv('--tab')};
-  const style=`<style>.t{fill:${C.ink};font-size:13px}.box{fill:${C.box};stroke:${C.l2};stroke-width:1.2}.life{stroke:${C.l2};stroke-dasharray:4 4}`+
-    `.msg{stroke:${C.ink};stroke-width:1.5;fill:none}.dash{stroke-dasharray:6 4}.bar{fill:${C.bar};stroke:${C.ink};stroke-width:1}`+
+  const style=`<style>.t{fill:${C.ink};font-size:13px}.box{fill:${C.box};stroke:${C.l2};stroke-width:1.2}.pbox{stroke:${C.l2};stroke-width:1.2;stroke-dasharray:5 3}.life{stroke:${C.l2};stroke-dasharray:4 4}`+
+    `.msg{stroke:${C.ink};stroke-width:1.5;fill:none}.dash{stroke-dasharray:6 4}.bar{fill:${C.bar};stroke:${C.ink};stroke-width:1}.destroy{stroke:${C.ink};stroke-width:2.4;stroke-linecap:round}`+
     `.note{fill:${C.note};stroke:${C.l2}}.blk{fill:none;stroke:${C.mu};stroke-width:1.2}.tab{fill:${C.tab};stroke:${C.mu}}.sep{stroke:${C.mu};stroke-dasharray:6 4}`+
-    `.el{cursor:pointer}.lh{cursor:crosshair}.el[data-kind=msg],.el[data-kind=note],.el[data-kind=bstart],.el[data-kind=bsep]{cursor:move}`+
+    `.el{cursor:pointer}.lh{cursor:crosshair}.el[data-kind=msg],.el[data-kind=note],.el[data-kind=bstart],.el[data-kind=bsep],.el[data-kind=destroy]{cursor:move}`+
     `.el[data-kind=bend]{cursor:ns-resize}.el[data-kind=part]{cursor:ew-resize}`+
-    `.sel .msg,.sel .box,.sel .note,.sel .blk,.sel .bar,.sel .tab{stroke:${C.ac};stroke-width:2.6}.sel .t{fill:${C.ac}}</style>`;
+    `.sel .msg,.sel .box,.sel .pbox,.sel .note,.sel .blk,.sel .bar,.sel .tab,.sel .destroy{stroke:${C.ac};stroke-width:2.6}.sel .t{fill:${C.ac}}</style>`;
   const defs=`<defs><marker id="mF" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto-start-reverse"><path d="M0 1.5L10.5 6L0 10.5z" fill="${C.ink}"/></marker>`+
     `<marker id="mO" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1.5L10 6L1 10.5" fill="none" stroke="${C.ink}" stroke-width="1.5"/></marker>`+
     `<marker id="mX" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="7" refY="6" orient="auto"><path d="M2 1L12 11M12 1L2 11" fill="none" stroke="${C.ink}" stroke-width="1.6"/></marker></defs>`;
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} 0 ${vbW} ${H}" width="${vbW*zoom}" height="${H*zoom}" font-family='${FONT.replace(/"/g,'&quot;')}'>`+
-    style+defs+titleS+bg.join('')+life.join('')+barS+fg.join('')+boxes.join('')+`</svg>`;
+    style+defs+titleS+pboxBg.join('')+bg.join('')+life.join('')+barS+fg.join('')+boxes.join('')+`</svg>`;
   return {svg,x,ys,vbX,vbW,H,bottom:cursor};
 }
 
@@ -391,6 +581,13 @@ function insertBefore(n,txt,ed){const {L,off}=lineOffsets();pendingSel=n;pending
 function insertEnd(txt,ed){const {L}=lineOffsets();let n=L.length-1;while(n>0&&!L[n].trim())n--;insertAfter(n,txt,ed)}
 function replaceLine(n,txt){const {L,off}=lineOffsets();pendingSel=n;edit(off[n],off[n]+L[n].length,txt)}
 function deleteLine(n){
+  const k=model&&model.byLine[n]&&model.byLine[n].k;
+  if(k==='part'){
+    const i=model.parts.findIndex(p=>p.line===n);
+    if(i>=0)return deletePart(i);
+  }
+  if(k==='pbox')return unwrapBox(n);
+  if(k==='pboxend'){flash('box 行から解除できます');return}
   const {L,off}=lineOffsets();pendingSel=null;
   if(n<L.length-1)edit(off[n],off[n+1],'');else if(n>0)edit(off[n]-1,off[n]+L[n].length,'');else edit(0,L[0].length,'');
   sel=null;
@@ -406,7 +603,8 @@ function setText(n,v){
   let out=raw;
   if(info.k==='msg'||info.k==='note'){const i=raw.indexOf(':');out=i<0?raw+': '+v:raw.slice(0,i+1)+' '+v}
   else if(info.k==='block')out=raw.replace(/^(\s*\w+)\b.*$/,(a,p)=>p+(v?' '+v:''));
-  else if(info.k==='part')out=raw.replace(/^(\s*(?:participant|actor)\s+\S+?)(?:\s+as\s+.*)?$/i,(a,p)=>p+' as '+v);
+  else if(info.k==='pbox')out=raw.replace(/^(\s*box)\b.*$/i,(a,p)=>p+(v?' '+v:''));
+  else if(info.k==='part')out=raw.replace(/^(\s*(?:create\s+)?(?:participant|actor)\s+\S+?)(?:\s+as\s+.*)?$/i,(a,p)=>p+' as '+v);
   else if(info.k==='title')out=raw.replace(/^(\s*title)\b\s*:?\s*.*$/i,(a,p)=>p+' '+v);
   if(out!==raw)replaceLine(n,out);
 }
@@ -418,7 +616,7 @@ function setPart(n,id,label){
   const raw=model.byLine[n].raw;
   id=id==null?p.id:id.trim();
   label=label==null?(raw===p.id?id:raw):label.trim().replace(/\r?\n/g,'<br/>');
-  if(!id||/\s/.test(id)||/[:,;]/.test(id)||/^(end|note|title|loop|alt|opt|par|rect|else|and)$/i.test(id)||/-[->x)]|<</.test(id)){flash('⚠ ID に使えない文字/語: '+id);return}
+  if(!id||/\s/.test(id)||/[:,;]/.test(id)||/^(end|note|title|loop|alt|opt|par|rect|else|and|box|create|destroy)$/i.test(id)||/-[->x)]|<</.test(id)){flash('⚠ ID に使えない文字/語: '+id);return}
   if(id!==p.id&&model.parts.some(q=>q.id===id)){flash('⚠ ID 重複: '+id);return}
   const L=getL(),sw=x=>x===p.id?id:x;
   if(id!==p.id)L.forEach((l,i)=>{
@@ -426,8 +624,9 @@ function setPart(n,id,label){
     if(k==='msg'&&(o=msgP(l))){if(o.f===p.id||o.t===p.id){o.f=sw(o.f);o.t=sw(o.t);L[i]=msgS(o)}}
     else if(k==='note'&&(o=noteP(l))){if(o.ps.includes(p.id)){o.ps=o.ps.map(sw);L[i]=noteS(o)}}
     else if(k==='act')L[i]=l.replace(/^(\s*(?:activate|deactivate)\s+)(\S+)\s*$/i,(a,pre,x)=>pre+sw(x));
+    else if(k==='destroy')L[i]=l.replace(/^(\s*destroy\s+)(\S+)\s*$/i,(a,pre,x)=>pre+sw(x));
   });
-  L[n]=L[n].replace(/^(\s*(?:participant|actor))\s+.*$/i,(a,pre)=>pre+' '+id+(label&&label!==id?' as '+label:''));
+  L[n]=L[n].replace(/^(\s*(?:create\s+)?(?:participant|actor))\s+.*$/i,(a,pre)=>pre+' '+id+(label&&label!==id?' as '+label:''));
   rewrite(L,n);
 }
 let editWhat=null;
@@ -496,9 +695,17 @@ function rewrite(L,selLine,editLine){
 }
 /* move lines a..b to the position indicated by y */
 function dropTarget(y,a,b){return geo.ys.find(o=>o.y>y&&(o.line<a||o.line>b))}
+const BANY=/^(box|loop|alt|opt|par|critical|break|rect)\b/i;
 function headEnd(L){
-  let e=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l))+1;
-  for(let i=e;i<L.length;i++){const t=L[i].trim();if(!t)continue;if(/^(title|autonumber|participant|actor|%%)/i.test(t))e=i+1;else break}
+  let e=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l))+1,inBox=false;
+  for(let i=e;i<L.length;i++){
+    const t=L[i].trim();if(!t)continue;
+    if(/^box\b/i.test(t)){inBox=true;e=i+1}
+    else if(inBox&&/^end$/i.test(t)){inBox=false;e=i+1}
+    else if(inBox&&/^(participant|actor|%%)/i.test(t))e=i+1;
+    else if(!inBox&&/^(title|autonumber|participant|actor|%%)/i.test(t))e=i+1;
+    else break;
+  }
   return e;
 }
 function moveRange(L,a,b,y){
@@ -518,7 +725,7 @@ function moveRange(L,a,b,y){
   if(a===b&&/^end$/i.test(L[a].trim())&&at>a&&!out[a].trim()){out.splice(a,1);at--}
   out.splice(at,0,...moved);
   let pos=at;const n=moved.length,ra=a<at?a:a+n;
-  const depthAt=k=>{let d=0;for(let i=0;i<k;i++){const t=out[i].trim();if(BSTART.test(t))d++;else if(/^end$/i.test(t))d--}return d};
+  const depthAt=k=>{let d=0;for(let i=0;i<k;i++){const t=out[i].trim();if(BANY.test(t))d++;else if(/^end$/i.test(t))d--}return d};
   for(const k of [...new Set([at,at+n,ra])].sort((x,y)=>y-x)){
     if(k<=0||k>=out.length)continue;
     const p=out[k-1].trim(),q=out[k].trim();
@@ -527,20 +734,51 @@ function moveRange(L,a,b,y){
   }
   return {L:out,at:pos};
 }
-/* rebuild participant declarations in the given order (also declares implicit ones) */
+/* rebuild participant declarations in the given order (preserving box...end and create) */
 function reorderParts(L,from,to){
-  const ids=model.parts.map(p=>p.id);const id=ids.splice(from,1)[0];ids.splice(to,0,id);
+  const fp=model.parts[from];
+  if(fp&&fp.created){flash('⚠ 途中生成 (create) の参加者は、出現行の上下移動で順序が決まります');return null}
+  const hp=model.parts.filter(p=>!p.created);
+  const fi=hp.indexOf(fp);if(fi<0)return null;
+  const ti=model.parts.filter((p,idx)=>!p.created&&idx!==from&&(idx<to||(to>from&&idx===to))).length;
   const isDecl=l=>/^\s*(participant|actor)\s+\S/i.test(l);
-  const decl={};model.parts.forEach(p=>{decl[p.id]=p.line!=null?L[p.line].trim():'participant '+p.id});
-  let pos=L.findIndex(isDecl),ind;
+  const boxKill=new Set();
+  model.boxes.forEach(b=>{boxKill.add(b.line);if(b.endLine!=null)boxKill.add(b.endLine)});
+  let pos=-1,ind=topIndent(L);
+  L.forEach((l,i)=>{if(pos<0&&(isDecl(l)||boxKill.has(i))){pos=i;ind=indentOf(l)}});
   if(pos<0){
     let h=L.findIndex(l=>/^\s*sequenceDiagram\b/i.test(l));
     for(let i=h+1;i<L.length&&/^\s*(title|autonumber|%%)/i.test(L[i]);i++)h=i;
-    pos=h+1;ind=topIndent(L);
-  }else ind=indentOf(L[pos]);
-  const out=L.filter(l=>!isDecl(l));
-  out.splice(pos,0,...ids.map(i=>ind+decl[i]));
-  return {L:out,at:pos+to};
+    pos=h+1;
+  }
+  const items=hp.map(p=>({p,box:p.box!=null?model.boxes[p.box]:null,line:p.line!=null?L[p.line].trim():'participant '+p.id}));
+  const [mv]=items.splice(fi,1);items.splice(ti,0,mv);
+  if(mv.box&&mv.box.parts.length>1){
+    const prev=items[ti-1],next=items[ti+1];
+    if((!prev||prev.box!==mv.box)&&(!next||next.box!==mv.box))mv.box=null;
+  }
+  if(!mv.box&&ti>0&&ti<items.length-1&&items[ti-1].box&&items[ti-1].box===items[ti+1].box)mv.box=items[ti-1].box;
+  const out=L.filter((l,i)=>!isDecl(l)&&!boxKill.has(i));
+  const ins=[];let at=pos;
+  for(let i=0;i<items.length;){
+    const b=items[i].box;
+    if(!b){if(items[i]===mv)at=pos+ins.length;ins.push(ind+items[i].line);i++;continue}
+    ins.push(ind+L[b.line].trim());
+    while(i<items.length&&items[i].box===b){
+      if(items[i]===mv)at=pos+ins.length;
+      ins.push(ind+'  '+items[i].line);i++;
+    }
+    ins.push(ind+'end');
+  }
+  out.splice(pos,0,...ins);
+  return {L:out,at};
+}
+function unwrapBox(n){
+  const b=model.boxes.find(b=>b.line===n),L=getL();
+  let e=b&&b.endLine!=null?b.endLine:-1;
+  if(e<0){for(let i=n+1;i<L.length;i++)if(/^\s*end\b/i.test(L[i])){e=i;break}}
+  if(e>n){for(let i=n+1;i<e;i++)L[i]=L[i].replace(/^ {1,2}/,'');L.splice(e,1)}
+  L.splice(n,1);sel=null;rewrite(L,null);
 }
 function wrap(a,b,type){
   const L=getL(),ind=indentOf(L[a]);
@@ -549,13 +787,18 @@ function wrap(a,b,type){
   rewrite(L,a,a);
 }
 function rangeOf(n){const L=getL();return BSTART.test((L[n]||'').trim())?[n,blockEnd(L,n)]:[n,n]}
-function renamePart(i,what){const p=model.parts[i];what=what||'label';if(p.line!=null)return startEdit(p.line,what);const r=reorderParts(getL(),i,i);editWhat=what;rewrite(r.L,r.at,r.at)}
-function setPartType(i,type){const r=reorderParts(getL(),i,i);r.L[r.at]=r.L[r.at].replace(/^(\s*)(participant|actor)\b/i,'$1'+type);rewrite(r.L,r.at)}
+function renamePart(i,what){const p=model.parts[i];what=what||'label';if(p.line!=null)return startEdit(p.line,what);const r=reorderParts(getL(),i,i);if(r){editWhat=what;rewrite(r.L,r.at,r.at)}}
+function setPartType(i,type){
+  const p=model.parts[i];
+  if(p.created&&p.line!=null){const L=getL();L[p.line]=L[p.line].replace(/^(\s*create\s+)(participant|actor)\b/i,'$1'+type);rewrite(L,p.line);return}
+  const r=reorderParts(getL(),i,i);if(r){r.L[r.at]=r.L[r.at].replace(/^(\s*)(participant|actor)\b/i,'$1'+type);rewrite(r.L,r.at)}
+}
 function deletePart(i){
   const id=model.parts[i].id,L=getL(),kill=new Set();
-  L.forEach((l,k)=>{const m=l.trim().match(/^(participant|actor)\s+(\S+?)(\s+as\s|$)/i);if(m&&m[2]===id)kill.add(k)});
+  L.forEach((l,k)=>{const m=l.trim().match(/^(?:create\s+)?(participant|actor)\s+(\S+?)(\s+as\s|$)/i);if(m&&m[2]===id)kill.add(k)});
+  for(const b of model.boxes){if(b.parts.length&&b.parts.every(p=>p.id===id)){kill.add(b.line);if(b.endLine!=null)kill.add(b.endLine)}}
   for(const it of model.items){
-    if((it.k==='msg'&&(it.f.id===id||it.t.id===id))||(it.k==='act'&&it.p.id===id))kill.add(it.line);
+    if((it.k==='msg'&&(it.f.id===id||it.t.id===id))||((it.k==='act'||it.k==='destroy')&&it.p.id===id))kill.add(it.line);
     else if(it.k==='note'&&it.ps.some(p=>p.id===id)){
       /* Note は対象一覧からその参加者だけ外す。他に対象が無ければ Note ごと削除 */
       if(it.ps.every(p=>p.id===id))kill.add(it.line);
@@ -571,7 +814,7 @@ function toggleAuto(){
   rewrite(L,null);
 }
 function addTitle(){const L=getL(),h=headerPos(L)+1;L.splice(h,0,topIndent(L)+'title タイトル');rewrite(L,h,h)}
-function addAt(y,txt){const nx=geo.ys.find(o=>o.y>y),he=headEnd(getL());if(nx&&nx.line<he)insertAfter(he-1,txt,true);else if(nx)insertBefore(nx.line,txt,true);else insertEnd(txt,true)}
+function addAt(y,txt,ed=true){const nx=geo.ys.find(o=>o.y>y),he=headEnd(getL());if(nx&&nx.line<he)insertAfter(he-1,txt,ed);else if(nx)insertBefore(nx.line,txt,ed);else insertEnd(txt,ed)}
 function nearestPart(x,lim=Infinity){let j=-1,b=lim;geo.x.forEach((xx,k)=>{const d=Math.abs(xx-x);if(d<b){b=d;j=k}});return j}
 function svgPt(e){const s=view.querySelector('svg'),p=s.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(s.getScreenCTM().inverse())}
 function overlay(html){
@@ -610,7 +853,7 @@ view.addEventListener('pointerdown',e=>{
       D.fx=D.mode==='from'?x2:x1;
     }
     else if(k==='note'){const x0=+g.dataset.x0,x1=+g.dataset.x1;D.mode=p.x>x1-10?'nR':p.x<x0+10?'nL':'note'}
-    else if(k==='bstart'||k==='bsep'||k==='bend')D.mode='move';
+    else if(k==='bstart'||k==='bsep'||k==='bend'||k==='destroy')D.mode='move';
     if(D.mode==='move'||D.mode==='note')[D.a,D.b]=rangeOf(D.line);
   }
   if(D.mode)Object.assign(drag,D);
@@ -669,7 +912,7 @@ function endDrag(e){
       L[drag.line]=noteS(o);rewrite(L,drag.line);break}
     case 'part':{
       const from=drag.i,to=geo.x.filter((x,k)=>k!==from&&x<p.x).length;if(to===from)break;
-      const r=reorderParts(L,from,to);rewrite(r.L,r.at);break}
+      const r=reorderParts(L,from,to);if(r)rewrite(r.L,r.at);break}
   }
 }
 view.addEventListener('pointerup',endDrag);
@@ -698,12 +941,19 @@ function menuFor(g,p){
   const set=fn=>()=>{const L2=getL();fn(L2);rewrite(L2,n)};
   const wrapRow=a=>({h:'囲む',row:BLOCKS.map(b=>({t:b,f:()=>{const [x,y]=rangeOf(a);wrap(x,y,b)}}))});
   const tail=n!=null?['-',{t:'複製',f:()=>{const [a,b]=rangeOf(n);const L2=getL();L2.splice(b+1,0,...L2.slice(a,b+1));rewrite(L2,b+1)}},{t:'削除',f:()=>{const [a,b]=rangeOf(n);const L2=getL();L2.splice(a,b-a+1);sel=null;rewrite(L2,null)}}]:[];
+  if(kind==='pbox'){
+    return [{t:'グループ名・色を編集',f:()=>startEdit(n)},'-',{t:'Box を解除',f:()=>unwrapBox(n)}];
+  }
+  if(kind==='destroy'){
+    return [{t:'削除',f:()=>deleteLine(n)}];
+  }
   if(kind==='part'){
     const i=+g.dataset.pi,P=model.parts[i];
     return [{t:'表示名を変更',f:()=>renamePart(i,'label')},{t:'ID を変更 ('+model.parts[i].id+')',f:()=>renamePart(i,'id')},
       {h:'種別',row:[{t:'participant',on:P.type!=='actor',f:()=>setPartType(i,'participant')},{t:'actor',on:P.type==='actor',f:()=>setPartType(i,'actor')}]},
-      {h:'並び',row:[{t:'← 左へ',dis:i===0,f:()=>{const r=reorderParts(getL(),i,i-1);rewrite(r.L,r.at)}},{t:'右へ →',dis:i===model.parts.length-1,f:()=>{const r=reorderParts(getL(),i,i+1);rewrite(r.L,r.at)}}]},
+      {h:'並び',row:[{t:'← 左へ',dis:P.created||i===0,f:()=>{const r=reorderParts(getL(),i,i-1);if(r)rewrite(r.L,r.at)}},{t:'右へ →',dis:P.created||i===model.parts.length-1,f:()=>{const r=reorderParts(getL(),i,i+1);if(r)rewrite(r.L,r.at)}}]},
       {t:'参加者を追加',f:()=>$('#bPart').click()},
+      {t:'末尾で破棄 (destroy) を追加',dis:P.destroyed,f:()=>insertEnd('destroy '+P.id,false)},
       '-',{t:'削除（関連する矢印も削除、Note の対象から除外）',f:()=>deletePart(i)}];
   }
   if(k==='msg'){
@@ -712,7 +962,7 @@ function menuFor(g,p){
     return [{t:'文言を編集',f:()=>startEdit(n)},
       {h:'矢印',row:ARROWS.map(a=>({t:a,on:o.a===a,f:so(o=>o.a=a)}))},
       {h:'活性化',row:[{t:'なし',on:!o.act,f:so(o=>o.act='')},{t:'+ 宛先ON',on:o.act==='+',f:so(o=>o.act='+')},{t:'- 送信元OFF',on:o.act==='-',f:so(o=>o.act='-')}]},
-      {t:'⇄ 方向を反転',f:so(o=>{const t=o.f;o.f=o.t;o.t=t})},
+      {t:o.f===o.t?'⇄ 折返し左右を反転':'⇄ 方向を反転',f:so(o=>{if(o.f===o.t&&REV_PAIR[o.a])o.a=REV_PAIR[o.a];else{const t=o.f;o.f=o.t;o.t=t}})},
       wrapRow(n),
       {t:'下に Note を追加',f:()=>insertAfter(n,`Note over ${o.f===o.t?o.f:o.f+','+o.t}: メモ`,true)},
       {t:'下にメッセージを追加',f:()=>insertAfter(n,`${o.t}-->>${o.f}: 応答`,true)},
@@ -741,8 +991,11 @@ function menuFor(g,p){
   const items=[{t:'参加者を追加',f:()=>$('#bPart').click()}];
   if(model.parts.length&&p){
     const j=nearestPart(p.x),k2=j+1<model.parts.length?j+1:Math.max(0,j-1);
+    let nk=model.parts.length+1,nid='P'+nk;while(model.parts.some(q=>q.id===nid))nid='P'+(++nk);
     items.push({t:'ここにメッセージを追加',f:()=>addAt(p.y,`${model.parts[j].id}->>${model.parts[k2].id}: メッセージ`)},
-      {t:'ここに Note を追加',f:()=>addAt(p.y,`Note over ${model.parts[j].id}: メモ`)});
+      {t:'ここに Note を追加',f:()=>addAt(p.y,`Note over ${model.parts[j].id}: メモ`)},
+      {t:'ここに途中生成 (create) を追加',f:()=>addAt(p.y,`create participant ${nid} as 新規`)},
+      {t:`ここで ${model.parts[j].id} を破棄 (destroy)`,dis:model.parts[j].destroyed,f:()=>addAt(p.y,`destroy ${model.parts[j].id}`,false)});
   }
   items.push('-');
   if(!model.title)items.push({t:'タイトルを追加',f:addTitle});
@@ -780,11 +1033,15 @@ document.addEventListener('keydown',e=>{
 /* ---------- toolbar ---------- */
 function afterLine(){return sel!=null?sel:null}
 $('#bPart').onclick=()=>{
-  const {L}=lineOffsets();let last=-1;L.forEach((l,i)=>{if(/^\s*(participant|actor)\b/i.test(l))last=i});
+  const {L}=lineOffsets();let last=headEnd(L)-1;
   if(last<0)L.forEach((l,i)=>{if(/^\s*(sequenceDiagram|title|autonumber)\b/i.test(l))last=i});
   let k=model.parts.length+1,id='P'+k;while(model.parts.some(p=>p.id===id))id='P'+(++k);
   if(last<0){pendingSel=1;pendingEdit=1;edit(0,0,'sequenceDiagram\n  participant '+id+' as 新規\n')}
-  else insertAfter(last,`participant ${id} as 新規`,true);
+  else{
+    const ind=/^\s*end$/i.test(L[last])?indentOf(L[last]):topIndent(L);
+    const p=lineOffsets().off[last]+L[last].length;pendingSel=last+1;pendingEdit=last+1;
+    edit(p,p,'\n'+ind+`participant ${id} as 新規`);
+  }
 };
 function twoParts(){const p=model.parts;if(!p.length)return null;let a=p[0].id,b=(p[1]||p[0]).id;
   if(sel!=null){const it=model.items.find(i=>i.line===sel&&i.k==='msg');if(it){a=it.t.id;b=it.f.id}}return [a,b]}
@@ -807,7 +1064,8 @@ $('#bDup').onclick=()=>{if(sel==null)return;const {L}=lineOffsets();insertAfter(
 $('#bDel').onclick=()=>sel!=null&&deleteLine(sel);
 $('#bFlip').onclick=()=>{
   if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
-  replaceLine(sel,indentOf(L[sel])+m[4]+m[2]+m[3]+m[1].trim()+(m[5]!=null?': '+m[5]:''));
+  const f=m[1].trim(),t=m[4],a=(f===t&&REV_PAIR[m[2]])?REV_PAIR[m[2]]:m[2];
+  replaceLine(sel,indentOf(L[sel])+(f===t?f:t)+a+m[3]+(f===t?t:f)+(m[5]!=null?': '+m[5]:''));
 };
 $('#bArrow').onclick=()=>{
   if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
@@ -906,6 +1164,7 @@ async function pick(fn,opts){
   try{return await fn(o)}
   catch(e){if(e.name==='AbortError'||!o.startIn)throw e;delete o.startIn;return fn(o)}   /* 無効なハンドル等 → 記憶フォルダで再試行 */
 }
+$('#bSample').onclick=()=>{loadText(SAMPLE,'',null);flash('全機能デモサンプルを読み込みました')};
 $('#bOpen').onclick=async()=>{
   if(!window.showOpenFilePicker)return $('#file').click();
   try{const [h]=await pick(showOpenFilePicker,{types:[{description:'Markdown / Mermaid',accept:{'text/plain':['.md','.mmd','.txt']}}]});
@@ -956,6 +1215,7 @@ function update(){
   const h=location.hash.match(/^#(src|z)=(.*)$/);
   if(h){try{src=h[1]==='z'?await unpack(h[2]):decodeURIComponent(h[2])}catch(e){}}
   let ls=null;try{ls=localStorage.getItem('seqedit.src')}catch(e){}
+  if(ls&&/^\s*sequenceDiagram\s+title 注文フロー\b/.test(ls))ls=null;
   if(src==null)src=ls;
   if(src!=null&&src===ls){try{const d=JSON.parse(localStorage.getItem('seqedit.doc')||'null');if(d){doc={...doc,pre:d.pre,post:d.post,name:d.name,crlf:d.crlf,md:d.md,idx:d.idx|0};savedSrc=d.saved}}catch(e){}}
   ta.value=src||SAMPLE;update();refreshBlocks();
