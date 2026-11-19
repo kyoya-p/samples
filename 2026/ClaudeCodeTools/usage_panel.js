@@ -226,7 +226,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
     <h2 class="ch">
       <span>残量推移/5h<span class="rem-badge" id="rem-5h"></span></span>
       <span class="rt">
-        <span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span>
+        <b class="now" id="now-5h"></b><span class="range"><select id="range-5h" aria-label="5時間枠の表示範囲"></select></span>
       </span>
     </h2>
     <div id="usage-chart-5h"></div>
@@ -235,7 +235,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
     <h2 class="ch">
       <span>残量推移/7d<span class="rem-badge" id="rem-1w"></span></span>
       <span class="rt">
-        <span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span>
+        <b class="now" id="now-1w"></b><span class="range"><select id="range-1w" aria-label="週次の表示範囲"></select></span>
       </span>
     </h2>
     <div id="usage-chart-1w"></div>
@@ -392,6 +392,25 @@ function usageChart() {
       remEl.textContent = remStr ? (remain === 0 ? remStr : '残り ' + remStr) : '';
       remEl.style.display = remStr ? '' : 'none';
       if (c.p?.reset) remEl.title = '更新予定: ' + fmtT(c.p.reset);
+    }
+
+    // 現在残量（100 - 使用率）。黒: 通常 / 橙: 20%未満 / 赤: 10%未満
+    const nowEl = document.getElementById('now-' + c.nm);
+    if (nowEl) {
+      const sv = S.length ? S[S.length - 1][c.key] : null;
+      if (typeof sv === 'number') {
+        const rem = 100 - sv;
+        nowEl.textContent = rem + '%';
+        const lab = document.createElement('small');
+        lab.textContent = ' /' + c.def;
+        lab.style.cssText = 'font-size:12px;font-weight:400;color:var(--mut)';
+        nowEl.appendChild(lab);
+        nowEl.style.color = rem < 10 ? '#d32f2f' : rem < 20 ? '#e8760a' : 'var(--fg)';
+        nowEl.title = new Date(S[S.length - 1].ts).toLocaleString('ja-JP') + ' 時点の残量（100 - 使用率 ' + sv + '%）';
+      } else {
+        nowEl.textContent = '-';
+        nowEl.style.color = 'var(--fg)';
+      }
     }
 
     const applyRange = label => {
@@ -829,7 +848,8 @@ render();
 
 function writePanel(data = buildData(), forceHtml = false) {
   const outPath = path.join(__dirname, 'claude-panel.html'); // git管理下のツールフォルダ直下に出力
-  if (forceHtml || !fs.existsSync(outPath)) {
+  // HTML はデータを埋め込まないため、毎回書き出して最新テンプレートに揃える
+  {
     const html = renderHtml(data);
     fs.writeFileSync(outPath, html, 'utf8');
   }

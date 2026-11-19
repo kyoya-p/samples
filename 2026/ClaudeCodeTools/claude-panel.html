@@ -89,7 +89,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
 </div>
 <script>
-let D = {}; // データは埋め込まない。usage_data.js を読み込んで置き換える
+let D = {}; // データは埋め込まない。usage_data.js を読み込んで置き換える（ページはリロードしない）
 const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
 const pad = n => String(n).padStart(2, '0');
 const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };

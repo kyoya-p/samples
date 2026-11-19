@@ -447,7 +447,7 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
 </div>
 <script>
-let D = ${JSON.stringify(data)}; // 初期データ。以後は usage_data.js の再読込で差し替える（ページはリロードしない）
+let D = {}; // データは埋め込まない。usage_data.js を読み込んで置き換える（ページはリロードしない）
 const k = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'k' : String(n);
 const pad = n => String(n).padStart(2, '0');
 const fmtT = ms => { const d = new Date(ms); return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
@@ -1119,6 +1119,7 @@ render();
     sc.src = 'usage_data.js?t=' + Date.now();
     document.head.appendChild(sc);
   };
+  refresh();
   setInterval(refresh, INTERVAL_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && Date.now() - last >= INTERVAL_MS) refresh();
@@ -1129,7 +1130,8 @@ render();
 
 function writePanel(data = buildData(), forceHtml = false) {
   const outPath = path.join(__dirname, 'agy-panel.html'); // git管理下のツールフォルダ直下に出力
-  if (forceHtml || !fs.existsSync(outPath)) {
+  // HTML はデータを埋め込まないため、毎回書き出して最新テンプレートに揃える
+  {
     const html = renderHtml(data);
     fs.writeFileSync(outPath, html, 'utf8');
   }
