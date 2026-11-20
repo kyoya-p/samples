@@ -18,6 +18,7 @@ okf_version: "0.2"
 * [ChromeItr](./ChromeExt/ChromeItr/README.md) - 🤖 Tab Transcriber: `chrome.tabCapture` でタブ音声を取得し、Gemini Nano(不可時は Whisper / transformers.js)で文字起こしをページ上のダイアログに表示する Chrome 拡張機能
 * [LinkCertVerifier](./ChromeExt/LinkCertVerifier/README.md) - 🤖 リンク右クリック「リンクのアドレスを検証」でページ遷移せずに URL 安全性・DNS・TLS 証明書チェーンを検証表示する Chrome 拡張機能（Node.js Native Messaging Host 連携）
 * [NanoTranslator](./ChromeExt/NanoTranslator/README.md) - 🤖 Chrome 内蔵 Gemini Nano で Web ページ・選択テキスト・入力文を翻訳する Chrome 拡張機能(外部通信なし、訳文を端末内辞書に保存)
+* [rmnav](./ChromeExt/rmnav/README.md) - Redmine チケット関係図ナビゲーター (Chrome 拡張機能 MV3: チケット詳細・一覧・ガントチャートから関連グラフを表示)
 * [GeminiNano](./GeminiNano/README.md) - Chrome 組み込み AI (Gemini Nano / Prompt API / Translator) の検証環境
 * [Gemini/ComputerUse](./Gemini/ComputerUse/README.md) - Gemini モデルを用いた Computer Use / 操作自動化サンプルの検証
 * [e-gemma2](./e-gemma2/mise.toml) - 🤖 gemma-2-2b-it(GGUF Q4_K_M)を llama-cpp-python のサーバで動かす mise タスク定義(127.0.0.1:8080)

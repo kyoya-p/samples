@@ -16,6 +16,21 @@
   let currentStrokeWidth = 4;
   let currentFillMode = 'none'; // 'none' | 'semi' | 'solid'
   let currentFontSize = 24;
+  let currentStamp = '';
+  const DEFAULT_STAMPS = ['Remove', 'Append', 'Move', 'Larger', 'Smaller', 'OK', 'NG', 'Fix', 'Check', '?', 'Tell me'];
+  function loadStamps() {
+    try {
+      const s = JSON.parse(localStorage.getItem('cd.stamps') || 'null');
+      if (Array.isArray(s) && s.length) {
+        for (const d of DEFAULT_STAMPS) if (!s.includes(d)) s.push(d);
+        return s;
+      }
+    } catch (e) {}
+    return DEFAULT_STAMPS.slice();
+  }
+  function saveStamps(list) {
+    try { localStorage.setItem('cd.stamps', JSON.stringify(list)); } catch (e) {}
+  }
 
   let objects = []; // Array of drawn objects
   let undoStack = [];
@@ -1244,6 +1259,23 @@
       return;
     }
 
+    if (currentTool === 'stamp' && currentStamp) {
+      const newObj = {
+        id: 'text_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+        type: 'text',
+        text: currentStamp,
+        x: Math.round(pos.x),
+        y: Math.round(pos.y),
+        color: currentColor,
+        fontSize: currentFontSize
+      };
+      measureTextObject(newObj);
+      objects.push(newObj);
+      pushAction({ type: 'ADD', object: newObj });
+      render();
+      return;
+    }
+
     // Drawing tools
     isDrawing = true;
     const id = 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
@@ -2062,6 +2094,52 @@
     });
   }
 
+  function fallbackCopyTextToClipboard(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    } catch (_) {}
+  }
+
+  function writeTextToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      return navigator.clipboard.writeText(text).catch(() => fallbackCopyTextToClipboard(text));
+    }
+    fallbackCopyTextToClipboard(text);
+    return Promise.resolve();
+  }
+
+  async function writeImageBlobToClipboard(blob) {
+    if (
+      navigator.clipboard &&
+      typeof navigator.clipboard.write === 'function' &&
+      typeof ClipboardItem !== 'undefined'
+    ) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        return;
+      } catch (directErr) {
+        console.warn('[ChromeDoodle] Direct clipboard.write failed, trying extension helper:', directErr);
+      }
+    }
+
+    const dataUrl = await readBlobAsDataURL(blob);
+    const res = await chrome.runtime.sendMessage({
+      type: 'CHROME_DOODLE_CLIPBOARD_WRITE_IMAGE',
+      dataUrl
+    });
+    if (!res || !res.success) {
+      throw new Error(res?.cancelled ? 'クリップボードコピーがキャンセルされました' : (res?.error || 'Clipboard write failed'));
+    }
+  }
+
   async function copyCropAreaToClipboard() {
     if (!cropRect) {
       showToast('⚠️ クロップ領域が指定されていません', 'warning');
@@ -2074,12 +2152,9 @@
       const blob = await getCompositeBlob(cropRect);
       if (!blob) throw new Error('Blob creation failed');
 
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      showToast('✅ クリップボードに領域画像をコピーしました！', 'success');
+      await tryCopyBlobOrShowModal(blob, 'クロップ領域', cropRect.w, cropRect.h);
     } catch (err) {
-      console.error('[ChromeDoodle] Clipboard copy error:', err);
+      console.warn('[ChromeDoodle] Clipboard copy error:', err);
       showToast('❌ クリップボードへの書き込みに失敗しました', 'error');
     }
   }
@@ -2090,12 +2165,9 @@
       const blob = await getCompositeBlob(null);
       if (!blob) throw new Error('Blob creation failed');
 
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
-      showToast('✅ 画面全体をクリップボードにコピーしました！', 'success');
+      await tryCopyBlobOrShowModal(blob, '画面全体', window.innerWidth, window.innerHeight);
     } catch (err) {
-      console.error('[ChromeDoodle] Clipboard copy error:', err);
+      console.warn('[ChromeDoodle] Clipboard copy error:', err);
       showToast('❌ コピーに失敗しました', 'error');
     }
   }
@@ -2189,13 +2261,11 @@
     shadow.getElementById('cd-modal-copy')?.addEventListener('click', async () => {
       if (!pendingCaptureBlob) return;
       try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': pendingCaptureBlob })
-        ]);
+        await writeImageBlobToClipboard(pendingCaptureBlob);
         showToast('✅ クリップボードにコピーしました！', 'success');
         closeCaptureResultModal();
       } catch (err) {
-        console.error('[ChromeDoodle] Modal copy error:', err);
+        console.warn('[ChromeDoodle] Modal copy error:', err);
         showToast('❌ コピーに失敗しました。PNG保存をお試しください', 'error');
       }
     });
@@ -2226,9 +2296,7 @@
       return;
     }
     try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
+      await writeImageBlobToClipboard(blob);
       showToast(`✅ ${title} (${Math.round(width)}×${Math.round(height)}) をクリップボードにコピーしました！`, 'success');
     } catch (err) {
       console.warn('[ChromeDoodle] Auto clipboard write failed, showing fallback modal:', err);
@@ -2237,7 +2305,7 @@
         title,
         width,
         height,
-        'ブラウザの制限により自動コピーができなかったため、下のボタンからワンクリックでコピーできます。'
+        'ブラウザの制限により自動コピーができなかったため、下のボタンからコピーまたはPNG保存ができます。'
       );
     }
   }
@@ -2708,6 +2776,14 @@
   }
 
   async function pasteImageFromClipboard() {
+    if (!navigator.clipboard || typeof navigator.clipboard.read !== 'function') {
+      if (copiedDoodleObject) {
+        pasteDoodleObject(copiedDoodleObject);
+        return;
+      }
+      showToast('⚠️ このページではボタンからの貼付が制限されています。Ctrl+V (Cmd+V) をお試しください', 'info');
+      return;
+    }
     try {
       const items = await navigator.clipboard.read();
       for (const item of items) {
@@ -2912,9 +2988,7 @@
             copyImageObjectAsFramed(selectedObject);
             return;
           }
-          try {
-            navigator.clipboard.writeText(JSON.stringify({ __chromedoodle: true, obj: copiedDoodleObject }));
-          } catch (_) {}
+          writeTextToClipboard(JSON.stringify({ __chromedoodle: true, obj: copiedDoodleObject }));
           const nameMap = { stroke: '線', line: '直線', arrow: '矢印', rect: '矩形', ellipse: '楕円', text: 'テキスト', image: '画像' };
           showToast(`📋 ${nameMap[selectedObject.type] || 'オブジェクト'}をコピーしました (Ctrl+Vで貼付)`, 'info');
         } else if (cropRect) {
@@ -2975,9 +3049,7 @@
             // 画像は Ctrl+C 同様、現在のフレームの画像(PNG)をクリップボードへ
             copyImageObjectAsFramed(selectedObject);
           } else {
-            try {
-              navigator.clipboard.writeText(JSON.stringify({ __chromedoodle: true, obj: copiedDoodleObject }));
-            } catch (_) {}
+            writeTextToClipboard(JSON.stringify({ __chromedoodle: true, obj: copiedDoodleObject }));
           }
         }
         const idx = objects.findIndex(o => o.id === selectedObject.id);
@@ -3033,6 +3105,10 @@
     }
     if (tool !== 'text') {
       closeTextEditor();
+    }
+    if (tool !== 'stamp') {
+      const stSel = shadow?.getElementById('cd-stamp-select');
+      if (stSel) { stSel.value = ''; stSel.style.borderColor = ''; }
     }
 
     // Toggle Web text edit (document.designMode)
@@ -3146,6 +3222,34 @@
           measureTextObject(selectedObject);
           render();
         }
+      });
+    }
+
+    // Text stamp selector
+    const stampSelect = shadow.getElementById('cd-stamp-select');
+    if (stampSelect) {
+      stampSelect.addEventListener('change', (e) => {
+        let v = e.target.value;
+        if (v === '__add__') {
+          const custom = prompt('追加するスタンプ文字列:');
+          if (!custom || !custom.trim()) { stampSelect.value = currentTool === 'stamp' ? currentStamp : ''; return; }
+          v = custom.trim();
+          const list = loadStamps();
+          if (!list.includes(v)) {
+            list.push(v);
+            saveStamps(list);
+            const opt = document.createElement('option');
+            opt.value = v; opt.textContent = v;
+            stampSelect.insertBefore(opt, stampSelect.querySelector('option[value="__add__"]'));
+          }
+          stampSelect.value = v;
+        }
+        if (!v) { setTool('select'); return; }
+        currentStamp = v;
+        setTool('stamp');
+        stampSelect.value = v;
+        stampSelect.style.borderColor = '#6366f1';
+        if (typeof showToast === 'function') showToast(`スタンプ: ${v} (クリックで配置)`);
       });
     }
 
@@ -3445,6 +3549,11 @@
 
         <select id="cd-font-select" class="cd-font-select" title="フォントサイズ">
           ${FONT_SIZES.map(s => `<option value="${s}" ${s === currentFontSize ? 'selected' : ''}>${s}px</option>`).join('')}
+        </select>
+        <select id="cd-stamp-select" class="cd-font-select" title="文字スタンプ (選択後クリックで連続配置)">
+          <option value="">スタンプ…</option>
+          ${loadStamps().map(s => `<option value="${s.replace(/"/g, '&quot;')}">${s.replace(/</g, '&lt;')}</option>`).join('')}
+          <option value="__add__">+ 追加…</option>
         </select>
       </div>
 

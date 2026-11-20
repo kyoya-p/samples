@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Redmine Graph Navigator</title>
+  <link rel="icon" type="image/png" href="icons/icon48.png">
+  <link rel="stylesheet" href="graph.css">
+  <script src="vendor/vis-network.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-title">
+      <span>🌐 Redmine Ticket Graph</span>
+      <span style="color:#64748b;">|</span>
+      <span id="origin-label-wrap">起点: <a id="origin-issue-link" href="#" target="_blank">---</a></span>
+    </div>
+    <div class="toolbar">
+      <div class="view-switch">
+        <button id="btn-view-graph" class="btn active" title="関係図グラフ表示">🌐 グラフ</button>
+        <button id="btn-view-gantt" class="btn" title="ガントチャート編集表示">📅 ガント</button>
+      </div>
+      <span style="color:#475569;">|</span>
+      <input type="text" id="add-issue-id" class="input-box" placeholder="チケット#">
+      <button id="btn-add-issue" class="btn" title="チケットをグラフに追加">➕ 追加</button>
+      <button id="btn-expand-selected" class="btn" title="選択したチケットの関連を展開">🔄 関連展開</button>
+      <span style="color:#475569;">|</span>
+      <button id="btn-fit" class="btn" title="グラフ全体を表示">🎯 フィット</button>
+      <button id="btn-layout-free" class="btn active" title="自由配置 (力学モデル)">自由配置</button>
+      <button id="btn-layout-hier-ud" class="btn" title="階層ツリー (上から下)">ツリー(上下)</button>
+      <button id="btn-layout-hier-lr" class="btn" title="階層ツリー (左から右)">ツリー(左右)</button>
+      <button id="btn-physics" class="btn active" title="物理シミュレーションON/OFF">⚡ 物理演算</button>
+      <span style="color:#475569;">|</span>
+      <button id="btn-legend" class="btn" title="凡例を表示">ℹ️ 凡例</button>
+      <button id="btn-tooltip" class="btn" title="ノードにマウスを乗せた時の詳細表示 ON/OFF">💬 ホバー情報</button>
+      <span style="color:#475569;">|</span>
+      <button id="btn-history" class="btn" title="最近表示したチケット履歴">🕐 履歴</button>
+      <button id="btn-options" class="btn" title="APIキー・表示設定">⚙️ 設定</button>
+      <button id="btn-help" class="btn" title="機能説明を表示">❓ ヘルプ</button>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <div class="filter-title">🔍 表示関連:</div>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-parent" data-rel="parent" checked><span class="filter-badge dashed"></span>親子タスク</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-blocks" data-rel="blocks" checked><span class="filter-badge" style="background:#ef4444;"></span>ブロック</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-precedes" data-rel="precedes" checked><span class="filter-badge" style="background:#0284c7;"></span>先行・後続</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-relates" data-rel="relates" checked><span class="filter-badge" style="background:#10b981;"></span>関連</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-duplicates" data-rel="duplicates" checked><span class="filter-badge" style="background:#f59e0b;"></span>重複</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-copied" data-rel="copied_to" checked><span class="filter-badge dashed" style="border-bottom-color:#8b5cf6;"></span>コピー</label>
+    <label class="filter-label"><input type="checkbox" id="chk-rel-mentions" data-rel="mentions" checked><span class="filter-badge dashed" style="border-bottom-style:dotted;border-bottom-color:#d946ef;"></span>記載</label>
+    <div style="margin-left:auto;display:flex;gap:4px;">
+      <button id="btn-filter-all" class="btn" style="padding:2px 8px;font-size:11px;">全選択</button>
+      <button id="btn-filter-none" class="btn" style="padding:2px 8px;font-size:11px;">全解除</button>
+    </div>
+  </div>
+
+  <div id="main-container">
+    <div id="history-sidebar" class="collapsed">
+      <div class="history-header">
+        <span>🕐 履歴</span>
+        <button id="btn-close-history" class="btn" style="padding:2px 6px;">✕</button>
+      </div>
+      <div id="history-panel"></div>
+      <div class="history-footer">
+        <button id="btn-hist-clear" class="btn" style="width:100%;font-size:11px;padding:3px 8px;background:#dc2626;border-color:#b91c1c;">🗑️ 履歴をクリア</button>
+      </div>
+    </div>
+
+    <div id="network-container">
+      <div id="network"></div>
+      <div id="gantt-view" style="display:none;">
+        <div class="gantt-toolbar">
+          <div class="gantt-toolbar-group">
+            <select id="gantt-zoom-select" class="gantt-zoom-select" title="表示単位">
+              <option value="day">日</option>
+              <option value="week" selected>週</option>
+              <option value="month">月</option>
+              <option value="quarter">四半期</option>
+              <option value="year">年</option>
+            </select>
+            <button id="btn-gantt-today" class="btn" title="今日の位置へスクロール">📍 今日</button>
+            <button id="btn-gantt-fit" class="btn" title="全タスクの期間へ移動">🔍 全体</button>
+          </div>
+          <div class="gantt-toolbar-group">
+            <label class="gantt-chk-label" title="関連展開された外部チケットを除き、元ページのチケットのみ表示"><input type="checkbox" id="chk-gantt-page-only"> 元ページのみ</label>
+            <label class="gantt-chk-label"><input type="checkbox" id="chk-gantt-open-only"> 未完了のみ</label>
+            <input type="text" id="gantt-search" class="gantt-search-box" placeholder="件名・#ID絞込...">
+          </div>
+          <div class="gantt-toolbar-group" style="margin-left:auto;">
+            <span id="gantt-dirty-badge" class="gantt-dirty-badge" style="display:none;">未保存: 0件</span>
+            <button id="btn-gantt-discard" class="btn" style="display:none;" title="未保存の変更を破棄">↩️ 破棄</button>
+            <button id="btn-gantt-save" class="btn gantt-save-btn" style="display:none;" title="変更をRedmineへ保存">💾 Redmineへ保存</button>
+          </div>
+        </div>
+        <div id="gantt-body">
+          <div id="gantt-left">
+            <div class="gantt-left-header">
+              <div class="gl-col-id">#ID</div>
+              <div class="gl-col-subj">件名</div>
+              <div class="gl-col-date">開始日</div>
+              <div class="gl-col-date">期日</div>
+              <div class="gl-col-pct">進捗</div>
+            </div>
+            <div id="gantt-left-rows"></div>
+          </div>
+          <div id="gantt-right">
+            <div id="gantt-timeline-header"></div>
+            <div id="gantt-timeline-canvas">
+              <div id="gantt-grid"></div>
+              <svg id="gantt-arrows"></svg>
+              <div id="gantt-today-line"></div>
+              <div id="gantt-bars"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <span id="loading-text">チケットデータを取得中...</span>
+      </div>
+      <div id="legend-modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong>凡例 (リレーション)</strong>
+          <span id="btn-close-legend" style="cursor:pointer;font-weight:bold;color:#64748b;font-size:15px;">✕</span>
+        </div>
+        <div class="legend-item"><span class="legend-line" style="border-bottom:2px dashed #64748b;"></span><span>親子タスク (点線 / 灰)</span></div>
+        <div class="legend-item"><span class="legend-line" style="background:#ef4444;"></span><span>ブロック (blocks / 赤)</span></div>
+        <div class="legend-item"><span class="legend-line" style="background:#0284c7;"></span><span>先行・後続 (precedes / 青)</span></div>
+        <div class="legend-item"><span class="legend-line" style="background:#10b981;"></span><span>関連 (relates / 緑)</span></div>
+        <div class="legend-item"><span class="legend-line" style="background:#f59e0b;"></span><span>重複 (duplicates / 橙)</span></div>
+        <div class="legend-item"><span class="legend-line" style="border-bottom:2px dashed #8b5cf6;"></span><span>コピー (copied / 紫)</span></div>
+        <div class="legend-item"><span class="legend-line" style="border-bottom:2px dotted #d946ef;"></span><span>記載 (mentions / 桃)</span></div>
+        <div style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;line-height:1.4;">
+          ※金色の太枠が起点チケットです。<br>
+          ※ノードをダブルクリックで関連を展開できます。<br>
+          ※401エラーが出るサーバは「⚙️ 設定」から API キーを登録してください。
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebar" class="collapsed">
+      <div class="sidebar-header">
+        <span>チケット詳細</span>
+        <button id="btn-close-sidebar" class="btn" style="padding:2px 6px;">✕</button>
+      </div>
+      <div class="sidebar-content" id="sidebar-body">
+        <div style="color:#94a3b8;text-align:center;margin-top:40px;line-height:1.6;">
+          グラフ内のノードをクリックすると<br>詳細情報が表示されます
+        </div>
+      </div>
+      <div class="sidebar-actions" id="sidebar-actions" style="display:none;">
+        <button id="btn-open-redmine" class="btn" style="background:#2563eb;border-color:#1d4ed8;width:100%;">🔗 Redmineで開く (別タブ)</button>
+        <div class="sidebar-btn-row">
+          <button id="btn-expand-this" class="btn">🔄 関連展開</button>
+          <button id="btn-remove-this" class="btn" style="background:#dc2626;border-color:#b91c1c;">🗑️ 除外</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div id="status-left">準備完了</div>
+    <div id="status-right">ノード: 0 | エッジ: 0</div>
+  </div>
+
+  <script src="gantt.js"></script>
+  <script src="graph.js"></script>
+</body>
+</html>

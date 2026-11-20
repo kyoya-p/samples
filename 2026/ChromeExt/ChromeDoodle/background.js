@@ -37,8 +37,74 @@ function updateBadge(tabId, isActive) {
   }
 }
 
+const pendingClipboardTasks = new Map();
+let clipboardTaskSeq = 0;
+
+function settleClipboardTask(id, payload) {
+  const task = pendingClipboardTasks.get(id);
+  if (!task || task.settled) return;
+  task.settled = true;
+  pendingClipboardTasks.delete(id);
+  try {
+    task.sendResponse(payload);
+  } catch (_) {}
+}
+
+chrome.windows.onRemoved.addListener((windowId) => {
+  for (const [id, task] of pendingClipboardTasks.entries()) {
+    if (task.windowId === windowId) {
+      settleClipboardTask(id, { success: false, cancelled: true });
+    }
+  }
+});
+
 // Handle runtime messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'CHROME_DOODLE_CLIPBOARD_WRITE_IMAGE') {
+    const id = `${Date.now()}_${++clipboardTaskSeq}`;
+    const task = {
+      dataUrl: message.dataUrl,
+      sendResponse,
+      windowId: null,
+      settled: false
+    };
+    pendingClipboardTasks.set(id, task);
+
+    chrome.windows.create({
+      url: chrome.runtime.getURL(`clipboard_helper.html?id=${encodeURIComponent(id)}`),
+      type: 'popup',
+      width: 340,
+      height: 150,
+      focused: true
+    }).then((win) => {
+      if (win && pendingClipboardTasks.has(id)) {
+        task.windowId = win.id;
+      }
+    }).catch((err) => {
+      settleClipboardTask(id, { success: false, error: err?.message || String(err) });
+    });
+    return true;
+  }
+
+  if (message.type === 'CHROME_DOODLE_CLIPBOARD_GET_DATA') {
+    const task = pendingClipboardTasks.get(message.id);
+    if (!task) {
+      sendResponse({ ok: false });
+    } else {
+      sendResponse({ ok: true, dataUrl: task.dataUrl });
+    }
+    return false;
+  }
+
+  if (message.type === 'CHROME_DOODLE_CLIPBOARD_RESULT') {
+    settleClipboardTask(message.id, {
+      success: !!message.success,
+      error: message.error
+    });
+    sendResponse({ ok: true });
+    return false;
+  }
+
   if (message.type === 'CHROME_DOODLE_CAPTURE_TAB') {
     const windowId = sender.tab ? sender.tab.windowId : chrome.windows.WINDOW_ID_CURRENT;
     chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, (dataUrl) => {

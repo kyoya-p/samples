@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>設定 - Redmine Graph Navigator (rmnav)</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 760px;
+      margin: 28px auto;
+      padding: 0 20px;
+      color: #1e293b;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    h1 { font-size: 20px; margin-bottom: 16px; color: #0f172a; }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    h2 { font-size: 15px; margin-bottom: 10px; color: #1e293b; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+    input[type="text"], input[type="password"] {
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .btn {
+      padding: 7px 14px;
+      font-size: 13px;
+      border: 1px solid #2563eb;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn:hover { background: #1d4ed8; }
+    .btn-sec {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .btn-sec:hover { background: #e2e8f0; }
+    .btn-del {
+      border-color: #dc2626;
+      background: #dc2626;
+      color: #fff;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+    th { color: #64748b; font-weight: 600; }
+    .msg { font-size: 12px; margin-top: 8px; color: #0f766e; }
+    .err { color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <h1>⚙️ Redmine Graph Navigator (rmnav) 設定</h1>
+
+  <div class="card">
+    <h2>1. ウィンドウ表示モード</h2>
+    <div class="row">
+      <label><input type="radio" name="openMode" value="popup" checked> ポップアップウィンドウで開く（既定）</label>
+      <label style="margin-left:16px;"><input type="radio" name="openMode" value="tab"> 通常タブで開く</label>
+    </div>
+    <div id="mode-msg" class="msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Redmine サーバー別 API キー</h2>
+    <p style="font-size:12px;color:#64748b;margin-bottom:12px;">
+      Cookie 認証を受け付けない Redmine（401 エラーになる環境）では、Base URL と API キーを登録すると確実に関連チケットを取得できます。<br>
+      例: <code>http://172.29.240.236:8090/srdm</code> または <code>http://nar-svc94.win.sharp.co.jp/RM3</code>
+    </p>
+    <div class="row">
+      <input type="text" id="inp-url" placeholder="Base URL (例: http://172.29.240.236:8090/srdm)" style="flex:2;min-width:260px;">
+      <input type="password" id="inp-key" placeholder="API Key" style="flex:1;min-width:180px;">
+      <button id="btn-save-key" class="btn">保存</button>
+      <button id="btn-test-key" class="btn btn-sec">接続テスト</button>
+    </div>
+    <div id="key-msg" class="msg"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Base URL</th>
+          <th>API Key (マスク)</th>
+          <th style="width:90px;">操作</th>
+        </tr>
+      </thead>
+      <tbody id="key-tbody"></tbody>
+    </table>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -36,16 +36,20 @@ button:hover,select:hover{border-color:var(--accent)}
 button:disabled{opacity:.4;cursor:default;border-color:var(--line)}
 button.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 main{flex:1;min-height:0;display:flex}
-.src{width:38%;min-width:240px;position:relative;background:var(--panel);border-right:1px solid var(--line)}
+.src{width:38%;min-width:160px;position:relative;background:var(--panel);flex-shrink:0;overflow:hidden}
+#split{width:5px;cursor:col-resize;background:transparent;border-right:1px solid var(--line);flex-shrink:0;touch-action:none}
+#split:hover,#split.on{background:var(--accent-soft);border-right-color:var(--accent)}
 #ln{position:absolute;left:0;top:0;bottom:0;width:44px;overflow:hidden;z-index:1;pointer-events:none;background:var(--panel-2);border-right:1px solid var(--line)}
 #lnI{padding:8px 6px 8px 0;text-align:right;color:var(--muted);font:12px/20px var(--mono)}
 #lnI div{height:20px}
 #lnI .e{color:#fff;background:var(--danger);font-weight:700;padding-right:6px;margin-right:-6px}
 #lnI .s{color:var(--accent);font-weight:700}
+#lnI .b{color:var(--ink);font-weight:600}
+#blkHl{position:absolute;left:0;right:0;background:rgba(45,91,185,.07);border-left:3px solid var(--accent);pointer-events:none;display:none}
 #errs{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .errl{position:absolute;left:0;right:0;height:20px;background:rgba(200,60,50,.18);border-left:4px solid var(--danger)}
 .errl span{position:absolute;right:16px;top:1px;font:11px/18px var(--ui);color:#fff;background:var(--danger);padding:0 6px;border-radius:3px;white-space:nowrap}
-#hl{position:absolute;left:0;right:0;height:20px;background:var(--accent-soft);pointer-events:none;display:none}
+#hl,#hl2{position:absolute;left:0;right:0;height:20px;background:var(--accent-soft);pointer-events:none;display:none}
 #src{position:absolute;inset:0;width:100%;height:100%;border:0;resize:none;outline:0;background:transparent;color:var(--ink);
   font:13px/20px var(--mono);padding:8px 8px 8px 52px;white-space:pre;overflow:auto;tab-size:2}
 #stage{flex:1;min-width:0;overflow:auto;position:relative;padding:12px;background:var(--panel)}
@@ -69,22 +73,6 @@ footer .err{color:var(--danger);cursor:pointer}
 <body>
 <header>
   <div class="grp">
-    <button id="bPart" title="参加者を追加">＋参加者</button>
-    <button id="bMsg" title="選択行の下にメッセージを追加">＋メッセージ</button>
-    <button id="bNote" title="Noteを追加">＋Note</button>
-    <select id="bBlock" title="選択行を囲む / 末尾に追加">
-      <option value="">囲む…</option><option>loop</option><option>alt</option><option>opt</option><option>par</option><option>critical</option><option>break</option>
-    </select>
-  </div>
-  <div class="grp">
-    <button id="bUp" title="選択行を上へ">↑</button>
-    <button id="bDown" title="選択行を下へ">↓</button>
-    <button id="bDup" title="選択行を複製">複製</button>
-    <button id="bFlip" title="送信元と宛先を入替">⇄</button>
-    <button id="bArrow" title="矢印種別を切替 (->> / -->> / -> / --> / -x / --x / -) / --) / <<->> / <<-->>)">矢印</button>
-    <button id="bDel" title="選択行を削除 (Delete)">削除</button>
-  </div>
-  <div class="grp">
     <label title="メッセージに連番を自動付与 (autonumber 行の追加 / 削除)" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="checkbox" id="cAuto">autonumber</label>
   </div>
   <div class="grp">
@@ -95,10 +83,12 @@ footer .err{color:var(--danger);cursor:pointer}
   <select id="sBlk" title="この .md 内のどのシーケンス図を編集するか" hidden></select>
   <button id="bSample" title="全機能を網羅したデフォルトのサンプル図を読み込む">サンプル</button>
   <button id="bOpen" title=".md / .mmd を開く(.md は mermaid シーケンス図ブロックのみ編集)。ダイアログは最後に使ったフォルダから開始">開く</button>
+  <button id="bReload" title="開いているファイルを再読込(カーソル・選択・スクロール維持)" hidden>再読込</button>
   <input id="file" type="file" accept=".mmd,.md,.txt" hidden>
 </header>
 <main>
-  <div class="src"><div id="errs"></div><div id="ln"><div id="lnI"></div></div><div id="hl"></div><textarea id="src" spellcheck="false" wrap="off" aria-label="Mermaid sequenceDiagram ソース"></textarea></div>
+  <div class="src"><div id="blkHl"></div><div id="errs"></div><div id="ln"><div id="lnI"></div></div><div id="hl"></div><div id="hl2"></div><textarea id="src" spellcheck="false" wrap="off" aria-label="Mermaid sequenceDiagram ソース"></textarea></div>
+  <div id="split" title="ドラッグで幅変更"></div>
   <div id="stage"><div id="view"></div></div>
 </main>
 <footer>
@@ -202,7 +192,7 @@ const ARROWS=['->>','-->>','->','-->','-x','--x','-)','--)','<<->>','<<-->>','<-
 const REV_PAIR={'->>':'<<-','-->>':'<<--','->':'<-','-->':'<--','-)':'(-','--)':'(--','<<-':'->>','<<--':'-->>','<-':'->','<--':'-->','(-':'-)','(--':'--)'};
 function parse(text){
   const L=text.split('\n'), items=[], parts=[], boxes=[], map={}, errors=[], byLine={};
-  let title='', titleLine=null, depth=0, curBox=null;
+  let title='', titleLine=null, depth=0, curBox=null, bstack=[];
   const part=(id,label,type,line)=>{
     let p=map[id];
     if(!p){p=map[id]={id,label:id,type:'participant',idx:parts.length,line:null,box:null,created:false,destroyed:false};parts.push(p)}
@@ -252,11 +242,13 @@ function parse(text){
     if(m=t.match(/^(activate|deactivate)\s+(\S+)$/i)){
       items.push({k:'act',on:m[1].toLowerCase()==='activate',p:part(m[2]),line:n});byLine[n]={k:'act'};return}
     if(m=t.match(/^(loop|alt|opt|par|critical|break|rect)\b\s*(.*)$/i)){
-      depth++;items.push({k:'bstart',type:m[1].toLowerCase(),raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
+      const bt=m[1].toLowerCase();depth++;bstack.push(bt);items.push({k:'bstart',type:bt,raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
     if(m=t.match(/^(else|and|option)\b\s*(.*)$/i)){
-      items.push({k:'bsep',type:m[1].toLowerCase(),raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
+      const sep=m[1].toLowerCase(),cur=bstack[bstack.length-1],want=sep==='else'?'alt':sep==='and'?'par':'critical';
+      if(cur!==want){errors.push({line:n,msg:`${sep} は ${want} ブロック内でのみ使用できます`});return}
+      items.push({k:'bsep',type:sep,raw:m[2],text:br(m[2]),line:n});byLine[n]={k:'block',raw:m[2]};return}
     if(/^end$/i.test(t)){
-      if(depth>0){depth--;items.push({k:'bend',line:n});byLine[n]={k:'end'}}
+      if(depth>0){depth--;bstack.pop();items.push({k:'bend',line:n});byLine[n]={k:'end'}}
       else if(curBox){curBox.endLine=n;byLine[n]={k:'pboxend'};curBox=null}
       else errors.push({line:n,msg:'対応するブロックが無い end'});
       return}
@@ -266,6 +258,8 @@ function parse(text){
       items.push({k:'msg',f,t:to,arrow:m[2],act:m[3],raw,text:br(raw),line:n});byLine[n]={k:'msg',raw};return}
     errors.push({line:n,msg:'解釈できない行: '+t.slice(0,30)});
   });
+  parts.sort((a,b)=>(a.line??Infinity)-(b.line??Infinity)||a.idx-b.idx);
+  parts.forEach((p,i)=>p.idx=i);
   if(depth>0)errors.push({line:L.length-1,msg:'end が不足 ('+depth+')'});
   if(curBox)errors.push({line:L.length-1,msg:'box の end が不足'});
   return {items,parts,boxes,errors,title,titleLine,byLine,nLines:L.length};
@@ -315,14 +309,12 @@ function layout(m){
     if(cur)out.push(cur);
     return out;
   }).join('\n');
-  const formatMsgText=(it,inc)=>{
-    let txt=it.text;
-    if(auto){const k=inc?++num:num+1;txt=k+'. '+txt}
-    return wrapTxt(txt);
-  };
+  const formatMsgText=(it)=>wrapTxt(it.text);
   const drawMsg=(it,customY,createdIdx)=>{
     const a=it.f.idx,b=it.t.idx;
-    const txt=formatMsgText(it,true),Ln=lines(txt).length;
+    const stepNum=auto?++num:null;
+    const numBadge=(bx,by)=>stepNum!=null?`<g pointer-events="none"><circle class="nb" cx="${bx}" cy="${by}" r="7.5"/><text class="nbt" x="${bx}" y="${by+3.5}" text-anchor="middle">${stepNum}</text></g>`:'';
+    const txt=formatMsgText(it),Ln=lines(txt).length;
     const bi=it.arrow.startsWith('<<')&&it.arrow.endsWith('>>');
     const rev=!bi&&(/^[<(]/.test(it.arrow));
     const dash=it.arrow.includes('--');
@@ -341,14 +333,18 @@ function layout(m){
       if(it.act==='+')act[b][act[b].length-1].y0=y;
       if(rev){
         const x1=edge(a,lvT,-1),w=tw(txt),cx=clampCX(x1-18,w),hw=w/2+4;
-        g=`<g class="el" data-kind="msg" data-self="-1" data-x1="${x1}" data-x2="${x1-36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1-36}V${y+10}H${x1-2}" marker-end="${mk}"${ms}/>`+
-          `<path class="hit" d="M${x1} ${y}H${x1-36}V${y+10}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+        const d=`M${x1} ${y}H${x1-32}A4 4 0 0 0 ${x1-36} ${y+4}V${y+6}A4 4 0 0 0 ${x1-32} ${y+10}`;
+        g=`<g class="el" data-kind="msg" data-self="-1" data-x1="${x1}" data-x2="${x1-36}" data-line="${it.line}"><path class="${cls}" d="${d}H${x1-2}" marker-end="${mk}"${ms}/>`+
+          `<path class="hit" d="${d}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+          numBadge(x1,y)+`<circle class="mh" data-end="from" cx="${x1}" cy="${y}" r="5"/><circle class="mh" data-end="to" cx="${x1-2}" cy="${y+10}" r="5"/>`+
           textLines(txt,cx,y-5,'middle')+`</g>`;
         touch(x1-36,x1);minL=Math.min(minL,x1-36,cx-hw);maxR=Math.max(maxR,cx+hw);
       }else{
         const x1=edge(a,lvT,1),w=tw(txt),cx=clampCX(x1+18,w),hw=w/2+4;
-        g=`<g class="el" data-kind="msg" data-self="1" data-x1="${x1}" data-x2="${x1+36}" data-line="${it.line}"><path class="${cls}" d="M${x1} ${y}H${x1+36}V${y+10}H${x1+2}" marker-end="${mk}"${ms}/>`+
-          `<path class="hit" d="M${x1} ${y}H${x1+36}V${y+10}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+        const d=`M${x1} ${y}H${x1+32}A4 4 0 0 1 ${x1+36} ${y+4}V${y+6}A4 4 0 0 1 ${x1+32} ${y+10}`;
+        g=`<g class="el" data-kind="msg" data-self="1" data-x1="${x1}" data-x2="${x1+36}" data-line="${it.line}"><path class="${cls}" d="${d}H${x1+2}" marker-end="${mk}"${ms}/>`+
+          `<path class="hit" d="${d}H${x1}" fill="none" stroke="transparent" stroke-width="14"/>`+
+          numBadge(x1,y)+`<circle class="mh" data-end="from" cx="${x1}" cy="${y}" r="5"/><circle class="mh" data-end="to" cx="${x1+2}" cy="${y+10}" r="5"/>`+
           textLines(txt,cx,y-5,'middle')+`</g>`;
         touch(x1,x1+36);minL=Math.min(minL,cx-hw);maxR=Math.max(maxR,x1+36,cx+hw);
       }
@@ -362,8 +358,10 @@ function layout(m){
       const x1=createdIdx===src?x[src]+dir*(bw[src]/2):edge(src,lv1,dir);
       const x2=createdIdx===dst?x[dst]-dir*(bw[dst]/2):edge(dst,lv2,-dir);
       const w=tw(txt),cx=clampCX((x1+x2)/2,w),hw=w/2+4;
-      g=`<g class="el" data-kind="msg" data-x1="${rev?x2:x1}" data-x2="${rev?x1:x2}" data-line="${it.line}"><line class="${cls}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="${mk}"${ms}/>`+
+      const fx=rev?x2:x1,tx=rev?x1:x2;
+      g=`<g class="el" data-kind="msg" data-x1="${fx}" data-x2="${tx}" data-line="${it.line}"><line class="${cls}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-end="${mk}"${ms}/>`+
         `<line class="hit" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="transparent" stroke-width="14"/>`+
+        numBadge(fx,y)+`<circle class="mh" data-end="from" cx="${fx}" cy="${y}" r="5"/><circle class="mh" data-end="to" cx="${tx}" cy="${y}" r="5"/>`+
         textLines(txt,cx,y-5,'middle')+`</g>`;
       {const l=Math.min(x1,x2,cx-hw),r=Math.max(x1,x2,cx+hw);touch(Math.min(x1,x2),Math.max(x1,x2));minL=Math.min(minL,l);maxR=Math.max(maxR,r)}
       if(it.act==='-')closeBar(a,y);
@@ -374,7 +372,7 @@ function layout(m){
   };
   const closeBlock=(y,b)=>{
     const pad=18+10*b.inner,inner=b.inner;
-    if(b.minX===Infinity){b.minX=x[0];b.maxX=x[0]}
+    if(b.minX===Infinity){b.minX=x[0];b.maxX=x[n-1]}
     const x0=b.minX-pad,x1=b.maxX+pad,w=x1-x0;
     minL=Math.min(minL,x0);maxR=Math.max(maxR,x1);
     const tabW=tw(b.type)+20;
@@ -383,7 +381,7 @@ function layout(m){
       (b.label?lines('['+b.label+']').map((l,k)=>`<text class="t" x="${x0+tabW+8}" y="${b.y0+15+k*LHT}">${esc(l)}</text>`).join(''):'')+`</g>`;
     if(b.type==='rect'){const col=(b.label||'').replace(/[^\w#(),.%\s/-]/g,'')||'transparent';
       const op=/^(?:rgba|hsla)\s*\(/i.test(col)||/\//.test(col)||/^#[0-9a-f]{4}$|^#[0-9a-f]{8}$/i.test(col)||/^transparent$/i.test(col)?'1':'.35';
-      s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" style="fill:${col};fill-opacity:${op}" pointer-events="none"/>`+
+      s=`<g class="el" data-kind="bstart" data-line="${b.line}"><rect class="blk rblk" x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" style="fill:${col};fill-opacity:${op}" pointer-events="none"/>`+
         `<rect x="${x0}" y="${b.y0}" width="${w}" height="${y-b.y0}" fill="none" stroke="transparent" stroke-width="8" pointer-events="stroke"/></g>`}
     for(const sp of b.seps){
       s+=`<g class="el" data-kind="bsep" data-line="${sp.line}"><line class="sep" x1="${x0}" x2="${x1}" y1="${sp.y}" y2="${sp.y}"/>`+
@@ -429,7 +427,7 @@ function layout(m){
       continue;
     }
     if(it.k==='msg'){
-      drawMsg(it,null,null);
+      ys[ys.length-1].ay=drawMsg(it,null,null);
     }else if(it.k==='note'){
       const Ln=lines(it.text).length,W2=Math.max(70,tw(it.text)+24),h=Ln*LHT+10;
       let x0,x1;const i=it.ps[0].idx;
@@ -440,8 +438,9 @@ function layout(m){
         x0=a-10;x1=b+10;if(x1-x0<W2){const c=(a+b)/2;x0=c-W2/2;x1=c+W2/2}
       }
       const y=cursor+4;
-      fg.push(`<g class="el" data-kind="note" data-x0="${x0}" data-x1="${x1}" data-line="${it.line}"><path class="note" d="M${x0} ${y}H${x1-8}l8 8V${y+h}H${x0}z"/>`+
-        lines(it.text).map((l,k)=>`<text class="t" ${al(it.text,(x0+x1)/2)} y="${y+16+k*LHT-2}">${esc(l)}</text>`).join('')+`</g>`);
+      fg.push(`<g class="el" data-kind="note" data-x0="${x0}" data-x1="${x1}" data-line="${it.line}"><rect class="note" x="${x0}" y="${y}" width="${x1-x0}" height="${h}"/>`+
+        lines(it.text).map((l,k)=>`<text class="t" ${al(it.text,(x0+x1)/2)} y="${y+16+k*LHT-2}">${esc(l)}</text>`).join('')+
+        `<rect class="nh" x="${x0-5}" y="${y}" width="10" height="${h}"/><rect class="nh" x="${x1-5}" y="${y}" width="10" height="${h}"/></g>`);
       touch(x0,x1);minL=Math.min(minL,x0);maxR=Math.max(maxR,x1);
       cursor=y+h+14;
     }else if(it.k==='act'){
@@ -450,7 +449,7 @@ function layout(m){
       cursor+=6;
     }else if(it.k==='bstart'){
       stack.push({type:it.type,label:it.text,line:it.line,y0:cursor,minX:Infinity,maxX:-Infinity,inner:0,seps:[]});
-      cursor+=30+(it.type==='rect'?0:(lines(it.text).length-1)*LHT);
+      cursor+=it.type==='rect'?6:30+(lines(it.text).length-1)*LHT;
     }else if(it.k==='bsep'){
       const b=stack[stack.length-1];
       if(b){b.seps.push({y:cursor+2,label:it.text,line:it.line});cursor+=28+(lines(it.text).length-1)*LHT}
@@ -499,26 +498,28 @@ function layout(m){
     const drawY=destroyY[i]!=null?[topY]:[topY,by];
     for(const yy of drawY){
       const ln=p.line!=null?` data-line="${p.line}"`:'';
-      boxes.push(`<g class="el" data-kind="part" data-pi="${i}"${ln}><rect class="box" x="${x[i]-bw[i]/2}" y="${yy}" width="${bw[i]}" height="${BH}" rx="${p.type==='actor'?19:5}"/>`+
-        lines(p.label).map((l,k,a)=>`<text class="t" ${al(p.label,x[i])} y="${yy+BH/2+5+(k-(a.length-1)/2)*LHT}" font-weight="600">${esc(l)}</text>`).join('')+`</g>`);
+      const isAct=p.type==='actor',tx=isAct?x[i]+8:x[i],ix=x[i]-bw[i]/2+16,iy=yy+BH/2;
+      const ico=isAct?`<g stroke="${C.ink}" fill="none" stroke-width="1.5" stroke-linecap="round"><circle cx="${ix}" cy="${iy-4}" r="4.5"/><path d="M${ix-6.5} ${iy+7}c0-5.2 13-5.2 13 0"/></g>`:'';
+      boxes.push(`<g class="el" data-kind="part" data-pi="${i}"${ln}><rect class="box" x="${x[i]-bw[i]/2}" y="${yy}" width="${bw[i]}" height="${BH}" rx="5"/>${ico}`+
+        lines(p.label).map((l,k,a)=>`<text class="t" ${al(p.label,tx)} y="${yy+BH/2+5+(k-(a.length-1)/2)*LHT}" font-weight="600">${esc(l)}</text>`).join('')+`</g>`);
     }
   });
   const barS=bars.map(b=>`<g class="el" data-kind="bar" data-line="${b.line}"><rect class="bar" x="${x[b.i]-5+(b.level-1)*5}" y="${b.y0}" width="10" height="${Math.max(4,b.y1-b.y0)}"/></g>`).join('');
   const titleS=m.title?`<g class="el" data-kind="title"${m.titleLine!=null?` data-line="${m.titleLine}"`:''}><text class="t" x="${W/2}" y="26" text-anchor="middle" font-size="17" font-weight="700">${esc(m.title)}</text></g>`:'';
   if(m.title){const hw=tw(m.title)*17/13/2+8;minL=Math.min(minL,W/2-hw);maxR=Math.max(maxR,W/2+hw)}
   const vbX=Math.min(0,minL-8),vbW=Math.max(W,maxR+8)-vbX;
-  const style=`<style>.t{fill:${C.ink};font-size:13px}.box{fill:${C.box};stroke:${C.l2};stroke-width:1.2}.pbox{stroke:${C.l2};stroke-width:1.2;stroke-dasharray:5 3}.life{stroke:${C.l2};stroke-dasharray:4 4}`+
+  const style=`<style>.t{fill:${C.ink};font-size:13px}.box{fill:${C.box};stroke:${C.l2};stroke-width:1.2}.pbox{stroke:${C.l2};stroke-width:1.2;stroke-dasharray:5 3}.life{stroke:${C.l2}}`+
     `.msg{stroke:${C.ink};stroke-width:1.5;fill:none}.dash{stroke-dasharray:6 4}.bar{fill:${C.bar};stroke:${C.ink};stroke-width:1}.destroy{stroke:${C.ink};stroke-width:2.4;stroke-linecap:round}`+
-    `.note{fill:${C.note};stroke:${C.l2}}.blk{fill:none;stroke:${C.mu};stroke-width:1.2}.tab{fill:${C.tab};stroke:${C.mu}}.sep{stroke:${C.mu};stroke-dasharray:6 4}`+
+    `.note{fill:${C.note};stroke:${C.l2};stroke-width:.6}.blk{fill:none;stroke:${C.mu};stroke-width:1.2}.rblk{stroke:${C.l2};stroke-width:.8}.tab{fill:${C.tab};stroke:${C.mu}}.sep{stroke:${C.mu};stroke-dasharray:6 4}`+
     `.el{cursor:pointer}.lh{cursor:crosshair}.el[data-kind=msg],.el[data-kind=note],.el[data-kind=bstart],.el[data-kind=bsep],.el[data-kind=destroy]{cursor:move}`+
-    `.el[data-kind=bend]{cursor:ns-resize}.el[data-kind=part]{cursor:ew-resize}`+
+    `.el[data-kind=bend]{cursor:ns-resize}.el[data-kind=part]{cursor:move}.nh{fill:transparent;pointer-events:none}.sel .nh{pointer-events:all;cursor:ew-resize}.mh{display:none;fill:#fff;stroke:#ef4444;stroke-width:2;cursor:ew-resize}.sel .mh{display:block}.nb{fill:${C.ink};stroke:${cv('--panel')};stroke-width:1.2}.nbt{fill:#fff;font-size:10px;font-weight:700}`+
     `.sel .msg,.sel .box,.sel .pbox,.sel .note,.sel .blk,.sel .bar,.sel .tab,.sel .destroy{stroke:${C.ac};stroke-width:2.6}.sel .t{fill:${C.ac}}</style>`;
   const defs=`<defs><marker id="mF" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto-start-reverse"><path d="M0 1.5L10.5 6L0 10.5z" fill="${C.ink}"/></marker>`+
     `<marker id="mO" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1.5L10 6L1 10.5" fill="none" stroke="${C.ink}" stroke-width="1.5"/></marker>`+
     `<marker id="mX" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="7" refY="6" orient="auto"><path d="M2 1L12 11M12 1L2 11" fill="none" stroke="${C.ink}" stroke-width="1.6"/></marker></defs>`;
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} 0 ${vbW} ${H}" width="${vbW*zoom}" height="${H*zoom}" font-family='${FONT.replace(/"/g,'&quot;')}'>`+
     style+defs+titleS+pboxBg.join('')+bg.join('')+life.join('')+barS+fg.join('')+boxes.join('')+`</svg>`;
-  return {svg,x,ys,vbX,vbW,H,bottom:cursor};
+  return {svg,x,ys,vbX,vbW,H,top:top+BH,bottom:cursor};
 }
 
 /* ---------- render / selection ---------- */
@@ -527,45 +528,77 @@ function render(){
   view.innerHTML=geo?geo.svg:'<p style="color:var(--muted)">参加者 / メッセージを入力してください</p>';
   applySel();
 }
+function selEndLine(){
+  if(sel==null||!model||!model.byLine[sel]||model.byLine[sel].k!=='block')return null;
+  const L=getL();return BSTART.test((L[sel]||'').trim())?blockEnd(L,sel):null;
+}
 function applySel(){
   view.querySelectorAll('.sel').forEach(e=>e.classList.remove('sel'));
-  if(sel!=null)view.querySelectorAll(`.el[data-line="${sel}"]`).forEach(e=>e.classList.add('sel'));
+  if(sel!=null){
+    view.querySelectorAll(`.el[data-line="${sel}"]`).forEach(e=>e.classList.add('sel'));
+    const e2=selEndLine();if(e2!=null)view.querySelectorAll(`.el[data-line="${e2}"]`).forEach(e=>e.classList.add('sel'));
+  }
   syncHl();
-  const k=sel!=null&&model.byLine[sel]?model.byLine[sel].k:null;
-  $('#bUp').disabled=$('#bDown').disabled=$('#bDup').disabled=$('#bDel').disabled=sel==null;
-  $('#bFlip').disabled=$('#bArrow').disabled=k!=='msg';
 }
 function syncHl(){
   if(model)syncLn();
-  if(sel==null){hl.style.display='none';return}
-  hl.style.display='block';hl.style.top=(PAD+sel*LH-ta.scrollTop)+'px';
+  syncBlkHl();
+  const h2=$('#hl2');
+  if(sel==null){hl.style.display='none';if(h2)h2.style.display='none';return}
+  hl.style.display='block';hl.style.top=(PAD+(sel+blkStart())*LH-ta.scrollTop)+'px';
+  const e2=selEndLine();
+  if(h2){if(e2!=null&&e2!==sel){h2.style.display='block';h2.style.top=(PAD+(e2+blkStart())*LH-ta.scrollTop)+'px'}else h2.style.display='none'}
+}
+function syncBlkHl(){
+  const bh=$('#blkHl');if(!bh)return;
+  if(!doc.md||!curBlk){bh.style.display='none';return}
+  bh.style.display='block';
+  bh.style.top=(PAD+curBlk.start*LH-ta.scrollTop)+'px';
+  bh.style.height=((curBlk.end-curBlk.start+1)*LH)+'px';
 }
 function select(n,scroll){
   sel=(n!=null&&model.byLine[n])?n:null;applySel();
   if(sel!=null&&scroll){
-    const y=PAD+sel*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl();
+    const y=PAD+(sel+blkStart())*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl();
     const el=view.querySelector(`.el[data-line="${sel}"]`);if(el)el.scrollIntoView({block:'nearest',inline:'nearest'});
   }
 }
 function status(){
   const e=model.errors;
-  st.innerHTML=e.length?`<span class="err" style="cursor:default">⚠ エラー ${e.length} 件:</span> `+e.slice(0,4).map(x=>`<span class="err" data-l="${x.line}" title="クリックでこの行へ">L${x.line+1} ${esc(x.msg)}</span>`).join(' ／ ')+(e.length>4?` ／ 他 ${e.length-4} 件`:''):
+  st.innerHTML=e.length?`<span class="err" style="cursor:default">⚠ エラー ${e.length} 件:</span> `+e.slice(0,4).map(x=>`<span class="err" data-l="${x.line}" title="クリックでこの行へ">L${x.line+1+blkStart()} ${esc(x.msg)}</span>`).join(' ／ ')+(e.length>4?` ／ 他 ${e.length-4} 件`:''):
     `参加者 ${model.parts.length} / 要素 ${model.items.length}`;
   syncErrs();syncLn();
 }
 function syncLn(){
-  const es=new Set(model.errors.map(x=>x.line));let h='';
-  for(let i=0;i<model.nLines;i++)h+=`<div${es.has(i)?' class="e"':i===sel?' class="s"':''}>${i+1}</div>`;
+  const b0=blkStart(),b1=curBlk?curBlk.end:model.nLines-1,total=ta.value.split('\n').length,e2=selEndLine();
+  const es=new Set(model.errors.map(x=>x.line+b0));let h='';
+  for(let i=0;i<total;i++)h+=`<div${es.has(i)?' class="e"':(i===sel+b0||(e2!=null&&i===e2+b0))?' class="s"':doc.md&&i>=b0&&i<=b1?' class="b"':''}>${i+1}</div>`;
   $('#lnI').innerHTML=h;lnScroll();
 }
 function lnScroll(){$('#lnI').style.transform=`translateY(${-ta.scrollTop}px)`}
 function syncErrs(){
-  $('#errs').innerHTML=model.errors.map(x=>`<div class="errl" style="top:${PAD+x.line*LH-ta.scrollTop}px"><span>⚠ ${esc(x.msg)}</span></div>`).join('');
+  const b0=blkStart();
+  $('#errs').innerHTML=model.errors.map(x=>`<div class="errl" style="top:${PAD+(x.line+b0)*LH-ta.scrollTop}px"><span>⚠ ${esc(x.msg)}</span></div>`).join('');
 }
-st.addEventListener('click',ev=>{const l=ev.target.dataset&&ev.target.dataset.l;if(l!=null){const n=+l;ta.focus();const lo=lineOffsets(),off=lo.off;ta.setSelectionRange(off[n],off[n]+lo.L[n].length);ta.scrollTop=Math.max(0,PAD+n*LH-ta.clientHeight/2)}});
+st.addEventListener('click',ev=>{const l=ev.target.dataset&&ev.target.dataset.l;if(l!=null){const n=+l+blkStart();ta.focus();const fullL=ta.value.split('\n'),off=[0];for(const x of fullL)off.push(off[off.length-1]+x.length+1);ta.setSelectionRange(off[n],off[n]+fullL[n].length);ta.scrollTop=Math.max(0,PAD+n*LH-ta.clientHeight/2)}});
 
 /* ---------- text edit helpers ---------- */
-function lineOffsets(){const L=ta.value.split('\n'),off=[0];for(const l of L)off.push(off[off.length-1]+l.length+1);return {L,off}}
+let curBlk=null;
+function blkStart(){return curBlk?curBlk.start:0}
+function computeBlk(){
+  if(!doc.md){curBlk=null;return null}
+  const t=ta.value,d=splitDoc(t,doc.idx);
+  if(!d.md){curBlk=null;return null}
+  const b0=d.pre.length,b1=t.length-d.post.length,body=t.slice(b0,b1).replace(/\n$/,'');
+  const start=d.pre.split('\n').length-1,L=body.split('\n'),end=start+L.length-1;
+  curBlk={start,end,c0:b0,c1:b0+body.length,L,d};
+  return curBlk;
+}
+function lineOffsets(){
+  const fullL=ta.value.split('\n'),off=[0];for(const l of fullL)off.push(off[off.length-1]+l.length+1);
+  if(!doc.md||!curBlk)return {L:fullL,off};
+  return {L:fullL.slice(curBlk.start,curBlk.end+1),off:off.slice(curBlk.start,curBlk.end+2)};
+}
 function edit(a,b,txt){
   const had=document.activeElement===ta,st0=ta.scrollTop;
   ta.focus({preventScroll:true});ta.setSelectionRange(a,b);
@@ -573,7 +606,7 @@ function edit(a,b,txt){
   if(!ok){ta.setRangeText(txt,a,b,'end');ta.dispatchEvent(new Event('input'))}
   if(!had){if(document.activeElement===ta)ta.blur();ta.scrollTop=st0;if(sel!=null)reveal(sel)}
 }
-function reveal(n){const y=PAD+n*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl()}
+function reveal(n){const y=PAD+(n+blkStart())*LH;if(y<ta.scrollTop||y>ta.scrollTop+ta.clientHeight-LH*2)ta.scrollTop=Math.max(0,y-ta.clientHeight/2);syncHl()}
 const indentOf=l=>(l.match(/^\s*/)||[''])[0];
 const indent=(ind,t)=>t.split('\n').map(l=>ind+l).join('\n');
 function insertAfter(n,txt,ed){const {L,off}=lineOffsets();n=Math.min(n,L.length-1);const p=off[n]+L[n].length;pendingSel=n+1;pendingEdit=ed?n+1:null;edit(p,p,'\n'+indent(indentOf(L[n]),txt))}
@@ -588,6 +621,13 @@ function deleteLine(n){
   }
   if(k==='pbox')return unwrapBox(n);
   if(k==='pboxend'){flash('box 行から解除できます');return}
+  if(k==='block'){
+    const L2=getL();
+    if(BSTART.test((L2[n]||'').trim())){
+      const e2=blockEnd(L2,n);dedentInner(L2,n,e2);
+      L2.splice(e2,1);L2.splice(n,1);sel=null;return rewrite(L2,null);
+    }
+  }
   const {L,off}=lineOffsets();pendingSel=null;
   if(n<L.length-1)edit(off[n],off[n+1],'');else if(n>0)edit(off[n]-1,off[n]+L[n].length,'');else edit(0,L[0].length,'');
   sel=null;
@@ -653,6 +693,7 @@ function startEdit(n,what){
   editEl={inp,n,v0,idInp,id0:pp?pp.id:null};
   const first=idInp&&what==='id'?idInp:inp;first.focus();first.select();
   const key=multi=>e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s')return;
     if(e.key==='Enter'&&(!multi||!e.shiftKey&&!e.altKey)&&!e.isComposing){e.preventDefault();stopEdit(true)}
     else if(e.key==='Escape'){e.preventDefault();stopEdit(false)}
     e.stopPropagation()};
@@ -674,8 +715,8 @@ function stopEdit(commit){
 const NS='http://www.w3.org/2000/svg';
 const NOTE=/^note\s+(left of|right of|over)\s+([^:]+?)\s*:\s*(.*)$/i;
 const BSTART=/^(loop|alt|opt|par|critical|break|rect)\b/i;
-const BLOCKS=['loop','alt','opt','par','critical','break'];
-const getL=()=>ta.value.split('\n');
+const BLOCKS=['loop','alt','opt','par','critical','break','rect'];
+const getL=()=>curBlk?curBlk.L.slice():ta.value.split('\n');
 function msgP(l){const m=l.trim().match(MSG);return m&&{ind:indentOf(l),f:m[1].trim(),a:m[2],act:m[3],t:m[4],x:m[5]}}
 const msgS=o=>`${o.ind}${o.f}${o.a}${o.act}${o.t}${o.x!=null?': '+o.x:''}`;
 function noteP(l){const m=l.trim().match(NOTE);return m&&{ind:indentOf(l),pos:m[1].toLowerCase(),ps:m[2].split(',').map(s=>s.trim()),x:m[3]}}
@@ -685,13 +726,14 @@ function lastContent(L){let n=L.length-1;while(n>0&&!L[n].trim())n--;return n}
 function topIndent(L){const l=L.find(l=>l.trim()&&!/^\s*sequenceDiagram\b/i.test(l));return l?indentOf(l):'  '}
 function flash(msg){st.textContent=msg;setTimeout(()=>model&&status(),2500)}
 function rewrite(L,selLine,editLine){
-  const v=L.join('\n');if(v===ta.value)return false;
+  const v=L.join('\n'),o=curBlk?ta.value.slice(curBlk.c0,curBlk.c1):ta.value,c0=curBlk?curBlk.c0:0;
+  if(v===o)return false;
   if(parse(v).errors.length>model.errors.length){flash('⚠ その操作は構文が崩れるため中止');return false}
   pendingSel=selLine??null;pendingEdit=editLine??null;
-  const o=ta.value;let a=0,eo=o.length,en=v.length;
+  let a=0,eo=o.length,en=v.length;
   while(a<eo&&a<en&&o[a]===v[a])a++;
   while(eo>a&&en>a&&o[eo-1]===v[en-1]){eo--;en--}
-  edit(a,eo,v.slice(a,en));return true;
+  edit(c0+a,c0+eo,v.slice(a,en));return true;
 }
 /* move lines a..b to the position indicated by y */
 function dropTarget(y,a,b){return geo.ys.find(o=>o.y>y&&(o.line<a||o.line>b))}
@@ -722,7 +764,11 @@ function moveRange(L,a,b,y){
   const moved=chunk.map(l=>l.trim()?ind+l.slice(base):l);
   let out=L.slice(0,a).concat(L.slice(b+1)),at=ins>b?ins-chunk.length:ins;
   /* end を下へ広げたとき、元の境界だった空行はブロック内に残さない */
-  if(a===b&&/^end$/i.test(L[a].trim())&&at>a&&!out[a].trim()){out.splice(a,1);at--}
+  if(a===b&&/^end$/i.test(L[a].trim())){
+    if(at>a&&!out[a].trim()){out.splice(a,1);at--}
+    if(at>a){for(let i=a;i<at;i++)if(out[i].trim())out[i]='  '+out[i]}
+    else if(at<a){for(let i=at;i<a;i++)if(out[i].trim()&&out[i].startsWith(ind+'  '))out[i]=ind+out[i].slice(ind.length+2)}
+  }
   out.splice(at,0,...moved);
   let pos=at;const n=moved.length,ra=a<at?a:a+n;
   const depthAt=k=>{let d=0;for(let i=0;i<k;i++){const t=out[i].trim();if(BANY.test(t))d++;else if(/^end$/i.test(t))d--}return d};
@@ -736,11 +782,12 @@ function moveRange(L,a,b,y){
 }
 /* rebuild participant declarations in the given order (preserving box...end and create) */
 function reorderParts(L,from,to){
+  const hasTop=p=>{const cr=model.items.find(it=>it.k==='create'&&it.p===p);return !p.created||(cr&&p.line!=null&&p.line!==cr.line)};
   const fp=model.parts[from];
-  if(fp&&fp.created){flash('⚠ 途中生成 (create) の参加者は、出現行の上下移動で順序が決まります');return null}
-  const hp=model.parts.filter(p=>!p.created);
+  if(fp&&!hasTop(fp)){flash('⚠ 途中生成 (create) の参加者は、出現行の上下移動で順序が決まります');return null}
+  const hp=model.parts.filter(hasTop);
   const fi=hp.indexOf(fp);if(fi<0)return null;
-  const ti=model.parts.filter((p,idx)=>!p.created&&idx!==from&&(idx<to||(to>from&&idx===to))).length;
+  const ti=model.parts.filter((p,idx)=>hasTop(p)&&idx!==from&&(idx<to||(to>from&&idx===to))).length;
   const isDecl=l=>/^\s*(participant|actor)\s+\S/i.test(l);
   const boxKill=new Set();
   model.boxes.forEach(b=>{boxKill.add(b.line);if(b.endLine!=null)boxKill.add(b.endLine)});
@@ -773,17 +820,52 @@ function reorderParts(L,from,to){
   out.splice(pos,0,...ins);
   return {L:out,at};
 }
+function dropPartTarget(y,ln){return geo.ys.find(o=>(o.ay??o.y)>y-6&&o.line!==ln)}
+function isPartVert(pr,p){return pr?.created?(p.y<=geo.top||(Math.abs(p.y-drag.sy)>12&&Math.abs(p.y-drag.sy)>Math.abs(p.x-drag.sx))):(p.y>geo.top&&Math.abs(p.y-drag.sy)>Math.abs(p.x-drag.sx))}
+function movePartY(L,i,y){
+  const p=model.parts[i];if(!p)return null;
+  const cr=model.items.find(it=>it.k==='create'&&it.p===p),cl=cr?cr.line:p.line;
+  if(y<=geo.top){
+    if(!p.created||cl==null)return null;
+    if(p.line!=null&&p.line!==cl){L.splice(cl,1);return {L,at:p.line}}
+    const decl=L[cl].trim().replace(/^create\s+/i,'');
+    L.splice(cl,1);
+    const pos=headEnd(L);L.splice(pos,0,topIndent(L)+decl);
+    return {L,at:pos};
+  }
+  if(p.created&&cl!=null)return moveRange(L,cl,cl,y);
+  const tg=dropPartTarget(y,p.line??-1);
+  let ins=tg?tg.line:lastContent(L)+1;
+  while(ins>0&&!L[ins-1].trim()&&ins-1!==p.line)ins--;
+  const he=headEnd(L);if(ins<he)ins=he;
+  const ind=(tg&&tg.line>=he)?indentOf(L[tg.line])+(/^(end|else|and|option)\b/i.test(L[tg.line].trim())?'  ':''):topIndent(L);
+  const decl=p.line!=null?L[p.line].trim().replace(/^create\s+/i,''):`${p.type} ${p.id}`;
+  if(p.line!=null){L.splice(p.line,1);if(ins>p.line)ins--}
+  L.splice(ins,0,ind+'create '+decl);
+  return {L,at:ins};
+}
+function dedentInner(L,n,e){
+  const base=indentOf(L[n]);let minEx=Infinity;
+  for(let i=n+1;i<e;i++){
+    if(!L[i].trim())continue;
+    const ind=indentOf(L[i]);
+    if(!ind.startsWith(base)||ind.length<=base.length){minEx=0;break}
+    minEx=Math.min(minEx,ind.length-base.length);
+  }
+  if(!minEx||minEx===Infinity)return;
+  for(let i=n+1;i<e;i++)if(L[i].trim())L[i]=base+L[i].slice(base.length+minEx);
+}
 function unwrapBox(n){
   const b=model.boxes.find(b=>b.line===n),L=getL();
   let e=b&&b.endLine!=null?b.endLine:-1;
   if(e<0){for(let i=n+1;i<L.length;i++)if(/^\s*end\b/i.test(L[i])){e=i;break}}
-  if(e>n){for(let i=n+1;i<e;i++)L[i]=L[i].replace(/^ {1,2}/,'');L.splice(e,1)}
+  if(e>n){dedentInner(L,n,e);L.splice(e,1)}
   L.splice(n,1);sel=null;rewrite(L,null);
 }
 function wrap(a,b,type){
   const L=getL(),ind=indentOf(L[a]);
   for(let i=a;i<=b;i++)if(L[i].trim())L[i]='  '+L[i];
-  L.splice(b+1,0,ind+'end');L.splice(a,0,ind+type+' 条件');
+  L.splice(b+1,0,ind+'end');L.splice(a,0,ind+type+(type==='rect'?' rgb(240,240,240)':' 条件'));
   rewrite(L,a,a);
 }
 function rangeOf(n){const L=getL();return BSTART.test((L[n]||'').trim())?[n,blockEnd(L,n)]:[n,n]}
@@ -848,8 +930,8 @@ view.addEventListener('pointerdown',e=>{
     const k=g.dataset.kind;D.line=g.dataset.line!=null?+g.dataset.line:null;
     if(k==='part'){D.mode='part';D.i=+g.dataset.pi}
     else if(k==='msg'){
-      const x1=+g.dataset.x1,x2=+g.dataset.x2;
-      D.mode=g.dataset.self?(Math.abs(p.x-x2)<12?'to':'move'):Math.abs(p.x-x2)<18?'to':Math.abs(p.x-x1)<18?'from':'move';
+      const x1=+g.dataset.x1,x2=+g.dataset.x2,mh=e.target.closest('.mh');
+      D.mode=mh?mh.dataset.end:(g.dataset.self?(Math.abs(p.x-x2)<12?'to':'move'):Math.abs(p.x-x2)<18?'to':Math.abs(p.x-x1)<18?'from':'move');
       D.fx=D.mode==='from'?x2:x1;
     }
     else if(k==='note'){const x0=+g.dataset.x0,x1=+g.dataset.x1;D.mode=p.x>x1-10?'nR':p.x<x0+10?'nL':'note'}
@@ -874,7 +956,13 @@ view.addEventListener('pointermove',e=>{
     case 'move':s=hl_(tgY());break;
     case 'note':s=(Math.abs(p.y-drag.sy)>12?hl_(tgY()):'')+vl(geo.x[nearestPart(p.x)]);break;
     case 'nL':case 'nR':s=vl(geo.x[nearestPart(p.x)]);break;
-    case 'part':{s=vl(p.x,2)+`<rect x="${p.x-30}" y="0" width="60" height="${vb.height}" fill="${A}" opacity=".08"/>`;break}
+    case 'part':{
+      const pr=model.parts[drag.i],cr=pr?.created?model.items.find(it=>it.k==='create'&&it.p===pr):null;
+      if(isPartVert(pr,p)){
+        if(p.y>geo.top){const t=dropPartTarget(p.y,cr?cr.line:-1);s=hl_(t?(t.ay??t.y):geo.bottom)}
+        else s=hl_(geo.top);
+      }else s=vl(p.x,2)+`<rect x="${p.x-30}" y="0" width="60" height="${vb.height}" fill="${A}" opacity=".08"/>`;
+      break}
   }
   overlay(s);
 });
@@ -911,7 +999,9 @@ function endDrag(e){
       o.pos='over';o.ps=lo===hi?[model.parts[lo].id]:[model.parts[lo].id,model.parts[hi].id];
       L[drag.line]=noteS(o);rewrite(L,drag.line);break}
     case 'part':{
-      const from=drag.i,to=geo.x.filter((x,k)=>k!==from&&x<p.x).length;if(to===from)break;
+      const from=drag.i,pr=model.parts[from];
+      if(isPartVert(pr,p)){const r=movePartY(L,from,p.y);if(r)rewrite(r.L,r.at);break}
+      const to=geo.x.filter((x,k)=>k!==from&&x<p.x).length;if(to===from)break;
       const r=reorderParts(L,from,to);if(r)rewrite(r.L,r.at);break}
   }
 }
@@ -952,7 +1042,7 @@ function menuFor(g,p){
     return [{t:'表示名を変更',f:()=>renamePart(i,'label')},{t:'ID を変更 ('+model.parts[i].id+')',f:()=>renamePart(i,'id')},
       {h:'種別',row:[{t:'participant',on:P.type!=='actor',f:()=>setPartType(i,'participant')},{t:'actor',on:P.type==='actor',f:()=>setPartType(i,'actor')}]},
       {h:'並び',row:[{t:'← 左へ',dis:P.created||i===0,f:()=>{const r=reorderParts(getL(),i,i-1);if(r)rewrite(r.L,r.at)}},{t:'右へ →',dis:P.created||i===model.parts.length-1,f:()=>{const r=reorderParts(getL(),i,i+1);if(r)rewrite(r.L,r.at)}}]},
-      {t:'参加者を追加',f:()=>$('#bPart').click()},
+      {t:'参加者を追加',f:addParticipant},
       {t:'末尾で破棄 (destroy) を追加',dis:P.destroyed,f:()=>insertEnd('destroy '+P.id,false)},
       '-',{t:'削除（関連する矢印も削除、Note の対象から除外）',f:()=>deletePart(i)}];
   }
@@ -978,17 +1068,17 @@ function menuFor(g,p){
     const t=L[n].trim(),type=t.match(BSTART)[1].toLowerCase(),e=blockEnd(L,n);
     const sep=type==='par'?'and':type==='critical'?'option':'else';
     return [{t:'条件を編集',f:()=>startEdit(n)},
-      {h:'種別',row:BLOCKS.map(b=>({t:b,on:type===b,f:set(L2=>{L2[n]=L2[n].replace(/^(\s*)\w+/,'$1'+b)})}))},
+      {h:'種別',row:BLOCKS.map(b=>({t:b,on:type===b,f:set(L2=>{L2[n]=b==='rect'?L2[n].replace(/^(\s*)\w+.*$/,'$1rect rgb(240,240,240)'):L2[n].replace(/^(\s*)\w+/,'$1'+b)})}))},
       {t:sep+' を追加',dis:!['alt','par','critical'].includes(type),f:()=>insertBefore(e,sep+' 条件',true)},
       wrapRow(n),
-      {t:'囲みを解除',f:()=>{const L2=getL(),e2=blockEnd(L2,n);for(let i=n+1;i<e2;i++)L2[i]=L2[i].replace(/^ {1,2}/,'');L2.splice(e2,1);L2.splice(n,1);sel=null;rewrite(L2,null)}},
+      {t:'囲みを解除',f:()=>{const L2=getL(),e2=blockEnd(L2,n);dedentInner(L2,n,e2);L2.splice(e2,1);L2.splice(n,1);sel=null;rewrite(L2,null)}},
       ...tail];
   }
   if(k==='block')return [{t:'条件を編集',f:()=>startEdit(n)},'-',{t:'削除',f:()=>deleteLine(n)}];
   if(k==='end')return [{t:'下端を上下ドラッグで範囲変更',dis:true}];
   if(k==='title')return [{t:'タイトルを編集',f:()=>startEdit(n)},{t:'削除',f:()=>deleteLine(n)}];
   if(k==='act')return [{t:'削除',f:()=>deleteLine(n)}];
-  const items=[{t:'参加者を追加',f:()=>$('#bPart').click()}];
+  const items=[{t:'参加者を追加',f:addParticipant}];
   if(model.parts.length&&p){
     const j=nearestPart(p.x),k2=j+1<model.parts.length?j+1:Math.max(0,j-1);
     let nk=model.parts.length+1,nid='P'+nk;while(model.parts.some(q=>q.id===nid))nid='P'+(++nk);
@@ -1011,16 +1101,38 @@ view.addEventListener('contextmenu',e=>{
 stage.addEventListener('contextmenu',e=>{if(e.target===stage||e.target===view){e.preventDefault();if(model)showMenu(e.clientX,e.clientY,menuFor(null,null))}});
 
 /* ---------- source interaction ---------- */
-function curLine(){return ta.value.slice(0,ta.selectionStart).split('\n').length-1}
-function followCaret(){const n=curLine();const s=model.byLine[n]?n:null;if(s!==sel){sel=s;applySel()}}
-ta.addEventListener('keyup',followCaret);ta.addEventListener('click',followCaret);
+function curLine(){
+  const ln=ta.value.slice(0,ta.selectionStart).split('\n').length-1;
+  return curBlk?(ln>=curBlk.start&&ln<=curBlk.end?ln-curBlk.start:null):ln;
+}
+function syncBlockFromCursor(){
+  if(!doc.md)return false;
+  const p=ta.selectionStart,t=ta.value;
+  const re=/^([ \t]*)(`{3,}|~{3,})[ \t]*mermaid[^\n]*\n([\s\S]*?)^\1\2[ \t]*\r?$/gm;let m,idx=0,hit=-1,prevEnd=0;
+  const spans=[];
+  while(m=re.exec(t)){
+    if(/^\s*sequenceDiagram\b/m.test(m[3])){
+      const s0=m.index,s1=m.index+m[0].length;
+      if(p>=s0&&p<=s1){hit=idx;break}
+      const between=t.slice(prevEnd,s0),hd=between.match(/(?:^|\n)(#{1,6}[ \t]+[^\n]*)/g);
+      const hStart=hd?prevEnd+between.lastIndexOf(hd[hd.length-1]):s0;
+      spans.push({idx,hStart,s1});
+      prevEnd=s1;idx++;
+    }
+  }
+  if(hit<0){for(const sp of spans)if(p>=sp.hStart&&p<=sp.s1){hit=sp.idx;break}}
+  if(hit>=0&&hit!==doc.idx){doc.idx=hit;sel=null;update();refreshBlocks();return true}
+  return false;
+}
+function followCaret(){syncBlockFromCursor();const n=curLine();const s=n!=null&&model.byLine[n]?n:null;if(s!==sel){sel=s;applySel()}}
+ta.addEventListener('keyup',followCaret);ta.addEventListener('click',followCaret);ta.addEventListener('mouseup',followCaret);
 ta.addEventListener('scroll',()=>{syncHl();if(model){syncErrs();lnScroll()}});
 ta.addEventListener('input',e=>{if(e&&/^history/.test(e.inputType||'')){const p=ta.selectionEnd;ta.setSelectionRange(p,p)}update()});
 ta.addEventListener('keydown',e=>{
   if(e.key==='Tab'){e.preventDefault();document.execCommand('insertText',false,'  ')}
 });
 document.addEventListener('keydown',e=>{
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();flash('保存機能は無効です')}   /* ブラウザの「ページを保存」も出さない */
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();stopEdit(true);saveFile();return}
   const tag=document.activeElement&&document.activeElement.tagName;
   if(tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT')return;
   const k=e.key.toLowerCase();
@@ -1031,8 +1143,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- toolbar ---------- */
-function afterLine(){return sel!=null?sel:null}
-$('#bPart').onclick=()=>{
+function addParticipant(){
   const {L}=lineOffsets();let last=headEnd(L)-1;
   if(last<0)L.forEach((l,i)=>{if(/^\s*(sequenceDiagram|title|autonumber)\b/i.test(l))last=i});
   let k=model.parts.length+1,id='P'+k;while(model.parts.some(p=>p.id===id))id='P'+(++k);
@@ -1042,36 +1153,8 @@ $('#bPart').onclick=()=>{
     const p=lineOffsets().off[last]+L[last].length;pendingSel=last+1;pendingEdit=last+1;
     edit(p,p,'\n'+ind+`participant ${id} as 新規`);
   }
-};
-function twoParts(){const p=model.parts;if(!p.length)return null;let a=p[0].id,b=(p[1]||p[0]).id;
-  if(sel!=null){const it=model.items.find(i=>i.line===sel&&i.k==='msg');if(it){a=it.t.id;b=it.f.id}}return [a,b]}
-$('#bMsg').onclick=()=>{const t=twoParts();if(!t){ta.focus();return}
-  const txt=`${t[0]}->>${t[1]}: メッセージ`;const n=afterLine();
-  if(n!=null)insertAfter(n,txt,true);else insertEnd(txt,true)};
-$('#bNote').onclick=()=>{const p=model.parts[0];if(!p)return;const txt=`Note over ${p.id}: メモ`;const n=afterLine();
-  if(n!=null)insertAfter(n,txt,true);else insertEnd(txt,true)};
-$('#bBlock').onchange=e=>{
-  const t=e.target.value;e.target.value='';if(!t)return;
-  const {L,off}=lineOffsets();
-  if(sel!=null){const ind=indentOf(L[sel]);pendingSel=sel;pendingEdit=sel;
-    edit(off[sel],off[sel]+L[sel].length,`${ind}${t} 条件\n  ${L[sel]}\n${ind}end`)}
-  else insertEnd(t+' 条件\nend',true)
-};
+}
 $('#cAuto').onchange=e=>{const want=e.target.checked;if(want!==model.items.some(i=>i.k==='auto'))toggleAuto();e.target.blur();$('#cAuto').checked=model.items.some(i=>i.k==='auto')};
-$('#bUp').onclick=()=>sel!=null&&moveLine(sel,-1);
-$('#bDown').onclick=()=>sel!=null&&moveLine(sel,1);
-$('#bDup').onclick=()=>{if(sel==null)return;const {L}=lineOffsets();insertAfter(sel,L[sel].trim(),false)};
-$('#bDel').onclick=()=>sel!=null&&deleteLine(sel);
-$('#bFlip').onclick=()=>{
-  if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
-  const f=m[1].trim(),t=m[4],a=(f===t&&REV_PAIR[m[2]])?REV_PAIR[m[2]]:m[2];
-  replaceLine(sel,indentOf(L[sel])+(f===t?f:t)+a+m[3]+(f===t?t:f)+(m[5]!=null?': '+m[5]:''));
-};
-$('#bArrow').onclick=()=>{
-  if(sel==null)return;const {L}=lineOffsets(),m=L[sel].trim().match(MSG);if(!m)return;
-  const i=ARROWS.indexOf(m[2]);
-  replaceLine(sel,indentOf(L[sel])+m[1].trim()+ARROWS[(i+1)%ARROWS.length]+m[3]+m[4]+(m[5]!=null?': '+m[5]:''));
-};
 /* 図の上で Ctrl+ホイール: 図だけ拡大縮小(カーソル位置を基準。ブラウザ全体のズームは抑止) */
 stage.addEventListener('wheel',e=>{
   if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();if(!geo)return;stopEdit(true);
@@ -1082,13 +1165,28 @@ stage.addEventListener('wheel',e=>{
 },{passive:false});
 function setZoom(z){zoom=Math.min(3,Math.max(.4,z));$('#zv').textContent=Math.round(zoom*100)+'%';render()}
 $('#bZm').onclick=()=>setZoom(zoom-.1);$('#bZp').onclick=()=>setZoom(zoom+.1);
+/* 中央セパレータの左右ドラッグでソース欄幅を調整 */
+(function(){
+  const sp=$('#split'),pane=document.querySelector('.src'),mn=document.querySelector('main');
+  try{const w=localStorage.getItem('seqedit.w');if(w)pane.style.width=w}catch(e){}
+  sp.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;e.preventDefault();sp.setPointerCapture(e.pointerId);sp.classList.add('on');
+    const move=ev=>{
+      const r=mn.getBoundingClientRect(),w=Math.max(160,Math.min(r.width-200,ev.clientX-r.left));
+      pane.style.width=Math.round(w)+'px';
+    };
+    const up=()=>{sp.classList.remove('on');sp.removeEventListener('pointermove',move);sp.removeEventListener('pointerup',up);
+      try{localStorage.setItem('seqedit.w',pane.style.width)}catch(e){}};
+    sp.addEventListener('pointermove',move);sp.addEventListener('pointerup',up);
+  });
+})();
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>render());
 function dl(name,data,type){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 /* ---------- file io (.md 内の mermaid ブロック対応) ---------- */
-let doc={pre:'',post:'',name:'',handle:null,crlf:false,md:false,orig:null},savedSrc=null;
+let doc={pre:'',post:'',name:'',handle:null,crlf:false,md:false,orig:null,mtime:0,size:-1,lastPrompted:null},savedSrc=null;
 const idb=(mode,fn)=>new Promise((res,rej)=>{
   const o=indexedDB.open('seqedit',1);o.onupgradeneeded=()=>o.result.createObjectStore('kv');o.onerror=()=>rej(o.error);
   o.onsuccess=()=>{const db=o.result,tx=db.transaction('kv',mode);let rq;try{rq=fn(tx.objectStore('kv'))}catch(e){db.close();return rej(e)}
@@ -1106,25 +1204,35 @@ function splitDoc(t,k){
   const b0=hit.index+hit[0].indexOf('\n')+1,b1=b0+hit[3].length;
   return {pre:t.slice(0,b0),post:t.slice(b1),body:lf(hit[3]).replace(/\n$/,''),crlf:/\r\n/.test(hit[3]),md:true,cnt,idx,blocks};
 }
-function fullText(){const b=doc.crlf?ta.value.replace(/\n/g,'\r\n'):ta.value;return doc.md?doc.pre+b+(doc.crlf?'\r\n':'\n')+doc.post:b}
-function showName(){const n=(doc.name||'無題')+(doc.md?' [mermaid ブロック]':'')+'';$('#fn').textContent=n;document.title=n+' - シーケンス図エディタ'}
-function loadText(t,name,handle){
+function fullText(){return doc.crlf?ta.value.replace(/\n/g,'\r\n'):ta.value}
+function showName(){
+  const st=doc.handle?(doc.perm==='prompt'?' [要許可:クリック]':' [自動追従]'):(doc.name?' [追従不可]':'');
+  const n=(doc.name||'無題')+(doc.md?' [mermaid ブロック]':'')+st;
+  $('#fn').textContent=n;$('#fn').style.cursor=doc.handle&&doc.perm==='prompt'?'pointer':'';
+  $('#bReload').hidden=!doc.name;
+  document.title=n+' - シーケンス図エディタ';
+}
+$('#fn').onclick=async()=>{
+  if(!doc.handle||!doc.handle.requestPermission)return;
+  try{doc.perm=await doc.handle.requestPermission({mode:'read'});showName();if(doc.perm==='granted')checkFileUpdate()}catch(e){}
+};
+function loadText(t,name,handle,meta){
   const d=splitDoc(t);
   if(/\.(md|markdown)$/i.test(name||'')&&!d.md){flash('⚠ mermaid の sequenceDiagram ブロックが無いため開けません(図以外は編集不可)');return}
-  doc={pre:d.pre,post:d.post,crlf:d.crlf,md:d.md,idx:d.idx,name:name||'',handle:handle||null,orig:t};
-  ta.value=d.body;savedSrc=d.body;sel=null;update();fillBlocks(d);keepHandle();
+  doc={pre:d.pre,post:d.post,crlf:d.crlf,md:d.md,idx:d.idx,name:name||'',handle:handle||null,orig:t,mtime:meta?meta.mtime:0,size:meta?meta.size:-1,lastPrompted:null,perm:handle?'granted':null};
+  ta.value=d.md?t.replace(/\r\n/g,'\n'):d.body;savedSrc=ta.value;sel=null;update();fillBlocks(d);keepHandle();
+  if(curBlk)ta.scrollTop=Math.max(0,PAD+curBlk.start*LH-20);
   if(d.cnt>1)flash('シーケンス図 '+d.cnt+' 個: 右上のプルダウンで編集対象を選択');
 
 }
 function fillBlocks(d){const e=$('#sBlk');e.hidden=!(d&&d.cnt>1);e.innerHTML='';if(e.hidden)return;
   d.blocks.forEach((b,i)=>{const o=document.createElement('option');o.value=i;o.textContent=b;e.appendChild(o)});e.value=d.idx}
-function refreshBlocks(){fillBlocks(doc.md?splitDoc(fullText(),doc.idx):null)}
-/* 編集対象の図を切替。編集中の内容は文書側に保持(保存は Ctrl+S で全体) */
+function refreshBlocks(){fillBlocks(doc.md?splitDoc(ta.value,doc.idx):null)}
+/* 編集対象の図を切替（全文表示のまま対象ブロックへスクロール） */
 function switchBlock(k){
   if(!doc.md)return;stopEdit(true);
-  const dirty=ta.value!==savedSrc,d=splitDoc(fullText(),k);
-  doc={...doc,pre:d.pre,post:d.post,md:d.md,crlf:d.crlf,idx:d.idx};
-  ta.value=d.body;savedSrc=dirty?null:d.body;sel=null;ta.scrollTop=0;update();fillBlocks(d);
+  doc.idx=k;sel=null;update();refreshBlocks();
+  if(curBlk){ta.scrollTop=Math.max(0,PAD+curBlk.start*LH-20);syncHl();syncErrs()}
 }
 $('#sBlk').onchange=e=>{switchBlock(+e.target.value);e.target.blur()};
 async function saveFile(){
@@ -1138,26 +1246,26 @@ async function saveFile(){
       else if(doc.md){const d=splitDoc(await (await doc.handle.getFile()).text(),doc.idx);
         if((d.pre!==doc.pre||d.post!==doc.post)&&!confirm('ファイルの図以外の部分が、エディタの保持内容と異なります(外部で変更された可能性)。上書きしますか?'))return}
       const w=await doc.handle.createWritable();await w.write(data);await w.close();
-      doc.name=doc.handle.name;doc.orig=data;keepHandle();
+      const fw=await doc.handle.getFile();doc.name=doc.handle.name;doc.orig=data;doc.mtime=fw.lastModified;doc.size=fw.size;doc.lastPrompted=null;keepHandle();
     }else dl(doc.name||'seq.mmd',data,'text/plain');
     savedSrc=ta.value;showName();save();refreshBlocks();flash('保存: '+(doc.name||'seq.mmd'));
   }catch(e){if(e.name!=='AbortError')flash('保存失敗: '+e.message)}
 }
 /* 名前を付けて .md 保存。.md 由来でなければ図を ```mermaid フェンスで包む */
 async function saveMdAs(){
-  const F='`'.repeat(3),wrap=!doc.md,data=wrap?F+'mermaid\n'+ta.value+'\n'+F+'\n':fullText();
+  const F='`'.repeat(3),wrap=!(doc.md||splitDoc(ta.value).md),data=wrap?F+'mermaid\n'+ta.value+'\n'+F+'\n':fullText();
   const name=(doc.name||'sequence').replace(/\.(mmd|txt|md|markdown)$/i,'')+'.md';
   try{
     if(window.showSaveFilePicker){
       const h=await pick(showSaveFilePicker,{suggestedName:name,types:[{description:'Markdown',accept:{'text/markdown':['.md']}}]});
       const w=await h.createWritable();await w.write(data);await w.close();
-      if(wrap)doc={...doc,pre:F+'mermaid\n',post:F+'\n',md:true,crlf:false,idx:0};
-      doc.handle=h;doc.name=h.name;doc.orig=data;keepHandle();
+      if(wrap){doc={...doc,md:true,crlf:false,idx:0};ta.value=data}
+      const fw=await h.getFile();doc.handle=h;doc.name=h.name;doc.orig=data;doc.mtime=fw.lastModified;doc.size=fw.size;doc.lastPrompted=null;keepHandle();
     }else dl(name,data,'text/markdown');
     savedSrc=ta.value;showName();save();refreshBlocks();flash('保存: '+(doc.handle?doc.name:name));
   }catch(e){if(e.name!=='AbortError')flash('保存失敗: '+e.message)}
 }
-/* 保存機能は一旦無効(saveFile / saveMdAs は未使用のまま残置) */
+/* ファイル保存は Ctrl+S / Cmd+S (saveFile / saveMdAs) */
 const PICK_ID='seqedit-md';
 async function pick(fn,opts){
   const o={id:PICK_ID,...opts};if(doc.handle)o.startIn=doc.handle;
@@ -1168,17 +1276,108 @@ $('#bSample').onclick=()=>{loadText(SAMPLE,'',null);flash('全機能デモサン
 $('#bOpen').onclick=async()=>{
   if(!window.showOpenFilePicker)return $('#file').click();
   try{const [h]=await pick(showOpenFilePicker,{types:[{description:'Markdown / Mermaid',accept:{'text/plain':['.md','.mmd','.txt']}}]});
-    loadText(await (await h.getFile()).text(),h.name,h)}
+    const f=await h.getFile();loadText(await f.text(),h.name,h,{mtime:f.lastModified,size:f.size})}
   catch(e){if(e.name!=='AbortError')flash('読込失敗: '+e.message)}
 };
-$('#file').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f);e.target.value=''};
-function loadFile(f,h){f.text().then(t=>loadText(t,f.name,h))}
+let reloadViaInput=false;
+$('#bReload').onclick=async()=>{
+  if(!doc.name)return;
+  if(savedSrc!=null&&ta.value!==savedSrc&&!confirm('未保存の変更があります。破棄して再読込しますか?'))return;
+  if(doc.handle){
+    try{
+      if(doc.handle.requestPermission){
+        const p=await doc.handle.requestPermission({mode:'read'});doc.perm=p;showName();
+        if(p!=='granted')return;
+      }
+      const f=await doc.handle.getFile();doc.mtime=f.lastModified;doc.size=f.size;
+      reloadFromExternal(await f.text());
+    }catch(e){flash('再読込失敗: '+e.message)}
+    return;
+  }
+  reloadViaInput=true;$('#file').click();
+};
+$('#file').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f);else reloadViaInput=false;e.target.value=''};
+function loadFile(f,h){
+  const re=reloadViaInput;reloadViaInput=false;
+  f.text().then(t=>{
+    if(re&&f.name===doc.name&&!h){doc.mtime=f.lastModified;doc.size=f.size;reloadFromExternal(t);return}
+    loadText(t,f.name,h,{mtime:f.lastModified,size:f.size});
+  });
+}
 addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
 addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
 addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drop');
   const f=e.dataTransfer.files[0],it=e.dataTransfer.items&&e.dataTransfer.items[0];if(!f)return;
   const hp=it&&it.getAsFileSystemHandle?it.getAsFileSystemHandle().catch(()=>null):Promise.resolve(null);
   hp.then(h=>loadFile(f,h&&h.kind==='file'?h:null))});
+
+/* 外部ファイル更新の自動追従（カーソル・選択・スクロール・選択中ブロックを可能な限り維持） */
+let checkingFile=false;
+function mapOffset(a,b,pos){
+  let p=0,la=a.length,lb=b.length;
+  while(p<la&&p<lb&&a.charCodeAt(p)===b.charCodeAt(p))p++;
+  if(pos<=p)return pos;
+  let q=0;
+  while(q<la-p&&q<lb-p&&a.charCodeAt(la-1-q)===b.charCodeAt(lb-1-q))q++;
+  if(pos>=la-q)return pos+(lb-la);
+  return Math.max(p,Math.min(lb-q,pos));
+}
+function reloadFromExternal(cur){
+  const s0=ta.selectionStart,s1=ta.selectionEnd,sDir=ta.selectionDirection;
+  const taST=ta.scrollTop,taSL=ta.scrollLeft,stSL=stage.scrollLeft,stST=stage.scrollTop;
+  const oldBody=ta.value,oldLines=oldBody.split('\n'),oldSel=sel,oldSelText=sel!=null?(curBlk?curBlk.L[sel]:oldLines[sel]):null;
+  const oldLbl=doc.md&&$('#sBlk').selectedOptions[0]?$('#sBlk').selectedOptions[0].textContent.replace(/^\d+:\s*/,''):null;
+  let d=splitDoc(cur,doc.idx);
+  if(doc.md){
+    if(!d.md){flash('⚠ 外部更新で sequenceDiagram ブロックが無くなったため再読込を中止');return}
+    if(oldLbl&&d.blocks[d.idx]&&d.blocks[d.idx].replace(/^\d+:\s*/,'')!==oldLbl){
+      const ni=d.blocks.findIndex(b=>b.replace(/^\d+:\s*/,'')===oldLbl);
+      if(ni>=0)d=splitDoc(cur,ni);
+    }
+  }
+  const newBody=cur.replace(/\r\n/g,'\n');
+  doc={...doc,pre:d.pre,post:d.post,crlf:d.crlf,md:d.md,idx:d.md?d.idx:0,orig:cur,lastPrompted:null};
+  ta.value=newBody;savedSrc=newBody;
+  if(oldSel!=null){
+    const nl=(d.md?d.body:newBody).split('\n');
+    if(nl[oldSel]===oldSelText)sel=oldSel;
+    else{
+      let best=-1,bd=1e9;
+      for(let i=0;i<nl.length;i++)if(nl[i]===oldSelText){const dist=Math.abs(i-oldSel);if(dist<bd){bd=dist;best=i}}
+      sel=best>=0?best:Math.min(oldSel,Math.max(0,nl.length-1));
+    }
+  }
+  const n0=mapOffset(oldBody,newBody,s0),n1=mapOffset(oldBody,newBody,s1);
+  update();fillBlocks(d);
+  try{ta.setSelectionRange(n0,n1,sDir)}catch(e){ta.selectionStart=n0;ta.selectionEnd=n1}
+  ta.scrollTop=taST;ta.scrollLeft=taSL;lnScroll();
+  stage.scrollLeft=stSL;stage.scrollTop=stST;
+  flash('外部変更を反映: '+(doc.name||''));
+}
+async function checkFileUpdate(){
+  if(!doc.handle||checkingFile||editEl)return;
+  checkingFile=true;
+  try{
+    if(doc.handle.queryPermission){
+      const p=await doc.handle.queryPermission({mode:'read'});
+      if(p!==doc.perm){doc.perm=p;showName()}
+      if(p!=='granted')return;
+    }
+    const f=await doc.handle.getFile();
+    if(doc.mtime&&f.lastModified===doc.mtime&&f.size===doc.size)return;
+    doc.mtime=f.lastModified;doc.size=f.size;
+    const cur=await f.text();
+    if(doc.orig!=null&&cur===doc.orig)return;
+    if(savedSrc!=null&&ta.value!==savedSrc){
+      if(cur!==doc.lastPrompted){doc.lastPrompted=cur;flash('⚠ 外部で更新されました(未保存変更があるため自動再読込を保留)')}
+      return;
+    }
+    reloadFromExternal(cur);
+  }catch(e){}finally{checkingFile=false}
+}
+setInterval(()=>{if(!document.hidden)checkFileUpdate()},1500);
+addEventListener('focus',checkFileUpdate);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkFileUpdate()});
 
 /* ---------- persistence ---------- */
 let saveT=null,packSeq=0;
@@ -1204,7 +1403,8 @@ function save(){
   },300);
 }
 function update(){
-  model=parse(ta.value);
+  const blk=computeBlk();
+  model=parse(blk?blk.L.join('\n'):ta.value);
   if(pendingSel!==null){sel=pendingSel;pendingSel=null}
   if(sel!=null&&!model.byLine[sel])sel=null;
   render();status();showName();save();$('#cAuto').checked=model.items.some(i=>i.k==='auto');
@@ -1219,7 +1419,7 @@ function update(){
   if(src==null)src=ls;
   if(src!=null&&src===ls){try{const d=JSON.parse(localStorage.getItem('seqedit.doc')||'null');if(d){doc={...doc,pre:d.pre,post:d.post,name:d.name,crlf:d.crlf,md:d.md,idx:d.idx|0};savedSrc=d.saved}}catch(e){}}
   ta.value=src||SAMPLE;update();refreshBlocks();
-  if(doc.name&&!doc.handle){const d0=doc;try{const h=await idb('readonly',st=>st.get('handle'));if(h&&h.name===d0.name&&doc===d0){doc.handle=h;showName()}}catch(e){}}
+  if(doc.name&&!doc.handle){const d0=doc;try{const h=await idb('readonly',st=>st.get('handle'));if(h&&h.name===d0.name&&doc===d0){doc.handle=h;showName();checkFileUpdate()}}catch(e){}}
 })();
 </script>
 </body>
