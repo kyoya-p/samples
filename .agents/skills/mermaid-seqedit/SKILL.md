@@ -37,22 +37,29 @@ update: 2026-11-20
    - 自己呼び出し: `y = cursor + Ln * LHT + 4`、次要素への `cursor = y + 16`。
 
 5. **グループ囲み (`box [Color] [Title] ... end`) と途中生成・消滅 (`create` / `destroy`)**
-   - `box`: `isCssCol` + `parseBox` で `mermaid.js` (`sequenceDb.ts` の `parseBoxData`) と同等に `CSS.supports('color', c)` で先頭トークンを判定（CSS 標準 148 色名、`transparent`、`rgb()` / `rgba()` / `hsl()` / `hsla()`、CSS Color 4 の `rgb(r g b / a)` 形式に対応。さらに `seqedit.html` 拡張として `#hex` も許容）。色指定なら背景色として `pboxBg` 最背面レイヤに描画し、残りをタイトルとして解釈。
+   - `box`: `isCssCol` + `parseBox` で `mermaid.js` (`sequenceDb.ts` の `parseBoxData`) と同等に `CSS.supports('color', c)`（ただし本家 Mermaid / Obsidian 互換のため `#hex` は除外）で先頭トークンを判定（CSS 標準 148 色名、`transparent`、`rgb()` / `rgba()` / `hsl()` / `hsla()`、CSS Color 4 の `rgb(r g b / a)` 形式に対応）。色指定なら背景色として `pboxBg` 最背面レイヤに描画し、残りをタイトルとして解釈。
    - `create participant|actor ...`: 直後にその参加者が関わるメッセージがあれば生成メッセージの Y 位置にボックスを配置し、矢印をボックス側面に接続。
-   - `destroy <id>`: 該当位置に `✕` マークを描画してライフラインを停止し、開いている活性バーを閉じて末尾の参加者ボックスを非表示化。
+   - `destroy <id>`: 本家 Mermaid / Obsidian 準拠で、直後にその参加者が関わるメッセージがある場合はそのメッセージの直後（`dy = Math.max(cursor + 6, my + 18)`）に `✕` マークを描画してライフラインを停止し（単独行時もフォールバック描画）、開いている活性バーを閉じて末尾の参加者ボックスを非表示化。
 
-6. **背景ハイライト (`rect`) と `box` の色・透過仕様**
+6. **背景ハイライト (`rect`) と `box` の色・透過仕様・描画順**
    - `rect` は `pboxBg` の前面・ライフライン/メッセージの背面に描画される。
-   - CSS 標準 148 色名、`transparent`、`rgb()` / `rgba()` / `hsl()` / `hsla()`、CSS Color 4 `/` 区切り α 指定、`#hex` に対応。
-   - `rgba()` / `hsla()` / `/` 付き α 指定 / `#RGBA` / `#RRGGBBAA` 指定時は `fill-opacity: 1` で指定 α をそのまま適用、`rgb()` / `hsl()` / 6桁 `#hex` / CSS 色名など不透明色を指定した場合は自動で半透明（`rect`: `0.35`, `box`: `0.22`）にする。
+   - `bg`（`rect` および `alt`/`loop` 等の複合フラグメントブロック）はネスト深度昇順・面積降順（`a.depth - b.depth || b.area - a.area`）でソートして描画し、外側・大きいブロックほど背面（下層）、内側・小さいブロックほど前面（上層）に重なるようにする。
+   - CSS 標準 148 色名、`transparent`、`rgb()` / `rgba()` / `hsl()` / `hsla()`、CSS Color 4 `/` 区切り α 指定に対応（`#hex` は廃止・非対応）。
+   - `rgba()` / `hsla()` / `/` 付き α 指定時は `fill-opacity: 1` で指定 α をそのまま適用、`rgb()` / `hsl()` / CSS 色名など不透明色を指定した場合は自動で半透明（`rect`: `0.35`, `box`: `0.22`）にする。
 
 7. **参加者 (`participant` / `actor`) のカスケード削除**
    - `deleteLine(n)` で参加者宣言行を削除した際も `deletePart(i)` に委譲する。
    - `deletePart(i)` は該当参加者の宣言行（および単独メンバーだった `box ... end`）に加え、接続する全メッセージ矢印 (`it.k === 'msg'`)、活性制御 (`it.k === 'act'`)、`destroy` (`it.k === 'destroy'`)、および `Note` の対象リスト（単独対象なら Note 行ごと）を一括削除する。
 
 8. **デフォルトソース (`SAMPLE`) とサンプル読込ボタン (`#bSample`)**
-   - `SAMPLE` 定数にレンダラの全対応表現（`title`、`autonumber`、`box ... end` (`rgba` / `#hex`)、`actor` / `participant` と `<br/>` 改行、`U->W` / `W-->U` / `U->>U` / `U<-U` を含む矢印各種、`create` / `destroy`、`+`/`-` および `activate`/`deactivate` によるネスト活性区間、長文自動折り返し、Note 3種 `left of` / `right of` / `over`、複合フラグメント・背景ハイライト全7種 `rect` (`rgba` + ネスト `rgb`) / `alt`+`else` / `loop` / `opt` / `break` / `par`+`and` / `critical`+`option`、`%%` コメント）を網羅格納。
+   - `SAMPLE` 定数にレンダラの全対応表現（`title`、`autonumber`、`box ... end` (`rgba`)、`actor` / `participant` と `<br/>` 改行、`U->W` / `W-->U` / `U->>U` / `U<-U` を含む矢印各種、`create` / `destroy`、`+`/`-` および `activate`/`deactivate` によるネスト活性区間、長文自動折り返し、Note 3種 `left of` / `right of` / `over`、複合フラグメント・背景ハイライト全7種 `rect` (`rgba` + ネスト `rgb`) / `alt`+`else` / `loop` / `opt` / `break` / `par`+`and` / `critical`+`option`、`%%` コメント）を網羅格納。
    - ヘッダーの「サンプル」ボタン (`#bSample`) でいつでも `SAMPLE` を再読込可能。
+
+9. **`box` / `rect` カラーピッカー (`#colPop`・右クリッククイックスウォッチ)**
+   - **起動方法**:
+     - `rect` 枠のダブルクリック、タイトルなし `box` のダブルクリック、または `box` インライン編集横の `🎨 色` ボタン (`#editCol`)。
+     - `box` / `rect` 右クリックメニューの「🎨 カラーピッカーで色変更...」および「色 (クイック選択)」スウォッチ行。
+   - **機能**: Figma / Chrome DevTools 風のカスタム HSV カラーピッカーを採用。2D 彩度・明度スペクトラム面 (`#cpSV`、無彩色時も色相/彩度を保持)、Hue / Alpha カスタムトラック (`#cpH` / `#cpA`)、変更前/現在の比較スウォッチ (`#cpPv`・クリックで元の色にリセット)、`EyeDropper` スポイト (`#cpEye`・対応ブラウザのみ)、RGBA ⇄ HSLA 出力形式切替 (`#cpFmt`) 付きチャンネル数値入力 (`#cpN0..3`)・任意 CSS 色文字列入力 (`#cpTxt`)、および16色パレットスウォッチ (8列×2段) を双方向同期。ヘッダードラッグ移動・矢印キー微調整に対応し、変更中は Undo 履歴を汚さず SVG のみライブプレビュー、`適用`/外側クリック/`Enter` で 1 ステップとして確定、`キャンセル`/`Esc` で元に戻す。`box` 変更時はタイトル (`rawTitle`) を保持して先頭色トークンのみ差し替える。
 
 ## シーケンス図レンダラ比較 (`seq_renderers_comparison.html`)
 

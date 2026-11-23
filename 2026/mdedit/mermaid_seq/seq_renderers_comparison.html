@@ -541,7 +541,7 @@ const otherRows = [
   { name: "活性バー & ネスト段差", svg: "act", cells: [`● <code class="syn">activate</code> <code class="syn">-&gt;&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">++</code> <code class="syn">--</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;+</code> <code class="syn">-</code>`, `● <code class="syn">activate</code> <code class="syn">-&gt;+</code> <code class="syn">-</code>`, `▲ <code class="syn">A.span</code>`, `▲ <span class="sub-note">自動/単層</span>`, `－`] },
   { name: "時間遅延・間隔", svg: "delay", cells: [`－`, `－`, `● <code class="syn">...</code> <code class="syn">|||</code>`, `● <code class="syn">space</code> <code class="syn">delay</code>`, `● <code class="syn">...</code>`, `－`, `▲ <code class="syn">...</code>`, `－`] },
   { name: "分岐・反復・並列・中断", svg: "frag", cells: [`● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop</code> <code class="syn">par/critical/break</code>`, `● <code class="syn">alt/opt/loop/par</code>`, `▲ <span class="sub-note">グループ表現</span>`, `▲ <code class="syn">if/else/loop</code>`, `－`] },
-  { name: "背景ハイライト (Rect)", svg: "rect", cells: [`● <code class="syn">rect rgba(...)</code><span class="sub-note">rgbは不透明 / rgbaで透過</span>`, `● <code class="syn">rect rgb/rgba/#hex</code><span class="sub-note">不透明色も自動半透明(0.35)</span>`, `▲ <code class="syn">group #RRGGBBaa</code><span class="sub-note">#transparent / 8桁Hexで透過</span>`, `▲ <code class="syn">group #Col #Bg</code><span class="sub-note">名前・Hex指定 (透過は環境依存)</span>`, `－`, `▲ <code class="syn">style.fill</code><span class="sub-note">style.opacityで透過</span>`, `－`, `－`] },
+  { name: "背景ハイライト (Rect)", svg: "rect", cells: [`● <code class="syn">rect rgba(...)</code><span class="sub-note">rgbは不透明 / rgbaで透過</span>`, `● <code class="syn">rect rgb/rgba/色名</code><span class="sub-note">不透明色も自動半透明(0.35)</span>`, `▲ <code class="syn">group #RRGGBBaa</code><span class="sub-note">#transparent / 8桁Hexで透過</span>`, `▲ <code class="syn">group #Col #Bg</code><span class="sub-note">名前・Hex指定 (透過は環境依存)</span>`, `－`, `▲ <code class="syn">style.fill</code><span class="sub-note">style.opacityで透過</span>`, `－`, `－`] },
   { name: "ノート (Left/Right/Over)", svg: "note", cells: [`● <code class="syn">Note left/right/over</code>`, `● <code class="syn">Note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `● <code class="syn">note left/right/over</code>`, `▲ <code class="syn">A."note"</code>`, `● <code class="syn">note: ...</code>`, `● <code class="syn">Note over</code>`] },
   { name: "区切り線 / 参照 (Ref)", svg: "div", cells: [`－`, `－`, `● <code class="syn">== A ==</code> <code class="syn">ref over</code>`, `● <code class="syn">== A ==</code> <code class="syn">ref over</code>`, `● <code class="syn">ref over</code>`, `－`, `● <code class="syn">-- A --</code>`, `－`] },
   { name: "自動採番 (Autonumber)", svg: "num", cells: [`● <code class="syn">autonumber [s i]</code>`, `▲ <code class="syn">autonumber</code><span class="sub-note">ONのみ</span>`, `● <code class="syn">autonumber [s i]</code>`, `● <code class="syn">autonumber [s]</code>`, `● <code class="syn">autonumber [s]</code>`, `▲ <code class="syn">autonumber:true</code>`, `● <code class="syn">autonumber</code>`, `－`] }
@@ -574,11 +574,11 @@ end`
   {
     name: "seqedit.html",
     hl: true,
-    note: "rect / box とも CSS色名（lightblue / Aqua 等）・rgb()・rgba()・#hex・transparent に対応。rgba/hsla/#RRGGBBAA は指定αをそのまま適用、色名・rgb() 等の不透明色は自動半透明（rect: 0.35 / box: 0.22）。",
+    note: "rect / box とも CSS色名（lightblue / Aqua 等）・rgb()・rgba()・hsl()・hsla()・transparent に対応（本家 Mermaid / Obsidian 互換のため #hex は非対応）。rgba/hsla は指定αをそのまま適用、色名・rgb() 等の不透明色は自動半透明（rect: 0.35 / box: 0.22）。",
     code: `box Aqua フロント              %% CSS色名も自動半透明 (0.22)
   participant W
 end
-box #10b981 データ層           %% #hex も自動半透明 (0.22)
+box rgba(16, 185, 129, 0.22) データ層  %% rgba で透過指定
   participant D
 end
 rect rgba(45, 91, 185, 0.15)   %% α=0.15 のまま透過
