@@ -19,10 +19,9 @@ h1{font-size:20px;margin:0}
 h2.ch{margin:0 0 4px 0;font-size:15px;font-weight:600}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.log-viewer{position:relative;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px;margin:8px 0;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
-.btn-close-log{position:absolute;top:10px;right:10px;background:var(--card);border:1px solid var(--line);cursor:pointer;color:var(--mut);font-size:12px;padding:2px 6px;border-radius:4px;line-height:1}
-.btn-close-log:hover{background:var(--bg);color:var(--fg);border-color:var(--bar)}
-.log-viewer pre{margin:0;padding:8px 30px 8px 8px;background:var(--bg);border:1px solid var(--line);border-radius:4px;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+/* 🤖 AI変更: 枠を一重化し、閉じるボタンをヘッダートグルへ移動 */
+.log-viewer{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:8px 0;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+.log-viewer pre{margin:0;padding:10px 12px;background:transparent;border:none;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
 .mlg-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:14px;font-weight:500}
 .mlg-head .it{display:inline-flex;align-items:center;gap:3px}
 .mlg{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
@@ -52,7 +51,6 @@ svg text{paint-order:stroke;stroke:var(--card);stroke-width:3px;stroke-linejoin:
   </div>
 </div>
 <div id="log-viewer" class="log-viewer" hidden>
-  <button type="button" id="btn-close-log" class="btn-close-log" title="閉じる" aria-label="閉じる">✕</button>
   <pre id="log-text"></pre>
 </div>
 <div class="grid">
@@ -150,15 +148,7 @@ function usageChart() {
     const now = Date.now();
 
     const segs = (key, p) => {
-      const res = S.reduce((a, s, i) => { if (!i || s[key] < S[i - 1][key]) a.push([]); a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1)); return a; }, []);
-      if (res.length && S.length) {
-        const lastS = S[S.length - 1];
-        const lastTs = sampleTs[sampleTs.length - 1];
-        if (now > lastTs && (!p?.reset || now < p.reset)) {
-          res[res.length - 1].push(x(now).toFixed(1) + ',' + yPct(lastS[key]).toFixed(1));
-        }
-      }
-      return res;
+      return S.reduce((a, s, i) => { if (!i || s[key] < S[i - 1][key]) a.push([]); a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1)); return a; }, []);
     };
 
     const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
@@ -170,7 +160,22 @@ function usageChart() {
       return '<circle cx="' + x(pt).toFixed(1) + '" cy="' + yPct(S[n][key]).toFixed(1) + '" r="4" fill="none" stroke="' + col + '" stroke-width="2"><animate attributeName="r" values="3;8;3" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>';
     };
 
+    const pendingLine = (key, col, p) => {
+      if (!S.length) return '';
+      const lastS = S[S.length - 1];
+      const lastTs = sampleTs[sampleTs.length - 1];
+      if (typeof lastS[key] === 'number' && now > lastTs && (!p?.reset || now < p.reset)) {
+        // 🤖 AI変更: 最終サンプルから現在時刻までのデータ未取得区間を薄い系列色(opacity 0.3)で描画
+        const x1 = x(lastTs).toFixed(1);
+        const x2 = x(now).toFixed(1);
+        const y = yPct(lastS[key]).toFixed(1);
+        return '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + col + '" stroke-opacity="0.3" stroke-width="2"><title>未測定区間（最新値保持）</title></line>';
+      }
+      return '';
+    };
+
     const line = (key, col, p) => segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
+      pendingLine(key, col, p) +
       (key === 'weekPct' ? '' : S.map((s, i) => '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>').join('')) + pulse(key, col, p);
 
     const grid = [0, 25, 50, 75, 100].map(v => '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + yPct(v) + '" y2="' + yPct(v) + '" stroke="var(--line)"/><text x="' + (PL - 5) + '" y="' + (yPct(v) + 5) + '" font-size="15" text-anchor="end" fill="var(--mut)">' + (100 - v) + '%</text>').join('');
@@ -530,12 +535,14 @@ function cumChart() {
         avg[kk] = (avg[kk] || 0) + tok * f;
       }
     }
-    const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, (avg[kk] / hours) * mult]);
-    lg.innerHTML = shown.map(([kk, v]) => {
+    // 🤖 AI変更: 凡例は表示期間内(t0〜t1)の合計トークンを表示（ツールチップに平均レート併記）
+    const rateUnit = isDay ? '/日' : '/時';
+    const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk], (avg[kk] / hours) * mult]);
+    lg.innerHTML = shown.map(([kk, sumV, rateV]) => {
       const vis = isModelVis(kk);
       const label = fmtLabel(kk);
       return vis
-        ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+        ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="期間(' + rangeMenu.value + ')内合計: ' + Math.round(sumV).toLocaleString() + ' (' + k(Math.round(rateV)) + rateUnit + ') — クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(sumV)) + '</span></button>'
         : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + label + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + label + '</span></button>';
     }).join('');
     lg.querySelectorAll('button[data-model]').forEach(btn => {
@@ -635,18 +642,21 @@ document.getElementById('btn-reset-charts')?.addEventListener('click', () => {
 const logViewer = document.getElementById('log-viewer');
 const logText = document.getElementById('log-text');
 const btnShowLog = document.getElementById('btn-show-log');
-const btnCloseLog = document.getElementById('btn-close-log');
 const updateLogText = () => {
   if (logText) logText.textContent = D.latestUsageText || '(最新ログなし)';
 };
+// 🤖 AI変更: 閉じるボタンをヘッダーのログ表示ボタン位置へ統合・トグル化
+const LOG_ICON_SVG = btnShowLog ? btnShowLog.innerHTML : '';
+const CLOSE_ICON_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 if (btnShowLog && logViewer) {
   btnShowLog.addEventListener('click', () => {
     logViewer.hidden = !logViewer.hidden;
-    if (!logViewer.hidden) updateLogText();
+    const open = !logViewer.hidden;
+    btnShowLog.innerHTML = open ? CLOSE_ICON_SVG : LOG_ICON_SVG;
+    btnShowLog.title = open ? 'Usageログを閉じる' : '最新Usageログをテキスト表示';
+    btnShowLog.setAttribute('aria-expanded', String(open));
+    if (open) updateLogText();
   });
-}
-if (btnCloseLog && logViewer) {
-  btnCloseLog.addEventListener('click', () => { logViewer.hidden = true; });
 }
 
 const render = () => {
