@@ -253,10 +253,15 @@ globalThis.__UsagePanelMount = function mountAgyPanel({ root, container, scrollE
           a[a.length - 1].push(x(pt.ts).toFixed(1) + ',' + yPct(pt.v).toFixed(1));
           return a;
         }, []);
-        if (segs.length && pts.length) {
+        let pendingLine = '';
+        if (pts.length) {
           const lastPt = pts[pts.length - 1];
           if (now > lastPt.ts && (!s.rp?.reset || now < s.rp.reset)) {
-            segs[segs.length - 1].push(x(now).toFixed(1) + ',' + yPct(lastPt.v).toFixed(1));
+            // 🤖 AI変更: 最終サンプルから現在時刻までのデータ未取得区間を薄い系列色(opacity 0.3)で描画
+            const x1 = x(lastPt.ts).toFixed(1);
+            const x2 = x(now).toFixed(1);
+            const y = yPct(lastPt.v).toFixed(1);
+            pendingLine = '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + s.col + '" stroke-opacity="0.3" stroke-width="2"><title>' + s.label + ' 未測定区間（最新値保持）</title></line>';
           }
         }
         const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
@@ -267,7 +272,7 @@ globalThis.__UsagePanelMount = function mountAgyPanel({ root, container, scrollE
         const pulse = lp && now - lp.ts <= 600000 && px >= t0 && px <= t1
           ? '<circle cx="' + x(px).toFixed(1) + '" cy="' + yPct(lp.v).toFixed(1) + '" r="6" fill="none" stroke="' + s.col + '" stroke-width="3"><animate attributeName="r" values="4.5;12;4.5" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>'
           : '';
-        return pl + dots + pulse;
+        return pl + pendingLine + dots + pulse;
       }).join('');
 
       const showProj = Boolean(state.settings.showProj);
@@ -676,11 +681,13 @@ globalThis.__UsagePanelMount = function mountAgyPanel({ root, container, scrollE
           avg[kk] = (avg[kk] || 0) + tok * f;
         }
       }
-      const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, (avg[kk] / hours) * mult]);
-      lg.innerHTML = shown.map(([kk, v]) => {
+      // 🤖 AI変更: 凡例は表示期間内(t0〜t1)の合計トークンを表示（ツールチップに平均レート併記）
+      const rateUnit = isDay ? '/日' : '/時';
+      const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk], (avg[kk] / hours) * mult]);
+      lg.innerHTML = shown.map(([kk, sumV, rateV]) => {
         const vis = isModelVis(kk);
         return vis
-          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + kk + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + kk + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="期間(' + rangeMenu.value + ')内合計: ' + Math.round(sumV).toLocaleString() + ' (' + k(Math.round(rateV)) + rateUnit + ') — クリックして ' + kk + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + kk + '</span><span class="v">' + k(Math.round(sumV)) + '</span></button>'
           : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + kk + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + kk + '</span></button>';
       }).join('');
       lg.querySelectorAll('button[data-model]').forEach(btn => {

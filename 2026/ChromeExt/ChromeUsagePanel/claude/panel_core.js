@@ -216,13 +216,6 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
           a[a.length - 1].push(x(sampleTs[i]).toFixed(1) + ',' + yPct(s[key]).toFixed(1));
           return a;
         }, []);
-        if (res.length && S.length) {
-          const lastS = S[S.length - 1];
-          const lastTs = sampleTs[sampleTs.length - 1];
-          if (typeof lastS[key] === 'number' && now > lastTs && (!p?.reset || now < p.reset)) {
-            res[res.length - 1].push(x(now).toFixed(1) + ',' + yPct(lastS[key]).toFixed(1));
-          }
-        }
         return res;
       };
       const stepPts = sg => sg.flatMap((q, i) => i ? [q.split(',')[0] + ',' + sg[i - 1].split(',')[1], q] : [q]);
@@ -233,8 +226,22 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
         if (pt < t0 || pt > t1) return '';
         return '<circle cx="' + x(pt).toFixed(1) + '" cy="' + yPct(S[n][key]).toFixed(1) + '" r="6" fill="none" stroke="' + col + '" stroke-width="3"><animate attributeName="r" values="4.5;12;4.5" dur="1.6s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>';
       };
+      const pendingLine = (key, col, p) => {
+        if (!S.length) return '';
+        const lastS = S[S.length - 1];
+        const lastTs = sampleTs[sampleTs.length - 1];
+        if (typeof lastS[key] === 'number' && now > lastTs && (!p?.reset || now < p.reset)) {
+          // 🤖 AI変更: 最終サンプルから現在時刻までのデータ未取得区間を薄い系列色(opacity 0.3)で描画
+          const x1 = x(lastTs).toFixed(1);
+          const x2 = x(now).toFixed(1);
+          const y = yPct(lastS[key]).toFixed(1);
+          return '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + col + '" stroke-opacity="0.3" stroke-width="2"><title>未測定区間（最新値保持）</title></line>';
+        }
+        return '';
+      };
       const line = (key, col, p) =>
         segs(key, p).map(pts => '<polyline fill="none" stroke="' + col + '" stroke-width="2" points="' + stepPts(pts).join(' ') + '"/>').join('') +
+        pendingLine(key, col, p) +
         (key === 'weekPct' || key === 'weekAltPct' ? '' : S.map((s, i) => typeof s[key] === 'number'
           ? '<circle cx="' + x(sampleTs[i]).toFixed(1) + '" cy="' + yPct(s[key]).toFixed(1) + '" r="1.5" fill="' + col + '"><title>' + new Date(s.ts).toLocaleString('ja-JP') + ' 残量 ' + (100 - s[key]) + '%</title></circle>'
           : '').join('')) +
@@ -633,12 +640,14 @@ globalThis.__UsagePanelMount = function mountClaudePanel({ root, container, scro
           avg[kk] = (avg[kk] || 0) + tok * f;
         }
       }
-      const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, (avg[kk] / hours) * mult]);
-      lg.innerHTML = shown.map(([kk, v]) => {
+      // 🤖 AI変更: 凡例は表示期間内(t0〜t1)の合計トークンを表示（ツールチップに平均レート併記）
+      const rateUnit = isDay ? '/日' : '/時';
+      const shown = keys.filter(kk => avg[kk] > 0).map(kk => [kk, avg[kk], (avg[kk] / hours) * mult]);
+      lg.innerHTML = shown.map(([kk, sumV, rateV]) => {
         const vis = isModelVis(kk);
         const label = fmtLabel(kk);
         return vis
-          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(v)) + unit + '</span></button>'
+          ? '<button type="button" class="cl-toggle expanded" data-model="' + kk + '" title="期間(' + rangeMenu.value + ')内合計: ' + Math.round(sumV).toLocaleString() + ' (' + k(Math.round(rateV)) + rateUnit + ') — クリックして ' + label + ' を非表示"><i class="sw" style="background:' + colOf(kk) + '"></i><span>' + label + '</span><span class="v">' + k(Math.round(sumV)) + '</span></button>'
           : '<button type="button" class="cl-toggle collapsed" data-model="' + kk + '" title="クリックして ' + label + ' を表示"><i class="sw" style="background:' + colOf(kk) + ';opacity:0.35"></i><span style="color:var(--mut)">' + label + '</span></button>';
       }).join('');
       lg.querySelectorAll('button[data-model]').forEach(btn => {
