@@ -79,10 +79,15 @@
   let canvas = null;
   let ctx = null;
   let toolbarEl = null;
+  let htmlHoverBoxEl = null;
   let cropOverlayEl = null;
   let textEditorEl = null;
   let toastEl = null;
   let captureModalEl = null;
+
+  // HTML edit mode hover state
+  let hoveredHtmlEl = null;
+  let lastHtmlMousePos = null;
 
   // --- Palette presets (9 colors + eyedropper + custom picker) ---
   const PRESET_COLORS = [
@@ -129,6 +134,11 @@
     textEditorEl.placeholder = 'テキストを入力 (Shift+Enterで改行、Escで完了)';
     shadow.appendChild(textEditorEl);
 
+    // HTML Edit Mode Hover Highlight
+    htmlHoverBoxEl = document.createElement('div');
+    htmlHoverBoxEl.className = 'cd-html-hover-box';
+    shadow.appendChild(htmlHoverBoxEl);
+
     // Crop UI Container
     cropOverlayEl = document.createElement('div');
     cropOverlayEl.className = 'cd-crop-overlay';
@@ -158,6 +168,7 @@
     setupKeyboardEvents();
     setupPasteHandler();
     setupResizeHandler();
+    setupHtmlEditHighlightEvents();
 
     applyPageZoom(currentPageZoom);
     syncPageZoom();
@@ -174,6 +185,9 @@
     clampToolbarToViewport();
     if (currentTool === 'crop' && cropRect) {
       updateCropOverlay();
+    }
+    if (currentTool === 'edit') {
+      renderHtmlHoverHighlight();
     }
   }
 
@@ -228,6 +242,9 @@
         syncPageZoom();
         resizeCanvas();
         clampToolbarToViewport();
+        if (currentTool === 'edit') {
+          renderHtmlHoverHighlight();
+        }
       }
     });
   }
@@ -241,10 +258,16 @@
       }
       hostEl.style.display = 'block';
       document.body.classList.add('cd-doodle-active-body');
+      if (currentTool === 'edit') {
+        document.designMode = 'on';
+        if (canvasWrapEl) canvasWrapEl.style.pointerEvents = 'none';
+        if (canvas) canvas.style.pointerEvents = 'none';
+      }
       syncPageZoom();
       resizeCanvas();
       notifyState(true);
     } else {
+      clearHtmlHoverHighlight();
       if (document.designMode === 'on') {
         document.designMode = 'off';
       }
@@ -1161,6 +1184,95 @@
     return null;
   }
 
+  // --- HTML Edit Mode Block Hover Highlight ---
+  const HTML_BLOCK_DISPLAYS = new Set([
+    'block', 'flex', 'grid', 'list-item', 'flow-root',
+    'table', 'table-row', 'table-cell', 'table-caption',
+    'table-row-group', 'table-header-group', 'table-footer-group',
+    'inline-block', 'inline-flex', 'inline-grid', 'inline-table'
+  ]);
+  const HTML_REPLACED_TAGS = new Set(['IMG', 'CANVAS', 'VIDEO', 'IFRAME']);
+
+  function findHtmlBlockElement(target) {
+    let el = target;
+    if (el && el.nodeType === 3) el = el.parentElement;
+    if (!(el instanceof Element)) return null;
+    if (el === hostEl || hostEl?.contains(el)) return null;
+    if (el === document.body || el === document.documentElement) return null;
+
+    // Walk out of SVG child primitives (<path>, <g>, etc.) up to <svg>
+    while (el && el instanceof SVGElement && el.tagName.toLowerCase() !== 'svg') {
+      el = el.parentElement;
+    }
+    if (!el || el === document.body || el === document.documentElement) return null;
+
+    const startEl = el;
+    while (el && el !== document.body && el !== document.documentElement) {
+      if (el === hostEl || hostEl?.contains(el)) return null;
+      const tag = el.tagName ? el.tagName.toUpperCase() : '';
+      const disp = getComputedStyle(el).display;
+      if (HTML_BLOCK_DISPLAYS.has(disp) || HTML_REPLACED_TAGS.has(tag)) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) return el;
+      }
+      el = el.parentElement;
+    }
+
+    if (startEl && startEl !== document.body && startEl !== document.documentElement) {
+      const r = startEl.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return startEl;
+    }
+    return null;
+  }
+
+  function renderHtmlHoverHighlight() {
+    if (!htmlHoverBoxEl) return;
+    if (!isActive || currentTool !== 'edit' || !hoveredHtmlEl || !hoveredHtmlEl.isConnected) {
+      htmlHoverBoxEl.style.display = 'none';
+      return;
+    }
+    const rect = hoveredHtmlEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      htmlHoverBoxEl.style.display = 'none';
+      return;
+    }
+    htmlHoverBoxEl.style.display = 'block';
+    htmlHoverBoxEl.style.left = `${rect.left}px`;
+    htmlHoverBoxEl.style.top = `${rect.top}px`;
+    htmlHoverBoxEl.style.width = `${rect.width}px`;
+    htmlHoverBoxEl.style.height = `${rect.height}px`;
+  }
+
+  function clearHtmlHoverHighlight() {
+    hoveredHtmlEl = null;
+    lastHtmlMousePos = null;
+    if (htmlHoverBoxEl) {
+      htmlHoverBoxEl.style.display = 'none';
+    }
+  }
+
+  function setupHtmlEditHighlightEvents() {
+    document.addEventListener('mouseleave', () => {
+      if (currentTool === 'edit') clearHtmlHoverHighlight();
+    });
+    window.addEventListener('blur', () => {
+      if (currentTool === 'edit') clearHtmlHoverHighlight();
+    });
+    window.addEventListener('scroll', () => {
+      if (!isActive || currentTool !== 'edit') return;
+      if (lastHtmlMousePos) {
+        const el = document.elementFromPoint(lastHtmlMousePos.x, lastHtmlMousePos.y);
+        hoveredHtmlEl = findHtmlBlockElement(el);
+      }
+      renderHtmlHoverHighlight();
+    }, true);
+    document.addEventListener('input', () => {
+      if (isActive && currentTool === 'edit' && hoveredHtmlEl) {
+        renderHtmlHoverHighlight();
+      }
+    }, true);
+  }
+
   // --- Canvas Mouse / Touch Events ---
   function setupCanvasEvents() {
     canvas.addEventListener('mousedown', onMouseDown);
@@ -1344,6 +1456,17 @@
   function onMouseMove(e) {
     if (!isActive) return;
     const pos = getMousePos(e);
+
+    if (currentTool === 'edit') {
+      if (toolbarEl?.classList.contains('dragging')) {
+        clearHtmlHoverHighlight();
+        return;
+      }
+      lastHtmlMousePos = pos;
+      hoveredHtmlEl = findHtmlBlockElement(e.target);
+      renderHtmlHoverHighlight();
+      return;
+    }
 
     if (currentTool === 'eyedropper') {
       eyedropperHoverPos = pos;
@@ -3070,7 +3193,7 @@
       // Tool shortcuts (only when not typing and no modifier keys pressed)
       if (!mod) {
         const key = e.key.toLowerCase();
-        if (key === 'v') setTool('select');
+        if (key === 'm') setTool('select');
         else if (key === 'w') setTool('edit');
         else if (key === 'p') setTool('freehand');
         else if (key === 'l') setTool('line');
@@ -3111,13 +3234,14 @@
       if (stSel) { stSel.value = ''; stSel.style.borderColor = ''; }
     }
 
-    // Toggle Web text edit (document.designMode)
+    // Toggle HTML edit mode (document.designMode + block hover highlight)
     if (tool === 'edit') {
       document.designMode = 'on';
       if (canvasWrapEl) canvasWrapEl.style.pointerEvents = 'none';
       if (canvas) canvas.style.pointerEvents = 'none';
-      showToast('✍️ Webテキスト直接編集モード (ページ上の文字をクリックして書き換え可能・Escで完了)', 'info');
+      showToast('</> HTML編集モード (ブロックをハイライト・クリックで直接編集・Escで完了)', 'info');
     } else {
+      clearHtmlHoverHighlight();
       if (prevTool === 'edit' && document.designMode === 'on') {
         document.designMode = 'off';
       }
@@ -3140,6 +3264,7 @@
     shadow.querySelectorAll('.cd-tool-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tool === tool);
     });
+    shadow.getElementById('cd-btn-eyedropper')?.classList.toggle('active', tool === 'eyedropper');
 
     // Change canvas cursor
     if (canvas) {
@@ -3153,14 +3278,10 @@
   }
 
   function setupToolbarEvents() {
-    // Tool buttons (eyedropper supports Shift+Click for native OS EyeDropper)
+    // Tool buttons
     shadow.querySelectorAll('.cd-tool-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        if (btn.dataset.tool === 'eyedropper' && e.shiftKey && typeof window.EyeDropper !== 'undefined') {
-          pickColorWithNativeEyeDropper();
-        } else {
-          setTool(btn.dataset.tool);
-        }
+      btn.addEventListener('click', () => {
+        setTool(btn.dataset.tool);
       });
     });
 
@@ -3476,13 +3597,13 @@
         <svg width="14" height="22" viewBox="0 0 14 24" fill="currentColor"><circle cx="4" cy="6" r="1.7"/><circle cx="10" cy="6" r="1.7"/><circle cx="4" cy="12" r="1.7"/><circle cx="10" cy="12" r="1.7"/><circle cx="4" cy="18" r="1.7"/><circle cx="10" cy="18" r="1.7"/></svg>
       </div>
       <div class="cd-toolbar-body">
-      <!-- Row 1: Drawing & Editing Tools (10) -->
+      <!-- Row 1: Drawing & Editing Tools (9) -->
       <div class="cd-section cd-tools-group">
-        <button class="cd-tool-btn" data-tool="select" title="選択・移動・オブジェクト編集 (V)">
+        <button class="cd-tool-btn" data-tool="select" title="選択・移動・オブジェクト編集 (M)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg>
         </button>
-        <button class="cd-tool-btn" data-tool="edit" title="Webページのテキストを直接編集 (W)">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <button class="cd-tool-btn" data-tool="edit" title="HTML編集モード (W)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 8 2 12 6 16"/><polyline points="18 8 22 12 18 16"/><line x1="14.5" y1="4" x2="9.5" y2="20"/></svg>
         </button>
         <button class="cd-tool-btn active" data-tool="freehand" title="フリーハンド描画 (P)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg>
@@ -3501,15 +3622,6 @@
         </button>
         <button class="cd-tool-btn" data-tool="text" title="テキスト配置・既存テキスト編集 (T)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-        </button>
-        <button class="cd-tool-btn" data-tool="eyedropper" title="スポイト (色抽出: I / Shift+クリックでOS全体)">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 2a3 3 0 0 1 3 3c0 .8-.3 1.5-.9 2.1l-1.6 1.6-4.2-4.2 1.6-1.6c.6-.6 1.3-.9 2.1-.9z"/>
-            <path d="m14.3 4.5 4.2 4.2"/>
-            <path d="M14.3 8.7 6.5 16.5H3v-3.5l7.8-7.8"/>
-            <path d="m2 22 2-2"/>
-            <circle cx="2" cy="22" r="1" fill="currentColor"/>
-          </svg>
         </button>
         <button class="cd-tool-btn cd-crop-btn" data-tool="crop" title="暗転クロップエリア指定・領域コピー (C)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
@@ -3559,6 +3671,9 @@
 
       <!-- Row 4: Actions -->
       <div class="cd-section cd-actions-group">
+        <button id="cd-btn-clear" class="cd-action-icon-btn clear-btn" title="全消去">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </button>
         <button id="cd-btn-paste" class="cd-action-icon-btn" title="クリップボードから画像を重ね貼り (Ctrl+V)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
         </button>
@@ -3567,9 +3682,6 @@
         </button>
         <button id="cd-btn-redo" class="cd-action-icon-btn disabled" title="やり直す (Ctrl+Y)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
-        <button id="cd-btn-clear" class="cd-action-icon-btn" title="全消去">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
         <button id="cd-btn-fullcopy" class="cd-action-icon-btn" title="表示範囲をクリップボードにコピー (Ctrl+C)">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -3723,6 +3835,13 @@
         background: rgba(239, 68, 68, 0.25);
         color: #f87171;
       }
+      .cd-action-icon-btn.clear-btn {
+        color: #ef4444;
+      }
+      .cd-action-icon-btn.clear-btn:hover {
+        background: rgba(239, 68, 68, 0.25);
+        color: #f87171;
+      }
 
       /* Color Palette */
       .cd-palette-group {
@@ -3748,6 +3867,12 @@
         border-color: #38bdf8;
         color: #38bdf8;
         transform: scale(1.08);
+      }
+      .cd-eyedropper-btn.active {
+        background: #6366f1;
+        border-color: #6366f1;
+        color: #ffffff;
+        box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
       }
       .cd-color-dot {
         width: 17px;
@@ -3883,6 +4008,21 @@
         font-weight: bold;
         line-height: 1.25;
         box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      }
+
+      /* HTML Edit Mode Hover Highlight */
+      .cd-html-hover-box {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 2147483643;
+        pointer-events: none;
+        box-sizing: border-box;
+        border: calc(2px * var(--cd-inv-zoom, 1)) solid #6366f1;
+        background: rgba(99, 102, 241, 0.06);
+        border-radius: 3px;
+        box-shadow: 0 0 0 calc(1px * var(--cd-inv-zoom, 1)) rgba(255, 255, 255, 0.65);
       }
 
       /* Crop Overlay & Actions */
